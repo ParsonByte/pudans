@@ -1,0 +1,21 @@
+package cn.tolim.pudans.contract.extension.index.query;
+
+import org.springframework.util.Assert;
+
+public record AndCondition(Condition left, Condition right) implements Condition {
+
+    public AndCondition {
+        Assert.notNull(left, "Left condition must not be null");
+        Assert.notNull(right, "Right condition must not be null");
+    }
+
+    @Override
+    public Condition not() {
+        return left.not().or(right.not());
+    }
+
+    @Override
+    public String toString() {
+        return "(" + left + " AND " + right + ")";
+    }
+}
