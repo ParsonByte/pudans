@@ -1,0 +1,11 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: anonymous
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-public-apis" ]
+rules: [ ]
