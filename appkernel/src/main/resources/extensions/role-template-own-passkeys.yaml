@@ -1,0 +1,11 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-own-passkeys
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+    resources: [ "passkeys", "passkeys/registration/options", "passkeys/registration/verify" ]
+    verbs: [ "create", "get", "list" ]

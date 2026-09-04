@@ -1,0 +1,16 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-own-permissions
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+    resources: [ "users/permissions", "users/ui-permissions" ]
+    resourceNames: [ "-" ]
+    verbs: [ "get", "list" ]
+  - apiGroups: [ "uc.api.pudans.tolim.cn" ]
+    resources: [ "users/permissions" ]
+    resourceNames: [ "-" ]
+    verbs: [ "get" ]

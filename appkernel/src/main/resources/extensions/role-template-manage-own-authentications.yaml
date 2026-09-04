@@ -1,0 +1,14 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-own-authentications
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+    resources: [ "authentications", "authentications/totp", "authentications/settings" ]
+    verbs: [ "*" ]
+  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+    resources: [ "devices" ]
+    verbs: [ "get", "list", "delete" ]

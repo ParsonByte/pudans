@@ -1,0 +1,16 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-own-connections
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+    resources:
+      [
+        "userconnections",
+        "userconnections/oidc/providers",
+        "userconnections/oidc/bind",
+      ]
+    verbs: [ "create", "get", "list", "delete" ]
