@@ -1,0 +1,25 @@
+apiVersion: v1alpha1
+kind: ConfigMap
+metadata:
+  name: system-default
+data:
+  basic: |
+    {
+      "title": "pudans",
+      "subtitle": "Enterprise identity and permission management",
+      "logo": "",
+      "favicon": ""
+    }
+  user: |
+    {
+      "allowRegistration": false,
+      "mustVerifyEmailOnRegistration": false,
+      "defaultRole": "normal-role",
+      "protectedUsernames": "admin"
+    }
+  seo: |
+    {
+      "blockSpiders": false,
+      "keywords": "",
+      "description": ""
+    }

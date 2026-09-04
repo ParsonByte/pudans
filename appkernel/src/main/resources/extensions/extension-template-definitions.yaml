@@ -1,0 +1,180 @@
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: additional-webfilter
+spec:
+  className: cn.tolim.pudans.contract.security.AdditionalWebFilter
+  displayName: "附加 Web 过滤器"
+  type: MULTI_INSTANCE
+  description: "用于 Web 请求的链式处理，可以用来实现跨领域、与应用无关的需求，如安全性、超时等"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: username-password-authentication-manager
+spec:
+  className: cn.tolim.pudans.contract.security.authentication.login.UsernamePasswordAuthenticationManager
+  displayName: "用户名密码认证管理器"
+  type: SINGLETON
+  description: "扩展用户名密码认证"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: before-security-webfilter
+spec:
+  className: cn.tolim.pudans.contract.security.BeforeSecurityWebFilter
+  displayName: "Security 前置过滤器"
+  type: MULTI_INSTANCE
+  description: "提供在 Security 过滤器链最前面执行的 Web 过滤器扩展方式"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: after-security-webfilter
+spec:
+  className: cn.tolim.pudans.contract.security.AfterSecurityWebFilter
+  displayName: "Security 后置过滤器"
+  type: MULTI_INSTANCE
+  description: "提供在 Security 过滤器链最后面执行的 Web 过滤器扩展方式"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: http-basic-security-webfilter
+spec:
+  className: cn.tolim.pudans.contract.security.HttpBasicSecurityWebFilter
+  displayName: "HTTP Basic 认证过滤器"
+  type: MULTI_INSTANCE
+  description: "提供 HTTP Basic 认证逻辑的扩展方式"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: form-login-security-webfilter
+spec:
+  className: cn.tolim.pudans.contract.security.FormLoginSecurityWebFilter
+  displayName: "表单登录认证过滤器"
+  type: MULTI_INSTANCE
+  description: "提供表单登录认证逻辑的扩展方式"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: authentication-security-webfilter
+spec:
+  className: cn.tolim.pudans.contract.security.AuthenticationSecurityWebFilter
+  displayName: "普通认证过滤器"
+  type: MULTI_INSTANCE
+  description: "提供普通认证逻辑的扩展方式"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: anonymous-authentication-security-webfilter
+spec:
+  className: cn.tolim.pudans.contract.security.AnonymousAuthenticationSecurityWebFilter
+  displayName: "匿名认证过滤器"
+  type: MULTI_INSTANCE
+  description: "提供匿名认证逻辑的扩展方式"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: oauth2-authorization-code-security-webfilter
+spec:
+  className: cn.tolim.pudans.contract.security.OAuth2AuthorizationCodeSecurityWebFilter
+  displayName: "OAuth2 授权码认证过滤器"
+  type: MULTI_INSTANCE
+  description: "提供 OAuth2 授权码认证逻辑的扩展方式"
+
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionDefinition
+metadata:
+  name: audit-webfilter
+spec:
+  className: cn.tolim.pudans.security.audit.AuditWebFilter
+  extensionPointName: additional-webfilter
+  displayName: "审计日志过滤器"
+  description: "为每个已认证请求写入不可变审计记录"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: audit-sink
+spec:
+  className: cn.tolim.pudans.contract.audit.AuditSink
+  displayName: "审计外发"
+  type: MULTI_INSTANCE
+  description: "审计记录落库后异步外发到 SIEM、消息队列或对象存储"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: risk-alert-channel
+spec:
+  className: cn.tolim.pudans.contract.risk.RiskAlertChannel
+  displayName: "风控告警通道"
+  type: MULTI_INSTANCE
+  description: "风控告警的多通道外发，如飞书、企业微信、钉钉、邮件"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionDefinition
+metadata:
+  name: feishu-risk-alert-channel
+spec:
+  className: cn.tolim.pudans.infra.feishu.FeishuAlertNotifier
+  extensionPointName: risk-alert-channel
+  displayName: "飞书告警通道"
+  description: "将风控告警以互动卡片发送到飞书群"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: rbac-rule-enricher
+spec:
+  className: cn.tolim.pudans.contract.security.RbacRuleEnricher
+  displayName: "RBAC 规则增强"
+  type: MULTI_INSTANCE
+  description: "在角色规则基础上追加属性条件与数据权限规则"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: password-policy
+spec:
+  className: cn.tolim.pudans.contract.security.PasswordPolicy
+  displayName: "密码策略"
+  type: SINGLETON
+  description: "密码复杂度、历史不可复用与弱口令字典校验"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: two-factor-verifier
+spec:
+  className: cn.tolim.pudans.contract.security.TwoFactorVerifier
+  displayName: "双因子验证器"
+  type: MULTI_INSTANCE
+  description: "按类型提供第二因子校验，如 TOTP、短信、硬件令牌"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionPointDefinition
+metadata:
+  name: user-provisioning-hook
+spec:
+  className: cn.tolim.pudans.contract.user.UserProvisioningHook
+  displayName: "用户创建前置校验"
+  type: MULTI_INSTANCE
+  description: "用户创建前的白名单、工号对账与一票否决校验"
+---
+apiVersion: plugin.pudans.tolim.cn/v1alpha1
+kind: ExtensionDefinition
+metadata:
+  name: totp-two-factor-verifier
+spec:
+  className: cn.tolim.pudans.security.authentication.twofactor.totp.TotpTwoFactorVerifier
+  extensionPointName: two-factor-verifier
+  displayName: "TOTP 验证器"
+  description: "基于时间的一次性密码，作为默认第二因子"

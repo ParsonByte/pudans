@@ -1,0 +1,11 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-annotation-setting
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups: [ "uc.api.pudans.tolim.cn" ]
+    resources: [ "annotationsettings" ]
+    verbs: [ "get", "list" ]
