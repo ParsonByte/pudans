@@ -1,0 +1,34 @@
+server:
+  port: 8090
+
+spring:
+  output:
+    ansi:
+      enabled: always
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
+        use-last-modified: false
+
+pudans:
+  security:
+    basic-auth:
+      disabled: false
+  plugin:
+    runtime-mode: development
+  work-dir: ${user.home}/pudans2-dev
+
+logging:
+  level:
+    org.springframework.data.r2dbc: DEBUG
+    org.springframework.r2dbc: DEBUG
+    cn.tolim.pudans: DEBUG
+    org.springframework.boot.autoconfigure.web.reactive.error.AbstractErrorWebExceptionHandler: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

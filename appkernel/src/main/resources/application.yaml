@@ -1,0 +1,111 @@
+server:
+  port: 8090
+  forward-headers-strategy: native
+  compression:
+    enabled: true
+
+spring:
+  output:
+    ansi:
+      enabled: detect
+  r2dbc:
+    url: ${PUDANS_DB_URL:r2dbc:postgresql://localhost:5432/pudans}
+    username: ${PUDANS_DB_USERNAME:pudans}
+    password: ${PUDANS_DB_PASSWORD:pudans}
+    pool:
+      enabled: true
+      initial-size: 1
+      max-size: 20
+      max-idle-time: 30m
+  sql:
+    init:
+      mode: always
+      platform: postgresql
+      separator: "@"
+      schema-locations: classpath:schema-postgresql.sql
+  data:
+    redis:
+      host: ${PUDANS_REDIS_HOST:localhost}
+      port: ${PUDANS_REDIS_PORT:6379}
+      password: ${PUDANS_REDIS_PASSWORD:}
+      database: ${PUDANS_REDIS_DATABASE:0}
+      timeout: 5s
+      lettuce:
+        pool:
+          enabled: true
+          max-active: 16
+          max-idle: 8
+          min-idle: 1
+          max-wait: 5s
+  session:
+    store-type: redis
+    timeout: 30m
+  cache:
+    type: redis
+  http:
+    codecs:
+      max-in-memory-size: 10MB
+  messages:
+    basename: config.i18n.messages
+  web:
+    error:
+      whitelabel:
+        enabled: false
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 365d
+  threads:
+    virtual:
+      enabled: true
+
+
+pudans:
+  work-dir: ${PUDANS_WORK_DIR:${user.home}/.pudans}
+  security:
+    basic-auth:
+      disabled: true
+    two-factor-auth:
+      disabled: false
+    totp:
+      key: ${PUDANS_TOTP_KEY:}
+      keystore-password: ${PUDANS_TOTP_KEYSTORE_PASSWORD:}
+    trusted-proxies: ${PUDANS_TRUSTED_PROXIES:127.0.0.1,::1}
+  feishu:
+    enabled: ${FEISHU_ENABLED:false}
+    app-id: ${FEISHU_APP_ID:}
+    app-secret: ${FEISHU_APP_SECRET:}
+    redirect-uri: ${FEISHU_REDIRECT_URI:{baseUrl}/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu}
+    sync-interval-seconds: ${FEISHU_SYNC_INTERVAL:21600}
+    alert-chat-id: ${FEISHU_ALERT_CHAT_ID:}
+  audit:
+    retention-days: ${AUDIT_RETENTION_DAYS:90}
+    archive-interval-seconds: ${AUDIT_ARCHIVE_INTERVAL:21600}
+  webauthn:
+    rp-id: ${WEBAUTHN_RP_ID:localhost}
+    rp-name: pudans
+    origins: ${WEBAUTHN_ORIGINS:http://localhost:8090}
+  oidc:
+    providers: [ ]
+
+springdoc:
+  api-docs:
+    enabled: false
+  writer-with-order-by-keys: true
+
+logging:
+  level:
+    root: INFO
+  file:
+    name: ${pudans.work-dir}/logs/pudans.log
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: when-authorized
+
+
