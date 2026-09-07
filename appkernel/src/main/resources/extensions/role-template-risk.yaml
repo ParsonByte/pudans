@@ -1,0 +1,29 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-riskrules
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Risk Control"
+    rbac.authorization.pudans.tolim.cn/display-name: "Risk Rule View"
+rules:
+  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+    resources: [ "riskrules" ]
+    verbs: [ "get", "list" ]
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-riskrules
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-riskrules" ]
+    rbac.authorization.pudans.tolim.cn/module: "Risk Control"
+    rbac.authorization.pudans.tolim.cn/display-name: "Risk Rule Manage"
+rules:
+  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+    resources: [ "riskrules" ]
+    verbs: [ "create", "update", "patch", "delete" ]

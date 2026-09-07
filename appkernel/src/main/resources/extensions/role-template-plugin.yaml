@@ -1,0 +1,28 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-plugins
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-plugins" ]'
+    rbac.authorization.pudans.tolim.cn/module: "Plugins"
+    rbac.authorization.pudans.tolim.cn/display-name: "Plugin Manage"
+rules:
+  - apiGroups: [ "extension.api.pudans.tolim.cn" ]
+    resources: [ "plugins" ]
+    verbs: [ "create", "update", "patch", "delete" ]
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-plugins
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Plugins"
+    rbac.authorization.pudans.tolim.cn/display-name: "Plugin View"
+rules:
+  - apiGroups: [ "extension.api.pudans.tolim.cn" ]
+    resources: [ "plugins" ]
+    verbs: [ "get", "list" ]
