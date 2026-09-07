@@ -1,0 +1,46 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: UserGroup
+metadata:
+  name: super-admins
+  labels:
+    pudans.tolim.cn/builtin: "true"
+  finalizers:
+    - system-protection
+displayName: 超级管理员组
+description: 内置超级管理员组，绑定 super-role。
+roleRefs:
+  - kind: Role
+    name: super-role
+    apiGroup: pudans.tolim.cn
+
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: UserGroup
+metadata:
+  name: system-admins
+  labels:
+    pudans.tolim.cn/builtin: "true"
+  finalizers:
+    - system-protection
+displayName: 系统管理员组
+description: 内置系统管理员组，绑定 system-admin-role。
+roleRefs:
+  - kind: Role
+    name: system-admin-role
+    apiGroup: pudans.tolim.cn
+
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: UserGroup
+metadata:
+  name: normal-users
+  labels:
+    pudans.tolim.cn/builtin: "true"
+  finalizers:
+    - system-protection
+displayName: 普通用户组
+description: 内置普通用户组，绑定 normal-role，飞书同步与批量创建的用户默认加入该组。
+roleRefs:
+  - kind: Role
+    name: normal-role
+    apiGroup: pudans.tolim.cn
