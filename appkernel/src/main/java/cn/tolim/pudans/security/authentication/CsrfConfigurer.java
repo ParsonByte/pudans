@@ -1,0 +1,52 @@
+package cn.tolim.pudans.security.authentication;
+
+import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
+
+import cn.tolim.pudans.contract.extension.ApiGroups;
+import org.springframework.core.annotation.Order;
+import org.springframework.security.config.web.server.ServerHttpSecurity;
+import org.springframework.security.oauth2.server.resource.web.server.authentication.ServerBearerTokenAuthenticationConverter;
+import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository;
+import org.springframework.security.web.server.csrf.CsrfWebFilter;
+import org.springframework.security.web.server.csrf.XorServerCsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.server.util.matcher.AndServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.NegatedServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+
+@Component
+@Order(0)
+class CsrfConfigurer implements SecurityConfigurer {
+
+    private static ServerWebExchangeMatcher tokenAuthMatcher() {
+        var bearerTokenConverter = new ServerBearerTokenAuthenticationConverter();
+        return exchange -> bearerTokenConverter
+                .convert(exchange)
+                .flatMap(a -> ServerWebExchangeMatcher.MatchResult.match())
+                .switchIfEmpty(Mono.defer(ServerWebExchangeMatcher.MatchResult::notMatch));
+    }
+
+    @Override
+    public void configure(ServerHttpSecurity http) {
+        var csrfMatcher = new AndServerWebExchangeMatcher(
+                CsrfWebFilter.DEFAULT_CSRF_MATCHER,
+                new NegatedServerWebExchangeMatcher(
+
+                        pathMatchers(
+                                "/apis/" + ApiGroups.CONSOLE + "/**",
+                                "/apis/" + ApiGroups.UC + "/**",
+                                "/apis/" + ApiGroups.PUBLIC + "/**",
+                                "/apis/" + ApiGroups.EXTENSION + "/**",
+                                "/apis/" + ApiGroups.AUTH + "/**",
+                                "/actuator/**",
+                                ApiGroups.PUBLIC_SETUP_PATH,
+                                "/sudo/**",
+                                "/login",
+                                "/logout")),
+                new NegatedServerWebExchangeMatcher(tokenAuthMatcher()));
+        http.csrf(csrfSpec -> csrfSpec.csrfTokenRepository(new CookieServerCsrfTokenRepository())
+                .csrfTokenRequestHandler(new XorServerCsrfTokenRequestAttributeHandler())
+                .requireCsrfProtectionMatcher(csrfMatcher));
+    }
+}
