@@ -1,0 +1,75 @@
+package cn.tolim.pudans.security.authentication;
+
+import static cn.tolim.pudans.security.authorization.AuthorityUtils.ANONYMOUS_ROLE_NAME;
+import static cn.tolim.pudans.security.authorization.AuthorityUtils.AUTHENTICATED_ROLE_NAME;
+import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
+import static java.util.Objects.requireNonNullElse;
+
+import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.core.rbac.service.UserGroupService;
+import cn.tolim.pudans.infra.exception.UserNotFoundException;
+import cn.tolim.pudans.security.authentication.login.PudansUser;
+import cn.tolim.pudans.security.authentication.twofactor.TwoFactorUtils;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsPasswordService;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import reactor.core.publisher.Mono;
+
+@Slf4j
+public class DefaultUserDetailService implements ReactiveUserDetailsService, ReactiveUserDetailsPasswordService {
+
+    private final UserService userService;
+
+    private final UserGroupService userGroupService;
+
+
+    @Setter
+    private boolean twoFactorAuthDisabled;
+
+    public DefaultUserDetailService(UserService userService, UserGroupService userGroupService) {
+        this.userService = userService;
+        this.userGroupService = userGroupService;
+    }
+
+    @Override
+    public Mono<UserDetails> updatePassword(UserDetails user, String newPassword) {
+        return userService.updatePassword(user.getUsername(), newPassword).map(u -> withNewPassword(user, newPassword));
+    }
+
+    @Override
+    public Mono<UserDetails> findByUsername(String username) {
+        var getUser = userService.getUser(username);
+        return getUser.switchIfEmpty(Mono.error(() -> new UserNotFoundException(username)))
+                .onErrorMap(UserNotFoundException.class, ignored -> new BadCredentialsException("Invalid Credentials"))
+                .flatMap(user -> {
+                    var name = user.getMetadata().getName();
+                    var disabled = requireNonNullElse(user.getSpec().getDisabled(), false);
+                    var setAuthorities = userGroupService
+                            .getRoleNamesByUsername(name)
+
+                            .concatWithValues(AUTHENTICATED_ROLE_NAME, ANONYMOUS_ROLE_NAME)
+                            .map(roleName -> new SimpleGrantedAuthority(ROLE_PREFIX + roleName))
+                            .distinct()
+                            .collectList();
+
+                    return setAuthorities.flatMap(authorities -> Mono.fromSupplier(() -> {
+                        var principal = new PudansUserDetails(
+                                name, user.getSpec().getPassword(), authorities, disabled);
+                        var twoFactorAuthSettings = TwoFactorUtils.getTwoFactorAuthSettings(user);
+                        return new PudansUser.Builder(principal)
+                                .twoFactorAuthEnabled((!twoFactorAuthDisabled) && twoFactorAuthSettings.isAvailable())
+                                .totpEncryptedSecret(user.getSpec().getTotpEncryptedSecret())
+                                .build();
+                    }));
+                });
+    }
+
+    private UserDetails withNewPassword(UserDetails userDetails, String newPassword) {
+        return User.withUserDetails(userDetails).password(newPassword).build();
+    }
+}
