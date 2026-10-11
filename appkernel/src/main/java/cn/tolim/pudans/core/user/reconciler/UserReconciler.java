@@ -1,0 +1,141 @@
+package cn.tolim.pudans.core.user.reconciler;
+
+import static cn.tolim.pudans.contract.extension.ExtensionUtil.addFinalizers;
+import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.contract.extension.ExtensionUtil.isDeleted;
+import static cn.tolim.pudans.contract.extension.ExtensionUtil.removeFinalizers;
+import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Optional;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+import cn.tolim.pudans.contract.core.extension.Device;
+import cn.tolim.pudans.contract.core.extension.RememberMeToken;
+import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.core.extension.user.UserConnection;
+import cn.tolim.pudans.contract.extension.ListOptions;
+import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
+import cn.tolim.pudans.contract.extension.controller.Controller;
+import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
+import cn.tolim.pudans.contract.extension.controller.ReactiveReconciler;
+import cn.tolim.pudans.contract.extension.controller.Reconciler.Request;
+import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.contract.security.device.DeviceService;
+import cn.tolim.pudans.core.event.DomainEventPublisher;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class UserReconciler implements ReactiveReconciler<Request> {
+
+    private static final String FINALIZER_NAME = "user-protection";
+
+    private final InternalReactiveExtensionClient client;
+
+    private final DeviceService deviceService;
+
+    private final DomainEventPublisher domainEventPublisher;
+
+    @Override
+    public Controller setupWith(ControllerBuilder builder) {
+        return builder.extension(new User()).build();
+    }
+
+    @Override
+    public Mono<Result> reconcileReactive(Request request) {
+        return client.fetch(User.class, request.name())
+                .flatMap(user -> {
+                    if (isDeleted(user)) {
+                        return cleanup(request.name()).then(Mono.defer(() -> {
+                            if (!removeFinalizers(user.getMetadata(), Set.of(FINALIZER_NAME))) {
+                                return Mono.just(Result.doNotRetry());
+                            }
+                            return client.updateInternal(user)
+                                    .doOnNext(this::publishDeleted)
+                                    .thenReturn(Result.doNotRetry());
+                        }));
+                    }
+                    if (!addFinalizers(user.getMetadata(), Set.of(FINALIZER_NAME))) {
+                        return Mono.just(Result.doNotRetry());
+                    }
+                    return client.updateInternal(user).thenReturn(Result.doNotRetry());
+                })
+                .switchIfEmpty(Mono.just(Result.doNotRetry()));
+    }
+
+    private Mono<Void> cleanup(String username) {
+        return Mono.when(
+                deleteUserConnections(username),
+                deleteUserDevices(username),
+                deleteUserRememberMeTokens(username),
+                deleteUserPersonalAccessTokens(username),
+                deleteUserGroupMemberships(username));
+    }
+
+    private void publishDeleted(User user) {
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("username", user.getMetadata().getName());
+        payload.put("uid", user.getSpec().getUid());
+        payload.put("email", user.getSpec().getEmail());
+        var deletedAt = user.getMetadata().getDeletionTimestamp();
+        payload.put("deletedAt", (deletedAt == null ? Instant.now() : deletedAt).toString());
+        domainEventPublisher.publish("user.deleted", payload, null);
+    }
+
+    private Mono<Void> deleteUserConnections(String username) {
+        var listOptions = ListOptions.builder()
+                .andQuery(equal("spec.username", username))
+                .build();
+        return client.listAll(UserConnection.class, listOptions, defaultSort())
+                .flatMap(client::delete)
+                .then();
+    }
+
+    private Mono<Void> deleteUserDevices(String username) {
+        var listOptions = ListOptions.builder()
+                .andQuery(equal("spec.principalName", username))
+                .build();
+        return client.listAll(Device.class, listOptions, defaultSort())
+                .filter(device -> !isDeleted(device))
+                .concatMap(device -> deviceService.revoke(username, device.getMetadata().getName()))
+                .then();
+    }
+
+    private Mono<Void> deleteUserRememberMeTokens(String username) {
+        var listOptions = ListOptions.builder()
+                .andQuery(equal("spec.username", username))
+                .build();
+        return client.listAll(RememberMeToken.class, listOptions, defaultSort())
+                .flatMap(client::delete)
+                .then();
+    }
+
+    private Mono<Void> deleteUserPersonalAccessTokens(String username) {
+        var listOptions = ListOptions.builder()
+                .andQuery(equal("spec.username", username))
+                .build();
+        return client.listAll(PersonalAccessToken.class, listOptions, defaultSort())
+                .flatMap(client::delete)
+                .then();
+    }
+
+    private Mono<Void> deleteUserGroupMemberships(String username) {
+        var subject = UserGroupBinding.Subject.user(username).toString();
+        var listOptions = ListOptions.builder()
+                .andQuery(equal("subjects", subject))
+                .build();
+        return client.listAll(UserGroupBinding.class, listOptions, defaultSort())
+                .filter(binding -> Optional.ofNullable(binding.getRoleRef())
+                        .map(ref -> UserGroupBinding.GROUP.equals(ref.getApiGroup()))
+                        .orElse(false))
+                .filter(binding -> !isDeleted(binding))
+                .flatMap(client::delete)
+                .then();
+    }
+}
