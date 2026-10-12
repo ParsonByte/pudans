@@ -1,0 +1,29 @@
+package cn.tolim.pudans.core.user.service;
+
+import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import reactor.core.publisher.Mono;
+
+
+public interface PatService {
+
+
+    Mono<PersonalAccessToken> create(PersonalAccessToken patRequest);
+
+
+    Mono<PersonalAccessToken> create(PersonalAccessToken patRequest, String username);
+
+
+    Mono<PersonalAccessToken> revoke(String patName, String username);
+
+
+    Mono<PersonalAccessToken> restore(String patName, String username);
+
+
+    Mono<PersonalAccessToken> delete(String patName, String username);
+
+
+    Mono<PersonalAccessToken> get(String patName, String username);
+
+
+    Mono<String> generateToken(PersonalAccessToken pat);
+}
