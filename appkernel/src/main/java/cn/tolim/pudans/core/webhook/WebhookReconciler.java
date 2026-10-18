@@ -1,0 +1,40 @@
+package cn.tolim.pudans.core.webhook;
+
+import cn.tolim.pudans.contract.core.extension.Webhook;
+import cn.tolim.pudans.contract.extension.ExtensionClient;
+import cn.tolim.pudans.contract.extension.controller.Controller;
+import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
+import cn.tolim.pudans.contract.extension.controller.Reconciler;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+@Component
+@RequiredArgsConstructor
+public class WebhookReconciler implements Reconciler<Reconciler.Request> {
+
+    private final ExtensionClient client;
+
+    private final WebhookSecretCipher secretCipher;
+
+    @Override
+    public Result reconcile(Request request) {
+        client.fetch(Webhook.class, request.name()).ifPresent(webhook -> {
+            var spec = webhook.getSpec();
+            if (spec == null || !StringUtils.hasText(spec.getSecret())) {
+                return;
+            }
+            if (secretCipher.isEncrypted(spec.getSecret())) {
+                return;
+            }
+            spec.setSecret(secretCipher.encrypt(spec.getSecret()));
+            client.update(webhook);
+        });
+        return Result.doNotRetry();
+    }
+
+    @Override
+    public Controller setupWith(ControllerBuilder builder) {
+        return builder.extension(new Webhook()).build();
+    }
+}
