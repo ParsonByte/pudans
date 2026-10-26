@@ -1,0 +1,49 @@
+package cn.tolim.pudans.plugin.extensionpoint;
+
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
+
+import cn.tolim.pudans.contract.extension.AbstractExtension;
+import cn.tolim.pudans.contract.extension.GVK;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
+
+@Data
+@ToString(callSuper = true)
+@EqualsAndHashCode(callSuper = true)
+@GVK(
+        group = "plugin.pudans.tolim.cn",
+        version = "v1alpha1",
+        kind = "ExtensionDefinition",
+        singular = "extensiondefinition",
+        plural = "extensiondefinitions")
+public class ExtensionDefinition extends AbstractExtension {
+
+
+    @Schema(requiredMode = REQUIRED)
+    private ExtensionSpec spec;
+
+
+    @Data
+    public static class ExtensionSpec {
+
+        @Schema(requiredMode = REQUIRED)
+        private String className;
+
+
+        @Schema(requiredMode = REQUIRED)
+        private String extensionPointName;
+
+
+        @Schema(requiredMode = REQUIRED)
+        private String displayName;
+
+
+        private String description;
+
+
+        private String icon;
+    }
+}
