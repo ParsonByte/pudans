@@ -1,0 +1,38 @@
+{
+  "name": "@pudans/api-client",
+  "version": "0.1.0",
+  "description": "Halo-aligned API client generated from pudans OpenAPI documents, wrapped by a shared ApiClient facade.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "generate": "rimraf src/api src/models src/api.ts src/base.ts src/common.ts src/configuration.ts && node ./scripts/prepare-spec.mjs && openapi-generator-cli generate -i ./.openapi/aggregated.json -g typescript-axios -c ./.openapi_config.yaml -o src --type-mappings=set=Array --global-property apiDocs=false,modelDocs=false && node ./scripts/post-generate.mjs",
+    "prebuild": "pnpm run generate",
+    "build": "vite build && tsc --emitDeclarationOnly --declarationMap",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "axios": "^1.21.1"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.40.1",
+    "axios": "catalog:",
+    "rimraf": "^6.0.1",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}
