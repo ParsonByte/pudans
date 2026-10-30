@@ -1,0 +1,75 @@
+{
+  "name": "@pudans/components",
+  "version": "0.1.0",
+  "description": "React UI kit for pudans, built with MUI, Iconify, CVA and CSS Modules.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist",
+    "src/styles/tailwind-config.ts",
+    "src/styles/tokens.ts"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css",
+    "./tailwind": "./src/styles/tailwind-config.ts",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "vite build && tsc --emitDeclarationOnly --declarationMap",
+    "dev": "vite build --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/roboto": "^5.0.8",
+    "@iconify/react": "catalog:",
+    "@mui/x-date-pickers": "catalog:",
+    "@mui/x-tree-view": "catalog:",
+    "class-variance-authority": "catalog:",
+    "dayjs": "catalog:",
+    "material-ui-popup-state": "catalog:",
+    "mui-one-time-password-input": "catalog:",
+    "notistack": "catalog:",
+    "clsx": "catalog:",
+    "react-animate-height": "catalog:",
+    "react-dnd": "catalog:",
+    "react-dnd-html5-backend": "catalog:",
+    "react-highlight-words": "catalog:",
+    "react-hotkeys-hook": "catalog:",
+    "react-image-crop": "catalog:",
+    "react-is": "catalog:",
+    "react-transition-group": "catalog:",
+    "recharts": "catalog:",
+    "tailwind-merge": "catalog:"
+  },
+  "peerDependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^9.0.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0"
+  },
+  "devDependencies": {
+    "@emotion/react": "catalog:",
+    "@emotion/styled": "catalog:",
+    "@mui/material": "catalog:",
+    "@types/hoist-non-react-statics": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/react-transition-group": "catalog:",
+    "@vitejs/plugin-react": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

@@ -1,0 +1,77 @@
+.wrapper {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.root.root {
+  border: 1px solid var(--pd-border-default);
+  background-color: rgb(var(--pd-bg-muted));
+  color: rgb(var(--pd-text-secondary));
+  font-weight: 600;
+}
+
+.root :global(img) {
+  object-fit: cover;
+}
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon > svg {
+  width: 55%;
+  height: 55%;
+}
+
+.root.sm {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.root.md {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
+.root.lg {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+
+.root.xl {
+  width: 48px;
+  height: 48px;
+  font-size: 17px;
+}
+
+.status {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  border: 2px solid rgb(var(--pd-bg-surface));
+  border-radius: var(--pd-radius-full);
+}
+
+.online {
+  background-color: rgb(var(--pd-state-success));
+}
+
+.offline {
+  background-color: rgb(var(--pd-text-tertiary));
+}
+
+.away {
+  background-color: rgb(var(--pd-state-warning));
+}
+
+.busy {
+  background-color: rgb(var(--pd-state-danger));
+}
