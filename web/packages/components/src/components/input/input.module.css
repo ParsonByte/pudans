@@ -1,0 +1,144 @@
+.root {
+  width: 100%;
+}
+
+.root :global(.MuiFormLabel-root) {
+  position: static;
+  display: block;
+  margin: 0 0 8px;
+  padding: 0;
+  color: rgb(var(--pd-text-secondary));
+  font-size: var(--pd-text-sm);
+  font-weight: 500;
+  line-height: 1.35;
+  transform: none;
+  transform-origin: initial;
+  white-space: nowrap;
+}
+
+.root :global(.MuiFormLabel-root.Mui-focused) {
+  color: rgb(var(--pd-brand-primary));
+}
+
+.root :global(.MuiFormLabel-root.Mui-error) {
+  color: rgb(var(--pd-state-danger));
+}
+
+.root :global(.MuiFormLabel-asterisk) {
+  color: rgb(var(--pd-state-danger));
+}
+
+.root :global(.MuiOutlinedInput-root) {
+  box-sizing: border-box;
+  padding: 0 12px;
+  background-color: transparent;
+  border-radius: var(--pd-radius-lg);
+  font-size: var(--pd-text-base);
+  transition:
+    background-color var(--pd-duration-fast) var(--pd-ease-standard),
+    box-shadow var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.root :global(.MuiOutlinedInput-root:hover) {
+  background-color: transparent;
+}
+
+.root :global(.MuiOutlinedInput-root.Mui-focused) {
+  background-color: transparent;
+  box-shadow:
+    0 0 0 1px rgb(var(--pd-brand-primary)),
+    0 0 0 4px rgb(var(--pd-brand-primary) / 0.12);
+}
+
+.root :global(.MuiOutlinedInput-notchedOutline) {
+  border-color: rgb(var(--pd-text-primary) / 0.23);
+  border-width: 1px;
+  transition: border-color var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.root :global(.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline) {
+  border-color: rgb(var(--pd-text-primary));
+}
+
+.root :global(.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline) {
+  border-color: rgb(var(--pd-brand-primary));
+  border-width: 1px;
+}
+
+.root :global(.MuiOutlinedInput-input) {
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  color: rgb(var(--pd-text-primary));
+  font-size: var(--pd-text-base);
+  line-height: 1.5;
+  caret-color: rgb(var(--pd-brand-primary));
+}
+
+.root :global(.MuiOutlinedInput-input::placeholder) {
+  color: rgb(var(--pd-text-tertiary));
+  opacity: 1;
+}
+
+.root :global(.MuiFormHelperText-root) {
+  margin: 6px 0 0;
+  color: rgb(var(--pd-text-secondary));
+  font-size: var(--pd-text-xs);
+  line-height: 1.4;
+}
+
+.root :global(.MuiFormHelperText-root.Mui-error) {
+  color: rgb(var(--pd-state-danger));
+}
+
+.root :global(input:-webkit-autofill),
+.root :global(input:-webkit-autofill:hover),
+.root :global(input:-webkit-autofill:focus) {
+  -webkit-box-shadow: 0 0 0 1000px rgb(var(--pd-bg-surface)) inset !important;
+  -webkit-text-fill-color: rgb(var(--pd-text-primary)) !important;
+  caret-color: rgb(var(--pd-brand-primary));
+  transition: background-color 9999s ease-out 0s;
+}
+
+.sm :global(.MuiOutlinedInput-root) {
+  height: var(--pd-control-sm);
+}
+
+.sm :global(.MuiOutlinedInput-input) {
+  font-size: var(--pd-text-sm);
+}
+
+.md :global(.MuiOutlinedInput-root) {
+  height: 40px;
+}
+
+.lg :global(.MuiOutlinedInput-root) {
+  height: 48px;
+}
+
+.lg :global(.MuiOutlinedInput-input) {
+  font-size: var(--pd-text-md);
+}
+
+.error :global(.MuiOutlinedInput-notchedOutline) {
+  border-color: rgb(var(--pd-state-danger)) !important;
+}
+
+.adornment {
+  display: flex;
+  align-items: center;
+  color: rgb(var(--pd-text-tertiary));
+}
+
+.adornment > svg {
+  width: 18px;
+  height: 18px;
+}
+
+.root :global(.MuiInputAdornment-positionStart) {
+  margin-right: 8px;
+}
+
+.root :global(.MuiInputAdornment-positionEnd) {
+  margin-left: 8px;
+}

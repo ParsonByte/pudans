@@ -1,0 +1,77 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input {
+  display: flex;
+  gap: var(--pd-space-2);
+}
+
+.field {
+  width: 40px;
+}
+
+.field :global(.MuiOutlinedInput-root) {
+  height: 40px;
+  border-radius: var(--pd-radius-lg);
+  background-color: transparent;
+  font-size: var(--pd-text-md);
+}
+
+.field :global(.MuiOutlinedInput-input) {
+  height: 100%;
+  padding: 0;
+  color: rgb(var(--pd-text-primary));
+  font-size: var(--pd-text-lg);
+  font-weight: var(--pd-font-weight-semibold);
+  text-align: center;
+}
+
+.field :global(.MuiOutlinedInput-notchedOutline) {
+  border-color: rgb(var(--pd-text-primary) / 0.23);
+}
+
+.field :global(.MuiOutlinedInput-root.Mui-focused) {
+  box-shadow:
+    0 0 0 1px rgb(var(--pd-brand-primary)),
+    0 0 0 4px rgb(var(--pd-brand-primary) / 0.12);
+}
+
+.field :global(.Mui-focused .MuiOutlinedInput-notchedOutline) {
+  border-color: rgb(var(--pd-brand-primary));
+  border-width: 1px;
+}
+
+.sm .field {
+  width: var(--pd-control-md);
+}
+
+.sm .field :global(.MuiOutlinedInput-root) {
+  height: var(--pd-control-md);
+  font-size: var(--pd-text-base);
+}
+
+.md .field {
+  width: 40px;
+}
+
+.lg .field {
+  width: 48px;
+}
+
+.lg .field :global(.MuiOutlinedInput-root) {
+  height: 48px;
+  font-size: var(--pd-text-lg);
+}
+
+.helper {
+  color: rgb(var(--pd-text-tertiary));
+  font-size: var(--pd-text-xs);
+  line-height: var(--pd-leading-xs);
+}
+
+.helperError {
+  color: rgb(var(--pd-state-danger));
+}

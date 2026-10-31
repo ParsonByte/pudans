@@ -1,0 +1,20 @@
+.root.root {
+  background-color: rgb(var(--pd-bg-muted));
+}
+
+.root.text {
+  border-radius: var(--pd-radius-xs);
+  transform: none;
+}
+
+.root.circular {
+  border-radius: var(--pd-radius-full);
+}
+
+.root.rectangular {
+  border-radius: var(--pd-radius-md);
+}
+
+.root.rounded {
+  border-radius: var(--pd-radius-lg);
+}

@@ -1,0 +1,23 @@
+.icon {
+  display: inline-block;
+  flex: 0 0 auto;
+  line-height: 1;
+  vertical-align: -0.125em;
+  color: inherit;
+}
+
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin {
+    animation-duration: 2s;
+  }
+}
