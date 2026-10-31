@@ -1,0 +1,150 @@
+.root {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid var(--pd-border-default);
+  border-radius: var(--pd-radius-lg);
+  background-color: rgb(var(--pd-bg-surface));
+  background-image: radial-gradient(circle at 1px 1px, var(--pd-border-subtle) 1px, transparent 0);
+  background-size: 20px 20px;
+  touch-action: none;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.canvas:active {
+  cursor: grabbing;
+}
+
+.edge {
+  stroke-width: 1.5;
+  opacity: 0.8;
+}
+
+.dashed {
+  stroke-dasharray: 6 5;
+}
+
+.edgeLabel {
+  fill: rgb(var(--pd-text-tertiary));
+  font-size: 11px;
+  paint-order: stroke;
+  stroke: rgb(var(--pd-bg-surface));
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.nodeGroup {
+  cursor: pointer;
+  outline: none;
+}
+
+.draggable {
+  cursor: move;
+}
+
+.node {
+  fill: rgb(var(--pd-bg-elevated));
+  stroke: var(--pd-border-default);
+  stroke-width: 1;
+  transition:
+    stroke var(--pd-duration-fast) var(--pd-ease-standard),
+    filter var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.nodeGroup:hover .node,
+.nodeGroup:focus-visible .node,
+.selected .node {
+  stroke: rgb(var(--pd-brand-primary));
+  stroke-width: 2;
+}
+
+.brand .node {
+  stroke: rgb(var(--pd-brand-primary));
+}
+
+.success .node {
+  stroke: rgb(var(--pd-state-success));
+}
+
+.warning .node {
+  stroke: rgb(var(--pd-state-warning));
+}
+
+.danger .node {
+  stroke: rgb(var(--pd-state-danger));
+}
+
+.neutral .node {
+  stroke: var(--pd-border-default);
+}
+
+.nodeLabel {
+  fill: rgb(var(--pd-text-primary));
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.nodeDescription {
+  fill: rgb(var(--pd-text-tertiary));
+  font-size: 11px;
+  pointer-events: none;
+}
+
+.toolbar {
+  position: absolute;
+  right: var(--pd-space-3);
+  bottom: var(--pd-space-3);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--pd-border-default);
+  border-radius: var(--pd-radius-lg);
+  background-color: rgb(var(--pd-bg-surface));
+  box-shadow: none;
+}
+
+.toolbar button {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 7px;
+  border: 0;
+  border-radius: var(--pd-radius-md);
+  background: transparent;
+  color: rgb(var(--pd-text-secondary));
+  font: inherit;
+  font-size: var(--pd-text-xs);
+  cursor: pointer;
+}
+
+.toolbar button:hover {
+  background-color: var(--pd-bg-hover);
+  color: rgb(var(--pd-text-primary));
+}
+
+.toolbar button:focus-visible {
+  outline: none;
+  box-shadow: var(--pd-shadow-focus);
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: rgb(var(--pd-text-tertiary));
+  font-size: var(--pd-text-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node {
+    transition: none;
+  }
+}

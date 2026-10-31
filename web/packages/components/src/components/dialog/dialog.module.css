@@ -1,0 +1,113 @@
+.backdrop.backdrop {
+  background-color: rgb(var(--pd-neutral-1000) / 0.5);
+}
+
+.paper.paper {
+  margin: var(--pd-space-6);
+  transform-origin: center;
+  border: 1px solid var(--pd-border-default);
+  border-radius: var(--pd-radius-lg);
+  background-color: rgb(var(--pd-bg-surface));
+  background-image: none;
+  box-shadow: var(--pd-shadow-lg);
+}
+
+.sm.sm {
+  max-width: 420px;
+}
+
+.md.md {
+  max-width: 560px;
+}
+
+.lg.lg {
+  max-width: 760px;
+}
+
+.header.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--pd-space-4);
+  padding: var(--pd-space-5) var(--pd-space-6) var(--pd-space-2);
+}
+
+.titleContent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pd-space-3);
+  min-width: 0;
+}
+
+.icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--pd-radius-md);
+  background-color: rgb(var(--pd-state-info-soft));
+  color: rgb(var(--pd-brand-primary));
+}
+
+.titleText {
+  min-width: 0;
+}
+
+.heading {
+  margin: 0;
+  color: rgb(var(--pd-text-primary));
+  font-size: var(--pd-text-lg);
+  font-weight: 600;
+  line-height: var(--pd-leading-lg);
+}
+
+.description {
+  margin: 4px 0 0;
+  color: rgb(var(--pd-text-secondary));
+  font-size: var(--pd-text-sm);
+  line-height: var(--pd-leading-sm);
+}
+
+.close.close {
+  flex: 0 0 auto;
+  margin-top: -4px;
+  color: rgb(var(--pd-text-tertiary));
+}
+
+.close.close:hover {
+  background-color: var(--pd-bg-hover);
+  color: rgb(var(--pd-text-primary));
+}
+
+.content.content {
+  padding: var(--pd-space-3) var(--pd-space-6) var(--pd-space-5);
+  color: rgb(var(--pd-text-secondary));
+  font-size: var(--pd-text-base);
+  line-height: var(--pd-leading-base);
+}
+
+.content.content:global(.MuiDialogContent-dividers) {
+  border-color: var(--pd-border-subtle);
+}
+
+.footer.footer {
+  display: flex;
+  gap: var(--pd-space-2);
+  justify-content: flex-end;
+  padding: var(--pd-space-4) var(--pd-space-6) var(--pd-space-5);
+  border-top: 1px solid var(--pd-border-subtle);
+}
+
+@media (max-width: 599px) {
+  .paper.paper {
+    margin: var(--pd-space-3);
+  }
+
+  .header.header,
+  .content.content,
+  .footer.footer {
+    padding-inline: var(--pd-space-4);
+  }
+}

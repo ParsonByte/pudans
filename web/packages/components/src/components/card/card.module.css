@@ -1,0 +1,38 @@
+.root {
+  border: 1px solid var(--pd-border-default);
+  border-radius: var(--pd-radius-lg);
+  background-color: rgb(var(--pd-bg-surface));
+  color: rgb(var(--pd-text-primary));
+  transition: border-color var(--pd-duration-base) var(--pd-ease-standard);
+}
+
+.elevated {
+  box-shadow: none;
+}
+
+.hoverable:hover {
+  border-color: var(--pd-text-tertiary);
+}
+
+.none {
+  padding: 0;
+}
+
+.sm {
+  padding: var(--pd-space-3);
+}
+
+.md {
+  padding: var(--pd-space-5);
+}
+
+.lg {
+  padding: var(--pd-space-6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .root {
+    transition: none;
+  }
+
+}
