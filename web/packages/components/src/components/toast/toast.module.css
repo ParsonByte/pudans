@@ -1,0 +1,6 @@
+.alert {
+  min-width: min(360px, calc(100vw - 32px));
+  max-width: min(480px, calc(100vw - 32px));
+  box-shadow: none;
+  pointer-events: auto;
+}
