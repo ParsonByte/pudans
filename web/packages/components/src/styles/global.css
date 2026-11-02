@@ -1,0 +1,166 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: rgb(var(--pd-bg-canvas));
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: rgb(var(--pd-bg-canvas));
+  color: rgb(var(--pd-text-primary));
+  font-family: var(--pd-font-sans);
+  font-size: var(--pd-text-base);
+  line-height: var(--pd-leading-base);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  color: inherit;
+  font: inherit;
+}
+
+a {
+  color: rgb(var(--pd-brand-primary));
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Brand-tinted selection. This also keeps --pd-shell-item-active-bg referenced
+   from the shared base chunk so the layout chunks can resolve it at runtime. */
+::selection {
+  background: var(--pd-shell-item-active-bg);
+  color: rgb(var(--pd-text-primary));
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--pd-brand-primary));
+  outline-offset: 2px;
+}
+
+.pd-visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.pd-skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 1000;
+  padding: 8px 12px;
+  border-radius: var(--pd-radius-md);
+  background: rgb(var(--pd-brand-primary));
+  color: rgb(var(--pd-brand-contrast));
+  transform: translateY(-200%);
+  transition: transform var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.pd-skip-link:focus-visible {
+  transform: translateY(0);
+}
+
+.pd-scrollbar {
+  scrollbar-color: rgb(var(--pd-neutral-300)) transparent;
+  scrollbar-width: thin;
+}
+
+.pd-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.pd-scrollbar::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--pd-radius-full);
+  background: rgb(var(--pd-neutral-300));
+  background-clip: padding-box;
+}
+
+.pd-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Cloudreve scrollbar treatment */
+html {
+  scrollbar-width: thin;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-button,
+::-webkit-scrollbar-corner {
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: transparent;
+}
+
+::-webkit-scrollbar-track {
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-track:hover {
+  background-color: rgb(var(--pd-neutral-200));
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track:hover,
+.dark ::-webkit-scrollbar-track:hover {
+  background-color: rgb(var(--pd-neutral-800));
+}
+
+:hover::-webkit-scrollbar-thumb,
+:hover > :first-child::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--pd-neutral-300));
+}
+
+[data-theme="dark"] :hover::-webkit-scrollbar-thumb,
+[data-theme="dark"] :hover > :first-child::-webkit-scrollbar-thumb,
+.dark :hover::-webkit-scrollbar-thumb,
+.dark :hover > :first-child::-webkit-scrollbar-thumb {
+  background-color: rgb(var(--pd-neutral-600));
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(var(--pd-brand-primary));
+}
