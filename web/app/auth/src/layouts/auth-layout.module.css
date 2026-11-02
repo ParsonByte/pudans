@@ -1,0 +1,257 @@
+ .page {
+  --login-text: #101114;
+  --login-muted: #5f6368;
+  --login-subtle: #8a8f98;
+  --login-video-text: #ffffff;
+  --login-video-muted: rgba(255, 255, 255, 0.72);
+  --login-video-subtle: rgba(255, 255, 255, 0.5);
+  --login-card: #ffffff;
+  --login-card-border: rgba(15, 23, 42, 0.12);
+  --login-field: #f7f8fa;
+  --login-field-border: rgba(15, 23, 42, 0.18);
+  --login-seg: #f1f2f4;
+  --login-overlay: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0.5) 0%,
+    rgba(0, 0, 0, 0.36) 48%,
+    rgba(0, 0, 0, 0.22) 100%
+  );
+  --login-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  --login-brand: #1976d2;
+  --login-nav: rgba(255, 255, 255, 0.88);
+  --login-slogan: #ffffff;
+  --login-footer: rgba(255, 255, 255, 0.55);
+  --login-mark-bg: rgba(255, 255, 255, 0.1);
+  --login-mark-border: rgba(255, 255, 255, 0.2);
+  --login-nav-bg: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.28) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  --login-footer-bg: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.3) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  --login-tint-bg: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.18) 0%,
+    transparent 30%,
+    transparent 70%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+  --login-tint-blend: normal;
+  --login-slogan-shadow: 0 4px 30px rgba(0, 0, 0, 0.35);
+  --login-nav-shadow: 0 1px 12px rgba(0, 0, 0, 0.25);
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow-x: hidden;
+  background: #f5f6f7;
+  color: var(--login-text);
+}
+
+.page.dark {
+  --login-text: #f7f8fa;
+  --login-muted: rgba(255, 255, 255, 0.62);
+  --login-subtle: rgba(255, 255, 255, 0.42);
+  --login-video-text: #ffffff;
+  --login-video-muted: rgba(255, 255, 255, 0.62);
+  --login-video-subtle: rgba(255, 255, 255, 0.42);
+  --login-card: #1e1e20;
+  --login-card-border: rgba(255, 255, 255, 0.11);
+  --login-field: #18181a;
+  --login-field-border: rgba(255, 255, 255, 0.16);
+  --login-seg: #242426;
+  --login-overlay: linear-gradient(
+    90deg,
+    rgba(4, 6, 10, 0.02) 0%,
+    rgba(4, 6, 10, 0.1) 28%,
+    rgba(4, 6, 10, 0.38) 52%,
+    rgba(8, 8, 9, 0.9) 74%,
+    #0a0a0a 100%
+  );
+  --login-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+  --login-brand: #90caf9;
+  --login-nav: rgba(255, 255, 255, 0.84);
+  --login-slogan: #ffffff;
+  --login-footer: rgba(255, 255, 255, 0.44);
+  --login-mark-bg: rgba(255, 255, 255, 0.08);
+  --login-mark-border: rgba(255, 255, 255, 0.14);
+  --login-nav-bg: transparent;
+  --login-footer-bg: transparent;
+  --login-tint-bg: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.24) 0%,
+    transparent 22%,
+    transparent 72%,
+    rgba(0, 0, 0, 0.18) 100%
+  );
+  --login-tint-blend: multiply;
+  --login-slogan-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+  --login-nav-shadow: none;
+  background: #0a0a0a;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 100svh;
+  padding: 112px clamp(24px, 7vw, 112px) 96px;
+}
+
+@media (max-width: 1024px) {
+  .content {
+    padding-right: clamp(24px, 5vw, 64px);
+  }
+}
+
+@media (max-width: 760px) {
+  .content {
+    justify-content: center;
+    align-items: flex-start;
+    padding: 96px 16px 80px;
+  }
+
+  /* The full-width mobile card reaches the footer area, so keep the pill
+     hidden there as before to avoid covering card actions. */
+  .videoControl {
+    display: none;
+  }
+}
+.video {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 68% center;
+  pointer-events: none;
+}
+
+.videoOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--login-overlay);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.videoTint {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--login-tint-bg);
+  mix-blend-mode: var(--login-tint-blend);
+  pointer-events: none;
+}
+
+.videoControl {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid var(--login-card-border);
+  border-radius: 999px;
+  background: var(--login-mark-bg);
+  color: var(--login-video-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    color var(--pd-duration-fast) var(--pd-ease-standard),
+    background-color var(--pd-duration-fast) var(--pd-ease-standard),
+    box-shadow var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.videoControl:hover {
+  background: var(--login-seg);
+  color: var(--login-video-text);
+}
+
+.videoControl:focus-visible {
+  outline: none;
+  box-shadow: var(--pd-shadow-focus);
+}
+
+.videoControlIcon {
+  color: var(--login-brand);
+}
+
+.routeStage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.routePanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--login-card);
+  will-change: opacity, transform;
+}
+
+.routeEnter {
+  z-index: 2;
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.routeEnterActive {
+  z-index: 2;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity 300ms var(--pd-ease-standard),
+    transform 300ms var(--pd-ease-standard);
+}
+
+.routeExit {
+  z-index: 1;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.routeExitActive {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-20px);
+  transition:
+    opacity 300ms var(--pd-ease-standard),
+    transform 300ms var(--pd-ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routePanel {
+    transform: none !important;
+  }
+
+  .routeEnterActive,
+  .routeExitActive {
+    transition: none;
+  }
+}
