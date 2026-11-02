@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@web/*": ["./src/*"],
+      "@pudans/components": ["./packages/components/src/index.ts"],
+      "@pudans/api-client": ["./packages/api-client/src/index.ts"],
+      "@pudans/shared": ["./packages/shared/src/index.ts"]
+    }
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "app/*/src/**/*.ts",
+    "app/*/src/**/*.tsx",
+    "vite.config.ts",
+    "packages/*/vite.config.ts"
+  ],
+  "exclude": ["**/node_modules", "**/dist"]
+}
