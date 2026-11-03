@@ -1,0 +1,169 @@
+.view {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 28px 28px 22px;
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--login-card-border);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--login-brand);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.title {
+  margin: 0;
+  color: var(--login-text);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 0 0 auto;
+  margin-top: 3px;
+  color: var(--login-muted);
+  font-size: 11px;
+  text-decoration: none;
+}
+
+.back:hover {
+  color: var(--login-text);
+}
+
+.tabs {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 2px;
+}
+
+.tabs :global(.MuiTabs-flexContainer) {
+  gap: 2px;
+}
+
+.tabs :global(.MuiTab-root) {
+  min-height: 44px;
+  padding: 9px 4px;
+  color: var(--login-muted);
+  font-size: 11.5px;
+  line-height: 1.3;
+}
+
+.tabs :global(.MuiTab-root.Mui-selected) {
+  color: var(--login-brand);
+}
+
+.panel {
+  height: 100%;
+  padding: 12px 6px 4px 2px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  background: var(--login-card);
+}
+
+.article {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 0 6px;
+}
+
+.kicker {
+  margin: 0 0 8px;
+  color: var(--login-brand);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.docTitle {
+  margin: 0;
+  color: var(--login-text);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.updated {
+  margin: 8px 0 0;
+  color: var(--login-subtle);
+  font-size: 10.5px;
+}
+
+.intro {
+  margin: 18px 0 0;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--login-card-border);
+  color: var(--login-muted);
+  font-size: 12.5px;
+  line-height: 1.8;
+}
+
+.section {
+  margin-top: 22px;
+}
+
+.section h3 {
+  margin: 0 0 7px;
+  color: var(--login-text);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.section p {
+  margin: 0 0 8px;
+  color: var(--login-muted);
+  font-size: 12.5px;
+  line-height: 1.8;
+}
+
+.note {
+  margin: 26px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--login-card-border);
+  color: var(--login-subtle);
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+
+@media (max-width: 760px) {
+  .view {
+    padding: 20px 16px 18px;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .title {
+    font-size: 19px;
+  }
+
+  .tabs :global(.MuiTab-root) {
+    font-size: 10.5px;
+  }
+
+  .panel {
+    padding-right: 2px;
+  }
+}
