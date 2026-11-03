@@ -1,0 +1,35 @@
+.footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 18px 24px;
+  background: var(--login-footer-bg);
+  color: var(--login-footer);
+  font-size: 10.5px;
+  text-shadow: var(--login-nav-shadow);
+}
+
+.footer a {
+  color: var(--login-video-muted);
+  text-decoration: none;
+  transition: color var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.footer a:hover {
+  color: var(--login-video-text);
+  text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .footer {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    padding: 14px 16px;
+  }
+}
