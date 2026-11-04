@@ -1,0 +1,80 @@
+.state {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pd-space-3);
+  max-width: 640px;
+  padding: var(--pd-space-4);
+  border: 1px solid var(--pd-border-default);
+  border-radius: var(--pd-radius-md);
+  background-color: rgb(var(--pd-bg-subtle));
+}
+
+.stateIcon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: rgb(var(--pd-state-danger));
+}
+
+.stateTitle {
+  margin: 0;
+  color: rgb(var(--pd-text-primary));
+  font-size: var(--pd-text-sm);
+  font-weight: 600;
+}
+
+.stateText {
+  margin: 4px 0 0;
+  color: rgb(var(--pd-text-secondary));
+  font-size: var(--pd-text-xs);
+  line-height: 1.55;
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pd-space-5);
+  width: 100%;
+  max-width: 640px;
+}
+
+.skeleton {
+  display: block;
+  height: 64px;
+  border-radius: var(--pd-radius-md);
+  background: linear-gradient(
+    90deg,
+    rgb(var(--pd-bg-subtle)) 25%,
+    rgb(var(--pd-bg-hover)) 37%,
+    rgb(var(--pd-bg-subtle)) 63%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skeleton:nth-child(2) {
+  width: 82%;
+}
+
+.skeleton:nth-child(3) {
+  width: 91%;
+}
+
+.skeleton:nth-child(4) {
+  width: 68%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
