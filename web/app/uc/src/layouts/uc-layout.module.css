@@ -1,0 +1,44 @@
+.logoGlyph {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.headerButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pd-radius-md);
+  background: transparent;
+  color: rgb(var(--pd-text-secondary));
+  cursor: pointer;
+  transition:
+    background-color var(--pd-duration-fast) var(--pd-ease-standard),
+    color var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.headerButton:hover {
+  background-color: var(--pd-bg-hover);
+  color: rgb(var(--pd-text-primary));
+}
+
+.headerButton:focus-visible {
+  outline: none;
+  box-shadow: var(--pd-shadow-focus);
+}
+
+.languageIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
