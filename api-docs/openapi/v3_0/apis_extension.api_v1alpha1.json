@@ -1,0 +1,2345 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "pudans Extension API",
+    "version": "1.0.0",
+    "description": "pudans enterprise identity and permission management API."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8090"
+    }
+  ],
+  "security": [
+    {
+      "basicAuth": [],
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensiondefinitions": {
+      "get": {
+        "description": "List ExtensionDefinition",
+        "operationId": "listExtensionDefinition",
+        "parameters": [
+          {
+            "description": "Page number. Default is 0.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Size number. Default is 0.",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Label selector. e.g.: hidden!=true",
+            "in": "query",
+            "name": "labelSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Field selector. e.g.: metadata.name==pudans",
+            "in": "query",
+            "name": "fieldSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionDefinitionList"
+                }
+              }
+            },
+            "description": "Response extensiondefinitions"
+          }
+        },
+        "tags": [
+          "ExtensionDefinitionV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create ExtensionDefinition",
+        "operationId": "createExtensionDefinition",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtensionDefinition"
+              }
+            }
+          },
+          "description": "Fresh extensiondefinition"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionDefinition"
+                }
+              }
+            },
+            "description": "Response extensiondefinitions created just now"
+          }
+        },
+        "tags": [
+          "ExtensionDefinitionV1alpha1"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensiondefinitions/{name}": {
+      "delete": {
+        "description": "Delete ExtensionDefinition",
+        "operationId": "deleteExtensionDefinition",
+        "parameters": [
+          {
+            "description": "Name of extensiondefinition",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response extensiondefinition deleted just now"
+          }
+        },
+        "tags": [
+          "ExtensionDefinitionV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get ExtensionDefinition",
+        "operationId": "getExtensionDefinition",
+        "parameters": [
+          {
+            "description": "Name of extensiondefinition",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionDefinition"
+                }
+              }
+            },
+            "description": "Response single extensiondefinition"
+          }
+        },
+        "tags": [
+          "ExtensionDefinitionV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Patch ExtensionDefinition",
+        "operationId": "patchExtensionDefinition",
+        "parameters": [
+          {
+            "description": "Name of extensiondefinition",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionDefinition"
+                }
+              }
+            },
+            "description": "Response extensiondefinition patched just now"
+          }
+        },
+        "tags": [
+          "ExtensionDefinitionV1alpha1"
+        ]
+      },
+      "put": {
+        "description": "Update ExtensionDefinition",
+        "operationId": "updateExtensionDefinition",
+        "parameters": [
+          {
+            "description": "Name of extensiondefinition",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtensionDefinition"
+              }
+            }
+          },
+          "description": "Updated extensiondefinition"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionDefinition"
+                }
+              }
+            },
+            "description": "Response extensiondefinitions updated just now"
+          }
+        },
+        "tags": [
+          "ExtensionDefinitionV1alpha1"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensionpointdefinitions": {
+      "get": {
+        "description": "List ExtensionPointDefinition",
+        "operationId": "listExtensionPointDefinition",
+        "parameters": [
+          {
+            "description": "Page number. Default is 0.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Size number. Default is 0.",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Label selector. e.g.: hidden!=true",
+            "in": "query",
+            "name": "labelSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Field selector. e.g.: metadata.name==pudans",
+            "in": "query",
+            "name": "fieldSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionPointDefinitionList"
+                }
+              }
+            },
+            "description": "Response extensionpointdefinitions"
+          }
+        },
+        "tags": [
+          "ExtensionPointDefinitionV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create ExtensionPointDefinition",
+        "operationId": "createExtensionPointDefinition",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtensionPointDefinition"
+              }
+            }
+          },
+          "description": "Fresh extensionpointdefinition"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionPointDefinition"
+                }
+              }
+            },
+            "description": "Response extensionpointdefinitions created just now"
+          }
+        },
+        "tags": [
+          "ExtensionPointDefinitionV1alpha1"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensionpointdefinitions/{name}": {
+      "delete": {
+        "description": "Delete ExtensionPointDefinition",
+        "operationId": "deleteExtensionPointDefinition",
+        "parameters": [
+          {
+            "description": "Name of extensionpointdefinition",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response extensionpointdefinition deleted just now"
+          }
+        },
+        "tags": [
+          "ExtensionPointDefinitionV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get ExtensionPointDefinition",
+        "operationId": "getExtensionPointDefinition",
+        "parameters": [
+          {
+            "description": "Name of extensionpointdefinition",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionPointDefinition"
+                }
+              }
+            },
+            "description": "Response single extensionpointdefinition"
+          }
+        },
+        "tags": [
+          "ExtensionPointDefinitionV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Patch ExtensionPointDefinition",
+        "operationId": "patchExtensionPointDefinition",
+        "parameters": [
+          {
+            "description": "Name of extensionpointdefinition",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionPointDefinition"
+                }
+              }
+            },
+            "description": "Response extensionpointdefinition patched just now"
+          }
+        },
+        "tags": [
+          "ExtensionPointDefinitionV1alpha1"
+        ]
+      },
+      "put": {
+        "description": "Update ExtensionPointDefinition",
+        "operationId": "updateExtensionPointDefinition",
+        "parameters": [
+          {
+            "description": "Name of extensionpointdefinition",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtensionPointDefinition"
+              }
+            }
+          },
+          "description": "Updated extensionpointdefinition"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtensionPointDefinition"
+                }
+              }
+            },
+            "description": "Response extensionpointdefinitions updated just now"
+          }
+        },
+        "tags": [
+          "ExtensionPointDefinitionV1alpha1"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins": {
+      "get": {
+        "description": "List plugins using query criteria and sort params",
+        "operationId": "ListPlugins",
+        "parameters": [
+          {
+            "description": "Page number. Default is 0.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Size number. Default is 0.",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Label selector. e.g.: hidden!=true",
+            "in": "query",
+            "name": "labelSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Field selector. e.g.: metadata.name==pudans",
+            "in": "query",
+            "name": "fieldSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Page number. Default is 0.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Size number. Default is 0.",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Label selector. e.g.: hidden!=true",
+            "in": "query",
+            "name": "labelSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Field selector. e.g.: metadata.name==pudans",
+            "in": "query",
+            "name": "fieldSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Keyword of plugin display name or description",
+            "in": "query",
+            "name": "keyword",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Whether the plugin is enabled",
+            "in": "query",
+            "name": "enabled",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginList"
+                }
+              }
+            },
+            "description": "Response plugins"
+          },
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PluginList"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1",
+          "PluginV1alpha1Console"
+        ]
+      },
+      "post": {
+        "description": "Create Plugin",
+        "operationId": "createPlugin",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/Plugin"
+              }
+            }
+          },
+          "description": "Fresh plugin"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "Response plugins created just now"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/-/install-from-uri": {
+      "post": {
+        "description": "Install a plugin from uri.",
+        "operationId": "InstallPluginFromUri",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstallFromUriRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/install": {
+      "post": {
+        "description": "Install a plugin by uploading a Jar file.",
+        "operationId": "InstallPlugin",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PluginInstallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}": {
+      "delete": {
+        "description": "Delete Plugin",
+        "operationId": "deletePlugin",
+        "parameters": [
+          {
+            "description": "Name of plugin",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response plugin deleted just now"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get Plugin",
+        "operationId": "getPlugin",
+        "parameters": [
+          {
+            "description": "Name of plugin",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "Response single plugin"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Patch Plugin",
+        "operationId": "patchPlugin",
+        "parameters": [
+          {
+            "description": "Name of plugin",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "Response plugin patched just now"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1"
+        ]
+      },
+      "put": {
+        "description": "Update Plugin",
+        "operationId": "updatePlugin",
+        "parameters": [
+          {
+            "description": "Name of plugin",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/Plugin"
+              }
+            }
+          },
+          "description": "Updated plugin"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "Response plugins updated just now"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/json-config": {
+      "get": {
+        "description": "Fetch converted json config of plugin by configured configMapName.",
+        "operationId": "fetchPluginJsonConfig",
+        "parameters": [
+          {
+            "description": "metadata.name of the plugin whose JSON config will be fetched.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      },
+      "put": {
+        "description": "Update the config of plugin setting.",
+        "operationId": "updatePluginJsonConfig",
+        "parameters": [
+          {
+            "description": "metadata.name of the plugin whose JSON config will be updated.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "content": {},
+            "description": "No Content"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/plugin-state": {
+      "put": {
+        "description": "Change the running state of a plugin by metadata.name.",
+        "operationId": "ChangePluginRunningState",
+        "parameters": [
+          {
+            "description": "metadata.name of the plugin whose running state will be changed.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PluginRunningStateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/reload": {
+      "put": {
+        "description": "Reload a plugin by metadata.name.",
+        "operationId": "reloadPlugin",
+        "parameters": [
+          {
+            "description": "metadata.name of the plugin to reload.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/reset-config": {
+      "put": {
+        "description": "Reset the configMap of plugin setting.",
+        "operationId": "ResetPluginConfig",
+        "parameters": [
+          {
+            "description": "metadata.name of the plugin whose setting config will be reset.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigMap"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/setting": {
+      "get": {
+        "description": "Fetch setting of plugin.",
+        "operationId": "fetchPluginSetting",
+        "parameters": [
+          {
+            "description": "metadata.name of the plugin whose setting will be fetched.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Setting"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/upgrade": {
+      "post": {
+        "description": "Upgrade a plugin by uploading a Jar file",
+        "operationId": "UpgradePlugin",
+        "parameters": [
+          {
+            "description": "metadata.name of the plugin to upgrade.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PluginInstallRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/upgrade-from-uri": {
+      "post": {
+        "description": "Upgrade a plugin from uri.",
+        "operationId": "UpgradePluginFromUri",
+        "parameters": [
+          {
+            "description": "metadata.name of the plugin to upgrade.",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpgradeFromUriRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/Plugin"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "PluginV1alpha1Console"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/reverseproxies": {
+      "get": {
+        "description": "List ReverseProxy",
+        "operationId": "listReverseProxy",
+        "parameters": [
+          {
+            "description": "Page number. Default is 0.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Size number. Default is 0.",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Label selector. e.g.: hidden!=true",
+            "in": "query",
+            "name": "labelSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Field selector. e.g.: metadata.name==pudans",
+            "in": "query",
+            "name": "fieldSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverseProxyList"
+                }
+              }
+            },
+            "description": "Response reverseproxies"
+          }
+        },
+        "tags": [
+          "ReverseProxyV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create ReverseProxy",
+        "operationId": "createReverseProxy",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseProxy"
+              }
+            }
+          },
+          "description": "Fresh reverseproxy"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverseProxy"
+                }
+              }
+            },
+            "description": "Response reverseproxies created just now"
+          }
+        },
+        "tags": [
+          "ReverseProxyV1alpha1"
+        ]
+      }
+    },
+    "/apis/extension.api.pudans.tolim.cn/v1alpha1/reverseproxies/{name}": {
+      "delete": {
+        "description": "Delete ReverseProxy",
+        "operationId": "deleteReverseProxy",
+        "parameters": [
+          {
+            "description": "Name of reverseproxy",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response reverseproxy deleted just now"
+          }
+        },
+        "tags": [
+          "ReverseProxyV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get ReverseProxy",
+        "operationId": "getReverseProxy",
+        "parameters": [
+          {
+            "description": "Name of reverseproxy",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverseProxy"
+                }
+              }
+            },
+            "description": "Response single reverseproxy"
+          }
+        },
+        "tags": [
+          "ReverseProxyV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Patch ReverseProxy",
+        "operationId": "patchReverseProxy",
+        "parameters": [
+          {
+            "description": "Name of reverseproxy",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverseProxy"
+                }
+              }
+            },
+            "description": "Response reverseproxy patched just now"
+          }
+        },
+        "tags": [
+          "ReverseProxyV1alpha1"
+        ]
+      },
+      "put": {
+        "description": "Update ReverseProxy",
+        "operationId": "updateReverseProxy",
+        "parameters": [
+          {
+            "description": "Name of reverseproxy",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/ReverseProxy"
+              }
+            }
+          },
+          "description": "Updated reverseproxy"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReverseProxy"
+                }
+              }
+            },
+            "description": "Response reverseproxies updated just now"
+          }
+        },
+        "tags": [
+          "ReverseProxyV1alpha1"
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AddOperation": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "add"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "A JSON Pointer path pointing to the location to move/copy from.",
+            "example": "/a/b/c",
+            "pattern": "^(/[^/~]*(~[01][^/~]*)*)*$"
+          },
+          "value": {
+            "description": "Value can be any JSON value"
+          }
+        },
+        "required": [
+          "op",
+          "path",
+          "value"
+        ]
+      },
+      "Condition": {
+        "properties": {
+          "lastTransitionTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 32768
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 1024,
+            "pattern": "^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "TRUE",
+              "FALSE",
+              "UNKNOWN"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "maxLength": 316,
+            "pattern": "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
+          }
+        },
+        "required": [
+          "lastTransitionTime",
+          "status",
+          "type"
+        ]
+      },
+      "ConfigMap": {
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "kind",
+          "metadata"
+        ]
+      },
+      "CopyOperation": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "A JSON Pointer path pointing to the location to move/copy from.",
+            "example": "/a/b/c",
+            "pattern": "^(/[^/~]*(~[01][^/~]*)*)*$"
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "copy"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "A JSON Pointer path pointing to the location to move/copy from.",
+            "example": "/a/b/c",
+            "pattern": "^(/[^/~]*(~[01][^/~]*)*)*$"
+          }
+        },
+        "required": [
+          "from",
+          "op",
+          "path"
+        ]
+      },
+      "ExtensionDefinition": {
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/ExtensionSpec"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "kind",
+          "metadata",
+          "spec"
+        ]
+      },
+      "ExtensionDefinitionList": {
+        "properties": {
+          "first": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the first page."
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "Indicates whether current page has next page."
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "Indicates whether current page has previous page."
+          },
+          "items": {
+            "type": "array",
+            "description": "A chunk of items.",
+            "items": {
+              "$ref": "#/components/schemas/ExtensionDefinition"
+            }
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the last page."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Size of each page. If not set or equal to 0, it means no pagination."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total elements."
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Indicates total pages."
+          }
+        },
+        "required": [
+          "first",
+          "hasNext",
+          "hasPrevious",
+          "items",
+          "last",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ]
+      },
+      "ExtensionPointDefinition": {
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/ExtensionPointSpec"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "kind",
+          "metadata",
+          "spec"
+        ]
+      },
+      "ExtensionPointDefinitionList": {
+        "properties": {
+          "first": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the first page."
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "Indicates whether current page has next page."
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "Indicates whether current page has previous page."
+          },
+          "items": {
+            "type": "array",
+            "description": "A chunk of items.",
+            "items": {
+              "$ref": "#/components/schemas/ExtensionPointDefinition"
+            }
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the last page."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Size of each page. If not set or equal to 0, it means no pagination."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total elements."
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Indicates total pages."
+          }
+        },
+        "required": [
+          "first",
+          "hasNext",
+          "hasPrevious",
+          "items",
+          "last",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ]
+      },
+      "ExtensionPointSpec": {
+        "properties": {
+          "className": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "SINGLETON",
+              "MULTI_INSTANCE"
+            ]
+          }
+        },
+        "required": [
+          "className",
+          "displayName",
+          "type"
+        ]
+      },
+      "ExtensionSpec": {
+        "properties": {
+          "className": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "extensionPointName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "className",
+          "displayName",
+          "extensionPointName"
+        ]
+      },
+      "FileReverseProxyProvider": {
+        "properties": {
+          "directory": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          }
+        }
+      },
+      "InstallFromUriRequest": {
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "uri"
+        ]
+      },
+      "JsonPatch": {
+        "type": "array",
+        "description": "JSON schema for JSONPatch operations",
+        "items": {
+          "oneOf": [
+            {
+              "$ref": "#/components/schemas/AddOperation"
+            },
+            {
+              "$ref": "#/components/schemas/ReplaceOperation"
+            },
+            {
+              "$ref": "#/components/schemas/TestOperation"
+            },
+            {
+              "$ref": "#/components/schemas/RemoveOperation"
+            },
+            {
+              "$ref": "#/components/schemas/MoveOperation"
+            },
+            {
+              "$ref": "#/components/schemas/CopyOperation"
+            }
+          ]
+        },
+        "minItems": 1,
+        "uniqueItems": true
+      },
+      "License": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        }
+      },
+      "Metadata": {
+        "properties": {
+          "annotations": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "creationTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deletionTimestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finalizers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "uniqueItems": true
+          },
+          "generateName": {
+            "type": "string",
+            "description": "The name field will be generated automatically according to the given generateName field"
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "name": {
+            "type": "string",
+            "description": "Metadata name"
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "MoveOperation": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "A JSON Pointer path pointing to the location to move/copy from.",
+            "example": "/a/b/c",
+            "pattern": "^(/[^/~]*(~[01][^/~]*)*)*$"
+          },
+          "op": {
+            "type": "string",
+            "enum": [
+              "move"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "A JSON Pointer path pointing to the location to move/copy from.",
+            "example": "/a/b/c",
+            "pattern": "^(/[^/~]*(~[01][^/~]*)*)*$"
+          }
+        },
+        "required": [
+          "from",
+          "op",
+          "path"
+        ]
+      },
+      "Plugin": {
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/PluginSpec"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PluginStatus"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "kind",
+          "metadata",
+          "spec"
+        ]
+      },
+      "PluginAuthor": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "website": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "PluginInstallRequest": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary"
+          },
+          "presetName": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "FILE",
+              "PRESET",
+              "URL"
+            ]
+          }
+        }
+      },
+      "PluginList": {
+        "properties": {
+          "first": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the first page."
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "Indicates whether current page has next page."
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "Indicates whether current page has previous page."
+          },
+          "items": {
+            "type": "array",
+            "description": "A chunk of items.",
+            "items": {
+              "$ref": "#/components/schemas/Plugin"
+            }
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the last page."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Size of each page. If not set or equal to 0, it means no pagination."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total elements."
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Indicates total pages."
+          }
+        },
+        "required": [
+          "first",
+          "hasNext",
+          "hasPrevious",
+          "items",
+          "last",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ]
+      },
+      "PluginRunningStateRequest": {
+        "properties": {
+          "async": {
+            "type": "boolean",
+            "default": false
+          },
+          "enable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enable"
+        ]
+      },
+      "PluginSpec": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/PluginAuthor"
+          },
+          "configMapName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "homepage": {
+            "type": "string"
+          },
+          "issues": {
+            "type": "string"
+          },
+          "license": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/License"
+            }
+          },
+          "logo": {
+            "type": "string"
+          },
+          "pluginDependencies": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "repo": {
+            "type": "string"
+          },
+          "requires": {
+            "type": "string"
+          },
+          "settingName": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+          }
+        },
+        "required": [
+          "version"
+        ]
+      },
+      "PluginStatus": {
+        "properties": {
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Condition"
+            },
+            "properties": {
+              "empty": {
+                "type": "boolean"
+              }
+            }
+          },
+          "entry": {
+            "type": "string"
+          },
+          "lastProbeState": {
+            "type": "string",
+            "enum": [
+              "CREATED",
+              "DISABLED",
+              "RESOLVED",
+              "STARTED",
+              "STOPPED",
+              "FAILED",
+              "UNLOADED"
+            ]
+          },
+          "lastStartTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "loadLocation": {
+            "type": "string",
+            "format": "uri"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "STARTING",
+              "CREATED",
+              "DISABLING",
+              "DISABLED",
+              "RESOLVED",
+              "STARTED",
+              "STOPPED",
+              "FAILED",
+              "UNKNOWN"
+            ]
+          },
+          "stylesheet": {
+            "type": "string"
+          }
+        }
+      },
+      "RemoveOperation": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "remove"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "A JSON Pointer path pointing to the location to move/copy from.",
+            "example": "/a/b/c",
+            "pattern": "^(/[^/~]*(~[01][^/~]*)*)*$"
+          }
+        },
+        "required": [
+          "op",
+          "path"
+        ]
+      },
+      "ReplaceOperation": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "replace"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "A JSON Pointer path pointing to the location to move/copy from.",
+            "example": "/a/b/c",
+            "pattern": "^(/[^/~]*(~[01][^/~]*)*)*$"
+          },
+          "value": {
+            "description": "Value can be any JSON value"
+          }
+        },
+        "required": [
+          "op",
+          "path",
+          "value"
+        ]
+      },
+      "ReverseProxy": {
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReverseProxyRule"
+            }
+          }
+        },
+        "required": [
+          "apiVersion",
+          "kind",
+          "metadata"
+        ]
+      },
+      "ReverseProxyList": {
+        "properties": {
+          "first": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the first page."
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "Indicates whether current page has next page."
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "Indicates whether current page has previous page."
+          },
+          "items": {
+            "type": "array",
+            "description": "A chunk of items.",
+            "items": {
+              "$ref": "#/components/schemas/ReverseProxy"
+            }
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the last page."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Size of each page. If not set or equal to 0, it means no pagination."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total elements."
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Indicates total pages."
+          }
+        },
+        "required": [
+          "first",
+          "hasNext",
+          "hasPrevious",
+          "items",
+          "last",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ]
+      },
+      "ReverseProxyRule": {
+        "properties": {
+          "file": {
+            "$ref": "#/components/schemas/FileReverseProxyProvider"
+          },
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "Setting": {
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/SettingSpec"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "kind",
+          "metadata",
+          "spec"
+        ]
+      },
+      "SettingForm": {
+        "minLength": 1,
+        "properties": {
+          "formSchema": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "group": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "formSchema",
+          "group"
+        ]
+      },
+      "SettingSpec": {
+        "properties": {
+          "forms": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SettingForm"
+            },
+            "minLength": 1
+          }
+        },
+        "required": [
+          "forms"
+        ]
+      },
+      "TestOperation": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "test"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "description": "A JSON Pointer path pointing to the location to move/copy from.",
+            "example": "/a/b/c",
+            "pattern": "^(/[^/~]*(~[01][^/~]*)*)*$"
+          },
+          "value": {
+            "description": "Value can be any JSON value"
+          }
+        },
+        "required": [
+          "op",
+          "path",
+          "value"
+        ]
+      },
+      "UpgradeFromUriRequest": {
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "uri"
+        ]
+      }
+    },
+    "securitySchemes": {
+      "basicAuth": {
+        "scheme": "basic",
+        "type": "http"
+      },
+      "bearerAuth": {
+        "bearerFormat": "JWT",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  }
+}
