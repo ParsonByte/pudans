@@ -1,0 +1,108 @@
+package cn.tolim.pudans.core.risk.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.util.Arrays;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.ReactiveValueOperations;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+@ExtendWith(MockitoExtension.class)
+class RiskControlServiceTest {
+
+    @Mock
+    ReactiveStringRedisTemplate redisTemplate;
+
+    @Mock
+    ReactiveValueOperations<String, String> valueOperations;
+
+    @Mock
+    RiskRuleRegistry ruleRegistry;
+
+    private RiskControlService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new RiskControlService(redisTemplate, ruleRegistry);
+    }
+
+    @Test
+    void isBannedReadsTheSceneSpecificBanKey() {
+        when(redisTemplate.hasKey("pudans:risk:ban:request-flood:1.2.3.4")).thenReturn(Mono.just(true));
+
+        StepVerifier.create(service.isBanned(RiskScene.REQUEST_FLOOD, "1.2.3.4"))
+                .expectNext(true)
+                .verifyComplete();
+
+        verify(redisTemplate).hasKey("pudans:risk:ban:request-flood:1.2.3.4");
+    }
+
+    @Test
+    void firstBannedSceneChecksEveryConfiguredSceneInOneRequest() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.multiGet(org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(Mono.just(Arrays.asList(null, null, "1")));
+
+        StepVerifier.create(service.firstBannedScene(
+                        List.of(RiskScene.REQUEST_FLOOD, RiskScene.AUTH_FAILURE, RiskScene.SERVER_ERROR),
+                        "1.2.3.4"))
+                .expectNext(RiskScene.SERVER_ERROR)
+                .verifyComplete();
+
+        @SuppressWarnings("unchecked")
+        var captor = ArgumentCaptor.forClass(List.class);
+        verify(valueOperations).multiGet(captor.capture());
+        assertThat(captor.getValue())
+                .containsExactly(
+                        "pudans:risk:ban:request-flood:1.2.3.4",
+                        "pudans:risk:ban:auth-failure:1.2.3.4",
+                        "pudans:risk:ban:server-error:1.2.3.4");
+    }
+
+    @Test
+    void firstBannedSceneIsEmptyWhenNoSceneIsBanned() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.multiGet(org.mockito.ArgumentMatchers.anyList()))
+                .thenReturn(Mono.just(Arrays.asList(null, null)));
+
+        StepVerifier.create(service.firstBannedScene(
+                        List.of(RiskScene.REQUEST_FLOOD, RiskScene.AUTH_FAILURE), "1.2.3.4"))
+                .verifyComplete();
+    }
+
+    @Test
+    void firstBannedSceneWithNoScenesNeverTouchesRedis() {
+        StepVerifier.create(service.firstBannedScene(List.of(), "1.2.3.4")).verifyComplete();
+    }
+
+    @Test
+    void unbanDeletesTheSceneSpecificBanKey() {
+        when(redisTemplate.delete("pudans:risk:ban:request-flood:1.2.3.4")).thenReturn(Mono.just(1L));
+
+        StepVerifier.create(service.unban(RiskScene.REQUEST_FLOOD, "1.2.3.4"))
+                .expectNext(1L)
+                .verifyComplete();
+
+        verify(redisTemplate).delete("pudans:risk:ban:request-flood:1.2.3.4");
+    }
+
+    @Test
+    void unbanReturnsZeroWhenNoBanExists() {
+        when(redisTemplate.delete("pudans:risk:ban:login-failure:5.6.7.8")).thenReturn(Mono.just(0L));
+
+        StepVerifier.create(service.unban(RiskScene.LOGIN_FAILURE, "5.6.7.8"))
+                .expectNext(0L)
+                .verifyComplete();
+    }
+}
