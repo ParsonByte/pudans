@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { MuiOtpInput, type MuiOtpInputProps } from "mui-one-time-password-input";
 import type { TextFieldProps } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./otp-input.module.css";
 
 export type OtpInputSize = "sm" | "md" | "lg";
@@ -31,7 +31,7 @@ export function OtpInput({
       ...base,
       error: error || base?.error,
       disabled: disabled ?? base?.disabled,
-      className: clsx(styles.field, base?.className),
+      className: cn(styles.field, base?.className),
       slotProps: {
         ...base?.slotProps,
         htmlInput: {
@@ -44,14 +44,14 @@ export function OtpInput({
   };
 
   return (
-    <div className={clsx(styles.root, className)}>
+    <div className={cn(styles.root, className)}>
       <MuiOtpInput
         {...props}
-        className={clsx(styles.input, styles[size])}
+        className={cn(styles.input, styles[size])}
         TextFieldsProps={resolveFieldProps}
       />
       {helperText ? (
-        <div className={clsx(styles.helper, error && styles.helperError)}>{helperText}</div>
+        <div className={cn(styles.helper, error && styles.helperError)}>{helperText}</div>
       ) : null}
     </div>
   );

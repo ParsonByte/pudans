@@ -1,5 +1,5 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import { Icon } from "../icon";
 import styles from "./alert.module.css";
 
@@ -35,12 +35,7 @@ export const Alert = forwardRef<HTMLDivElement, AlertProps>(function Alert(
   ref,
 ) {
   return (
-    <div
-      ref={ref}
-      role="alert"
-      className={clsx(styles.root, styles[severity], className)}
-      {...props}
-    >
+    <div ref={ref} role="alert" className={cn(styles.root, styles[severity], className)} {...props}>
       <Icon name={severityIcons[severity]} size={20} className={styles.icon} />
       <div className={styles.content}>
         {title ? <div className={styles.title}>{title}</div> : null}

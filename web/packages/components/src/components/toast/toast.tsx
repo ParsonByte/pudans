@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { SnackbarProvider, useSnackbar, type SnackbarKey } from "notistack";
 import type { SnackbarOrigin } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import { Alert, type AlertSeverity } from "../alert";
 import styles from "./toast.module.css";
 
@@ -161,7 +161,7 @@ function ToastBridge({
             onClose?.();
             closeSnackbar(snackbarKey);
           }}
-          className={clsx(styles.alert, className)}
+          className={cn(styles.alert, className)}
         >
           {message}
         </Alert>

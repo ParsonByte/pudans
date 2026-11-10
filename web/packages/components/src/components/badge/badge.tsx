@@ -1,5 +1,5 @@
 import { forwardRef, type HTMLAttributes } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./badge.module.css";
 
 export type BadgeTone = "neutral" | "brand" | "success" | "warning" | "danger" | "info";
@@ -21,7 +21,7 @@ export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
   return (
     <span
       ref={ref}
-      className={clsx(styles.root, styles[tone], styles[variant], styles[size], className)}
+      className={cn(styles.root, styles[tone], styles[variant], styles[size], className)}
       {...props}
     >
       {dot ? <span className={styles.dot} aria-hidden="true" /> : null}

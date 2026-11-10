@@ -16,8 +16,18 @@ const cloudrevePalette = {
     divider: "rgba(0, 0, 0, 0.12)",
   },
   dark: {
-    primary: { main: "#90caf9", light: "#e3f2fd", dark: "#42a5f5", contrastText: "rgba(0, 0, 0, 0.87)" },
-    secondary: { main: "#ce93d8", light: "#f3e5f5", dark: "#ab47bc", contrastText: "rgba(0, 0, 0, 0.87)" },
+    primary: {
+      main: "#90caf9",
+      light: "#e3f2fd",
+      dark: "#42a5f5",
+      contrastText: "rgba(0, 0, 0, 0.87)",
+    },
+    secondary: {
+      main: "#ce93d8",
+      light: "#f3e5f5",
+      dark: "#ab47bc",
+      contrastText: "rgba(0, 0, 0, 0.87)",
+    },
     background: { default: "#121212", paper: "#121212" },
     text: {
       primary: "rgba(255, 255, 255, 0.87)",
@@ -28,20 +38,101 @@ const cloudrevePalette = {
   },
 } as const;
 
+function normalizeHex(value: string | undefined): string | null {
+  if (!value) {
+    return null;
+  }
+  const trimmed = value.trim();
+  const short = /^#([0-9a-f]{3})$/i.exec(trimmed);
+  if (short) {
+    const [r, g, b] = short[1].split("");
+    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+  }
+  return /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed.toLowerCase() : null;
+}
+
+function channelsOf(hex: string): [number, number, number] {
+  return [
+    Number.parseInt(hex.slice(1, 3), 16),
+    Number.parseInt(hex.slice(3, 5), 16),
+    Number.parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+function toHex(channels: [number, number, number]): string {
+  return `#${channels
+    .map((channel) =>
+      Math.round(Math.min(255, Math.max(0, channel)))
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
+}
+
+function mixHex(source: string, target: string, weight: number): string {
+  const a = channelsOf(source);
+  const b = channelsOf(target);
+  return toHex([
+    a[0] + (b[0] - a[0]) * weight,
+    a[1] + (b[1] - a[1]) * weight,
+    a[2] + (b[2] - a[2]) * weight,
+  ]);
+}
+
+function contrastTextFor(hex: string): string {
+  const [r, g, b] = channelsOf(hex);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  return luminance > 0.62 ? "#000000" : "#ffffff";
+}
+
+export interface PudansAccentColor {
+  main: string;
+  light: string;
+  dark: string;
+  contrastText: string;
+}
+
+export function buildAccentColor(
+  accentColor?: string,
+  mode: PudansColorMode = "light",
+): PudansAccentColor | null {
+  const normalized = normalizeHex(accentColor);
+  if (!normalized) {
+    return null;
+  }
+  return {
+    main: normalized,
+    light: mixHex(normalized, "#ffffff", mode === "light" ? 0.3 : 0.18),
+    dark: mixHex(normalized, "#000000", mode === "light" ? 0.22 : 0.08),
+    contrastText: contrastTextFor(normalized),
+  };
+}
+
+/** Returns the accent as a CSS `r g b` channel triple for var(--pd-brand-primary). */
+export function accentChannels(accentColor?: string): string | null {
+  const normalized = normalizeHex(accentColor);
+  if (!normalized) {
+    return null;
+  }
+  return channelsOf(normalized).join(" ");
+}
+
 /**
  * Cloudreve theme extraction:
  * - palette defaults from cloudreve/inventory/setting.go (#1976d2 light, #90caf9 dark)
+ * - optional accent color derived into light/dark/contrast steps
  * - 12px global shape radius
  * - MUI default typography/shadows
  * - Cloudreve App.tsx component overrides (buttons, menus, dialogs, filled input)
  */
-export function createPudansTheme(mode: PudansColorMode): Theme {
+export function createPudansTheme(mode: PudansColorMode, accentColor?: string): Theme {
   const palette = cloudrevePalette[mode];
+  const accent = buildAccentColor(accentColor, mode);
 
   return createTheme({
     palette: {
       mode,
-      primary: palette.primary,
+      primary: accent ?? palette.primary,
       secondary: palette.secondary,
       background: palette.background,
       text: palette.text,

@@ -4,7 +4,7 @@ import {
   Switch as MuiSwitch,
   type SwitchProps as MuiSwitchProps,
 } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./switch.module.css";
 
 export type SwitchSize = "sm" | "md" | "lg";
@@ -27,19 +27,19 @@ export function Switch({
 }: SwitchProps) {
   const control = (
     <MuiSwitch
-      className={clsx(styles.control, styles[size])}
+      className={cn(styles.control, styles[size])}
       size={size === "sm" ? "small" : "medium"}
       {...props}
     />
   );
 
   if (!label && !description) {
-    return <span className={clsx(styles.standalone, className)}>{control}</span>;
+    return <span className={cn(styles.standalone, className)}>{control}</span>;
   }
 
   return (
     <FormControlLabel
-      className={clsx(styles.root, className)}
+      className={cn(styles.root, className)}
       control={control}
       labelPlacement={labelPlacement}
       label={

@@ -1,5 +1,5 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./page-layout.module.css";
 
 export interface PageLayoutProps extends Omit<
@@ -34,9 +34,9 @@ export const PageLayout = forwardRef<HTMLDivElement, PageLayoutProps>(function P
   );
 
   return (
-    <div ref={ref} className={clsx(styles.root, className)} {...props}>
+    <div ref={ref} className={cn(styles.root, className)} {...props}>
       <header className={styles.header}>{header ?? defaultHeader}</header>
-      <main className={clsx(styles.body, "pd-scrollbar")}>{children}</main>
+      <main className={cn(styles.body, "pd-scrollbar")}>{children}</main>
       {footer ? <footer className={styles.footer}>{footer}</footer> : null}
     </div>
   );

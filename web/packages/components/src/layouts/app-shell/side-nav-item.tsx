@@ -4,7 +4,7 @@ import {
   type ElementType,
   type ReactNode,
 } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./side-nav-item.module.css";
 
 export type SideNavItemProps<C extends ElementType = "button"> = {
@@ -57,12 +57,7 @@ export function SideNavItem<C extends ElementType = "button">(props: SideNavItem
     {
       ...rest,
       type: Component === "button" ? "button" : undefined,
-      className: clsx(
-        styles.item,
-        active && styles.active,
-        collapsed && styles.collapsed,
-        className,
-      ),
+      className: cn(styles.item, active && styles.active, collapsed && styles.collapsed, className),
       "aria-current": active ? "page" : undefined,
       title: title ?? (collapsed && typeof label === "string" ? label : undefined),
     },

@@ -1,7 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { Tab as MuiTab, Tabs as MuiTabs } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./tabs.module.css";
 
 export interface TabItem {
@@ -68,21 +68,18 @@ const StyledTab = styled(MuiTab)(({ theme }) => {
     },
     "&.Mui-selected": {
       backgroundColor:
-        theme.palette.mode === "dark"
-          ? "rgba(144, 202, 249, 0.16)"
-          : "rgba(25, 118, 210, 0.10)",
+        theme.palette.mode === "dark" ? "rgba(144, 202, 249, 0.16)" : "rgba(25, 118, 210, 0.10)",
       color: theme.palette.primary.main,
     },
     "&.Mui-selected:hover": {
       backgroundColor:
-        theme.palette.mode === "dark"
-          ? "rgba(144, 202, 249, 0.22)"
-          : "rgba(25, 118, 210, 0.16)",
+        theme.palette.mode === "dark" ? "rgba(144, 202, 249, 0.22)" : "rgba(25, 118, 210, 0.16)",
     },
     "&.Mui-focusVisible": {
-      boxShadow: theme.palette.mode === "dark"
-        ? "0 0 0 3px rgba(144, 202, 249, 0.32)"
-        : "0 0 0 3px rgba(25, 118, 210, 0.24)",
+      boxShadow:
+        theme.palette.mode === "dark"
+          ? "0 0 0 3px rgba(144, 202, 249, 0.32)"
+          : "0 0 0 3px rgba(25, 118, 210, 0.24)",
     },
     "&.Mui-disabled": {
       opacity: 0.45,
@@ -126,7 +123,7 @@ export function Tabs({
   const tabPanelId = activeItem ? `${baseId}-panel-${activeItem.key}` : undefined;
 
   return (
-    <div className={clsx(styles.container, fullWidth && styles.fullWidth, className)}>
+    <div className={cn(styles.container, fullWidth && styles.fullWidth, className)}>
       <StyledTabs
         value={activeItem ? activeValue : false}
         onChange={(_event, nextValue) => {
@@ -134,7 +131,7 @@ export function Tabs({
         }}
         variant={fullWidth ? "fullWidth" : "standard"}
         aria-label={ariaLabel}
-        className={clsx(styles.tabs, size === "sm" && styles.tabsSm)}
+        className={cn(styles.tabs, size === "sm" && styles.tabsSm)}
       >
         {items.map((item) => (
           <StyledTab
@@ -146,7 +143,7 @@ export function Tabs({
             disabled={item.disabled}
             id={`${baseId}-tab-${item.key}`}
             aria-controls={`${baseId}-panel-${item.key}`}
-            className={clsx(styles.tab, size === "sm" && styles.tabSm)}
+            className={cn(styles.tab, size === "sm" && styles.tabSm)}
           />
         ))}
       </StyledTabs>
@@ -157,7 +154,7 @@ export function Tabs({
           id={tabPanelId}
           role="tabpanel"
           aria-labelledby={`${baseId}-tab-${activeItem.key}`}
-          className={clsx(styles.panel, panelClassName)}
+          className={cn(styles.panel, panelClassName)}
         >
           {activeItem.content}
         </div>

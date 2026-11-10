@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { CssBaseline, ThemeProvider } from "@mui/material";
-import { createPudansTheme } from "./create-theme";
+import { accentChannels, buildAccentColor, createPudansTheme } from "./create-theme";
 import {
   darkTokens,
   lightTokens,
@@ -34,6 +34,8 @@ export interface PudansThemeProviderProps {
   onPreferenceChange?: (preference: PudansColorModePreference) => void;
   /** false disables localStorage persistence. */
   storageKey?: string | false;
+  /** Optional hex accent color. Derived light/dark steps feed both MUI and CSS vars. */
+  accentColor?: string;
   disableCssBaseline?: boolean;
 }
 
@@ -75,6 +77,7 @@ export function PudansThemeProvider({
   preference: controlledPreference,
   onPreferenceChange,
   storageKey = PUDANS_COLOR_MODE_STORAGE_KEY,
+  accentColor,
   disableCssBaseline = false,
 }: PudansThemeProviderProps) {
   const [internalPreference, setInternalPreference] = useState<PudansColorModePreference>(
@@ -113,6 +116,35 @@ export function PudansThemeProvider({
     }
   }, [resolvedMode]);
 
+  useIsomorphicLayoutEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+    const root = document.documentElement;
+    const accent = buildAccentColor(accentColor, resolvedMode);
+    const channels = accentChannels(accentColor);
+    const pairs: Array<[string, string | null]> = accent
+      ? [
+          ["--pd-brand-primary", channels],
+          ["--pd-brand-hover", accentChannels(accent.light)],
+          ["--pd-brand-active", accentChannels(accent.dark)],
+          ["--pd-brand-contrast", accentChannels(accent.contrastText)],
+        ]
+      : [
+          ["--pd-brand-primary", null],
+          ["--pd-brand-hover", null],
+          ["--pd-brand-active", null],
+          ["--pd-brand-contrast", null],
+        ];
+    for (const [property, value] of pairs) {
+      if (value === null) {
+        root.style.removeProperty(property);
+      } else {
+        root.style.setProperty(property, value);
+      }
+    }
+  }, [accentColor, resolvedMode]);
+
   const setPreference = useCallback(
     (next: PudansColorModePreference): void => {
       if (controlledPreference === undefined) {
@@ -135,7 +167,10 @@ export function PudansThemeProvider({
     setPreference(resolvedMode === "dark" ? "light" : "dark");
   }, [resolvedMode, setPreference]);
 
-  const theme = useMemo(() => createPudansTheme(resolvedMode), [resolvedMode]);
+  const theme = useMemo(
+    () => createPudansTheme(resolvedMode, accentColor),
+    [resolvedMode, accentColor],
+  );
   const contextValue = useMemo<PudansThemeContextValue>(
     () => ({ preference, resolvedMode, setPreference, toggle }),
     [preference, resolvedMode, setPreference, toggle],

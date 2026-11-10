@@ -8,7 +8,7 @@ import {
   IconButton,
   type DialogProps as MuiDialogProps,
 } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import { Icon } from "../icon";
 import styles from "./dialog.module.css";
 
@@ -65,7 +65,7 @@ export function Dialog({
       slots={{ transition: Grow }}
       slotProps={{
         backdrop: { className: styles.backdrop },
-        paper: { className: clsx(styles.paper, styles[size]) },
+        paper: { className: cn(styles.paper, styles[size]) },
       }}
     >
       {hasHeader ? (

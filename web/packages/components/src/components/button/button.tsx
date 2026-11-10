@@ -1,38 +1,30 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { cva } from "class-variance-authority";
 import { cn } from "../../utils/cn";
 import styles from "./button.module.css";
-
-const buttonVariants = cva(styles.root, {
-  variants: {
-    variant: {
-      primary: styles.primary,
-      secondary: styles.secondary,
-      outline: styles.outline,
-      ghost: styles.ghost,
-    },
-    size: {
-      sm: styles.sm,
-      md: styles.md,
-      lg: styles.lg,
-    },
-    radius: {
-      sm: styles.radiusSm,
-      md: styles.radiusMd,
-      lg: styles.radiusLg,
-      full: styles.radiusFull,
-    },
-  },
-  defaultVariants: {
-    variant: "primary",
-    size: "md",
-    radius: "lg",
-  },
-});
 
 export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
 export type ButtonRadius = "sm" | "md" | "lg" | "full";
+
+const VARIANT_CLASS: Record<ButtonVariant, string> = {
+  primary: styles.primary,
+  secondary: styles.secondary,
+  outline: styles.outline,
+  ghost: styles.ghost,
+};
+
+const SIZE_CLASS: Record<ButtonSize, string> = {
+  sm: styles.sm,
+  md: styles.md,
+  lg: styles.lg,
+};
+
+const RADIUS_CLASS: Record<ButtonRadius, string> = {
+  sm: styles.radiusSm,
+  md: styles.radiusMd,
+  lg: styles.radiusLg,
+  full: styles.radiusFull,
+};
 
 export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> {
   variant?: ButtonVariant;
@@ -46,9 +38,9 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 }
 
 /**
- * Token-driven action button. CVA resolves variant modifiers, CSS Modules keep
- * styles local, and the consuming app can safely append Tailwind utilities
- * through className (merged by tailwind-merge).
+ * Token-driven action button. Variant, size and radius classes are resolved by
+ * plain lookup tables; CSS Modules keep styles local and no runtime styling
+ * dependency is involved.
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
@@ -73,7 +65,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ref={ref}
       type={type}
       className={cn(
-        buttonVariants({ variant, size, radius }),
+        styles.root,
+        VARIANT_CLASS[variant],
+        SIZE_CLASS[size],
+        RADIUS_CLASS[radius],
         block && styles.block,
         loading && styles.loading,
         className,

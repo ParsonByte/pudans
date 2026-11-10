@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem } from "@mui/x-tree-view/TreeItem";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./tree-view.module.css";
 
 export interface TreeNode {
@@ -76,7 +76,7 @@ export function TreeView({
 
   return (
     <SimpleTreeView
-      className={clsx(styles.root, className)}
+      className={cn(styles.root, className)}
       aria-label={ariaLabel}
       selectedItems={activeSelected}
       expandedItems={activeExpanded}

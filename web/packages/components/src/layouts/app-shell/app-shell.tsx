@@ -11,7 +11,7 @@ import {
 } from "react";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Avatar } from "../../components/avatar";
 import { DropdownMenu, type DropdownMenuItem } from "../../components/dropdown-menu";
@@ -334,7 +334,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
   } as CSSProperties;
 
   const shell = (
-    <div ref={ref} className={clsx(styles.navBarFrame, className)} style={shellStyle} {...props}>
+    <div ref={ref} className={cn(styles.navBarFrame, className)} style={shellStyle} {...props}>
       <a className="pd-skip-link" href="#pd-main">
         Skip to content
       </a>
@@ -351,7 +351,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
       {hasDrawer ? (
         <aside
           id="pd-app-drawer"
-          className={clsx(
+          className={cn(
             styles.appDrawer,
             !isMobile && isCollapsed && styles.appDrawerCollapsed,
             isMobile && mobileOpen && styles.appDrawerMobileOpen,
@@ -391,7 +391,7 @@ export const AppShell = forwardRef<HTMLDivElement, AppShellProps>(function AppSh
             ) : null}
           </div>
 
-          <div className={clsx(styles.drawerNav, "pd-scrollbar")} onClick={closeMobileDrawer}>
+          <div className={cn(styles.drawerNav, "pd-scrollbar")} onClick={closeMobileDrawer}>
             {sidebarHeader ? <div className={styles.drawerSection}>{sidebarHeader}</div> : null}
 
             {menuItems?.length ? (

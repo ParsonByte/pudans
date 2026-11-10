@@ -1,5 +1,5 @@
 import { fileURLToPath, URL } from "node:url";
-import react from "@vitejs/plugin-react";
+import react from "@vitejs/plugin-react-swc";
 import { defineConfig } from "vite";
 
 export default defineConfig({
@@ -14,7 +14,6 @@ export default defineConfig({
       entry: fileURLToPath(new URL("./src/index.ts", import.meta.url)),
       formats: ["es"],
       fileName: "index",
-      cssFileName: "style",
     },
     rollupOptions: {
       external: [
@@ -26,7 +25,6 @@ export default defineConfig({
         /^react-dnd($|\/)/,
         "react-dnd-html5-backend",
         "react-animate-height",
-        "react-is",
         "react-transition-group",
         "recharts",
         "notistack",
@@ -36,9 +34,11 @@ export default defineConfig({
         "react-hotkeys-hook",
         "react-image-crop",
         "dayjs",
-        "clsx",
-        "tailwind-merge",
       ],
+      output: {
+        assetFileNames: (assetInfo) =>
+          assetInfo.name?.endsWith(".css") ? "style.css" : "assets/[name][extname]",
+      },
     },
     sourcemap: true,
     cssMinify: false,

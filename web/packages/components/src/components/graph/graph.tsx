@@ -11,7 +11,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./graph.module.css";
 
 export type GraphNodeTone = "neutral" | "brand" | "success" | "warning" | "danger";
@@ -398,7 +398,7 @@ export const Graph = forwardRef<HTMLDivElement, GraphProps>(function Graph(
   return (
     <div
       ref={ref}
-      className={clsx(styles.root, className)}
+      className={cn(styles.root, className)}
       style={{ height, ...style } as CSSProperties}
       {...props}
     >
@@ -440,7 +440,7 @@ export const Graph = forwardRef<HTMLDivElement, GraphProps>(function Graph(
               {edgeGeometry.map((edge, index) => (
                 <g key={edge.key}>
                   <line
-                    className={clsx(styles.edge, edge.dashed && styles.dashed)}
+                    className={cn(styles.edge, edge.dashed && styles.dashed)}
                     x1={edge.x1}
                     y1={edge.y1}
                     x2={edge.x2}
@@ -473,7 +473,7 @@ export const Graph = forwardRef<HTMLDivElement, GraphProps>(function Graph(
                 return (
                   <g
                     key={node.id}
-                    className={clsx(
+                    className={cn(
                       styles.nodeGroup,
                       draggable && styles.draggable,
                       node.tone && styles[node.tone],

@@ -5,7 +5,7 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import { AnimateHeight } from "../../components/animate-height";
 import { Icon } from "../../components/icon";
 import styles from "./sidebar-layout.module.css";
@@ -63,9 +63,9 @@ export const SidebarLayout = forwardRef<HTMLDivElement, SidebarLayoutProps>(func
   } as CSSProperties;
 
   return (
-    <div ref={ref} className={clsx(styles.root, className)} style={layoutStyle} {...props}>
+    <div ref={ref} className={cn(styles.root, className)} style={layoutStyle} {...props}>
       <aside
-        className={clsx(styles.sidebar, isCollapsed && styles.collapsed)}
+        className={cn(styles.sidebar, isCollapsed && styles.collapsed)}
         aria-label={sidebarLabel}
       >
         <div className={styles.sidebarHeader}>
@@ -92,7 +92,7 @@ export const SidebarLayout = forwardRef<HTMLDivElement, SidebarLayoutProps>(func
             />
           </button>
         </div>
-        <div className={clsx(styles.nav, "pd-scrollbar")}>{sidebar}</div>
+        <div className={cn(styles.nav, "pd-scrollbar")}>{sidebar}</div>
         {sidebarFooter ? <div className={styles.sidebarFooter}>{sidebarFooter}</div> : null}
       </aside>
       <main className={styles.content}>{children}</main>

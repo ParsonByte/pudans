@@ -14,7 +14,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./chart.module.css";
 
 export const CHART_COLORS = [
@@ -105,7 +105,7 @@ export function LineChart({
   emptyText = "No data",
 }: LineChartProps) {
   return (
-    <div className={clsx(styles.root, className)} style={{ height }}>
+    <div className={cn(styles.root, className)} style={{ height }}>
       {data.length === 0 ? (
         <ChartEmpty>{emptyText}</ChartEmpty>
       ) : (
@@ -167,7 +167,7 @@ export function BarChart({
   emptyText = "No data",
 }: BarChartProps) {
   return (
-    <div className={clsx(styles.root, className)} style={{ height }}>
+    <div className={cn(styles.root, className)} style={{ height }}>
       {data.length === 0 ? (
         <ChartEmpty>{emptyText}</ChartEmpty>
       ) : (
@@ -228,7 +228,7 @@ export function PieChart({
   emptyText = "No data",
 }: PieChartProps) {
   return (
-    <div className={clsx(styles.root, className)} style={{ height }}>
+    <div className={cn(styles.root, className)} style={{ height }}>
       {data.length === 0 ? (
         <ChartEmpty>{emptyText}</ChartEmpty>
       ) : (

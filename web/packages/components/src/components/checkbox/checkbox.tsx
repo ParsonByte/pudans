@@ -4,7 +4,7 @@ import {
   FormControlLabel,
   type CheckboxProps as MuiCheckboxProps,
 } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./checkbox.module.css";
 
 export type CheckboxSize = "sm" | "md" | "lg";
@@ -25,15 +25,15 @@ export function Checkbox({
   className,
   ...props
 }: CheckboxProps) {
-  const control = <MuiCheckbox className={clsx(styles.control, styles[size])} {...props} />;
+  const control = <MuiCheckbox className={cn(styles.control, styles[size])} {...props} />;
 
   if (!label && !description) {
-    return <span className={clsx(styles.standalone, className)}>{control}</span>;
+    return <span className={cn(styles.standalone, className)}>{control}</span>;
   }
 
   return (
     <FormControlLabel
-      className={clsx(styles.root, className)}
+      className={cn(styles.root, className)}
       control={control}
       labelPlacement={labelPlacement}
       label={

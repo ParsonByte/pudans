@@ -5,7 +5,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker as MuiDatePicker } from "@mui/x-date-pickers/DatePicker";
 import { DateTimePicker as MuiDateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { TimePicker as MuiTimePicker } from "@mui/x-date-pickers/TimePicker";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./date-picker.module.css";
 
 export type DatePickerMode = "date" | "datetime" | "time";
@@ -57,7 +57,7 @@ export function DatePicker({
     minDate,
     maxDate,
     format,
-    className: clsx(styles.root, styles[size], className),
+    className: cn(styles.root, styles[size], className),
     slotProps: {
       textField: {
         size: "small" as const,

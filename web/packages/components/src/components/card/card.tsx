@@ -1,5 +1,5 @@
 import { forwardRef, type HTMLAttributes } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./card.module.css";
 
 export type CardPadding = "none" | "sm" | "md" | "lg";
@@ -19,7 +19,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
   return (
     <div
       ref={ref}
-      className={clsx(
+      className={cn(
         styles.root,
         styles[padding],
         styles[variant],

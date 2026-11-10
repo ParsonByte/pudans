@@ -1,5 +1,5 @@
 import { type HTMLAttributes, type Key, type KeyboardEvent, type ReactNode } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./table.module.css";
 
 export interface TableColumn<T> {
@@ -63,7 +63,7 @@ export function Table<T>({
 
   return (
     <div
-      className={clsx(
+      className={cn(
         styles.wrapper,
         variant === "plain" && styles.plain,
         "pd-scrollbar",
@@ -72,7 +72,7 @@ export function Table<T>({
     >
       <table
         {...props}
-        className={clsx(
+        className={cn(
           styles.table,
           zebra && styles.zebra,
           hoverable && styles.hoverable,
@@ -87,7 +87,7 @@ export function Table<T>({
               <th
                 key={column.key}
                 scope="col"
-                className={clsx(styles.th, column.className)}
+                className={cn(styles.th, column.className)}
                 style={{
                   width: column.width,
                   textAlign: column.align ?? "left",
@@ -109,7 +109,7 @@ export function Table<T>({
             data.map((row, index) => (
               <tr
                 key={getRowKey(row, index)}
-                className={clsx(styles.row, onRowClick && styles.clickable)}
+                className={cn(styles.row, onRowClick && styles.clickable)}
                 onClick={onRowClick ? () => onRowClick(row, index) : undefined}
                 onKeyDown={onRowClick ? (event) => handleRowKeyDown(event, row, index) : undefined}
                 tabIndex={onRowClick ? 0 : undefined}
@@ -117,7 +117,7 @@ export function Table<T>({
                 {columns.map((column) => (
                   <td
                     key={column.key}
-                    className={clsx(styles.td, column.className)}
+                    className={cn(styles.td, column.className)}
                     style={{ textAlign: column.align ?? "left" }}
                   >
                     {column.render

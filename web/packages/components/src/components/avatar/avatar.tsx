@@ -1,6 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import { Avatar as MuiAvatar, type AvatarProps as MuiAvatarProps } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./avatar.module.css";
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl" | number;
@@ -67,12 +67,12 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(function Avatar(
     ) : null);
 
   return (
-    <span className={clsx(styles.wrapper, wrapperClassName)}>
+    <span className={cn(styles.wrapper, wrapperClassName)}>
       <MuiAvatar
         ref={ref}
         src={src}
         alt={alt ?? name ?? ""}
-        className={clsx(styles.root, !isNumericSize && styles[size], className)}
+        className={cn(styles.root, !isNumericSize && styles[size], className)}
         style={{
           ...(isNumericSize
             ? {
@@ -89,7 +89,7 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(function Avatar(
       </MuiAvatar>
       {status ? (
         <span
-          className={clsx(styles.status, styles[status])}
+          className={cn(styles.status, styles[status])}
           aria-label={statusLabel ?? status}
           role="img"
         />

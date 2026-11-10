@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./stat-card.module.css";
 
 export type StatCardTone = "brand" | "success" | "warning" | "info" | "danger";
@@ -22,20 +22,13 @@ export interface StatCardProps {
  * optional tinted icon chip. Purely presentational — data fetching stays with
  * the caller.
  */
-export function StatCard({
-  label,
-  value,
-  hint,
-  icon,
-  tone = "brand",
-  className,
-}: StatCardProps) {
+export function StatCard({ label, value, hint, icon, tone = "brand", className }: StatCardProps) {
   return (
-    <div className={clsx(styles.card, className)}>
+    <div className={cn(styles.card, className)}>
       <div className={styles.top}>
         <span className={styles.label}>{label}</span>
         {icon ? (
-          <span className={clsx(styles.icon, styles[tone])} aria-hidden="true">
+          <span className={cn(styles.icon, styles[tone])} aria-hidden="true">
             {icon}
           </span>
         ) : null}

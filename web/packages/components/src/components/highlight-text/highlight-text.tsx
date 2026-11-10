@@ -1,5 +1,5 @@
 import Highlighter from "react-highlight-words";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./highlight-text.module.css";
 
 export interface HighlightTextProps {
@@ -27,8 +27,8 @@ export function HighlightText({
 }: HighlightTextProps) {
   return (
     <Highlighter
-      className={clsx(styles.root, className)}
-      highlightClassName={clsx(styles.highlight, highlightClassName)}
+      className={cn(styles.root, className)}
+      highlightClassName={cn(styles.highlight, highlightClassName)}
       highlightTag={highlightTag}
       searchWords={[...searchWords]}
       textToHighlight={text}

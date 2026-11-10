@@ -1,6 +1,6 @@
 import { useEffect, useId, type KeyboardEvent, type ReactNode } from "react";
 import { Popover, type PopoverProps } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import {
   bindContextMenu,
   bindPopover,
@@ -86,10 +86,10 @@ export function DropdownMenu({
   };
 
   return (
-    <span className={clsx(styles.root, className)}>
+    <span className={cn(styles.root, className)}>
       <span
         {...triggerProps}
-        className={clsx(styles.trigger, triggerClassName)}
+        className={cn(styles.trigger, triggerClassName)}
         role="button"
         tabIndex={0}
         aria-label={triggerLabel}
@@ -108,7 +108,7 @@ export function DropdownMenu({
         transformOrigin={transformOrigin}
         slotProps={{
           paper: {
-            className: clsx(styles.paper, menuClassName),
+            className: cn(styles.paper, menuClassName),
           },
         }}
       >
@@ -121,7 +121,7 @@ export function DropdownMenu({
                 key={item.key}
                 type="button"
                 role="menuitem"
-                className={clsx(
+                className={cn(
                   styles.item,
                   item.danger && styles.danger,
                   item.disabled && styles.disabled,

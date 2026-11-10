@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import { Tabs } from "../../components/tabs";
 import styles from "./page-container.module.css";
 
@@ -33,7 +33,7 @@ export function PageContainer({
   className,
 }: PageContainerProps) {
   return (
-    <section className={clsx(styles.paper, className)}>
+    <section className={cn(styles.paper, className)}>
       <header className={styles.header}>
         <div className={styles.heading}>
           <h1 className={styles.title}>{title}</h1>
@@ -43,11 +43,7 @@ export function PageContainer({
 
       {tabs?.length ? (
         <div className={styles.tabs}>
-          <Tabs
-            items={tabs}
-            value={activeTab}
-            onValueChange={onTabChange}
-          />
+          <Tabs items={tabs} value={activeTab} onValueChange={onTabChange} />
         </div>
       ) : (
         <div className={styles.divider} aria-hidden="true" />

@@ -1,6 +1,6 @@
 import { useRef, type CSSProperties, type ReactNode } from "react";
 import { Slide } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import { Button } from "../button";
 import { useDirtyState } from "./use-dirty-state";
 import styles from "./settings-panel.module.css";
@@ -25,7 +25,7 @@ export function FormItem({
   children,
 }: FormItemProps) {
   return (
-    <div className={clsx(styles.item, inline && styles.itemInline, className)}>
+    <div className={cn(styles.item, inline && styles.itemInline, className)}>
       <div className={styles.itemText}>
         {label ? (
           <label className={styles.itemLabel} htmlFor={htmlFor}>
@@ -91,7 +91,7 @@ export function SettingsPanel<T extends object>({
 
   return (
     <div
-      className={clsx(styles.panel, className)}
+      className={cn(styles.panel, className)}
       style={{ "--pd-form-panel-width": maxWidth + "px" } as CSSProperties}
     >
       <div className={styles.fields}>{children}</div>

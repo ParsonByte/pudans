@@ -1,5 +1,5 @@
 import { Skeleton as MuiSkeleton, type SkeletonProps as MuiSkeletonProps } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./skeleton.module.css";
 
 export type SkeletonVariant = "text" | "circular" | "rectangular" | "rounded";
@@ -13,7 +13,7 @@ export function Skeleton({ variant = "text", className, ...props }: SkeletonProp
   return (
     <MuiSkeleton
       variant={variant}
-      className={clsx(styles.root, styles[variant], className)}
+      className={cn(styles.root, styles[variant], className)}
       {...props}
     />
   );

@@ -2,7 +2,7 @@ import {
   Pagination as MuiPagination,
   type PaginationProps as MuiPaginationProps,
 } from "@mui/material";
-import { clsx } from "clsx";
+import { cn } from "../../utils/cn";
 import styles from "./pagination.module.css";
 
 export type PaginationSize = "sm" | "md";
@@ -39,7 +39,7 @@ export function Pagination({
       count={pageCount}
       onChange={(_event, nextPage) => onPageChange(nextPage)}
       shape="rounded"
-      className={clsx(styles.root, styles[size], className)}
+      className={cn(styles.root, styles[size], className)}
     />
   );
 }
