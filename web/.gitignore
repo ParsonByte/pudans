@@ -7,3 +7,6 @@ coverage/
 .vite/
 # Frontend output is mounted into appkernel at packaging time.
 /appkernel/src/main/resources/static/
+
+# Husky-generated shims
+.husky/_/

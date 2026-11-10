@@ -87,12 +87,14 @@ export function definePudansUiPluginConfig(options: PudansUiPluginBuildOptions):
       lib: {
         entry: resolve(process.cwd(), sourceEntry),
         formats: ["es"],
-        // Vite 8 / Rolldown treats the returned value as the full file name.
         fileName: () => manifest.spec.entry,
-        cssFileName: "style",
       },
       rollupOptions: {
         external: (id) => isHostExternal(id) || extraExternals.has(id),
+        output: {
+          assetFileNames: (assetInfo) =>
+            assetInfo.name?.endsWith(".css") ? "style.css" : "assets/[name][extname]",
+        },
       },
     },
   };

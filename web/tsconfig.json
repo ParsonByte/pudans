@@ -3,7 +3,9 @@
   "compilerOptions": {
     "moduleResolution": "Bundler",
     "noEmit": true,
-    "types": ["node", "vite/client"],
+    "declaration": false,
+    "declarationMap": false,
+    "types": ["node", "vite/client", "vite-plugin-pwa/client"],
     "baseUrl": ".",
     "paths": {
       "@web/*": ["./src/*"],
@@ -15,6 +17,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "src/**/*.d.ts",
     "app/*/src/**/*.ts",
     "app/*/src/**/*.tsx",
     "vite.config.ts",
