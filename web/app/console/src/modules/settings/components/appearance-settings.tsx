@@ -1,5 +1,10 @@
 import { useTranslation } from "react-i18next";
+import { Box, Chip, Stack } from "@mui/material";
+import Sketch from "@uiw/react-color-sketch";
+import { hsvaToHex } from "@uiw/color-convert";
 import { FormItem, Input, SettingsPanel, Switch } from "@pudans/components";
+import { useAppDispatch, useAppSelector } from "@web/store/hooks";
+import { setAccentColor } from "@web/store/app-slice";
 import { useConfigForm, type SystemConfig } from "../hooks/use-system-config";
 import { ConfigFailed, SettingsLoading } from "./config-state";
 
@@ -26,8 +31,12 @@ function mergeAppearance(config: SystemConfig, values: AppearanceValues): System
   return { ...config, ...values };
 }
 
+const ACCENT_PRESETS = ["#1976d2", "#0f766e", "#7c3aed", "#db2777", "#ea580c", "#475569"];
+
 export function AppearanceSettings() {
   const { t } = useTranslation("console");
+  const dispatch = useAppDispatch();
+  const accentColor = useAppSelector((state) => state.app.accentColor);
   const form = useConfigForm({
     group: "seo",
     parse: parseAppearance,
@@ -55,6 +64,30 @@ export function AppearanceSettings() {
       resetLabel={t("settingsReset")}
       dirtyLabel={t("settingsUnsaved")}
     >
+      <FormItem label={t("settingsAccentColor")} description={t("settingsAccentColorHelp")}>
+        <Stack spacing={1.5}>
+          <Sketch
+            color={accentColor}
+            onChange={(color) => dispatch(setAccentColor(hsvaToHex(color.hsva)))}
+            style={{ width: 240 }}
+          />
+          <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>
+            {ACCENT_PRESETS.map((color) => (
+              <Chip
+                key={color}
+                label={color}
+                size="small"
+                onClick={() => dispatch(setAccentColor(color))}
+                sx={{
+                  borderLeft: `12px solid ${color}`,
+                  fontFamily: "monospace",
+                }}
+              />
+            ))}
+          </Stack>
+          <Box sx={{ height: 44, borderRadius: 2, backgroundColor: accentColor, opacity: 0.9 }} />
+        </Stack>
+      </FormItem>
       <FormItem
         label={t("settingsSeoKeywords")}
         description={t("settingsSeoKeywordsHelp")}
@@ -86,9 +119,7 @@ export function AppearanceSettings() {
       >
         <Switch
           checked={values.blockSpiders}
-          onChange={(event) =>
-            form.setValues({ ...values, blockSpiders: event.target.checked })
-          }
+          onChange={(event) => form.setValues({ ...values, blockSpiders: event.target.checked })}
         />
       </FormItem>
     </SettingsPanel>

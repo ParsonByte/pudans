@@ -15,13 +15,22 @@ import {
   type TableColumn,
 } from "@pudans/components";
 import { apiClient } from "@pudans/api-client";
-import { clsx } from "clsx";
+import {
+  Timeline,
+  TimelineConnector,
+  TimelineContent,
+  TimelineDot,
+  TimelineItem,
+  TimelineOppositeContent,
+  TimelineSeparator,
+} from "@mui/lab";
+import TimeAgo from "timeago-react";
+import { cn } from "@pudans/shared";
 import dayjs from "dayjs";
 import type { TFunction } from "i18next";
 import styles from "./overview-view.module.css";
 
-const OVERVIEW_ENDPOINT =
-  "/apis/console.api.pudans.tolim.cn/v1alpha1/dashboard/overview";
+const OVERVIEW_ENDPOINT = "/apis/console.api.pudans.tolim.cn/v1alpha1/dashboard/overview";
 
 interface GlobalInfoSummary {
   siteTitle?: string | null;
@@ -283,7 +292,45 @@ export function OverviewView() {
         </article>
       </section>
 
-      <section className={clsx(styles.panel, styles.tablePanel)}>
+      <section className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <div>
+            <h2 className={styles.panelTitle}>{t("recentTitle")}</h2>
+            <p className={styles.panelDescription}>{t("recentDescription")}</p>
+          </div>
+        </div>
+        <Timeline position="right" sx={{ px: 0, mt: 0 }}>
+          {operations.slice(0, 4).map((operation) => (
+            <TimelineItem key={operation.auditId ?? operation.timestamp ?? operation.operation}>
+              <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.35, fontSize: 12 }}>
+                {operation.timestamp ? <TimeAgo datetime={operation.timestamp} /> : "—"}
+              </TimelineOppositeContent>
+              <TimelineSeparator>
+                <TimelineDot
+                  color={
+                    operation.result === "SUCCESS"
+                      ? "success"
+                      : operation.result === "FAILURE"
+                        ? "error"
+                        : "warning"
+                  }
+                />
+                <TimelineConnector />
+              </TimelineSeparator>
+              <TimelineContent sx={{ pb: 2 }}>
+                <span className={styles.operation}>
+                  <span className={styles.operationName}>{operation.operation ?? "-"}</span>
+                  {operation.resourceName ? (
+                    <span className={styles.operationTarget}>{operation.resourceName}</span>
+                  ) : null}
+                </span>
+              </TimelineContent>
+            </TimelineItem>
+          ))}
+        </Timeline>
+      </section>
+
+      <section className={cn(styles.panel, styles.tablePanel)}>
         <div className={styles.panelHeader}>
           <div>
             <h2 className={styles.panelTitle}>{t("recentTitle")}</h2>
