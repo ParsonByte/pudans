@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../providers/auth-provider";
 
 const SIGN_IN_LOCATION = "/auth/";
@@ -23,9 +24,7 @@ export function RequireAuth({
   const { status, canAccessConsole } = useAuth();
 
   const blocked =
-    status === "loading" ||
-    status === "anonymous" ||
-    (access === "console" && !canAccessConsole);
+    status === "loading" || status === "anonymous" || (access === "console" && !canAccessConsole);
 
   useEffect(() => {
     if (status === "anonymous") {
@@ -43,8 +42,7 @@ export function RequireAuth({
   return children;
 }
 
-/**
- * Route guard for the sign-in application: signed-in visitors are sent back to
+/** Route guard for the sign-in application: signed-in visitors are sent back to
  * the console or the user centre instead of seeing the login form.
  */
 export function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
@@ -58,6 +56,28 @@ export function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
 
   if (status === "authenticated") {
     return null;
+  }
+  return children;
+}
+
+/**
+ * Route-level permission guard for console modules. The sidebar already hides
+ * entries the account cannot use; this guard protects direct URL navigation.
+ */
+export function RequirePermission({
+  permission,
+  children,
+}: {
+  permission: string;
+  children: ReactNode;
+}) {
+  const { status, hasPermission } = useAuth();
+
+  if (status === "loading") {
+    return null;
+  }
+  if (status === "authenticated" && !hasPermission(permission)) {
+    return <Navigate to="/" replace />;
   }
   return children;
 }

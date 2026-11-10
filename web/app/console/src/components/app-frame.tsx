@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Box } from "@mui/material";
 
 export interface AppFrameProps {
   appName: string;
@@ -7,8 +8,8 @@ export interface AppFrameProps {
 
 export function AppFrame({ appName, children }: AppFrameProps) {
   return (
-    <div data-app={appName} className="min-h-screen">
+    <Box data-app={appName} sx={{ minHeight: "100vh" }}>
       {children}
-    </div>
+    </Box>
   );
 }

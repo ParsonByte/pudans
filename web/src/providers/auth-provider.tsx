@@ -1,42 +1,19 @@
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 import {
-  createContext,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { apiClient, type UserView } from "@pudans/api-client";
+  CONSOLE_UI_PERMISSIONS,
+  hasAnyPermission,
+  loadSession,
+  type AuthStatus,
+  type CurrentUser,
+} from "../store/auth-slice";
 
-const CURRENT_USER_PATH = "/apis/uc.api.pudans.tolim.cn/v1alpha1/users/-";
-const UI_PERMISSIONS_PATH =
-  "/apis/console.api.pudans.tolim.cn/v1alpha1/users/-/ui-permissions";
-
-const ALL_PERMISSIONS = "*";
-
-/** Console ui permission tags; holding any of them proves console access. */
-export const CONSOLE_UI_PERMISSIONS = new Set([
-  "dashboard:view",
-  "users:manage",
-  "roles:manage",
-  "audit:view",
-  "risk:manage",
-  "webhooks:manage",
-  "settings:manage",
-  "auth-providers:manage",
-  "plugins:manage",
-  "ops:view",
-]);
-
-export type AuthStatus = "loading" | "authenticated" | "anonymous";
-
-export interface CurrentUser {
-  name: string;
-  displayName: string;
-  email?: string;
-  avatar?: string;
-}
+export {
+  ALL_PERMISSIONS,
+  CONSOLE_UI_PERMISSIONS,
+  type AuthStatus,
+  type CurrentUser,
+} from "../store/auth-slice";
 
 export interface AuthContextValue {
   status: AuthStatus;
@@ -47,114 +24,42 @@ export interface AuthContextValue {
   hasPermission: (...tags: string[]) => boolean;
 }
 
-const LOADING_STATE: AuthContextValue = {
-  status: "loading",
-  user: null,
-  permissions: [],
-  isAnonymous: true,
-  canAccessConsole: false,
-  hasPermission: () => false,
-};
-
-const ANONYMOUS_STATE: AuthContextValue = {
-  status: "anonymous",
-  user: null,
-  permissions: [],
-  isAnonymous: true,
-  canAccessConsole: false,
-  hasPermission: () => false,
-};
-
-const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-function toCurrentUser(view: UserView): CurrentUser {
-  const name = view.metadata?.name ?? "";
-  return {
-    name,
-    displayName: view.spec?.displayName || name,
-    email: view.spec?.email || undefined,
-    avatar: view.spec?.avatar || undefined,
-  };
-}
-
-function toPermissions(payload: unknown): readonly string[] {
-  return Array.isArray(payload) ? payload : [];
-}
-
-function hasAny(
-  permissions: readonly string[],
-  tags: string[],
-): boolean {
-  if (permissions.includes(ALL_PERMISSIONS)) {
-    return true;
-  }
-  return tags.some((tag) => permissions.includes(tag));
-}
-
 /**
  * Global session layer shared by every application shell (auth, console, uc).
  *
- * Mirrors the Halo single-page setup: the current user and the aggregated ui
- * permissions are fetched exactly once per application load, published through
- * this provider, and every consumer (layouts, guards, feature views) reads the
- * same state via {@link useAuth} / {@link usePermissions}. An anonymous or
- * expired session degrades to the anonymous state instead of throwing.
+ * The actual request and state live in the Redux Toolkit auth slice; this
+ * provider only dispatches the one-time load, and every consumer (layouts,
+ * guards, feature views) reads the same memoised value through {@link useAuth}.
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const dispatch = useAppDispatch();
   const startedRef = useRef(false);
-  const [state, setState] = useState<AuthContextValue>(LOADING_STATE);
 
   useEffect(() => {
     if (startedRef.current) {
       return;
     }
     startedRef.current = true;
-    let cancelled = false;
+    void dispatch(loadSession());
+  }, [dispatch]);
 
-    const request = { pudansRetry: false as const };
-    Promise.allSettled([
-      apiClient.http.get<UserView>(CURRENT_USER_PATH, request),
-      apiClient.http.get<readonly string[]>(UI_PERMISSIONS_PATH, request),
-    ]).then(([userResult, permissionsResult]) => {
-      if (cancelled) {
-        return;
-      }
-      if (userResult.status !== "fulfilled") {
-        setState(ANONYMOUS_STATE);
-        return;
-      }
-      const user = toCurrentUser(userResult.value);
-      const permissions = toPermissions(
-        permissionsResult.status === "fulfilled"
-          ? permissionsResult.value
-          : [],
-      );
-      setState({
-        status: "authenticated",
-        user,
-        permissions,
-        isAnonymous: false,
-        canAccessConsole: hasAny(permissions, [...CONSOLE_UI_PERMISSIONS]),
-        hasPermission: (...tags: string[]) => hasAny(permissions, tags),
-      });
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const value = useMemo(() => state, [state]);
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return <>{children}</>;
 }
 
 export function useAuth(): AuthContextValue {
-  const context = useContext(AuthContext);
-  if (!context) {
-    return LOADING_STATE;
-  }
-  return context;
+  const { status, user, permissions } = useAppSelector((state) => state.auth);
+
+  return useMemo<AuthContextValue>(() => {
+    const hasPermission = (...tags: string[]): boolean => hasAnyPermission(permissions, tags);
+    return {
+      status,
+      user,
+      permissions,
+      isAnonymous: status !== "authenticated",
+      canAccessConsole: hasAnyPermission(permissions, [...CONSOLE_UI_PERMISSIONS]),
+      hasPermission,
+    };
+  }, [status, user, permissions]);
 }
 
 export interface PermissionsHookValue {
