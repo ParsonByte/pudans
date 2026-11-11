@@ -1,18 +1,10 @@
 import { useTranslation } from "react-i18next";
-import {
-  DropdownMenu,
-  Icon,
-  Tooltip,
-  type PudansColorModePreference,
-} from "@pudans/components";
-import { useAppStore } from "@web/store/app-store";
+import { DropdownMenu, Icon, Tooltip, type PudansColorModePreference } from "@pudans/components";
+import { useAppDispatch, useAppSelector } from "@web/store/hooks";
+import { setLocale, setThemePreference } from "@web/store/app-slice";
 import styles from "./auth-topbar.module.css";
 
-const THEME_ORDER: readonly PudansColorModePreference[] = [
-  "light",
-  "dark",
-  "system",
-];
+const THEME_ORDER: readonly PudansColorModePreference[] = ["light", "dark", "system"];
 
 const THEME_ICONS: Record<PudansColorModePreference, string> = {
   light: "mdi:white-balance-sunny",
@@ -22,24 +14,20 @@ const THEME_ICONS: Record<PudansColorModePreference, string> = {
 
 export function AuthTopbar() {
   const { t, i18n } = useTranslation("auth");
-  const themePreference = useAppStore((state) => state.themePreference);
-  const setThemePreference = useAppStore((state) => state.setThemePreference);
-  const setLocale = useAppStore((state) => state.setLocale);
+  const dispatch = useAppDispatch();
+  const themePreference = useAppSelector((state) => state.app.themePreference);
 
-  const themeLabel = t(
-    `theme${themePreference[0].toUpperCase()}${themePreference.slice(1)}`,
-  );
+  const themeLabel = t(`theme${themePreference[0].toUpperCase()}${themePreference.slice(1)}`);
   const currentLanguage = i18n.language.startsWith("zh") ? "zh-CN" : "en-US";
-  const currentLanguageLabel =
-    currentLanguage === "zh-CN" ? t("languageZh") : t("languageEn");
+  const currentLanguageLabel = currentLanguage === "zh-CN" ? t("languageZh") : t("languageEn");
 
   const cycleTheme = (): void => {
     const currentIndex = THEME_ORDER.indexOf(themePreference);
-    setThemePreference(THEME_ORDER[(currentIndex + 1) % THEME_ORDER.length]);
+    dispatch(setThemePreference(THEME_ORDER[(currentIndex + 1) % THEME_ORDER.length]));
   };
 
   const changeLanguage = async (locale: string): Promise<void> => {
-    setLocale(locale);
+    dispatch(setLocale(locale));
     await i18n.changeLanguage(locale);
   };
 
@@ -53,7 +41,6 @@ export function AuthTopbar() {
             <small>{t("brandSub")}</small>
           </span>
         </a>
-
       </div>
 
       <div className={styles.actions}>
@@ -62,10 +49,7 @@ export function AuthTopbar() {
           <span>{t("help")}</span>
         </a>
 
-        <Tooltip
-          title={t("themeTooltip", { theme: themeLabel })}
-          placement="bottom"
-        >
+        <Tooltip title={t("themeTooltip", { theme: themeLabel })} placement="bottom">
           <button
             type="button"
             className={styles.iconButton}

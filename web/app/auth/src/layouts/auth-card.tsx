@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { clsx } from "clsx";
+import { cn } from "@pudans/shared";
 import { useLocation } from "react-router-dom";
 import styles from "./auth-card.module.css";
 
@@ -22,7 +22,7 @@ export function AuthCard({ children, className }: AuthCardProps) {
 
   return (
     <div
-      className={clsx(styles.card, expanded && styles.expanded, className)}
+      className={cn(styles.card, expanded && styles.expanded, className)}
       data-auth-card=""
       data-expanded={expanded ? "true" : undefined}
     >

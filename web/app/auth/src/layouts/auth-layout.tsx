@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useOutlet } from "react-router-dom";
-import { clsx } from "clsx";
+import { cn } from "@pudans/shared";
 import { Icon } from "@pudans/components";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { AuthCard } from "./auth-card";
@@ -75,7 +75,7 @@ export function AuthLayout() {
 
   return (
     <main
-      className={clsx(styles.page, isDark ? styles.dark : undefined)}
+      className={cn(styles.page, isDark ? styles.dark : undefined)}
       data-app="pudans-auth"
       data-theme-preference={themePreference}
       data-locale={i18n.language}

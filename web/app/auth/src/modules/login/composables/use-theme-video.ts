@@ -1,12 +1,12 @@
 import { usePudansTheme } from "@pudans/components";
-import { useAppStore } from "@web/store/app-store";
+import { useAppSelector } from "@web/store/hooks";
 
 /**
  * Bridges the persisted app preference with the auth page's light/dark
  * variables. The video itself is rendered by AuthBranding with loop/cover.
  */
 export function useThemeVideo() {
-  const themePreference = useAppStore((state) => state.themePreference);
+  const themePreference = useAppSelector((state) => state.app.themePreference);
   const { resolvedMode } = usePudansTheme();
 
   return {

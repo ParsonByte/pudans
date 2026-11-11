@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { clsx } from "clsx";
+import { cn } from "@pudans/shared";
 import { Alert, Button, Icon, Input } from "@pudans/components";
 import { useRecovery } from "../composables/use-recovery";
 import styles from "./recovery-form.module.css";
@@ -34,12 +34,9 @@ export function RecoveryForm() {
     submit,
   } = useRecovery();
 
-  const description =
-    step === 2 ? t("recoveryPasswordDescription") : t("recoveryDescription");
-  const submitLabel =
-    step === 2 ? t("recoveryResetSubmit") : t("recoveryNext");
-  const loadingLabel =
-    step === 2 ? t("recoveryResetting") : t("recoverySubmitting");
+  const description = step === 2 ? t("recoveryPasswordDescription") : t("recoveryDescription");
+  const submitLabel = step === 2 ? t("recoveryResetSubmit") : t("recoveryNext");
+  const loadingLabel = step === 2 ? t("recoveryResetting") : t("recoverySubmitting");
 
   return (
     <div className={styles.view}>
@@ -54,15 +51,12 @@ export function RecoveryForm() {
           <Fragment key={item.number}>
             {index > 0 ? (
               <span
-                className={clsx(
-                  styles.connector,
-                  step > index && styles.connectorDone,
-                )}
+                className={cn(styles.connector, step > index && styles.connectorDone)}
                 aria-hidden="true"
               />
             ) : null}
             <div
-              className={clsx(
+              className={cn(
                 styles.step,
                 step === item.number && styles.stepActive,
                 step > item.number && styles.stepDone,
@@ -70,11 +64,7 @@ export function RecoveryForm() {
               aria-current={step === item.number ? "step" : undefined}
             >
               <span className={styles.stepDot}>
-                {step > item.number ? (
-                  <Icon name="mdi:check" size={14} />
-                ) : (
-                  item.number
-                )}
+                {step > item.number ? <Icon name="mdi:check" size={14} /> : item.number}
               </span>
               <span className={styles.stepLabel}>{t(item.labelKey)}</span>
             </div>
@@ -88,9 +78,7 @@ export function RecoveryForm() {
             <Icon name="mdi:check-circle-outline" size={38} />
           </span>
           <h3 className={styles.successTitle}>{t("recoverySuccessTitle")}</h3>
-          <p className={styles.successDescription}>
-            {t("recoverySuccessDescription")}
-          </p>
+          <p className={styles.successDescription}>{t("recoverySuccessDescription")}</p>
         </div>
       ) : (
         <form className={styles.form} onSubmit={submit} noValidate>
@@ -111,7 +99,7 @@ export function RecoveryForm() {
 
               <div className={styles.codeRow}>
                 <Input
-                  className={clsx(styles.input, styles.codeInput)}
+                  className={cn(styles.input, styles.codeInput)}
                   label={t("recoveryCodeLabel")}
                   placeholder={t("recoveryCodePlaceholder")}
                   value={code}
@@ -151,19 +139,11 @@ export function RecoveryForm() {
                   <button
                     type="button"
                     className={styles.visibilityButton}
-                    aria-label={
-                      passwordVisible
-                        ? t("hidePassword")
-                        : t("showPassword")
-                    }
+                    aria-label={passwordVisible ? t("hidePassword") : t("showPassword")}
                     onClick={togglePasswordVisibility}
                   >
                     <Icon
-                      name={
-                        passwordVisible
-                          ? "mdi:eye-off-outline"
-                          : "mdi:eye-outline"
-                      }
+                      name={passwordVisible ? "mdi:eye-off-outline" : "mdi:eye-outline"}
                       size={18}
                     />
                   </button>

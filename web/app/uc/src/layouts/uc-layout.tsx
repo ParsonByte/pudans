@@ -13,7 +13,8 @@ import {
   type DropdownMenuItem,
   type PudansColorModePreference,
 } from "@pudans/components";
-import { useAppStore } from "@web/store/app-store";
+import { useAppDispatch, useAppSelector } from "@web/store/hooks";
+import { setLocale, setThemePreference } from "@web/store/app-slice";
 import { useAuth } from "@web/providers/auth-provider";
 import styles from "./uc-layout.module.css";
 
@@ -45,9 +46,8 @@ export function UcLayout() {
   const { t, i18n } = useTranslation("uc");
   const location = useLocation();
   const navigate = useNavigate();
-  const themePreference = useAppStore((state) => state.themePreference);
-  const setThemePreference = useAppStore((state) => state.setThemePreference);
-  const setLocale = useAppStore((state) => state.setLocale);
+  const dispatch = useAppDispatch();
+  const themePreference = useAppSelector((state) => state.app.themePreference);
   const [collapsed, setCollapsed] = useState(false);
   const { user: currentUser } = useAuth();
 
@@ -68,11 +68,11 @@ export function UcLayout() {
 
   const cycleTheme = (): void => {
     const currentIndex = THEME_ORDER.indexOf(themePreference);
-    setThemePreference(THEME_ORDER[(currentIndex + 1) % THEME_ORDER.length]);
+    dispatch(setThemePreference(THEME_ORDER[(currentIndex + 1) % THEME_ORDER.length]));
   };
 
   const changeLanguage = async (locale: string): Promise<void> => {
-    setLocale(locale);
+    dispatch(setLocale(locale));
     await i18n.changeLanguage(locale);
   };
 

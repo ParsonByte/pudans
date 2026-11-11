@@ -11,28 +11,18 @@ import {
   useToast,
   type PudansColorModePreference,
 } from "@pudans/components";
-import { useAppStore } from "@web/store/app-store";
-import {
-  apiClient,
-  getErrorMessage,
-  type SetupPayload,
-} from "@pudans/api-client";
+import { useAppDispatch, useAppSelector } from "@web/store/hooks";
+import { setLocale, setThemePreference } from "@web/store/app-slice";
+import { apiClient, getErrorMessage, type SetupPayload } from "@pudans/api-client";
 import { useSetupLocale } from "./composables/use-setup-locale";
 import styles from "./setup-view.module.css";
 
-type FieldErrors = Partial<
-  Record<keyof SetupPayload | "confirmPassword", string>
->;
+type FieldErrors = Partial<Record<keyof SetupPayload | "confirmPassword", string>>;
 
 const defaultSiteUrl =
-  import.meta.env.VITE_SITE_URL ??
-  (typeof window !== "undefined" ? window.location.origin : "");
+  import.meta.env.VITE_SITE_URL ?? (typeof window !== "undefined" ? window.location.origin : "");
 
-const THEME_ORDER: readonly PudansColorModePreference[] = [
-  "light",
-  "dark",
-  "system",
-];
+const THEME_ORDER: readonly PudansColorModePreference[] = ["light", "dark", "system"];
 
 const THEME_ICONS: Record<PudansColorModePreference, string> = {
   light: "mdi:white-balance-sunny",
@@ -44,22 +34,23 @@ export function SetupView() {
   const { t, i18n } = useTranslation("setup");
   const setupLocale = useSetupLocale();
   const toast = useToast();
-  const themePreference = useAppStore((state) => state.themePreference);
-  const setThemePreference = useAppStore((state) => state.setThemePreference);
-  const setLocale = useAppStore((state) => state.setLocale);
+  const dispatch = useAppDispatch();
+  const themePreference = useAppSelector((state) => state.app.themePreference);
 
-  const themeLabel = t(`settings.theme${themePreference[0].toUpperCase()}${themePreference.slice(1)}`);
+  const themeLabel = t(
+    `settings.theme${themePreference[0].toUpperCase()}${themePreference.slice(1)}`,
+  );
   const currentLanguage = i18n.language.startsWith("zh") ? "zh-CN" : "en-US";
   const currentLanguageLabel =
     currentLanguage === "zh-CN" ? t("settings.languageZh") : t("settings.languageEn");
 
   const cycleTheme = (): void => {
     const currentIndex = THEME_ORDER.indexOf(themePreference);
-    setThemePreference(THEME_ORDER[(currentIndex + 1) % THEME_ORDER.length]);
+    dispatch(setThemePreference(THEME_ORDER[(currentIndex + 1) % THEME_ORDER.length]));
   };
 
   const changeLanguage = async (locale: string): Promise<void> => {
-    setLocale(locale);
+    dispatch(setLocale(locale));
     await i18n.changeLanguage(locale);
   };
   const [form, setForm] = useState<SetupPayload>({
@@ -75,13 +66,9 @@ export function SetupView() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const passwordsMatch =
-    form.password.length > 0 && form.password === confirmPassword;
+  const passwordsMatch = form.password.length > 0 && form.password === confirmPassword;
 
-  const setField = <K extends keyof SetupPayload>(
-    key: K,
-    value: SetupPayload[K],
-  ): void => {
+  const setField = <K extends keyof SetupPayload>(key: K, value: SetupPayload[K]): void => {
     setForm((current) => ({ ...current, [key]: value }));
     setFieldErrors((current) => ({
       ...current,
@@ -104,9 +91,7 @@ export function SetupView() {
     } else if (
       form.username.length < 4 ||
       form.username.length > 63 ||
-      !/^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/.test(
-        form.username,
-      )
+      !/^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/.test(form.username)
     ) {
       nextErrors.username = t("usernamePattern");
     }
@@ -140,9 +125,7 @@ export function SetupView() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ): Promise<void> => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
     setError(null);
     if (!passwordsMatch || !validate()) {
@@ -170,17 +153,12 @@ export function SetupView() {
 
   const confirmationError =
     fieldErrors.confirmPassword ??
-    (confirmPassword.length > 0 && !passwordsMatch
-      ? t("passwordMismatch")
-      : undefined);
+    (confirmPassword.length > 0 && !passwordsMatch ? t("passwordMismatch") : undefined);
 
   return (
     <main className={styles.page}>
       <div className={styles.settings}>
-        <Tooltip
-          title={t("settings.themeTooltip", { theme: themeLabel })}
-          placement="bottom"
-        >
+        <Tooltip title={t("settings.themeTooltip", { theme: themeLabel })} placement="bottom">
           <button
             type="button"
             className={styles.settingButton}

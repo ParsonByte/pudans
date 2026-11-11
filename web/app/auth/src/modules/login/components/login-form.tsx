@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { clsx } from "clsx";
+import { QRCodeSVG } from "qrcode.react";
+import { cn } from "@pudans/shared";
 import { Button, Icon, Input, useToast } from "@pudans/components";
 import { useLogin } from "../composables/use-login";
 import FeishuIcon from "./feishu-icon";
@@ -50,7 +51,7 @@ export function LoginForm() {
         <button
           type="button"
           role="tab"
-          className={clsx(styles.tab, activeTab === "login" && styles.tabActive)}
+          className={cn(styles.tab, activeTab === "login" && styles.tabActive)}
           aria-selected={activeTab === "login"}
           onClick={() => setActiveTab("login")}
         >
@@ -59,7 +60,7 @@ export function LoginForm() {
         <button
           type="button"
           role="tab"
-          className={clsx(styles.tab, activeTab === "scan" && styles.tabActive)}
+          className={cn(styles.tab, activeTab === "scan" && styles.tabActive)}
           aria-selected={activeTab === "scan"}
           onClick={() => setActiveTab("scan")}
         >
@@ -70,7 +71,14 @@ export function LoginForm() {
       {activeTab === "scan" ? (
         <div className={styles.scanPanel} role="tabpanel">
           <span className={styles.scanIcon} aria-hidden="true">
-            <Icon name="mdi:qrcode" size={46} />
+            <QRCodeSVG
+              value={`${typeof window === "undefined" ? "" : window.location.origin}/auth/?scan=session`}
+              size={148}
+              level="M"
+              bgColor="transparent"
+              fgColor="currentColor"
+              marginSize={2}
+            />
           </span>
           <h3 className={styles.scanTitle}>{t("scanTitle")}</h3>
           <p className={styles.scanText}>{t("scanSoon")}</p>
@@ -163,7 +171,7 @@ export function LoginForm() {
               {t("passkey")}
             </button>
             <a
-              className={clsx(styles.providerButton, styles.providerLink)}
+              className={cn(styles.providerButton, styles.providerLink)}
               href={FEISHU_AUTHORIZATION_URL}
             >
               <FeishuIcon size={17} />
