@@ -2,17 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Box, Button, InputAdornment, Stack, TextField, Typography } from "@mui/material";
 import Fuse from "fuse.js";
-import {
-  Avatar,
-  Badge,
-  HighlightText,
-  Icon,
-  PageContainer,
-  Pagination,
-  Table,
-  type TableColumn,
-  RelativeTime,
-} from "@pudans/components";
+import { Avatar, Badge, HighlightText, Icon, Pagination, Table, type TableColumn, RelativeTime } from "@pudans/components";
+import { PageContainer } from "@pudans/layouts";
 import { apiClient, type ListedUser, type UserList } from "@pudans/api-client";
 
 const USERS_ENDPOINT = "/apis/console.api.pudans.tolim.cn/v1alpha1/users";

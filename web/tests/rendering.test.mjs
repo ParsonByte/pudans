@@ -3,6 +3,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import * as lib from "@pudans/components";
+import { PudansThemeProvider } from "@pudans/theme";
 
 function render(component, props = {}) {
   return renderToStaticMarkup(createElement(component, props));
@@ -15,7 +16,7 @@ test("core components render server-side without a DOM", () => {
 
   const button = render(lib.Button, { children: "Save" });
   assert.match(button, /Save/);
-  assert.match(button, /data-variant="primary"/);
+  assert.match(button, /MuiButton/);
 
   const progress = render(lib.Progress, { value: 42, showValue: true });
   assert.match(progress, /aria-valuenow="42"/);
@@ -39,12 +40,11 @@ test("the migrated offline icon collection renders synchronously", () => {
 test("theme switch exposes accessible semantics", () => {
   const html = renderToStaticMarkup(
     createElement(
-      lib.PudansThemeProvider,
+      PudansThemeProvider,
       { defaultPreference: "light", storageKey: false, disableCssBaseline: true },
       createElement(lib.ThemeSwitch, { showLabels: true }),
     ),
   );
-  assert.match(html, /role="radiogroup"/);
-  assert.match(html, /role="radio"/);
-  assert.match(html, /aria-checked="true"/);
+  assert.match(html, /aria-label="Color theme"/);
+  assert.match(html, /<button/);
 });

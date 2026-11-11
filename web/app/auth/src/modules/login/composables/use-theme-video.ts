@@ -1,4 +1,4 @@
-import { usePudansTheme } from "@pudans/components";
+import { usePudansTheme } from "@pudans/theme";
 import { useAppSelector } from "@web/store/hooks";
 
 /**

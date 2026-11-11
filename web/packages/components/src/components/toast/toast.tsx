@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
-import { SnackbarProvider, useSnackbar, type SnackbarKey } from "notistack";
-import type { SnackbarOrigin } from "@mui/material";
-import { cn } from "../../utils/cn";
-import { Alert, type AlertSeverity } from "../alert";
-import styles from "./toast.module.css";
+import { Box, type SnackbarOrigin } from "@mui/material";
+import { styled } from "@mui/material/styles";
+import {
+  MaterialDesignContent,
+  SnackbarProvider,
+  useSnackbar,
+  type CustomContentProps,
+  type SnackbarKey,
+} from "notistack";
+
+export type ToastSeverity = "info" | "success" | "warning" | "error";
 
 export interface ToastOptions {
   message: ReactNode;
-  severity?: AlertSeverity;
+  severity?: ToastSeverity;
   title?: ReactNode;
   duration?: number;
   action?: ReactNode;
@@ -24,41 +30,71 @@ export interface ToastContextValue {
 
 export interface ToastProviderProps {
   children: ReactNode;
-  /**
-   * Maximum visible queue size. notistack automatically queues and dismisses
-   * older items after this limit.
-   */
+  /** Legacy notistack default: 3 stacked toasts. */
   maxSnack?: number;
+  /** Legacy App.tsx SnackbarProvider anchor: bottom-left. */
   anchorOrigin?: SnackbarOrigin;
+  /** Legacy notistack default: 5000 ms. */
   autoHideDuration?: number;
 }
 
-function createContent(options: ToastOptions, close: (key: SnackbarKey) => void) {
-  return (key: SnackbarKey): ReactNode => (
-    <Alert
-      severity={options.severity ?? "info"}
-      title={options.title}
-      action={options.action}
-      onClose={() => close(key)}
-      className={styles.alert}
-    >
-      {options.message}
-    </Alert>
+const LegacyContentBase = (props: CustomContentProps) => <MaterialDesignContent {...props} />;
+
+/**
+ * Legacy App.tsx StyledMaterialDesignContent: 12px radius and palette-toned
+ * success / error / warning backgrounds. "default" keeps the notistack surface
+ * colour (legacy default variant); "info" is intentionally not overridden so it
+ * keeps the notistack default, exactly like the legacy provider.
+ */
+const StyledMaterialDesignContent = styled(LegacyContentBase)(({ theme }) => ({
+  "&.notistack-MuiContent": {
+    borderRadius: theme.shape.borderRadius,
+  },
+  "&.notistack-MuiContent-success": {
+    backgroundColor: theme.palette.success.main,
+  },
+  "&.notistack-MuiContent-error": {
+    backgroundColor: theme.palette.error.main,
+  },
+  "&.notistack-MuiContent-warning": {
+    backgroundColor: theme.palette.warning.main,
+  },
+}));
+
+function toastMessage(message: ReactNode, title: ReactNode): ReactNode {
+  if (!title) {
+    return message;
+  }
+  return (
+    <Box>
+      <Box component="div" sx={{ fontWeight: (theme) => theme.typography.fontWeightMedium, mb: 0.5 }}>
+        {title}
+      </Box>
+      <Box component="div">{message}</Box>
+    </Box>
   );
 }
 
-/** notistack-backed global toast queue. */
+const toastComponents = {
+  success: StyledMaterialDesignContent,
+  error: StyledMaterialDesignContent,
+  warning: StyledMaterialDesignContent,
+  default: StyledMaterialDesignContent,
+};
+
+/** Legacy App.tsx SnackbarProvider: bottom-left, maxSnack 3, 5000 ms. */
 export function ToastProvider({
   children,
-  maxSnack = 4,
-  anchorOrigin = { vertical: "bottom", horizontal: "right" },
-  autoHideDuration = 4000,
+  maxSnack = 3,
+  anchorOrigin = { vertical: "bottom", horizontal: "left" },
+  autoHideDuration = 5000,
 }: ToastProviderProps) {
   return (
     <SnackbarProvider
       maxSnack={maxSnack}
       anchorOrigin={anchorOrigin}
       autoHideDuration={autoHideDuration}
+      Components={toastComponents}
       preventDuplicate
     >
       {children}
@@ -71,14 +107,14 @@ export function useToast(): ToastContextValue {
 
   const show = useCallback(
     (options: ToastOptions): string => {
-      const key = enqueueSnackbar(options.message, {
-        variant: options.severity ?? "info",
-        autoHideDuration: options.duration ?? 4000,
-        content: createContent(options, closeSnackbar),
+      const key = enqueueSnackbar(toastMessage(options.message, options.title), {
+        variant: options.severity ?? "default",
+        autoHideDuration: options.duration,
+        action: options.action,
       });
       return String(key);
     },
-    [closeSnackbar, enqueueSnackbar],
+    [enqueueSnackbar],
   );
 
   const success = useCallback(
@@ -118,7 +154,7 @@ export function useToast(): ToastContextValue {
 export interface ToastProps {
   open: boolean;
   message: ReactNode;
-  severity?: AlertSeverity;
+  severity?: ToastSeverity;
   title?: ReactNode;
   duration?: number;
   action?: ReactNode;
@@ -132,7 +168,7 @@ function ToastBridge({
   message,
   severity = "info",
   title,
-  duration = 4000,
+  duration = 5000,
   action,
   onClose,
   className,
@@ -149,27 +185,11 @@ function ToastBridge({
       return;
     }
 
-    const key = enqueueSnackbar(message, {
+    const key = enqueueSnackbar(toastMessage(message, title), {
       variant: severity,
       autoHideDuration: duration,
-      content: (snackbarKey) => (
-        <Alert
-          severity={severity}
-          title={title}
-          action={action}
-          onClose={() => {
-            onClose?.();
-            closeSnackbar(snackbarKey);
-          }}
-          className={cn(styles.alert, className)}
-        >
-          {message}
-        </Alert>
-      ),
-      onClose: () => {
-        onClose?.();
-        keyRef.current = null;
-      },
+      action,
+      className,
     });
     keyRef.current = key;
 
@@ -179,25 +199,22 @@ function ToastBridge({
         keyRef.current = null;
       }
     };
-  }, [
-    action,
-    className,
-    closeSnackbar,
-    duration,
-    enqueueSnackbar,
-    message,
-    onClose,
-    open,
-    severity,
-    title,
-  ]);
+  }, [action, className, closeSnackbar, duration, enqueueSnackbar, message, open, severity, title]);
+
+  useEffect(() => {
+    if (!open || onClose === undefined) {
+      return undefined;
+    }
+    const timer = window.setTimeout(() => onClose(), duration);
+    return () => window.clearTimeout(timer);
+  }, [duration, onClose, open]);
 
   return null;
 }
 
 /** Standalone controlled toast. Prefer ToastProvider + useToast for app queues. */
 export function Toast({
-  anchorOrigin = { vertical: "bottom", horizontal: "right" },
+  anchorOrigin = { vertical: "bottom", horizontal: "left" },
   ...props
 }: ToastProps) {
   return (
@@ -205,6 +222,7 @@ export function Toast({
       maxSnack={1}
       anchorOrigin={anchorOrigin}
       autoHideDuration={null}
+      Components={toastComponents}
       preventDuplicate
     >
       <ToastBridge {...props} />

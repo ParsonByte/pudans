@@ -25,11 +25,12 @@
     "clean": "rm -rf build app/*/dist",
     "prepare": "cd .. && husky web/.husky",
     "test": "node --test tests/",
-    "test:packages": "pnpm --filter @pudans/shared build && pnpm --filter @pudans/components build",
+    "test:packages": "pnpm --filter @pudans/utils build && pnpm --filter @pudans/components build",
     "check:cycles": "node scripts/check-cycles.mjs",
     "check:exports": "node scripts/check-exports.mjs",
     "audit:tokens": "node scripts/audit-design-tokens.mjs",
-    "verify": "pnpm typecheck && pnpm check:cycles && pnpm check:exports && pnpm test:packages && pnpm test && pnpm lint && pnpm build"
+    "verify": "pnpm typecheck && pnpm check:cycles && pnpm check:exports && pnpm check:boundary && pnpm test:packages && pnpm test && pnpm lint && pnpm build",
+    "check:boundary": "node scripts/check-component-boundary.mjs"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -46,7 +47,11 @@
     "@mui/x-tree-view": "^9.18.0",
     "@pudans/api-client": "workspace:*",
     "@pudans/components": "workspace:*",
-    "@pudans/shared": "workspace:*",
+    "@pudans/hooks": "workspace:*",
+    "@pudans/icons": "workspace:*",
+    "@pudans/layouts": "workspace:*",
+    "@pudans/theme": "workspace:*",
+    "@pudans/utils": "workspace:*",
     "@reduxjs/toolkit": "^2.14.0",
     "@types/path-browserify": "^1.0.3",
     "@types/streamsaver": "^2.0.5",

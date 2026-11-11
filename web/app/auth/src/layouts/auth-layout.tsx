@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useOutlet } from "react-router-dom";
-import { cn } from "@pudans/shared";
+import { cn } from "@pudans/utils";
 import { Icon } from "@pudans/components";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { AuthCard } from "./auth-card";

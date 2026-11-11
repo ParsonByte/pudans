@@ -12,14 +12,24 @@ import { fileURLToPath } from "node:url";
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const repoRoot = dirname(root);
-const scanRoots = [join(root, "app"), join(root, "src"), join(root, "packages/components/src")];
+const scanRoots = [
+  join(root, "app"),
+  join(root, "src"),
+  join(root, "packages/components/src"),
+  join(root, "packages/layouts/src"),
+  join(root, "packages/hooks/src"),
+  join(root, "packages/utils/src"),
+  join(root, "packages/theme/src"),
+  join(root, "packages/icons/src"),
+];
 const allowlist = [
-  "packages/components/src/styles/tokens.ts",
-  "packages/components/src/styles/variables.css",
-  "packages/components/src/styles/create-theme.ts",
-  "packages/components/src/styles/global.css",
-  "packages/components/src/components/icon/cloudreve-icons.ts",
-  "packages/components/src/components/icon/builtin-icons.ts",
+  "packages/theme/src/tokens.ts",
+  "packages/theme/src/variables.css",
+  "packages/theme/src/create-theme.ts",
+  "packages/theme/src/global.css",
+  "packages/theme/src/index.css",
+  "packages/icons/src/cloudreve-icons.ts",
+  "packages/icons/src/builtin-icons.ts",
 ];
 const strict = process.argv.includes("--strict");
 

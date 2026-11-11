@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Icon, PageContainer, Tabs, type TabItem } from "@pudans/components";
+import { Icon, Tabs, type TabItem } from "@pudans/components";
+import { PageContainer } from "@pudans/layouts";
 import { SiteSettings } from "./components/site-settings";
 import { UserSettings } from "./components/user-settings";
 import { CaptchaSettings } from "./components/captcha-settings";

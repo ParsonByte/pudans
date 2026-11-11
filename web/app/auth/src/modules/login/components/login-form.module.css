@@ -127,8 +127,13 @@
   line-height: 1.55;
 }
 
+.input {
+  margin-top: 6px;
+}
+
 .input :global(.MuiFormLabel-root) {
-  margin-bottom: 7px;
+  padding: 0 4px;
+  background: var(--login-card);
   color: var(--login-muted);
   font-size: var(--pd-text-xs);
   font-weight: 500;

@@ -2,14 +2,14 @@ import { forwardRef, useId, type ReactNode } from "react";
 import {
   FormControl,
   FormHelperText,
-  FormLabel,
+  InputLabel,
   MenuItem,
   Select as MuiSelect,
   type SelectProps as MuiSelectProps,
 } from "@mui/material";
+import type { Theme } from "@mui/material/styles";
 import type { InputSize } from "../input";
-import { cn } from "../../utils/cn";
-import styles from "./select.module.css";
+import { cn } from "@pudans/utils";
 
 export interface SelectOption {
   label: ReactNode;
@@ -17,10 +17,7 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
-export interface SelectProps extends Omit<
-  MuiSelectProps,
-  "size" | "label" | "labelId" | "children"
-> {
+export type SelectProps = Omit<MuiSelectProps, "size" | "label" | "labelId" | "children"> & {
   size?: InputSize;
   label?: ReactNode;
   helperText?: ReactNode;
@@ -28,10 +25,24 @@ export interface SelectProps extends Omit<
   options?: readonly SelectOption[];
   children?: ReactNode;
   displayEmpty?: boolean;
+};
+
+/** Legacy DenseSelect: 39px min height, 6px vertical paddings. */
+function denseSx(theme: Theme) {
+  return {
+    minHeight: theme.spacing(4.875),
+    "& .MuiOutlinedInput-input": {
+      display: "flex",
+      alignItems: "center",
+      paddingTop: theme.spacing(0.75),
+      paddingBottom: theme.spacing(0.75),
+    },
+  };
 }
 
 /**
- * Cloudreve-style outlined select with a fixed label above the field.
+ * Cloudreve outlined select: floating InputLabel + notched 12px outline and the
+ * legacy dense (39px) variant for admin forms.
  */
 export const Select = forwardRef<HTMLDivElement, SelectProps>(function Select(
   {
@@ -53,7 +64,9 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(function Select(
 ) {
   const generatedId = useId();
   const selectId = id ?? `pudans-select-${generatedId.replace(/:/g, "")}`;
+  const labelId = label ? `${selectId}-label` : undefined;
   const helperId = helperText ? `${selectId}-helper` : undefined;
+  const dense = size === "sm";
 
   return (
     <FormControl
@@ -62,19 +75,22 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(function Select(
       error={error}
       disabled={disabled}
       required={required}
-      className={cn(styles.root, styles[size], error && styles.error, className)}
+      variant="outlined"
+      className={cn(className)}
+      sx={dense ? denseSx : undefined}
     >
       {label ? (
-        <FormLabel htmlFor={selectId} className={styles.label}>
+        <InputLabel id={labelId} htmlFor={selectId}>
           {label}
-        </FormLabel>
+        </InputLabel>
       ) : null}
-
       <MuiSelect
         id={selectId}
+        labelId={labelId}
+        label={label}
+        size={dense ? "small" : "medium"}
         variant="outlined"
         displayEmpty={displayEmpty}
-        error={error}
         inputProps={{ "aria-describedby": helperId }}
         {...props}
       >
@@ -85,12 +101,7 @@ export const Select = forwardRef<HTMLDivElement, SelectProps>(function Select(
         ))}
         {children}
       </MuiSelect>
-
-      {helperText ? (
-        <FormHelperText id={helperId} className={styles.helper}>
-          {helperText}
-        </FormHelperText>
-      ) : null}
+      {helperText ? <FormHelperText id={helperId}>{helperText}</FormHelperText> : null}
     </FormControl>
   );
 });

@@ -1,8 +1,16 @@
-import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { cn } from "../../utils/cn";
-import { DropdownMenu } from "../dropdown-menu";
+import { useLayoutEffect, useRef, useState, type ReactElement, type ReactNode } from "react";
+import {
+  Box,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+import { bindMenu, bindTrigger, usePopupState } from "material-ui-popup-state/hooks";
 import { Icon } from "../icon";
-import styles from "./responsive-tabs.module.css";
+import { StyledTab, StyledTabs } from "../tabs";
 
 export interface ResponsiveTabItem<T extends string = string> {
   key: T;
@@ -17,12 +25,40 @@ export interface ResponsiveTabsProps<T extends string = string> {
   onChange: (value: T) => void;
   ariaLabel?: string;
   className?: string;
+  /** Label of the overflow trigger tab (legacy i18n "showMore"). */
+  moreLabel?: ReactNode;
+}
+
+function renderLabel(item: ResponsiveTabItem): ReactElement {
+  return (
+    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+      <Box component="span">{item.label}</Box>
+      {item.badge ? (
+        <Box
+          component="span"
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            px: 0.75,
+            borderRadius: (theme) => theme.shape.borderRadius,
+            backgroundColor: "action.selected",
+            color: "primary.main",
+            fontSize: (theme) => theme.typography.caption.fontSize,
+            lineHeight: (theme) => theme.typography.caption.lineHeight,
+          }}
+        >
+          {item.badge}
+        </Box>
+      ) : null}
+    </Box>
+  );
 }
 
 /**
- * Tabs that collapse the trailing items into an overflow menu when they no
- * longer fit. Migrated from the legacy Common/ResponsiveTabs and rebuilt on
- * tokenized styles.
+ * Legacy Common/ResponsiveTabs: a divider-bottomed 2px padded box containing
+ * the legacy StyledTabs. Below the sm breakpoint or when the tab row overflows,
+ * only the active tab plus a "Show more" tab are rendered; the remaining tabs
+ * move into a MUI Menu.
  */
 export function ResponsiveTabs<T extends string = string>({
   items,
@@ -30,69 +66,82 @@ export function ResponsiveTabs<T extends string = string>({
   onChange,
   ariaLabel = "Tabs",
   className,
+  moreLabel = "Show more",
 }: ResponsiveTabsProps<T>) {
-  const listRef = useRef<HTMLDivElement>(null);
-  const [overflowing, setOverflowing] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [hideTabs, setHideTabs] = useState(false);
+  const moreOptionState = usePopupState({ variant: "popover", popupId: "pd-tabs-more" });
+  const { onClose, ...menuProps } = bindMenu(moreOptionState);
 
   useLayoutEffect(() => {
-    const node = listRef.current;
-    if (!node) {
-      return;
-    }
-    const measure = (): void => {
-      setOverflowing(node.scrollWidth > node.clientWidth + 1);
+    const checkOverflow = (): void => {
+      const flex = tabsRef.current?.querySelector<HTMLElement>(".MuiTabs-flexContainer");
+      if (!flex) {
+        return;
+      }
+      setHideTabs((previous) => (previous ? true : flex.scrollWidth > flex.clientWidth));
     };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(node);
-    return () => observer.disconnect();
+    checkOverflow();
+    window.addEventListener("resize", checkOverflow);
+    return () => window.removeEventListener("resize", checkOverflow);
   }, [items.length]);
 
-  const select = useCallback(
-    (key: T) => {
-      onChange(key);
-    },
-    [onChange],
-  );
-
-  const active = items.find((item) => item.key === value) ?? items[0];
-  const visible = overflowing && active ? [active] : items;
+  const collapsed = isMobile || hideTabs;
+  const visibleItems = collapsed ? items.filter((item) => item.key === value) : items;
+  const otherItems = items.filter((item) => item.key !== value);
 
   return (
-    <div className={cn(styles.root, className)}>
-      <div ref={listRef} className={styles.list} role="tablist" aria-label={ariaLabel}>
-        {visible.map((item) => (
-          <button
+    <Box className={className} sx={{ borderBottom: 1, borderColor: "divider", pb: 0.25 }}>
+      <StyledTabs
+        ref={tabsRef}
+        value={value}
+        onChange={(_event, nextValue) => onChange(nextValue as T)}
+        aria-label={ariaLabel}
+      >
+        {visibleItems.map((item) => (
+          <StyledTab
             key={item.key}
-            type="button"
-            role="tab"
-            aria-selected={item.key === value}
-            className={cn(styles.tab, item.key === value && styles.selected)}
-            onClick={() => select(item.key)}
-          >
-            {item.icon ? (
-              <span className={styles.icon} aria-hidden="true">
-                {item.icon}
-              </span>
-            ) : null}
-            <span className={styles.label}>{item.label}</span>
-            {item.badge ? <span className={styles.badge}>{item.badge}</span> : null}
-          </button>
-        ))}
-        {overflowing ? (
-          <DropdownMenu
-            trigger={<Icon name="cr:MoreHorizontal" size={18} />}
-            triggerLabel="Show more tabs"
-            showChevron={false}
-            items={items.map((item) => ({
-              key: item.key,
-              label: item.label,
-              icon: item.icon,
-              onSelect: () => select(item.key),
-            }))}
+            value={item.key}
+            label={renderLabel(item)}
+            icon={item.icon ? <>{item.icon}</> : undefined}
           />
+        ))}
+        {collapsed && items.length > 1 ? (
+          <>
+            <StyledTab
+              label={
+                <Box component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  {moreLabel}
+                  <Icon name="cr:CaretDown" size={15} />
+                </Box>
+              }
+              {...bindTrigger(moreOptionState)}
+            />
+            <Menu
+              {...menuProps}
+              onClose={() => {
+                moreOptionState.close();
+                onClose?.();
+              }}
+            >
+              {otherItems.map((item) => (
+                <MenuItem
+                  key={item.key}
+                  onClick={() => {
+                    moreOptionState.close();
+                    onChange(item.key);
+                  }}
+                >
+                  {item.icon ? <ListItemIcon>{item.icon}</ListItemIcon> : null}
+                  <ListItemText>{item.label}</ListItemText>
+                </MenuItem>
+              ))}
+            </Menu>
+          </>
         ) : null}
-      </div>
-    </div>
+      </StyledTabs>
+    </Box>
   );
 }

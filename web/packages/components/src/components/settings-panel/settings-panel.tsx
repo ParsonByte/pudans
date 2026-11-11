@@ -1,9 +1,52 @@
-import { useRef, type CSSProperties, type ReactNode } from "react";
-import { Slide } from "@mui/material";
-import { cn } from "../../utils/cn";
+import { useEffect, useMemo, useRef, type ReactNode } from "react";
+import { Box, Grow, Typography, useTheme } from "@mui/material";
+import { cn } from "@pudans/utils";
 import { Button } from "../button";
-import { useDirtyState } from "./use-dirty-state";
-import styles from "./settings-panel.module.css";
+import { Icon } from "../icon";
+
+function isEqualValue(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) {
+    return true;
+  }
+  if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) {
+    return false;
+  }
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+      return false;
+    }
+    return left.every((item, index) => isEqualValue(item, right[index]));
+  }
+  const leftRecord = left as Record<string, unknown>;
+  const rightRecord = right as Record<string, unknown>;
+  const leftKeys = Object.keys(leftRecord);
+  const rightKeys = Object.keys(rightRecord);
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+  return leftKeys.every(
+    (key) =>
+      Object.prototype.hasOwnProperty.call(rightRecord, key) &&
+      isEqualValue(leftRecord[key], rightRecord[key]),
+  );
+}
+
+interface UseDirtyStateOptions {
+  dirty?: boolean;
+  onDirtyChange?: (dirty: boolean) => void;
+}
+
+/** Component-private dirty-state comparison (kept inside the component file). */
+function useDirtyState<T>(initialValues: T, values: T, options: UseDirtyStateOptions = {}): boolean {
+  const compared = useMemo(() => !isEqualValue(initialValues, values), [initialValues, values]);
+  const dirty = options.dirty ?? compared;
+  const callbackRef = useRef(options.onDirtyChange);
+  callbackRef.current = options.onDirtyChange;
+  useEffect(() => {
+    callbackRef.current?.(dirty);
+  }, [dirty]);
+  return dirty;
+}
 
 export interface FormItemProps {
   label?: ReactNode;
@@ -15,6 +58,11 @@ export interface FormItemProps {
   children: ReactNode;
 }
 
+/**
+ * Setting row from the legacy Pages/Setting SettingForm: body2/600 label with
+ * caption helper text (12px / text.secondary) above the control, 4px title gap.
+ * inline renders the label/help left and the control right for switches.
+ */
 export function FormItem({
   label,
   description,
@@ -24,19 +72,57 @@ export function FormItem({
   className,
   children,
 }: FormItemProps) {
+  const theme = useTheme();
   return (
-    <div className={cn(styles.item, inline && styles.itemInline, className)}>
-      <div className={styles.itemText}>
+    <Box
+      className={cn(className)}
+      sx={
+        inline
+          ? {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: theme.spacing(2),
+              minWidth: 0,
+            }
+          : { minWidth: 0 }
+      }
+    >
+      <Box sx={{ minWidth: 0 }}>
         {label ? (
-          <label className={styles.itemLabel} htmlFor={htmlFor}>
+          <Typography
+            component="label"
+            htmlFor={htmlFor}
+            variant="body2"
+            sx={{
+              display: "block",
+              fontWeight: 600,
+              color: theme.palette.text.primary,
+              marginBottom: description ? theme.spacing(0.5) : 0,
+            }}
+          >
             {label}
-            {required ? <span className={styles.required}>*</span> : null}
-          </label>
+            {required ? (
+              <Box component="span" sx={{ marginLeft: theme.spacing(0.25), color: "error.main" }}>
+                *
+              </Box>
+            ) : null}
+          </Typography>
         ) : null}
-        {description ? <p className={styles.itemDescription}>{description}</p> : null}
-      </div>
-      <div className={styles.itemControl}>{children}</div>
-    </div>
+        {description ? (
+          <Typography
+            component="p"
+            variant="caption"
+            sx={{ margin: 0, color: theme.palette.text.secondary, lineHeight: 1.66 }}
+          >
+            {description}
+          </Typography>
+        ) : null}
+      </Box>
+      <Box sx={{ minWidth: 0, ...(inline ? {} : { marginTop: description ? theme.spacing(1) : 0 }) }}>
+        {children}
+      </Box>
+    </Box>
   );
 }
 
@@ -55,16 +141,18 @@ export interface SettingsPanelProps<T extends object> {
   onDirtyChange?: (dirty: boolean) => void;
   /** Replaces the default reset/save buttons (e.g. publish or discard). */
   actions?: ReactNode;
+  /** Optional content max width in px; the legacy settings page was fluid. */
   maxWidth?: number;
   className?: string;
   children: ReactNode;
 }
 
 /**
- * App-agnostic dirty-state form shell. Any editable surface (settings, profile,
- * wizard step, inline editor) can use it: the floating bar slides in only when
- * the current values differ from the loaded snapshot. The default bar exposes
- * reset/save actions; pass `actions` to replace them with domain-specific ones.
+ * Settings shell rebuilt from the legacy Admin/Settings SettingWrapper:
+ * fluid form column (24px section rhythm) plus the fixed SavingFloat bar —
+ * paper background, 1px divider border, shape radius, 16px padding, bottom
+ * 23px, zIndex.modal, Save + SecondaryButton inside a MUI Grow appearing only
+ * when values are dirty. The controls are the only API-level addition.
  */
 export function SettingsPanel<T extends object>({
   initialValues,
@@ -79,58 +167,90 @@ export function SettingsPanel<T extends object>({
   dirty: dirtyProp,
   onDirtyChange,
   actions,
-  maxWidth = 640,
+  maxWidth,
   className,
   children,
 }: SettingsPanelProps<T>) {
+  const theme = useTheme();
   const dirty = useDirtyState(initialValues, values, {
     dirty: dirtyProp,
     onDirtyChange,
   });
-  const barRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div
-      className={cn(styles.panel, className)}
-      style={{ "--pd-form-panel-width": maxWidth + "px" } as CSSProperties}
+    <Box
+      className={cn(className)}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        minWidth: 0,
+        maxWidth: maxWidth ? theme.spacing(maxWidth / 8) : "none",
+      }}
     >
-      <div className={styles.fields}>{children}</div>
-
-      <Slide direction="up" in={dirty} mountOnEnter unmountOnExit timeout={260}>
-        <div ref={barRef} className={styles.barWrap}>
-          <div className={styles.bar}>
-            {dirtyLabel ? (
-              <span className={styles.dirty}>
-                <span className={styles.dot} aria-hidden="true" />
-                {dirtyLabel}
-              </span>
-            ) : (
-              <span />
-            )}
-            {actions ?? (
-              <div className={styles.actions}>
-                {onReset && resetLabel ? (
-                  <Button variant="ghost" onClick={onReset} disabled={saving}>
-                    {resetLabel}
-                  </Button>
-                ) : null}
-                {onSave && saveLabel ? (
-                  <Button
-                    variant="primary"
-                    onClick={() => {
-                      void onSave();
-                    }}
-                    loading={saving}
-                    loadingText={savingLabel}
-                  >
-                    {saveLabel}
-                  </Button>
-                ) : null}
-              </div>
-            )}
-          </div>
-        </div>
-      </Slide>
-    </div>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: theme.spacing(3),
+          minWidth: 0,
+        }}
+      >
+        {children}
+      </Box>
+      <Box sx={{ height: theme.spacing(8.75) }} />
+      <Grow in={dirty}>
+        <Box
+          sx={{
+            position: "fixed",
+            bottom: theme.spacing(2.875),
+            zIndex: theme.zIndex.modal,
+            display: "flex",
+            alignItems: "center",
+            gap: theme.spacing(1),
+            padding: theme.spacing(2),
+            border: "var(--pd-border-width-thin) solid " + theme.palette.divider,
+            borderRadius: theme.shape.borderRadius,
+            backgroundColor: theme.palette.background.paper,
+          }}
+        >
+          {dirtyLabel ? (
+            <Typography
+              variant="caption"
+              sx={{ color: theme.palette.text.secondary, marginRight: theme.spacing(1) }}
+            >
+              {dirtyLabel}
+            </Typography>
+          ) : null}
+          {actions ?? (
+            <>
+              {onSave && saveLabel ? (
+                <Button
+                  variant="primary"
+                  startIcon={<Icon name="cr:Save" size={20} />}
+                  loading={saving}
+                  loadingText={savingLabel}
+                  onClick={() => {
+                    void onSave();
+                  }}
+                >
+                  {saveLabel}
+                </Button>
+              ) : null}
+              {onReset && resetLabel ? (
+                <Button
+                  variant="secondary"
+                  startIcon={<Icon name="cr:ArrowHookUpRight" size={20} />}
+                  disabled={saving}
+                  onClick={onReset}
+                >
+                  {resetLabel}
+                </Button>
+              ) : null}
+            </>
+          )}
+        </Box>
+      </Grow>
+    </Box>
   );
 }

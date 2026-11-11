@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Box, Button, Chip, Divider, Stack, Typography } from "@mui/material";
 import { QRCodeSVG } from "qrcode.react";
-import { Icon, OtpInput, PageContainer, useToast } from "@pudans/components";
+import { Icon, OtpInput, useToast } from "@pudans/components";
+import { PageContainer } from "@pudans/layouts";
 import { useAuth } from "@web/providers/auth-provider";
 import { UcPanel } from "../../components/uc-panel";
 

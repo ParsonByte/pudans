@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { SimpleTreeView } from "@mui/x-tree-view/SimpleTreeView";
 import { TreeItem } from "@mui/x-tree-view/TreeItem";
-import { cn } from "../../utils/cn";
+import { cn } from "@pudans/utils";
 import styles from "./tree-view.module.css";
 
 export interface TreeNode {

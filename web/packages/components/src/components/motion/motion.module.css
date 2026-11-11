@@ -13,23 +13,3 @@
   align-items: center;
   justify-content: center;
 }
-
-.fadeLayer {
-  opacity: 0;
-  transition: opacity var(--pd-duration-fast) var(--pd-ease-standard);
-}
-
-.visible {
-  opacity: 1;
-}
-
-.hidden {
-  opacity: 0;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fadeLayer {
-    transition: none;
-  }
-}

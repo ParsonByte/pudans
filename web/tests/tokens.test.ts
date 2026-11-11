@@ -19,9 +19,9 @@ import {
   shadows,
   transitions,
   zIndex,
-} from "../packages/components/src/styles/tokens.ts";
+} from "../packages/theme/src/tokens.ts";
 
-const stylesDir = new URL("../packages/components/src/styles/", import.meta.url).pathname;
+const stylesDir = new URL("../packages/theme/src/", import.meta.url).pathname;
 const componentsDir = new URL("../packages/components/src/", import.meta.url).pathname;
 const variablesCss = readFileSync(join(stylesDir, "variables.css"), "utf8");
 const darkSectionStart = variablesCss.indexOf('[data-theme="dark"]');
@@ -142,6 +142,9 @@ test("every var(--pd-*) referenced by component styles is defined", () => {
   );
   const defined = new Set<string>();
   const definitionPattern = /(--pd-[a-z0-9-]+)\s*:/g;
+  for (const match of variablesCss.matchAll(definitionPattern)) {
+    defined.add(match[1]);
+  }
   for (const file of sourceFiles) {
     for (const match of readFileSync(file, "utf8").matchAll(definitionPattern)) {
       defined.add(match[1]);

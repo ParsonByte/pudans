@@ -1,6 +1,14 @@
 import { useId, type ReactNode } from "react";
-import { cn } from "../../utils/cn";
-import styles from "./size-input.module.css";
+import {
+  FilledInput,
+  FormControl,
+  FormHelperText,
+  InputAdornment,
+  InputLabel,
+  MenuItem,
+  OutlinedInput,
+  Select,
+} from "@mui/material";
 
 export type SizeUnit = "B" | "KB" | "MB" | "GB" | "TB";
 
@@ -17,11 +25,13 @@ export interface SizeInputProps {
   disabled?: boolean;
   required?: boolean;
   size?: "sm" | "md";
+  variant?: "filled" | "outlined";
+  suffix?: ReactNode;
   className?: string;
   id?: string;
 }
 
-export const SIZE_UNITS: ReadonlyArray<{ unit: SizeUnit; factor: number }> = [
+const SIZE_UNITS: ReadonlyArray<{ unit: SizeUnit; factor: number }> = [
   { unit: "B", factor: 1 },
   { unit: "KB", factor: 1024 },
   { unit: "MB", factor: 1024 * 1024 },
@@ -29,7 +39,7 @@ export const SIZE_UNITS: ReadonlyArray<{ unit: SizeUnit; factor: number }> = [
   { unit: "TB", factor: 1024 * 1024 * 1024 * 1024 },
 ];
 
-export function convertSize(bytes: number, unit: SizeUnit): number {
+function convertSize(bytes: number, unit: SizeUnit): number {
   const entry = SIZE_UNITS.find((item) => item.unit === unit);
   return entry ? bytes / entry.factor : bytes;
 }
@@ -45,8 +55,8 @@ function pickUnit(bytes: number, allowed: readonly SizeUnit[]): SizeUnit {
 }
 
 /**
- * Byte-size input with unit selection, migrated from the legacy Common/
- * SizeInput. Pure props based: no Redux, no i18n coupling.
+ * Legacy Common/SizeInput: filled (default) or dense outlined byte-size input
+ * with a trailing unit Select (B/KB/MB/GB/TB, minWidth 70px, no background).
  */
 export function SizeInput({
   value,
@@ -61,6 +71,8 @@ export function SizeInput({
   disabled = false,
   required = false,
   size = "md",
+  variant = "filled",
+  suffix,
   className,
   id,
 }: SizeInputProps) {
@@ -69,69 +81,117 @@ export function SizeInput({
   const unit = pickUnit(value, units);
   const amount = convertSize(value, unit);
   const display = Number.isInteger(amount) ? String(amount) : String(Number(amount.toFixed(2)));
+  const rangeError =
+    (min !== undefined && value < min) || (max !== undefined && value > max)
+      ? `Allowed range: ${min ?? 0} – ${max ?? "∞"} bytes`
+      : undefined;
+  const resolvedError = error ?? rangeError;
+  const isError = Boolean(error || rangeError);
+  const dense = size === "sm";
 
   const handleAmount = (raw: string): void => {
     const parsed = Number.parseFloat(raw);
     const nextAmount = Number.isFinite(parsed) ? parsed : 0;
     const entry = SIZE_UNITS.find((item) => item.unit === unit);
-    const bytes = Math.round(nextAmount * (entry?.factor ?? 1));
-    onChange(bytes);
+    onChange(Math.round(nextAmount * (entry?.factor ?? 1)));
+  };
+
+  const handleUnit = (nextUnit: SizeUnit): void => {
+    const entry = SIZE_UNITS.find((item) => item.unit === nextUnit);
+    onChange(Math.round(amount * (entry?.factor ?? 1)));
+  };
+
+  const unitSelect = (
+    <Select
+      variant="filled"
+      size="small"
+      value={unit}
+      disabled={disabled || units.length <= 1}
+      onChange={(event) => handleUnit(event.target.value as SizeUnit)}
+      inputProps={{ "aria-label": "Unit" }}
+      sx={{
+        minWidth: (theme) => theme.spacing(8.75),
+        backgroundColor: "initial",
+        mt: variant === "filled" ? 1.75 : 0,
+        ...(variant === "outlined"
+          ? { "& .MuiSelect-select": { fontSize: "0.875rem" } }
+          : {}),
+        "& .MuiFilledInput-root": { backgroundColor: "initial", borderRadius: 0 },
+        "& .MuiFilledInput-input": {
+          paddingTop: (theme) => theme.spacing(0.625),
+          "&:focus": { backgroundColor: "initial" },
+        },
+      }}
+    >
+      {units.map((option) => (
+        <MenuItem key={option} dense value={option}>
+          {option}
+          {suffix}
+        </MenuItem>
+      ))}
+    </Select>
+  );
+
+  const adornment = <InputAdornment position="end">{unitSelect}</InputAdornment>;
+  const htmlInputProps = {
+    step: "any",
+    min: allowZero ? 0 : 1,
   };
 
   return (
-    <div className={cn(styles.root, styles[size], error ? styles.invalid : undefined, className)}>
-      {label ? (
-        <label className={styles.label} htmlFor={inputId}>
-          {label}
-          {required ? (
-            <span className={styles.required} aria-hidden="true">
-              *
-            </span>
-          ) : null}
-        </label>
-      ) : null}
-      <div className={styles.control}>
-        <input
+    <FormControl
+      fullWidth
+      variant={variant}
+      size={dense ? "small" : "medium"}
+      error={isError}
+      disabled={disabled}
+      required={required}
+      className={className}
+      sx={
+        variant === "outlined"
+          ? (theme) => ({
+              "& .MuiInputLabel-root": {
+                fontSize: theme.typography.body2.fontSize,
+                "&:not(.Mui-focused):not(.MuiInputLabel-shrink)": {
+                  transform: `translate(${theme.spacing(1.75)}, ${theme.spacing(1.25)}) scale(1)`,
+                },
+              },
+              "& .MuiOutlinedInput-root": { paddingTop: 0, paddingBottom: 0 },
+              "& .MuiOutlinedInput-input": {
+                paddingTop: theme.spacing(1.2),
+                paddingBottom: theme.spacing(1.2),
+                fontSize: theme.typography.body2.fontSize,
+              },
+            })
+          : undefined
+      }
+    >
+      {label ? <InputLabel htmlFor={inputId}>{label}</InputLabel> : null}
+      {variant === "outlined" ? (
+        <OutlinedInput
           id={inputId}
           type="number"
-          className={styles.input}
           value={display}
-          min={allowZero ? 0 : undefined}
-          step="any"
-          disabled={disabled}
-          required={required}
+          label={label}
           onChange={(event) => handleAmount(event.target.value)}
-          aria-invalid={Boolean(error) || undefined}
+          endAdornment={adornment}
+          inputProps={htmlInputProps}
         />
-        <select
-          className={styles.unit}
-          value={unit}
-          disabled={disabled || units.length <= 1}
-          aria-label="Unit"
-          onChange={(event) => {
-            const nextUnit = event.target.value as SizeUnit;
-            const entry = SIZE_UNITS.find((item) => item.unit === nextUnit);
-            onChange(Math.round(amount * (entry?.factor ?? 1)));
-          }}
-        >
-          {units.map((option) => (
-            <option key={option} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      </div>
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
+      ) : (
+        <FilledInput
+          id={inputId}
+          type="number"
+          value={display}
+          onChange={(event) => handleAmount(event.target.value)}
+          endAdornment={adornment}
+          inputProps={htmlInputProps}
+        />
+      )}
+      {resolvedError ? (
+        <FormHelperText error={isError}>{resolvedError}</FormHelperText>
       ) : helperText ? (
-        <p className={styles.helper}>{helperText}</p>
-      ) : min !== undefined || max !== undefined ? (
-        <p className={styles.helper}>
-          Allowed range: {min ?? 0} – {max ?? "∞"} bytes
-        </p>
+        <FormHelperText>{helperText}</FormHelperText>
       ) : null}
-    </div>
+    </FormControl>
   );
 }

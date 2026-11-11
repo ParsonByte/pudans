@@ -1,15 +1,8 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
-import {
-  Badge,
-  Icon,
-  PageContainer,
-  RelativeTime,
-  Table,
-  useToast,
-  type TableColumn,
-} from "@pudans/components";
+import { Badge, Icon, RelativeTime, Table, useToast, type TableColumn } from "@pudans/components";
+import { PageContainer } from "@pudans/layouts";
 import { UcPanel } from "../../components/uc-panel";
 
 interface AuthorizationToken {

@@ -11,7 +11,12 @@ import {
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
-import { cn } from "../../utils/cn";
+import Box from "@mui/material/Box";
+import IconButton from "@mui/material/IconButton";
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
+import { useTheme } from "@mui/material/styles";
+import { cn } from "@pudans/utils";
 import styles from "./graph.module.css";
 
 export type GraphNodeTone = "neutral" | "brand" | "success" | "warning" | "danger";
@@ -204,6 +209,7 @@ export const Graph = forwardRef<HTMLDivElement, GraphProps>(function Graph(
   },
   ref,
 ) {
+  const theme = useTheme();
   const nodeIds = nodes.map((node) => node.id).join("|");
   const initial = useMemo(
     () => initialPositions(nodes),
@@ -403,7 +409,19 @@ export const Graph = forwardRef<HTMLDivElement, GraphProps>(function Graph(
       {...props}
     >
       {!hasNodes ? (
-        <div className={styles.empty}>No graph data</div>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            height: "100%",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            No graph data
+          </Typography>
+        </Box>
       ) : (
         <>
           <svg
@@ -504,8 +522,8 @@ export const Graph = forwardRef<HTMLDivElement, GraphProps>(function Graph(
                       y={-size.height / 2}
                       width={size.width}
                       height={size.height}
-                      rx={12}
-                      ry={12}
+                      rx={theme.shape.borderRadius}
+                      ry={theme.shape.borderRadius}
                     />
                     <text
                       className={styles.nodeLabel}
@@ -525,17 +543,31 @@ export const Graph = forwardRef<HTMLDivElement, GraphProps>(function Graph(
             </g>
           </svg>
 
-          <div className={styles.toolbar} role="group" aria-label="Graph controls">
-            <button type="button" onClick={() => zoomBy(0.85)} aria-label="Zoom in">
+          <Paper
+            elevation={3}
+            role="group"
+            aria-label="Graph controls"
+            sx={{
+              position: "absolute",
+              right: 2,
+              bottom: 2,
+              display: "flex",
+              alignItems: "center",
+              gap: 0.25,
+              padding: 0.5,
+              borderRadius: 1,
+            }}
+          >
+            <IconButton size="small" onClick={() => zoomBy(0.85)} aria-label="Zoom in">
               +
-            </button>
-            <button type="button" onClick={() => zoomBy(1.18)} aria-label="Zoom out">
+            </IconButton>
+            <IconButton size="small" onClick={() => zoomBy(1.18)} aria-label="Zoom out">
               −
-            </button>
-            <button type="button" onClick={fit} aria-label="Fit graph">
-              Fit
-            </button>
-          </div>
+            </IconButton>
+            <IconButton size="small" onClick={fit} aria-label="Fit graph">
+              <Typography variant="caption">Fit</Typography>
+            </IconButton>
+          </Paper>
         </>
       )}
     </div>

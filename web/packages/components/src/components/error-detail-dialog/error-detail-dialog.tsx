@@ -1,7 +1,18 @@
 import type { ReactNode } from "react";
-import { Dialog } from "../dialog";
-import { CodeBlock } from "../code";
-import styles from "./error-detail-dialog.module.css";
+import {
+  Box,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Typography,
+  Paper,
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import { Dialog, StyledDialogContentText } from "../dialog";
 
 export interface ErrorDetail {
   key: string;
@@ -19,10 +30,15 @@ export interface ErrorDetailDialogProps {
   footer?: ReactNode;
 }
 
+/** Legacy StyledTableContainerPaper: 1px divider border, no shadow. */
+const StyledTableContainerPaper = styled(Paper)(({ theme }) => ({
+  boxShadow: "none",
+  border: `1px solid ${theme.palette.divider}`,
+}));
+
 /**
- * Aggregated error inspector migrated from the legacy AggregatedErrorDetail
- * dialog. Renders a human message, per-item errors and the request id so users
- * can report issues.
+ * Legacy AggregatedErrorDetail dialog: DraggableDialog with a body2 message,
+ * a small object/error table and a caption request id.
  */
 export function ErrorDetailDialog({
   open,
@@ -33,25 +49,42 @@ export function ErrorDetailDialog({
   requestId,
   footer,
 }: ErrorDetailDialogProps) {
+  const rows = errors ?? [];
+
   return (
-    <Dialog open={open} onClose={onClose} title={title} size="md" footer={footer}>
-      {message ? <p className={styles.message}>{message}</p> : null}
-      {errors && errors.length > 0 ? (
-        <ul className={styles.list}>
-          {errors.map((error) => (
-            <li key={error.key} className={styles.item}>
-              <span className={styles.itemLabel}>{error.label ?? error.key}</span>
-              <span className={styles.itemMessage}>{error.message}</span>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      {requestId ? (
-        <div className={styles.requestId}>
-          <span className={styles.requestLabel}>Request ID</span>
-          <CodeBlock code={requestId} showCopy={false} wrap />
-        </div>
-      ) : null}
+    <Dialog open={open} onClose={onClose} title={title} size="sm" fullWidth footer={footer}>
+      <Stack spacing={2}>
+          {message ? <StyledDialogContentText>{message}</StyledDialogContentText> : null}
+          {rows.length > 0 ? (
+            <TableContainer component={StyledTableContainerPaper}>
+              <Table size="small" sx={{ width: "100%" }}>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Object</TableCell>
+                    <TableCell>Error</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rows.map((error) => (
+                    <TableRow key={error.key} hover sx={{ "&:last-child td": { border: 0 } }}>
+                      <TableCell component="th" scope="row">
+                        <Box sx={{ maxWidth: (theme) => theme.spacing(31.25), overflow: "hidden", textOverflow: "ellipsis" }}>
+                          {error.label ?? error.key}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{error.message}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          ) : null}
+          {requestId ? (
+            <Typography variant="caption" component="div" color="text.secondary">
+              Request ID: <Box component="code">{requestId}</Box>
+            </Typography>
+          ) : null}
+      </Stack>
     </Dialog>
   );
 }

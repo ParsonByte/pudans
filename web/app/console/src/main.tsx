@@ -1,6 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "@pudans/components/style.css";
+import "@pudans/theme/style.css";
 import { AppProviders } from "@web/providers";
 import { App } from "./App";
 

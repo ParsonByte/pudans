@@ -2,18 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { NuqsAdapter } from "nuqs/adapters/react-router/v6";
-import {
-  AppShell,
-  Icon,
-  LanguageSwitcher,
-  SideNavItem,
-  ThemeSwitch,
-  type AppShellLinkComponent,
-  type AppShellMenuItem,
-  type AppShellUser,
-  type BreadcrumbItem,
-  type DropdownMenuItem,
-} from "@pudans/components";
+import { Icon, LanguageSwitcher, ThemeSwitch, type DropdownMenuItem } from "@pudans/components";
+import { AppShell, SideNavItem, type AppShellLinkComponent, type AppShellMenuItem, type AppShellUser, type BreadcrumbItem } from "@pudans/layouts";
 import { useAppDispatch } from "@web/store/hooks";
 import { setLocale } from "@web/store/app-slice";
 import { useAuth, usePermissions } from "@web/providers/auth-provider";

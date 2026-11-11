@@ -1,14 +1,8 @@
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Avatar, Box, Button, Chip, Stack, Typography } from "@mui/material";
-import {
-  ImageCropper,
-  Icon,
-  PageContainer,
-  useToast,
-  type ImageCropperResult,
-  RelativeTime,
-} from "@pudans/components";
+import { ImageCropper, Icon, useToast, type ImageCropperResult, RelativeTime } from "@pudans/components";
+import { PageContainer } from "@pudans/layouts";
 import { useAuth } from "@web/providers/auth-provider";
 import { UcPanel } from "../../components/uc-panel";
 

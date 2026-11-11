@@ -7,7 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { cn } from "../../utils/cn";
+import { List, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
+import { cn } from "@pudans/utils";
 import { Dialog } from "../dialog";
 import styles from "./select-dialog.module.css";
 
@@ -28,7 +29,10 @@ export interface SelectDialogProps<T = string> {
   onCancel: () => void;
 }
 
-/** Controlled option picker dialog (touch + keyboard friendly). */
+/**
+ * Legacy SelectOption dialog: DraggableDialog + MUI List of ListItemButton rows
+ * whose primary text is body2/bold and secondary text is body2.
+ */
 export function SelectDialog<T = string>({
   open,
   title = "Select an option",
@@ -39,30 +43,25 @@ export function SelectDialog<T = string>({
 }: SelectDialogProps<T>) {
   return (
     <Dialog open={open} onClose={onCancel} size="sm" title={title} description={description}>
-      <ul className={styles.list}>
-        {options.map((option, index) => (
-          <li key={index}>
-            <button
-              type="button"
-              className={styles.option}
+      <List component="nav" disablePadding>
+          {options.map((option, index) => (
+            <ListItemButton
+              key={index}
               disabled={option.disabled}
               onClick={() => onSelect(option.value, option)}
             >
-              {option.icon ? (
-                <span className={styles.icon} aria-hidden="true">
-                  {option.icon}
-                </span>
-              ) : null}
-              <span className={styles.body}>
-                <span className={styles.label}>{option.label}</span>
-                {option.description ? (
-                  <span className={styles.description}>{option.description}</span>
-                ) : null}
-              </span>
-            </button>
-          </li>
-        ))}
-      </ul>
+              {option.icon ? <ListItemIcon>{option.icon}</ListItemIcon> : null}
+              <ListItemText
+                primary={option.label}
+                secondary={option.description}
+                slotProps={{
+                  primary: { variant: "body2", sx: { fontWeight: "bold" } },
+                  secondary: { variant: "body2" },
+                }}
+              />
+            </ListItemButton>
+          ))}
+      </List>
     </Dialog>
   );
 }
@@ -151,4 +150,5 @@ export function useSelectOption(): SelectFn {
   return context.select;
 }
 
+/** Compatibility class for legacy StyledDialogContentText-like bodies. */
 export const selectDialogBodyClassName = cn(styles.body);

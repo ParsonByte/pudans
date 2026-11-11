@@ -1,6 +1,30 @@
-import Highlighter from "react-highlight-words";
-import { cn } from "../../utils/cn";
-import styles from "./highlight-text.module.css";
+import Highlighter, { type HighlightTagProps } from "react-highlight-words";
+import { alpha, useTheme } from "@mui/material";
+import { amber } from "@mui/material/colors";
+
+/**
+ * Legacy App.tsx global ".highlight-marker": amber fill, small radius and a
+ * same-colour ring (no padding). Rebuilt from MUI amber + alpha so it follows
+ * the theme colour utilities instead of a raw literal.
+ */
+function HighlightMark({ children, className, style }: HighlightTagProps) {
+  const theme = useTheme();
+  return (
+    <mark
+      className={className}
+      style={{
+        backgroundColor: alpha(amber[500], 0.62),
+        borderRadius: theme.spacing(0.5),
+        boxShadow: "0 0 0 " + theme.spacing(0.25) + " " + alpha(amber[500], 0.62),
+        color: "inherit",
+        padding: 0,
+        ...style,
+      }}
+    >
+      {children}
+    </mark>
+  );
+}
 
 export interface HighlightTextProps {
   text: string;
@@ -10,7 +34,7 @@ export interface HighlightTextProps {
   activeIndex?: number;
   className?: string;
   highlightClassName?: string;
-  /** Defaults to "mark". */
+  /** Defaults to the MUI mark matching .highlight-marker. */
   highlightTag?: string;
 }
 
@@ -23,13 +47,13 @@ export function HighlightText({
   activeIndex,
   className,
   highlightClassName,
-  highlightTag = "mark",
+  highlightTag,
 }: HighlightTextProps) {
   return (
     <Highlighter
-      className={cn(styles.root, className)}
-      highlightClassName={cn(styles.highlight, highlightClassName)}
-      highlightTag={highlightTag}
+      className={className}
+      highlightClassName={highlightClassName ?? ""}
+      highlightTag={highlightClassName || highlightTag ? (highlightTag ?? "mark") : HighlightMark}
       searchWords={[...searchWords]}
       textToHighlight={text}
       caseSensitive={caseSensitive}

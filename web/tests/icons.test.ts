@@ -1,13 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import {
-  CLOUDREVE_ICON_PREFIX,
-  cloudreveIconCollection,
-  cloudreveIconNames,
-  Icon,
-  registerCloudreveIcons,
-} from "@pudans/components";
+import { Icon } from "@pudans/components";
+import { CLOUDREVE_ICON_PREFIX, cloudreveIconCollection, cloudreveIconNames, registerCloudreveIcons } from "@pudans/icons";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 

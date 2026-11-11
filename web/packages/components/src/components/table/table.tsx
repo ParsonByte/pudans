@@ -1,8 +1,15 @@
 import { type HTMLAttributes, type Key, type KeyboardEvent, type ReactNode } from "react";
-import { cn } from "../../utils/cn";
+import Paper from "@mui/material/Paper";
+import MuiTable from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import { cn } from "@pudans/utils";
 import { EmptyState } from "../empty-state";
 import { Skeleton } from "../skeleton";
-import styles from "./table.module.css";
 
 export interface TableColumn<T> {
   key: string;
@@ -34,8 +41,10 @@ export interface TableProps<T> extends Omit<HTMLAttributes<HTMLTableElement>, "c
 }
 
 /**
- * Headless-ish data table with render-slot columns, zebra rows and optional
- * keyboard-accessible row activation.
+ * Legacy Admin table rebuilt with MUI Table primitives: StyledTableContainerPaper
+ * (Paper, 1px divider border, 12px radius, no shadow), Table size="small"
+ * (TableCell 6px 16px), TableHead fontWeight 500, row hover action.hover and
+ * MUI-default divider cell borders.
  */
 export function Table<T>({
   columns,
@@ -72,89 +81,86 @@ export function Table<T>({
   };
 
   return (
-    <div
-      className={cn(
-        styles.wrapper,
-        variant === "plain" && styles.plain,
-        "pd-scrollbar",
-        wrapperClassName,
-      )}
+    <TableContainer
+      component={Paper}
+      className={cn(wrapperClassName)}
+      sx={(theme) => ({
+        width: "100%",
+        overflowX: "auto",
+        backgroundColor: variant === "card" ? theme.palette.background.paper : "transparent",
+        border: variant === "card" ? `1px solid ${theme.palette.divider}` : 0,
+        borderRadius: variant === "card" ? `${theme.shape.borderRadius}px` : 0,
+        boxShadow: "none",
+      })}
     >
-      <table
-        {...props}
-        aria-busy={loading || undefined}
-        className={cn(
-          styles.table,
-          zebra && styles.zebra,
-          hoverable && styles.hoverable,
-          stickyHeader && styles.stickyHeader,
-          className,
-        )}
-      >
-        {caption ? <caption className={styles.caption}>{caption}</caption> : null}
-        <thead className={styles.head}>
-          <tr>
+      <MuiTable {...props} size="small" stickyHeader={stickyHeader} sx={{ width: "100%", tableLayout: "fixed" }}>
+        {caption ? (
+          <Typography
+            component="caption"
+            variant="body2"
+            color="text.secondary"
+            sx={{ display: "table-caption", padding: 2, textAlign: "left" }}
+          >
+            {caption}
+          </Typography>
+        ) : null}
+        <TableHead>
+          <TableRow>
             {columns.map((column) => (
-              <th
+              <TableCell
                 key={column.key}
                 scope="col"
-                className={cn(styles.th, column.className)}
-                style={{
-                  width: column.width,
-                  textAlign: column.align ?? "left",
-                }}
+                align={column.align ?? "left"}
+                className={cn(column.className)}
+                sx={{ width: column.width }}
               >
                 {column.header}
-              </th>
+              </TableCell>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHead>
+        <TableBody aria-busy={loading || undefined}>
           {loading ? (
             Array.from({ length: loadingRows }).map((_, rowIndex) => (
-              <tr key={"skeleton-" + rowIndex} className={styles.row}>
+              <TableRow key={"skeleton-" + rowIndex} hover={hoverable}>
                 {columns.map((column, columnIndex) => (
-                  <td key={column.key} className={styles.td}>
-                    <Skeleton
-                      variant="text"
-                      width={columnIndex === 0 ? "60%" : "40%"}
-                      height={18}
-                    />
-                  </td>
+                  <TableCell key={column.key} align={column.align ?? "left"}>
+                    <Skeleton variant="text" width={columnIndex === 0 ? "60%" : "40%"} />
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))
           ) : data.length === 0 ? (
-            <tr>
-              <td className={styles.empty} colSpan={columns.length}>
+            <TableRow>
+              <TableCell colSpan={columns.length} align="center" sx={{ padding: 4 }}>
                 {emptyState ?? <EmptyState compact size="sm" title={emptyText} />}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
             data.map((row, index) => (
-              <tr
+              <TableRow
                 key={getRowKey(row, index)}
-                className={cn(styles.row, onRowClick && styles.clickable)}
+                hover={hoverable}
                 onClick={onRowClick ? () => onRowClick(row, index) : undefined}
                 onKeyDown={onRowClick ? (event) => handleRowKeyDown(event, row, index) : undefined}
                 tabIndex={onRowClick ? 0 : undefined}
+                sx={{
+                  ...(zebra && index % 2 === 1 ? { backgroundColor: "action.hover" } : {}),
+                  ...(onRowClick ? { cursor: "pointer", "&:focus-visible": { outline: "none", backgroundColor: "action.selected" } } : {}),
+                }}
               >
                 {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    className={cn(styles.td, column.className)}
-                    style={{ textAlign: column.align ?? "left" }}
-                  >
+                  <TableCell key={column.key} align={column.align ?? "left"} className={cn(column.className)}>
                     {column.render
                       ? column.render(row, index)
                       : String((row as Record<string, unknown>)[column.key] ?? "")}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))
           )}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </MuiTable>
+    </TableContainer>
   );
 }

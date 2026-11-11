@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
-import { cn } from "../../utils/cn";
-import { Icon } from "../icon";
-import styles from "./progress-steps.module.css";
+import Box from "@mui/material/Box";
+import Step from "@mui/material/Step";
+import StepLabel from "@mui/material/StepLabel";
+import Stepper from "@mui/material/Stepper";
+import Typography from "@mui/material/Typography";
+import { cn } from "@pudans/utils";
 
 export type ProgressStepStatus = "pending" | "active" | "complete" | "error";
 
@@ -35,8 +38,9 @@ function resolveStatus(step: ProgressStep, index: number, current?: number): Pro
 }
 
 /**
- * Step progress migrated from the legacy Tasks StepProgressBar. Used by
- * onboarding, upload and multi-stage dialogs.
+ * Task/upload stepper rebuilt with MUI Stepper + StepLabel (body2 labels,
+ * caption descriptions, primary active/completed icons, error step icons,
+ * divider connector). Mirrors Pages/Tasks TaskProgress styling.
  */
 export function ProgressSteps({
   steps,
@@ -45,37 +49,45 @@ export function ProgressSteps({
   size = "md",
   className,
 }: ProgressStepsProps) {
+  const activeStep =
+    current ?? steps.findIndex((step) => step.status === "active");
+
   return (
-    <ol
-      className={cn(styles.root, styles[orientation], styles[size], className)}
-      aria-label="Progress"
-    >
-      {steps.map((step, index) => {
-        const status = resolveStatus(step, index, current);
-        return (
-          <li
-            key={step.key}
-            className={cn(styles.step, styles[status])}
-            aria-current={status === "active" ? "step" : undefined}
-          >
-            <span className={styles.marker} aria-hidden="true">
-              {status === "complete" ? (
-                <Icon name="cr:Checkmark" size={14} />
-              ) : status === "error" ? (
-                <Icon name="cr:Warning" size={14} />
-              ) : (
-                <span className={styles.index}>{index + 1}</span>
-              )}
-            </span>
-            <span className={styles.body}>
-              <span className={styles.label}>{step.label}</span>
-              {step.description ? (
-                <span className={styles.description}>{step.description}</span>
-              ) : null}
-            </span>
-          </li>
-        );
-      })}
-    </ol>
+    <Box className={cn(className)}>
+      <Stepper
+        activeStep={activeStep}
+        orientation={orientation}
+        sx={{ "& .MuiStepIcon-root": { fontSize: size === "sm" ? 20 : 24 } }}
+      >
+        {steps.map((step, index) => {
+          const status = resolveStatus(step, index, current);
+          return (
+            <Step key={step.key} completed={status === "complete"}>
+              <StepLabel
+                error={status === "error"}
+                sx={{
+                  "& .MuiStepLabel-label": {
+                    color:
+                      status === "pending" ? "text.secondary" : "text.primary",
+                  },
+                }}
+              >
+                {step.label}
+                {step.description ? (
+                  <Typography
+                    component="span"
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block" }}
+                  >
+                    {step.description}
+                  </Typography>
+                ) : null}
+              </StepLabel>
+            </Step>
+          );
+        })}
+      </Stepper>
+    </Box>
   );
 }

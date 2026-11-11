@@ -1,32 +1,52 @@
-import { forwardRef, useId, type ReactNode } from "react";
-import {
-  FormControl,
-  FormHelperText,
-  FormLabel,
-  InputAdornment,
-  OutlinedInput,
-  type OutlinedInputProps,
-} from "@mui/material";
-import { cn } from "../../utils/cn";
-import styles from "./input.module.css";
+import { forwardRef, type ReactNode } from "react";
+import { InputAdornment, TextField, type TextFieldProps } from "@mui/material";
+import { cn } from "@pudans/utils";
 
 export type InputSize = "sm" | "md" | "lg";
 
-export interface InputProps extends Omit<
-  OutlinedInputProps,
-  "size" | "startAdornment" | "endAdornment"
-> {
+export type InputProps = Omit<TextFieldProps, "size" | "label" | "helperText" | "variant" | "select"> & {
   size?: InputSize;
   label?: ReactNode;
   helperText?: ReactNode;
   startIcon?: ReactNode;
   endIcon?: ReactNode;
+  /** Legacy FilledTextField / OutlinedInput variants. Defaults to outlined. */
+  variant?: "outlined" | "filled";
+  /** Legacy lowercase html input attributes. */
+  inputProps?: Record<string, unknown>;
+};
+
+/** DenseFilledTextField: 14px font, 9.6px vertical paddings, label at 10px. */
+function denseSx(theme: import("@mui/material/styles").Theme) {
+  return {
+    "& .MuiOutlinedInput-root": {
+      paddingTop: 0,
+      paddingBottom: 0,
+    },
+    "& .MuiOutlinedInput-input": {
+      paddingTop: theme.spacing(1.2),
+      paddingBottom: theme.spacing(1.2),
+      fontSize: theme.typography.body2.fontSize,
+    },
+    "& .MuiInputLabel-root": {
+      fontSize: theme.typography.body2.fontSize,
+      "&:not(.Mui-focused):not(.MuiInputLabel-shrink)": {
+        transform: `translate(${theme.spacing(1.75)}, ${theme.spacing(1.25)}) scale(1)`,
+      },
+    },
+  };
+}
+
+interface SlotBag {
+  startAdornment?: ReactNode;
+  endAdornment?: ReactNode;
+  [key: string]: unknown;
 }
 
 /**
- * Enterprise input built from FormControl + OutlinedInput. The label is a
- * separate block above the field (never notched into the border), which keeps
- * focus state clean in both light and dark themes.
+ * MUI TextField wrapper matching the legacy FilledTextField /
+ * DenseFilledTextField (floating label inside the underlined/filled control,
+ * dense variant for admin forms).
  */
 export const Input = forwardRef<HTMLDivElement, InputProps>(function Input(
   {
@@ -35,6 +55,7 @@ export const Input = forwardRef<HTMLDivElement, InputProps>(function Input(
     helperText,
     startIcon,
     endIcon,
+    variant = "outlined",
     className,
     error = false,
     fullWidth = true,
@@ -42,62 +63,53 @@ export const Input = forwardRef<HTMLDivElement, InputProps>(function Input(
     required = false,
     id,
     inputProps,
+    slotProps,
+    sx,
     ...props
   },
   ref,
 ) {
-  const generatedId = useId();
-  const inputId = id ?? `pudans-input-${generatedId.replace(/:/g, "")}`;
-  const helperId = helperText ? `${inputId}-helper` : undefined;
+  const dense = size === "sm";
+  const inputSlot = (slotProps as { input?: SlotBag } | undefined)?.input;
+  const htmlInputSlot = (slotProps as { htmlInput?: Record<string, unknown> } | undefined)?.htmlInput;
+
+  const resolvedSlotProps = {
+    ...slotProps,
+    input: {
+      ...inputSlot,
+      startAdornment: startIcon ? (
+        <InputAdornment position="start">{startIcon}</InputAdornment>
+      ) : (
+        inputSlot?.startAdornment
+      ),
+      endAdornment: endIcon ? (
+        <InputAdornment position="end">{endIcon}</InputAdornment>
+      ) : (
+        inputSlot?.endAdornment
+      ),
+    },
+    htmlInput: {
+      ...inputProps,
+      ...htmlInputSlot,
+    },
+  };
 
   return (
-    <FormControl
+    <TextField
       ref={ref}
-      fullWidth={fullWidth}
+      id={id}
+      variant={variant}
+      label={label}
+      helperText={helperText}
       error={error}
+      fullWidth={fullWidth}
       disabled={disabled}
       required={required}
-      className={cn(styles.root, styles[size], error && styles.error, className)}
-    >
-      {label ? (
-        <FormLabel htmlFor={inputId} className={styles.label}>
-          {label}
-        </FormLabel>
-      ) : null}
-
-      <OutlinedInput
-        id={inputId}
-        notched={false}
-        error={error}
-        disabled={disabled}
-        required={required}
-        inputProps={{
-          "aria-describedby": helperId,
-          ...inputProps,
-        }}
-        startAdornment={
-          startIcon ? (
-            <InputAdornment position="start" className={styles.adornment}>
-              {startIcon}
-            </InputAdornment>
-          ) : undefined
-        }
-        endAdornment={
-          endIcon ? (
-            <InputAdornment position="end" className={styles.adornment}>
-              {endIcon}
-            </InputAdornment>
-          ) : undefined
-        }
-        {...props}
-      />
-
-      {helperText ? (
-        <FormHelperText id={helperId} className={styles.helper}>
-          {helperText}
-        </FormHelperText>
-      ) : null}
-    </FormControl>
+      className={cn(className)}
+      {...(props as TextFieldProps)}
+      slotProps={resolvedSlotProps as unknown as TextFieldProps["slotProps"]}
+      sx={[dense ? denseSx : undefined, ...(Array.isArray(sx) ? sx : [sx])]}
+    />
   );
 });
 

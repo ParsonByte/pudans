@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T03:00:30.271Z",
+  "generatedAt": "2026-11-16T03:26:48.763Z",
   "sourceRoot": "/Users/byte/Global/Reference/cloudreve/frontend",
   "targetRoot": "/Users/byte/Global/Project/pudans",
   "meta": {
@@ -84,6 +84,7 @@
       "app-shell",
       "page-container",
       "page-layout",
+      "shared",
       "sidebar-layout"
     ],
     "hooks": [],
@@ -5812,14 +5813,14 @@
     {
       "source": "src/component/Frame/NavBar/AppDrawer.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/app-shell/app-shell.tsx",
+      "target": "web/packages/layouts/src/app-shell/app-shell.tsx",
       "reason": "AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。",
       "status": "已复用"
     },
     {
       "source": "src/component/Frame/NavBar/AppMain.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/app-shell/app-shell.tsx",
+      "target": "web/packages/layouts/src/app-shell/app-shell.tsx",
       "reason": "AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。",
       "status": "已复用"
     },
@@ -5833,7 +5834,7 @@
     {
       "source": "src/component/Frame/NavBar/DrawerHeader.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/app-shell/app-shell.tsx",
+      "target": "web/packages/layouts/src/app-shell/app-shell.tsx",
       "reason": "AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。",
       "status": "已复用"
     },
@@ -5875,7 +5876,7 @@
     {
       "source": "src/component/Frame/NavBar/SideNavItem.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/app-shell/side-nav-item.tsx",
+      "target": "web/packages/layouts/src/app-shell/side-nav-item.tsx",
       "reason": "目标库已有 SideNavItem，支持折叠/激活/图标过渡，直接复用。",
       "status": "已复用"
     },
@@ -5896,21 +5897,21 @@
     {
       "source": "src/component/Frame/NavBar/TopAppBar.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/app-shell/app-shell.tsx",
+      "target": "web/packages/layouts/src/app-shell/app-shell.tsx",
       "reason": "AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。",
       "status": "已复用"
     },
     {
       "source": "src/component/Frame/NavBar/UserAction.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/app-shell/app-shell.tsx",
+      "target": "web/packages/layouts/src/app-shell/app-shell.tsx",
       "reason": "AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。",
       "status": "已复用"
     },
     {
       "source": "src/component/Frame/NavBarFrame.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/app-shell/app-shell.tsx",
+      "target": "web/packages/layouts/src/app-shell/app-shell.tsx",
       "reason": "由 AppShell 统一承载导航框架。",
       "status": "已复用"
     },
@@ -5931,7 +5932,7 @@
     {
       "source": "src/component/Frame/RadiusFrame.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/page-container/page-container.tsx",
+      "target": "web/packages/layouts/src/page-container/page-container.tsx",
       "reason": "PageContainer 已实现圆角内容框架，直接复用。",
       "status": "已复用"
     },
@@ -5952,7 +5953,7 @@
     {
       "source": "src/component/Icons/Add.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Add",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -5960,7 +5961,7 @@
     {
       "source": "src/component/Icons/AppFolder.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:AppFolder",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -5968,7 +5969,7 @@
     {
       "source": "src/component/Icons/AppGeneric.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:AppGeneric",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -5976,7 +5977,7 @@
     {
       "source": "src/component/Icons/AppsList.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:AppsList",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -5984,7 +5985,7 @@
     {
       "source": "src/component/Icons/AppsListOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:AppsListOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -5992,7 +5993,7 @@
     {
       "source": "src/component/Icons/Archive.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Archive",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6000,7 +6001,7 @@
     {
       "source": "src/component/Icons/ArchiveArrow.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArchiveArrow",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6008,7 +6009,7 @@
     {
       "source": "src/component/Icons/ArrowClockwise.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowClockwise",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6016,7 +6017,7 @@
     {
       "source": "src/component/Icons/ArrowClockwiseFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowClockwiseFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6024,7 +6025,7 @@
     {
       "source": "src/component/Icons/ArrowDown.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowDown",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6032,7 +6033,7 @@
     {
       "source": "src/component/Icons/ArrowHookDownLeft.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowHookDownLeft",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6040,7 +6041,7 @@
     {
       "source": "src/component/Icons/ArrowHookUpRight.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowHookUpRight",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6048,7 +6049,7 @@
     {
       "source": "src/component/Icons/ArrowImport.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowImport",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6056,7 +6057,7 @@
     {
       "source": "src/component/Icons/ArrowLeft.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowLeft",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6064,7 +6065,7 @@
     {
       "source": "src/component/Icons/ArrowRepeatAll.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowRepeatAll",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6072,7 +6073,7 @@
     {
       "source": "src/component/Icons/ArrowRepeatOff.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowRepeatOff",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6080,7 +6081,7 @@
     {
       "source": "src/component/Icons/ArrowRepeatOne.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowRepeatOne",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6088,7 +6089,7 @@
     {
       "source": "src/component/Icons/ArrowShuffle.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowShuffle",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6096,7 +6097,7 @@
     {
       "source": "src/component/Icons/ArrowSort.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowSort",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6104,7 +6105,7 @@
     {
       "source": "src/component/Icons/ArrowSortDownFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowSortDownFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6112,7 +6113,7 @@
     {
       "source": "src/component/Icons/ArrowSync.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowSync",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6120,7 +6121,7 @@
     {
       "source": "src/component/Icons/ArrowSyncCircleFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ArrowSyncCircleFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6128,7 +6129,7 @@
     {
       "source": "src/component/Icons/BinFullOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BinFullOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6136,7 +6137,7 @@
     {
       "source": "src/component/Icons/Book.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Book",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6144,7 +6145,7 @@
     {
       "source": "src/component/Icons/BookInformation.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BookInformation",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6152,7 +6153,7 @@
     {
       "source": "src/component/Icons/Border.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Border",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6160,7 +6161,7 @@
     {
       "source": "src/component/Icons/BorderAll.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BorderAll",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6168,7 +6169,7 @@
     {
       "source": "src/component/Icons/BorderInside.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BorderInside",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6176,7 +6177,7 @@
     {
       "source": "src/component/Icons/Bot.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Bot",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6184,7 +6185,7 @@
     {
       "source": "src/component/Icons/BoxMultiple.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BoxMultiple",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6192,7 +6193,7 @@
     {
       "source": "src/component/Icons/BoxMultipleFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BoxMultipleFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6200,7 +6201,7 @@
     {
       "source": "src/component/Icons/BranchCompare.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BranchCompare",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6208,7 +6209,7 @@
     {
       "source": "src/component/Icons/BranchForkLink.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BranchForkLink",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6216,7 +6217,7 @@
     {
       "source": "src/component/Icons/Broom.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Broom",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6224,7 +6225,7 @@
     {
       "source": "src/component/Icons/BuildingShop.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BuildingShop",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6232,7 +6233,7 @@
     {
       "source": "src/component/Icons/BuildingShopFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:BuildingShopFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6240,7 +6241,7 @@
     {
       "source": "src/component/Icons/CalendarClock.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CalendarClock",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6248,7 +6249,7 @@
     {
       "source": "src/component/Icons/CameraFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CameraFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6256,7 +6257,7 @@
     {
       "source": "src/component/Icons/CameraRounded.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CameraRounded",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6264,7 +6265,7 @@
     {
       "source": "src/component/Icons/CaretDown.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CaretDown",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6272,7 +6273,7 @@
     {
       "source": "src/component/Icons/CaretRight.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CaretRight",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6280,7 +6281,7 @@
     {
       "source": "src/component/Icons/Cart.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Cart",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6288,7 +6289,7 @@
     {
       "source": "src/component/Icons/CheckCircleFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CheckCircleFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6296,7 +6297,7 @@
     {
       "source": "src/component/Icons/CheckUnchecked.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CheckUnchecked",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6304,7 +6305,7 @@
     {
       "source": "src/component/Icons/CheckboxChecked.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CheckboxChecked",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6312,7 +6313,7 @@
     {
       "source": "src/component/Icons/Checkmark.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Checkmark",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6320,7 +6321,7 @@
     {
       "source": "src/component/Icons/CheckmarkCircle.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CheckmarkCircle",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6328,7 +6329,7 @@
     {
       "source": "src/component/Icons/CheckmarkCircleFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CheckmarkCircleFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6336,7 +6337,7 @@
     {
       "source": "src/component/Icons/ChevronRight.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ChevronRight",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6344,7 +6345,7 @@
     {
       "source": "src/component/Icons/CircleHintFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CircleHintFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6352,7 +6353,7 @@
     {
       "source": "src/component/Icons/Clipboard.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Clipboard",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6360,7 +6361,7 @@
     {
       "source": "src/component/Icons/ClockArrowDownload.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ClockArrowDownload",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6368,7 +6369,7 @@
     {
       "source": "src/component/Icons/ClockFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ClockFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6376,7 +6377,7 @@
     {
       "source": "src/component/Icons/CloudArrowIUp.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CloudArrowIUp",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6384,7 +6385,7 @@
     {
       "source": "src/component/Icons/CloudDownload.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CloudDownload",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6392,7 +6393,7 @@
     {
       "source": "src/component/Icons/CloudDownloadOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CloudDownloadOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6400,7 +6401,7 @@
     {
       "source": "src/component/Icons/CloudFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CloudFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6408,7 +6409,7 @@
     {
       "source": "src/component/Icons/CloudOff.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CloudOff",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6416,7 +6417,7 @@
     {
       "source": "src/component/Icons/CoinStack.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CoinStack",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6424,7 +6425,7 @@
     {
       "source": "src/component/Icons/Color.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Color",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6432,7 +6433,7 @@
     {
       "source": "src/component/Icons/CommentMultiple.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CommentMultiple",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6440,7 +6441,7 @@
     {
       "source": "src/component/Icons/CopperCoin.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CopperCoin",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6448,7 +6449,7 @@
     {
       "source": "src/component/Icons/CopyOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CopyOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6456,7 +6457,7 @@
     {
       "source": "src/component/Icons/Copyright.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Copyright",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6464,7 +6465,7 @@
     {
       "source": "src/component/Icons/CubeSync.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CubeSync",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6472,7 +6473,7 @@
     {
       "source": "src/component/Icons/CubeSyncFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CubeSyncFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6480,7 +6481,7 @@
     {
       "source": "src/component/Icons/CubeTree.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CubeTree",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6488,7 +6489,7 @@
     {
       "source": "src/component/Icons/CubeTreeFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:CubeTreeFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6496,7 +6497,7 @@
     {
       "source": "src/component/Icons/Currency.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Currency",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6504,7 +6505,7 @@
     {
       "source": "src/component/Icons/DarkTheme.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DarkTheme",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6512,7 +6513,7 @@
     {
       "source": "src/component/Icons/DataBarVerticalStar.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DataBarVerticalStar",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6520,7 +6521,7 @@
     {
       "source": "src/component/Icons/DataHistogram.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DataHistogram",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6528,7 +6529,7 @@
     {
       "source": "src/component/Icons/DataHistogramFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DataHistogramFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6536,7 +6537,7 @@
     {
       "source": "src/component/Icons/Delete.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Delete",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6544,7 +6545,7 @@
     {
       "source": "src/component/Icons/DeleteOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DeleteOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6552,7 +6553,7 @@
     {
       "source": "src/component/Icons/DesktopFlow.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DesktopFlow",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6560,7 +6561,7 @@
     {
       "source": "src/component/Icons/Discord.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Discord",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6568,7 +6569,7 @@
     {
       "source": "src/component/Icons/Dismiss.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Dismiss",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6576,7 +6577,7 @@
     {
       "source": "src/component/Icons/DismissCircleFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DismissCircleFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6584,7 +6585,7 @@
     {
       "source": "src/component/Icons/Divider.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Divider",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6592,7 +6593,7 @@
     {
       "source": "src/component/Icons/Document.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Document",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6600,7 +6601,7 @@
     {
       "source": "src/component/Icons/DocumentArrowDownFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DocumentArrowDownFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6608,7 +6609,7 @@
     {
       "source": "src/component/Icons/DocumentCopyFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DocumentCopyFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6616,7 +6617,7 @@
     {
       "source": "src/component/Icons/DocumentDataLink.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DocumentDataLink",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6624,7 +6625,7 @@
     {
       "source": "src/component/Icons/DocumentFlowchart.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DocumentFlowchart",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6632,7 +6633,7 @@
     {
       "source": "src/component/Icons/DocumentPDF.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DocumentPDF",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6640,7 +6641,7 @@
     {
       "source": "src/component/Icons/DocumentText.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DocumentText",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6648,7 +6649,7 @@
     {
       "source": "src/component/Icons/DocumentTextOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:DocumentTextOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6656,7 +6657,7 @@
     {
       "source": "src/component/Icons/Download.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Download",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6664,7 +6665,7 @@
     {
       "source": "src/component/Icons/Earth.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Earth",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6672,7 +6673,7 @@
     {
       "source": "src/component/Icons/Edit.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Edit",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6680,7 +6681,7 @@
     {
       "source": "src/component/Icons/EditSetting.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:EditSetting",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6688,7 +6689,7 @@
     {
       "source": "src/component/Icons/EmailClock.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:EmailClock",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6696,7 +6697,7 @@
     {
       "source": "src/component/Icons/EmojiEdit.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:EmojiEdit",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6704,7 +6705,7 @@
     {
       "source": "src/component/Icons/Enter.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Enter",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6712,7 +6713,7 @@
     {
       "source": "src/component/Icons/Eye.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Eye",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6720,7 +6721,7 @@
     {
       "source": "src/component/Icons/EyeOff.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:EyeOff",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6728,7 +6729,7 @@
     {
       "source": "src/component/Icons/FastForward.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FastForward",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6736,7 +6737,7 @@
     {
       "source": "src/component/Icons/FileAdd.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FileAdd",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6744,7 +6745,7 @@
     {
       "source": "src/component/Icons/FileExclBox.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FileExclBox",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6752,7 +6753,7 @@
     {
       "source": "src/component/Icons/FilePowerPointBox.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FilePowerPointBox",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6760,7 +6761,7 @@
     {
       "source": "src/component/Icons/FileWordBox.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FileWordBox",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6768,7 +6769,7 @@
     {
       "source": "src/component/Icons/FilmstripImage.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FilmstripImage",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6776,7 +6777,7 @@
     {
       "source": "src/component/Icons/Filter.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Filter",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6784,7 +6785,7 @@
     {
       "source": "src/component/Icons/Fingerprint.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Fingerprint",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6792,7 +6793,7 @@
     {
       "source": "src/component/Icons/Folder.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Folder",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6800,7 +6801,7 @@
     {
       "source": "src/component/Icons/FolderAdd.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FolderAdd",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6808,7 +6809,7 @@
     {
       "source": "src/component/Icons/FolderArrowRightOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FolderArrowRightOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6816,7 +6817,7 @@
     {
       "source": "src/component/Icons/FolderArrowUp.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FolderArrowUp",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6824,7 +6825,7 @@
     {
       "source": "src/component/Icons/FolderLink.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FolderLink",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6832,7 +6833,7 @@
     {
       "source": "src/component/Icons/FolderOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FolderOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6840,7 +6841,7 @@
     {
       "source": "src/component/Icons/FolderZip.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FolderZip",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6848,7 +6849,7 @@
     {
       "source": "src/component/Icons/FullScreenMaximize.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FullScreenMaximize",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6856,7 +6857,7 @@
     {
       "source": "src/component/Icons/FullScreenMinimize.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:FullScreenMinimize",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6864,7 +6865,7 @@
     {
       "source": "src/component/Icons/Gift.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Gift",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6872,7 +6873,7 @@
     {
       "source": "src/component/Icons/Globe.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Globe",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6880,7 +6881,7 @@
     {
       "source": "src/component/Icons/GlobeFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:GlobeFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6888,7 +6889,7 @@
     {
       "source": "src/component/Icons/Grid.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Grid",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6896,7 +6897,7 @@
     {
       "source": "src/component/Icons/GridOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:GridOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6904,7 +6905,7 @@
     {
       "source": "src/component/Icons/HardDrive.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:HardDrive",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6912,7 +6913,7 @@
     {
       "source": "src/component/Icons/HardDriveOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:HardDriveOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6920,7 +6921,7 @@
     {
       "source": "src/component/Icons/HistoryOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:HistoryOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6928,7 +6929,7 @@
     {
       "source": "src/component/Icons/Home.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Home",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6936,7 +6937,7 @@
     {
       "source": "src/component/Icons/HomeOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:HomeOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6944,7 +6945,7 @@
     {
       "source": "src/component/Icons/Icons.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Icons",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6952,7 +6953,7 @@
     {
       "source": "src/component/Icons/Image.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Image",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6960,7 +6961,7 @@
     {
       "source": "src/component/Icons/ImageAarowCounterclockwise.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ImageAarowCounterclockwise",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6968,7 +6969,7 @@
     {
       "source": "src/component/Icons/ImageCopy.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ImageCopy",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6976,7 +6977,7 @@
     {
       "source": "src/component/Icons/ImageCopyOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ImageCopyOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6984,7 +6985,7 @@
     {
       "source": "src/component/Icons/ImageEdit.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ImageEdit",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -6992,7 +6993,7 @@
     {
       "source": "src/component/Icons/ImageOffOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ImageOffOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7000,7 +7001,7 @@
     {
       "source": "src/component/Icons/ImageOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ImageOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7008,7 +7009,7 @@
     {
       "source": "src/component/Icons/InPrivate.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:InPrivate",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7016,7 +7017,7 @@
     {
       "source": "src/component/Icons/Info.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Info",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7024,7 +7025,7 @@
     {
       "source": "src/component/Icons/InfoFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:InfoFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7032,7 +7033,7 @@
     {
       "source": "src/component/Icons/IosArrow.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:IosArrow",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7040,7 +7041,7 @@
     {
       "source": "src/component/Icons/IosArrowLeft.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:IosArrowLeft",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7048,7 +7049,7 @@
     {
       "source": "src/component/Icons/LanguageC.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LanguageC",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7056,7 +7057,7 @@
     {
       "source": "src/component/Icons/LanguageCPP.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LanguageCPP",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7064,7 +7065,7 @@
     {
       "source": "src/component/Icons/LanguageGo.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LanguageGo",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7072,7 +7073,7 @@
     {
       "source": "src/component/Icons/LanguageJS.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LanguageJS",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7080,7 +7081,7 @@
     {
       "source": "src/component/Icons/LanguagePHP.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LanguagePHP",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7088,7 +7089,7 @@
     {
       "source": "src/component/Icons/LanguagePython.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LanguagePython",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7096,7 +7097,7 @@
     {
       "source": "src/component/Icons/LanguageRust.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LanguageRust",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7104,7 +7105,7 @@
     {
       "source": "src/component/Icons/Link.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Link",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7112,7 +7113,7 @@
     {
       "source": "src/component/Icons/LinkDismiss.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LinkDismiss",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7120,7 +7121,7 @@
     {
       "source": "src/component/Icons/LinkEdit.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LinkEdit",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7128,7 +7129,7 @@
     {
       "source": "src/component/Icons/LinkOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LinkOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7136,7 +7137,7 @@
     {
       "source": "src/component/Icons/LinkSetting.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LinkSetting",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7144,7 +7145,7 @@
     {
       "source": "src/component/Icons/LocationFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LocationFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7152,7 +7153,7 @@
     {
       "source": "src/component/Icons/LockClosed.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LockClosed",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7160,7 +7161,7 @@
     {
       "source": "src/component/Icons/LockClosedKey.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LockClosedKey",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7168,7 +7169,7 @@
     {
       "source": "src/component/Icons/LockClosedOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:LockClosedOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7176,7 +7177,7 @@
     {
       "source": "src/component/Icons/MagnetOn.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:MagnetOn",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7184,7 +7185,7 @@
     {
       "source": "src/component/Icons/MailOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:MailOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7192,7 +7193,7 @@
     {
       "source": "src/component/Icons/Markdown.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Markdown",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7200,7 +7201,7 @@
     {
       "source": "src/component/Icons/Money.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Money",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7208,7 +7209,7 @@
     {
       "source": "src/component/Icons/Moon.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Moon",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7216,7 +7217,7 @@
     {
       "source": "src/component/Icons/MoreHorizontal.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:MoreHorizontal",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7224,7 +7225,7 @@
     {
       "source": "src/component/Icons/MoreVertical.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:MoreVertical",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7232,7 +7233,7 @@
     {
       "source": "src/component/Icons/MusicNote1.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:MusicNote1",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7240,7 +7241,7 @@
     {
       "source": "src/component/Icons/MusicNote1Outlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:MusicNote1Outlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7248,7 +7249,7 @@
     {
       "source": "src/component/Icons/MusicNote2.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:MusicNote2",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7256,7 +7257,7 @@
     {
       "source": "src/component/Icons/MusicNote2Play.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:MusicNote2Play",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7264,7 +7265,7 @@
     {
       "source": "src/component/Icons/Notepad.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Notepad",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7272,7 +7273,7 @@
     {
       "source": "src/component/Icons/Numbers.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Numbers",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7280,7 +7281,7 @@
     {
       "source": "src/component/Icons/Open.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Open",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7288,7 +7289,7 @@
     {
       "source": "src/component/Icons/OpenFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:OpenFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7296,7 +7297,7 @@
     {
       "source": "src/component/Icons/Options.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Options",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7304,7 +7305,7 @@
     {
       "source": "src/component/Icons/PackageOpen.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PackageOpen",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7312,7 +7313,7 @@
     {
       "source": "src/component/Icons/Password.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Password",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7320,7 +7321,7 @@
     {
       "source": "src/component/Icons/Pause.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Pause",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7328,7 +7329,7 @@
     {
       "source": "src/component/Icons/Payment.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Payment",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7336,7 +7337,7 @@
     {
       "source": "src/component/Icons/PaymentFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PaymentFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7344,7 +7345,7 @@
     {
       "source": "src/component/Icons/People.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:People",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7352,7 +7353,7 @@
     {
       "source": "src/component/Icons/PeopleFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PeopleFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7360,7 +7361,7 @@
     {
       "source": "src/component/Icons/PeopleStar.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PeopleStar",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7368,7 +7369,7 @@
     {
       "source": "src/component/Icons/PeopleTeam.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PeopleTeam",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7376,7 +7377,7 @@
     {
       "source": "src/component/Icons/PeopleTeamOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PeopleTeamOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7384,7 +7385,7 @@
     {
       "source": "src/component/Icons/Person.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Person",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7392,7 +7393,7 @@
     {
       "source": "src/component/Icons/PersonLock.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PersonLock",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7400,7 +7401,7 @@
     {
       "source": "src/component/Icons/PersonOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PersonOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7408,7 +7409,7 @@
     {
       "source": "src/component/Icons/PersonPasskey.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PersonPasskey",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7416,7 +7417,7 @@
     {
       "source": "src/component/Icons/PersonStar.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PersonStar",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7424,7 +7425,7 @@
     {
       "source": "src/component/Icons/PhoneLaptop.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PhoneLaptop",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7432,7 +7433,7 @@
     {
       "source": "src/component/Icons/PhoneLaptopOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PhoneLaptopOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7440,7 +7441,7 @@
     {
       "source": "src/component/Icons/PinOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:PinOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7448,7 +7449,7 @@
     {
       "source": "src/component/Icons/Play.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Play",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7456,7 +7457,7 @@
     {
       "source": "src/component/Icons/Pulse.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Pulse",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7464,7 +7465,7 @@
     {
       "source": "src/component/Icons/QQ.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:QQ",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7472,7 +7473,7 @@
     {
       "source": "src/component/Icons/QuestionCircle.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:QuestionCircle",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7480,7 +7481,7 @@
     {
       "source": "src/component/Icons/Raw.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Raw",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7488,7 +7489,7 @@
     {
       "source": "src/component/Icons/RectangleLandscapeSync.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:RectangleLandscapeSync",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7496,7 +7497,7 @@
     {
       "source": "src/component/Icons/RectangleLandscapeSyncOff.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:RectangleLandscapeSyncOff",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7504,7 +7505,7 @@
     {
       "source": "src/component/Icons/RenameFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:RenameFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7512,7 +7513,7 @@
     {
       "source": "src/component/Icons/RenameOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:RenameOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7520,7 +7521,7 @@
     {
       "source": "src/component/Icons/Save.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Save",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7528,7 +7529,7 @@
     {
       "source": "src/component/Icons/Savings.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Savings",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7536,7 +7537,7 @@
     {
       "source": "src/component/Icons/Search.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Search",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7544,7 +7545,7 @@
     {
       "source": "src/component/Icons/SendLogging.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:SendLogging",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7552,7 +7553,7 @@
     {
       "source": "src/component/Icons/SendLoggingFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:SendLoggingFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7560,7 +7561,7 @@
     {
       "source": "src/component/Icons/Server.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Server",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7568,7 +7569,7 @@
     {
       "source": "src/component/Icons/ServerFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ServerFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7576,7 +7577,7 @@
     {
       "source": "src/component/Icons/Setting.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Setting",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7584,7 +7585,7 @@
     {
       "source": "src/component/Icons/SettingsOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:SettingsOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7592,7 +7593,7 @@
     {
       "source": "src/component/Icons/Share.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Share",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7600,7 +7601,7 @@
     {
       "source": "src/component/Icons/ShareAndroid.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ShareAndroid",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7608,7 +7609,7 @@
     {
       "source": "src/component/Icons/ShareFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ShareFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7616,7 +7617,7 @@
     {
       "source": "src/component/Icons/ShareOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ShareOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7624,7 +7625,7 @@
     {
       "source": "src/component/Icons/Shield.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Shield",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7632,7 +7633,7 @@
     {
       "source": "src/component/Icons/ShieldAdd.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ShieldAdd",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7640,7 +7641,7 @@
     {
       "source": "src/component/Icons/ShieldDismiss.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ShieldDismiss",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7648,7 +7649,7 @@
     {
       "source": "src/component/Icons/ShieldFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ShieldFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7656,7 +7657,7 @@
     {
       "source": "src/component/Icons/ShieldLock.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ShieldLock",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7664,7 +7665,7 @@
     {
       "source": "src/component/Icons/ShieldLockFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:ShieldLockFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7672,7 +7673,7 @@
     {
       "source": "src/component/Icons/SignOut.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:SignOut",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7680,7 +7681,7 @@
     {
       "source": "src/component/Icons/SlideText.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:SlideText",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7688,7 +7689,7 @@
     {
       "source": "src/component/Icons/Sparkle.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Sparkle",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7696,7 +7697,7 @@
     {
       "source": "src/component/Icons/SparkleFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:SparkleFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7704,7 +7705,7 @@
     {
       "source": "src/component/Icons/StarFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:StarFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7712,7 +7713,7 @@
     {
       "source": "src/component/Icons/Storage.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Storage",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7720,7 +7721,7 @@
     {
       "source": "src/component/Icons/StorageOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:StorageOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7728,7 +7729,7 @@
     {
       "source": "src/component/Icons/Subtitles.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Subtitles",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7736,7 +7737,7 @@
     {
       "source": "src/component/Icons/SunWithTime.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:SunWithTime",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7744,7 +7745,7 @@
     {
       "source": "src/component/Icons/Sunny.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Sunny",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7752,7 +7753,7 @@
     {
       "source": "src/component/Icons/TableSettings.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TableSettings",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7760,7 +7761,7 @@
     {
       "source": "src/component/Icons/Tag.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Tag",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7768,7 +7769,7 @@
     {
       "source": "src/component/Icons/Tags.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Tags",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7776,7 +7777,7 @@
     {
       "source": "src/component/Icons/TaskList.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TaskList",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7784,7 +7785,7 @@
     {
       "source": "src/component/Icons/TaskListOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TaskListOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7792,7 +7793,7 @@
     {
       "source": "src/component/Icons/TaskListRegular.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TaskListRegular",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7800,7 +7801,7 @@
     {
       "source": "src/component/Icons/Telegram.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Telegram",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7808,7 +7809,7 @@
     {
       "source": "src/component/Icons/TextBulletListSquareEdiFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TextBulletListSquareEdiFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7816,7 +7817,7 @@
     {
       "source": "src/component/Icons/TextBulletListSquareEdit.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TextBulletListSquareEdit",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7824,7 +7825,7 @@
     {
       "source": "src/component/Icons/TextCaseTitle.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TextCaseTitle",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7832,7 +7833,7 @@
     {
       "source": "src/component/Icons/TextEditStyle.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TextEditStyle",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7840,7 +7841,7 @@
     {
       "source": "src/component/Icons/TextGrammarLighting.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TextGrammarLighting",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7848,7 +7849,7 @@
     {
       "source": "src/component/Icons/TextIndentIncrease.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TextIndentIncrease",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7856,7 +7857,7 @@
     {
       "source": "src/component/Icons/TicketDiagonal.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:TicketDiagonal",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7864,7 +7865,7 @@
     {
       "source": "src/component/Icons/Timer.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Timer",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7872,7 +7873,7 @@
     {
       "source": "src/component/Icons/Translate.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Translate",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7880,7 +7881,7 @@
     {
       "source": "src/component/Icons/Upload.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Upload",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7888,7 +7889,7 @@
     {
       "source": "src/component/Icons/UploadFilled.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:UploadFilled",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7896,7 +7897,7 @@
     {
       "source": "src/component/Icons/Video.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Video",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7904,7 +7905,7 @@
     {
       "source": "src/component/Icons/VideoOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:VideoOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7912,7 +7913,7 @@
     {
       "source": "src/component/Icons/WalletCreditCard.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:WalletCreditCard",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7920,7 +7921,7 @@
     {
       "source": "src/component/Icons/Warning.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Warning",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7928,7 +7929,7 @@
     {
       "source": "src/component/Icons/WarningOutlined.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:WarningOutlined",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7936,7 +7937,7 @@
     {
       "source": "src/component/Icons/Whiteboard.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:Whiteboard",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7944,7 +7945,7 @@
     {
       "source": "src/component/Icons/WindowApps.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:WindowApps",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -7952,7 +7953,7 @@
     {
       "source": "src/component/Icons/WrenchSettings.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/components/icon/cloudreve-icons.ts",
+      "target": "web/packages/icons/src/cloudreve-icons.ts",
       "icon": "cr:WrenchSettings",
       "reason": "SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。",
       "status": "已完成"
@@ -8135,14 +8136,14 @@
     {
       "source": "src/component/Pages/PageContainer.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/page-container/page-container.tsx",
+      "target": "web/packages/layouts/src/page-container/page-container.tsx",
       "reason": "目标库 PageContainer 已覆盖圆角容器与移动端适配。",
       "status": "已复用"
     },
     {
       "source": "src/component/Pages/PageHeader.tsx",
       "disposition": "复用",
-      "target": "web/packages/components/src/layouts/page-layout/page-layout.tsx",
+      "target": "web/packages/layouts/src/page-layout/page-layout.tsx",
       "reason": "PageLayout 的 title/description/actions 已覆盖页头能力。",
       "status": "已复用"
     },
@@ -9122,7 +9123,7 @@
     {
       "source": "src/constants/index.ts",
       "disposition": "封装",
-      "target": "web/packages/shared/src/constants.ts",
+      "target": "web/packages/utils/src/constants.ts",
       "reason": "通用常量（版本/布局/键位）并入 @pudans/shared 常量；cloudreve 专有常量不迁移。",
       "status": "已完成"
     },
@@ -9136,14 +9137,14 @@
     {
       "source": "src/hooks/delayedHover.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/hooks/use-delayed-hover.ts",
+      "target": "web/packages/hooks/src/use-delayed-hover.ts",
       "reason": "迁移为 useDelayedHover（可配置延迟，清理定时器，支持 popup state）。",
       "status": "已完成"
     },
     {
       "source": "src/hooks/useMediaSession.ts",
       "disposition": "迁移",
-      "target": "web/packages/components/src/hooks/use-media-session.ts",
+      "target": "web/packages/hooks/src/use-media-session.ts",
       "reason": "迁移为 useMediaSession（泛化 MediaSession API，去掉 FileResponse 依赖）。",
       "status": "已完成"
     },
@@ -9157,7 +9158,7 @@
     {
       "source": "src/hooks/useOverflow.tsx",
       "disposition": "迁移",
-      "target": "web/packages/components/src/hooks/use-overflow.ts",
+      "target": "web/packages/hooks/src/use-overflow.ts",
       "reason": "迁移为 useOverflow（ResizeObserver + 返回值）。",
       "status": "已完成"
     },
@@ -9311,42 +9312,42 @@
     {
       "source": "src/util/base64.ts",
       "disposition": "迁移",
-      "target": "web/packages/shared/src/utils/base64.ts",
+      "target": "web/packages/utils/src/utils/base64.ts",
       "reason": "迁移 base64Encode/base64Decode 到 @pudans/shared/utils。",
       "status": "已完成"
     },
     {
       "source": "src/util/boolset.ts",
       "disposition": "迁移",
-      "target": "web/packages/shared/src/utils/boolset.ts",
+      "target": "web/packages/utils/src/utils/boolset.ts",
       "reason": "迁移 Boolset 位图工具到 @pudans/shared/utils 并补测试。",
       "status": "已完成"
     },
     {
       "source": "src/util/datetime.ts",
       "disposition": "迁移",
-      "target": "web/packages/shared/src/utils/datetime.ts",
+      "target": "web/packages/utils/src/utils/datetime.ts",
       "reason": "迁移时间格式化/时长格式化（注入 locale/timezone，不依赖 i18n 单例）。",
       "status": "已完成"
     },
     {
       "source": "src/util/filesystem.ts",
       "disposition": "迁移",
-      "target": "web/packages/shared/src/utils/filesystem.ts",
+      "target": "web/packages/utils/src/utils/filesystem.ts",
       "reason": "迁移 File System Access API 工具（目录创建/流式写文件/权限校验）。",
       "status": "已完成"
     },
     {
       "source": "src/util/index.ts",
       "disposition": "复用",
-      "target": "web/packages/shared/src/index.ts",
+      "target": "web/packages/utils/src/index.ts",
       "reason": "通用工具汇总由 @pudans/shared 导出。",
       "status": "已复用"
     },
     {
       "source": "src/util/lru.ts",
       "disposition": "迁移",
-      "target": "web/packages/shared/src/utils/lru.ts",
+      "target": "web/packages/utils/src/utils/lru.ts",
       "reason": "迁移 LRUCache（带 blob URL 回收）到 @pudans/shared/utils。",
       "status": "已完成"
     },

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { cn } from "@pudans/shared";
+import { cn } from "@pudans/utils";
 import { useLocation } from "react-router-dom";
 import styles from "./auth-card.module.css";
 

@@ -1,8 +1,6 @@
-import { useId, type ReactNode } from "react";
-import { Tab as MuiTab, Tabs as MuiTabs } from "@mui/material";
+import { useId, type ReactElement, type ReactNode } from "react";
+import { Box, Tab as MuiTab, Tabs as MuiTabs, alpha } from "@mui/material";
 import { styled } from "@mui/material/styles";
-import { cn } from "../../utils/cn";
-import styles from "./tabs.module.css";
 
 export interface TabItem {
   key: string;
@@ -27,87 +25,105 @@ export interface TabsProps {
   "aria-label"?: string;
 }
 
-const StyledTabs = styled(MuiTabs)(({ theme }) => ({
-  minHeight: 40,
-  paddingBottom: theme.spacing(1),
-  "& .MuiTabs-indicator": {
-    display: "none",
-  },
+/**
+ * Legacy Common/StyledComponents StyledTabs: 36px min-height, 24px gap between
+ * tabs, no indicator bar (indicator bottom reset) and no own border.
+ */
+const StyledTabsBase = styled(MuiTabs)(({ theme }) => ({
+  minHeight: 36,
+  overflow: "initial",
   "& .MuiTabs-flexContainer": {
-    alignItems: "center",
-    gap: theme.spacing(1),
+    gap: theme.spacing(3),
   },
-  "& .MuiTabs-scrollButtons": {
-    color: theme.palette.text.secondary,
+  "& .MuiTabs-scroller": {
+    overflow: "initial!important",
+  },
+  "& .MuiTabs-indicator": {
+    bottom: "initial",
   },
 }));
 
-const StyledTab = styled(MuiTab)(({ theme }) => {
-  const hoverBackground =
-    theme.palette.mode === "dark" ? "rgb(var(--pd-bg-hover))" : "rgb(var(--pd-bg-hover))";
-  return {
-    minHeight: 36,
-    minWidth: 0,
-    padding: theme.spacing(0.75, 2),
-    borderRadius: 9999,
-    color: theme.palette.text.secondary,
-    fontSize: 14,
-    fontWeight: 500,
-    lineHeight: 1.4,
-    textTransform: "none",
-    transition: theme.transitions.create(["background-color", "color"], {
-      duration: theme.transitions.duration.shortest,
-    }),
-    "& .MuiTab-iconWrapper": {
-      marginRight: 6,
-      marginBottom: 0,
-    },
-    "&:hover": {
-      backgroundColor: hoverBackground,
-      color: theme.palette.text.primary,
-    },
-    "&.Mui-selected": {
-      backgroundColor:
-        theme.palette.mode === "dark"
-          ? "rgb(var(--pd-brand-primary) / 0.16)"
-          : "rgb(var(--pd-brand-primary) / 0.10)",
-      color: theme.palette.primary.main,
-    },
-    "&.Mui-selected:hover": {
-      backgroundColor:
-        theme.palette.mode === "dark"
-          ? "rgb(var(--pd-brand-primary) / 0.22)"
-          : "rgb(var(--pd-brand-primary) / 0.16)",
-    },
-    "&.Mui-focusVisible": {
-      boxShadow:
-        theme.palette.mode === "dark"
-          ? "0 0 0 3px rgb(var(--pd-brand-primary) / 0.32)"
-          : "0 0 0 3px rgb(var(--pd-brand-primary) / 0.24)",
-    },
-    "&.Mui-disabled": {
-      opacity: 0.45,
-    },
-  };
-});
+export const StyledTabs = StyledTabsBase as unknown as typeof MuiTabs;
 
-function renderLabel(item: TabItem): ReactNode {
-  if (!item.badge) {
-    return item.label;
-  }
+/**
+ * Legacy Common/StyledComponents StyledTab: padding 8px 0, transparent hit
+ * plate drawn by ::after (8px radius, inset 4px / -8px) and a matching ripple.
+ */
+const StyledTabBase = styled(MuiTab)(({ theme }) => ({
+  padding: `${theme.spacing(1)} 0px`,
+  overflow: "initial",
+  minHeight: 36,
+  minWidth: 0,
+  transition: theme.transitions.create(["background-color", "color"]),
+  "&::after": {
+    content: "''",
+    borderRadius: theme.spacing(1),
+    position: "absolute",
+    top: theme.spacing(0.5),
+    bottom: theme.spacing(0.5),
+    left: theme.spacing(-1),
+    right: theme.spacing(-1),
+    transition: theme.transitions.create(["background-color"]),
+  },
+  "&.MuiTab-root>.MuiTab-iconWrapper": {
+    height: 20,
+    width: 20,
+    marginRight: theme.spacing(0.5),
+    marginBottom: 0,
+  },
+  "&.MuiTab-root": {
+    flexDirection: "row",
+    paddingRight: theme.spacing(0.5),
+  },
+  "&.MuiButtonBase-root .MuiTouchRipple-root": {
+    borderRadius: theme.spacing(1),
+    top: theme.spacing(0.5),
+    bottom: theme.spacing(0.5),
+    left: theme.spacing(-1),
+    right: theme.spacing(-1),
+  },
+  "&:hover": {
+    "&:not(.Mui-selected)": { color: theme.palette.text.primary },
+    "&::after": {
+      backgroundColor: theme.palette.action.hover,
+    },
+    "&.Mui-selected::after": {
+      backgroundColor: alpha(theme.palette.primary.main, 0.06),
+    },
+  },
+}));
+
+export const StyledTab = StyledTabBase as unknown as typeof MuiTab;
+
+function renderLabel(item: TabItem): ReactElement {
   return (
-    <span className={styles.labelGroup}>
-      <span className={styles.labelText}>{item.label}</span>
-      <span className={styles.badge}>{item.badge}</span>
-    </span>
+    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+      <Box component="span">{item.label}</Box>
+      {item.badge ? (
+        <Box
+          component="span"
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            px: 0.75,
+            borderRadius: (theme) => theme.shape.borderRadius,
+            backgroundColor: "action.selected",
+            color: "primary.main",
+            fontSize: (theme) => theme.typography.caption.fontSize,
+            lineHeight: (theme) => theme.typography.caption.lineHeight,
+          }}
+        >
+          {item.badge}
+        </Box>
+      ) : null}
+    </Box>
   );
 }
 
 /**
- * Cloudreve-style pill tabs built on MUI Tabs/Tab. MUI supplies keyboard
- * navigation, scroll buttons and the native ripple; the styled overrides turn
- * each tab into a rounded pill with hover and selected veils, while the
- * indicator underline is hidden.
+ * MUI Tabs + legacy StyledTabs/StyledTab. Tabs keep their native keyboard
+ * navigation, ripple and indicator transition; the pill/background styling of
+ * the old custom tabs was removed because the legacy component had none.
  */
 export function Tabs({
   items,
@@ -127,7 +143,7 @@ export function Tabs({
   const tabPanelId = activeItem ? `${baseId}-panel-${activeItem.key}` : undefined;
 
   return (
-    <div className={cn(styles.container, fullWidth && styles.fullWidth, className)}>
+    <Box className={className} sx={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
       <StyledTabs
         value={activeItem ? activeValue : false}
         onChange={(_event, nextValue) => {
@@ -135,35 +151,35 @@ export function Tabs({
         }}
         variant={fullWidth ? "fullWidth" : "standard"}
         aria-label={ariaLabel}
-        className={cn(styles.tabs, size === "sm" && styles.tabsSm)}
+        sx={size === "sm" ? { minHeight: (theme) => theme.spacing(4) } : undefined}
       >
         {items.map((item) => (
           <StyledTab
             key={item.key}
             value={item.key}
             label={renderLabel(item)}
-            icon={item.icon ? <span className={styles.icon}>{item.icon}</span> : undefined}
+            icon={item.icon ? <>{item.icon}</> : undefined}
             iconPosition="start"
             disabled={item.disabled}
             id={`${baseId}-tab-${item.key}`}
             aria-controls={`${baseId}-panel-${item.key}`}
-            className={cn(styles.tab, size === "sm" && styles.tabSm)}
           />
         ))}
       </StyledTabs>
 
       {activeItem?.content !== undefined ? (
-        <div
+        <Box
           key={activeItem.key}
           id={tabPanelId}
           role="tabpanel"
           aria-labelledby={`${baseId}-tab-${activeItem.key}`}
-          className={cn(styles.panel, panelClassName)}
+          className={panelClassName}
+          sx={{ minWidth: 0 }}
         >
           {activeItem.content}
-        </div>
+        </Box>
       ) : null}
-    </div>
+    </Box>
   );
 }
 

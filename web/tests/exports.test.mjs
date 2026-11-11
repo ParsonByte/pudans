@@ -100,15 +100,28 @@ test("the built library exposes every expected public symbol", async () => {
     "FileDropZone",
     "Captcha",
     "AnimatedSwap",
-    "PudansThemeProvider",
-    "usePudansTheme",
-    "AppShell",
-    "PageLayout",
-    "PageContainer",
-    "useDelayedHover",
-    "useOverflow",
-    "useMediaSession",
   ];
   const missing = required.filter((name) => !(name in lib));
   assert.deepEqual(missing, []);
+  const forbidden = ["PudansThemeProvider", "usePudansTheme", "lightTokens", "AppShell", "PageLayout", "PageContainer", "useOverflow", "SIZE_UNITS", "cloudreveIconNames"];
+  assert.deepEqual(forbidden.filter((name) => name in lib), [], "non-component exports leaked from @pudans/components");
+});
+
+test("theme, layouts, hooks and icons live in their own packages", async () => {
+  const theme = await import("@pudans/theme");
+  const layouts = await import("@pudans/layouts");
+  const hooks = await import("@pudans/hooks");
+  const icons = await import("@pudans/icons");
+  for (const name of ["PudansThemeProvider", "usePudansTheme", "createPudansTheme", "lightTokens", "darkTokens", "accentPresets"]) {
+    assert.ok(name in theme, "theme export " + name);
+  }
+  for (const name of ["AppShell", "SidebarLayout", "PageLayout", "PageContainer"]) {
+    assert.ok(name in layouts, "layout export " + name);
+  }
+  for (const name of ["useDelayedHover", "useOverflow", "useMediaSession"]) {
+    assert.ok(name in hooks, "hook export " + name);
+  }
+  for (const name of ["cloudreveIconNames", "cloudreveIconCollection", "registerCloudreveIcons"]) {
+    assert.ok(name in icons, "icon export " + name);
+  }
 });

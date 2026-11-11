@@ -1,9 +1,3 @@
-import "./styles/index.css";
-
+// Pure component entry: components and their public types only.
+// Theme, icons data, hooks, layouts and utilities live in dedicated packages.
 export * from "./components";
-export * from "./hooks";
-export * from "./layouts";
-export * from "./styles/create-theme";
-export * from "./styles/theme-provider";
-export * from "./styles/tokens";
-export * from "./utils";

@@ -7,8 +7,8 @@ import {
   type GrowProps,
   type SlideProps,
 } from "@mui/material";
-import { cn } from "../../utils/cn";
-import { motionDurations } from "../../styles/tokens";
+import { cn } from "@pudans/utils";
+import { motionDurations } from "@pudans/theme";
 import styles from "./motion.module.css";
 
 export interface MotionTimeout {
@@ -16,13 +16,14 @@ export interface MotionTimeout {
   exit: number;
 }
 
+/** MUI Fade/Grow defaults: entering/leaving durations from the legacy baseline. */
 export const fadeTimeout: MotionTimeout = {
   enter: motionDurations.entering,
   exit: motionDurations.leaving,
 };
 
 export const growTimeout: MotionTimeout = {
-  enter: motionDurations.base,
+  enter: motionDurations.entering,
   exit: motionDurations.leaving,
 };
 
@@ -47,8 +48,9 @@ export interface AnimatedSwapProps {
 }
 
 /**
- * Cross-fade between two states (migrated from the legacy NavIconTransition).
- * Both slots are positioned absolutely so the swap never reflows the toolbar.
+ * Cross-fade between two states, rebuilt from the legacy NavIconTransition:
+ * both glyphs are absolutely stacked and swapped with the MUI Fade defaults,
+ * so the toolbar never reflows while the icon changes.
  */
 export function AnimatedSwap({
   active,
@@ -58,21 +60,20 @@ export function AnimatedSwap({
   className,
 }: AnimatedSwapProps) {
   return (
-    <span className={cn(styles.swap, className)} style={{ width: size, height: size }}>
-      <span
-        className={cn(styles.slot, styles.fadeLayer, active ? styles.visible : styles.hidden)}
-        aria-hidden={!active}
-      >
-        {activeContent}
-      </span>
-      <span
-        className={cn(styles.slot, styles.fadeLayer, active ? styles.hidden : styles.visible)}
-        aria-hidden={active}
-      >
-        {inactiveContent}
-      </span>
+    <span
+      className={cn(styles.swap, className)}
+      style={{ width: size, height: size, position: "relative" }}
+    >
+      <MuiFade in={active} timeout={fadeTimeout} appear>
+        <span className={styles.slot} aria-hidden={!active}>
+          {activeContent}
+        </span>
+      </MuiFade>
+      <MuiFade in={!active} timeout={fadeTimeout} appear>
+        <span className={styles.slot} aria-hidden={active}>
+          {inactiveContent}
+        </span>
+      </MuiFade>
     </span>
   );
 }
-
-export { motionDurations, motionEasing, transitions } from "../../styles/tokens";

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { ThemeProvider as StyledThemeProvider } from "styled-components";
-import { PudansThemeProvider, usePudansTheme } from "@pudans/components";
+import { PudansThemeProvider, usePudansTheme } from "@pudans/theme";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { setAccentColor, setThemePreference } from "../store/app-slice";
 

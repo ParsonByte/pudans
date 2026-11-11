@@ -5,8 +5,6 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DatePicker as MuiDatePicker } from "@mui/x-date-pickers/DatePicker";
 import { DateTimePicker as MuiDateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
 import { TimePicker as MuiTimePicker } from "@mui/x-date-pickers/TimePicker";
-import { cn } from "../../utils/cn";
-import styles from "./date-picker.module.css";
 
 export type DatePickerMode = "date" | "datetime" | "time";
 export type DatePickerSize = "sm" | "md" | "lg";
@@ -29,8 +27,9 @@ export interface DatePickerProps {
 }
 
 /**
- * Dayjs-backed date, datetime and time picker. The adapter is configured inside
- * the component so plugin authors can use it without extra setup.
+ * Dayjs-backed MUI X picker. Legacy usage kept MUI defaults (outlined medium
+ * TextField, floating label, Paper radius 12 / elevation 8), only adding
+ * fullWidth + small size in dense admin forms.
  */
 export function DatePicker({
   mode = "date",
@@ -48,7 +47,7 @@ export function DatePicker({
   format,
   className,
 }: DatePickerProps) {
-  const commonProps = {
+  const pickerProps = {
     value,
     defaultValue,
     onChange: (next: Dayjs | null) => onChange?.(next),
@@ -57,14 +56,13 @@ export function DatePicker({
     minDate,
     maxDate,
     format,
-    className: cn(styles.root, styles[size], className),
+    className,
     slotProps: {
       textField: {
-        size: "small" as const,
         fullWidth,
         error,
         helperText,
-        className: styles.field,
+        size: (size === "sm" ? "small" : "medium") as "small" | "medium",
       },
     },
   };
@@ -72,11 +70,11 @@ export function DatePicker({
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       {mode === "datetime" ? (
-        <MuiDateTimePicker {...commonProps} />
+        <MuiDateTimePicker {...pickerProps} />
       ) : mode === "time" ? (
-        <MuiTimePicker {...commonProps} />
+        <MuiTimePicker {...pickerProps} />
       ) : (
-        <MuiDatePicker {...commonProps} />
+        <MuiDatePicker {...pickerProps} />
       )}
     </LocalizationProvider>
   );

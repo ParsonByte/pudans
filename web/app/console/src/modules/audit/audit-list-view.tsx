@@ -18,15 +18,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { type Dayjs } from "dayjs";
 import Fuse from "fuse.js";
 import { useQueryState } from "nuqs";
-import {
-  Badge,
-  Icon,
-  PageContainer,
-  Table,
-  type BadgeTone,
-  type TableColumn,
-  RelativeTime,
-} from "@pudans/components";
+import { Badge, Icon, Table, type BadgeTone, type TableColumn, RelativeTime } from "@pudans/components";
+import { PageContainer } from "@pudans/layouts";
 import { apiClient, type AuditLogPage, type AuditRecord } from "@pudans/api-client";
 
 const AUDIT_ENDPOINT = "/apis/console.api.pudans.tolim.cn/v1alpha1/auditlogs";

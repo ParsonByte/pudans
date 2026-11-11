@@ -9,7 +9,7 @@ const HOST_EXTERNALS = [
   "react/jsx-dev-runtime",
   "@pudans/api-client",
   "@pudans/components",
-  "@pudans/shared",
+  "@pudans/utils",
 ] as const;
 
 export function isHostExternal(id: string): boolean {

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { cn } from "../../utils/cn";
-import styles from "./description-list.module.css";
+import { Box, Typography, useTheme } from "@mui/material";
+import { cn } from "@pudans/utils";
 
 export interface DescriptionItem {
   key: string;
@@ -13,14 +13,17 @@ export interface DescriptionItem {
 export interface DescriptionListProps {
   items: readonly DescriptionItem[];
   columns?: 1 | 2 | 3;
+  /** Compatibility flag: tightens the legacy 8px row rhythm to 4px. */
   dense?: boolean;
+  /** Compatibility flag: wraps the list in the legacy details-card outline. */
   bordered?: boolean;
   className?: string;
 }
 
 /**
- * Label/value property list migrated from the legacy file sidebar InfoRow /
- * Details panels; used by detail drawers, dialogs and settings summaries.
+ * Label/value property list rebuilt 1:1 from the legacy FileManager Sidebar
+ * InfoRow: MUI body2 label (500 / text.primary) over a body2 value
+ * (text.secondary), 8px vertical rhythm, no padding, border or background.
  */
 export function DescriptionList({
   items,
@@ -29,26 +32,51 @@ export function DescriptionList({
   bordered = false,
   className,
 }: DescriptionListProps) {
+  const theme = useTheme();
   return (
-    <dl
-      className={cn(
-        styles.root,
-        styles["cols" + columns],
-        dense && styles.dense,
-        bordered && styles.bordered,
-        className,
-      )}
+    <Box
+      component="dl"
+      className={cn(className)}
+      sx={{
+        display: "grid",
+        margin: 0,
+        gap: dense ? theme.spacing(1) : theme.spacing(2),
+        gridTemplateColumns:
+          columns === 1 ? "minmax(0, 1fr)" : `repeat(${columns}, minmax(0, 1fr))`,
+        ...(bordered
+          ? {
+              padding: theme.spacing(2),
+              border: `var(--pd-border-width-thin) solid ${theme.palette.divider}`,
+              borderRadius: theme.shape.borderRadius,
+            }
+          : {}),
+      }}
     >
       {items.map((item) => (
-        <div
+        <Box
           key={item.key}
-          className={styles.item}
-          style={item.span ? { gridColumn: "span " + item.span } : undefined}
+          sx={{ minWidth: 0, gridColumn: item.span ? `span ${item.span}` : undefined }}
         >
-          <dt className={styles.label}>{item.label}</dt>
-          <dd className={styles.value}>{item.value}</dd>
-        </div>
+          <Typography
+            component="dt"
+            variant="body2"
+            sx={{ fontWeight: 500, color: theme.palette.text.primary }}
+          >
+            {item.label}
+          </Typography>
+          <Typography
+            component="dd"
+            variant="body2"
+            sx={{
+              margin: 0,
+              overflowWrap: "anywhere",
+              color: theme.palette.text.secondary,
+            }}
+          >
+            {item.value}
+          </Typography>
+        </Box>
       ))}
-    </dl>
+    </Box>
   );
 }

@@ -1,36 +1,21 @@
 import { Tooltip as MuiTooltip, type TooltipProps as MuiTooltipProps } from "@mui/material";
-import { cn } from "../../utils/cn";
-import styles from "./tooltip.module.css";
 
 export interface TooltipProps extends Omit<MuiTooltipProps, "arrow" | "slotProps"> {
+  /** Legacy MUI Tooltip default: no arrow. */
   arrow?: boolean;
-  /** Hover/focus delay in milliseconds. */
+  /** Hover/focus enter delay in milliseconds. Legacy App.tsx sets enterDelay 500. */
   delay?: number;
 }
 
 /**
- * Delay + arrow tooltip. The tooltip surface uses semantic text/surface tokens,
- * so it automatically inverts in dark mode.
+ * Legacy MUI Tooltip: all surface tokens (label size, padding, overlay
+ * background, shape radius) come from the MUI theme; the
+ * only project override in the legacy App.tsx was enterDelay 500 (applied
+ * globally by @pudans/theme), mirrored here through the delay prop.
  */
-export function Tooltip({
-  arrow = true,
-  delay = 500,
-  className,
-  children,
-  ...props
-}: TooltipProps) {
+export function Tooltip({ arrow = false, delay = 500, children, ...props }: TooltipProps) {
   return (
-    <MuiTooltip
-      {...props}
-      title={props.title}
-      arrow={arrow}
-      enterDelay={delay}
-      enterNextDelay={delay}
-      slotProps={{
-        tooltip: { className: cn(styles.tooltip, className) },
-        arrow: { className: styles.arrow },
-      }}
-    >
+    <MuiTooltip {...props} arrow={arrow} enterDelay={delay}>
       {children}
     </MuiTooltip>
   );

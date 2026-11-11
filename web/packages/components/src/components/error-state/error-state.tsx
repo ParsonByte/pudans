@@ -1,6 +1,6 @@
-import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Button } from "../button";
-import { EmptyState, type EmptyStateProps } from "../empty-state";
+import { Component, type ErrorInfo, type HTMLAttributes, type ReactNode } from "react";
+import { Box, Button, Typography, useTheme } from "@mui/material";
+import { cn } from "@pudans/utils";
 
 export function resolveErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -18,42 +18,93 @@ export function resolveErrorMessage(error: unknown): string {
   return "Unexpected error";
 }
 
-export interface ErrorStateProps extends Omit<EmptyStateProps, "title" | "variant" | "icon"> {
+export interface ErrorStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
+  /** Legacy h2 copy. Defaults to the resolved error message. */
   title?: ReactNode;
   error?: unknown;
+  /** Optional retry action (not present in the legacy route fallback). */
   onRetry?: () => void;
   retryLabel?: ReactNode;
+  description?: ReactNode;
+  action?: ReactNode;
+}
+
+function errorText(error: unknown): string {
+  if (error instanceof Error) {
+    return error.stack ? `${error.toString()}\n\n${error.stack}` : error.toString();
+  }
+  if (typeof error === "string") {
+    return error;
+  }
+  return resolveErrorMessage(error);
 }
 
 /**
- * Error presentation migrated from the legacy ErrorBoundary page. Reuses the
- * EmptyState layout and follows the same spacing/typography tokens.
+ * Legacy Common/ErrorBoundary route fallback rebuilt 1:1: plain 16px padded
+ * block, browser-default h1 ":(" in grey, h2 message, and an expandable
+ * <details> block with the stringified error + stack in monospace pre/code.
  */
 export function ErrorState({
-  title = "Something went wrong",
+  title,
   error,
   onRetry,
   retryLabel = "Try again",
   description,
   action,
+  className,
   ...props
 }: ErrorStateProps) {
+  const theme = useTheme();
+  const message = title ?? description ?? resolveErrorMessage(error);
   return (
-    <EmptyState
+    <Box
+      className={cn(className)}
+      sx={{ padding: theme.spacing(2), color: theme.palette.text.primary }}
       {...props}
-      variant="error"
-      title={title}
-      description={description ?? resolveErrorMessage(error)}
-      action={
-        onRetry ? (
-          <Button variant="outline" onClick={onRetry}>
-            {retryLabel}
-          </Button>
-        ) : (
-          action
-        )
-      }
-    />
+    >
+      <Typography
+        component="h1"
+        sx={{
+          margin: theme.spacing(0.625, 0),
+          fontSize: "2em",
+          fontWeight: 700,
+          color: theme.palette.grey[500],
+        }}
+      >
+        :(
+      </Typography>
+      <Typography component="h2" sx={{ margin: theme.spacing(1.875, 0), fontSize: "1.5em", fontWeight: 700 }}>
+        {message}
+      </Typography>
+      {error ? (
+        <Box
+          component="details"
+          sx={{
+            "& summary": { cursor: "pointer", color: theme.palette.text.secondary },
+            "& pre": {
+              margin: 0,
+              marginTop: theme.spacing(1),
+              fontFamily: "var(--pd-font-mono)",
+              fontSize: theme.typography.body2.fontSize,
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+            },
+          }}
+        >
+          <summary>Error details</summary>
+          <pre>
+            <code>{errorText(error)}</code>
+          </pre>
+        </Box>
+      ) : null}
+      {onRetry ? (
+        <Button variant="text" onClick={onRetry} sx={{ marginTop: theme.spacing(1) }}>
+          {retryLabel}
+        </Button>
+      ) : (
+        action
+      )}
+    </Box>
   );
 }
 
@@ -69,7 +120,8 @@ interface ErrorBoundaryState {
 
 /**
  * Class-based error boundary (React only supports boundaries in class
- * components). Renders ErrorState by default and exposes a reset callback.
+ * components). The default fallback is the legacy ErrorBoundary visual with no
+ * injected retry button; pass a fallback render-prop to expose reset.
  */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = { error: null };
@@ -97,6 +149,6 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     if (this.props.fallback !== undefined) {
       return this.props.fallback;
     }
-    return <ErrorState error={error} onRetry={this.reset} />;
+    return <ErrorState error={error} />;
   }
 }

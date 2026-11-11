@@ -1,6 +1,7 @@
-import { forwardRef, type HTMLAttributes } from "react";
-import { cn } from "../../utils/cn";
-import styles from "./badge.module.css";
+import { forwardRef, type HTMLAttributes, type Ref } from "react";
+import Box from "@mui/material/Box";
+import Chip, { type ChipProps } from "@mui/material/Chip";
+import { cn } from "@pudans/utils";
 
 export type BadgeTone = "neutral" | "brand" | "success" | "warning" | "danger" | "info";
 export type BadgeVariant = "soft" | "solid" | "outline";
@@ -13,20 +14,52 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   dot?: boolean;
 }
 
-/** Compact status badge with soft/solid/outline variants. */
+const CHIP_COLORS: Record<BadgeTone, ChipProps["color"]> = {
+  neutral: "default",
+  brand: "primary",
+  success: "success",
+  warning: "warning",
+  danger: "error",
+  info: "info",
+};
+
+const CHIP_SIZES: Record<BadgeSize, ChipProps["size"]> = {
+  sm: "small",
+  md: "medium",
+};
+
+/**
+ * Legacy-faithful status chip. The old project used plain MUI Chip (default
+ * filled / outlined, 32px medium, 24px small, body2 13px) plus App.tsx
+ * SquareChip radius overrides; no custom soft-pill surface is introduced here.
+ */
 export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(function Badge(
   { tone = "neutral", variant = "soft", size = "md", dot = false, className, children, ...props },
   ref,
 ) {
   return (
-    <span
-      ref={ref}
-      className={cn(styles.root, styles[tone], styles[variant], styles[size], className)}
-      {...props}
-    >
-      {dot ? <span className={styles.dot} aria-hidden="true" /> : null}
-      {children}
-    </span>
+    <Chip
+      {...(props as unknown as ChipProps)}
+      ref={ref as unknown as Ref<HTMLDivElement>}
+      color={CHIP_COLORS[tone]}
+      variant={variant === "outline" ? "outlined" : "filled"}
+      size={CHIP_SIZES[size]}
+      label={children ?? ""}
+      icon={
+        dot ? (
+          <Box
+            component="span"
+            sx={{
+              width: "0.5em",
+              height: "0.5em",
+              borderRadius: "50%",
+              backgroundColor: "currentColor",
+            }}
+          />
+        ) : undefined
+      }
+      className={cn(className)}
+    />
   );
 });
 

@@ -1,7 +1,7 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
-import { cn } from "../../utils/cn";
+import { Box, Typography, useTheme } from "@mui/material";
+import { cn } from "@pudans/utils";
 import { Icon } from "../icon";
-import styles from "./empty-state.module.css";
 
 export type EmptyStateVariant =
   "empty" | "not-found" | "error" | "permission" | "success" | "file-drop";
@@ -9,12 +9,15 @@ export type EmptyStateSize = "sm" | "md" | "lg";
 
 const VARIANT_ICON: Record<EmptyStateVariant, string> = {
   empty: "cr:PackageOpen",
-  "not-found": "cr:DismissCircleFilled",
+  "not-found": "cr:PackageOpen",
   error: "cr:Warning",
   permission: "cr:ShieldLock",
   success: "cr:CheckmarkCircle",
   "file-drop": "cr:CloudArrowIUp",
 };
+
+/** Legacy Nothing() default was size=1 → 100px glyph / 50px vertical margin. */
+const SIZE_SCALE: Record<EmptyStateSize, number> = { sm: 0.6, md: 1, lg: 1.25 };
 
 export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   title: ReactNode;
@@ -25,22 +28,30 @@ export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "t
   size?: EmptyStateSize;
   action?: ReactNode;
   secondaryAction?: ReactNode;
+  /** Compatibility flag: legacy details-card outline (not part of Nothing). */
   bordered?: boolean;
+  /** Compatibility flag: EmptyFileList wrapper (margin 0, padding 16px). */
   compact?: boolean;
 }
 
-function renderIcon(icon: ReactNode | string, variant: EmptyStateVariant, size: EmptyStateSize) {
-  if (typeof icon !== "string") {
+function renderIcon(
+  icon: ReactNode | string | undefined,
+  variant: EmptyStateVariant,
+  scale: number,
+  size: EmptyStateSize,
+) {
+  if (typeof icon !== "string" && icon !== undefined) {
     return icon;
   }
-  const dimension = size === "sm" ? 24 : size === "lg" ? 40 : 32;
-  return <Icon name={icon || VARIANT_ICON[variant]} size={dimension} />;
+  const glyph = size === "sm" ? 40 : size === "lg" ? 120 : 100;
+  return <Icon name={icon || VARIANT_ICON[variant]} size={glyph * scale} />;
 }
 
 /**
- * Unified empty / not-found / error / permission state.
- * Migrated from the legacy Cloudreve Nothing, EmptyFileList and NoMatch
- * components and generalised for every pudans surface.
+ * Empty / not-found state rebuilt 1:1 from the legacy Common/Nothing:
+ * 100px PackageOpen at palette.action.disabled, h5 24px/500 title and body2
+ * secondary copy, centered with the legacy 50px auto margin + 20px top
+ * padding. EmptyFileList contributes the full-height flex-center wrapper.
  */
 export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function EmptyState(
   {
@@ -58,34 +69,71 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function E
   },
   ref,
 ) {
+  const theme = useTheme();
+  const scale = SIZE_SCALE[size];
+  const tone =
+    variant === "error"
+      ? theme.palette.error.main
+      : variant === "permission"
+        ? theme.palette.warning.main
+        : variant === "success"
+          ? theme.palette.success.main
+          : theme.palette.action.disabled;
+
   return (
-    <div
+    <Box
       ref={ref}
       role={variant === "error" ? "alert" : "status"}
-      className={cn(
-        styles.root,
-        styles[variant],
-        styles[size],
-        bordered && styles.bordered,
-        compact && styles.compact,
-        className,
-      )}
+      className={cn(className)}
+      sx={{
+        display: compact ? "flex" : "block",
+        flexDirection: compact ? "column" : undefined,
+        alignItems: compact ? "center" : undefined,
+        justifyContent: compact ? "center" : undefined,
+        ...(compact
+          ? { margin: 0, padding: theme.spacing(2) }
+          : {
+              margin: `${theme.spacing(6.25 * scale)} auto`,
+              paddingTop: theme.spacing(2.5),
+            }),
+        color: tone,
+        textAlign: "center",
+        ...(bordered
+          ? {
+              border: `var(--pd-border-width-thin) dashed ${theme.palette.divider}`,
+              borderRadius: theme.shape.borderRadius,
+            }
+          : {}),
+      }}
       {...props}
     >
-      <span className={styles.icon} aria-hidden="true">
-        {renderIcon(icon, variant, size)}
-      </span>
-      <div className={styles.content}>
-        <p className={styles.title}>{title}</p>
-        {description ? <p className={styles.description}>{description}</p> : null}
-      </div>
+      <Box component="span" sx={{ display: "inline-flex", color: "inherit" }} aria-hidden="true">
+        {renderIcon(icon, variant, scale, size)}
+      </Box>
+      <Typography variant="h5" sx={{ fontWeight: 500, color: "inherit" }}>
+        {title}
+      </Typography>
+      {description ? (
+        <Typography variant="body2" sx={{ color: "inherit" }}>
+          {description}
+        </Typography>
+      ) : null}
       {action || secondaryAction ? (
-        <div className={styles.actions}>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: theme.spacing(2),
+            marginTop: theme.spacing(2),
+          }}
+        >
           {action}
           {secondaryAction}
-        </div>
+        </Box>
       ) : null}
-    </div>
+    </Box>
   );
 });
 

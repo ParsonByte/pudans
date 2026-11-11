@@ -1,20 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import {
-  Avatar,
-  Badge,
-  Button,
-  Icon,
-  LineChart,
-  PageContainer,
-  PieChart,
-  StatCard,
-  Table,
-  type BadgeTone,
-  type TableColumn,
-  RelativeTime,
-} from "@pudans/components";
+import { Avatar, Badge, Button, Icon, LineChart, PieChart, StatCard, Table, type BadgeTone, type TableColumn, RelativeTime } from "@pudans/components";
+import { PageContainer } from "@pudans/layouts";
 import { apiClient } from "@pudans/api-client";
 import {
   Timeline,
@@ -25,7 +13,7 @@ import {
   TimelineOppositeContent,
   TimelineSeparator,
 } from "@mui/lab";
-import { cn } from "@pudans/shared";
+import { cn } from "@pudans/utils";
 import dayjs from "dayjs";
 import type { TFunction } from "i18next";
 import styles from "./overview-view.module.css";

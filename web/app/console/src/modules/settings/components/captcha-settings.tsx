@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Box, Typography } from "@mui/material";
 import { Turnstile } from "@marsidev/react-turnstile";
 import ReCAPTCHA from "react-google-recaptcha";
-import { usePudansTheme } from "@pudans/components";
+import { usePudansTheme } from "@pudans/theme";
 import { FormItem, Select, SettingsPanel, Switch } from "@pudans/components";
 import { useConfigForm, type SystemConfig } from "../hooks/use-system-config";
 import { ConfigFailed, SettingsLoading } from "./config-state";

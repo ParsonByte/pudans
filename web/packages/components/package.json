@@ -1,7 +1,7 @@
 {
   "name": "@pudans/components",
   "version": "0.1.0",
-  "description": "React 18 + MUI UI kit for pudans, built with Emotion, Iconify and CSS Modules.",
+  "description": "Pudans pure React component library (no theme, icons data, hooks, layouts or app dependencies).",
   "license": "MIT",
   "type": "module",
   "sideEffects": [
@@ -9,8 +9,7 @@
     "**/*.less"
   ],
   "files": [
-    "dist",
-    "src/styles/tokens.ts"
+    "dist"
   ],
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -29,11 +28,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@fontsource/roboto": "catalog:",
+    "@pudans/icons": "workspace:*",
+    "@pudans/theme": "workspace:*",
+    "@pudans/utils": "workspace:*",
     "@iconify/react": "catalog:",
     "@mui/x-date-pickers": "catalog:",
     "@mui/x-tree-view": "catalog:",
-    "@pudans/shared": "workspace:*",
     "dayjs": "catalog:",
     "material-ui-popup-state": "catalog:",
     "mui-one-time-password-input": "catalog:",
@@ -58,6 +58,9 @@
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
     "@mui/material": "catalog:",
+    "@pudans/icons": "workspace:*",
+    "@pudans/theme": "workspace:*",
+    "@pudans/utils": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react-swc": "catalog:",

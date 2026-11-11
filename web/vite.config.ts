@@ -36,20 +36,32 @@ export default defineConfig({
         replacement: fileURLToPath(new URL("./src", import.meta.url)),
       },
       {
-        // Serve the library stylesheet from source so theme tokens are never
-        // stale relative to the component sources during app builds.
-        find: /^@pudans\/components\/style\.css$/,
-        replacement: fileURLToPath(
-          new URL("./packages/components/src/styles/index.css", import.meta.url),
-        ),
+        find: /^@pudans\/theme\/style\.css$/,
+        replacement: fileURLToPath(new URL("./packages/theme/src/index.css", import.meta.url)),
       },
       {
         find: /^@pudans\/components$/,
         replacement: fileURLToPath(new URL("./packages/components/src/index.ts", import.meta.url)),
       },
       {
-        find: /^@pudans\/shared$/,
-        replacement: fileURLToPath(new URL("./packages/shared/src/index.ts", import.meta.url)),
+        find: /^@pudans\/theme$/,
+        replacement: fileURLToPath(new URL("./packages/theme/src/index.ts", import.meta.url)),
+      },
+      {
+        find: /^@pudans\/icons$/,
+        replacement: fileURLToPath(new URL("./packages/icons/src/index.ts", import.meta.url)),
+      },
+      {
+        find: /^@pudans\/hooks$/,
+        replacement: fileURLToPath(new URL("./packages/hooks/src/index.ts", import.meta.url)),
+      },
+      {
+        find: /^@pudans\/layouts$/,
+        replacement: fileURLToPath(new URL("./packages/layouts/src/index.ts", import.meta.url)),
+      },
+      {
+        find: /^@pudans\/utils$/,
+        replacement: fileURLToPath(new URL("./packages/utils/src/index.ts", import.meta.url)),
       },
       {
         find: /^@pudans\/api-client$/,
@@ -109,6 +121,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         setup: path.resolve(appRoot, "setup/index.html"),
+        lab: path.resolve(appRoot, "lab/index.html"),
         auth: path.resolve(appRoot, "auth/index.html"),
         console: path.resolve(appRoot, "console/index.html"),
         uc: path.resolve(appRoot, "uc/index.html"),

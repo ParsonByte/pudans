@@ -1,16 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Alert,
-  Button,
-  Card,
-  DropdownMenu,
-  Icon,
-  Input,
-  Tooltip,
-  useToast,
-  type PudansColorModePreference,
-} from "@pudans/components";
+import { Alert, Button, Card, DropdownMenu, Icon, Input, Tooltip, useToast } from "@pudans/components";
+import { type PudansColorModePreference } from "@pudans/theme";
 import { useAppDispatch, useAppSelector } from "@web/store/hooks";
 import { setLocale, setThemePreference } from "@web/store/app-slice";
 import { apiClient, getErrorMessage, type SetupPayload } from "@pudans/api-client";

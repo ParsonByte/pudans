@@ -10,9 +10,9 @@ const BT = String.fromCharCode(96);
 const code = (s) => BT + String(s) + BT;
 const DISPOSITIONS = ["迁移", "封装", "复用", "保留应用层", "暂缓"];
 const lib = (name) => "web/packages/components/src/components/" + name;
-const layout = (name) => "web/packages/components/src/layouts/" + name;
-const hook = (name) => "web/packages/components/src/hooks/" + name;
-const shared = (name) => "web/packages/shared/src/utils/" + name;
+const layout = (name) => "web/packages/layouts/src/" + name;
+const hook = (name) => "web/packages/hooks/src/" + name;
+const shared = (name) => "web/packages/utils/src/utils/" + name;
 const app = (p) => "web/app/" + p;
 
 function walk(dir, rel) {
@@ -223,7 +223,7 @@ srcFiles.filter((x) => x.indexOf("src/component/Uploader/") === 0 && x !== "src/
 srcFiles.filter((x) => x.indexOf("src/api/") === 0).forEach((f) => {
   put(f, "暂缓", "—", "cloudreve REST API 客户端；目标仓库使用 @pudans/api-client 生成的 OpenAPI 客户端，接口模型不同，登记为业务参考。");
 });
-put("src/constants/index.ts", "封装", "web/packages/shared/src/constants.ts", "通用常量（版本/布局/键位）并入 @pudans/shared 常量；cloudreve 专有常量不迁移。");
+put("src/constants/index.ts", "封装", "web/packages/utils/src/constants.ts", "通用常量（版本/布局/键位）并入 @pudans/shared 常量；cloudreve 专有常量不迁移。");
 put("src/hooks/delayedHover.tsx", "迁移", hook("use-delayed-hover.ts"), "迁移为 useDelayedHover（可配置延迟，清理定时器，支持 popup state）。");
 put("src/hooks/useOverflow.tsx", "迁移", hook("use-overflow.ts"), "迁移为 useOverflow（ResizeObserver + 返回值）。");
 put("src/hooks/useMediaSession.ts", "迁移", hook("use-media-session.ts"), "迁移为 useMediaSession（泛化 MediaSession API，去掉 FileResponse 依赖）。");
@@ -242,7 +242,7 @@ put("src/util/boolset.ts", "迁移", shared("boolset.ts"), "迁移 Boolset 位�
 put("src/util/datetime.ts", "迁移", shared("datetime.ts"), "迁移时间格式化/时长格式化（注入 locale/timezone，不依赖 i18n 单例）。");
 put("src/util/filesystem.ts", "迁移", shared("filesystem.ts"), "迁移 File System Access API 工具（目录创建/流式写文件/权限校验）。");
 put("src/util/lru.ts", "迁移", shared("lru.ts"), "迁移 LRUCache（带 blob URL 回收）到 @pudans/shared/utils。");
-put("src/util/index.ts", "复用", "web/packages/shared/src/index.ts", "通用工具汇总由 @pudans/shared 导出。");
+put("src/util/index.ts", "复用", "web/packages/utils/src/index.ts", "通用工具汇总由 @pudans/shared 导出。");
 put("src/util/permission.ts", "暂缓", "—", "文件复制/移动权限判定依赖 cloudreve URI 语义，待文件应用。");
 put("src/util/uri.ts", "暂缓", "—", "cloudreve:// URI 解析器为云盘专有协议，目标无对应协议。");
 put("src/util/zip.js", "暂缓", "—", "压缩流实现与 cloudreve 归档 API 绑定，登记待文件应用。");
@@ -302,7 +302,7 @@ function lookup(rel) {
     if (rel.indexOf(rule[0]) === 0) {
       if (rel.indexOf("src/component/Icons/") === 0) {
         const name = path.basename(rel, ".tsx");
-        return { disposition: rule[1], target: "web/packages/components/src/components/icon/cloudreve-icons.ts", icon: "cr:" + name, reason: rule[3] };
+        return { disposition: rule[1], target: "web/packages/icons/src/cloudreve-icons.ts", icon: "cr:" + name, reason: rule[3] };
       }
       return { disposition: rule[1], target: rule[2], reason: rule[3] };
     }
@@ -328,7 +328,7 @@ try {
   const coll = JSON.parse(fs.readFileSync(path.join(OUT_DIR, "data/cloudreve-icons.json"), "utf8"));
   iconCollectionNames = new Set(coll.map((i) => i.component));
 } catch (e) { /* generated later */ }
-const iconFileExists = fs.existsSync(path.join(TARGET, "packages/components/src/components/icon/cloudreve-icons.ts"));
+const iconFileExists = fs.existsSync(path.join(TARGET, "packages/icons/src/cloudreve-icons.ts"));
 
 const rows = files.map((rel) => {
   const hit = lookup(rel);
@@ -347,9 +347,9 @@ function listDir(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).filter((e) => e.isDirectory() && e.name !== "node_modules").map((e) => e.name).sort();
 }
 const componentsDir = path.join(TARGET, "packages/components/src/components");
-const layoutsDir = path.join(TARGET, "packages/components/src/layouts");
-const hooksDir = path.join(TARGET, "packages/components/src/hooks");
-const sharedUtilsDir = path.join(TARGET, "packages/shared/src/utils");
+const layoutsDir = path.join(TARGET, "packages/layouts/src");
+const hooksDir = path.join(TARGET, "packages/hooks/src");
+const sharedUtilsDir = path.join(TARGET, "packages/utils/src/utils");
 const targetComponents = listDir(componentsDir);
 const targetLayouts = listDir(layoutsDir);
 const targetHooks = listDir(hooksDir);
@@ -555,7 +555,7 @@ push(h(["Pages/NoMatch", "公共库 EmptyState(not-found)", "已迁移", "任意
 push("");
 push("## 七、设计变量（token）清单");
 push("");
-push("> 完整定义见 " + c("web/packages/components/src/styles/tokens.ts") + "、" + c("variables.css") + "、" + c("create-theme.ts") + "；规范说明见 " + c(".dsh/migration/design-system.md") + "。");
+push("> 完整定义见 " + c("web/packages/theme/src/tokens.ts") + "、" + c("variables.css") + "、" + c("create-theme.ts") + "；规范说明见 " + c(".dsh/migration/design-system.md") + "。");
 push("");
 push(h(["组", "token 前缀", "覆盖"]));
 push(h(["---", "---", "---"]));
@@ -572,7 +572,7 @@ push("");
 push(h(["项", "值"]));
 push(h(["---", "---"]));
 push(h(["源图标文件", String(srcFiles.filter((f) => f.indexOf("src/component/Icons/") === 0).length)]));
-push(h(["目标集合", c("web/packages/components/src/components/icon/cloudreve-icons.ts") + "（Iconify collection prefix " + c("cr") + "）"]));
+push(h(["目标集合", c("web/packages/icons/src/cloudreve-icons.ts") + "（Iconify collection prefix " + c("cr") + "）"]));
 push(h(["映射清单", c(".dsh/migration/icon-map.md") + " / " + c(".dsh/migration/data/cloudreve-icons.json")]));
 push(h(["使用方式", c('<Icon name="cr:Search" />') + "（离线注册，无网络请求）"]));
 push("");

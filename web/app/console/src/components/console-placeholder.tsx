@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
-import { Icon, PageContainer } from "@pudans/components";
+import { Icon } from "@pudans/components";
+import { PageContainer } from "@pudans/layouts";
 import styles from "./console-placeholder.module.css";
 
 export interface ConsoleEmptyStateProps {

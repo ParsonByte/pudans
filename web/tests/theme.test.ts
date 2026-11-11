@@ -1,12 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  buildAccentColor,
-  createPudansTheme,
-  darkTokens,
-  lightTokens,
-  motionDurations,
-} from "@pudans/components";
+import { buildAccentColor, createPudansTheme, darkTokens, lightTokens, motionDurations } from "@pudans/theme";
 
 test("light and dark themes derive from the token palette", () => {
   const light = createPudansTheme("light");
@@ -17,12 +11,15 @@ test("light and dark themes derive from the token palette", () => {
   assert.equal(light.palette.background.default, lightTokens.canvas);
   assert.equal(dark.palette.background.default, darkTokens.canvas);
   assert.equal(light.shape.borderRadius, 12);
+  assert.equal(light.palette.primary.main, "#1976d2");
+  assert.equal(light.palette.secondary.main, "#9c27b0");
+  assert.equal(dark.palette.primary.main, "#90caf9");
   assert.equal(light.typography.fontFamily, '"Roboto", "Helvetica", "Arial", sans-serif');
   assert.equal(light.transitions.duration.short, motionDurations.base);
   assert.equal(light.transitions.duration.enteringScreen, motionDurations.entering);
   assert.equal(light.transitions.easing.easeInOut, "cubic-bezier(0.4, 0, 0.2, 1)");
-  assert.equal(light.zIndex.modal, 1400);
-  assert.equal(light.zIndex.tooltip, 1800);
+  assert.equal(light.zIndex.modal, 1300);
+  assert.equal(light.zIndex.tooltip, 1500);
 });
 
 test("accent colour overrides the primary ramp and normalizes hex", () => {

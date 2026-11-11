@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
-import { cn } from "../../utils/cn";
+import { Backdrop, Box, Typography } from "@mui/material";
 import { Icon } from "../icon";
-import styles from "./file-drop-zone.module.css";
 
 export interface FileDropZoneProps {
   onFiles: (files: File[]) => void;
   accept?: string;
   multiple?: boolean;
   disabled?: boolean;
-  /** Renders a full-viewport overlay instead of an inline dashed area. */
+  /** Renders the legacy full-viewport MUI Backdrop instead of an inline area. */
   overlay?: boolean;
   title?: ReactNode;
   description?: ReactNode;
@@ -36,9 +35,10 @@ function matchesAccept(file: File, accept: string | undefined): boolean {
 }
 
 /**
- * Drag & drop surface migrated from the legacy Uploader DropFile. Supports an
- * inline drop area or a full-screen overlay, keyboard activation and accept
- * filtering; the actual upload protocol stays in the consuming application.
+ * Drag & drop surface rebuilt from the legacy Uploader/DropFile:
+ * - overlay mode = MUI Backdrop (zIndex drawer + 1, white content, 80px icon,
+ *   h4 label) shown while dragging files over the window;
+ * - inline mode = dashed token-styled drop target.
  */
 export function FileDropZone({
   onFiles,
@@ -46,7 +46,7 @@ export function FileDropZone({
   multiple = true,
   disabled = false,
   overlay = false,
-  title = "Drop files to upload",
+  title = "Drop files here",
   description,
   children,
   className,
@@ -137,41 +137,42 @@ export function FileDropZone({
     }
   };
 
-  const body = (
-    <>
-      <Icon name="cr:CloudArrowIUp" size={overlay ? 56 : 28} />
-      <span className={styles.title}>{title}</span>
-      {description ? <span className={styles.description}>{description}</span> : null}
-      {!overlay && children}
-    </>
-  );
-
   if (overlay) {
-    return dragging ? (
-      <div
-        className={cn(styles.overlay, className)}
-        role="presentation"
+    return (
+      <Backdrop
+        open={dragging}
+        className={className}
+        sx={{
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          color: (theme) => theme.palette.common.white,
+          flexDirection: "column",
+          gap: 1,
+          textAlign: "center",
+        }}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
       >
-        <div className={styles.overlayCard}>
-          <span className={styles.overlayBody}>{body}</span>
-        </div>
-      </div>
-    ) : null;
+        <Box sx={{ fontSize: (theme) => theme.spacing(10), lineHeight: 0 }}>
+          <Icon name="cr:CloudArrowIUp" />
+        </Box>
+        <Typography variant="h4" color="inherit">
+          {title}
+        </Typography>
+        {description ? (
+          <Typography variant="body1" color="inherit">
+            {description}
+          </Typography>
+        ) : null}
+      </Backdrop>
+    );
   }
 
   return (
-    <div
+    <Box
       role="button"
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled || undefined}
-      className={cn(
-        styles.root,
-        dragging && styles.dragging,
-        disabled && styles.disabled,
-        className,
-      )}
+      className={className}
       onClick={openPicker}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -183,8 +184,46 @@ export function FileDropZone({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 1,
+        minHeight: (theme) => theme.spacing(20),
+        padding: (theme) => theme.spacing(3),
+        border: (theme) => `${theme.spacing(0.25)} dashed ${theme.palette.divider}`,
+        borderRadius: (theme) => theme.shape.borderRadius,
+        backgroundColor: dragging ? "action.selected" : "action.hover",
+        color: dragging ? "primary.main" : "text.secondary",
+        textAlign: "center",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        transition: (theme) =>
+          theme.transitions.create(["border-color", "background-color", "color"]),
+        "&:hover": {
+          borderColor: "primary.main",
+          color: "primary.main",
+        },
+        "&:focus-visible": {
+          outline: (theme) => `${theme.spacing(0.25)} solid ${theme.palette.primary.main}`,
+          outlineOffset: (theme) => theme.spacing(0.25),
+        },
+        "& .MuiBox-root": { pointerEvents: "none" },
+      }}
     >
-      {body}
+      <Box sx={{ fontSize: (theme) => theme.spacing(3.5), lineHeight: 0 }}>
+        <Icon name="cr:CloudArrowIUp" />
+      </Box>
+      <Typography variant="subtitle1" color="inherit">
+        {title}
+      </Typography>
+      {description ? (
+        <Typography variant="body2" color="inherit">
+          {description}
+        </Typography>
+      ) : null}
+      {children}
       <input
         ref={inputRef}
         type="file"
@@ -197,6 +236,6 @@ export function FileDropZone({
           event.target.value = "";
         }}
       />
-    </div>
+    </Box>
   );
 }

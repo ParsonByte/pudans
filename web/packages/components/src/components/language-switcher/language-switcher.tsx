@@ -1,7 +1,14 @@
-import { cn } from "../../utils/cn";
-import { DropdownMenu } from "../dropdown-menu";
+import { useState, type CSSProperties } from "react";
+import {
+  IconButton,
+  Menu,
+  MenuItem,
+  Tooltip,
+  Typography,
+  type SxProps,
+  type Theme,
+} from "@mui/material";
 import { Icon } from "../icon";
-import styles from "./language-switcher.module.css";
 
 export interface LanguageOption {
   code: string;
@@ -18,11 +25,16 @@ export interface LanguageSwitcherProps {
   showCurrentLabel?: boolean;
   ariaLabel?: string;
   className?: string;
+  style?: CSSProperties;
+  sx?: SxProps<Theme>;
 }
 
 /**
- * Language picker migrated from the legacy Common/LanguageSwitcher. i18n
- * runtime is injected via props so the component stays app-agnostic.
+ * Legacy Common/LanguageSwitcher: Tooltip > IconButton(Translate) > MUI Menu with
+ * one 14px MenuItem per language; the active language is highlighted through the
+ * MUI `selected` state (action.selected background + primary text). Menu paper
+ * radius (8px), elevation (3), list padding (4px 0) and MenuItem radius (8px)
+ * come from the shared legacy theme overrides.
  */
 export function LanguageSwitcher({
   languages,
@@ -32,42 +44,58 @@ export function LanguageSwitcher({
   showCurrentLabel = false,
   ariaLabel = "Change language",
   className,
+  style,
+  sx,
 }: LanguageSwitcherProps) {
+  const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const current = languages.find((language) => language.code === value);
-  const items = languages.map((language) => ({
-    key: language.code,
-    label: (
-      <span className={styles.itemLabel}>
-        <span>{language.label}</span>
-        {language.description ? (
-          <span className={styles.itemDescription}>{language.description}</span>
-        ) : null}
-      </span>
-    ),
-    icon:
-      language.code === value ? (
-        <Icon name="cr:Checkmark" size={14} />
-      ) : (
-        <span className={styles.iconSpacer} />
-      ),
-    onSelect: () => onChange(language.code),
-  }));
+  const showLabel = !compact && showCurrentLabel;
+  const callerSx = Array.isArray(sx) ? sx : sx ? [sx] : [];
 
   return (
-    <div className={cn(styles.root, className)}>
-      <DropdownMenu
-        trigger={
-          <span className={styles.trigger}>
-            <Icon name="cr:Translate" size={18} />
-            {!compact && showCurrentLabel ? (
-              <span className={styles.current}>{current?.label ?? value}</span>
+    <>
+      <Tooltip title={ariaLabel}>
+        <IconButton
+          className={className}
+          style={style}
+          sx={[{ ml: 1 }, ...callerSx]}
+          aria-label={ariaLabel}
+          onClick={(event) => setAnchorEl(event.currentTarget)}
+        >
+          <Icon name="cr:Translate" size={24} />
+          {showLabel ? (
+            <Typography component="span" variant="body2" sx={{ ml: 1, lineHeight: 1 }}>
+              {current?.label ?? value}
+            </Typography>
+          ) : null}
+        </IconButton>
+      </Tooltip>
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        {languages.map((language) => (
+          <MenuItem
+            key={language.code}
+            selected={language.code === value}
+            sx={{ fontSize: 14 }}
+            onClick={() => {
+              onChange(language.code);
+              setAnchorEl(null);
+            }}
+          >
+            {language.label}
+            {language.description && !showLabel ? (
+              <Typography component="span" variant="caption" sx={{ ml: 1, color: "text.secondary" }}>
+                {language.description}
+              </Typography>
             ) : null}
-          </span>
-        }
-        triggerLabel={ariaLabel}
-        items={items}
-        showChevron={false}
-      />
-    </div>
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
   );
 }

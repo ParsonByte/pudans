@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * Component export gate.
- * 1. every folder under packages/components/src/components has an index barrel
- * 2. every folder is re-exported from the package barrel
- * 3. named exports are unique across folders
- * 4. the root barrel re-exports components/hooks/layouts/styles/utils
+ * - verifies every folder under packages/components/src/components has a barrel and is re-exported
+ * - verifies named exports are unique across folders
+ * - verifies the component package root barrel exports ONLY ./components
+ * - verifies theme/layouts/hooks/icons packages expose their expected entries
  * Usage: node scripts/check-exports.mjs
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -36,27 +36,19 @@ for (const folder of folders) {
   const barrelPath = join(components, folder, "index.ts");
   if (!existsSync(barrelPath)) continue;
   const barrelSource = readFileSync(barrelPath, "utf8");
-  for (const match of barrelSource.matchAll(/from\s+"\.\/([^"]+)"/g)) {
-    const file = join(components, folder, match[1] + ".tsx");
-    const ts = join(components, folder, match[1] + ".ts");
-    const source = existsSync(file)
-      ? readFileSync(file, "utf8")
-      : existsSync(ts)
-        ? readFileSync(ts, "utf8")
-        : "";
+  const files = [...new Set(barrelSource.split("\n").filter((line) => line.includes('from "./')).map((line) => line.split('"')[1].replace("./", "")))];
+  for (const file of files) {
+    const tsx = join(components, folder, file + ".tsx");
+    const ts = join(components, folder, file + ".ts");
+    const source = existsSync(tsx) ? readFileSync(tsx, "utf8") : existsSync(ts) ? readFileSync(ts, "utf8") : "";
     const declarations = [
-      ...source.matchAll(
-        /export\s+(?:const|function|class|interface|type|enum)\s+([A-Za-z0-9_]+)/g,
-      ),
+      ...source.matchAll(/export\s+(?:const|function|class|interface|type|enum)\s+([A-Za-z0-9_]+)/g),
       ...source.matchAll(/export\s*\{([^}]+)\}/g),
     ];
     for (const declaration of declarations) {
       for (const token of declaration[1].split(",")) {
-        const name = token
-          .trim()
-          .split(/\s+as\s+/)
-          .pop();
-        if (!name) continue;
+        const name = token.trim().split(/\s+as\s+/).pop();
+
         const existing = names.get(name);
         if (existing !== undefined && existing !== folder) {
           problems.push("duplicate export " + name + " in " + existing + " and " + folder);
@@ -69,20 +61,24 @@ for (const folder of folders) {
 }
 
 const rootBarrel = readFileSync(join(src, "index.ts"), "utf8");
-for (const expected of [
-  "./components",
-  "./hooks",
-  "./layouts",
-  "./styles/create-theme",
-  "./styles/theme-provider",
-  "./styles/tokens",
-  "./utils",
-]) {
-  if (!rootBarrel.includes(expected)) problems.push("root barrel missing " + expected);
+if (!rootBarrel.includes('"./components"')) problems.push("root barrel must export ./components");
+for (const forbidden of ["./hooks", "./layouts", "./styles", "./utils"]) {
+  if (rootBarrel.includes(forbidden)) problems.push("root barrel must not export non-component entry " + forbidden);
 }
-for (const folder of ["hooks", "layouts", "utils"]) {
-  if (!existsSync(join(src, folder, "index.ts")))
-    problems.push("missing barrel: " + folder + "/index.ts");
+for (const folder of ["hooks", "layouts", "utils", "styles"]) {
+  if (existsSync(join(src, folder))) problems.push("non-component directory found in component package: " + folder);
+}
+
+for (const [pkg, entries] of [
+  ["theme", ["tokens.ts", "create-theme.ts", "theme-provider.tsx", "variables.css", "global.css", "index.ts"]],
+  ["layouts", ["index.ts", "app-shell/app-shell.tsx", "page-layout/page-layout.tsx"]],
+  ["hooks", ["index.ts", "use-overflow.ts"]],
+  ["icons", ["index.ts", "cloudreve-icons.ts"]],
+  ["utils", ["index.ts", "utils/classnames.ts"]],
+]) {
+  for (const entry of entries) {
+    if (!existsSync(join(root, "packages", pkg, "src", entry))) problems.push("missing " + pkg + " entry: " + entry);
+  }
 }
 
 if (problems.length > 0) {
@@ -90,10 +86,4 @@ if (problems.length > 0) {
   for (const problem of problems) console.error(" - " + problem);
   process.exit(1);
 }
-console.log(
-  "Export check passed: " +
-    folders.length +
-    " component folders, " +
-    names.size +
-    " unique named exports.",
-);
+console.log("Export check passed: " + folders.length + " component folders, " + names.size + " unique named exports, pure root barrel.");

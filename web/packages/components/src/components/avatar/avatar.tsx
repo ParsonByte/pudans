@@ -1,7 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
-import { Avatar as MuiAvatar, type AvatarProps as MuiAvatarProps } from "@mui/material";
-import { cn } from "../../utils/cn";
-import styles from "./avatar.module.css";
+import { Avatar as MuiAvatar, type AvatarProps as MuiAvatarProps, useTheme } from "@mui/material";
+import { cn } from "@pudans/utils";
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl" | number;
 export type AvatarStatus = "online" | "offline" | "away" | "busy";
@@ -16,6 +15,24 @@ export interface AvatarProps extends Omit<MuiAvatarProps, "src" | "alt" | "child
   status?: AvatarStatus;
   statusLabel?: string;
   wrapperClassName?: string;
+}
+
+const SIZE_MAP: Record<"sm" | "md" | "lg" | "xl", number> = {
+  sm: 24,
+  md: 32,
+  lg: 40,
+  xl: 48,
+};
+
+const FALLBACK_COLORS = ["primary", "secondary", "success", "warning", "info", "error"] as const;
+
+/** Deterministic legacy-equivalent colour identity for text avatars. */
+function hashString(value: string): number {
+  let hash = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = value.charCodeAt(index) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash);
 }
 
 function getInitials(name: string): string {
@@ -35,8 +52,10 @@ function getInitials(name: string): string {
 }
 
 /**
- * Avatar with image, initials, icon and explicit fallback layers. If the image
- * fails, MUI reveals the children fallback underneath automatically.
+ * MUI Avatar rebuilt with the legacy UserAvatar colours/typography: no border,
+ * deterministic per-name background (old stringToColor) mapped onto theme
+ * palette colours, grey[500] for anonymous users, MUI Avatars own font sizing
+ * and fallback chain for broken images.
  */
 export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(function Avatar(
   {
@@ -55,43 +74,65 @@ export const Avatar = forwardRef<HTMLDivElement, AvatarProps>(function Avatar(
   },
   ref,
 ) {
+  const theme = useTheme();
   const isNumericSize = typeof size === "number";
+  const pixels = isNumericSize ? size : SIZE_MAP[size];
+  const paletteKey = FALLBACK_COLORS[hashString(name ?? "") % FALLBACK_COLORS.length];
+  const palette = theme.palette[paletteKey];
+  const background = name ? palette.main : theme.palette.grey[500];
+  const color = name ? palette.contrastText : theme.palette.getContrastText(theme.palette.grey[500]);
   const content =
     fallback ??
     (name ? (
       getInitials(name)
     ) : icon ? (
-      <span className={styles.icon} aria-hidden="true">
+      <span style={{ display: "inline-flex", width: "55%", height: "55%" }} aria-hidden="true">
         {icon}
       </span>
     ) : null);
 
   return (
-    <span className={cn(styles.wrapper, wrapperClassName)}>
+    <span style={{ position: "relative", display: "inline-flex", flex: "0 0 auto" }} className={cn(wrapperClassName)}>
       <MuiAvatar
+        {...props}
         ref={ref}
         src={src}
         alt={alt ?? name ?? ""}
-        className={cn(styles.root, !isNumericSize && styles[size], className)}
-        style={{
-          ...(isNumericSize
-            ? {
-                width: size,
-                height: size,
-                fontSize: Math.max(10, Math.round(size * 0.36)),
-              }
-            : undefined),
-          ...style,
-        }}
-        {...props}
+        className={cn(className)}
+        sx={[
+          {
+            width: pixels,
+            height: pixels,
+            fontSize: pixels * 0.5,
+            bgcolor: background,
+            color,
+          },
+          ...(Array.isArray(props.sx) ? props.sx : [props.sx]),
+        ]}
       >
         {content}
       </MuiAvatar>
       {status ? (
         <span
-          className={cn(styles.status, styles[status])}
           aria-label={statusLabel ?? status}
           role="img"
+          style={{
+            position: "absolute",
+            right: 0,
+            bottom: 0,
+            width: 10,
+            height: 10,
+            borderRadius: "50%",
+            border: `2px solid ${theme.palette.background.paper}`,
+            backgroundColor:
+              status === "online"
+                ? theme.palette.success.main
+                : status === "away"
+                  ? theme.palette.warning.main
+                  : status === "busy"
+                    ? theme.palette.error.main
+                    : theme.palette.text.disabled,
+          }}
         />
       ) : null}
     </span>

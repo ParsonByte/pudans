@@ -1,14 +1,21 @@
 import { useEffect, useId, type KeyboardEvent, type ReactNode } from "react";
-import { Popover, type PopoverProps } from "@mui/material";
-import { cn } from "../../utils/cn";
+import {
+  Box,
+  Divider,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  Typography,
+  type MenuProps,
+} from "@mui/material";
 import {
   bindContextMenu,
-  bindPopover,
+  bindMenu,
   bindTrigger,
   usePopupState,
 } from "material-ui-popup-state/hooks";
 import { Icon } from "../icon";
-import styles from "./dropdown-menu.module.css";
 
 export interface DropdownMenuItem {
   key: string;
@@ -33,13 +40,16 @@ export interface DropdownMenuProps {
   triggerClassName?: string;
   menuClassName?: string;
   className?: string;
-  anchorOrigin?: PopoverProps["anchorOrigin"];
-  transformOrigin?: PopoverProps["transformOrigin"];
+  anchorOrigin?: MenuProps["anchorOrigin"];
+  transformOrigin?: MenuProps["transformOrigin"];
 }
 
 /**
- * Popover-backed menu powered by material-ui-popup-state. Click-outside closing
- * is delegated to Popover; contextMenu mode opens at the pointer coordinates.
+ * Legacy SquareMenu/MenuItem rebuilt on MUI Menu: 8px paper radius,
+ * elevation 3, list padding 4px 0 and MenuItem radius 8 / margin 0 4px are
+ * inherited from the shared MUI theme. Items are dense (32px) like the legacy
+ * FileManager context menu; icons are 20px ListItemIcons whose colour turns
+ * primary on hover (error.light for danger items).
  */
 export function DropdownMenu({
   trigger,
@@ -61,7 +71,7 @@ export function DropdownMenu({
     popupId: `pd-dropdown-${useId().replace(/:/g, "")}`,
   });
   const triggerProps = contextMenu ? bindContextMenu(popupState) : bindTrigger(popupState);
-  const popoverProps = bindPopover(popupState);
+  const menuProps = bindMenu(popupState);
 
   useEffect(() => {
     onOpenChange?.(popupState.isOpen);
@@ -86,61 +96,55 @@ export function DropdownMenu({
   };
 
   return (
-    <span className={cn(styles.root, className)}>
-      <span
+    <>
+      <Box
+        component="span"
         {...triggerProps}
-        className={cn(styles.trigger, triggerClassName)}
+        className={triggerClassName}
         role="button"
         tabIndex={0}
         aria-label={triggerLabel}
         aria-expanded={popupState.isOpen}
         onKeyDown={handleKeyDown}
+        sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, cursor: "pointer" }}
       >
         {trigger}
-        {!contextMenu && showChevron ? (
-          <Icon name="mdi:menu-down-outline" size={14} className={styles.chevron} />
-        ) : null}
-      </span>
+        {!contextMenu && showChevron ? <Icon name="cr:CaretDown" size={15} /> : null}
+      </Box>
 
-      <Popover
-        {...popoverProps}
+      <Menu
+        {...menuProps}
         anchorOrigin={anchorOrigin}
         transformOrigin={transformOrigin}
-        slotProps={{
-          paper: {
-            className: cn(styles.paper, menuClassName),
-          },
-        }}
+        className={className}
+        slotProps={{ paper: { className: menuClassName, sx: { minWidth: (theme) => theme.spacing(25) } } }}
       >
-        <div className={styles.menu} role="menu">
-          {items.map((item) =>
-            item.divider ? (
-              <div key={item.key} className={styles.divider} role="separator" />
-            ) : (
-              <button
-                key={item.key}
-                type="button"
-                role="menuitem"
-                className={cn(
-                  styles.item,
-                  item.danger && styles.danger,
-                  item.disabled && styles.disabled,
-                )}
-                disabled={item.disabled}
-                onClick={() => handleSelect(item)}
-              >
-                {item.icon ? (
-                  <span className={styles.itemIcon} aria-hidden="true">
-                    {item.icon}
-                  </span>
-                ) : null}
-                <span className={styles.itemLabel}>{item.label}</span>
-                {item.shortcut ? <span className={styles.shortcut}>{item.shortcut}</span> : null}
-              </button>
-            ),
-          )}
-        </div>
-      </Popover>
-    </span>
+        {items.map((item) =>
+          item.divider ? (
+            <Divider key={item.key} sx={{ my: 0.5 }} />
+          ) : (
+            <MenuItem
+              key={item.key}
+              dense
+              disabled={item.disabled}
+              onClick={() => handleSelect(item)}
+              sx={{
+                "&:hover .MuiListItemIcon-root": {
+                  color: item.danger ? "error.light" : "primary.main",
+                },
+              }}
+            >
+              {item.icon ? <ListItemIcon>{item.icon}</ListItemIcon> : null}
+              <ListItemText>{item.label}</ListItemText>
+              {item.shortcut ? (
+                <Typography variant="caption" color="text.secondary" sx={{ ml: 2 }}>
+                  {item.shortcut}
+                </Typography>
+              ) : null}
+            </MenuItem>
+          ),
+        )}
+      </Menu>
+    </>
   );
 }

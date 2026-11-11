@@ -1,7 +1,7 @@
 import { Fragment } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { cn } from "@pudans/shared";
+import { cn } from "@pudans/utils";
 import { Alert, Button, Icon, Input } from "@pudans/components";
 import { useRecovery } from "../composables/use-recovery";
 import styles from "./recovery-form.module.css";

@@ -1,11 +1,11 @@
 import { type ReactNode } from "react";
 import {
+  Box,
   Checkbox as MuiCheckbox,
   FormControlLabel,
+  Typography,
   type CheckboxProps as MuiCheckboxProps,
 } from "@mui/material";
-import { cn } from "../../utils/cn";
-import styles from "./checkbox.module.css";
 
 export type CheckboxSize = "sm" | "md" | "lg";
 
@@ -16,7 +16,11 @@ export interface CheckboxProps extends Omit<MuiCheckboxProps, "size"> {
   labelPlacement?: "bottom" | "end" | "start" | "top";
 }
 
-/** Brand-colored checkbox with an optional label and supporting text. */
+/**
+ * App.tsx keeps MUI defaults for Checkbox (primary color, 9px padding hit
+ * area, 4px ripple radius); this wrapper only forwards the legacy size prop and
+ * the optional label/description copy.
+ */
 export function Checkbox({
   size = "md",
   label,
@@ -25,22 +29,34 @@ export function Checkbox({
   className,
   ...props
 }: CheckboxProps) {
-  const control = <MuiCheckbox className={cn(styles.control, styles[size])} {...props} />;
+  const control = <MuiCheckbox size={size === "sm" ? "small" : "medium"} {...props} />;
 
   if (!label && !description) {
-    return <span className={cn(styles.standalone, className)}>{control}</span>;
+    return (
+      <Box component="span" className={className} sx={{ display: "inline-flex" }}>
+        {control}
+      </Box>
+    );
   }
 
   return (
     <FormControlLabel
-      className={cn(styles.root, className)}
+      className={className}
       control={control}
       labelPlacement={labelPlacement}
       label={
-        <span className={styles.label}>
-          {label ? <span className={styles.labelText}>{label}</span> : null}
-          {description ? <span className={styles.description}>{description}</span> : null}
-        </span>
+        <Box component="span" sx={{ display: "inline-flex", flexDirection: "column" }}>
+          {label ? (
+            <Typography variant="body1" component="span">
+              {label}
+            </Typography>
+          ) : null}
+          {description ? (
+            <Typography variant="caption" component="span" sx={{ color: "text.secondary" }}>
+              {description}
+            </Typography>
+          ) : null}
+        </Box>
       }
     />
   );

@@ -1,11 +1,11 @@
 import { type ReactNode } from "react";
 import {
+  Box,
   FormControlLabel,
   Switch as MuiSwitch,
+  Typography,
   type SwitchProps as MuiSwitchProps,
 } from "@mui/material";
-import { cn } from "../../utils/cn";
-import styles from "./switch.module.css";
 
 export type SwitchSize = "sm" | "md" | "lg";
 
@@ -16,7 +16,11 @@ export interface SwitchProps extends Omit<MuiSwitchProps, "size"> {
   labelPlacement?: "bottom" | "end" | "start" | "top";
 }
 
-/** Brand-colored switch with optional label and description. */
+/**
+ * App.tsx does not override MuiSwitch: keep MUI defaults (primary color, 34px
+ * thumb track, 38px hit area) and only forward the legacy size plus optional
+ * label/description.
+ */
 export function Switch({
   size = "md",
   label,
@@ -25,28 +29,34 @@ export function Switch({
   className,
   ...props
 }: SwitchProps) {
-  const control = (
-    <MuiSwitch
-      className={cn(styles.control, styles[size])}
-      size={size === "sm" ? "small" : "medium"}
-      {...props}
-    />
-  );
+  const control = <MuiSwitch size={size === "sm" ? "small" : "medium"} {...props} />;
 
   if (!label && !description) {
-    return <span className={cn(styles.standalone, className)}>{control}</span>;
+    return (
+      <Box component="span" className={className} sx={{ display: "inline-flex" }}>
+        {control}
+      </Box>
+    );
   }
 
   return (
     <FormControlLabel
-      className={cn(styles.root, className)}
+      className={className}
       control={control}
       labelPlacement={labelPlacement}
       label={
-        <span className={styles.label}>
-          {label ? <span className={styles.labelText}>{label}</span> : null}
-          {description ? <span className={styles.description}>{description}</span> : null}
-        </span>
+        <Box component="span" sx={{ display: "inline-flex", flexDirection: "column" }}>
+          {label ? (
+            <Typography variant="body1" component="span">
+              {label}
+            </Typography>
+          ) : null}
+          {description ? (
+            <Typography variant="caption" component="span" sx={{ color: "text.secondary" }}>
+              {description}
+            </Typography>
+          ) : null}
+        </Box>
       }
     />
   );

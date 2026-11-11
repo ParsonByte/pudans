@@ -1,6 +1,10 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
-import { cn } from "../../utils/cn";
-import styles from "./progress.module.css";
+import Box from "@mui/material/Box";
+import MuiCircularProgress from "@mui/material/CircularProgress";
+import MuiLinearProgress from "@mui/material/LinearProgress";
+import Typography from "@mui/material/Typography";
+import type { Theme } from "@mui/material/styles";
+import { cn } from "@pudans/utils";
 
 export type ProgressTone = "brand" | "success" | "warning" | "danger" | "neutral";
 export type ProgressSize = "sm" | "md" | "lg";
@@ -17,6 +21,8 @@ export interface ProgressProps extends Omit<HTMLAttributes<HTMLDivElement>, "chi
   ariaLabel?: string;
 }
 
+const LINEAR_HEIGHT: Record<ProgressSize, number> = { sm: 0.5, md: 1, lg: 1.5 };
+
 function clamp(value: number | undefined): number | undefined {
   if (value === undefined || Number.isNaN(value)) {
     return undefined;
@@ -24,10 +30,31 @@ function clamp(value: number | undefined): number | undefined {
   return Math.min(100, Math.max(0, value));
 }
 
+function toneColor(theme: Theme, tone: ProgressTone, circular = false): string {
+  switch (tone) {
+    case "success":
+      return theme.palette.success.main;
+    case "warning":
+      return theme.palette.warning.main;
+    case "danger":
+      return theme.palette.error.main;
+    case "neutral":
+      return theme.palette.grey[500];
+    default:
+      // BorderLinearProgress used dedicated light/dark blues; the closest
+      // theme tokens are the brand-450 / brand-400 ramps in @pudans/theme.
+      return circular
+        ? theme.palette.primary.main
+        : theme.palette.mode === "light"
+          ? "rgb(var(--pd-brand-450))"
+          : "rgb(var(--pd-brand-400))";
+  }
+}
+
 /**
- * Unified progress indicator. Merges the legacy BorderLinearProgress and the
- * double-ring CircularProgress into one token-driven component with a tone
- * palette, sizes and accessible progressbar semantics.
+ * Merged legacy BorderLinearProgress (8px high, 5px radius, grey[200]/[800]
+ * track) and FacebookCircularProgress (40px double ring, thickness 4, rounded
+ * stroke cap) built on MUI LinearProgress/CircularProgress.
  */
 export const Progress = forwardRef<HTMLDivElement, ProgressProps>(function Progress(
   {
@@ -48,54 +75,74 @@ export const Progress = forwardRef<HTMLDivElement, ProgressProps>(function Progr
   const rounded = safeValue === undefined ? undefined : Math.round(safeValue);
 
   return (
-    <div
+    <Box
       ref={ref}
-      className={cn(styles.root, styles[variant], styles[size], styles[tone], className)}
+      className={cn(className)}
       {...props}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 1,
+        width: variant === "circular" ? "auto" : "100%",
+      }}
     >
       {label || showValue ? (
-        <div className={styles.header}>
-          {label ? <span className={styles.label}>{label}</span> : <span />}
-          {showValue && !indeterminate ? <span className={styles.value}>{rounded}%</span> : null}
-        </div>
+        <Box sx={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            {label}
+          </Typography>
+          {showValue && !indeterminate ? (
+            <Typography variant="caption" color="text.secondary">
+              {rounded}%
+            </Typography>
+          ) : null}
+        </Box>
       ) : null}
 
       {variant === "linear" ? (
-        <div
-          className={styles.track}
-          role="progressbar"
+        <MuiLinearProgress
+          variant={indeterminate ? "indeterminate" : "determinate"}
+          value={rounded}
           aria-label={ariaLabel}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={indeterminate ? undefined : rounded}
-        >
-          <div
-            className={cn(styles.bar, indeterminate && styles.indeterminate)}
-            style={indeterminate ? undefined : { width: rounded + "%" }}
-          />
-        </div>
+          sx={(theme) => ({
+            width: "100%",
+            height: theme.spacing(LINEAR_HEIGHT[size]),
+            borderRadius: theme.spacing(0.625),
+            backgroundColor: theme.palette.grey[theme.palette.mode === "light" ? 200 : 800],
+            "& .MuiLinearProgress-bar": {
+              borderRadius: theme.spacing(0.625),
+              backgroundColor: toneColor(theme, tone),
+            },
+          })}
+        />
       ) : (
-        <svg
-          className={styles.ring}
-          viewBox="0 0 48 48"
-          role="progressbar"
-          aria-label={ariaLabel}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={indeterminate ? undefined : rounded}
-        >
-          <circle className={styles.ringTrack} cx="24" cy="24" r="20" />
-          <circle
-            className={cn(styles.ringBar, indeterminate && styles.ringIndeterminate)}
-            cx="24"
-            cy="24"
-            r="20"
-            pathLength={100}
-            strokeDasharray={indeterminate ? "28 72" : rounded + " 100"}
+        <Box sx={{ position: "relative", display: "inline-flex", width: "fit-content" }}>
+          <MuiCircularProgress
+            variant="determinate"
+            value={100}
+            size={size === "sm" ? 20 : size === "md" ? 40 : 56}
+            thickness={4}
+            aria-label={ariaLabel}
+            sx={(theme) => ({
+              color: theme.palette.grey[theme.palette.mode === "light" ? 200 : 800],
+            })}
           />
-        </svg>
+          <MuiCircularProgress
+            variant={indeterminate ? "indeterminate" : "determinate"}
+            value={rounded}
+            size={size === "sm" ? 20 : size === "md" ? 40 : 56}
+            thickness={4}
+            aria-label={ariaLabel}
+            sx={(theme) => ({
+              color: toneColor(theme, tone, true),
+              position: "absolute",
+              left: 0,
+              "& .MuiCircularProgress-circle": { strokeLinecap: "round" },
+            })}
+          />
+        </Box>
       )}
-    </div>
+    </Box>
   );
 });
 

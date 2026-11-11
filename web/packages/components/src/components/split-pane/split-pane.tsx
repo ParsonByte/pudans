@@ -6,7 +6,8 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
-import { cn } from "../../utils/cn";
+import { Box, Fade, useTheme } from "@mui/material";
+import { cn } from "@pudans/utils";
 import styles from "./split-pane.module.css";
 
 export interface SplitPaneProps {
@@ -20,6 +21,8 @@ export interface SplitPaneProps {
   className?: string;
   ariaLabel?: string;
 }
+
+const LEGACY_MIN_SIZE = 236;
 
 function readStoredSize(key: string | undefined, fallback: number): number {
   if (!key || typeof window === "undefined") {
@@ -35,20 +38,23 @@ function readStoredSize(key: string | undefined, fallback: number): number {
 }
 
 /**
- * Resizable two-pane layout migrated from the legacy Frame SplitHandle
- * (sidebar drag handle). Pointer based, keyboard accessible and optionally
- * persisted per surface.
+ * Resizable two-pane layout rebuilt from the legacy Frame/NavBar SplitHandle:
+ * an 8px transparent hit strip with ew-resize cursor (no hover feedback) and an
+ * 8px divider-colour bar that only fades in while dragging. The
+ * legacy 236px minimum drawer width is the default; keyboard support stays as
+ * an accessibility addition over the old mouse-only handler.
  */
 export function SplitPane({
   children,
   direction = "horizontal",
   initialSize = 320,
-  minSize = 200,
+  minSize = LEGACY_MIN_SIZE,
   maxSize,
   storageKey,
   className,
   ariaLabel = "Resize pane",
 }: SplitPaneProps) {
+  const theme = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState<number>(() => readStoredSize(storageKey, initialSize));
   const [dragging, setDragging] = useState(false);
@@ -62,7 +68,7 @@ export function SplitPane({
     if (!container) {
       return Number.POSITIVE_INFINITY;
     }
-    return (horizontal ? container.clientWidth : container.clientHeight) - 160;
+    return (horizontal ? container.clientWidth : container.clientHeight) / 2;
   }, [horizontal, maxSize]);
 
   const clamp = useCallback(
@@ -144,7 +150,7 @@ export function SplitPane({
       <div className={styles.pane} style={paneStyle}>
         {children[0]}
       </div>
-      <div
+      <Box
         role="separator"
         aria-orientation={horizontal ? "vertical" : "horizontal"}
         aria-label={ariaLabel}
@@ -152,15 +158,34 @@ export function SplitPane({
         aria-valuemin={minSize}
         aria-valuemax={maxSize}
         tabIndex={0}
-        className={styles.divider}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         onKeyDown={handleKeyDown}
+        sx={{
+          position: "relative",
+          flex: "0 0 auto",
+          width: horizontal ? theme.spacing(1) : "100%",
+          height: horizontal ? "100%" : theme.spacing(1),
+          cursor: horizontal ? "col-resize" : "row-resize",
+          touchAction: "none",
+          backgroundColor: "transparent",
+          zIndex: theme.zIndex.drawer + 2,
+          "&:focus-visible": { outline: "none" },
+        }}
       >
-        <span className={styles.grip} aria-hidden="true" />
-      </div>
+        <Fade in={dragging} unmountOnExit>
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              backgroundColor: theme.palette.divider,
+              pointerEvents: "none",
+            }}
+          />
+        </Fade>
+      </Box>
       <div className={cn(styles.pane, styles.secondary)}>{children[1]}</div>
     </div>
   );

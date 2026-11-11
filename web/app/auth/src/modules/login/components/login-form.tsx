@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
-import { cn } from "@pudans/shared";
+import { cn } from "@pudans/utils";
 import { Button, Icon, Input, useToast } from "@pudans/components";
 import { useLogin } from "../composables/use-login";
 import FeishuIcon from "./feishu-icon";

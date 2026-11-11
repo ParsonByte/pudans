@@ -7,9 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Button } from "../button";
-import { Dialog } from "../dialog";
-import styles from "./confirm-dialog.module.css";
+import { Button, Stack } from "@mui/material";
+import { Dialog, StyledDialogContentText } from "../dialog";
 
 export interface ConfirmOptions {
   title?: ReactNode;
@@ -27,47 +26,55 @@ export interface ConfirmDialogProps extends ConfirmOptions {
 }
 
 /**
- * Controlled confirmation dialog. For imperative call sites prefer the
- * ConfirmProvider + useConfirm() pair below.
+ * Legacy Confirmation dialog: DraggableDialog with "Are you sure?" title,
+ * body2 break-all content and a Cancel (text) + OK (contained) action bar.
  */
 export function ConfirmDialog({
   open,
   title = "Are you sure?",
   description,
-  confirmLabel = "Confirm",
+  confirmLabel = "OK",
   cancelLabel = "Cancel",
   tone = "default",
   loading = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const close = (): void => onCancel();
+
   return (
     <Dialog
       open={open}
       onClose={onCancel}
-      size="sm"
       title={title}
       showCloseButton
       closeLabel={typeof cancelLabel === "string" ? cancelLabel : "Cancel"}
+      loading={loading}
+      showActions
+      hideOk
       footer={
-        <>
-          <Button variant="ghost" onClick={onCancel} disabled={loading}>
+        <Stack direction="row" spacing={1}>
+          <Button disabled={loading} onClick={close}>
             {cancelLabel}
           </Button>
           <Button
-            variant={tone === "danger" ? "danger" : "primary"}
+            variant="contained"
+            color={tone === "danger" ? "error" : "primary"}
+            disabled={loading}
             onClick={onConfirm}
-            loading={loading}
           >
             {confirmLabel}
           </Button>
-        </>
+        </Stack>
       }
     >
-      {description ? <div className={styles.body}>{description}</div> : null}
+      <Stack spacing={2}>
+        {description ? <StyledDialogContentText>{description}</StyledDialogContentText> : null}
+      </Stack>
     </Dialog>
   );
 }
+
 
 type ConfirmFn = (options?: ConfirmOptions) => Promise<boolean>;
 

@@ -1,29 +1,38 @@
-import { forwardRef, useState, type CSSProperties, type ReactNode } from "react";
-import { usePudansTheme } from "../../styles/theme-provider";
-import { cn } from "../../utils/cn";
-import styles from "./logo.module.css";
+import { forwardRef, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  Box,
+  Skeleton,
+  Typography,
+  type SxProps,
+  type Theme,
+} from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 
 export interface LogoProps {
   /** Default image source (light mode). */
   src?: string;
-  /** Optional dark-mode source; falls back to src. */
+  /** Optional dark-mode source; falls back to src. Mirrors the legacy logo/logo_light pair. */
   darkSrc?: string;
-  /** Wordmark text when no image is available. */
+  /** Wordmark text used only when no image source is available. */
   name?: string;
   href?: string;
   alt?: string;
-  /** Height in px; width follows the intrinsic aspect ratio. */
+  /** Image height in px; the width follows the intrinsic aspect ratio. */
   height?: number;
   invertInDark?: boolean;
   className?: string;
   style?: CSSProperties;
+  /** Applied to the img / skeleton exactly like the legacy `sx` pass-through. */
+  sx?: SxProps<Theme>;
   children?: ReactNode;
 }
 
 /**
- * Brand lockup migrated from the legacy Common/Logo. Brand artwork is injected
- * by the application; the component only owns layout, fallback wordmark and
- * light/dark source switching.
+ * Legacy Common/Logo: light/dark source switch, a wave Skeleton while the image
+ * decodes, then the img shown with drag/select disabled. Styling (width, max
+ * height, object-fit, object-position) is owned by the caller through `sx`,
+ * because the legacy usages sized the img itself (DrawerHeader 160x35,
+ * HeadlessFrame 40% x 40px).
  */
 export const Logo = forwardRef<HTMLAnchorElement, LogoProps>(function Logo(
   {
@@ -31,57 +40,98 @@ export const Logo = forwardRef<HTMLAnchorElement, LogoProps>(function Logo(
     darkSrc,
     name = "pudans",
     href,
-    alt = "pudans",
+    alt = "Logo",
     height = 32,
     invertInDark = false,
     className,
     style,
+    sx,
     children,
   },
   ref,
 ) {
-  const { resolvedMode } = usePudansTheme();
+  const theme = useTheme();
+  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
-  const imageSrc = resolvedMode === "dark" ? (darkSrc ?? src) : src;
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const imageSrc = theme.palette.mode === "dark" ? (darkSrc ?? src) : src;
   const showImage = Boolean(imageSrc) && !failed;
+
+  useEffect(() => {
+    setFailed(false);
+    setLoaded(false);
+    const image = imageRef.current;
+    if (image?.complete && image.naturalWidth > 0) {
+      setLoaded(true);
+    }
+  }, [imageSrc]);
+
+  const callerSx = Array.isArray(sx) ? sx : sx ? [sx] : [];
+  const mediaSx: SxProps<Theme> = [
+    {
+      display: loaded ? "block" : "none",
+      width: "100%",
+      height,
+      objectFit: "contain",
+      objectPosition: "left",
+      filter: invertInDark && theme.palette.mode === "dark" ? "invert(1)" : undefined,
+      userSelect: "none",
+      WebkitUserDrag: "none",
+    },
+    ...callerSx,
+  ];
 
   const content = (
     <>
+      {showImage && !loaded ? (
+        <Skeleton
+          animation="wave"
+          variant="rounded"
+          sx={[{ width: "100%", height }, ...callerSx]}
+        />
+      ) : null}
       {showImage ? (
-        <img
-          className={cn(styles.image, invertInDark && resolvedMode === "dark" && styles.invert)}
+        <Box
+          component="img"
+          ref={imageRef}
           src={imageSrc}
           alt={alt}
-          height={height}
-          onError={() => setFailed(true)}
+          draggable={false}
+          onLoad={() => setLoaded(true)}
+          sx={mediaSx}
         />
       ) : (
-        <span className={styles.wordmark} style={{ fontSize: Math.max(16, height * 0.58) }}>
+        <Typography
+          component="span"
+          variant="h6"
+          sx={[{ fontWeight: 700, lineHeight: 1, color: "primary.main" }, ...callerSx]}
+        >
           {name}
-        </span>
+        </Typography>
       )}
       {children}
     </>
   );
 
+  const rootSx = {
+    display: "inline-flex",
+    alignItems: "center",
+    textDecoration: "none",
+    color: "inherit",
+  } as const;
+
   if (href) {
     return (
-      <a
-        ref={ref}
-        href={href}
-        className={cn(styles.root, className)}
-        style={style}
-        aria-label={alt}
-      >
+      <Box ref={ref} component="a" href={href} className={className} style={style} sx={rootSx}>
         {content}
-      </a>
+      </Box>
     );
   }
 
   return (
-    <span className={cn(styles.root, className)} style={style} role="img" aria-label={alt}>
+    <Box ref={ref} component="span" className={className} style={style} sx={rootSx}>
       {content}
-    </span>
+    </Box>
   );
 });
 

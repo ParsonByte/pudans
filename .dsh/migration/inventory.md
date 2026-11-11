@@ -1,6 +1,6 @@
 # 旧项目前端 → pudans web 迁移清单（inventory）
 
-> 生成时间：2026-11-16T03:00:30.269Z · 生成方式：`.dsh/migration/generate-inventory.mjs`（状态由文件系统推导，不手写完成状态）
+> 生成时间：2026-11-16T03:26:48.761Z · 生成方式：`.dsh/migration/generate-inventory.mjs`（状态由文件系统推导，不手写完成状态）
 
 | 项 | 值 |
 | --- | --- |
@@ -11,7 +11,7 @@
 | 源 public/ 文件 | 461 |
 | 源根配置 | 13 |
 | 目标组件库组件目录 | 55 |
-| 目标布局目录 | 4 |
+| 目标布局目录 | 5 |
 | 目标 hooks | 0 |
 | 目标 shared utils | 12 |
 
@@ -46,257 +46,257 @@
 
 | # | 源路径 | 目标路径 | 处理方式 | 状态 | 理由 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `src/component/Icons/Add.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Add`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 2 | `src/component/Icons/AppFolder.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:AppFolder`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 3 | `src/component/Icons/AppGeneric.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:AppGeneric`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 4 | `src/component/Icons/AppsList.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:AppsList`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 5 | `src/component/Icons/AppsListOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:AppsListOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 6 | `src/component/Icons/Archive.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Archive`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 7 | `src/component/Icons/ArchiveArrow.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArchiveArrow`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 8 | `src/component/Icons/ArrowClockwise.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowClockwise`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 9 | `src/component/Icons/ArrowClockwiseFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowClockwiseFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 10 | `src/component/Icons/ArrowDown.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowDown`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 11 | `src/component/Icons/ArrowHookDownLeft.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowHookDownLeft`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 12 | `src/component/Icons/ArrowHookUpRight.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowHookUpRight`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 13 | `src/component/Icons/ArrowImport.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowImport`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 14 | `src/component/Icons/ArrowLeft.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowLeft`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 15 | `src/component/Icons/ArrowRepeatAll.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowRepeatAll`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 16 | `src/component/Icons/ArrowRepeatOff.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowRepeatOff`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 17 | `src/component/Icons/ArrowRepeatOne.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowRepeatOne`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 18 | `src/component/Icons/ArrowShuffle.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowShuffle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 19 | `src/component/Icons/ArrowSort.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowSort`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 20 | `src/component/Icons/ArrowSortDownFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowSortDownFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 21 | `src/component/Icons/ArrowSync.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowSync`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 22 | `src/component/Icons/ArrowSyncCircleFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ArrowSyncCircleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 23 | `src/component/Icons/BinFullOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BinFullOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 24 | `src/component/Icons/Book.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Book`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 25 | `src/component/Icons/BookInformation.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BookInformation`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 26 | `src/component/Icons/Border.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Border`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 27 | `src/component/Icons/BorderAll.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BorderAll`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 28 | `src/component/Icons/BorderInside.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BorderInside`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 29 | `src/component/Icons/Bot.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Bot`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 30 | `src/component/Icons/BoxMultiple.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BoxMultiple`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 31 | `src/component/Icons/BoxMultipleFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BoxMultipleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 32 | `src/component/Icons/BranchCompare.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BranchCompare`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 33 | `src/component/Icons/BranchForkLink.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BranchForkLink`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 34 | `src/component/Icons/Broom.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Broom`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 35 | `src/component/Icons/BuildingShop.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BuildingShop`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 36 | `src/component/Icons/BuildingShopFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:BuildingShopFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 37 | `src/component/Icons/CalendarClock.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CalendarClock`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 38 | `src/component/Icons/CameraFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CameraFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 39 | `src/component/Icons/CameraRounded.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CameraRounded`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 40 | `src/component/Icons/CaretDown.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CaretDown`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 41 | `src/component/Icons/CaretRight.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CaretRight`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 42 | `src/component/Icons/Cart.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Cart`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 43 | `src/component/Icons/CheckCircleFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CheckCircleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 44 | `src/component/Icons/CheckUnchecked.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CheckUnchecked`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 45 | `src/component/Icons/CheckboxChecked.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CheckboxChecked`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 46 | `src/component/Icons/Checkmark.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Checkmark`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 47 | `src/component/Icons/CheckmarkCircle.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CheckmarkCircle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 48 | `src/component/Icons/CheckmarkCircleFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CheckmarkCircleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 49 | `src/component/Icons/ChevronRight.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ChevronRight`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 50 | `src/component/Icons/CircleHintFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CircleHintFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 51 | `src/component/Icons/Clipboard.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Clipboard`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 52 | `src/component/Icons/ClockArrowDownload.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ClockArrowDownload`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 53 | `src/component/Icons/ClockFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ClockFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 54 | `src/component/Icons/CloudArrowIUp.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CloudArrowIUp`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 55 | `src/component/Icons/CloudDownload.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CloudDownload`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 56 | `src/component/Icons/CloudDownloadOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CloudDownloadOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 57 | `src/component/Icons/CloudFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CloudFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 58 | `src/component/Icons/CloudOff.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CloudOff`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 59 | `src/component/Icons/CoinStack.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CoinStack`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 60 | `src/component/Icons/Color.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Color`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 61 | `src/component/Icons/CommentMultiple.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CommentMultiple`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 62 | `src/component/Icons/CopperCoin.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CopperCoin`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 63 | `src/component/Icons/CopyOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CopyOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 64 | `src/component/Icons/Copyright.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Copyright`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 65 | `src/component/Icons/CubeSync.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CubeSync`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 66 | `src/component/Icons/CubeSyncFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CubeSyncFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 67 | `src/component/Icons/CubeTree.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CubeTree`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 68 | `src/component/Icons/CubeTreeFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:CubeTreeFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 69 | `src/component/Icons/Currency.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Currency`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 70 | `src/component/Icons/DarkTheme.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DarkTheme`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 71 | `src/component/Icons/DataBarVerticalStar.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DataBarVerticalStar`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 72 | `src/component/Icons/DataHistogram.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DataHistogram`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 73 | `src/component/Icons/DataHistogramFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DataHistogramFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 74 | `src/component/Icons/Delete.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Delete`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 75 | `src/component/Icons/DeleteOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DeleteOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 76 | `src/component/Icons/DesktopFlow.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DesktopFlow`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 77 | `src/component/Icons/Discord.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Discord`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 78 | `src/component/Icons/Dismiss.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Dismiss`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 79 | `src/component/Icons/DismissCircleFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DismissCircleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 80 | `src/component/Icons/Divider.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Divider`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 81 | `src/component/Icons/Document.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Document`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 82 | `src/component/Icons/DocumentArrowDownFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DocumentArrowDownFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 83 | `src/component/Icons/DocumentCopyFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DocumentCopyFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 84 | `src/component/Icons/DocumentDataLink.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DocumentDataLink`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 85 | `src/component/Icons/DocumentFlowchart.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DocumentFlowchart`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 86 | `src/component/Icons/DocumentPDF.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DocumentPDF`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 87 | `src/component/Icons/DocumentText.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DocumentText`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 88 | `src/component/Icons/DocumentTextOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:DocumentTextOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 89 | `src/component/Icons/Download.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Download`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 90 | `src/component/Icons/Earth.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Earth`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 91 | `src/component/Icons/Edit.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Edit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 92 | `src/component/Icons/EditSetting.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:EditSetting`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 93 | `src/component/Icons/EmailClock.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:EmailClock`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 94 | `src/component/Icons/EmojiEdit.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:EmojiEdit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 95 | `src/component/Icons/Enter.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Enter`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 96 | `src/component/Icons/Eye.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Eye`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 97 | `src/component/Icons/EyeOff.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:EyeOff`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 98 | `src/component/Icons/FastForward.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FastForward`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 99 | `src/component/Icons/FileAdd.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FileAdd`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 100 | `src/component/Icons/FileExclBox.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FileExclBox`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 101 | `src/component/Icons/FilePowerPointBox.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FilePowerPointBox`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 102 | `src/component/Icons/FileWordBox.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FileWordBox`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 103 | `src/component/Icons/FilmstripImage.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FilmstripImage`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 104 | `src/component/Icons/Filter.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Filter`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 105 | `src/component/Icons/Fingerprint.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Fingerprint`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 106 | `src/component/Icons/Folder.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Folder`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 107 | `src/component/Icons/FolderAdd.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FolderAdd`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 108 | `src/component/Icons/FolderArrowRightOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FolderArrowRightOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 109 | `src/component/Icons/FolderArrowUp.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FolderArrowUp`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 110 | `src/component/Icons/FolderLink.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FolderLink`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 111 | `src/component/Icons/FolderOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FolderOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 112 | `src/component/Icons/FolderZip.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FolderZip`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 113 | `src/component/Icons/FullScreenMaximize.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FullScreenMaximize`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 114 | `src/component/Icons/FullScreenMinimize.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:FullScreenMinimize`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 115 | `src/component/Icons/Gift.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Gift`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 116 | `src/component/Icons/Globe.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Globe`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 117 | `src/component/Icons/GlobeFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:GlobeFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 118 | `src/component/Icons/Grid.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Grid`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 119 | `src/component/Icons/GridOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:GridOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 120 | `src/component/Icons/HardDrive.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:HardDrive`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 121 | `src/component/Icons/HardDriveOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:HardDriveOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 122 | `src/component/Icons/HistoryOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:HistoryOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 123 | `src/component/Icons/Home.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Home`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 124 | `src/component/Icons/HomeOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:HomeOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 125 | `src/component/Icons/Icons.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Icons`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 126 | `src/component/Icons/Image.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Image`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 127 | `src/component/Icons/ImageAarowCounterclockwise.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ImageAarowCounterclockwise`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 128 | `src/component/Icons/ImageCopy.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ImageCopy`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 129 | `src/component/Icons/ImageCopyOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ImageCopyOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 130 | `src/component/Icons/ImageEdit.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ImageEdit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 131 | `src/component/Icons/ImageOffOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ImageOffOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 132 | `src/component/Icons/ImageOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ImageOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 133 | `src/component/Icons/InPrivate.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:InPrivate`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 134 | `src/component/Icons/Info.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Info`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 135 | `src/component/Icons/InfoFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:InfoFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 136 | `src/component/Icons/IosArrow.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:IosArrow`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 137 | `src/component/Icons/IosArrowLeft.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:IosArrowLeft`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 138 | `src/component/Icons/LanguageC.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LanguageC`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 139 | `src/component/Icons/LanguageCPP.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LanguageCPP`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 140 | `src/component/Icons/LanguageGo.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LanguageGo`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 141 | `src/component/Icons/LanguageJS.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LanguageJS`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 142 | `src/component/Icons/LanguagePHP.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LanguagePHP`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 143 | `src/component/Icons/LanguagePython.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LanguagePython`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 144 | `src/component/Icons/LanguageRust.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LanguageRust`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 145 | `src/component/Icons/Link.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Link`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 146 | `src/component/Icons/LinkDismiss.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LinkDismiss`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 147 | `src/component/Icons/LinkEdit.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LinkEdit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 148 | `src/component/Icons/LinkOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LinkOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 149 | `src/component/Icons/LinkSetting.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LinkSetting`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 150 | `src/component/Icons/LocationFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LocationFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 151 | `src/component/Icons/LockClosed.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LockClosed`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 152 | `src/component/Icons/LockClosedKey.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LockClosedKey`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 153 | `src/component/Icons/LockClosedOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:LockClosedOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 154 | `src/component/Icons/MagnetOn.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:MagnetOn`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 155 | `src/component/Icons/MailOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:MailOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 156 | `src/component/Icons/Markdown.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Markdown`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 157 | `src/component/Icons/Money.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Money`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 158 | `src/component/Icons/Moon.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Moon`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 159 | `src/component/Icons/MoreHorizontal.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:MoreHorizontal`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 160 | `src/component/Icons/MoreVertical.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:MoreVertical`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 161 | `src/component/Icons/MusicNote1.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:MusicNote1`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 162 | `src/component/Icons/MusicNote1Outlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:MusicNote1Outlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 163 | `src/component/Icons/MusicNote2.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:MusicNote2`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 164 | `src/component/Icons/MusicNote2Play.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:MusicNote2Play`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 165 | `src/component/Icons/Notepad.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Notepad`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 166 | `src/component/Icons/Numbers.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Numbers`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 167 | `src/component/Icons/Open.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Open`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 168 | `src/component/Icons/OpenFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:OpenFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 169 | `src/component/Icons/Options.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Options`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 170 | `src/component/Icons/PackageOpen.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PackageOpen`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 171 | `src/component/Icons/Password.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Password`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 172 | `src/component/Icons/Pause.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Pause`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 173 | `src/component/Icons/Payment.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Payment`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 174 | `src/component/Icons/PaymentFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PaymentFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 175 | `src/component/Icons/People.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:People`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 176 | `src/component/Icons/PeopleFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PeopleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 177 | `src/component/Icons/PeopleStar.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PeopleStar`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 178 | `src/component/Icons/PeopleTeam.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PeopleTeam`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 179 | `src/component/Icons/PeopleTeamOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PeopleTeamOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 180 | `src/component/Icons/Person.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Person`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 181 | `src/component/Icons/PersonLock.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PersonLock`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 182 | `src/component/Icons/PersonOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PersonOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 183 | `src/component/Icons/PersonPasskey.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PersonPasskey`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 184 | `src/component/Icons/PersonStar.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PersonStar`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 185 | `src/component/Icons/PhoneLaptop.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PhoneLaptop`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 186 | `src/component/Icons/PhoneLaptopOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PhoneLaptopOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 187 | `src/component/Icons/PinOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:PinOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 188 | `src/component/Icons/Play.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Play`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 189 | `src/component/Icons/Pulse.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Pulse`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 190 | `src/component/Icons/QQ.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:QQ`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 191 | `src/component/Icons/QuestionCircle.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:QuestionCircle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 192 | `src/component/Icons/Raw.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Raw`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 193 | `src/component/Icons/RectangleLandscapeSync.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:RectangleLandscapeSync`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 194 | `src/component/Icons/RectangleLandscapeSyncOff.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:RectangleLandscapeSyncOff`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 195 | `src/component/Icons/RenameFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:RenameFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 196 | `src/component/Icons/RenameOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:RenameOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 197 | `src/component/Icons/Save.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Save`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 198 | `src/component/Icons/Savings.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Savings`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 199 | `src/component/Icons/Search.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Search`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 200 | `src/component/Icons/SendLogging.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:SendLogging`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 201 | `src/component/Icons/SendLoggingFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:SendLoggingFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 202 | `src/component/Icons/Server.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Server`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 203 | `src/component/Icons/ServerFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ServerFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 204 | `src/component/Icons/Setting.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Setting`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 205 | `src/component/Icons/SettingsOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:SettingsOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 206 | `src/component/Icons/Share.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Share`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 207 | `src/component/Icons/ShareAndroid.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ShareAndroid`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 208 | `src/component/Icons/ShareFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ShareFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 209 | `src/component/Icons/ShareOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ShareOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 210 | `src/component/Icons/Shield.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Shield`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 211 | `src/component/Icons/ShieldAdd.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ShieldAdd`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 212 | `src/component/Icons/ShieldDismiss.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ShieldDismiss`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 213 | `src/component/Icons/ShieldFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ShieldFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 214 | `src/component/Icons/ShieldLock.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ShieldLock`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 215 | `src/component/Icons/ShieldLockFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:ShieldLockFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 216 | `src/component/Icons/SignOut.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:SignOut`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 217 | `src/component/Icons/SlideText.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:SlideText`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 218 | `src/component/Icons/Sparkle.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Sparkle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 219 | `src/component/Icons/SparkleFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:SparkleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 220 | `src/component/Icons/StarFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:StarFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 221 | `src/component/Icons/Storage.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Storage`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 222 | `src/component/Icons/StorageOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:StorageOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 223 | `src/component/Icons/Subtitles.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Subtitles`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 224 | `src/component/Icons/SunWithTime.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:SunWithTime`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 225 | `src/component/Icons/Sunny.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Sunny`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 226 | `src/component/Icons/TableSettings.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TableSettings`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 227 | `src/component/Icons/Tag.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Tag`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 228 | `src/component/Icons/Tags.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Tags`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 229 | `src/component/Icons/TaskList.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TaskList`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 230 | `src/component/Icons/TaskListOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TaskListOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 231 | `src/component/Icons/TaskListRegular.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TaskListRegular`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 232 | `src/component/Icons/Telegram.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Telegram`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 233 | `src/component/Icons/TextBulletListSquareEdiFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TextBulletListSquareEdiFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 234 | `src/component/Icons/TextBulletListSquareEdit.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TextBulletListSquareEdit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 235 | `src/component/Icons/TextCaseTitle.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TextCaseTitle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 236 | `src/component/Icons/TextEditStyle.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TextEditStyle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 237 | `src/component/Icons/TextGrammarLighting.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TextGrammarLighting`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 238 | `src/component/Icons/TextIndentIncrease.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TextIndentIncrease`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 239 | `src/component/Icons/TicketDiagonal.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:TicketDiagonal`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 240 | `src/component/Icons/Timer.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Timer`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 241 | `src/component/Icons/Translate.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Translate`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 242 | `src/component/Icons/Upload.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Upload`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 243 | `src/component/Icons/UploadFilled.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:UploadFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 244 | `src/component/Icons/Video.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Video`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 245 | `src/component/Icons/VideoOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:VideoOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 246 | `src/component/Icons/WalletCreditCard.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:WalletCreditCard`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 247 | `src/component/Icons/Warning.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Warning`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 248 | `src/component/Icons/WarningOutlined.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:WarningOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 249 | `src/component/Icons/Whiteboard.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:Whiteboard`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 250 | `src/component/Icons/WindowApps.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:WindowApps`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
-| 251 | `src/component/Icons/WrenchSettings.tsx` | `web/packages/components/src/components/icon/cloudreve-icons.ts -> `cr:WrenchSettings`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 1 | `src/component/Icons/Add.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Add`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 2 | `src/component/Icons/AppFolder.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:AppFolder`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 3 | `src/component/Icons/AppGeneric.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:AppGeneric`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 4 | `src/component/Icons/AppsList.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:AppsList`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 5 | `src/component/Icons/AppsListOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:AppsListOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 6 | `src/component/Icons/Archive.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Archive`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 7 | `src/component/Icons/ArchiveArrow.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArchiveArrow`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 8 | `src/component/Icons/ArrowClockwise.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowClockwise`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 9 | `src/component/Icons/ArrowClockwiseFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowClockwiseFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 10 | `src/component/Icons/ArrowDown.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowDown`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 11 | `src/component/Icons/ArrowHookDownLeft.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowHookDownLeft`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 12 | `src/component/Icons/ArrowHookUpRight.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowHookUpRight`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 13 | `src/component/Icons/ArrowImport.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowImport`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 14 | `src/component/Icons/ArrowLeft.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowLeft`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 15 | `src/component/Icons/ArrowRepeatAll.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowRepeatAll`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 16 | `src/component/Icons/ArrowRepeatOff.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowRepeatOff`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 17 | `src/component/Icons/ArrowRepeatOne.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowRepeatOne`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 18 | `src/component/Icons/ArrowShuffle.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowShuffle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 19 | `src/component/Icons/ArrowSort.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowSort`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 20 | `src/component/Icons/ArrowSortDownFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowSortDownFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 21 | `src/component/Icons/ArrowSync.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowSync`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 22 | `src/component/Icons/ArrowSyncCircleFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ArrowSyncCircleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 23 | `src/component/Icons/BinFullOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BinFullOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 24 | `src/component/Icons/Book.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Book`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 25 | `src/component/Icons/BookInformation.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BookInformation`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 26 | `src/component/Icons/Border.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Border`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 27 | `src/component/Icons/BorderAll.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BorderAll`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 28 | `src/component/Icons/BorderInside.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BorderInside`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 29 | `src/component/Icons/Bot.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Bot`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 30 | `src/component/Icons/BoxMultiple.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BoxMultiple`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 31 | `src/component/Icons/BoxMultipleFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BoxMultipleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 32 | `src/component/Icons/BranchCompare.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BranchCompare`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 33 | `src/component/Icons/BranchForkLink.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BranchForkLink`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 34 | `src/component/Icons/Broom.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Broom`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 35 | `src/component/Icons/BuildingShop.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BuildingShop`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 36 | `src/component/Icons/BuildingShopFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:BuildingShopFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 37 | `src/component/Icons/CalendarClock.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CalendarClock`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 38 | `src/component/Icons/CameraFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CameraFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 39 | `src/component/Icons/CameraRounded.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CameraRounded`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 40 | `src/component/Icons/CaretDown.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CaretDown`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 41 | `src/component/Icons/CaretRight.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CaretRight`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 42 | `src/component/Icons/Cart.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Cart`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 43 | `src/component/Icons/CheckCircleFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CheckCircleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 44 | `src/component/Icons/CheckUnchecked.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CheckUnchecked`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 45 | `src/component/Icons/CheckboxChecked.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CheckboxChecked`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 46 | `src/component/Icons/Checkmark.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Checkmark`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 47 | `src/component/Icons/CheckmarkCircle.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CheckmarkCircle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 48 | `src/component/Icons/CheckmarkCircleFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CheckmarkCircleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 49 | `src/component/Icons/ChevronRight.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ChevronRight`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 50 | `src/component/Icons/CircleHintFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CircleHintFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 51 | `src/component/Icons/Clipboard.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Clipboard`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 52 | `src/component/Icons/ClockArrowDownload.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ClockArrowDownload`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 53 | `src/component/Icons/ClockFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ClockFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 54 | `src/component/Icons/CloudArrowIUp.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CloudArrowIUp`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 55 | `src/component/Icons/CloudDownload.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CloudDownload`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 56 | `src/component/Icons/CloudDownloadOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CloudDownloadOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 57 | `src/component/Icons/CloudFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CloudFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 58 | `src/component/Icons/CloudOff.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CloudOff`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 59 | `src/component/Icons/CoinStack.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CoinStack`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 60 | `src/component/Icons/Color.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Color`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 61 | `src/component/Icons/CommentMultiple.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CommentMultiple`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 62 | `src/component/Icons/CopperCoin.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CopperCoin`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 63 | `src/component/Icons/CopyOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CopyOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 64 | `src/component/Icons/Copyright.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Copyright`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 65 | `src/component/Icons/CubeSync.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CubeSync`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 66 | `src/component/Icons/CubeSyncFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CubeSyncFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 67 | `src/component/Icons/CubeTree.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CubeTree`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 68 | `src/component/Icons/CubeTreeFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:CubeTreeFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 69 | `src/component/Icons/Currency.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Currency`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 70 | `src/component/Icons/DarkTheme.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DarkTheme`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 71 | `src/component/Icons/DataBarVerticalStar.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DataBarVerticalStar`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 72 | `src/component/Icons/DataHistogram.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DataHistogram`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 73 | `src/component/Icons/DataHistogramFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DataHistogramFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 74 | `src/component/Icons/Delete.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Delete`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 75 | `src/component/Icons/DeleteOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DeleteOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 76 | `src/component/Icons/DesktopFlow.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DesktopFlow`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 77 | `src/component/Icons/Discord.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Discord`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 78 | `src/component/Icons/Dismiss.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Dismiss`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 79 | `src/component/Icons/DismissCircleFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DismissCircleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 80 | `src/component/Icons/Divider.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Divider`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 81 | `src/component/Icons/Document.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Document`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 82 | `src/component/Icons/DocumentArrowDownFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DocumentArrowDownFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 83 | `src/component/Icons/DocumentCopyFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DocumentCopyFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 84 | `src/component/Icons/DocumentDataLink.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DocumentDataLink`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 85 | `src/component/Icons/DocumentFlowchart.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DocumentFlowchart`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 86 | `src/component/Icons/DocumentPDF.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DocumentPDF`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 87 | `src/component/Icons/DocumentText.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DocumentText`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 88 | `src/component/Icons/DocumentTextOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:DocumentTextOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 89 | `src/component/Icons/Download.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Download`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 90 | `src/component/Icons/Earth.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Earth`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 91 | `src/component/Icons/Edit.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Edit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 92 | `src/component/Icons/EditSetting.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:EditSetting`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 93 | `src/component/Icons/EmailClock.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:EmailClock`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 94 | `src/component/Icons/EmojiEdit.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:EmojiEdit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 95 | `src/component/Icons/Enter.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Enter`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 96 | `src/component/Icons/Eye.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Eye`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 97 | `src/component/Icons/EyeOff.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:EyeOff`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 98 | `src/component/Icons/FastForward.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FastForward`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 99 | `src/component/Icons/FileAdd.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FileAdd`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 100 | `src/component/Icons/FileExclBox.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FileExclBox`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 101 | `src/component/Icons/FilePowerPointBox.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FilePowerPointBox`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 102 | `src/component/Icons/FileWordBox.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FileWordBox`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 103 | `src/component/Icons/FilmstripImage.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FilmstripImage`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 104 | `src/component/Icons/Filter.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Filter`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 105 | `src/component/Icons/Fingerprint.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Fingerprint`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 106 | `src/component/Icons/Folder.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Folder`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 107 | `src/component/Icons/FolderAdd.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FolderAdd`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 108 | `src/component/Icons/FolderArrowRightOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FolderArrowRightOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 109 | `src/component/Icons/FolderArrowUp.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FolderArrowUp`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 110 | `src/component/Icons/FolderLink.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FolderLink`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 111 | `src/component/Icons/FolderOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FolderOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 112 | `src/component/Icons/FolderZip.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FolderZip`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 113 | `src/component/Icons/FullScreenMaximize.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FullScreenMaximize`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 114 | `src/component/Icons/FullScreenMinimize.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:FullScreenMinimize`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 115 | `src/component/Icons/Gift.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Gift`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 116 | `src/component/Icons/Globe.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Globe`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 117 | `src/component/Icons/GlobeFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:GlobeFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 118 | `src/component/Icons/Grid.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Grid`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 119 | `src/component/Icons/GridOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:GridOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 120 | `src/component/Icons/HardDrive.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:HardDrive`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 121 | `src/component/Icons/HardDriveOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:HardDriveOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 122 | `src/component/Icons/HistoryOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:HistoryOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 123 | `src/component/Icons/Home.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Home`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 124 | `src/component/Icons/HomeOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:HomeOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 125 | `src/component/Icons/Icons.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Icons`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 126 | `src/component/Icons/Image.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Image`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 127 | `src/component/Icons/ImageAarowCounterclockwise.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ImageAarowCounterclockwise`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 128 | `src/component/Icons/ImageCopy.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ImageCopy`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 129 | `src/component/Icons/ImageCopyOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ImageCopyOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 130 | `src/component/Icons/ImageEdit.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ImageEdit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 131 | `src/component/Icons/ImageOffOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ImageOffOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 132 | `src/component/Icons/ImageOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ImageOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 133 | `src/component/Icons/InPrivate.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:InPrivate`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 134 | `src/component/Icons/Info.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Info`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 135 | `src/component/Icons/InfoFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:InfoFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 136 | `src/component/Icons/IosArrow.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:IosArrow`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 137 | `src/component/Icons/IosArrowLeft.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:IosArrowLeft`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 138 | `src/component/Icons/LanguageC.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LanguageC`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 139 | `src/component/Icons/LanguageCPP.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LanguageCPP`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 140 | `src/component/Icons/LanguageGo.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LanguageGo`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 141 | `src/component/Icons/LanguageJS.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LanguageJS`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 142 | `src/component/Icons/LanguagePHP.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LanguagePHP`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 143 | `src/component/Icons/LanguagePython.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LanguagePython`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 144 | `src/component/Icons/LanguageRust.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LanguageRust`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 145 | `src/component/Icons/Link.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Link`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 146 | `src/component/Icons/LinkDismiss.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LinkDismiss`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 147 | `src/component/Icons/LinkEdit.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LinkEdit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 148 | `src/component/Icons/LinkOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LinkOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 149 | `src/component/Icons/LinkSetting.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LinkSetting`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 150 | `src/component/Icons/LocationFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LocationFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 151 | `src/component/Icons/LockClosed.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LockClosed`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 152 | `src/component/Icons/LockClosedKey.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LockClosedKey`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 153 | `src/component/Icons/LockClosedOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:LockClosedOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 154 | `src/component/Icons/MagnetOn.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:MagnetOn`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 155 | `src/component/Icons/MailOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:MailOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 156 | `src/component/Icons/Markdown.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Markdown`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 157 | `src/component/Icons/Money.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Money`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 158 | `src/component/Icons/Moon.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Moon`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 159 | `src/component/Icons/MoreHorizontal.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:MoreHorizontal`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 160 | `src/component/Icons/MoreVertical.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:MoreVertical`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 161 | `src/component/Icons/MusicNote1.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:MusicNote1`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 162 | `src/component/Icons/MusicNote1Outlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:MusicNote1Outlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 163 | `src/component/Icons/MusicNote2.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:MusicNote2`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 164 | `src/component/Icons/MusicNote2Play.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:MusicNote2Play`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 165 | `src/component/Icons/Notepad.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Notepad`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 166 | `src/component/Icons/Numbers.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Numbers`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 167 | `src/component/Icons/Open.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Open`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 168 | `src/component/Icons/OpenFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:OpenFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 169 | `src/component/Icons/Options.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Options`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 170 | `src/component/Icons/PackageOpen.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PackageOpen`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 171 | `src/component/Icons/Password.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Password`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 172 | `src/component/Icons/Pause.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Pause`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 173 | `src/component/Icons/Payment.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Payment`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 174 | `src/component/Icons/PaymentFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PaymentFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 175 | `src/component/Icons/People.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:People`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 176 | `src/component/Icons/PeopleFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PeopleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 177 | `src/component/Icons/PeopleStar.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PeopleStar`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 178 | `src/component/Icons/PeopleTeam.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PeopleTeam`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 179 | `src/component/Icons/PeopleTeamOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PeopleTeamOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 180 | `src/component/Icons/Person.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Person`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 181 | `src/component/Icons/PersonLock.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PersonLock`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 182 | `src/component/Icons/PersonOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PersonOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 183 | `src/component/Icons/PersonPasskey.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PersonPasskey`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 184 | `src/component/Icons/PersonStar.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PersonStar`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 185 | `src/component/Icons/PhoneLaptop.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PhoneLaptop`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 186 | `src/component/Icons/PhoneLaptopOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PhoneLaptopOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 187 | `src/component/Icons/PinOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:PinOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 188 | `src/component/Icons/Play.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Play`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 189 | `src/component/Icons/Pulse.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Pulse`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 190 | `src/component/Icons/QQ.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:QQ`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 191 | `src/component/Icons/QuestionCircle.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:QuestionCircle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 192 | `src/component/Icons/Raw.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Raw`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 193 | `src/component/Icons/RectangleLandscapeSync.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:RectangleLandscapeSync`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 194 | `src/component/Icons/RectangleLandscapeSyncOff.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:RectangleLandscapeSyncOff`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 195 | `src/component/Icons/RenameFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:RenameFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 196 | `src/component/Icons/RenameOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:RenameOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 197 | `src/component/Icons/Save.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Save`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 198 | `src/component/Icons/Savings.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Savings`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 199 | `src/component/Icons/Search.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Search`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 200 | `src/component/Icons/SendLogging.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:SendLogging`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 201 | `src/component/Icons/SendLoggingFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:SendLoggingFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 202 | `src/component/Icons/Server.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Server`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 203 | `src/component/Icons/ServerFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ServerFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 204 | `src/component/Icons/Setting.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Setting`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 205 | `src/component/Icons/SettingsOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:SettingsOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 206 | `src/component/Icons/Share.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Share`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 207 | `src/component/Icons/ShareAndroid.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ShareAndroid`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 208 | `src/component/Icons/ShareFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ShareFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 209 | `src/component/Icons/ShareOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ShareOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 210 | `src/component/Icons/Shield.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Shield`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 211 | `src/component/Icons/ShieldAdd.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ShieldAdd`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 212 | `src/component/Icons/ShieldDismiss.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ShieldDismiss`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 213 | `src/component/Icons/ShieldFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ShieldFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 214 | `src/component/Icons/ShieldLock.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ShieldLock`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 215 | `src/component/Icons/ShieldLockFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:ShieldLockFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 216 | `src/component/Icons/SignOut.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:SignOut`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 217 | `src/component/Icons/SlideText.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:SlideText`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 218 | `src/component/Icons/Sparkle.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Sparkle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 219 | `src/component/Icons/SparkleFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:SparkleFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 220 | `src/component/Icons/StarFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:StarFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 221 | `src/component/Icons/Storage.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Storage`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 222 | `src/component/Icons/StorageOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:StorageOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 223 | `src/component/Icons/Subtitles.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Subtitles`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 224 | `src/component/Icons/SunWithTime.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:SunWithTime`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 225 | `src/component/Icons/Sunny.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Sunny`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 226 | `src/component/Icons/TableSettings.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TableSettings`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 227 | `src/component/Icons/Tag.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Tag`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 228 | `src/component/Icons/Tags.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Tags`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 229 | `src/component/Icons/TaskList.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TaskList`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 230 | `src/component/Icons/TaskListOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TaskListOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 231 | `src/component/Icons/TaskListRegular.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TaskListRegular`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 232 | `src/component/Icons/Telegram.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Telegram`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 233 | `src/component/Icons/TextBulletListSquareEdiFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TextBulletListSquareEdiFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 234 | `src/component/Icons/TextBulletListSquareEdit.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TextBulletListSquareEdit`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 235 | `src/component/Icons/TextCaseTitle.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TextCaseTitle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 236 | `src/component/Icons/TextEditStyle.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TextEditStyle`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 237 | `src/component/Icons/TextGrammarLighting.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TextGrammarLighting`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 238 | `src/component/Icons/TextIndentIncrease.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TextIndentIncrease`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 239 | `src/component/Icons/TicketDiagonal.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:TicketDiagonal`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 240 | `src/component/Icons/Timer.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Timer`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 241 | `src/component/Icons/Translate.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Translate`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 242 | `src/component/Icons/Upload.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Upload`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 243 | `src/component/Icons/UploadFilled.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:UploadFilled`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 244 | `src/component/Icons/Video.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Video`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 245 | `src/component/Icons/VideoOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:VideoOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 246 | `src/component/Icons/WalletCreditCard.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:WalletCreditCard`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 247 | `src/component/Icons/Warning.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Warning`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 248 | `src/component/Icons/WarningOutlined.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:WarningOutlined`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 249 | `src/component/Icons/Whiteboard.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:Whiteboard`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 250 | `src/component/Icons/WindowApps.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:WindowApps`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
+| 251 | `src/component/Icons/WrenchSettings.tsx` | `web/packages/icons/src/cloudreve-icons.ts -> `cr:WrenchSettings`` | 迁移 | 已完成 | SvgIcon 包装器逐个抽取为 offline Iconify 集合 cr:*（见 cloudreve-icons.ts）；不保留单文件组件。 |
 
 ### component/Common（29）
 
@@ -338,24 +338,24 @@
 | --- | --- | --- | --- | --- | --- |
 | 1 | `src/component/Frame/FrameManagerBundle.tsx` | `web/app/console/src/layouts` | 保留应用层 | 已保留 | Frame 组合由各应用自己的 layout 承担，不进入公共库。 |
 | 2 | `src/component/Frame/HeadlessFrame.tsx` | — | 暂缓 | 已登记（暂缓） | HeadlessFrame 为云盘文件管理器事件编排层，待文件应用迁移。 |
-| 3 | `src/component/Frame/NavBar/AppDrawer.tsx` | `web/packages/components/src/layouts/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
-| 4 | `src/component/Frame/NavBar/AppMain.tsx` | `web/packages/components/src/layouts/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
+| 3 | `src/component/Frame/NavBar/AppDrawer.tsx` | `web/packages/layouts/src/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
+| 4 | `src/component/Frame/NavBar/AppMain.tsx` | `web/packages/layouts/src/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
 | 5 | `src/component/Frame/NavBar/DarkThemeSwitcher.tsx` | `web/packages/components/src/components/theme-switch/theme-switch.tsx` | 迁移 | 已完成 | 迁移为 ThemeSwitch（light/system/dark 分段控件），直接消费 usePudansTheme。 |
-| 6 | `src/component/Frame/NavBar/DrawerHeader.tsx` | `web/packages/components/src/layouts/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
+| 6 | `src/component/Frame/NavBar/DrawerHeader.tsx` | `web/packages/layouts/src/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
 | 7 | `src/component/Frame/NavBar/FileSelectedActions.tsx` | — | 暂缓 | 已登记（暂缓） | 文件多选操作条依赖文件管理器选中态，待文件应用迁移。 |
 | 8 | `src/component/Frame/NavBar/NavBarMainActions.tsx` | — | 暂缓 | 已登记（暂缓） | 导航主操作与 cloudreve 上传/新建流程耦合，登记业务层待迁移。 |
 | 9 | `src/component/Frame/NavBar/NavIconTransition.tsx` | `web/packages/components/src/components/motion/motion.tsx` | 封装 | 已完成 | 图标切换动效抽为 AnimatedSwap（TransitionGroup + Fade，token 化时长）。 |
 | 10 | `src/component/Frame/NavBar/PageNavigation.tsx` | — | 暂缓 | 已登记（暂缓） | 页面导航条绑定 cloudreve 路由与文件路径，登记待迁移。 |
 | 11 | `src/component/Frame/NavBar/SearchBar.tsx` | `web/packages/components/src/components/search-input/search-input.tsx` | 迁移 | 已完成 | 迁移为 SearchInput：快捷键提示、loading、清空，去掉 redux 全局搜索依赖。 |
-| 12 | `src/component/Frame/NavBar/SideNavItem.tsx` | `web/packages/components/src/layouts/app-shell/side-nav-item.tsx` | 复用 | 已复用 | 目标库已有 SideNavItem，支持折叠/激活/图标过渡，直接复用。 |
+| 12 | `src/component/Frame/NavBar/SideNavItem.tsx` | `web/packages/layouts/src/app-shell/side-nav-item.tsx` | 复用 | 已复用 | 目标库已有 SideNavItem，支持折叠/激活/图标过渡，直接复用。 |
 | 13 | `src/component/Frame/NavBar/SplitHandle.tsx` | `web/packages/components/src/components/split-pane/split-pane.tsx` | 迁移 | 已完成 | 迁移为 SplitPane 可拖拽分隔条（pointer 事件，支持持久化 key）。 |
 | 14 | `src/component/Frame/NavBar/StorageSummary.tsx` | — | 暂缓 | 已登记（暂缓） | 存储配额摘要依赖 cloudreve 容量 API，目标暂无文件产品面。 |
-| 15 | `src/component/Frame/NavBar/TopAppBar.tsx` | `web/packages/components/src/layouts/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
-| 16 | `src/component/Frame/NavBar/UserAction.tsx` | `web/packages/components/src/layouts/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
-| 17 | `src/component/Frame/NavBarFrame.tsx` | `web/packages/components/src/layouts/app-shell/app-shell.tsx` | 复用 | 已复用 | 由 AppShell 统一承载导航框架。 |
+| 15 | `src/component/Frame/NavBar/TopAppBar.tsx` | `web/packages/layouts/src/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
+| 16 | `src/component/Frame/NavBar/UserAction.tsx` | `web/packages/layouts/src/app-shell/app-shell.tsx` | 复用 | 已复用 | AppShell 已提供可折叠 Sidebar、Header、用户菜单与内容区，旧导航拆分件合并复用。 |
+| 17 | `src/component/Frame/NavBarFrame.tsx` | `web/packages/layouts/src/app-shell/app-shell.tsx` | 复用 | 已复用 | 由 AppShell 统一承载导航框架。 |
 | 18 | `src/component/Frame/OauthAppCard.tsx` | `web/packages/components/src/components/oauth-app-card/oauth-app-card.tsx` | 迁移 | 已完成 | 迁移为 OAuthAppCard（图标/名称/描述/加载骨架），供授权页与集成页复用。 |
 | 19 | `src/component/Frame/PoweredBy.tsx` | `web/packages/components/src/components/powered-by/powered-by.tsx` | 迁移 | 已完成 | 迁移为通用 PoweredBy（品牌名/链接/logo 由 props 注入）。 |
-| 20 | `src/component/Frame/RadiusFrame.tsx` | `web/packages/components/src/layouts/page-container/page-container.tsx` | 复用 | 已复用 | PageContainer 已实现圆角内容框架，直接复用。 |
+| 20 | `src/component/Frame/RadiusFrame.tsx` | `web/packages/layouts/src/page-container/page-container.tsx` | 复用 | 已复用 | PageContainer 已实现圆角内容框架，直接复用。 |
 | 21 | `src/component/Frame/assets/logo.svg` | — | 暂缓 | 已登记（暂缓） | cloudreve 品牌 logo 不迁移到 pudans；Logo 组件改为可注入源，品牌资产由应用层提供。 |
 | 22 | `src/component/Frame/assets/logo_light.svg` | — | 暂缓 | 已登记（暂缓） | cloudreve 品牌 logo 不迁移到 pudans；Logo 组件改为可注入源，品牌资产由应用层提供。 |
 
@@ -400,8 +400,8 @@
 | 23 | `src/component/Pages/Login/Signin/SignIn.tsx` | `web/app/auth/src/modules/login` | 复用 | 已复用 | 目标 auth 登录模块已覆盖密码/OTP 流程；passkey 与第三方回调登记为待补。 |
 | 24 | `src/component/Pages/Login/Signup.tsx` | — | 暂缓 | 已登记（暂缓） | 目标暂未开放注册入口（管理员创建用户），登记待产品决策。 |
 | 25 | `src/component/Pages/NoMatch.tsx` | `web/packages/components/src/components/empty-state/empty-state.tsx` | 迁移 | 已完成 | 迁移为 EmptyState variant=not-found（图标/标题/返回动作）。 |
-| 26 | `src/component/Pages/PageContainer.tsx` | `web/packages/components/src/layouts/page-container/page-container.tsx` | 复用 | 已复用 | 目标库 PageContainer 已覆盖圆角容器与移动端适配。 |
-| 27 | `src/component/Pages/PageHeader.tsx` | `web/packages/components/src/layouts/page-layout/page-layout.tsx` | 复用 | 已复用 | PageLayout 的 title/description/actions 已覆盖页头能力。 |
+| 26 | `src/component/Pages/PageContainer.tsx` | `web/packages/layouts/src/page-container/page-container.tsx` | 复用 | 已复用 | 目标库 PageContainer 已覆盖圆角容器与移动端适配。 |
+| 27 | `src/component/Pages/PageHeader.tsx` | `web/packages/layouts/src/page-layout/page-layout.tsx` | 复用 | 已复用 | PageLayout 的 title/description/actions 已覆盖页头能力。 |
 | 28 | `src/component/Pages/Pages.tsx` | `web/src/router` | 保留应用层 | 已保留 | 路由组合由 @web/router 与 app/*/router 承担。 |
 | 29 | `src/component/Pages/Profile/Profile.tsx` | `web/app/uc/src/modules/profile` | 复用 | 已复用 | 目标 UC 已有 profile 模块，页面结构与交互已适配。 |
 | 30 | `src/component/Pages/Setting/AvatarCropperDialog.tsx` | `web/packages/components/src/components/image-cropper/image-cropper.tsx` | 复用 | 已复用 | ImageCropper 已覆盖裁剪+输出 blob 能力。 |
@@ -874,17 +874,17 @@
 
 | # | 源路径 | 目标路径 | 处理方式 | 状态 | 理由 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `src/constants/index.ts` | `web/packages/shared/src/constants.ts` | 封装 | 已完成 | 通用常量（版本/布局/键位）并入 @pudans/shared 常量；cloudreve 专有常量不迁移。 |
+| 1 | `src/constants/index.ts` | `web/packages/utils/src/constants.ts` | 封装 | 已完成 | 通用常量（版本/布局/键位）并入 @pudans/shared 常量；cloudreve 专有常量不迁移。 |
 
 ### hooks（5）
 
 | # | 源路径 | 目标路径 | 处理方式 | 状态 | 理由 |
 | --- | --- | --- | --- | --- | --- |
 | 1 | `src/hooks/areaSelection.ts` | — | 暂缓 | 已登记（暂缓） | 框选逻辑与文件网格 DOM 结构强耦合，待文件应用迁移。 |
-| 2 | `src/hooks/delayedHover.tsx` | `web/packages/components/src/hooks/use-delayed-hover.ts` | 迁移 | 已完成 | 迁移为 useDelayedHover（可配置延迟，清理定时器，支持 popup state）。 |
-| 3 | `src/hooks/useMediaSession.ts` | `web/packages/components/src/hooks/use-media-session.ts` | 迁移 | 已完成 | 迁移为 useMediaSession（泛化 MediaSession API，去掉 FileResponse 依赖）。 |
+| 2 | `src/hooks/delayedHover.tsx` | `web/packages/hooks/src/use-delayed-hover.ts` | 迁移 | 已完成 | 迁移为 useDelayedHover（可配置延迟，清理定时器，支持 popup state）。 |
+| 3 | `src/hooks/useMediaSession.ts` | `web/packages/hooks/src/use-media-session.ts` | 迁移 | 已完成 | 迁移为 useMediaSession（泛化 MediaSession API，去掉 FileResponse 依赖）。 |
 | 4 | `src/hooks/useNavigation.tsx` | — | 暂缓 | 已登记（暂缓） | 文件路径导航 thunk 编排，待文件应用迁移。 |
-| 5 | `src/hooks/useOverflow.tsx` | `web/packages/components/src/hooks/use-overflow.ts` | 迁移 | 已完成 | 迁移为 useOverflow（ResizeObserver + 返回值）。 |
+| 5 | `src/hooks/useOverflow.tsx` | `web/packages/hooks/src/use-overflow.ts` | 迁移 | 已完成 | 迁移为 useOverflow（ResizeObserver + 返回值）。 |
 
 ### redux（14）
 
@@ -924,12 +924,12 @@
 
 | # | 源路径 | 目标路径 | 处理方式 | 状态 | 理由 |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `src/util/base64.ts` | `web/packages/shared/src/utils/base64.ts` | 迁移 | 已完成 | 迁移 base64Encode/base64Decode 到 @pudans/shared/utils。 |
-| 2 | `src/util/boolset.ts` | `web/packages/shared/src/utils/boolset.ts` | 迁移 | 已完成 | 迁移 Boolset 位图工具到 @pudans/shared/utils 并补测试。 |
-| 3 | `src/util/datetime.ts` | `web/packages/shared/src/utils/datetime.ts` | 迁移 | 已完成 | 迁移时间格式化/时长格式化（注入 locale/timezone，不依赖 i18n 单例）。 |
-| 4 | `src/util/filesystem.ts` | `web/packages/shared/src/utils/filesystem.ts` | 迁移 | 已完成 | 迁移 File System Access API 工具（目录创建/流式写文件/权限校验）。 |
-| 5 | `src/util/index.ts` | `web/packages/shared/src/index.ts` | 复用 | 已复用 | 通用工具汇总由 @pudans/shared 导出。 |
-| 6 | `src/util/lru.ts` | `web/packages/shared/src/utils/lru.ts` | 迁移 | 已完成 | 迁移 LRUCache（带 blob URL 回收）到 @pudans/shared/utils。 |
+| 1 | `src/util/base64.ts` | `web/packages/utils/src/utils/base64.ts` | 迁移 | 已完成 | 迁移 base64Encode/base64Decode 到 @pudans/shared/utils。 |
+| 2 | `src/util/boolset.ts` | `web/packages/utils/src/utils/boolset.ts` | 迁移 | 已完成 | 迁移 Boolset 位图工具到 @pudans/shared/utils 并补测试。 |
+| 3 | `src/util/datetime.ts` | `web/packages/utils/src/utils/datetime.ts` | 迁移 | 已完成 | 迁移时间格式化/时长格式化（注入 locale/timezone，不依赖 i18n 单例）。 |
+| 4 | `src/util/filesystem.ts` | `web/packages/utils/src/utils/filesystem.ts` | 迁移 | 已完成 | 迁移 File System Access API 工具（目录创建/流式写文件/权限校验）。 |
+| 5 | `src/util/index.ts` | `web/packages/utils/src/index.ts` | 复用 | 已复用 | 通用工具汇总由 @pudans/shared 导出。 |
+| 6 | `src/util/lru.ts` | `web/packages/utils/src/utils/lru.ts` | 迁移 | 已完成 | 迁移 LRUCache（带 blob URL 回收）到 @pudans/shared/utils。 |
 | 7 | `src/util/permission.ts` | — | 暂缓 | 已登记（暂缓） | 文件复制/移动权限判定依赖 cloudreve URI 语义，待文件应用。 |
 | 8 | `src/util/uri.ts` | — | 暂缓 | 已登记（暂缓） | cloudreve:// URI 解析器为云盘专有协议，目标无对应协议。 |
 | 9 | `src/util/zip.js` | — | 暂缓 | 已登记（暂缓） | 压缩流实现与 cloudreve 归档 API 绑定，登记待文件应用。 |
@@ -1043,9 +1043,9 @@
 
 `accordion`、`alert`、`animate-height`、`avatar`、`badge`、`breadcrumbs`、`button`、`captcha`、`card`、`chart`、`checkbox`、`code`、`confirm-dialog`、`date-picker`、`description-list`、`dialog`、`dropdown-menu`、`empty-state`、`error-detail-dialog`、`error-state`、`file-drop-zone`、`file-type-icon`、`form-field`、`graph`、`highlight-text`、`icon`、`image-cropper`、`input`、`language-switcher`、`logo`、`motion`、`oauth-app-card`、`otp-input`、`pagination`、`powered-by`、`progress`、`progress-steps`、`relative-time`、`responsive-tabs`、`search-input`、`select`、`select-dialog`、`settings-panel`、`size-input`、`skeleton`、`split-pane`、`stat-card`、`switch`、`table`、`tabs`、`theme-switch`、`toast`、`tooltip`、`tree-view`、`user`
 
-### 布局目录（4）
+### 布局目录（5）
 
-`app-shell`、`page-container`、`page-layout`、`sidebar-layout`
+`app-shell`、`page-container`、`page-layout`、`shared`、`sidebar-layout`
 
 ### hooks 目录（0）
 
@@ -1125,7 +1125,7 @@
 
 ## 七、设计变量（token）清单
 
-> 完整定义见 `web/packages/components/src/styles/tokens.ts`、`variables.css`、`create-theme.ts`；规范说明见 `.dsh/migration/design-system.md`。
+> 完整定义见 `web/packages/theme/src/tokens.ts`、`variables.css`、`create-theme.ts`；规范说明见 `.dsh/migration/design-system.md`。
 
 | 组 | token 前缀 | 覆盖 |
 | --- | --- | --- |
@@ -1142,7 +1142,7 @@
 | 项 | 值 |
 | --- | --- |
 | 源图标文件 | 251 |
-| 目标集合 | `web/packages/components/src/components/icon/cloudreve-icons.ts`（Iconify collection prefix `cr`） |
+| 目标集合 | `web/packages/icons/src/cloudreve-icons.ts`（Iconify collection prefix `cr`） |
 | 映射清单 | `.dsh/migration/icon-map.md` / `.dsh/migration/data/cloudreve-icons.json` |
 | 使用方式 | `<Icon name="cr:Search" />`（离线注册，无网络请求） |
 

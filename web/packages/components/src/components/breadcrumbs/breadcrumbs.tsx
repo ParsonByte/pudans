@@ -1,8 +1,19 @@
-import type { ReactNode } from "react";
-import { cn } from "../../utils/cn";
-import { DropdownMenu } from "../dropdown-menu";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  Box,
+  Button,
+  ClickAwayListener,
+  ListItemIcon,
+  ListItemText,
+  Menu,
+  MenuItem,
+  TextField,
+  Tooltip,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
+import { cn } from "@pudans/utils";
 import { Icon } from "../icon";
-import styles from "./breadcrumbs.module.css";
 
 export interface BreadcrumbEntry {
   key?: string;
@@ -10,6 +21,8 @@ export interface BreadcrumbEntry {
   icon?: ReactNode | string;
   href?: string;
   onClick?: () => void;
+  /** Marks the filesystem root segment (legacy is_root): no max-width. */
+  isRoot?: boolean;
 }
 
 export interface BreadcrumbsProps {
@@ -19,65 +32,33 @@ export interface BreadcrumbsProps {
   separator?: ReactNode;
   ariaLabel?: string;
   className?: string;
+  /** Enables the legacy click-to-edit path field (Cloudreve Breadcrumb PathTextField). */
+  editable?: boolean;
+  /** Initial value of the editable path. Defaults to the joined string labels. */
+  path?: string;
+  /** Called with the edited path on Enter / click-away. */
+  onPathSubmit?: (path: string) => void;
+  /** Legacy alias: renders the chain without the editable path field. */
+  displayOnly?: boolean;
 }
 
 function itemKey(item: BreadcrumbEntry, index: number): string {
   return item.key ?? (typeof item.label === "string" ? item.label : "crumb-" + index);
 }
 
-function renderIcon(icon: ReactNode | string | undefined) {
+function renderIcon(icon: ReactNode | string | undefined, size: number) {
   if (!icon) {
     return null;
   }
-  return typeof icon === "string" ? (
-    <Icon name={icon} size={16} className={styles.icon} />
-  ) : (
-    <span className={styles.icon}>{icon}</span>
-  );
-}
-
-function Crumb({ item, current }: { item: BreadcrumbEntry; current: boolean }) {
-  const content = (
-    <>
-      {renderIcon(item.icon)}
-      <span className={styles.label}>{item.label}</span>
-    </>
-  );
-  if (item.href) {
-    return (
-      <a
-        href={item.href}
-        className={cn(styles.crumb, current && styles.current)}
-        aria-current={current ? "page" : undefined}
-      >
-        {content}
-      </a>
-    );
-  }
-  if (item.onClick && !current) {
-    return (
-      <button
-        type="button"
-        className={cn(styles.crumb, current && styles.current)}
-        onClick={item.onClick}
-      >
-        {content}
-      </button>
-    );
-  }
-  return (
-    <span
-      className={cn(styles.crumb, styles.static, current && styles.current)}
-      aria-current={current ? "page" : undefined}
-    >
-      {content}
-    </span>
-  );
+  return typeof icon === "string" ? <Icon name={icon} size={size} /> : icon;
 }
 
 /**
- * Breadcrumb navigation migrated from the legacy FileManager TopBar trio.
- * Supports leading icons, link/button/static items and middle collapsing.
+ * Path trail rebuilt from the legacy FileManager TopBar Breadcrumb trio:
+ * MUI small text buttons (32px min height, 13px/500), 15px ChevronRight
+ * separators at text.disabled, per-segment max widths (root auto, middle
+ * 100px, current 300px), MoreHorizontal overflow Menu and the monospace
+ * click-to-edit path TextField.
  */
 export function Breadcrumbs({
   items,
@@ -85,61 +66,236 @@ export function Breadcrumbs({
   separator,
   ariaLabel = "Breadcrumb",
   className,
+  editable = false,
+  path,
+  onPathSubmit,
+  displayOnly = false,
 }: BreadcrumbsProps) {
-  const collapse = maxItems !== undefined && items.length > maxItems && maxItems >= 3;
-  const keepTail = collapse ? maxItems - 2 : items.length;
-  const visibleHead = collapse ? [items[0]] : items.slice(0, items.length - keepTail);
-  const hidden = collapse ? items.slice(1, items.length - keepTail) : [];
-  const visibleTail = items.slice(items.length - keepTail);
-  const visible = [...visibleHead, ...visibleTail];
-  const sep = separator ?? (
-    <Icon name="cr:ChevronRight" size={14} className={styles.separatorIcon} />
+  const theme = useTheme();
+  const chainRef = useRef<HTMLDivElement>(null);
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const canEdit = editable && !displayOnly;
+  const [editing, setEditing] = useState(false);
+  const [editedPath, setEditedPath] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const fallbackPath = items
+    .map((item) => (typeof item.label === "string" ? item.label : ""))
+    .filter(Boolean)
+    .join("/");
+  const currentPath = path ?? fallbackPath;
+
+  useEffect(() => {
+    setCollapsed(false);
+  }, [items.length]);
+
+  useEffect(() => {
+    if (isMobile || maxItems !== undefined || items.length < 2) {
+      return;
+    }
+    const node = chainRef.current;
+    if (!node || typeof ResizeObserver === "undefined") {
+      return;
+    }
+    const measure = (): void => {
+      if (!collapsed && node.scrollWidth > node.clientWidth + 1) {
+        setCollapsed(true);
+      }
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    measure();
+    return () => observer.disconnect();
+  }, [collapsed, isMobile, items.length, maxItems]);
+
+  const hideCount =
+    maxItems !== undefined && items.length > maxItems && maxItems >= 2
+      ? items.length - 1
+      : collapsed
+        ? items.length - 1
+        : 0;
+  const hidden = items.slice(0, hideCount);
+  const visible = items.slice(hideCount);
+  const hiddenOpen = Boolean(anchorEl);
+
+  const startEditing = (): void => {
+    if (!canEdit) {
+      return;
+    }
+    setEditedPath(currentPath);
+    setEditing(true);
+  };
+
+  const submitPath = (): void => {
+    setEditing(false);
+    if (editedPath && editedPath !== currentPath) {
+      onPathSubmit?.(editedPath);
+    }
+  };
+
+  const closeHidden = (): void => {
+    setAnchorEl(null);
+  };
+
+  const segmentSx = (globalIndex: number) => {
+    const latest = globalIndex === items.length - 1;
+    const isRoot = globalIndex === 0 || items[globalIndex]?.isRoot;
+    return {
+      minHeight: theme.spacing(4),
+      maxWidth: latest ? theme.spacing(37.5) : isRoot ? "none" : theme.spacing(12.5),
+      color: latest ? theme.palette.text.primary : theme.palette.text.secondary,
+      transition: theme.transitions.create(["max-width", "color", "background-color"], {
+        duration: theme.transitions.duration.standard,
+        easing: theme.transitions.easing.easeInOut,
+      }),
+    };
+  };
+
+  const chevron = separator ?? (
+    <Icon
+      name="cr:ChevronRight"
+      sx={{
+        fontSize: theme.spacing(1.875),
+        mx: theme.spacing(0.5),
+        color: theme.palette.text.disabled,
+        verticalAlign: "middle",
+      }}
+    />
   );
 
-  const renderList = () =>
-    visible.map((item, index) => {
-      const globalIndex = collapse
-        ? index === 0
-          ? 0
-          : items.length - keepTail + index - 1
-        : index;
-      return (
-        <li key={itemKey(item, globalIndex)} className={styles.item}>
-          <Crumb item={item} current={globalIndex === items.length - 1} />
-          {globalIndex === items.length - 1 ? null : (
-            <span className={styles.separator} aria-hidden="true">
-              {sep}
-            </span>
-          )}
-        </li>
-      );
-    });
-
   return (
-    <nav aria-label={ariaLabel} className={cn(styles.root, className)}>
-      <ol className={styles.list}>
-        {collapse ? (
-          <>
-            {renderList().slice(0, 1)}
-            <li className={styles.item}>
-              <DropdownMenu
-                trigger={<Icon name="cr:MoreHorizontal" size={16} />}
-                triggerLabel="Show hidden path segments"
-                showChevron={false}
-                items={hidden.map((item, index) => ({
-                  key: itemKey(item, index),
-                  label: item.label,
-                  icon: renderIcon(item.icon),
-                  onSelect: item.onClick,
-                }))}
-              />
-            </li>
-            {renderList().slice(1)}
-          </>
-        ) : (
-          renderList()
-        )}
-      </ol>
-    </nav>
+    <Box
+      component="nav"
+      aria-label={ariaLabel}
+      className={cn(className)}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        flexGrow: 1,
+        minWidth: 0,
+        whiteSpace: "nowrap",
+        overflow: "auto",
+        cursor: canEdit ? "text" : "default",
+      }}
+      onClick={startEditing}
+    >
+      {editing ? (
+        <ClickAwayListener mouseEvent="onMouseDown" onClickAway={submitPath}>
+          <TextField
+            autoFocus
+            fullWidth
+            size="small"
+            value={editedPath}
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) => setEditedPath(event.target.value)}
+            onFocus={(event) => event.target.select()}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                submitPath();
+              }
+            }}
+            slotProps={{ htmlInput: { "aria-label": "Path" } }}
+            sx={{
+              "& .MuiOutlinedInput-notchedOutline": { border: "none" },
+              "& .MuiOutlinedInput-input": {
+                padding: theme.spacing(0.75, 0.5),
+                fontSize: theme.spacing(1.625),
+                lineHeight: 1.5,
+                fontFamily: "var(--pd-font-mono)",
+              },
+              height: theme.spacing(4),
+              overflow: "hidden",
+              verticalAlign: "middle",
+            }}
+          />
+        </ClickAwayListener>
+      ) : (
+        <>
+          {hidden.length > 0 ? (
+            <>
+              <Button
+                size="small"
+                color="inherit"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setAnchorEl(event.currentTarget);
+                }}
+                sx={{ minHeight: theme.spacing(4) }}
+              >
+                <Icon name="cr:MoreHorizontal" />
+              </Button>
+              {chevron}
+            </>
+          ) : null}
+          {visible.map((item, index) => {
+            const globalIndex = hideCount + index;
+            const latest = globalIndex === items.length - 1;
+            return (
+              <Box
+                key={itemKey(item, globalIndex)}
+                component="span"
+                sx={{ display: "inline-flex", alignItems: "center", minWidth: 0 }}
+              >
+                <Button
+                  size="small"
+                  color="inherit"
+                  href={item.href}
+                  onClick={
+                    item.href
+                      ? undefined
+                      : (event) => {
+                          event.stopPropagation();
+                          if (!latest) {
+                            item.onClick?.();
+                          }
+                        }
+                  }
+                  startIcon={renderIcon(item.icon, 24) ?? undefined}
+                  endIcon={
+                    latest && items.length > 1 ? (
+                      <Icon name="cr:CaretDown" sx={{ fontSize: theme.spacing(1.5) }} />
+                    ) : undefined
+                  }
+                  sx={segmentSx(globalIndex)}
+                >
+                  <Tooltip
+                    title={typeof item.label === "string" ? item.label : ""}
+                    placement="bottom"
+                  >
+                    <Box
+                      component="span"
+                      sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
+                      {item.label}
+                    </Box>
+                  </Tooltip>
+                </Button>
+                {!latest ? chevron : null}
+              </Box>
+            );
+          })}
+        </>
+      )}
+      <Menu
+        anchorEl={anchorEl}
+        open={hiddenOpen}
+        onClose={closeHidden}
+        slotProps={{ list: { dense: true } }}
+      >
+        {hidden.map((item, index) => (
+          <MenuItem
+            key={itemKey(item, index)}
+            onClick={() => {
+              closeHidden();
+              item.onClick?.();
+            }}
+          >
+            <ListItemIcon>{renderIcon(item.icon, 20)}</ListItemIcon>
+            <ListItemText>{item.label}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+    </Box>
   );
 }

@@ -2,7 +2,7 @@ import {
   Pagination as MuiPagination,
   type PaginationProps as MuiPaginationProps,
 } from "@mui/material";
-import { cn } from "../../utils/cn";
+import { cn } from "@pudans/utils";
 import styles from "./pagination.module.css";
 
 export type PaginationSize = "sm" | "md";
@@ -19,7 +19,11 @@ export interface PaginationProps extends Omit<
   onPageChange: (page: number) => void;
 }
 
-/** Brand-colored pagination with total/pageSize helpers. */
+/**
+ * MUI Pagination with legacy defaults: body2 page items (32x32 / small 26x26),
+ * primary selected fill, action.hover hover and item radius from MUI (rounded
+ * shape uses theme.shape.borderRadius). No local item styling remains.
+ */
 export function Pagination({
   page,
   total,
@@ -37,9 +41,9 @@ export function Pagination({
       {...props}
       page={page}
       count={pageCount}
+      size={size === "sm" ? "small" : "medium"}
       onChange={(_event, nextPage) => onPageChange(nextPage)}
-      shape="rounded"
-      className={cn(styles.root, styles[size], className)}
+      className={cn(styles.root, className)}
     />
   );
 }

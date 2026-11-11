@@ -1,33 +1,76 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
-import { cn } from "../../utils/cn";
-import styles from "./button.module.css";
+import {
+  Box,
+  Button as MuiButton,
+  CircularProgress,
+  type ButtonProps as MuiButtonProps,
+} from "@mui/material";
+import { styled, type Theme } from "@mui/material/styles";
 
 export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 export type ButtonRadius = "sm" | "md" | "lg" | "full";
 
-const VARIANT_CLASS: Record<ButtonVariant, string> = {
-  primary: styles.primary,
-  secondary: styles.secondary,
-  outline: styles.outline,
-  ghost: styles.ghost,
-  danger: styles.danger,
+/** Legacy Cloudreve DefaultButton contract: MUI Button with text.primary text. */
+const StyledButton = styled(MuiButton)(({ theme }) => ({
+  minHeight: theme.spacing(4),
+  "& .MuiButton-startIcon": {
+    marginLeft: 0,
+  },
+}));
+
+/** Legacy SecondaryButton: text.secondary on action.hover, hover action.focus. */
+function variantStyles(variant: ButtonVariant, theme: Theme) {
+  const hairline = theme.spacing(0.125);
+  switch (variant) {
+    case "secondary":
+      return {
+        color: theme.palette.text.secondary,
+        backgroundColor: theme.palette.action.hover,
+        "&:hover": { backgroundColor: theme.palette.action.focus },
+      };
+    case "outline":
+      return {
+        color: theme.palette.text.primary,
+        border: `${hairline} solid ${theme.palette.divider}`,
+        "&:hover": {
+          backgroundColor: theme.palette.action.hover,
+          borderColor: theme.palette.divider,
+        },
+      };
+    default:
+      return {};
+  }
+}
+
+function radiusStyles(radius: ButtonRadius, theme: Theme) {
+  switch (radius) {
+    case "sm":
+      return { borderRadius: theme.spacing(0.5) };
+    case "md":
+      return { borderRadius: theme.spacing(1) };
+    case "full":
+      return { borderRadius: theme.spacing(10) };
+    default:
+      return { borderRadius: theme.shape.borderRadius };
+  }
+}
+
+const VARIANT_PROPS: Record<ButtonVariant, Pick<MuiButtonProps, "variant" | "color">> = {
+  primary: { variant: "contained", color: "primary" },
+  secondary: { variant: "text", color: "inherit" },
+  outline: { variant: "outlined", color: "primary" },
+  ghost: { variant: "text", color: "primary" },
+  danger: { variant: "contained", color: "error" },
 };
 
-const SIZE_CLASS: Record<ButtonSize, string> = {
-  sm: styles.sm,
-  md: styles.md,
-  lg: styles.lg,
+const MUI_SIZE: Record<ButtonSize, "small" | "medium" | "large"> = {
+  sm: "small",
+  md: "medium",
+  lg: "large",
 };
 
-const RADIUS_CLASS: Record<ButtonRadius, string> = {
-  sm: styles.radiusSm,
-  md: styles.radiusMd,
-  lg: styles.radiusLg,
-  full: styles.radiusFull,
-};
-
-export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color"> {
+export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "color" | "size"> {
   variant?: ButtonVariant;
   size?: ButtonSize;
   radius?: ButtonRadius;
@@ -39,64 +82,55 @@ export interface ButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement
 }
 
 /**
- * Token-driven action button. Variant, size and radius classes are resolved by
- * plain lookup tables; CSS Modules keep styles local and no runtime styling
- * dependency is involved.
+ * Action button rebuilt on MUI Button to match the legacy DefaultButton /
+ * LoadingButton visual: 14px/500 text, padding 6px 16px, minHeight 32px,
+ * 12px radius, disableElevation, text.primary labels for outline/ghost.
  */
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      variant = "primary",
-      size = "md",
-      radius = "lg",
-      block = false,
-      loading = false,
-      loadingText,
-      startIcon,
-      endIcon,
-      className,
-      children,
-      disabled,
-      type = "button",
-      ...props
-    },
-    ref,
-  ) => (
-    <button
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = "primary",
+    size = "md",
+    radius = "lg",
+    block = false,
+    loading = false,
+    loadingText,
+    startIcon,
+    endIcon,
+    className,
+    children,
+    disabled,
+    type = "button",
+    ...props
+  },
+  ref,
+) {
+  const loadingIndicator = loadingText ? (
+    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+      <CircularProgress size="1em" color="inherit" />
+      {loadingText}
+    </Box>
+  ) : undefined;
+
+  return (
+    <StyledButton
       ref={ref}
       type={type}
-      className={cn(
-        styles.root,
-        VARIANT_CLASS[variant],
-        SIZE_CLASS[size],
-        RADIUS_CLASS[radius],
-        block && styles.block,
-        loading && styles.loading,
-        className,
-      )}
       disabled={disabled || loading}
-      aria-busy={loading || undefined}
-      aria-disabled={loading || undefined}
-      data-variant={variant}
-      data-size={size}
-      data-loading={loading ? "true" : undefined}
-      {...props}
+      loading={loading}
+      loadingPosition="center"
+      loadingIndicator={loadingIndicator}
+      startIcon={startIcon}
+      endIcon={endIcon}
+      fullWidth={block}
+      className={className}
+      {...VARIANT_PROPS[variant]}
+      size={MUI_SIZE[size]}
+      sx={(theme: Theme) => ({ ...variantStyles(variant, theme), ...radiusStyles(radius, theme) })}
+      {...(props as MuiButtonProps)}
     >
-      {loading ? (
-        <span className={styles.spinner} aria-hidden="true" />
-      ) : startIcon ? (
-        <span className={styles.icon} aria-hidden="true">
-          {startIcon}
-        </span>
-      ) : null}
-      <span className={styles.label}>{loading && loadingText ? loadingText : children}</span>
-      {!loading && endIcon ? (
-        <span className={styles.icon} aria-hidden="true">
-          {endIcon}
-        </span>
-      ) : null}
-    </button>
-  ),
-);
+      {children}
+    </StyledButton>
+  );
+});
 
 Button.displayName = "Button";

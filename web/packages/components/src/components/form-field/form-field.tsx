@@ -1,6 +1,15 @@
 import { useId, type ReactNode } from "react";
-import { cn } from "../../utils/cn";
-import styles from "./form-field.module.css";
+import {
+  alpha,
+  Box,
+  FormControl,
+  FormHelperText,
+  FormLabel,
+  ListItem,
+  ListItemText,
+  Paper,
+  Typography,
+} from "@mui/material";
 
 export interface FormFieldProps {
   label?: ReactNode;
@@ -13,9 +22,9 @@ export interface FormFieldProps {
 }
 
 /**
- * Label + control + helper/error wrapper migrated from the legacy
- * StyledFormControl / Form files. Keeps validation copy, required marker and
- * description typography consistent across every form.
+ * Label + control + helper/error wrapper rebuilt from the legacy
+ * StyledFormControl: body2 / 600 title with a 4px bottom margin (theme.spacing(0.5))
+ * and no border, matching Admin settings forms.
  */
 export function FormField({
   label,
@@ -31,32 +40,45 @@ export function FormField({
   const errorId = "field-error-" + generatedId.replace(/:/g, "");
 
   return (
-    <div
-      className={cn(styles.field, error && styles.invalid, className)}
-      data-required={required || undefined}
-    >
+    <FormControl error={Boolean(error)} required={required} fullWidth className={className}>
       {label ? (
-        <label className={styles.label} htmlFor={htmlFor}>
+        <FormLabel
+          htmlFor={htmlFor}
+          sx={{
+            display: "block",
+            mb: 0.5,
+            color: "text.primary",
+            fontWeight: 600,
+            fontSize: "0.875rem",
+            lineHeight: 1.43,
+            "&.Mui-focused": { color: "text.primary" },
+          }}
+        >
           {label}
           {required ? (
-            <span className={styles.required} aria-hidden="true">
+            <Box component="span" sx={{ ml: 0.25, color: "error.main" }} aria-hidden="true">
               *
-            </span>
+            </Box>
           ) : null}
-        </label>
+        </FormLabel>
       ) : null}
       {description ? (
-        <p id={descriptionId} className={styles.description}>
+        <Typography
+          id={descriptionId}
+          variant="caption"
+          component="p"
+          sx={{ color: "text.secondary", mb: 0.5 }}
+        >
           {description}
-        </p>
+        </Typography>
       ) : null}
-      <div className={styles.control}>{children}</div>
+      {children}
       {error ? (
-        <p id={errorId} className={styles.error} role="alert">
+        <FormHelperText id={errorId} error sx={{ mx: 0 }}>
           {error}
-        </p>
+        </FormHelperText>
       ) : null}
-    </div>
+    </FormControl>
   );
 }
 
@@ -69,7 +91,7 @@ export interface FormSectionProps {
   className?: string;
 }
 
-/** Grouped form/settings section with an optional header and action slot. */
+/** Grouped settings section = legacy AdminCard (Paper, 1px divider, 12px radius). */
 export function FormSection({
   title,
   description,
@@ -79,18 +101,52 @@ export function FormSection({
   className,
 }: FormSectionProps) {
   return (
-    <section className={cn(styles.section, bordered && styles.bordered, className)}>
+    <Paper
+      elevation={0}
+      className={className}
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+        padding: 2,
+        ...(bordered
+          ? {
+              border: (theme) => `${theme.spacing(0.125)} solid ${theme.palette.divider}`,
+              borderRadius: (theme) => theme.shape.borderRadius,
+            }
+          : {}),
+      }}
+    >
       {title || description || actions ? (
-        <header className={styles.sectionHeader}>
-          <div className={styles.sectionHeading}>
-            {title ? <h2 className={styles.sectionTitle}>{title}</h2> : null}
-            {description ? <p className={styles.sectionDescription}>{description}</p> : null}
-          </div>
-          {actions ? <div className={styles.sectionActions}>{actions}</div> : null}
-        </header>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            gap: 1.5,
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            {title ? (
+              <Typography variant="h6" component="h2">
+                {title}
+              </Typography>
+            ) : null}
+            {description ? (
+              <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                {description}
+              </Typography>
+            ) : null}
+          </Box>
+          {actions ? (
+            <Box sx={{ display: "flex", flex: "0 0 auto", alignItems: "center", gap: 1 }}>
+              {actions}
+            </Box>
+          ) : null}
+        </Box>
       ) : null}
-      <div className={styles.sectionBody}>{children}</div>
-    </section>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>{children}</Box>
+    </Paper>
   );
 }
 
@@ -104,8 +160,8 @@ export interface SettingItemProps {
 }
 
 /**
- * Title/description/control row migrated from the legacy SettingListItem.
- * Used by UC profile & security and by console settings sections.
+ * Title/description/control row rebuilt from the legacy SettingListItem:
+ * 1px text.primary(23%) border, 12px radius, subtitle2 title + caption copy.
  */
 export function SettingItem({
   title,
@@ -115,13 +171,36 @@ export function SettingItem({
   className,
 }: SettingItemProps) {
   return (
-    <div className={cn(styles.settingItem, className)}>
-      <div className={styles.settingBody}>
-        <span className={styles.settingTitle}>{title}</span>
-        {description ? <span className={styles.settingDescription}>{description}</span> : null}
+    <ListItem
+      className={className}
+      sx={{
+        alignItems: "flex-start",
+        justifyContent: "space-between",
+        gap: 2,
+        mt: 1,
+        py: 0.5,
+        px: 2,
+        border: (theme) => `${theme.spacing(0.125)} solid ${alpha(theme.palette.text.primary, 0.23)}`,
+        borderRadius: (theme) => theme.shape.borderRadius,
+      }}
+    >
+      <Box sx={{ minWidth: 0, flex: "1 1 auto" }}>
+        <ListItemText
+          sx={{ my: 0 }}
+          primary={title}
+          secondary={description}
+          slotProps={{
+            primary: { variant: "subtitle2", color: "text.primary" },
+            secondary: { variant: "caption", noWrap: true },
+          }}
+        />
         {children}
-      </div>
-      {control ? <div className={styles.settingControl}>{control}</div> : null}
-    </div>
+      </Box>
+      {control ? (
+        <Box sx={{ display: "flex", flex: "0 0 auto", alignItems: "center", gap: 1, pt: 0.5 }}>
+          {control}
+        </Box>
+      ) : null}
+    </ListItem>
   );
 }

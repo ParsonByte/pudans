@@ -11,7 +11,11 @@
       "@web/*": ["./src/*"],
       "@pudans/components": ["./packages/components/src/index.ts"],
       "@pudans/api-client": ["./packages/api-client/src/index.ts"],
-      "@pudans/shared": ["./packages/shared/src/index.ts"]
+      "@pudans/theme": ["./packages/theme/src/index.ts"],
+      "@pudans/icons": ["./packages/icons/src/index.ts"],
+      "@pudans/hooks": ["./packages/hooks/src/index.ts"],
+      "@pudans/layouts": ["./packages/layouts/src/index.ts"],
+      "@pudans/utils": ["./packages/utils/src/index.ts"]
     }
   },
   "include": [

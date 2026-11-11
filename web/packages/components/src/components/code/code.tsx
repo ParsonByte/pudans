@@ -6,23 +6,33 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from "react";
-import { cn } from "../../utils/cn";
+import { styled } from "@mui/material/styles";
+import { cn } from "@pudans/utils";
 import { Icon } from "../icon";
 import styles from "./code.module.css";
+
+const StyledCode = styled("code")(({ theme }) => ({
+  backgroundColor: theme.palette.grey[100],
+  ...theme.applyStyles("dark", { backgroundColor: theme.palette.grey[900] }),
+  border: `var(--pd-border-width-thin) solid ${theme.palette.divider}`,
+  borderRadius: theme.spacing(0.5),
+  padding: theme.spacing(0.125, 0.5),
+  fontFamily: "inherit",
+}));
 
 export interface CodeProps extends HTMLAttributes<HTMLElement> {
   children: ReactNode;
 }
 
-/** Inline code token, migrated from the legacy Common/Code component. */
+/** Inline code token, rebuilt 1:1 from the legacy Common/Code styled(Box). */
 export const Code = forwardRef<HTMLElement, CodeProps>(function Code(
   { children, className, ...props },
   ref,
 ) {
   return (
-    <code ref={ref} className={cn(styles.inline, className)} {...props}>
+    <StyledCode ref={ref} className={cn(className)} {...props}>
       {children}
-    </code>
+    </StyledCode>
   );
 });
 
@@ -67,7 +77,8 @@ async function copyText(value: string): Promise<boolean> {
 
 /**
  * Multi-line code surface with optional language label and copy affordance.
- * Used by error details, API docs and future editor surfaces.
+ * The legacy project only shipped the inline Common/Code; this block keeps the
+ * existing pudans API and token-driven surface for error details / API docs.
  */
 export const CodeBlock = forwardRef<HTMLPreElement, CodeBlockProps>(function CodeBlock(
   {
