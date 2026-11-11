@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Box, Button, InputAdornment, Stack, TextField, Typography } from "@mui/material";
 import Fuse from "fuse.js";
-import TimeAgo from "timeago-react";
 import {
   Avatar,
   Badge,
@@ -12,6 +11,7 @@ import {
   Pagination,
   Table,
   type TableColumn,
+  RelativeTime,
 } from "@pudans/components";
 import { apiClient, type ListedUser, type UserList } from "@pudans/api-client";
 
@@ -119,7 +119,7 @@ export function UserListView() {
       render: (user) =>
         user.registeredAt ? (
           <Typography variant="body2" color="text.secondary">
-            <TimeAgo datetime={user.registeredAt} locale={undefined} />
+            <RelativeTime datetime={user.registeredAt} locale={undefined} />
           </Typography>
         ) : (
           <Typography variant="body2" color="text.secondary">
@@ -177,7 +177,9 @@ export function UserListView() {
         rowKey={(user) => user.name ?? user.email ?? ""}
         hoverable
         zebra
-        emptyText={loading ? t("usersLoading") : t("usersEmpty")}
+        loading={loading}
+
+        emptyText={t("usersEmpty")}
       />
 
       <Stack direction="row" sx={{ justifyContent: "flex-end", mt: 2 }}>

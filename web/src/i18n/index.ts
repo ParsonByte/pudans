@@ -40,7 +40,6 @@ void i18n
   .init({
     ...config,
     supportedLngs: [...SUPPORTED_LOCALES],
-    nonExplicitSupportedLngs: true,
     load: "currentOnly",
     partialBundledLanguages: true,
     detection: {
@@ -63,6 +62,9 @@ void i18n
     react: {
       useSuspense: false,
     },
+  })
+  .catch((error: unknown) => {
+    console.error("i18n initialization failed", error);
   });
 
 i18n.on("languageChanged", (language) => {

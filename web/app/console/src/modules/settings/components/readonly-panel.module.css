@@ -36,7 +36,7 @@
   display: inline-flex;
   align-items: center;
   padding: 2px 8px;
-  border-radius: 9999px;
+  border-radius: var(--pd-radius-full);
   background-color: rgb(var(--pd-bg-subtle));
   color: rgb(var(--pd-text-secondary));
   font-family: var(--pd-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);

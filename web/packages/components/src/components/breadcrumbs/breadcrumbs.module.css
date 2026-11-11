@@ -1,0 +1,87 @@
+.root {
+  min-width: 0;
+  color: rgb(var(--pd-text-secondary));
+}
+
+.list {
+  display: flex;
+  align-items: center;
+  gap: var(--pd-space-1);
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pd-space-1);
+  min-width: 0;
+}
+
+.separator {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: rgb(var(--pd-text-disabled));
+}
+
+.crumb {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pd-space-1);
+  max-width: 220px;
+  padding: 2px var(--pd-space-1);
+  border: 0;
+  border-radius: var(--pd-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--pd-text-sm);
+  text-decoration: none;
+  cursor: pointer;
+  transition: var(--pd-transition-colors);
+}
+
+.crumb:hover {
+  background-color: var(--pd-bg-hover);
+  color: rgb(var(--pd-text-primary));
+  text-decoration: none;
+}
+
+.crumb:focus-visible {
+  outline: none;
+  box-shadow: var(--pd-shadow-focus);
+}
+
+.static {
+  cursor: default;
+}
+
+.static:hover {
+  background: transparent;
+  color: inherit;
+}
+
+.current {
+  color: rgb(var(--pd-text-primary));
+  font-weight: var(--pd-font-weight-medium);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: rgb(var(--pd-text-tertiary));
+}
+
+.separatorIcon {
+  color: rgb(var(--pd-text-disabled));
+}

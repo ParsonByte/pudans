@@ -12,7 +12,7 @@
 .sm {
   min-height: 20px;
   padding: 0 7px;
-  font-size: 11px;
+  font-size: var(--pd-text-xs);
 }
 
 .md {

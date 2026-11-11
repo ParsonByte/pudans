@@ -2,10 +2,12 @@ import { Icon as NetworkIcon } from "@iconify/react";
 import { Icon as OfflineIcon, type IconProps as IconifyProps } from "@iconify/react/offline";
 import { cn } from "../../utils/cn";
 import { registerBuiltinIcons } from "./builtin-icons";
+import { registerCloudreveIcons } from "./cloudreve-icons";
 import { isRegisteredIcon } from "./icon-registry";
 import styles from "./icon.module.css";
 
 registerBuiltinIcons();
+registerCloudreveIcons();
 
 export { registerCollection as registerIconCollection, registerIcon } from "./icon-registry";
 

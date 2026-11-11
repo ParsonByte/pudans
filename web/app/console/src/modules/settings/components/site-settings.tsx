@@ -60,21 +60,33 @@ export function SiteSettings() {
       resetLabel={t("settingsReset")}
       dirtyLabel={t("settingsUnsaved")}
     >
-      <FormItem label={t("settingsFieldTitle")} description={t("settingsFieldTitleHelp")} htmlFor="settings-site-title">
+      <FormItem
+        label={t("settingsFieldTitle")}
+        description={t("settingsFieldTitleHelp")}
+        htmlFor="settings-site-title"
+      >
         <Input
           id="settings-site-title"
           value={values.title}
           onChange={(event) => update("title", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsFieldSubtitle")} description={t("settingsFieldSubtitleHelp")} htmlFor="settings-site-subtitle">
+      <FormItem
+        label={t("settingsFieldSubtitle")}
+        description={t("settingsFieldSubtitleHelp")}
+        htmlFor="settings-site-subtitle"
+      >
         <Input
           id="settings-site-subtitle"
           value={values.subtitle}
           onChange={(event) => update("subtitle", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsFieldUrl")} description={t("settingsFieldUrlHelp")} htmlFor="settings-site-url">
+      <FormItem
+        label={t("settingsFieldUrl")}
+        description={t("settingsFieldUrlHelp")}
+        htmlFor="settings-site-url"
+      >
         <Input
           id="settings-site-url"
           placeholder="https://"
@@ -82,7 +94,11 @@ export function SiteSettings() {
           onChange={(event) => update("externalUrl", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsFieldLogo")} description={t("settingsFieldLogoHelp")} htmlFor="settings-site-logo">
+      <FormItem
+        label={t("settingsFieldLogo")}
+        description={t("settingsFieldLogoHelp")}
+        htmlFor="settings-site-logo"
+      >
         <Input
           id="settings-site-logo"
           placeholder="https://"
@@ -90,7 +106,11 @@ export function SiteSettings() {
           onChange={(event) => update("logo", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsFieldFavicon")} description={t("settingsFieldFaviconHelp")} htmlFor="settings-site-favicon">
+      <FormItem
+        label={t("settingsFieldFavicon")}
+        description={t("settingsFieldFaviconHelp")}
+        htmlFor="settings-site-favicon"
+      >
         <Input
           id="settings-site-favicon"
           placeholder="https://"
@@ -98,7 +118,11 @@ export function SiteSettings() {
           onChange={(event) => update("favicon", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsFieldLanguage")} description={t("settingsFieldLanguageHelp")} htmlFor="settings-site-language">
+      <FormItem
+        label={t("settingsFieldLanguage")}
+        description={t("settingsFieldLanguageHelp")}
+        htmlFor="settings-site-language"
+      >
         <Select
           id="settings-site-language"
           options={[

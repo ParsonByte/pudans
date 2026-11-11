@@ -62,7 +62,7 @@
   position: sticky;
   bottom: 0;
   margin-top: auto;
-  z-index: 8;
+  z-index: var(--pd-z-raised);
   display: flex;
   justify-content: center;
   width: 100%;
@@ -81,8 +81,8 @@
   border-radius: var(--pd-radius-lg);
   background-color: rgb(var(--pd-bg-elevated, var(--pd-bg-surface)));
   box-shadow:
-    0 12px 32px rgb(0 0 0 / 0.12),
-    0 2px 8px rgb(0 0 0 / 0.06);
+    0 12px 32px var(--pd-border-subtle),
+    0 2px 8px var(--pd-bg-hover);
   pointer-events: auto;
   backdrop-filter: blur(12px);
 }
@@ -99,7 +99,7 @@
 .dot {
   width: 7px;
   height: 7px;
-  border-radius: 9999px;
+  border-radius: var(--pd-radius-full);
   background-color: rgb(var(--pd-brand-primary));
   box-shadow: 0 0 0 3px rgb(var(--pd-brand-primary) / 0.16);
 }

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Provider } from "react-redux";
-import { ToastProvider } from "@pudans/components";
+import { ConfirmProvider, SelectProvider, ToastProvider } from "@pudans/components";
 import { AppThemeProvider } from "../theme";
 import { AuthProvider } from "./auth-provider";
 import { store } from "../store";
@@ -15,9 +15,13 @@ export function AppProviders({ children }: AppProvidersProps) {
     <Provider store={store}>
       <AppThemeProvider>
         <AuthProvider>
-          <ToastProvider maxSnack={3} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
-            {children}
-          </ToastProvider>
+          <ConfirmProvider>
+            <SelectProvider>
+              <ToastProvider maxSnack={3} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
+                {children}
+              </ToastProvider>
+            </SelectProvider>
+          </ConfirmProvider>
         </AuthProvider>
       </AppThemeProvider>
     </Provider>

@@ -1,0 +1,31 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pd-space-2);
+  min-width: 0;
+  color: rgb(var(--pd-text-primary));
+  text-decoration: none;
+}
+
+.root:hover {
+  text-decoration: none;
+}
+
+.image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+
+.invert {
+  filter: invert(1);
+}
+
+.wordmark {
+  color: rgb(var(--pd-brand-primary));
+  font-weight: var(--pd-font-weight-bold);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}

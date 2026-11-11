@@ -21,7 +21,7 @@
 .eyebrow {
   margin: 0 0 6px;
   color: var(--login-brand);
-  font-size: 9.5px;
+  font-size: var(--pd-text-xs);
   font-weight: 700;
   letter-spacing: 0.18em;
 }
@@ -29,7 +29,7 @@
 .title {
   margin: 0;
   color: var(--login-text);
-  font-size: 22px;
+  font-size: var(--pd-text-2xl);
   font-weight: 600;
   letter-spacing: -0.03em;
 }
@@ -41,7 +41,7 @@
   flex: 0 0 auto;
   margin-top: 3px;
   color: var(--login-muted);
-  font-size: 11px;
+  font-size: var(--pd-text-xs);
   text-decoration: none;
 }
 
@@ -63,7 +63,7 @@
   min-height: 44px;
   padding: 9px 4px;
   color: var(--login-muted);
-  font-size: 11.5px;
+  font-size: var(--pd-text-xs);
   line-height: 1.3;
 }
 
@@ -89,7 +89,7 @@
 .kicker {
   margin: 0 0 8px;
   color: var(--login-brand);
-  font-size: 9px;
+  font-size: var(--pd-text-xs);
   font-weight: 700;
   letter-spacing: 0.16em;
 }
@@ -106,7 +106,7 @@
 .updated {
   margin: 8px 0 0;
   color: var(--login-subtle);
-  font-size: 10.5px;
+  font-size: var(--pd-text-xs);
 }
 
 .intro {
@@ -114,7 +114,7 @@
   padding-bottom: 18px;
   border-bottom: 1px solid var(--login-card-border);
   color: var(--login-muted);
-  font-size: 12.5px;
+  font-size: var(--pd-text-sm);
   line-height: 1.8;
 }
 
@@ -125,14 +125,14 @@
 .section h3 {
   margin: 0 0 7px;
   color: var(--login-text);
-  font-size: 13.5px;
+  font-size: var(--pd-text-sm);
   font-weight: 600;
 }
 
 .section p {
   margin: 0 0 8px;
   color: var(--login-muted);
-  font-size: 12.5px;
+  font-size: var(--pd-text-sm);
   line-height: 1.8;
 }
 
@@ -141,7 +141,7 @@
   padding-top: 14px;
   border-top: 1px solid var(--login-card-border);
   color: var(--login-subtle);
-  font-size: 10.5px;
+  font-size: var(--pd-text-xs);
   line-height: 1.6;
 }
 
@@ -156,11 +156,11 @@
   }
 
   .title {
-    font-size: 19px;
+    font-size: var(--pd-text-xl);
   }
 
   .tabs :global(.MuiTab-root) {
-    font-size: 10.5px;
+    font-size: var(--pd-text-xs);
   }
 
   .panel {

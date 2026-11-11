@@ -9,7 +9,7 @@
   overflow: hidden;
   border: 0;
   /* Source: borderRadius "90px" — the visual capsule. */
-  border-radius: 90px;
+  border-radius: var(--pd-radius-full);
   background-color: transparent;
   color: rgb(var(--pd-text-primary));
   font: inherit;
@@ -21,8 +21,8 @@
   white-space: nowrap;
   cursor: pointer;
   transition:
-    background-color 250ms cubic-bezier(0.4, 0, 0.2, 1),
-    color 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    background-color var(--pd-duration-base) cubic-bezier(0.4, 0, 0.2, 1),
+    color var(--pd-duration-base) cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* theme.palette.action.hover */

@@ -17,8 +17,10 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
-export interface SelectProps
-  extends Omit<MuiSelectProps, "size" | "label" | "labelId" | "children"> {
+export interface SelectProps extends Omit<
+  MuiSelectProps,
+  "size" | "label" | "labelId" | "children"
+> {
   size?: InputSize;
   label?: ReactNode;
   helperText?: ReactNode;

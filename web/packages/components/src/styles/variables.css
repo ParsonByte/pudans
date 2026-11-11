@@ -3,7 +3,7 @@
 .light {
   color-scheme: light;
 
-  /* Brand ramp · deepseek-chat --dsw-static-blue-* */
+  /* Brand ramp */
   --pd-brand-50: 227 242 253;
   --pd-brand-100: 187 222 251;
   --pd-brand-200: 144 202 249;
@@ -12,10 +12,11 @@
   --pd-brand-450: 33 150 243;
   --pd-brand-500: 25 118 210;
   --pd-brand-600: 21 101 192;
+  --pd-brand-700: 17 74 158;
   --pd-brand-800: 13 71 161;
   --pd-brand-900: 10 58 122;
 
-  /* Cool neutral ramp · deepseek-chat --dsw-static-neutral-bluish-* */
+  /* Neutral ramp */
   --pd-neutral-0: 255 255 255;
   --pd-neutral-50: 250 250 250;
   --pd-neutral-60: 245 245 245;
@@ -42,14 +43,13 @@
   --pd-bg-muted: 224 224 224;
   --pd-bg-hover: rgba(0, 0, 0, 0.04);
   --pd-bg-active: rgba(0, 0, 0, 0.08);
+  --pd-bg-backdrop: rgb(var(--pd-neutral-1000) / 0.5);
 
   /* Application shell */
   --pd-shell-drawer-width: 240px;
   --pd-shell-drawer-collapsed-width: 72px;
   --pd-shell-app-bar-height: 64px;
   --pd-shell-gutter: 24px;
-  /* Selected navigation = the library's brand-soft surface + brand-primary ink,
-     the same pair used by TreeView and Badge. */
   --pd-shell-item-active-bg: rgb(var(--pd-brand-soft));
   --pd-shell-item-active-fg: rgb(var(--pd-brand-primary));
   --pd-shell-item-hover-bg: var(--pd-bg-hover);
@@ -86,7 +86,7 @@
   --pd-chart-5: 211 47 47;
   --pd-chart-6: 156 39 176;
 
-  /* Radius · Cloudreve 12px shape + 8px menus */
+  /* Radius */
   --pd-radius-none: 0px;
   --pd-radius-xs: 4px;
   --pd-radius-sm: 6px;
@@ -96,16 +96,16 @@
   --pd-radius-2xl: 20px;
   --pd-radius-full: 9999px;
 
-  /* Elevation · Cloudreve + deepseek-chat lv3 */
+  /* Elevation */
   --pd-shadow-xs: 0 1px 2px 0 rgba(15, 17, 21, 0.04);
   --pd-shadow-sm: 0 1px 3px 0 rgba(15, 17, 21, 0.08), 0 1px 2px -1px rgba(15, 17, 21, 0.08);
   --pd-shadow-md: 0 4px 12px -2px rgba(15, 17, 21, 0.1), 0 2px 4px -2px rgba(15, 17, 21, 0.06);
   --pd-shadow-lg:
     0 0 1px 0 rgba(0, 0, 0, 0.2), 0 0 4px 0 rgba(0, 0, 0, 0.02), 0 12px 32px 0 rgba(0, 0, 0, 0.08);
   --pd-shadow-xl: 0 0 1px 0 rgba(0, 0, 0, 0.24), 0 20px 48px 0 rgba(0, 0, 0, 0.14);
-  --pd-shadow-focus: 0 0 0 3px rgba(57, 100, 254, 0.35);
+  --pd-shadow-focus: 0 0 0 var(--pd-focus-ring-width) rgb(var(--pd-brand-primary) / 0.35);
 
-  /* Motion · Cloudreve / MUI transition scale + easing */
+  /* Motion durations (ms values are mirrored by tokens.ts motionDurations) */
   --pd-duration-fast: 150ms;
   --pd-duration-base: 250ms;
   --pd-duration-slow: 300ms;
@@ -116,20 +116,95 @@
   --pd-duration-complex: 375ms;
   --pd-duration-entering: 225ms;
   --pd-duration-leaving: 195ms;
+  --pd-duration-instant: 100ms;
+  --pd-duration-skeleton: 1400ms;
+  --pd-duration-spin: 900ms;
+  --pd-duration-autofill: 9999s;
+
+  /* Motion easing */
   --pd-ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
   --pd-ease-in: cubic-bezier(0.4, 0, 1, 1);
   --pd-ease-out: cubic-bezier(0, 0, 0.2, 1);
   --pd-ease-sharp: cubic-bezier(0.4, 0, 0.6, 1);
   --pd-ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
 
-  /* Controls · deepseek-chat heights */
+  /* Composed transitions · always reference duration/easing variables */
+  --pd-transition-colors:
+    color var(--pd-duration-fast) var(--pd-ease-standard),
+    background-color var(--pd-duration-fast) var(--pd-ease-standard),
+    border-color var(--pd-duration-fast) var(--pd-ease-standard),
+    fill var(--pd-duration-fast) var(--pd-ease-standard);
+  --pd-transition-transform: transform var(--pd-duration-fast) var(--pd-ease-standard);
+  --pd-transition-opacity: opacity var(--pd-duration-shorter) var(--pd-ease-standard);
+  --pd-transition-shadow: box-shadow var(--pd-duration-base) var(--pd-ease-standard);
+  --pd-transition-all: all var(--pd-duration-base) var(--pd-ease-standard);
+
+  /* Interaction states */
+  --pd-focus-ring-width: 3px;
+  --pd-focus-ring-offset: 2px;
+  --pd-opacity-disabled: 0.45;
+  --pd-opacity-muted: 0.72;
+  --pd-opacity-hover: 0.04;
+  --pd-opacity-active: 0.08;
+  --pd-opacity-backdrop: 0.5;
+  --pd-hover-lift: -1px;
+  --pd-press-scale: 0.985;
+  --pd-backdrop-blur: 4px;
+
+  /* Icon sizes */
+  --pd-icon-xs: 14px;
+  --pd-icon-sm: 16px;
+  --pd-icon-md: 20px;
+  --pd-icon-lg: 24px;
+  --pd-icon-xl: 28px;
+
+  /* Media/glass/scrim effects */
+  --pd-media-text: 255 255 255;
+  --pd-media-text-secondary: rgba(255, 255, 255, 0.72);
+  --pd-media-text-tertiary: rgba(255, 255, 255, 0.5);
+  --pd-scrim-strong: rgba(0, 0, 0, 0.5);
+  --pd-scrim-medium: rgba(0, 0, 0, 0.36);
+  --pd-scrim-soft: rgba(0, 0, 0, 0.22);
+  --pd-glass-surface: rgba(255, 255, 255, 0.1);
+  --pd-glass-border: rgba(255, 255, 255, 0.2);
+  --pd-glass-surface-soft: rgba(255, 255, 255, 0.08);
+  --pd-glass-border-soft: rgba(255, 255, 255, 0.14);
+  --pd-nav-veil: rgba(255, 255, 255, 0.88);
+  --pd-qr-surface: 255 255 255;
+
+  /* Border widths */
+  --pd-border-width-none: 0px;
+  --pd-border-width-thin: 1px;
+  --pd-border-width-thick: 2px;
+
+  /* Layering */
+  --pd-z-base: 0;
+  --pd-z-sticky: 100;
+  --pd-z-dropdown: 1000;
+  --pd-z-overlay: 1300;
+  --pd-z-modal: 1400;
+  --pd-z-popover: 1500;
+  --pd-z-toast: 1700;
+  --pd-z-tooltip: 1800;
+  --pd-z-raised: 1;
+  --pd-z-shell: 40;
+  --pd-z-shell-raised: 50;
+
+  /* Breakpoints (reference values; media queries cannot consume CSS variables) */
+  --pd-breakpoint-sm: 600px;
+  --pd-breakpoint-md: 900px;
+  --pd-breakpoint-lg: 1200px;
+  --pd-breakpoint-xl: 1536px;
+
+  /* Controls */
   --pd-control-xs: 28px;
   --pd-control-sm: 32px;
   --pd-control-md: 36px;
   --pd-control-lg: 40px;
   --pd-control-xl: 44px;
 
-  /* Layout · 4px grid with Cloudreve 8px MUI spacing */
+  /* Layout */
+  --pd-space-0: 0px;
   --pd-space-1: 4px;
   --pd-space-2: 8px;
   --pd-space-3: 12px;
@@ -143,6 +218,7 @@
   --pd-space-gutter: 24px;
   --pd-space-section: 48px;
   --pd-sidebar-width: 248px;
+  --pd-sidebar-collapsed-width: 72px;
   --pd-header-height: 56px;
   --pd-container-max: 1440px;
 
@@ -184,6 +260,7 @@
   --pd-bg-muted: 33 33 33;
   --pd-bg-hover: rgba(255, 255, 255, 0.08);
   --pd-bg-active: rgba(255, 255, 255, 0.16);
+  --pd-bg-backdrop: rgb(var(--pd-neutral-950) / 0.6);
 
   --pd-shell-item-active-bg: rgb(var(--pd-brand-soft));
   --pd-shell-item-active-fg: rgb(var(--pd-brand-primary));
@@ -227,7 +304,7 @@
   --pd-shadow-lg:
     0 0 1px 0 rgba(0, 0, 0, 0.48), 0 0 4px 0 rgba(0, 0, 0, 0.2), 0 12px 32px 0 rgba(0, 0, 0, 0.36);
   --pd-shadow-xl: 0 0 1px 0 rgba(0, 0, 0, 0.56), 0 20px 48px 0 rgba(0, 0, 0, 0.48);
-  --pd-shadow-focus: 0 0 0 3px rgba(86, 134, 254, 0.45);
+  --pd-shadow-focus: 0 0 0 var(--pd-focus-ring-width) rgb(var(--pd-brand-primary) / 0.45);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -246,5 +323,8 @@
     --pd-duration-complex: 1ms;
     --pd-duration-entering: 1ms;
     --pd-duration-leaving: 1ms;
+    --pd-duration-instant: 1ms;
+    --pd-duration-skeleton: 1ms;
+    --pd-duration-spin: 1ms;
   }
 }

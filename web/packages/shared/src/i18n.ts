@@ -28,7 +28,6 @@ export function createI18nConfig({
     debug,
     defaultNS,
     ns,
-    initAsync: false,
     returnNull: false,
     interpolation: {
       escapeValue: false,

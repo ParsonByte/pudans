@@ -2,8 +2,8 @@ export type PudansColorMode = "light" | "dark";
 export type PudansColorModePreference = PudansColorMode | "system";
 
 /**
- * Static blue scale lifted from deepseek-chat (--dsw-static-blue-*).
- * The 500 step is the light brand color; 450 is the dark brand color.
+ * Brand ramp. 500 is the light-mode primary, 450 the dark-mode primary.
+ * Values are channel-safe hex strings; CSS variables mirror them as RGB triples.
  */
 export const brandPalette = {
   50: "#e3f2fd",
@@ -14,11 +14,12 @@ export const brandPalette = {
   450: "#2196f3",
   500: "#1976d2",
   600: "#1565c0",
+  700: "#114a9e",
   800: "#0d47a1",
   900: "#0a3a7a",
 } as const;
 
-/** Cool neutral ramp from deepseek-chat (--dsw-static-neutral-bluish-*). */
+/** Cool neutral ramp shared by every surface, border and text token. */
 export const neutralPalette = {
   0: "#ffffff",
   50: "#fafafa",
@@ -56,6 +57,7 @@ export interface PudansModeTokens {
   brandHover: string;
   brandActive: string;
   brandContrast: string;
+  brandSoft: string;
   borderSubtle: string;
   borderDefault: string;
   borderStrong: string;
@@ -87,6 +89,7 @@ export const lightTokens: PudansModeTokens = {
   brandHover: brandPalette[400],
   brandActive: brandPalette[600],
   brandContrast: neutralPalette[0],
+  brandSoft: brandPalette[50],
   borderSubtle: "rgba(0, 0, 0, 0.08)",
   borderDefault: "rgba(0, 0, 0, 0.12)",
   borderStrong: "rgba(0, 0, 0, 0.23)",
@@ -118,6 +121,7 @@ export const darkTokens: PudansModeTokens = {
   brandHover: brandPalette[100],
   brandActive: brandPalette[400],
   brandContrast: neutralPalette[900],
+  brandSoft: "#1e2b38",
   borderSubtle: "rgba(255, 255, 255, 0.08)",
   borderDefault: "rgba(255, 255, 255, 0.12)",
   borderStrong: "rgba(255, 255, 255, 0.23)",
@@ -137,7 +141,6 @@ export const modeTokens: Record<PudansColorMode, PudansModeTokens> = {
   dark: darkTokens,
 };
 
-/** Cloudreve uses 12px as its global MUI shape radius and 8px for menus. */
 export const radii = {
   none: "0px",
   xs: "4px",
@@ -149,23 +152,73 @@ export const radii = {
   full: "9999px",
 } as const;
 
-/** Shadows blend Cloudreve elevation usage with deepseek-chat's lv3 shadow. */
 export const shadows = {
   xs: "0 1px 2px 0 rgba(15, 17, 21, 0.04)",
   sm: "0 1px 3px 0 rgba(15, 17, 21, 0.08), 0 1px 2px -1px rgba(15, 17, 21, 0.08)",
   md: "0 4px 12px -2px rgba(15, 17, 21, 0.10), 0 2px 4px -2px rgba(15, 17, 21, 0.06)",
   lg: "0 0 1px 0 rgba(0, 0, 0, 0.20), 0 0 4px 0 rgba(0, 0, 0, 0.02), 0 12px 32px 0 rgba(0, 0, 0, 0.08)",
   xl: "0 0 1px 0 rgba(0, 0, 0, 0.24), 0 20px 48px 0 rgba(0, 0, 0, 0.14)",
-  focus: "0 0 0 3px rgba(57, 100, 254, 0.35)",
+  focus: "0 0 0 3px rgba(25, 118, 210, 0.35)",
 } as const;
 
-/** deepseek-chat control heights: xs 28 · s 32 · m 36 · l 40 · xl 44. */
+export const shadowFocus = shadows.focus;
+
+/** Icon glyph sizes used by control internals (checkbox, tree, avatars). */
+export const iconSizes = {
+  xs: 14,
+  sm: 16,
+  md: 20,
+  lg: 24,
+  xl: 28,
+} as const;
+
+/** Media/glass/scrim effects used by surfaces layered over video or imagery. */
+/** Preset accent colours offered by the console appearance settings. */
+export const accentPresets = [
+  "#1976d2",
+  "#0f766e",
+  "#7c3aed",
+  "#db2777",
+  "#ea580c",
+  "#475569",
+] as const;
+
+export const effectTokens = {
+  mediaText: "#ffffff",
+  mediaTextSecondary: "rgba(255, 255, 255, 0.72)",
+  mediaTextTertiary: "rgba(255, 255, 255, 0.5)",
+  scrimStrong: "rgba(0, 0, 0, 0.5)",
+  scrimMedium: "rgba(0, 0, 0, 0.36)",
+  scrimSoft: "rgba(0, 0, 0, 0.22)",
+  glassSurface: "rgba(255, 255, 255, 0.1)",
+  glassBorder: "rgba(255, 255, 255, 0.2)",
+  glassSurfaceSoft: "rgba(255, 255, 255, 0.08)",
+  glassBorderSoft: "rgba(255, 255, 255, 0.14)",
+  navVeil: "rgba(255, 255, 255, 0.88)",
+  /** Always-white surface required for QR code scanning. */
+  qrSurface: "#ffffff",
+} as const;
+
+export const borderWidths = {
+  none: 0,
+  thin: 1,
+  thick: 2,
+} as const;
+
+/** deepseek-chat derived control heights: xs 28 / sm 32 / md 36 / lg 40 / xl 44. */
 export const controlHeights = {
   xs: 28,
   sm: 32,
   md: 36,
   lg: 40,
   xl: 44,
+} as const;
+
+export const fontWeights = {
+  regular: 400,
+  medium: 500,
+  semibold: 600,
+  bold: 700,
 } as const;
 
 export const fontSizes = {
@@ -180,10 +233,12 @@ export const fontSizes = {
 } as const;
 
 export const spacing = {
+  unit: 4,
   base: 4,
   gutter: 24,
   section: 48,
   sidebar: 248,
+  sidebarCollapsed: 72,
   header: 56,
   container: 1440,
 } as const;
@@ -191,6 +246,35 @@ export const spacing = {
 export const fontFamily = {
   sans: '"Roboto", "Helvetica", "Arial", sans-serif',
   mono: 'Menlo, Monaco, Consolas, "Cascadia Mono", "Ubuntu Mono", "JetBrains Mono", "Fira Code", "Courier New", monospace',
+} as const;
+
+/**
+ * Motion scale. Durations are aligned with the legacy Cloudreve/Material scale
+ * (150/200/250/300/375ms, 225ms in / 195ms out for screen transitions).
+ */
+export const motionDurations = {
+  instant: 100,
+  fastest: 150,
+  faster: 200,
+  fast: 150,
+  base: 250,
+  slow: 300,
+  slower: 375,
+  complex: 375,
+  entering: 225,
+  leaving: 195,
+  skeleton: 1400,
+  spin: 900,
+  /** Autofill background transition hack; tokenized instead of an inline literal. */
+  autofill: 9999,
+} as const;
+
+export const motionEasing = {
+  standard: "cubic-bezier(0.4, 0, 0.2, 1)",
+  in: "cubic-bezier(0.4, 0, 1, 1)",
+  out: "cubic-bezier(0, 0, 0.2, 1)",
+  sharp: "cubic-bezier(0.4, 0, 0.6, 1)",
+  emphasized: "cubic-bezier(0.2, 0, 0, 1)",
 } as const;
 
 export const motion = {
@@ -204,9 +288,64 @@ export const motion = {
   complex: "375ms",
   entering: "225ms",
   leaving: "195ms",
-  easing: "cubic-bezier(0.4, 0, 0.2, 1)",
-  easingIn: "cubic-bezier(0.4, 0, 1, 1)",
-  easingOut: "cubic-bezier(0, 0, 0.2, 1)",
-  easingSharp: "cubic-bezier(0.4, 0, 0.6, 1)",
-  easingEmphasized: "cubic-bezier(0.2, 0, 0, 1)",
+  easing: motionEasing.standard,
+  easingIn: motionEasing.in,
+  easingOut: motionEasing.out,
+  easingSharp: motionEasing.sharp,
+  easingEmphasized: motionEasing.emphasized,
+} as const;
+
+export const zIndex = {
+  base: 0,
+  sticky: 100,
+  mobileStepper: 1000,
+  fab: 1050,
+  speedDial: 1050,
+  appBar: 1100,
+  drawer: 1200,
+  raised: 1,
+  shell: 40,
+  shellRaised: 50,
+  dropdown: 1000,
+  overlay: 1300,
+  modal: 1400,
+  popover: 1500,
+  toast: 1700,
+  tooltip: 1800,
+} as const;
+
+export const opacity = {
+  disabled: 0.45,
+  muted: 0.72,
+  hidden: 0,
+  full: 1,
+  backdrop: 0.5,
+  hover: 0.04,
+  active: 0.08,
+} as const;
+
+export const breakpoints = {
+  sm: 600,
+  md: 900,
+  lg: 1200,
+  xl: 1536,
+} as const;
+
+/** Composed CSS transition shorthands; every component should use one of these. */
+export const transitions = {
+  colors:
+    "color 150ms cubic-bezier(0.4, 0, 0.2, 1), background-color 150ms cubic-bezier(0.4, 0, 0.2, 1), border-color 150ms cubic-bezier(0.4, 0, 0.2, 1), fill 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+  transform: "transform 150ms cubic-bezier(0.4, 0, 0.2, 1)",
+  opacity: "opacity 200ms cubic-bezier(0.4, 0, 0.2, 1)",
+  shadow: "box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+  all: "all 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+} as const;
+
+/** Interaction states shared by every component (hover lift, press scale, focus ring). */
+export const interaction = {
+  hoverLift: "-1px",
+  pressScale: "0.985",
+  focusRingWidth: 3,
+  focusRingOffset: 2,
+  disabledOpacity: opacity.disabled,
 } as const;

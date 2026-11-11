@@ -5,7 +5,7 @@
   justify-content: center;
   min-height: 360px;
   padding: var(--pd-space-10);
-  border-radius: 12px;
+  border-radius: var(--pd-radius-lg);
   background-color: rgb(var(--pd-bg-subtle));
   text-align: center;
 }

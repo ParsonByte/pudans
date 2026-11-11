@@ -37,10 +37,10 @@
   width: 34px;
   height: 34px;
   border: 1px solid var(--login-mark-border);
-  border-radius: 10px;
+  border-radius: var(--pd-radius-md);
   background: var(--login-mark-bg);
   color: var(--login-video-text);
-  font-size: 17px;
+  font-size: var(--pd-text-lg);
   font-weight: 700;
   letter-spacing: -0.04em;
   backdrop-filter: blur(12px);
@@ -55,14 +55,14 @@
 
 .brandText strong {
   color: var(--login-video-text);
-  font-size: 14px;
+  font-size: var(--pd-text-base);
   font-weight: 700;
   letter-spacing: 0.16em;
 }
 
 .brandText small {
   color: var(--login-video-subtle);
-  font-size: 9px;
+  font-size: var(--pd-text-xs);
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -82,7 +82,7 @@
   gap: 6px;
   margin-right: 4px;
   color: var(--login-video-muted);
-  font-size: 12px;
+  font-size: var(--pd-text-xs);
   font-weight: 500;
   text-decoration: none;
   transition: color var(--pd-duration-fast) var(--pd-ease-standard);
@@ -100,7 +100,7 @@
   height: 34px;
   padding: 0;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: var(--pd-radius-md);
   background: transparent;
   color: var(--login-video-muted);
   cursor: pointer;

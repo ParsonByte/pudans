@@ -52,13 +52,13 @@
 }
 
 .sm :global(.MuiSvgIcon-root) {
-  font-size: 18px;
+  font-size: var(--pd-icon-sm);
 }
 
 .md :global(.MuiSvgIcon-root) {
-  font-size: 20px;
+  font-size: var(--pd-icon-md);
 }
 
 .lg :global(.MuiSvgIcon-root) {
-  font-size: 24px;
+  font-size: var(--pd-icon-lg);
 }

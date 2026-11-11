@@ -17,7 +17,7 @@
 
 .cardEyebrow {
   color: var(--login-brand);
-  font-size: 10px;
+  font-size: var(--pd-text-xs);
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -26,7 +26,7 @@
 .cardTitle {
   margin: 0;
   color: var(--login-text);
-  font-size: 28px;
+  font-size: var(--pd-text-3xl);
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.2;
@@ -35,7 +35,7 @@
 .cardDescription {
   margin: 0;
   color: var(--login-muted);
-  font-size: 12.5px;
+  font-size: var(--pd-text-sm);
   line-height: 1.65;
 }
 
@@ -46,18 +46,18 @@
   margin-top: 24px;
   padding: 3px;
   border: 1px solid var(--login-card-border);
-  border-radius: 10px;
+  border-radius: var(--pd-radius-md);
   background: var(--login-seg);
 }
 
 .tab {
   height: 34px;
   border: 0;
-  border-radius: 7px;
+  border-radius: var(--pd-radius-md);
   background: transparent;
   color: var(--login-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--pd-text-xs);
   font-weight: 500;
   cursor: pointer;
   transition:
@@ -72,7 +72,7 @@
 .tabActive {
   background: var(--login-card);
   color: var(--login-text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--pd-shadow-sm);
 }
 
 .form {
@@ -101,7 +101,7 @@
   height: 76px;
   margin-bottom: 6px;
   border: 1px solid rgb(var(--pd-brand-primary) / 0.24);
-  border-radius: 16px;
+  border-radius: var(--pd-radius-xl);
   background: rgb(var(--pd-brand-primary) / 0.08);
   color: var(--login-brand);
 }
@@ -109,28 +109,28 @@
 .scanTitle {
   margin: 0;
   color: var(--login-text);
-  font-size: 16px;
+  font-size: var(--pd-text-lg);
   font-weight: 600;
 }
 
 .scanText {
   margin: 0;
   color: var(--login-muted);
-  font-size: 12.5px;
+  font-size: var(--pd-text-sm);
 }
 
 .scanHint {
   max-width: 240px;
   margin: 4px 0 0;
   color: var(--login-subtle);
-  font-size: 10.5px;
+  font-size: var(--pd-text-xs);
   line-height: 1.55;
 }
 
 .input :global(.MuiFormLabel-root) {
   margin-bottom: 7px;
   color: var(--login-muted);
-  font-size: 11.5px;
+  font-size: var(--pd-text-xs);
   font-weight: 500;
 }
 
@@ -140,10 +140,10 @@
 
 .input :global(.MuiOutlinedInput-root) {
   height: 46px;
-  border-radius: 10px;
+  border-radius: var(--pd-radius-md);
   background: var(--login-field);
   color: var(--login-text);
-  font-size: 13px;
+  font-size: var(--pd-text-sm);
   transition:
     background-color var(--pd-duration-fast) var(--pd-ease-standard),
     box-shadow var(--pd-duration-fast) var(--pd-ease-standard);
@@ -180,7 +180,7 @@
 .input :global(.MuiFormHelperText-root) {
   margin: 6px 0 0;
   color: rgb(var(--pd-state-danger));
-  font-size: 11px;
+  font-size: var(--pd-text-xs);
 }
 
 .visibilityButton {
@@ -191,7 +191,7 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--pd-radius-sm);
   background: transparent;
   color: var(--login-subtle);
   cursor: pointer;
@@ -210,7 +210,7 @@
 
 .forgot {
   color: var(--login-brand);
-  font-size: 11.5px;
+  font-size: var(--pd-text-xs);
   font-weight: 500;
   text-decoration: none;
 }
@@ -227,7 +227,7 @@
   width: 100%;
   gap: 16px;
   color: var(--login-subtle);
-  font-size: 11px;
+  font-size: var(--pd-text-xs);
   line-height: 1.4;
 }
 
@@ -245,14 +245,14 @@
 .submit {
   height: 46px;
   margin-top: 2px;
-  font-size: 13px;
+  font-size: var(--pd-text-sm);
   font-weight: 600;
 }
 
 .agreement {
   margin: 0;
   color: var(--login-muted);
-  font-size: 10.5px;
+  font-size: var(--pd-text-xs);
   line-height: 1.6;
   text-align: center;
 }
@@ -271,7 +271,7 @@
   align-items: center;
   gap: 10px;
   color: var(--login-subtle);
-  font-size: 10px;
+  font-size: var(--pd-text-xs);
 }
 
 .divider::before,
@@ -295,11 +295,11 @@
   gap: 7px;
   height: 36px;
   border: 1px solid var(--login-card-border);
-  border-radius: 9px;
+  border-radius: var(--pd-radius-md);
   background: transparent;
   color: var(--login-muted);
   font: inherit;
-  font-size: 11.5px;
+  font-size: var(--pd-text-xs);
   text-decoration: none;
   cursor: not-allowed;
   opacity: 0.62;
@@ -328,6 +328,6 @@
 
   .hints {
     gap: 10px;
-    font-size: 9.5px;
+    font-size: var(--pd-text-xs);
   }
 }

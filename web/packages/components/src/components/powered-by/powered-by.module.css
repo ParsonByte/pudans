@@ -1,0 +1,41 @@
+.root {
+  color: rgb(var(--pd-text-tertiary));
+  font-size: var(--pd-text-xs);
+  line-height: var(--pd-leading-xs);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pd-space-1);
+  color: inherit;
+  text-decoration: none;
+  transition: var(--pd-transition-opacity);
+  opacity: 0.8;
+}
+
+.link:hover {
+  opacity: 1;
+  text-decoration: none;
+}
+
+.label {
+  color: rgb(var(--pd-text-tertiary));
+}
+
+.name {
+  color: rgb(var(--pd-text-secondary));
+  font-weight: var(--pd-font-weight-medium);
+}
+
+.logo {
+  display: block;
+  filter: grayscale(100%);
+  opacity: 0.6;
+  transition: var(--pd-transition-opacity);
+}
+
+.link:hover .logo {
+  filter: grayscale(0%);
+  opacity: 1;
+}

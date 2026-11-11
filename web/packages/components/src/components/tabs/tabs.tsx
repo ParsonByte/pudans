@@ -44,7 +44,7 @@ const StyledTabs = styled(MuiTabs)(({ theme }) => ({
 
 const StyledTab = styled(MuiTab)(({ theme }) => {
   const hoverBackground =
-    theme.palette.mode === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.04)";
+    theme.palette.mode === "dark" ? "rgb(var(--pd-bg-hover))" : "rgb(var(--pd-bg-hover))";
   return {
     minHeight: 36,
     minWidth: 0,
@@ -68,18 +68,22 @@ const StyledTab = styled(MuiTab)(({ theme }) => {
     },
     "&.Mui-selected": {
       backgroundColor:
-        theme.palette.mode === "dark" ? "rgba(144, 202, 249, 0.16)" : "rgba(25, 118, 210, 0.10)",
+        theme.palette.mode === "dark"
+          ? "rgb(var(--pd-brand-primary) / 0.16)"
+          : "rgb(var(--pd-brand-primary) / 0.10)",
       color: theme.palette.primary.main,
     },
     "&.Mui-selected:hover": {
       backgroundColor:
-        theme.palette.mode === "dark" ? "rgba(144, 202, 249, 0.22)" : "rgba(25, 118, 210, 0.16)",
+        theme.palette.mode === "dark"
+          ? "rgb(var(--pd-brand-primary) / 0.22)"
+          : "rgb(var(--pd-brand-primary) / 0.16)",
     },
     "&.Mui-focusVisible": {
       boxShadow:
         theme.palette.mode === "dark"
-          ? "0 0 0 3px rgba(144, 202, 249, 0.32)"
-          : "0 0 0 3px rgba(25, 118, 210, 0.24)",
+          ? "0 0 0 3px rgb(var(--pd-brand-primary) / 0.32)"
+          : "0 0 0 3px rgb(var(--pd-brand-primary) / 0.24)",
     },
     "&.Mui-disabled": {
       opacity: 0.45,

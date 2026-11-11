@@ -62,7 +62,7 @@ export function SecurityView() {
               borderRadius: 3,
               border: "1px solid",
               borderColor: "divider",
-              backgroundColor: "#fff",
+              backgroundColor: "rgb(var(--pd-qr-surface))",
               display: "inline-grid",
               placeItems: "center",
             }}

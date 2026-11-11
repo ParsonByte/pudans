@@ -1,13 +1,13 @@
 import { useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Avatar, Box, Button, Chip, Stack, Typography } from "@mui/material";
-import TimeAgo from "timeago-react";
 import {
   ImageCropper,
   Icon,
   PageContainer,
   useToast,
   type ImageCropperResult,
+  RelativeTime,
 } from "@pudans/components";
 import { useAuth } from "@web/providers/auth-provider";
 import { UcPanel } from "../../components/uc-panel";
@@ -77,7 +77,7 @@ export function ProfileView() {
               />
             </Stack>
             <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1 }}>
-              <TimeAgo datetime={registeredAt} /> · {t("profileJoined")}
+              <RelativeTime datetime={registeredAt} /> · {t("profileJoined")}
             </Typography>
           </Box>
         </Stack>

@@ -17,7 +17,6 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { type Dayjs } from "dayjs";
 import Fuse from "fuse.js";
-import TimeAgo from "timeago-react";
 import { useQueryState } from "nuqs";
 import {
   Badge,
@@ -26,6 +25,7 @@ import {
   Table,
   type BadgeTone,
   type TableColumn,
+  RelativeTime,
 } from "@pudans/components";
 import { apiClient, type AuditLogPage, type AuditRecord } from "@pudans/api-client";
 
@@ -145,7 +145,7 @@ export function AuditListView() {
         record.timestamp ? (
           <Tooltip title={dayjs(record.timestamp).format("YYYY-MM-DD HH:mm:ss")}>
             <Typography variant="body2" color="text.secondary">
-              <TimeAgo datetime={record.timestamp} />
+              <RelativeTime datetime={record.timestamp} />
             </Typography>
           </Tooltip>
         ) : (
@@ -249,7 +249,9 @@ export function AuditListView() {
           rowKey={(record) => record.metadata.name}
           hoverable
           zebra
-          emptyText={loading ? t("auditLoading") : t("auditEmpty")}
+          loading={loading}
+
+          emptyText={t("auditEmpty")}
         />
 
         <Stack direction="row" sx={{ justifyContent: "center", mt: 2 }}>

@@ -1,0 +1,109 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pd-space-2);
+  min-width: 220px;
+  height: var(--pd-control-md);
+  padding: 0 var(--pd-space-2);
+  border: var(--pd-border-width-thin) solid var(--pd-border-subtle);
+  border-radius: var(--pd-radius-full);
+  background-color: rgb(var(--pd-bg-subtle));
+  transition: var(--pd-transition-colors), var(--pd-transition-shadow);
+}
+
+.root:focus-within {
+  border-color: rgb(var(--pd-brand-primary));
+  background-color: rgb(var(--pd-bg-surface));
+  box-shadow: var(--pd-shadow-focus);
+}
+
+.disabled {
+  opacity: var(--pd-opacity-disabled);
+  pointer-events: none;
+}
+
+.icon {
+  flex: 0 0 auto;
+  color: rgb(var(--pd-text-tertiary));
+}
+
+.input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: rgb(var(--pd-text-primary));
+  font: inherit;
+  font-size: var(--pd-text-sm);
+  outline: none;
+}
+
+.input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.input::placeholder {
+  color: rgb(var(--pd-text-tertiary));
+}
+
+.clear {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pd-radius-full);
+  background: transparent;
+  color: rgb(var(--pd-text-tertiary));
+  cursor: pointer;
+  transition: var(--pd-transition-colors);
+}
+
+.clear:hover {
+  background-color: var(--pd-bg-hover);
+  color: rgb(var(--pd-text-primary));
+}
+
+.clear:focus-visible {
+  outline: none;
+  box-shadow: var(--pd-shadow-focus);
+}
+
+.shortcut {
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border: var(--pd-border-width-thin) solid var(--pd-border-subtle);
+  border-radius: var(--pd-radius-xs);
+  background-color: rgb(var(--pd-bg-surface));
+  color: rgb(var(--pd-text-tertiary));
+  font-family: var(--pd-font-sans);
+  font-size: var(--pd-text-xs);
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.spinner {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgb(var(--pd-brand-primary) / 0.3);
+  border-top-color: rgb(var(--pd-brand-primary));
+  border-radius: var(--pd-radius-full);
+  animation: pd-search-spin var(--pd-duration-spin) linear infinite;
+}
+
+@keyframes pd-search-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}

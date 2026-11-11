@@ -1,11 +1,12 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { accentPresets } from "@pudans/components";
 import type { PudansColorModePreference } from "@pudans/components";
 import { DEFAULT_LOCALE } from "@pudans/shared";
 
 export const COLOR_MODE_STORAGE_KEY = "pudans:color-mode";
 export const ACCENT_COLOR_STORAGE_KEY = "pudans:accent-color";
 export const LOCALE_STORAGE_KEY = "pudans:locale";
-export const DEFAULT_ACCENT_COLOR = "#1976d2";
+export const DEFAULT_ACCENT_COLOR: string = accentPresets[0];
 
 function readStorage(key: string): string | null {
   if (typeof window === "undefined") {

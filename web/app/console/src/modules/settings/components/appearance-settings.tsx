@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Box, Chip, Stack } from "@mui/material";
 import Sketch from "@uiw/react-color-sketch";
 import { hsvaToHex } from "@uiw/color-convert";
-import { FormItem, Input, SettingsPanel, Switch } from "@pudans/components";
+import { accentPresets, FormItem, Input, SettingsPanel, Switch } from "@pudans/components";
 import { useAppDispatch, useAppSelector } from "@web/store/hooks";
 import { setAccentColor } from "@web/store/app-slice";
 import { useConfigForm, type SystemConfig } from "../hooks/use-system-config";
@@ -30,8 +30,6 @@ function parseAppearance(config: SystemConfig): AppearanceValues {
 function mergeAppearance(config: SystemConfig, values: AppearanceValues): SystemConfig {
   return { ...config, ...values };
 }
-
-const ACCENT_PRESETS = ["#1976d2", "#0f766e", "#7c3aed", "#db2777", "#ea580c", "#475569"];
 
 export function AppearanceSettings() {
   const { t } = useTranslation("console");
@@ -72,15 +70,15 @@ export function AppearanceSettings() {
             style={{ width: 240 }}
           />
           <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>
-            {ACCENT_PRESETS.map((color) => (
+            {accentPresets.map((color) => (
               <Chip
                 key={color}
                 label={color}
                 size="small"
                 onClick={() => dispatch(setAccentColor(color))}
                 sx={{
-                  borderLeft: `12px solid ${color}`,
-                  fontFamily: "monospace",
+                  borderLeft: "12px solid " + color,
+                  fontFamily: "var(--pd-font-mono)",
                 }}
               />
             ))}

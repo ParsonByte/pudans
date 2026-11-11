@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Box, InputAdornment, Stack, TextField, Typography } from "@mui/material";
 import Fuse from "fuse.js";
-import TimeAgo from "timeago-react";
 import {
   Badge,
   HighlightText,
@@ -10,6 +9,7 @@ import {
   PageContainer,
   Table,
   type TableColumn,
+  RelativeTime,
 } from "@pudans/components";
 import { apiClient, type Role, type RoleList } from "@pudans/api-client";
 
@@ -108,7 +108,7 @@ export function RoleListView() {
       render: (role) =>
         role.metadata.creationTimestamp ? (
           <Typography variant="body2" color="text.secondary">
-            <TimeAgo datetime={role.metadata.creationTimestamp} />
+            <RelativeTime datetime={role.metadata.creationTimestamp} />
           </Typography>
         ) : (
           "—"
@@ -151,7 +151,9 @@ export function RoleListView() {
         rowKey={(role) => role.metadata.name}
         hoverable
         zebra
-        emptyText={loading ? t("rolesLoading") : t("rolesEmpty")}
+        loading={loading}
+
+        emptyText={t("rolesEmpty")}
       />
     </PageContainer>
   );

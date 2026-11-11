@@ -4,11 +4,7 @@ export interface FeishuIconProps extends SVGProps<SVGSVGElement> {
   size?: number;
 }
 
-export default function FeishuIcon({
-  size = 20,
-  className,
-  ...rest
-}: FeishuIconProps) {
+export default function FeishuIcon({ size = 20, className, ...rest }: FeishuIconProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

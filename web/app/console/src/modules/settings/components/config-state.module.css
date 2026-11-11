@@ -48,7 +48,7 @@
     rgb(var(--pd-bg-subtle)) 63%
   );
   background-size: 400% 100%;
-  animation: shimmer 1.4s ease infinite;
+  animation: shimmer var(--pd-duration-skeleton) ease infinite;
 }
 
 .skeleton:nth-child(2) {

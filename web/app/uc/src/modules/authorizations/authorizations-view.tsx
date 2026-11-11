@@ -1,8 +1,15 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert, Box, Button, Stack, Typography } from "@mui/material";
-import TimeAgo from "timeago-react";
-import { Badge, Icon, PageContainer, Table, useToast, type TableColumn } from "@pudans/components";
+import {
+  Badge,
+  Icon,
+  PageContainer,
+  RelativeTime,
+  Table,
+  useToast,
+  type TableColumn,
+} from "@pudans/components";
 import { UcPanel } from "../../components/uc-panel";
 
 interface AuthorizationToken {
@@ -88,7 +95,7 @@ export function AuthorizationsView() {
         render: (token) =>
           token.lastUsedAt ? (
             <Typography variant="body2" color="text.secondary">
-              <TimeAgo datetime={token.lastUsedAt} />
+              <RelativeTime datetime={token.lastUsedAt} />
             </Typography>
           ) : (
             <Typography variant="body2" color="text.secondary">

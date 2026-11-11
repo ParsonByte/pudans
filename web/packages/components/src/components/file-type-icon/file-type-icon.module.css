@@ -1,0 +1,53 @@
+.root {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--pd-radius-md);
+  background-color: rgb(var(--pd-bg-subtle));
+  color: rgb(var(--pd-text-secondary));
+}
+
+.sm {
+  width: 26px;
+  height: 26px;
+  border-radius: var(--pd-radius-sm);
+}
+
+.lg {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--pd-radius-lg);
+}
+
+.brand {
+  background-color: rgb(var(--pd-brand-soft));
+  color: rgb(var(--pd-brand-primary));
+}
+
+.success {
+  background-color: rgb(var(--pd-state-success-soft));
+  color: rgb(var(--pd-state-success));
+}
+
+.warning {
+  background-color: rgb(var(--pd-state-warning-soft));
+  color: rgb(var(--pd-state-warning));
+}
+
+.danger {
+  background-color: rgb(var(--pd-state-danger-soft));
+  color: rgb(var(--pd-state-danger));
+}
+
+.info {
+  background-color: rgb(var(--pd-state-info-soft));
+  color: rgb(var(--pd-state-info));
+}
+
+.neutral {
+  background-color: rgb(var(--pd-bg-subtle));
+  color: rgb(var(--pd-text-secondary));
+}

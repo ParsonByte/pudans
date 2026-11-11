@@ -1,17 +1,10 @@
-import {
-  createBrowserRouter,
-  RouterProvider,
-  type RouteObject,
-} from "react-router-dom";
+import { createBrowserRouter, RouterProvider, type RouteObject } from "react-router-dom";
 
 export interface CreateAppRouterOptions {
   basename?: string;
 }
 
-export function createAppRouter(
-  routes: RouteObject[],
-  options: CreateAppRouterOptions = {},
-) {
+export function createAppRouter(routes: RouteObject[], options: CreateAppRouterOptions = {}) {
   return createBrowserRouter(routes, {
     basename: options.basename,
   });

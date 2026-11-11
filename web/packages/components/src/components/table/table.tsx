@@ -1,5 +1,7 @@
 import { type HTMLAttributes, type Key, type KeyboardEvent, type ReactNode } from "react";
 import { cn } from "../../utils/cn";
+import { EmptyState } from "../empty-state";
+import { Skeleton } from "../skeleton";
 import styles from "./table.module.css";
 
 export interface TableColumn<T> {
@@ -21,6 +23,11 @@ export interface TableProps<T> extends Omit<HTMLAttributes<HTMLTableElement>, "c
   hoverable?: boolean;
   stickyHeader?: boolean;
   emptyText?: ReactNode;
+  /** Custom empty slot; takes precedence over emptyText. */
+  emptyState?: ReactNode;
+  /** Renders skeleton rows while data is loading. */
+  loading?: boolean;
+  loadingRows?: number;
   caption?: ReactNode;
   onRowClick?: (row: T, index: number) => void;
   wrapperClassName?: string;
@@ -39,6 +46,9 @@ export function Table<T>({
   hoverable = true,
   stickyHeader = false,
   emptyText = "No records",
+  emptyState,
+  loading = false,
+  loadingRows = 4,
   caption,
   onRowClick,
   className,
@@ -72,6 +82,7 @@ export function Table<T>({
     >
       <table
         {...props}
+        aria-busy={loading || undefined}
         className={cn(
           styles.table,
           zebra && styles.zebra,
@@ -99,10 +110,24 @@ export function Table<T>({
           </tr>
         </thead>
         <tbody>
-          {data.length === 0 ? (
+          {loading ? (
+            Array.from({ length: loadingRows }).map((_, rowIndex) => (
+              <tr key={"skeleton-" + rowIndex} className={styles.row}>
+                {columns.map((column, columnIndex) => (
+                  <td key={column.key} className={styles.td}>
+                    <Skeleton
+                      variant="text"
+                      width={columnIndex === 0 ? "60%" : "40%"}
+                      height={18}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))
+          ) : data.length === 0 ? (
             <tr>
               <td className={styles.empty} colSpan={columns.length}>
-                {emptyText}
+                {emptyState ?? <EmptyState compact size="sm" title={emptyText} />}
               </td>
             </tr>
           ) : (

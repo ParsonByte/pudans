@@ -111,3 +111,12 @@
     padding-inline: var(--pd-space-4);
   }
 }
+.draggable .header {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.draggable .header:active {
+  cursor: grabbing;
+}

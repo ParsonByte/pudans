@@ -23,7 +23,13 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "clean": "rm -rf build app/*/dist",
-    "prepare": "cd .. && husky web/.husky"
+    "prepare": "cd .. && husky web/.husky",
+    "test": "node --test tests/",
+    "test:packages": "pnpm --filter @pudans/shared build && pnpm --filter @pudans/components build",
+    "check:cycles": "node scripts/check-cycles.mjs",
+    "check:exports": "node scripts/check-exports.mjs",
+    "audit:tokens": "node scripts/audit-design-tokens.mjs",
+    "verify": "pnpm typecheck && pnpm check:cycles && pnpm check:exports && pnpm test:packages && pnpm test && pnpm lint && pnpm build"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

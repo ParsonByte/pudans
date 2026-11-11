@@ -93,6 +93,20 @@
   background-color: var(--pd-bg-active);
 }
 
+.danger {
+  background-color: rgb(var(--pd-state-danger));
+  color: rgb(var(--pd-brand-contrast));
+  border-color: transparent;
+}
+
+.danger:hover:not(:disabled) {
+  background-color: rgb(var(--pd-state-danger) / 0.9);
+}
+
+.danger:active:not(:disabled) {
+  background-color: rgb(var(--pd-state-danger) / 0.8);
+}
+
 .sm {
   min-width: 58px;
   height: var(--pd-control-sm);
@@ -162,7 +176,7 @@
   border: 2px solid currentColor;
   border-right-color: transparent;
   border-radius: var(--pd-radius-full);
-  animation: spin 700ms linear infinite;
+  animation: spin var(--pd-duration-spin) linear infinite;
 }
 
 .loading {
@@ -181,7 +195,6 @@
   }
 
   .spinner {
-    animation-duration: 1.4s;
+    animation-duration: var(--pd-duration-skeleton);
   }
-
 }

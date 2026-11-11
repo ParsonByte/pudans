@@ -12,8 +12,10 @@ import styles from "./input.module.css";
 
 export type InputSize = "sm" | "md" | "lg";
 
-export interface InputProps
-  extends Omit<OutlinedInputProps, "size" | "startAdornment" | "endAdornment"> {
+export interface InputProps extends Omit<
+  OutlinedInputProps,
+  "size" | "startAdornment" | "endAdornment"
+> {
   size?: InputSize;
   label?: ReactNode;
   helperText?: ReactNode;

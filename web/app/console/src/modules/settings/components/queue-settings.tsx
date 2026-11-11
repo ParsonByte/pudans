@@ -74,7 +74,11 @@ export function QueueSettings() {
       resetLabel={t("settingsReset")}
       dirtyLabel={t("settingsUnsaved")}
     >
-      <FormItem label={t("settingsQueueHost")} description={t("settingsQueueHostHelp")} htmlFor="settings-queue-host">
+      <FormItem
+        label={t("settingsQueueHost")}
+        description={t("settingsQueueHostHelp")}
+        htmlFor="settings-queue-host"
+      >
         <Input
           id="settings-queue-host"
           placeholder="127.0.0.1"
@@ -82,7 +86,11 @@ export function QueueSettings() {
           onChange={(event) => update("host", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsQueuePort")} description={t("settingsQueuePortHelp")} htmlFor="settings-queue-port">
+      <FormItem
+        label={t("settingsQueuePort")}
+        description={t("settingsQueuePortHelp")}
+        htmlFor="settings-queue-port"
+      >
         <Input
           id="settings-queue-port"
           inputMode="numeric"
@@ -90,7 +98,11 @@ export function QueueSettings() {
           onChange={(event) => update("port", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsQueuePassword")} description={t("settingsQueuePasswordHelp")} htmlFor="settings-queue-password">
+      <FormItem
+        label={t("settingsQueuePassword")}
+        description={t("settingsQueuePasswordHelp")}
+        htmlFor="settings-queue-password"
+      >
         <Input
           id="settings-queue-password"
           type="password"
@@ -99,7 +111,11 @@ export function QueueSettings() {
           onChange={(event) => update("password", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsQueueDatabase")} description={t("settingsQueueDatabaseHelp")} htmlFor="settings-queue-database">
+      <FormItem
+        label={t("settingsQueueDatabase")}
+        description={t("settingsQueueDatabaseHelp")}
+        htmlFor="settings-queue-database"
+      >
         <Input
           id="settings-queue-database"
           inputMode="numeric"
@@ -107,7 +123,11 @@ export function QueueSettings() {
           onChange={(event) => update("database", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsQueueConcurrency")} description={t("settingsQueueConcurrencyHelp")} htmlFor="settings-queue-concurrency">
+      <FormItem
+        label={t("settingsQueueConcurrency")}
+        description={t("settingsQueueConcurrencyHelp")}
+        htmlFor="settings-queue-concurrency"
+      >
         <Input
           id="settings-queue-concurrency"
           inputMode="numeric"

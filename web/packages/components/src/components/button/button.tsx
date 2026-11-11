@@ -2,7 +2,7 @@ import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { cn } from "../../utils/cn";
 import styles from "./button.module.css";
 
-export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
+export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 export type ButtonSize = "sm" | "md" | "lg";
 export type ButtonRadius = "sm" | "md" | "lg" | "full";
 
@@ -11,6 +11,7 @@ const VARIANT_CLASS: Record<ButtonVariant, string> = {
   secondary: styles.secondary,
   outline: styles.outline,
   ghost: styles.ghost,
+  danger: styles.danger,
 };
 
 const SIZE_CLASS: Record<ButtonSize, string> = {

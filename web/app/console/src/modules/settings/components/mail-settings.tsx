@@ -75,7 +75,11 @@ export function MailSettings() {
       resetLabel={t("settingsReset")}
       dirtyLabel={t("settingsUnsaved")}
     >
-      <FormItem label={t("settingsMailHost")} description={t("settingsMailHostHelp")} htmlFor="settings-mail-host">
+      <FormItem
+        label={t("settingsMailHost")}
+        description={t("settingsMailHostHelp")}
+        htmlFor="settings-mail-host"
+      >
         <Input
           id="settings-mail-host"
           placeholder="smtp.example.com"
@@ -83,7 +87,11 @@ export function MailSettings() {
           onChange={(event) => update("host", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsMailPort")} description={t("settingsMailPortHelp")} htmlFor="settings-mail-port">
+      <FormItem
+        label={t("settingsMailPort")}
+        description={t("settingsMailPortHelp")}
+        htmlFor="settings-mail-port"
+      >
         <Input
           id="settings-mail-port"
           placeholder="465"
@@ -92,7 +100,11 @@ export function MailSettings() {
           onChange={(event) => update("port", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsMailUsername")} description={t("settingsMailUsernameHelp")} htmlFor="settings-mail-username">
+      <FormItem
+        label={t("settingsMailUsername")}
+        description={t("settingsMailUsernameHelp")}
+        htmlFor="settings-mail-username"
+      >
         <Input
           id="settings-mail-username"
           autoComplete="off"
@@ -100,7 +112,11 @@ export function MailSettings() {
           onChange={(event) => update("username", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsMailPassword")} description={t("settingsMailPasswordHelp")} htmlFor="settings-mail-password">
+      <FormItem
+        label={t("settingsMailPassword")}
+        description={t("settingsMailPasswordHelp")}
+        htmlFor="settings-mail-password"
+      >
         <Input
           id="settings-mail-password"
           type="password"
@@ -109,7 +125,11 @@ export function MailSettings() {
           onChange={(event) => update("password", event.target.value)}
         />
       </FormItem>
-      <FormItem label={t("settingsMailFrom")} description={t("settingsMailFromHelp")} htmlFor="settings-mail-from">
+      <FormItem
+        label={t("settingsMailFrom")}
+        description={t("settingsMailFromHelp")}
+        htmlFor="settings-mail-from"
+      >
         <Input
           id="settings-mail-from"
           placeholder="no-reply@example.com"
@@ -118,10 +138,7 @@ export function MailSettings() {
         />
       </FormItem>
       <FormItem label={t("settingsMailSsl")} description={t("settingsMailSslHelp")} inline>
-        <Switch
-          checked={values.ssl}
-          onChange={(event) => update("ssl", event.target.checked)}
-        />
+        <Switch checked={values.ssl} onChange={(event) => update("ssl", event.target.checked)} />
       </FormItem>
     </SettingsPanel>
   );

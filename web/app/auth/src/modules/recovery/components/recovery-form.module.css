@@ -17,7 +17,7 @@
 
 .eyebrow {
   color: var(--login-brand);
-  font-size: 10px;
+  font-size: var(--pd-text-xs);
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -26,7 +26,7 @@
 .title {
   margin: 0;
   color: var(--login-text);
-  font-size: 27px;
+  font-size: var(--pd-text-3xl);
   font-weight: 600;
   letter-spacing: -0.035em;
   line-height: 1.2;
@@ -35,7 +35,7 @@
 .description {
   margin: 0;
   color: var(--login-muted);
-  font-size: 12.5px;
+  font-size: var(--pd-text-sm);
   line-height: 1.65;
 }
 
@@ -64,7 +64,7 @@
   border-radius: 50%;
   background: var(--login-seg);
   color: var(--login-subtle);
-  font-size: 11px;
+  font-size: var(--pd-text-xs);
   font-weight: 600;
   transition:
     background-color var(--pd-duration-fast) var(--pd-ease-standard),
@@ -88,7 +88,7 @@
 
 .stepLabel {
   color: var(--login-subtle);
-  font-size: 10.5px;
+  font-size: var(--pd-text-xs);
   line-height: 1.3;
   white-space: nowrap;
   transition: color var(--pd-duration-fast) var(--pd-ease-standard);
@@ -125,7 +125,7 @@
 .input :global(.MuiFormLabel-root) {
   margin-bottom: 7px;
   color: var(--login-muted);
-  font-size: 11.5px;
+  font-size: var(--pd-text-xs);
   font-weight: 500;
 }
 
@@ -135,10 +135,10 @@
 
 .input :global(.MuiOutlinedInput-root) {
   height: 46px;
-  border-radius: 10px;
+  border-radius: var(--pd-radius-md);
   background: var(--login-field);
   color: var(--login-text);
-  font-size: 13px;
+  font-size: var(--pd-text-sm);
   transition:
     background-color var(--pd-duration-fast) var(--pd-ease-standard),
     box-shadow var(--pd-duration-fast) var(--pd-ease-standard);
@@ -201,7 +201,7 @@
   background: var(--login-field);
   color: var(--login-brand);
   font: inherit;
-  font-size: 11.5px;
+  font-size: var(--pd-text-xs);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -228,7 +228,7 @@
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--pd-radius-sm);
   background: transparent;
   color: var(--login-subtle);
   cursor: pointer;
@@ -245,7 +245,7 @@
   justify-content: space-between;
   gap: 10px;
   color: var(--login-subtle);
-  font-size: 10px;
+  font-size: var(--pd-text-xs);
   line-height: 1.4;
 }
 
@@ -265,10 +265,10 @@
 .errorAlert {
   padding: 10px 12px;
   border-color: rgb(var(--pd-state-danger) / 0.32);
-  border-radius: 8px;
+  border-radius: var(--pd-radius-md);
   background: rgb(var(--pd-state-danger) / 0.09);
   color: rgb(var(--pd-state-danger));
-  font-size: 11.5px;
+  font-size: var(--pd-text-xs);
   line-height: 1.55;
 }
 
@@ -280,7 +280,7 @@
 .submit {
   height: 46px;
   margin-top: 2px;
-  font-size: 13px;
+  font-size: var(--pd-text-sm);
   font-weight: 600;
 }
 
@@ -292,7 +292,7 @@
   margin-top: auto;
   padding-top: 18px;
   color: var(--login-muted);
-  font-size: 11.5px;
+  font-size: var(--pd-text-xs);
   text-decoration: none;
 }
 
@@ -308,7 +308,7 @@
   margin-top: 34px;
   padding: 30px 16px;
   border: 1px solid rgb(var(--pd-brand-primary) / 0.18);
-  border-radius: 14px;
+  border-radius: var(--pd-radius-xl);
   background: rgb(var(--pd-brand-primary) / 0.06);
   text-align: center;
 }
@@ -327,7 +327,7 @@
 .successTitle {
   margin: 4px 0 0;
   color: var(--login-text);
-  font-size: 15px;
+  font-size: var(--pd-text-md);
   font-weight: 600;
 }
 
@@ -335,7 +335,7 @@
   max-width: 280px;
   margin: 0;
   color: var(--login-muted);
-  font-size: 11.5px;
+  font-size: var(--pd-text-xs);
   line-height: 1.6;
 }
 
@@ -345,7 +345,7 @@
   }
 
   .title {
-    font-size: 24px;
+    font-size: var(--pd-text-2xl);
   }
 
   .step {
@@ -358,16 +358,16 @@
   }
 
   .stepLabel {
-    font-size: 9.5px;
+    font-size: var(--pd-text-xs);
   }
 
   .codeButton {
     min-width: 88px;
     padding: 0 9px;
-    font-size: 10.5px;
+    font-size: var(--pd-text-xs);
   }
 
   .hints {
-    font-size: 9.5px;
+    font-size: var(--pd-text-xs);
   }
 }

@@ -1,18 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router-dom";
 import { Icon, Tabs, type TabItem } from "@pudans/components";
-import {
-  getLegalDocument,
-  type LegalDocument,
-  type LegalDocumentKey,
-} from "./legal-copy";
+import { getLegalDocument, type LegalDocument, type LegalDocumentKey } from "./legal-copy";
 import styles from "./legal-view.module.css";
 
-const LEGAL_KEYS: readonly LegalDocumentKey[] = [
-  "terms",
-  "privacy",
-  "confidentiality",
-];
+const LEGAL_KEYS: readonly LegalDocumentKey[] = ["terms", "privacy", "confidentiality"];
 
 function isLegalKey(value: string | null): value is LegalDocumentKey {
   return value !== null && (LEGAL_KEYS as readonly string[]).includes(value);

@@ -17,6 +17,7 @@ export default defineConfig({
     },
     rollupOptions: {
       external: [
+        "@pudans/shared",
         /^react($|\/)/,
         /^react-dom($|\/)/,
         /^@mui\//,

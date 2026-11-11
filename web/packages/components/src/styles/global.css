@@ -60,8 +60,139 @@ a:hover {
 }
 
 :focus-visible {
-  outline: 2px solid rgb(var(--pd-brand-primary));
-  outline-offset: 2px;
+  outline: var(--pd-border-width-thick) solid rgb(var(--pd-brand-primary));
+  outline-offset: var(--pd-focus-ring-offset);
+}
+
+/* ------------------------------------------------------------------------- */
+/* Motion utilities · shared interaction + entrance/exit transitions          */
+/* Every duration/easing below resolves to a token and therefore honours      */
+/* prefers-reduced-motion through the variables.css override.                */
+/* ------------------------------------------------------------------------- */
+
+.pd-transition-colors {
+  transition: var(--pd-transition-colors);
+}
+
+.pd-transition-transform {
+  transition: var(--pd-transition-transform);
+}
+
+.pd-transition-opacity {
+  transition: var(--pd-transition-opacity);
+}
+
+.pd-transition-shadow {
+  transition: var(--pd-transition-shadow);
+}
+
+.pd-transition-all {
+  transition: var(--pd-transition-all);
+}
+
+.pd-hover-lift {
+  transition: var(--pd-transition-transform), var(--pd-transition-shadow);
+  will-change: transform;
+}
+
+.pd-hover-lift:hover {
+  transform: translateY(var(--pd-hover-lift));
+  box-shadow: var(--pd-shadow-md);
+}
+
+.pd-press {
+  transition: var(--pd-transition-transform);
+}
+
+.pd-press:active {
+  transform: scale(var(--pd-press-scale));
+}
+
+.pd-focus-ring:focus-visible {
+  outline: none;
+  box-shadow: var(--pd-shadow-focus);
+}
+
+.pd-animate-fade-in {
+  animation: pd-fade-in var(--pd-duration-base) var(--pd-ease-out) both;
+}
+
+.pd-animate-scale-in {
+  animation: pd-scale-in var(--pd-duration-base) var(--pd-ease-emphasized) both;
+}
+
+.pd-animate-slide-up {
+  animation: pd-slide-up var(--pd-duration-base) var(--pd-ease-out) both;
+}
+
+.pd-animate-pulse {
+  animation: pd-pulse var(--pd-duration-skeleton) var(--pd-ease-standard) infinite;
+}
+
+.pd-animate-spin {
+  animation: pd-spin var(--pd-duration-spin) linear infinite;
+}
+
+@keyframes pd-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pd-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pd-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pd-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: var(--pd-opacity-muted);
+  }
+}
+
+@keyframes pd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pd-hover-lift:hover,
+  .pd-press:active {
+    transform: none;
+  }
+
+  .pd-animate-fade-in,
+  .pd-animate-scale-in,
+  .pd-animate-slide-up,
+  .pd-animate-pulse,
+  .pd-animate-spin {
+    animation: none;
+  }
 }
 
 .pd-visually-hidden {

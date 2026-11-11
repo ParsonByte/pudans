@@ -11,7 +11,7 @@
   padding: 18px 24px;
   background: var(--login-footer-bg);
   color: var(--login-footer);
-  font-size: 10.5px;
+  font-size: var(--pd-text-xs);
   text-shadow: var(--login-nav-shadow);
 }
 

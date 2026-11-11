@@ -1,4 +1,12 @@
-import { useId, type MouseEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type MouseEvent,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import {
   Dialog as MuiDialog,
   DialogActions,
@@ -24,6 +32,8 @@ export interface DialogProps extends Omit<MuiDialogProps, "title" | "slotProps" 
   showCloseButton?: boolean;
   dividers?: boolean;
   closeLabel?: string;
+  /** Drag the dialog by its header (ignored on coarse pointers). */
+  draggable?: boolean;
 }
 
 /**
@@ -40,13 +50,55 @@ export function Dialog({
   showCloseButton = true,
   dividers = false,
   closeLabel = "Close dialog",
+  draggable = false,
   onClose,
   className,
   ...props
 }: DialogProps) {
   const titleId = useId();
   const descriptionId = useId();
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const dragOrigin = useRef({ pointerX: 0, pointerY: 0, x: 0, y: 0 });
   const hasHeader = Boolean(title || description || icon || showCloseButton);
+
+  useEffect(() => {
+    if (!props.open) {
+      setOffset({ x: 0, y: 0 });
+    }
+  }, [props.open]);
+
+  const handleDragStart = (event: PointerEvent<HTMLDivElement>): void => {
+    if (!draggable || event.button !== 0) {
+      return;
+    }
+    const target = event.target as HTMLElement;
+    if (target.closest("button, a, input, textarea, select")) {
+      return;
+    }
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragOrigin.current = {
+      pointerX: event.clientX,
+      pointerY: event.clientY,
+      x: offset.x,
+      y: offset.y,
+    };
+  };
+
+  const handleDragMove = (event: PointerEvent<HTMLDivElement>): void => {
+    if (!draggable || !event.currentTarget.hasPointerCapture(event.pointerId)) {
+      return;
+    }
+    setOffset({
+      x: dragOrigin.current.x + (event.clientX - dragOrigin.current.pointerX),
+      y: dragOrigin.current.y + (event.clientY - dragOrigin.current.pointerY),
+    });
+  };
+
+  const handleDragEnd = (event: PointerEvent<HTMLDivElement>): void => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
 
   const handleClose = (event: MouseEvent<HTMLButtonElement>): void => {
     onClose?.(event, "escapeKeyDown");
@@ -69,7 +121,14 @@ export function Dialog({
       }}
     >
       {hasHeader ? (
-        <DialogTitle component="div" className={styles.header}>
+        <DialogTitle
+          component="div"
+          className={styles.header}
+          onPointerDown={draggable ? handleDragStart : undefined}
+          onPointerMove={draggable ? handleDragMove : undefined}
+          onPointerUp={draggable ? handleDragEnd : undefined}
+          onPointerCancel={draggable ? handleDragEnd : undefined}
+        >
           <div className={styles.titleContent}>
             {icon ? (
               <span className={styles.icon} aria-hidden="true">

@@ -4,12 +4,7 @@ export function isEqualValue(left: unknown, right: unknown): boolean {
   if (Object.is(left, right)) {
     return true;
   }
-  if (
-    typeof left !== "object" ||
-    typeof right !== "object" ||
-    left === null ||
-    right === null
-  ) {
+  if (typeof left !== "object" || typeof right !== "object" || left === null || right === null) {
     return false;
   }
   if (Array.isArray(left) || Array.isArray(right)) {
@@ -49,10 +44,7 @@ export function useDirtyState<T>(
   values: T,
   options: UseDirtyStateOptions = {},
 ): boolean {
-  const compared = useMemo(
-    () => !isEqualValue(initialValues, values),
-    [initialValues, values],
-  );
+  const compared = useMemo(() => !isEqualValue(initialValues, values), [initialValues, values]);
   const dirty = options.dirty ?? compared;
   const callbackRef = useRef(options.onDirtyChange);
   callbackRef.current = options.onDirtyChange;

@@ -8,7 +8,7 @@
 
 .root :global(.MuiTreeItem-content) {
   min-height: 32px;
-  border-radius: 8px;
+  border-radius: var(--pd-radius-md);
   padding-block: 2px;
 }
 
@@ -31,7 +31,7 @@
 }
 
 .root :global(.MuiTreeItem-iconContainer svg) {
-  font-size: 18px;
+  font-size: var(--pd-icon-sm);
   color: rgb(var(--pd-text-tertiary));
 }
 

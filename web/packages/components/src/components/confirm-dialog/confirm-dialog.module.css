@@ -1,0 +1,14 @@
+.body {
+  color: rgb(var(--pd-text-secondary));
+  font-size: var(--pd-text-base);
+  line-height: var(--pd-leading-base);
+  overflow-wrap: anywhere;
+}
+
+.danger.danger {
+  background-color: rgb(var(--pd-state-danger));
+}
+
+.danger.danger:hover {
+  background-color: rgb(var(--pd-state-danger) / 0.9);
+}

@@ -33,6 +33,7 @@
     "@iconify/react": "catalog:",
     "@mui/x-date-pickers": "catalog:",
     "@mui/x-tree-view": "catalog:",
+    "@pudans/shared": "workspace:*",
     "dayjs": "catalog:",
     "material-ui-popup-state": "catalog:",
     "mui-one-time-password-input": "catalog:",

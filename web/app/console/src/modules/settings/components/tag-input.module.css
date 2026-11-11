@@ -39,7 +39,7 @@
   height: 16px;
   padding: 0;
   border: 0;
-  border-radius: 9999px;
+  border-radius: var(--pd-radius-full);
   background: transparent;
   color: inherit;
   cursor: pointer;

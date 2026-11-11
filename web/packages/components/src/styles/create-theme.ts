@@ -1,42 +1,24 @@
-import { alpha, createTheme, type Theme } from "@mui/material/styles";
-import type { PudansColorMode } from "./tokens";
+import { alpha, createTheme, type Theme, type ThemeOptions } from "@mui/material/styles";
+import {
+  brandPalette,
+  fontFamily,
+  fontSizes,
+  fontWeights,
+  lightTokens,
+  darkTokens,
+  motionDurations,
+  motionEasing,
+  neutralPalette,
+  radii,
+  shadowFocus,
+  type PudansColorMode,
+} from "./tokens";
 
-const fontFamily = '"Roboto", "Helvetica", "Arial", sans-serif';
-
-const cloudrevePalette = {
-  light: {
-    primary: { main: "#1976d2", light: "#42a5f5", dark: "#1565c0", contrastText: "#ffffff" },
-    secondary: { main: "#9c27b0", light: "#ba68c8", dark: "#7b1fa2", contrastText: "#ffffff" },
-    background: { default: "#fafafa", paper: "#ffffff" },
-    text: {
-      primary: "rgba(0, 0, 0, 0.87)",
-      secondary: "rgba(0, 0, 0, 0.60)",
-      disabled: "rgba(0, 0, 0, 0.38)",
-    },
-    divider: "rgba(0, 0, 0, 0.12)",
-  },
-  dark: {
-    primary: {
-      main: "#90caf9",
-      light: "#e3f2fd",
-      dark: "#42a5f5",
-      contrastText: "rgba(0, 0, 0, 0.87)",
-    },
-    secondary: {
-      main: "#ce93d8",
-      light: "#f3e5f5",
-      dark: "#ab47bc",
-      contrastText: "rgba(0, 0, 0, 0.87)",
-    },
-    background: { default: "#121212", paper: "#121212" },
-    text: {
-      primary: "rgba(255, 255, 255, 0.87)",
-      secondary: "rgba(255, 255, 255, 0.60)",
-      disabled: "rgba(255, 255, 255, 0.38)",
-    },
-    divider: "rgba(255, 255, 255, 0.12)",
-  },
-} as const;
+/**
+ * Single source of truth: this file only expresses layout/component contracts.
+ * Every colour, radius, duration and easing comes from tokens.ts, so the MUI
+ * theme and the CSS-variable layer cannot drift apart.
+ */
 
 function normalizeHex(value: string | undefined): string | null {
   if (!value) {
@@ -46,7 +28,7 @@ function normalizeHex(value: string | undefined): string | null {
   const short = /^#([0-9a-f]{3})$/i.exec(trimmed);
   if (short) {
     const [r, g, b] = short[1].split("");
-    return `#${r}${r}${g}${g}${b}${b}`.toLowerCase();
+    return "#" + r + r + g + g + b + b;
   }
   return /^#[0-9a-f]{6}$/i.test(trimmed) ? trimmed.toLowerCase() : null;
 }
@@ -60,13 +42,16 @@ function channelsOf(hex: string): [number, number, number] {
 }
 
 function toHex(channels: [number, number, number]): string {
-  return `#${channels
-    .map((channel) =>
-      Math.round(Math.min(255, Math.max(0, channel)))
-        .toString(16)
-        .padStart(2, "0"),
-    )
-    .join("")}`;
+  return (
+    "#" +
+    channels
+      .map((channel) =>
+        Math.round(Math.min(255, Math.max(0, channel)))
+          .toString(16)
+          .padStart(2, "0"),
+      )
+      .join("")
+  );
 }
 
 function mixHex(source: string, target: string, weight: number): string {
@@ -108,7 +93,7 @@ export function buildAccentColor(
   };
 }
 
-/** Returns the accent as a CSS `r g b` channel triple for var(--pd-brand-primary). */
+/** Returns the accent as a CSS "r g b" channel triple for var(--pd-brand-primary). */
 export function accentChannels(accentColor?: string): string | null {
   const normalized = normalizeHex(accentColor);
   if (!normalized) {
@@ -117,95 +102,194 @@ export function accentChannels(accentColor?: string): string | null {
   return channelsOf(normalized).join(" ");
 }
 
+const tooltipBackground = "rgba(97, 97, 97, 0.92)";
+
 /**
- * Cloudreve theme extraction:
- * - palette defaults from cloudreve/inventory/setting.go (#1976d2 light, #90caf9 dark)
- * - optional accent color derived into light/dark/contrast steps
- * - 12px global shape radius
- * - MUI default typography/shadows
- * - Cloudreve App.tsx component overrides (buttons, menus, dialogs, filled input)
+ * Creates the MUI theme for a colour mode.
+ *
+ * Extraction provenance: the shape scale (12px), dense menu metrics and the
+ * filled-input treatment come from the legacy Cloudreve frontend; the semantic
+ * colour/motion scale comes from the pudans token layer. Everything is now
+ * consumed through tokens.ts.
  */
 export function createPudansTheme(mode: PudansColorMode, accentColor?: string): Theme {
-  const palette = cloudrevePalette[mode];
+  const tokens = mode === "dark" ? darkTokens : lightTokens;
   const accent = buildAccentColor(accentColor, mode);
+  const primary = accent ?? {
+    main: tokens.brand,
+    light: tokens.brandHover,
+    dark: tokens.brandActive,
+    contrastText: tokens.brandContrast,
+  };
+  const secondary = {
+    main: mode === "light" ? brandPalette[600] : brandPalette[300],
+    light: mode === "light" ? brandPalette[400] : brandPalette[200],
+    dark: mode === "light" ? brandPalette[800] : brandPalette[500],
+    contrastText: mode === "light" ? neutralPalette[0] : neutralPalette[900],
+  };
 
-  return createTheme({
+  const options: ThemeOptions = {
     palette: {
       mode,
-      primary: accent ?? palette.primary,
-      secondary: palette.secondary,
-      background: palette.background,
-      text: palette.text,
-      divider: palette.divider,
+      primary,
+      secondary,
+      background: {
+        default: tokens.canvas,
+        paper: tokens.surface,
+      },
+      text: {
+        primary: tokens.textPrimary,
+        secondary: tokens.textSecondary,
+        disabled: tokens.textDisabled,
+      },
+      divider: tokens.borderDefault,
+      success: { main: tokens.success, light: tokens.successSoft, contrastText: "#ffffff" },
+      warning: { main: tokens.warning, light: tokens.warningSoft, contrastText: "#ffffff" },
+      error: { main: tokens.danger, light: tokens.dangerSoft, contrastText: "#ffffff" },
+      info: { main: tokens.info, light: tokens.infoSoft, contrastText: "#ffffff" },
+      action: {
+        hover: tokens.hover,
+        selected: tokens.active,
+        disabled: tokens.textDisabled,
+        disabledBackground: tokens.muted,
+      },
     },
     shape: {
-      borderRadius: 12,
+      borderRadius: Number.parseInt(radii.lg, 10),
+    },
+    breakpoints: {
+      values: { xs: 0, sm: 600, md: 900, lg: 1200, xl: 1536 },
+    },
+    zIndex: {
+      mobileStepper: 1000,
+      fab: 1050,
+      speedDial: 1050,
+      appBar: 1100,
+      drawer: 1200,
+      modal: 1400,
+      snackbar: 1700,
+      tooltip: 1800,
+    },
+    transitions: {
+      duration: {
+        shortest: motionDurations.fastest,
+        shorter: motionDurations.faster,
+        short: motionDurations.base,
+        standard: motionDurations.slow,
+        complex: motionDurations.complex,
+        enteringScreen: motionDurations.entering,
+        leavingScreen: motionDurations.leaving,
+      },
+      easing: motionEasing,
+      create: (
+        props?: string | string[],
+        options?: Partial<{ duration: string | number; easing: string; delay: string | number }>,
+      ): string => {
+        const duration = options?.duration ?? motionDurations.base;
+        const easing = options?.easing ?? motionEasing.standard;
+        const list = props === undefined ? [] : Array.isArray(props) ? props : [props];
+        return list.map((property) => property + " " + duration + "ms " + easing).join(", ");
+      },
     },
     typography: {
-      fontFamily,
+      fontFamily: fontFamily.sans,
       htmlFontSize: 16,
       fontSize: 14,
       fontWeightLight: 300,
-      fontWeightRegular: 400,
-      fontWeightMedium: 500,
-      fontWeightBold: 700,
+      fontWeightRegular: fontWeights.regular,
+      fontWeightMedium: fontWeights.medium,
+      fontWeightBold: fontWeights.bold,
+      h1: {
+        fontSize: fontSizes["3xl"][0],
+        lineHeight: fontSizes["3xl"][1].lineHeight,
+        fontWeight: fontWeights.bold,
+      },
+      h2: {
+        fontSize: fontSizes["2xl"][0],
+        lineHeight: fontSizes["2xl"][1].lineHeight,
+        fontWeight: fontWeights.semibold,
+      },
+      h3: {
+        fontSize: fontSizes.xl[0],
+        lineHeight: fontSizes.xl[1].lineHeight,
+        fontWeight: fontWeights.semibold,
+      },
+      h4: {
+        fontSize: fontSizes.lg[0],
+        lineHeight: fontSizes.lg[1].lineHeight,
+        fontWeight: fontWeights.semibold,
+      },
+      h5: {
+        fontSize: fontSizes.md[0],
+        lineHeight: fontSizes.md[1].lineHeight,
+        fontWeight: fontWeights.medium,
+      },
+      h6: {
+        fontSize: fontSizes.base[0],
+        lineHeight: fontSizes.base[1].lineHeight,
+        fontWeight: fontWeights.semibold,
+      },
+      subtitle1: {
+        fontSize: fontSizes.base[0],
+        lineHeight: fontSizes.base[1].lineHeight,
+        fontWeight: fontWeights.medium,
+      },
+      subtitle2: {
+        fontSize: fontSizes.sm[0],
+        lineHeight: fontSizes.sm[1].lineHeight,
+        fontWeight: fontWeights.medium,
+      },
+      body1: { fontSize: fontSizes.base[0], lineHeight: fontSizes.base[1].lineHeight },
+      body2: { fontSize: fontSizes.sm[0], lineHeight: fontSizes.sm[1].lineHeight },
+      caption: { fontSize: fontSizes.xs[0], lineHeight: fontSizes.xs[1].lineHeight },
+      button: {
+        fontSize: fontSizes.base[0],
+        lineHeight: fontSizes.base[1].lineHeight,
+        fontWeight: fontWeights.medium,
+        textTransform: "none",
+      },
     },
     components: {
       MuiCssBaseline: {
         styleOverrides: {
           body: {
             overscrollBehavior: "none",
-            backgroundColor: palette.background.default,
-            color: palette.text.primary,
-            fontFamily,
+            backgroundColor: tokens.canvas,
+            color: tokens.textPrimary,
+            fontFamily: fontFamily.sans,
+          },
+          "::selection": {
+            backgroundColor: tokens.brandSoft,
+            color: tokens.textPrimary,
           },
         },
       },
       MuiTooltip: {
-        defaultProps: {
-          enterDelay: 500,
-        },
+        defaultProps: { enterDelay: 500 },
         styleOverrides: {
           tooltip: {
-            borderRadius: 4,
-            backgroundColor: "rgba(97, 97, 97, 0.92)",
+            borderRadius: Number.parseInt(radii.xs, 10),
+            backgroundColor: tooltipBackground,
             color: "#ffffff",
             boxShadow: "none",
-            fontSize: 12,
-            lineHeight: "18px",
+            fontSize: Number.parseInt(fontSizes.xs[0], 10),
+            lineHeight: fontSizes.xs[1].lineHeight,
             padding: "6px 9px",
           },
-          arrow: {
-            color: "rgba(97, 97, 97, 0.92)",
-          },
+          arrow: { color: tooltipBackground },
         },
       },
       MuiCheckbox: {
-        defaultProps: {
-          color: "primary",
-        },
-        styleOverrides: {
-          root: {
-            borderRadius: 4,
-          },
-        },
+        defaultProps: { color: "primary" },
+        styleOverrides: { root: { borderRadius: Number.parseInt(radii.xs, 10) } },
       },
-      MuiSwitch: {
-        defaultProps: {
-          color: "primary",
-        },
-      },
+      MuiSwitch: { defaultProps: { color: "primary" } },
       MuiTabs: {
         styleOverrides: {
           root: {
             minHeight: 40,
-            "& .MuiTabs-indicator": {
-              display: "none",
-            },
-            "& .MuiTabs-flexContainer": {
-              alignItems: "center",
-              gap: 8,
-            },
+            "& .MuiTabs-indicator": { display: "none" },
+            "& .MuiTabs-flexContainer": { alignItems: "center", gap: 8 },
           },
         },
       },
@@ -216,8 +300,8 @@ export function createPudansTheme(mode: PudansColorMode, accentColor?: string): 
             minWidth: 0,
             padding: "6px 16px",
             borderRadius: 9999,
-            fontSize: 14,
-            fontWeight: 500,
+            fontSize: Number.parseInt(fontSizes.base[0], 10),
+            fontWeight: fontWeights.medium,
             textTransform: "none",
           },
         },
@@ -225,77 +309,50 @@ export function createPudansTheme(mode: PudansColorMode, accentColor?: string): 
       MuiPaginationItem: {
         styleOverrides: {
           root: {
-            borderRadius: 8,
+            borderRadius: Number.parseInt(radii.md, 10),
             "&.Mui-selected": {
-              backgroundColor: palette.primary.main,
-              color: palette.primary.contrastText,
+              backgroundColor: primary.main,
+              color: primary.contrastText,
             },
-            "&.Mui-selected:hover": {
-              backgroundColor: palette.primary.dark,
-            },
+            "&.Mui-selected:hover": { backgroundColor: primary.dark },
           },
         },
       },
       MuiAlert: {
         styleOverrides: {
-          root: {
-            borderRadius: 12,
-            boxShadow: "none",
-          },
+          root: { borderRadius: Number.parseInt(radii.lg, 10), boxShadow: "none" },
         },
       },
-      MuiTableHead: {
-        styleOverrides: {
-          root: {
-            backgroundColor: "transparent",
-          },
-        },
-      },
+      MuiTableHead: { styleOverrides: { root: { backgroundColor: "transparent" } } },
       MuiTableCell: {
         styleOverrides: {
-          root: {
-            borderBottom: `1px solid ${palette.divider}`,
-          },
+          root: { borderBottom: "1px solid " + tokens.borderDefault },
           head: {
-            color: palette.text.secondary,
-            fontSize: 12,
-            fontWeight: 600,
+            color: tokens.textSecondary,
+            fontSize: Number.parseInt(fontSizes.xs[0], 10),
+            fontWeight: fontWeights.semibold,
           },
         },
       },
-      MuiToggleButton: {
-        styleOverrides: {
-          root: {
-            textTransform: "none",
-          },
-        },
-      },
+      MuiToggleButton: { styleOverrides: { root: { textTransform: "none" } } },
       MuiButton: {
-        defaultProps: {
-          disableElevation: true,
-        },
+        defaultProps: { disableElevation: true },
         styleOverrides: {
           root: {
             minHeight: 36,
-            borderRadius: 12,
-            fontWeight: 500,
+            borderRadius: Number.parseInt(radii.lg, 10),
+            fontWeight: fontWeights.medium,
             textTransform: "none",
             boxShadow: "none",
           },
         },
       },
-      MuiPaper: {
-        styleOverrides: {
-          root: {
-            backgroundImage: "none",
-          },
-        },
-      },
+      MuiPaper: { styleOverrides: { root: { backgroundImage: "none" } } },
       MuiCard: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
-            border: `1px solid ${palette.divider}`,
+            borderRadius: Number.parseInt(radii.lg, 10),
+            border: "1px solid " + tokens.borderDefault,
             boxShadow: "none",
             backgroundImage: "none",
           },
@@ -304,40 +361,24 @@ export function createPudansTheme(mode: PudansColorMode, accentColor?: string): 
       MuiDialog: {
         styleOverrides: {
           paper: {
-            borderRadius: 12,
+            borderRadius: Number.parseInt(radii.lg, 10),
             backgroundImage: "none",
-            border: `1px solid ${palette.divider}`,
+            border: "1px solid " + tokens.borderDefault,
           },
         },
       },
-      MuiDialogContent: {
-        styleOverrides: {
-          root: {
-            paddingTop: 0,
-          },
-        },
-      },
+      MuiDialogContent: { styleOverrides: { root: { paddingTop: 0 } } },
       MuiMenu: {
-        defaultProps: {
-          slotProps: {
-            paper: {
-              elevation: 3,
-            },
-          },
-        },
+        defaultProps: { slotProps: { paper: { elevation: 3 } } },
         styleOverrides: {
-          paper: {
-            borderRadius: 8,
-          },
-          list: {
-            padding: "4px 0",
-          },
+          paper: { borderRadius: Number.parseInt(radii.md, 10) },
+          list: { padding: "4px 0" },
         },
       },
       MuiMenuItem: {
         styleOverrides: {
           root: {
-            borderRadius: 8,
+            borderRadius: Number.parseInt(radii.md, 10),
             margin: "0px 4px",
             paddingLeft: 8,
             paddingRight: 8,
@@ -345,51 +386,43 @@ export function createPudansTheme(mode: PudansColorMode, accentColor?: string): 
         },
       },
       MuiListItemButton: {
-        styleOverrides: {
-          root: {
-            borderRadius: 12,
-          },
-        },
+        styleOverrides: { root: { borderRadius: Number.parseInt(radii.lg, 10) } },
       },
-      MuiSkeleton: {
-        defaultProps: {
-          animation: "wave",
-        },
-      },
+      MuiSkeleton: { defaultProps: { animation: "wave" } },
       MuiFilledInput: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
-            backgroundColor: alpha(palette.text.primary, 0.06),
-            "&::before, &::after": {
-              borderBottom: "none",
-            },
-            "&:hover:not(.Mui-disabled, .Mui-error):before": {
-              borderBottom: "none",
-            },
+            borderRadius: Number.parseInt(radii.lg, 10),
+            backgroundColor: alpha(tokens.textPrimary, 0.06),
+            "&::before, &::after": { borderBottom: "none" },
+            "&:hover:not(.Mui-disabled, .Mui-error):before": { borderBottom: "none" },
           },
         },
       },
       MuiOutlinedInput: {
         styleOverrides: {
           root: {
-            borderRadius: 12,
+            borderRadius: Number.parseInt(radii.lg, 10),
             backgroundColor: "transparent",
             "& .MuiOutlinedInput-notchedOutline": {
-              borderColor: alpha(palette.text.primary, 0.23),
+              borderColor: alpha(tokens.textPrimary, 0.23),
             },
-            "&:hover .MuiOutlinedInput-notchedOutline": {
-              borderColor: palette.text.primary,
-            },
+            "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: tokens.textPrimary },
             "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-              borderColor: palette.primary.main,
+              borderColor: primary.main,
               borderWidth: 2,
             },
           },
         },
       },
+      MuiLink: {
+        styleOverrides: { root: { color: primary.main } },
+      },
     },
-  });
+  };
+
+  return createTheme(options);
 }
 
 export { lightTokens, darkTokens } from "./tokens";
+export { shadowFocus };

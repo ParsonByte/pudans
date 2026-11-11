@@ -94,8 +94,7 @@ const documents: Record<LegalDocumentKey, Record<LegalLanguage, LegalDocument>> 
       kicker: "LEGAL · PRIVACY",
       title: "隐私政策",
       updated: "2026-11-15",
-      intro:
-        "本政策说明 PUDANS 在提供身份与权限服务时如何收集、使用、存储和保护你的个人信息。",
+      intro: "本政策说明 PUDANS 在提供身份与权限服务时如何收集、使用、存储和保护你的个人信息。",
       sections: [
         {
           heading: "1. 信息收集",
@@ -166,8 +165,7 @@ const documents: Record<LegalDocumentKey, Record<LegalLanguage, LegalDocument>> 
       kicker: "LEGAL · CONFIDENTIALITY",
       title: "数据保密协议",
       updated: "2026-11-15",
-      intro:
-        "本协议适用于你在使用 PUDANS 过程中接触到的组织数据、账号信息和其他非公开信息。",
+      intro: "本协议适用于你在使用 PUDANS 过程中接触到的组织数据、账号信息和其他非公开信息。",
       sections: [
         {
           heading: "1. 保密范围",
@@ -190,9 +188,7 @@ const documents: Record<LegalDocumentKey, Record<LegalLanguage, LegalDocument>> 
         },
         {
           heading: "4. 期限与责任",
-          paragraphs: [
-            "保密义务在账号终止后继续有效。违反本协议造成损失的，应依法承担相应责任。",
-          ],
+          paragraphs: ["保密义务在账号终止后继续有效。违反本协议造成损失的，应依法承担相应责任。"],
         },
       ],
     },
@@ -233,9 +229,6 @@ const documents: Record<LegalDocumentKey, Record<LegalLanguage, LegalDocument>> 
   },
 };
 
-export function getLegalDocument(
-  key: LegalDocumentKey,
-  language: string,
-): LegalDocument {
+export function getLegalDocument(key: LegalDocumentKey, language: string): LegalDocument {
   return documents[key][language.startsWith("zh") ? "zh-CN" : "en-US"];
 }

@@ -11,16 +11,16 @@
   max-height: calc(100svh - 208px);
   margin-right: 0;
   overflow: hidden;
-  border: 1px solid var(--login-card-border, rgba(15, 23, 42, 0.12));
-  border-radius: 20px;
-  background: var(--login-card, #ffffff);
-  box-shadow: var(--login-shadow, 0 20px 60px rgba(0, 0, 0, 0.2));
-  color: var(--login-text, #101114);
+  border: var(--pd-border-width-thin) solid var(--login-card-border);
+  border-radius: var(--pd-radius-2xl);
+  background: var(--login-card);
+  box-shadow: var(--login-shadow);
+  color: var(--login-text);
   isolation: isolate;
   transition:
-    width 300ms cubic-bezier(0.4, 0, 0.2, 1),
-    height 300ms cubic-bezier(0.4, 0, 0.2, 1),
-    margin-right 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    width var(--pd-duration-slow) var(--pd-ease-standard),
+    height var(--pd-duration-slow) var(--pd-ease-standard),
+    margin-right var(--pd-duration-slow) var(--pd-ease-standard);
   will-change: width, height, margin-right;
 }
 
@@ -53,6 +53,6 @@
     min-height: 0;
     max-height: none;
     margin-right: 0;
-    border-radius: 16px;
+    border-radius: var(--pd-radius-xl);
   }
 }

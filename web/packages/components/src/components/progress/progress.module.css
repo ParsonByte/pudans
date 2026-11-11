@@ -1,0 +1,151 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pd-space-1);
+  width: 100%;
+  color: rgb(var(--pd-text-secondary));
+}
+
+.circular {
+  align-items: center;
+  width: auto;
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pd-space-2);
+  font-size: var(--pd-text-xs);
+  line-height: var(--pd-leading-xs);
+}
+
+.label {
+  color: rgb(var(--pd-text-secondary));
+}
+
+.value {
+  color: rgb(var(--pd-text-tertiary));
+  font-variant-numeric: tabular-nums;
+}
+
+.track {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  border-radius: var(--pd-radius-full);
+  background-color: rgb(var(--pd-bg-muted));
+}
+
+.sm .track {
+  height: 2px;
+}
+
+.md .track {
+  height: 4px;
+}
+
+.lg .track {
+  height: 8px;
+}
+
+.bar {
+  height: 100%;
+  border-radius: inherit;
+  background-color: rgb(var(--pd-brand-primary));
+  transition: width var(--pd-duration-base) var(--pd-ease-standard);
+}
+
+.success .bar,
+.success .ringBar {
+  background-color: rgb(var(--pd-state-success));
+  stroke: rgb(var(--pd-state-success));
+}
+
+.warning .bar,
+.warning .ringBar {
+  background-color: rgb(var(--pd-state-warning));
+  stroke: rgb(var(--pd-state-warning));
+}
+
+.danger .bar,
+.danger .ringBar {
+  background-color: rgb(var(--pd-state-danger));
+  stroke: rgb(var(--pd-state-danger));
+}
+
+.neutral .bar,
+.neutral .ringBar {
+  background-color: rgb(var(--pd-neutral-400));
+  stroke: rgb(var(--pd-neutral-400));
+}
+
+.brand .bar,
+.brand .ringBar {
+  background-color: rgb(var(--pd-brand-primary));
+  stroke: rgb(var(--pd-brand-primary));
+}
+
+.indeterminate {
+  width: 40%;
+  border-radius: var(--pd-radius-full);
+  animation: pd-progress-indeterminate var(--pd-duration-skeleton) var(--pd-ease-standard) infinite;
+}
+
+@keyframes pd-progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
+.ring {
+  width: 40px;
+  height: 40px;
+  transform: rotate(-90deg);
+}
+
+.sm .ring {
+  width: 20px;
+  height: 20px;
+}
+
+.lg .ring {
+  width: 56px;
+  height: 56px;
+}
+
+.ringTrack,
+.ringBar {
+  fill: none;
+  stroke-width: 4;
+}
+
+.ringTrack {
+  stroke: rgb(var(--pd-bg-muted));
+}
+
+.ringBar {
+  stroke-linecap: round;
+  transition: stroke-dasharray var(--pd-duration-base) var(--pd-ease-standard);
+}
+
+.ringIndeterminate {
+  animation: pd-progress-spin var(--pd-duration-spin) linear infinite;
+  transform-origin: center;
+}
+
+@keyframes pd-progress-spin {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indeterminate,
+  .ringIndeterminate {
+    animation: none;
+  }
+}

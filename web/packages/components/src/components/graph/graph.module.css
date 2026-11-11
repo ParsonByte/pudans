@@ -32,7 +32,7 @@
 
 .edgeLabel {
   fill: rgb(var(--pd-text-tertiary));
-  font-size: 11px;
+  font-size: var(--pd-text-xs);
   paint-order: stroke;
   stroke: rgb(var(--pd-bg-surface));
   stroke-width: 4px;
@@ -86,14 +86,14 @@
 
 .nodeLabel {
   fill: rgb(var(--pd-text-primary));
-  font-size: 13px;
+  font-size: var(--pd-text-sm);
   font-weight: 600;
   pointer-events: none;
 }
 
 .nodeDescription {
   fill: rgb(var(--pd-text-tertiary));
-  font-size: 11px;
+  font-size: var(--pd-text-xs);
   pointer-events: none;
 }
 

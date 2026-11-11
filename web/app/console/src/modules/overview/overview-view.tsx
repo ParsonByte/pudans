@@ -13,6 +13,7 @@ import {
   Table,
   type BadgeTone,
   type TableColumn,
+  RelativeTime,
 } from "@pudans/components";
 import { apiClient } from "@pudans/api-client";
 import {
@@ -24,7 +25,6 @@ import {
   TimelineOppositeContent,
   TimelineSeparator,
 } from "@mui/lab";
-import TimeAgo from "timeago-react";
 import { cn } from "@pudans/shared";
 import dayjs from "dayjs";
 import type { TFunction } from "i18next";
@@ -303,7 +303,7 @@ export function OverviewView() {
           {operations.slice(0, 4).map((operation) => (
             <TimelineItem key={operation.auditId ?? operation.timestamp ?? operation.operation}>
               <TimelineOppositeContent color="text.secondary" sx={{ flex: 0.35, fontSize: 12 }}>
-                {operation.timestamp ? <TimeAgo datetime={operation.timestamp} /> : "—"}
+                {operation.timestamp ? <RelativeTime datetime={operation.timestamp} /> : "—"}
               </TimelineOppositeContent>
               <TimelineSeparator>
                 <TimelineDot

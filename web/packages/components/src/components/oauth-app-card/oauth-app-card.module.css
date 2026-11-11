@@ -1,0 +1,57 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--pd-space-3);
+}
+
+.icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  border-radius: var(--pd-radius-md);
+  background-color: rgb(var(--pd-brand-soft));
+  color: rgb(var(--pd-brand-primary));
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  color: rgb(var(--pd-text-primary));
+  font-size: var(--pd-text-base);
+  font-weight: var(--pd-font-weight-medium);
+  line-height: var(--pd-leading-base);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.description {
+  overflow: hidden;
+  color: rgb(var(--pd-text-secondary));
+  font-size: var(--pd-text-sm);
+  line-height: var(--pd-leading-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
