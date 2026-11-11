@@ -1,8 +1,5 @@
 import { createInstance } from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import ChainedBackend from "i18next-chained-backend";
-import HttpBackend from "i18next-http-backend";
-import LocalStorageBackend from "i18next-localstorage-backend";
 import { initReactI18next } from "react-i18next";
 import { createI18nConfig, DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@pudans/shared";
 import { resources } from "./resources";
@@ -33,34 +30,20 @@ const config = createI18nConfig({
 
 export const i18n = createInstance();
 
+// All namespaces are bundled in resources.ts (LAZY_NAMESPACES is empty), so
+// there is no runtime locale fetch. This keeps startup deterministic, removes
+// 404 noise from deployments without /locales and works offline.
 void i18n
   .use(LanguageDetector)
-  .use(ChainedBackend)
   .use(initReactI18next)
   .init({
     ...config,
     supportedLngs: [...SUPPORTED_LOCALES],
     load: "currentOnly",
-    partialBundledLanguages: true,
     detection: {
       order: ["localStorage", "navigator"],
       lookupLocalStorage: LOCALE_KEY,
       caches: ["localStorage"],
-    },
-    backend: {
-      backends: [LocalStorageBackend, HttpBackend],
-      backendOptions: [
-        {
-          expirationTime: 7 * 24 * 60 * 60 * 1000,
-          defaultVersion: "v1",
-        },
-        {
-          loadPath: "/locales/{{lng}}/{{ns}}.json",
-        },
-      ],
-    },
-    react: {
-      useSuspense: false,
     },
   })
   .catch((error: unknown) => {
