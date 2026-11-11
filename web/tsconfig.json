@@ -5,7 +5,7 @@
     "noEmit": true,
     "declaration": false,
     "declarationMap": false,
-    "types": ["node", "vite/client", "vite-plugin-pwa/client"],
+    "types": ["node", "vite/client"],
     "baseUrl": ".",
     "paths": {
       "@web/*": ["./src/*"],

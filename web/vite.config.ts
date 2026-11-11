@@ -2,7 +2,6 @@ import { fileURLToPath, URL } from "node:url";
 import path from "node:path";
 import react from "@vitejs/plugin-react-swc";
 import mkcert from "vite-plugin-mkcert";
-import { VitePWA } from "vite-plugin-pwa";
 import { viteStaticCopy } from "vite-plugin-static-copy";
 import { defineConfig } from "vite";
 
@@ -27,66 +26,6 @@ export default defineConfig({
           dest: "pdfjs",
         },
       ],
-    }),
-    VitePWA({
-      registerType: "autoUpdate",
-      injectRegister: false,
-      includeAssets: ["icons/pwa-192.png", "icons/pwa-512.png", "login-bg-poster.jpg"],
-      manifest: {
-        name: "pudans",
-        short_name: "pudans",
-        description: "pudans identity, permission and rich-media workspace for the web.",
-        theme_color: "#1976d2",
-        background_color: "#fafafa",
-        display: "standalone",
-        orientation: "any",
-        scope: "/",
-        start_url: "/console/",
-        icons: [
-          {
-            src: "/icons/pwa-192.png",
-            sizes: "192x192",
-            type: "image/png",
-          },
-          {
-            src: "/icons/pwa-512.png",
-            sizes: "512x512",
-            type: "image/png",
-          },
-          {
-            src: "/icons/pwa-maskable-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable",
-          },
-        ],
-      },
-      workbox: {
-        globPatterns: ["**/*.{js,css,html,woff2,png,svg,jpg,jpeg,json}"],
-        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
-        navigateFallbackDenylist: [/^\/apis/, /^\/system/, /^\/api/, /^\/login/, /^\/logout/],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/tile\.openstreetmap\.org\//,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "osm-tiles",
-              expiration: { maxEntries: 600, maxAgeSeconds: 7 * 24 * 3600 },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/.*\.(?:png|jpe?g|svg|webp)$/,
-            handler: "StaleWhileRevalidate",
-            options: {
-              cacheName: "remote-images",
-              expiration: { maxEntries: 240, maxAgeSeconds: 7 * 24 * 3600 },
-            },
-          },
-        ],
-      },
-      devOptions: {
-        enabled: false,
-      },
     }),
     ...(useHttps ? [mkcert()] : []),
   ],
