@@ -103,12 +103,12 @@
 | 提交 | 内容 |
 | --- | --- |
 | fd45a85 | 上一轮迁移基线（工作树干净） |
-| 本轮提交 | 组件库边界改造 + 55 组件重写 + 主题复刻 + 文档/截图（见 git log 最新提交，tag: refactor-2026-11-16） |
+| 88362c3（tag refactor-2026-11-16） | 组件库边界改造 + 55 组件重写 + 主题复刻 + 文档/截图 |
 
 回滚：
 
     cd /Users/byte/Global/Project/pudans
     git reset --hard fd45a85     # 回到本轮改造前
-    git revert <本轮提交hash>     # 保留历史的反向提交
+    git revert 88362c3            # 保留历史的反向提交
 
 本轮未修改后端与 Gradle 构建入口；所有改动在 web/ 与 .dsh/。
