@@ -11,34 +11,23 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 /**
- * Serves the bundled SPA entry files for application roots and client-side
- * routes. Spring WebFlux only treats the top-level static/index.html as a
- * welcome page, so nested apps such as /setup/ and /console/ need an explicit
- * path rewrite. Routes such as /auth/recovery are rewritten to
- * /auth/index.html so direct links survive a reload.
+ * Serves the bundled auth SPA entry file for /auth and its client-side routes.
+ * The web build has a single HTML entry, so every auth route is rewritten to
+ * /auth/index.html and direct links survive a reload.
  */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE - 200)
 public class SpaIndexWebFilter implements WebFilter {
 
+    private static final String AUTH_ROOT = "/auth";
+    private static final String AUTH_ROOT_SLASH = "/auth/";
+    private static final String AUTH_INDEX = "/auth/index.html";
+
     private static final Map<String, String> SPA_ROOTS = Map.of(
-            "/setup", "/setup/index.html",
-            "/setup/", "/setup/index.html",
-            "/auth", "/auth/index.html",
-            "/auth/", "/auth/index.html",
-            "/console", "/console/index.html",
-            "/console/", "/console/index.html",
-            "/uc", "/uc/index.html",
-            "/uc/", "/uc/index.html");
+            AUTH_ROOT, AUTH_INDEX,
+            AUTH_ROOT_SLASH, AUTH_INDEX);
 
-    private static final Map<String, String> SPA_INDEXES = Map.of(
-            "/setup", "/setup/index.html",
-            "/auth", "/auth/index.html",
-            "/console", "/console/index.html",
-            "/uc", "/uc/index.html");
-
-    private static final Set<String> INDEX_DOCUMENTS =
-            Set.of("/setup/index.html", "/auth/index.html", "/console/index.html", "/uc/index.html");
+    private static final Set<String> INDEX_DOCUMENTS = Set.of(AUTH_INDEX);
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -46,26 +35,23 @@ public class SpaIndexWebFilter implements WebFilter {
         var indexPath = SPA_ROOTS.get(path);
 
         if (indexPath == null && isClientRoute(path)) {
-            indexPath = SPA_INDEXES.entrySet().stream()
-                    .filter(entry -> path.startsWith(entry.getKey() + "/"))
-                    .map(Map.Entry::getValue)
-                    .findFirst()
-                    .orElse(null);
+            indexPath = AUTH_INDEX;
         }
 
         if (indexPath == null && !INDEX_DOCUMENTS.contains(path)) {
             return chain.filter(exchange);
         }
 
-        // SPA entry documents carry per-session redirects (sign-in guards, setup
-        // redirects), so they must never be served from the browser cache.
+        // Auth entry documents carry per-session redirects, so they must never
+        // be served from the browser cache.
         var response = exchange.getResponse();
         response.beforeCommit(() -> {
             response.getHeaders().setCacheControl("no-store");
             return Mono.empty();
         });
 
-        var request = indexPath == null ? exchange.getRequest() : exchange.getRequest().mutate().path(indexPath).build();
+        var request =
+                indexPath == null ? exchange.getRequest() : exchange.getRequest().mutate().path(indexPath).build();
         return chain.filter(exchange.mutate().request(request).build());
     }
 
@@ -73,7 +59,6 @@ public class SpaIndexWebFilter implements WebFilter {
         if (path.endsWith("/index.html") || path.contains(".")) {
             return false;
         }
-        return SPA_INDEXES.keySet().stream()
-                .anyMatch(root -> path.startsWith(root + "/"));
+        return path.startsWith(AUTH_ROOT_SLASH);
     }
 }

@@ -29,7 +29,10 @@
   "dependencies": {
     "@pudans/components": "workspace:*",
     "@pudans/theme": "workspace:*",
-    "@pudans/utils": "workspace:*"
+    "@pudans/utils": "workspace:*",
+    "react-dnd": "catalog:",
+    "react-dnd-html5-backend": "catalog:",
+    "react-hotkeys-hook": "catalog:"
   },
   "peerDependencies": {
     "@emotion/react": "^11.14.0",

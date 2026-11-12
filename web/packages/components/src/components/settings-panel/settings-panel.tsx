@@ -227,7 +227,7 @@ export function SettingsPanel<T extends object>({
               {onSave && saveLabel ? (
                 <Button
                   variant="primary"
-                  startIcon={<Icon name="cr:Save" size={20} />}
+                  startIcon={<Icon name="pd:Save" size={20} />}
                   loading={saving}
                   loadingText={savingLabel}
                   onClick={() => {
@@ -240,7 +240,7 @@ export function SettingsPanel<T extends object>({
               {onReset && resetLabel ? (
                 <Button
                   variant="secondary"
-                  startIcon={<Icon name="cr:ArrowHookUpRight" size={20} />}
+                  startIcon={<Icon name="pd:ArrowHookUpRight" size={20} />}
                   disabled={saving}
                   onClick={onReset}
                 >

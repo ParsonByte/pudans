@@ -6,6 +6,7 @@ import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
+import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
@@ -34,6 +35,8 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    private final SecurityProperties securityProperties;
+
     public FeishuOAuth2SecurityConfigurer(
             FeishuProperties properties,
             FeishuClient feishuClient,
@@ -41,7 +44,8 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
             UserGroupService userGroupService,
             ServerSecurityContextRepository securityContextRepository,
             LoginHandlerEnhancer loginHandlerEnhancer,
-            DomainEventPublisher domainEventPublisher) {
+            DomainEventPublisher domainEventPublisher,
+            SecurityProperties securityProperties) {
         this.properties = properties;
         this.feishuClient = feishuClient;
         this.feishuUserService = feishuUserService;
@@ -49,6 +53,7 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
         this.securityContextRepository = securityContextRepository;
         this.loginHandlerEnhancer = loginHandlerEnhancer;
         this.domainEventPublisher = domainEventPublisher;
+        this.securityProperties = securityProperties;
     }
 
     @Override
@@ -63,7 +68,8 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
                 userGroupService,
                 securityContextRepository,
                 loginHandlerEnhancer,
-                domainEventPublisher);
+                domainEventPublisher,
+                securityProperties);
         http.addFilterAt(filter, SecurityWebFiltersOrder.OAUTH2_AUTHORIZATION_CODE);
     }
 

@@ -5,7 +5,7 @@ import { Icon } from "../icon";
 export interface OAuthAppCardProps {
   name: ReactNode;
   description?: ReactNode;
-  /** Absolute URL or Iconify name (e.g. "cr:LinkOutlined"). */
+  /** Absolute URL or Iconify name (e.g. "pd:LinkOutlined"). */
   icon?: string;
   loading?: boolean;
   action?: ReactNode;
@@ -64,7 +64,7 @@ export function OAuthAppCard({
           />
         ) : (
           <Avatar sx={{ width: 48, height: 48, bgcolor: "primary.main" }}>
-            {icon ? <Icon name={icon} size={24} /> : <Icon name="cr:LinkOutlined" size={24} />}
+            {icon ? <Icon name={icon} size={24} /> : <Icon name="pd:LinkOutlined" size={24} />}
           </Avatar>
         )}
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -120,7 +120,7 @@ export function ConnectingLine() {
           color: "text.secondary",
         })}
       >
-        <Icon name="cr:Link" size={14} />
+        <Icon name="pd:Link" size={14} />
       </Box>
       <Box
         sx={(theme) => ({

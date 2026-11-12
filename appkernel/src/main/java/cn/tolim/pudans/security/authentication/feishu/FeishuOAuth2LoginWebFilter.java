@@ -12,6 +12,7 @@ import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
+import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -53,6 +54,8 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     private final LoginHandlerEnhancer loginHandlerEnhancer;
 
     private final DomainEventPublisher domainEventPublisher;
+
+    private final SecurityProperties securityProperties;
 
     private static Mono<Void> redirect(ServerWebExchange exchange, String location) {
         exchange.getResponse().setStatusCode(HttpStatus.FOUND);
@@ -148,7 +151,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                                 exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "SUCCESS");
                             }))
                             .then(loginHandlerEnhancer.onLoginSuccess(exchange, authentication))
-                            .then(redirect(exchange, "/console/"));
+                            .then(redirect(exchange, securityProperties.getPostLoginUrl()));
                 });
     }
 

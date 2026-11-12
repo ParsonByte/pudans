@@ -113,7 +113,7 @@ export function UserAvatar({
         ]}
       >
         {anonymous ? (
-          <Icon name="cr:InPrivate" size={Math.round(dimension * 0.6)} />
+          <Icon name="pd:InPrivate" size={Math.round(dimension * 0.6)} />
         ) : (
           icon
         )}

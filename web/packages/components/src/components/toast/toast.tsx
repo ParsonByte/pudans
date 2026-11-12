@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
+import { forwardRef, useCallback, useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Box, type SnackbarOrigin } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import {
@@ -38,7 +38,15 @@ export interface ToastProviderProps {
   autoHideDuration?: number;
 }
 
-const LegacyContentBase = (props: CustomContentProps) => <MaterialDesignContent {...props} />;
+/**
+ * notistack clones a custom snackbar and requires it to forward its ref to the
+ * DOM node. A plain function component drops the ref and crashes the provider
+ * on the first toast.
+ */
+const LegacyContentBase = forwardRef<HTMLDivElement, CustomContentProps>((props, ref) => (
+  <MaterialDesignContent {...props} ref={ref} />
+));
+LegacyContentBase.displayName = "StyledSnackbarContent";
 
 /**
  * Legacy App.tsx StyledMaterialDesignContent: 12px radius and palette-toned

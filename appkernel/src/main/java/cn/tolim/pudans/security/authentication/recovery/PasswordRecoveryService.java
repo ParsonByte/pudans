@@ -1,6 +1,8 @@
 package cn.tolim.pudans.security.authentication.recovery;
 
 import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.PasswordPolicyViolationException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -13,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -42,8 +43,9 @@ public class PasswordRecoveryService {
                 .setIfAbsent(cooldownKey, "1", options.getResendCooldown())
                 .flatMap(acquired -> {
                     if (!Boolean.TRUE.equals(acquired)) {
-                        return Mono.error(new ResponseStatusException(
+                        return Mono.error(new ApiException(
                                 HttpStatus.TOO_MANY_REQUESTS,
+                                "recovery-code-cooldown",
                                 "Please wait before requesting another verification code."));
                     }
 
@@ -85,8 +87,15 @@ public class PasswordRecoveryService {
                             .listByEmail(normalizedEmail)
                             .next()
                             .switchIfEmpty(Mono.error(invalidCode()))
-                            .flatMap(user -> userService.updateWithRawPassword(
-                                    user.getMetadata().getName(), newPassword))
+                            .flatMap(user -> userService
+                                    .updateWithRawPassword(user.getMetadata().getName(), newPassword)
+                                    .onErrorMap(
+                                            PasswordPolicyViolationException.class,
+                                            error -> new ApiException(
+                                                    HttpStatus.BAD_REQUEST,
+                                                    "recovery-password-invalid",
+                                                    "The new password does not satisfy the password policy.",
+                                                    error)))
                             .then(Mono.defer(() -> redisTemplate
                                     .delete(codeKey)
                                     .then(redisTemplate.delete(attemptsKey))))
@@ -143,8 +152,8 @@ public class PasswordRecoveryService {
                 left.getBytes(StandardCharsets.UTF_8), right.getBytes(StandardCharsets.UTF_8));
     }
 
-    private static ResponseStatusException invalidCode() {
-        return new ResponseStatusException(
-                HttpStatus.BAD_REQUEST, "Invalid or expired verification code.");
+    private static ApiException invalidCode() {
+        return new ApiException(
+                HttpStatus.BAD_REQUEST, "recovery-code-invalid", "Invalid or expired verification code.");
     }
 }

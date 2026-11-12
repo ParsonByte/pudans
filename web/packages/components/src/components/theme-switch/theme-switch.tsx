@@ -46,9 +46,9 @@ export interface ThemeSwitchProps {
 const DEFAULT_LABELS: ThemeSwitchLabels = { light: "Light", system: "System", dark: "Dark" };
 
 const OPTIONS: Array<{ value: PudansColorModePreference; icon: string }> = [
-  { value: "light", icon: "cr:Sunny" },
-  { value: "system", icon: "cr:SunWithTime" },
-  { value: "dark", icon: "cr:Moon" },
+  { value: "light", icon: "pd:Sunny" },
+  { value: "system", icon: "pd:SunWithTime" },
+  { value: "dark", icon: "pd:Moon" },
 ];
 
 function labelText(label: ReactNode, fallback: string): string {
@@ -159,7 +159,7 @@ export function ThemeSwitch({
             aria-label={ariaLabel}
             onClick={(event) => setAnchorEl(event.currentTarget)}
           >
-            <Icon name="cr:DarkTheme" size={size === "sm" ? 20 : 28} />
+            <Icon name="pd:DarkTheme" size={size === "sm" ? 20 : 28} />
           </IconButton>
         </span>
       </Tooltip>

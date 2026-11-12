@@ -3,11 +3,11 @@ import { Icon as OfflineIcon, type IconProps as IconifyProps } from "@iconify/re
 import { Box, useTheme } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
 import { cn } from "@pudans/utils";
-import { isRegisteredIcon, registerBuiltinIcons, registerCloudreveIcons } from "@pudans/icons";
+import { isRegisteredIcon, registerBuiltinIcons, registerLegacyIcons } from "@pudans/icons";
 import styles from "./icon.module.css";
 
 registerBuiltinIcons();
-registerCloudreveIcons();
+registerLegacyIcons();
 
 export interface IconProps extends Omit<IconifyProps, "icon" | "color"> {
   /** Iconify identifier, for example "mdi:home-outline". */

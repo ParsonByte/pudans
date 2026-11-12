@@ -63,7 +63,7 @@ const StyledItemBase = styled(ButtonBase, {
 const StyledItem: ElementType = StyledItemBase;
 
 /**
- * Cloudreve sidebar row: a 32px transparent capsule that gains a faint hover
+ * legacy sidebar row: a 32px transparent capsule that gains a faint hover
  * veil and a soft primary tint when active. The icon slot is a fixed 20px box
  * followed by a 14px gap and a body2 label (legacy exact values).
  */

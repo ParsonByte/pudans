@@ -32,7 +32,7 @@ export interface BreadcrumbsProps {
   separator?: ReactNode;
   ariaLabel?: string;
   className?: string;
-  /** Enables the legacy click-to-edit path field (Cloudreve Breadcrumb PathTextField). */
+  /** Enables the legacy click-to-edit path field (legacy Breadcrumb PathTextField). */
   editable?: boolean;
   /** Initial value of the editable path. Defaults to the joined string labels. */
   path?: string;
@@ -154,7 +154,7 @@ export function Breadcrumbs({
 
   const chevron = separator ?? (
     <Icon
-      name="cr:ChevronRight"
+      name="pd:ChevronRight"
       sx={{
         fontSize: theme.spacing(1.875),
         mx: theme.spacing(0.5),
@@ -223,7 +223,7 @@ export function Breadcrumbs({
                 }}
                 sx={{ minHeight: theme.spacing(4) }}
               >
-                <Icon name="cr:MoreHorizontal" />
+                <Icon name="pd:MoreHorizontal" />
               </Button>
               {chevron}
             </>
@@ -254,7 +254,7 @@ export function Breadcrumbs({
                   startIcon={renderIcon(item.icon, 24) ?? undefined}
                   endIcon={
                     latest && items.length > 1 ? (
-                      <Icon name="cr:CaretDown" sx={{ fontSize: theme.spacing(1.5) }} />
+                      <Icon name="pd:CaretDown" sx={{ fontSize: theme.spacing(1.5) }} />
                     ) : undefined
                   }
                   sx={segmentSx(globalIndex)}

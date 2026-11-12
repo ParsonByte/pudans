@@ -1,0 +1,299 @@
+.view {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  padding: 30px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.cardTop {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardEyebrow {
+  color: var(--login-brand);
+  font-size: var(--pd-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.cardTitle {
+  margin: 0;
+  color: var(--login-text);
+  font-size: var(--pd-text-3xl);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.cardDescription {
+  margin: 0;
+  color: var(--login-muted);
+  font-size: var(--pd-text-sm);
+  line-height: 1.65;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.input {
+  margin-top: 6px;
+}
+
+.input :global(.MuiFormLabel-root) {
+  padding: 0 4px;
+  background: var(--login-card);
+  color: var(--login-muted);
+  font-size: var(--pd-text-xs);
+  font-weight: 500;
+}
+
+.input :global(.MuiFormLabel-root.Mui-focused) {
+  color: var(--login-brand);
+}
+
+.input :global(.MuiOutlinedInput-root) {
+  height: 46px;
+  border-radius: var(--pd-radius-md);
+  background: var(--login-field);
+  color: var(--login-text);
+  font-size: var(--pd-text-sm);
+  transition:
+    background-color var(--pd-duration-fast) var(--pd-ease-standard),
+    box-shadow var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.input :global(.MuiOutlinedInput-notchedOutline) {
+  border-color: var(--login-field-border);
+}
+
+.input :global(.MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline) {
+  border-color: var(--login-muted);
+}
+
+.input :global(.MuiOutlinedInput-root.Mui-focused) {
+  box-shadow:
+    0 0 0 1px var(--login-brand),
+    0 0 0 4px rgb(var(--pd-brand-primary) / 0.12);
+}
+
+.input :global(.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline) {
+  border-color: var(--login-brand);
+  border-width: 1px;
+}
+
+.input :global(.MuiInputAdornment-root) {
+  color: var(--login-subtle);
+}
+
+.input :global(.MuiOutlinedInput-input::placeholder) {
+  color: var(--login-subtle);
+  opacity: 1;
+}
+
+.input :global(.MuiFormHelperText-root) {
+  margin: 6px 0 0;
+  color: rgb(var(--pd-state-danger));
+  font-size: var(--pd-text-xs);
+}
+
+.visibilityButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--pd-radius-sm);
+  background: transparent;
+  color: var(--login-subtle);
+  cursor: pointer;
+}
+
+.visibilityButton:hover {
+  background: var(--login-seg);
+  color: var(--login-text);
+}
+
+.formMeta {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -4px;
+}
+
+.forgot {
+  color: var(--login-brand);
+  font-size: var(--pd-text-xs);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.forgot:hover {
+  text-decoration: underline;
+}
+
+.hints {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 16px;
+  color: var(--login-subtle);
+  font-size: var(--pd-text-xs);
+  line-height: 1.4;
+}
+
+.hints span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.hints svg {
+  color: rgb(var(--pd-state-success));
+}
+
+.submit {
+  height: 46px;
+  margin-top: 2px;
+  font-size: var(--pd-text-sm);
+  font-weight: 600;
+}
+
+.agreement {
+  margin: 0;
+  color: var(--login-muted);
+  font-size: var(--pd-text-xs);
+  line-height: 1.6;
+  text-align: center;
+}
+
+.agreement a {
+  color: var(--login-brand);
+  text-decoration: none;
+}
+
+.agreement a:hover {
+  text-decoration: underline;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--login-subtle);
+  font-size: var(--pd-text-xs);
+}
+
+.divider::before,
+.divider::after {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--login-card-border);
+  content: "";
+}
+
+.providers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.providerButton {
+  display: inline-flex;
+  flex: 1 1 120px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--login-card-border);
+  border-radius: var(--pd-radius-md);
+  background: transparent;
+  color: var(--login-muted);
+  font: inherit;
+  font-size: var(--pd-text-xs);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--pd-duration-fast) var(--pd-ease-standard),
+    border-color var(--pd-duration-fast) var(--pd-ease-standard),
+    color var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.providerButton:hover {
+  border-color: var(--login-field-border);
+  background: var(--login-seg);
+  color: var(--login-text);
+  text-decoration: none;
+}
+
+.providerLogo {
+  width: 17px;
+  height: 17px;
+  object-fit: contain;
+}
+
+.setupPanel {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 28px;
+  padding: 28px 20px;
+  border: 1px solid rgb(var(--pd-state-warning) / 0.28);
+  border-radius: var(--pd-radius-xl);
+  background: rgb(var(--pd-state-warning) / 0.08);
+  text-align: center;
+}
+
+.setupIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  background: rgb(var(--pd-state-warning) / 0.14);
+  color: rgb(var(--pd-state-warning));
+}
+
+.setupText {
+  max-width: 300px;
+  margin: 0;
+  color: var(--login-muted);
+  font-size: var(--pd-text-xs);
+  line-height: 1.65;
+}
+
+@media (max-width: 760px) {
+  .view {
+    padding: 24px;
+  }
+
+  .hints {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px 14px;
+    font-size: var(--pd-text-xs);
+  }
+
+  .hints span {
+    white-space: normal;
+  }
+}

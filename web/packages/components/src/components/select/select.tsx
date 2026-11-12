@@ -41,7 +41,7 @@ function denseSx(theme: Theme) {
 }
 
 /**
- * Cloudreve outlined select: floating InputLabel + notched 12px outline and the
+ * legacy outlined select: floating InputLabel + notched 12px outline and the
  * legacy dense (39px) variant for admin forms.
  */
 export const Select = forwardRef<HTMLDivElement, SelectProps>(function Select(

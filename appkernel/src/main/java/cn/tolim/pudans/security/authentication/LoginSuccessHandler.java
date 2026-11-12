@@ -35,11 +35,12 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
             ServerResponse.Context context,
             LoginHandlerEnhancer loginHandlerEnhancer,
             LoginParameterRequestCache parameterRequestCache,
-            ServerRequestCache serverRequestCache) {
+            ServerRequestCache serverRequestCache,
+            String postLoginUrl) {
         this.context = context;
         this.loginHandlerEnhancer = loginHandlerEnhancer;
         this.parameterRequestCache = parameterRequestCache;
-        var successHandler = new RedirectServerAuthenticationSuccessHandler("/uc/");
+        var successHandler = new RedirectServerAuthenticationSuccessHandler(postLoginUrl);
         successHandler.setRequestCache(serverRequestCache);
         this.defaultSuccessHandler = successHandler;
     }

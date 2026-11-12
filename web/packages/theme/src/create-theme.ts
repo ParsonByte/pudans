@@ -6,7 +6,7 @@ import type { PudansColorMode } from "./tokens";
 /**
  * Legacy-faithful MUI theme derivation.
  *
- * Visual baseline: cloudreve/frontend (MUI 6 defaults) + the overrides that the
+ * Visual baseline: legacy/frontend (MUI 6 defaults) + the overrides that the
  * legacy App.tsx applied through applyThemeWithOverrides:
  * - shape.borderRadius = 12
  * - MuiButton / MuiTab / MuiToggleButton: textTransform none + disableElevation

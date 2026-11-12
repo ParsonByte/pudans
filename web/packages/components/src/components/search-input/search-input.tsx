@@ -175,7 +175,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
         input: {
           startAdornment: (
             <InputAdornment position="start" sx={{ color: theme.palette.primary.main }}>
-              <Icon name="cr:Search" />
+              <Icon name="pd:Search" />
             </InputAdornment>
           ),
           endAdornment: (
@@ -189,7 +189,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
                     onClick={handleClear}
                     sx={{ color: theme.palette.text.secondary }}
                   >
-                    <Icon name="cr:Dismiss" size={16} />
+                    <Icon name="pd:Dismiss" size={16} />
                   </IconButton>
                 ) : null}
                 {shortcut ? (

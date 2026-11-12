@@ -29,6 +29,7 @@ import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
 import cn.tolim.pudans.security.authentication.LoginParameterRequestCache;
 import cn.tolim.pudans.security.authentication.SecurityConstant;
 import cn.tolim.pudans.contract.security.authentication.CryptoService;
+import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.security.authentication.LoginFailureHandler;
 import cn.tolim.pudans.security.authentication.LoginSuccessHandler;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
@@ -70,6 +71,8 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
 
     private final ServerRequestCache serverRequestCache;
 
+    private final SecurityProperties securityProperties;
+
     public LoginSecurityConfigurer(
             ObservationRegistry observationRegistry,
             ReactiveUserDetailsService userDetailsService,
@@ -86,7 +89,8 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
             LoginParameterRequestCache parameterRequestCache,
             DomainEventPublisher domainEventPublisher,
             cn.tolim.pudans.core.audit.service.PluginInvocationAuditor pluginInvocationAuditor,
-            ServerRequestCache serverRequestCache) {
+            ServerRequestCache serverRequestCache,
+            SecurityProperties securityProperties) {
         this.observationRegistry = observationRegistry;
         this.userDetailsService = userDetailsService;
         this.passwordService = passwordService;
@@ -103,6 +107,7 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
         this.domainEventPublisher = domainEventPublisher;
         this.pluginInvocationAuditor = pluginInvocationAuditor;
         this.serverRequestCache = serverRequestCache;
+        this.securityProperties = securityProperties;
     }
 
     @Override
@@ -125,7 +130,11 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
         filter.setRequiresAuthenticationMatcher(requiresMatcher);
         filter.setAuthenticationSuccessHandler(
                 new LoginSuccessHandler(
-                        context, loginHandlerEnhancer, parameterRequestCache, serverRequestCache));
+                        context,
+                        loginHandlerEnhancer,
+                        parameterRequestCache,
+                        serverRequestCache,
+                        securityProperties.getPostLoginUrl()));
         filter.setAuthenticationFailureHandler(
                 new LoginFailureHandler("local", context, messageSource, loginHandlerEnhancer, domainEventPublisher));
         filter.setServerAuthenticationConverter(authConverter);

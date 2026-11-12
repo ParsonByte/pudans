@@ -1,40 +1,23 @@
 import { fileURLToPath, URL } from "node:url";
-import path from "node:path";
 import react from "@vitejs/plugin-react-swc";
 import mkcert from "vite-plugin-mkcert";
-import { viteStaticCopy } from "vite-plugin-static-copy";
 import { defineConfig } from "vite";
 
 const webRoot = fileURLToPath(new URL(".", import.meta.url));
-const appRoot = fileURLToPath(new URL("./app", import.meta.url));
 const useHttps = process.env.VITE_HTTPS === "true";
+const proxyTarget = process.env.VITE_PROXY_TARGET ?? "http://localhost:8090";
 
+/**
+ * The auth application is the only web entry point. The server mounts the
+ * build under /auth, so assets and client-side routes share that base.
+ */
 export default defineConfig({
-  root: appRoot,
-  base: "/",
+  root: webRoot,
+  base: "/auth/",
   envDir: webRoot,
-  plugins: [
-    react(),
-    viteStaticCopy({
-      targets: [
-        {
-          src: path.resolve(webRoot, "node_modules/pdfjs-dist/cmaps"),
-          dest: "pdfjs",
-        },
-        {
-          src: path.resolve(webRoot, "node_modules/pdfjs-dist/standard_fonts"),
-          dest: "pdfjs",
-        },
-      ],
-    }),
-    ...(useHttps ? [mkcert()] : []),
-  ],
+  plugins: [react(), ...(useHttps ? [mkcert()] : [])],
   resolve: {
     alias: [
-      {
-        find: "@web",
-        replacement: fileURLToPath(new URL("./src", import.meta.url)),
-      },
       {
         find: /^@pudans\/theme\/style\.css$/,
         replacement: fileURLToPath(new URL("./packages/theme/src/index.css", import.meta.url)),
@@ -56,40 +39,13 @@ export default defineConfig({
         replacement: fileURLToPath(new URL("./packages/hooks/src/index.ts", import.meta.url)),
       },
       {
-        find: /^@pudans\/layouts$/,
-        replacement: fileURLToPath(new URL("./packages/layouts/src/index.ts", import.meta.url)),
-      },
-      {
         find: /^@pudans\/utils$/,
         replacement: fileURLToPath(new URL("./packages/utils/src/index.ts", import.meta.url)),
-      },
-      {
-        find: /^@pudans\/api-client$/,
-        replacement: fileURLToPath(new URL("./packages/api-client/src/index.ts", import.meta.url)),
-      },
-      {
-        find: /^path$/,
-        replacement: "path-browserify",
       },
     ],
   },
   worker: {
     format: "es",
-  },
-  optimizeDeps: {
-    include: [
-      "monaco-editor/esm/vs/editor/editor.api",
-      "pdfjs-dist",
-      "fuse.js",
-      "lodash",
-      "path-browserify",
-      "hls.js",
-      "mpegts.js",
-      "leaflet",
-      "mapbox-gl",
-      "qrcode.react",
-      "timeago-react",
-    ],
   },
   server: {
     port: 5173,
@@ -99,33 +55,26 @@ export default defineConfig({
     },
     proxy: {
       "/apis": {
-        target: "http://localhost:8090",
+        target: proxyTarget,
         changeOrigin: true,
       },
-      "/system": {
-        target: "http://localhost:8090",
+      "/login": {
+        target: proxyTarget,
         changeOrigin: true,
       },
-      "/api": {
-        target: "http://localhost:8090",
+      "/logout": {
+        target: proxyTarget,
         changeOrigin: true,
       },
     },
   },
   build: {
-    outDir: "../build/dist",
+    outDir: "../build/dist/auth",
     emptyOutDir: true,
     sourcemap: true,
     target: "es2022",
-    chunkSizeWarningLimit: 4096,
+    chunkSizeWarningLimit: 2048,
     rollupOptions: {
-      input: {
-        setup: path.resolve(appRoot, "setup/index.html"),
-        lab: path.resolve(appRoot, "lab/index.html"),
-        auth: path.resolve(appRoot, "auth/index.html"),
-        console: path.resolve(appRoot, "console/index.html"),
-        uc: path.resolve(appRoot, "uc/index.html"),
-      },
       output: {
         entryFileNames: "assets/[name]-[hash].js",
         chunkFileNames: "assets/[name]-[hash].js",

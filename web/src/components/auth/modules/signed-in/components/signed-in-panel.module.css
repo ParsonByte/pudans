@@ -1,0 +1,111 @@
+.view {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  padding: 30px;
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eyebrow {
+  color: var(--login-brand);
+  font-size: var(--pd-text-xs);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.title {
+  margin: 0;
+  color: var(--login-text);
+  font-size: var(--pd-text-3xl);
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.description {
+  margin: 0;
+  color: var(--login-muted);
+  font-size: var(--pd-text-sm);
+  line-height: 1.65;
+}
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 30px;
+  padding: 20px;
+  border: 1px solid var(--login-card-border);
+  border-radius: var(--pd-radius-xl);
+  background: var(--login-field);
+}
+
+.avatar {
+  flex: 0 0 auto;
+  width: 52px !important;
+  height: 52px !important;
+  background: rgb(var(--pd-brand-primary) / 0.14) !important;
+  color: var(--login-brand) !important;
+  font-size: var(--pd-text-lg) !important;
+  font-weight: 600 !important;
+}
+
+.identity {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.label {
+  color: var(--login-subtle);
+  font-size: var(--pd-text-xs);
+}
+
+.name {
+  overflow: hidden;
+  color: var(--login-text);
+  font-size: var(--pd-text-md);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.username {
+  overflow: hidden;
+  color: var(--login-muted);
+  font-size: var(--pd-text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verified {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: rgb(var(--pd-state-success));
+}
+
+.submit {
+  height: 46px;
+  margin-top: auto;
+  font-size: var(--pd-text-sm);
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .view {
+    padding: 24px;
+  }
+
+  .title {
+    font-size: var(--pd-text-2xl);
+  }
+}

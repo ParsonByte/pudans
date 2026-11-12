@@ -249,7 +249,7 @@ export const fontFamily = {
 } as const;
 
 /**
- * Motion scale. Durations are aligned with the legacy Cloudreve/Material scale
+ * Motion scale. Durations are aligned with the legacy legacy/Material scale
  * (150/200/250/300/375ms, 225ms in / 195ms out for screen transitions).
  */
 export const motionDurations = {

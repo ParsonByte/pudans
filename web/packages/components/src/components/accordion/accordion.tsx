@@ -85,7 +85,7 @@ export function Accordion({
         transform: expanded ? "rotate(0deg)" : "rotate(-90deg)",
       }}
     >
-      <Icon name="cr:CaretDown" size={12} />
+      <Icon name="pd:CaretDown" size={12} />
     </Box>
   );
 

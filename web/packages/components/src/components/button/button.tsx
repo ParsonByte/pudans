@@ -11,7 +11,7 @@ export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "dan
 export type ButtonSize = "sm" | "md" | "lg";
 export type ButtonRadius = "sm" | "md" | "lg" | "full";
 
-/** Legacy Cloudreve DefaultButton contract: MUI Button with text.primary text. */
+/** Legacy legacy DefaultButton contract: MUI Button with text.primary text. */
 const StyledButton = styled(MuiButton)(({ theme }) => ({
   minHeight: theme.spacing(4),
   "& .MuiButton-startIcon": {

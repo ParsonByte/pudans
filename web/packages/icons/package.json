@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
-  "description": "Offline Iconify icon collections (MDI subset + migrated Cloudreve set) and registry.",
+  "description": "Offline Iconify icon collections (MDI subset + bundled legacy icon set) and registry.",
   "sideEffects": [
     "**/*.ts"
   ],

@@ -121,7 +121,7 @@ export const CodeBlock = forwardRef<HTMLPreElement, CodeBlockProps>(function Cod
           <span className={styles.language}>{language}</span>
           {showCopy && text ? (
             <button type="button" className={styles.copy} onClick={handleCopy}>
-              <Icon name={copied ? "cr:Checkmark" : "cr:CopyOutlined"} size={14} />
+              <Icon name={copied ? "pd:Checkmark" : "pd:CopyOutlined"} size={14} />
               <span>{copied ? copiedLabel : copyLabel}</span>
             </button>
           ) : null}

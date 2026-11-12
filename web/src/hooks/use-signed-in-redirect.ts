@@ -1,19 +1,38 @@
 import { useEffect } from "react";
-import { useAuth } from "../providers/auth-provider";
+import { useNavigate } from "react-router-dom";
+import { AUTH_BASENAME, AUTH_ROUTES } from "../constants";
+import { useSession } from "../session/use-session";
+import { safeRedirectPath } from "../util/url";
 
 /**
- * Client-side companion of the server sign-in guard: whenever the auth layout
- * mounts for a visitor that already holds a session, bounce them to the
- * console or the user centre. Reads the global auth context — no extra
- * requests. Disabled for routes that stay public (e.g. legal documents).
+ * Signed-in visitors never see the sign-in or recovery forms. The destination
+ * comes from the backend session snapshot (configurable post-login URL) and is
+ * restricted to this origin before it is used.
  */
+export function toRouterPath(path: string): string | null {
+  if (path === AUTH_BASENAME || path === `${AUTH_BASENAME}/`) {
+    return "/";
+  }
+  if (path.startsWith(`${AUTH_BASENAME}/`)) {
+    return path.slice(AUTH_BASENAME.length);
+  }
+  return null;
+}
+
 export function useSignedInRedirect(enabled: boolean): void {
-  const { status, canAccessConsole } = useAuth();
+  const { status, session } = useSession();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!enabled || status !== "authenticated") {
       return;
     }
-    window.location.replace(canAccessConsole ? "/console/" : "/uc/");
-  }, [enabled, status, canAccessConsole]);
+    const target = safeRedirectPath(session?.redirectUrl, AUTH_ROUTES.signedIn);
+    const routerPath = toRouterPath(target);
+    if (routerPath) {
+      navigate(routerPath, { replace: true });
+      return;
+    }
+    window.location.replace(target);
+  }, [enabled, status, session?.redirectUrl, navigate]);
 }

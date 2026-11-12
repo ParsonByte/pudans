@@ -236,7 +236,7 @@ export function Dialog({
           </Box>
           {showCloseButton ? (
             <IconButton disabled={loading} onClick={handleClose} aria-label={closeLabel}>
-              <Icon name="cr:Dismiss" size={20} />
+              <Icon name="pd:Dismiss" size={20} />
             </IconButton>
           ) : null}
         </DialogTitle>

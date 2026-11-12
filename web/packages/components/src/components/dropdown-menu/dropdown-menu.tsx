@@ -109,7 +109,7 @@ export function DropdownMenu({
         sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, cursor: "pointer" }}
       >
         {trigger}
-        {!contextMenu && showChevron ? <Icon name="cr:CaretDown" size={15} /> : null}
+        {!contextMenu && showChevron ? <Icon name="pd:CaretDown" size={15} /> : null}
       </Box>
 
       <Menu

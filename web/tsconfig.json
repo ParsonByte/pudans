@@ -8,13 +8,10 @@
     "types": ["node", "vite/client"],
     "baseUrl": ".",
     "paths": {
-      "@web/*": ["./src/*"],
       "@pudans/components": ["./packages/components/src/index.ts"],
-      "@pudans/api-client": ["./packages/api-client/src/index.ts"],
       "@pudans/theme": ["./packages/theme/src/index.ts"],
       "@pudans/icons": ["./packages/icons/src/index.ts"],
       "@pudans/hooks": ["./packages/hooks/src/index.ts"],
-      "@pudans/layouts": ["./packages/layouts/src/index.ts"],
       "@pudans/utils": ["./packages/utils/src/index.ts"]
     }
   },
@@ -22,8 +19,6 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
-    "app/*/src/**/*.ts",
-    "app/*/src/**/*.tsx",
     "vite.config.ts",
     "packages/*/vite.config.ts"
   ],

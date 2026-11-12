@@ -114,7 +114,7 @@ export function ResponsiveTabs<T extends string = string>({
               label={
                 <Box component="span" sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   {moreLabel}
-                  <Icon name="cr:CaretDown" size={15} />
+                  <Icon name="pd:CaretDown" size={15} />
                 </Box>
               }
               {...bindTrigger(moreOptionState)}

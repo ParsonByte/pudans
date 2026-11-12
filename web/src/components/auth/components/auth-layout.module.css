@@ -1,0 +1,256 @@
+.page {
+  --login-text: rgb(var(--pd-text-primary));
+  --login-muted: rgb(var(--pd-text-secondary));
+  --login-subtle: rgb(var(--pd-text-tertiary));
+  --login-video-text: rgb(var(--pd-media-text));
+  --login-video-muted: var(--pd-media-text-secondary);
+  --login-video-subtle: var(--pd-media-text-tertiary);
+  --login-card: rgb(var(--pd-bg-surface));
+  --login-card-border: var(--pd-border-default);
+  --login-field: rgb(var(--pd-bg-subtle));
+  --login-field-border: var(--pd-border-strong);
+  --login-seg: rgb(var(--pd-bg-muted));
+  --login-overlay: linear-gradient(
+    90deg,
+    var(--pd-scrim-strong) 0%,
+    var(--pd-scrim-medium) 48%,
+    var(--pd-scrim-soft) 100%
+  );
+  --login-shadow: var(--pd-shadow-xl);
+  --login-brand: rgb(var(--pd-brand-primary));
+  --login-nav: var(--pd-nav-veil);
+  --login-slogan: rgb(var(--pd-media-text));
+  --login-footer: var(--pd-media-text-tertiary);
+  --login-mark-bg: var(--pd-glass-surface);
+  --login-mark-border: var(--pd-glass-border);
+  --login-nav-bg: linear-gradient(180deg, var(--pd-scrim-soft) 0%, transparent 100%);
+  --login-footer-bg: linear-gradient(0deg, var(--pd-scrim-medium) 0%, transparent 100%);
+  --login-tint-bg: linear-gradient(
+    180deg,
+    var(--pd-scrim-soft) 0%,
+    transparent 30%,
+    transparent 70%,
+    var(--pd-scrim-soft) 100%
+  );
+  --login-tint-blend: normal;
+  --login-slogan-shadow: var(--pd-shadow-lg);
+  --login-nav-shadow: var(--pd-shadow-md);
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow-x: hidden;
+  background: rgb(var(--pd-bg-canvas));
+  color: var(--login-text);
+}
+
+.page.dark {
+  --login-text: rgb(var(--pd-text-primary));
+  --login-muted: rgb(var(--pd-text-secondary));
+  --login-subtle: rgb(var(--pd-text-tertiary));
+  --login-video-text: rgb(var(--pd-media-text));
+  --login-video-muted: var(--pd-media-text-secondary);
+  --login-video-subtle: var(--pd-media-text-tertiary);
+  --login-card: rgb(var(--pd-bg-elevated));
+  --login-card-border: var(--pd-border-default);
+  --login-field: rgb(var(--pd-bg-subtle));
+  --login-field-border: var(--pd-border-strong);
+  --login-seg: rgb(var(--pd-bg-muted));
+  --login-overlay: linear-gradient(
+    90deg,
+    rgb(var(--pd-neutral-1000) / 0.02) 0%,
+    rgb(var(--pd-neutral-1000) / 0.1) 28%,
+    rgb(var(--pd-scrim-medium) / 0.38) 52%,
+    rgb(var(--pd-neutral-1000) / 0.9) 74%,
+    rgb(var(--pd-bg-canvas)) 100%
+  );
+  --login-shadow: var(--pd-shadow-xl);
+  --login-brand: rgb(var(--pd-brand-primary));
+  --login-nav: var(--pd-nav-veil);
+  --login-slogan: rgb(var(--pd-media-text));
+  --login-footer: var(--pd-media-text-tertiary);
+  --login-mark-bg: var(--pd-glass-surface-soft);
+  --login-mark-border: var(--pd-glass-border-soft);
+  --login-nav-bg: transparent;
+  --login-footer-bg: transparent;
+  --login-tint-bg: linear-gradient(
+    180deg,
+    var(--pd-scrim-medium) 0%,
+    transparent 22%,
+    transparent 72%,
+    var(--pd-scrim-soft) 100%
+  );
+  --login-tint-blend: multiply;
+  --login-slogan-shadow: 0 4px 30px var(--pd-scrim-medium);
+  --login-nav-shadow: none;
+  background: rgb(var(--pd-bg-canvas));
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 100svh;
+  padding: 112px clamp(24px, 7vw, 112px) 96px;
+}
+
+@media (max-width: 1024px) {
+  .content {
+    padding-right: clamp(24px, 5vw, 64px);
+  }
+}
+
+@media (max-width: 760px) {
+  .content {
+    justify-content: center;
+    align-items: flex-start;
+    padding: 96px 16px 80px;
+  }
+
+  /* The full-width mobile card reaches the footer area, so keep the pill
+     hidden there as before to avoid covering card actions. */
+  .videoControl {
+    display: none;
+  }
+}
+.video {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 68% center;
+  pointer-events: none;
+}
+
+.videoOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--login-overlay);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  pointer-events: none;
+}
+
+.videoTint {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--login-tint-bg);
+  mix-blend-mode: var(--login-tint-blend);
+  pointer-events: none;
+}
+
+.videoControl {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid var(--login-card-border);
+  border-radius: var(--pd-radius-full);
+  background: var(--login-mark-bg);
+  color: var(--login-video-muted);
+  font: inherit;
+  font-size: var(--pd-text-xs);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition:
+    color var(--pd-duration-fast) var(--pd-ease-standard),
+    background-color var(--pd-duration-fast) var(--pd-ease-standard),
+    box-shadow var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+.videoControl:hover {
+  background: var(--login-seg);
+  color: var(--login-video-text);
+}
+
+.videoControl:focus-visible {
+  outline: none;
+  box-shadow: var(--pd-shadow-focus);
+}
+
+.videoControlIcon {
+  color: var(--login-brand);
+}
+
+.routeStage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.routePanel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--login-card);
+  will-change: opacity, transform;
+}
+
+.routeEnter {
+  z-index: 2;
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.routeEnterActive {
+  z-index: 2;
+  opacity: 1;
+  transform: translateX(0);
+  transition:
+    opacity var(--pd-duration-slow) var(--pd-ease-standard),
+    transform var(--pd-duration-slow) var(--pd-ease-standard);
+}
+
+.routeExit {
+  z-index: 1;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.routeExitActive {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-20px);
+  transition:
+    opacity var(--pd-duration-slow) var(--pd-ease-standard),
+    transform var(--pd-duration-slow) var(--pd-ease-standard);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routePanel {
+    transform: none !important;
+  }
+
+  .routeEnterActive,
+  .routeExitActive {
+    transition: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .videoControl {
+    display: none;
+  }
+}
+

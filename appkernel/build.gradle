@@ -174,7 +174,7 @@ tasks.named('test') {
 // Nothing under src/main/resources is touched by the frontend build.
 tasks.named('processResources') {
     dependsOn project(':web').tasks.named('assemble')
-    from(project(':web').layout.buildDirectory.dir('dist')) {
+    from(project(':web').layout.projectDirectory.dir('../build/dist')) {
         into 'static'
     }
 }

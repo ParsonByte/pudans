@@ -34,6 +34,13 @@ public class SecurityProperties {
 
     private final List<String> trustedProxies = new ArrayList<>();
 
+    /**
+     * Destination used after a successful interactive sign-in. Deployments can
+     * point this at an external application or keep the bundled auth landing
+     * page, which confirms the active session.
+     */
+    private String postLoginUrl = "/auth/done";
+
     @Data
     public static class BasicAuthOptions {
         

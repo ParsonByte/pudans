@@ -2,9 +2,9 @@ plugins {
     id 'base'
 }
 
-description = 'pudans unified MPA frontend build and Spring Boot resource mount.'
+description = 'pudans auth-only frontend build and Spring Boot resource mount.'
 
-def frontendDist = layout.buildDirectory.dir('dist')
+def frontendDist = layout.projectDirectory.dir('../build/dist')
 
 tasks.register('pnpmInstall', Exec) {
     group = 'frontend'
@@ -21,12 +21,12 @@ tasks.register('pnpmInstall', Exec) {
 
 tasks.register('pnpmBuild', Exec) {
     group = 'frontend'
-    description = 'Builds the unified MPA into web/build/dist.'
+    description = 'Builds the auth entry into the repository build/dist/auth.'
     dependsOn tasks.named('pnpmInstall')
     workingDir layout.projectDirectory
     commandLine 'bash', '-lc', 'npx --yes pnpm@latest run build'
     inputs.files(fileTree(layout.projectDirectory) {
-        include 'packages/**', 'app/**', 'src/**', '*.json', '*.yaml', '*.ts'
+        include 'packages/**', 'public/**', 'src/**', 'index.html', '*.json', '*.yaml', '*.ts'
         exclude '**/node_modules/**', '**/dist/**', 'build/**'
     })
     outputs.dir(frontendDist)
@@ -34,7 +34,7 @@ tasks.register('pnpmBuild', Exec) {
 
 tasks.register('bundleFrontend') {
     group = 'frontend'
-    description = 'Compatibility alias for the unified MPA build.'
+    description = 'Compatibility alias for the auth build.'
     dependsOn tasks.named('pnpmBuild')
 }
 

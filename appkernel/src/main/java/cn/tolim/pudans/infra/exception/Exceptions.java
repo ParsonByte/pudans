@@ -57,6 +57,9 @@ public enum Exceptions {
 
 
         resolveLocalizedDetail(errorResponse, messageSource, locale);
+        if (t instanceof ApiException apiException) {
+            problemDetail.setProperty("code", apiException.getCode());
+        }
         problemDetail.setInstance(exchange.getRequest().getURI());
         problemDetail.setProperty("requestId", exchange.getRequest().getId());
         problemDetail.setProperty("timestamp", Instant.now());

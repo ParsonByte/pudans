@@ -62,7 +62,7 @@ export function LanguageSwitcher({
           aria-label={ariaLabel}
           onClick={(event) => setAnchorEl(event.currentTarget)}
         >
-          <Icon name="cr:Translate" size={24} />
+          <Icon name="pd:Translate" size={24} />
           {showLabel ? (
             <Typography component="span" variant="body2" sx={{ ml: 1, lineHeight: 1 }}>
               {current?.label ?? value}

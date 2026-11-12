@@ -53,7 +53,7 @@ class AuthorizationExchangeConfigurers {
                 .pathMatchers(
                         "/apis/" + ApiGroups.AUTH + "/v1alpha1/passkeys/assertion/**",
                         "/apis/" + ApiGroups.AUTH + "/v1alpha1/oauth2/**",
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/login/public-key",
+                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/login/**",
                         "/apis/" + ApiGroups.AUTH + "/v1alpha1/recovery/**")
                 .permitAll()
                 .pathMatchers(

@@ -1,5 +1,6 @@
 package cn.tolim.pudans.security.authentication.recovery;
 
+import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,6 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -29,8 +29,9 @@ public class PasswordResetMailer {
         var mailSender = mailSenderProvider.getIfAvailable();
         if (mailSender == null) {
             if (!options.isLogCodes()) {
-                return Mono.error(new ResponseStatusException(
+                return Mono.error(new ApiException(
                         HttpStatus.SERVICE_UNAVAILABLE,
+                        "recovery-mail-unavailable",
                         "Email delivery is not configured. Set spring.mail.* before using password recovery."));
             }
             log.warn(
@@ -59,8 +60,11 @@ public class PasswordResetMailer {
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorMap(
                         MailException.class,
-                        error -> new ResponseStatusException(
-                                HttpStatus.SERVICE_UNAVAILABLE, "Could not send the verification email.", error))
+                        error -> new ApiException(
+                                HttpStatus.SERVICE_UNAVAILABLE,
+                                "recovery-mail-unavailable",
+                                "Could not send the verification email.",
+                                error))
                 .then();
     }
 }

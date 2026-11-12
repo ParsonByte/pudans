@@ -217,7 +217,7 @@ export function ImageCropper({
           {title}
         </Box>
         <IconButton disabled={busy} onClick={handleClose} aria-label="Close">
-          <Icon name="cr:Dismiss" size={20} />
+          <Icon name="pd:Dismiss" size={20} />
         </IconButton>
       </DialogTitle>
       <DialogContent>

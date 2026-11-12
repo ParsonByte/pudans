@@ -153,7 +153,7 @@ export function FileDropZone({
         onDrop={handleDrop}
       >
         <Box sx={{ fontSize: (theme) => theme.spacing(10), lineHeight: 0 }}>
-          <Icon name="cr:CloudArrowIUp" />
+          <Icon name="pd:CloudArrowIUp" />
         </Box>
         <Typography variant="h4" color="inherit">
           {title}
@@ -213,7 +213,7 @@ export function FileDropZone({
       }}
     >
       <Box sx={{ fontSize: (theme) => theme.spacing(3.5), lineHeight: 0 }}>
-        <Icon name="cr:CloudArrowIUp" />
+        <Icon name="pd:CloudArrowIUp" />
       </Box>
       <Typography variant="subtitle1" color="inherit">
         {title}

@@ -8,12 +8,12 @@ export type EmptyStateVariant =
 export type EmptyStateSize = "sm" | "md" | "lg";
 
 const VARIANT_ICON: Record<EmptyStateVariant, string> = {
-  empty: "cr:PackageOpen",
-  "not-found": "cr:PackageOpen",
-  error: "cr:Warning",
-  permission: "cr:ShieldLock",
-  success: "cr:CheckmarkCircle",
-  "file-drop": "cr:CloudArrowIUp",
+  empty: "pd:PackageOpen",
+  "not-found": "pd:PackageOpen",
+  error: "pd:Warning",
+  permission: "pd:ShieldLock",
+  success: "pd:CheckmarkCircle",
+  "file-drop": "pd:CloudArrowIUp",
 };
 
 /** Legacy Nothing() default was size=1 → 100px glyph / 50px vertical margin. */
@@ -22,7 +22,7 @@ const SIZE_SCALE: Record<EmptyStateSize, number> = { sm: 0.6, md: 1, lg: 1.25 };
 export interface EmptyStateProps extends Omit<HTMLAttributes<HTMLDivElement>, "title"> {
   title: ReactNode;
   description?: ReactNode;
-  /** Either a rendered node or an icon name such as "cr:PackageOpen". */
+  /** Either a rendered node or an icon name such as "pd:PackageOpen". */
   icon?: ReactNode | string;
   variant?: EmptyStateVariant;
   size?: EmptyStateSize;
