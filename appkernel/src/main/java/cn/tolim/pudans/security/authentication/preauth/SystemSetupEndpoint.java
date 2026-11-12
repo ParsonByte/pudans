@@ -112,7 +112,7 @@ public class SystemSetupEndpoint {
 
     private static Mono<ServerResponse> redirectToConsole() {
         return ServerResponse.status(HttpStatus.FOUND)
-                .location(URI.create("/console"))
+                .location(URI.create("/auth/"))
                 .build();
     }
 
@@ -328,7 +328,7 @@ public class SystemSetupEndpoint {
             if (!setupRequired) {
                 return redirectToConsole();
             }
-            return ServerResponse.temporaryRedirect(URI.create("/setup/")).build();
+            return ServerResponse.temporaryRedirect(URI.create("/auth/")).build();
         });
     }
 

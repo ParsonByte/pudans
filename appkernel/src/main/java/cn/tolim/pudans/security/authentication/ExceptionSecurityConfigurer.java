@@ -46,7 +46,7 @@ public class ExceptionSecurityConfigurer implements SecurityConfigurer {
                     new AuthenticationConverterServerWebExchangeMatcher(new ServerBearerTokenAuthenticationConverter()),
                     new BearerTokenServerAccessDeniedHandler()));
             accessDeniedHandlers.add(new ServerWebExchangeDelegatingServerAccessDeniedHandler.DelegateEntry(
-                    pathMatchers(HttpMethod.GET, "/login"), new RedirectAccessDeniedHandler("/uc")));
+                    pathMatchers(HttpMethod.GET, "/login"), new RedirectAccessDeniedHandler("/auth/")));
             accessDeniedHandlers.add(new ServerWebExchangeDelegatingServerAccessDeniedHandler.DelegateEntry(
                     anyExchange(), new HttpStatusServerAccessDeniedHandler(HttpStatus.FORBIDDEN)));
 

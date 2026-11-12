@@ -22,10 +22,13 @@ public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuc
     private final AuditService auditService;
 
     public TotpAuthenticationSuccessHandler(
-            LoginHandlerEnhancer loginEnhancer, ServerRequestCache serverRequestCache, AuditService auditService) {
+            LoginHandlerEnhancer loginEnhancer,
+            ServerRequestCache serverRequestCache,
+            AuditService auditService,
+            String postLoginUrl) {
         this.loginEnhancer = loginEnhancer;
         this.auditService = auditService;
-        var successHandler = new RedirectServerAuthenticationSuccessHandler("/uc");
+        var successHandler = new RedirectServerAuthenticationSuccessHandler(postLoginUrl);
         successHandler.setRequestCache(serverRequestCache);
         this.successHandler = successHandler;
     }

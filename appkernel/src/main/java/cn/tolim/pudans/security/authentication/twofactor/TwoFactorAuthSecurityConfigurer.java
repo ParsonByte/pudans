@@ -5,6 +5,7 @@ import static org.springframework.security.web.server.util.matcher.ServerWebExch
 import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
+import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
@@ -34,6 +35,8 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
 
     private final AuditService auditService;
 
+    private final SecurityProperties securityProperties;
+
     public TwoFactorAuthSecurityConfigurer(
             ServerSecurityContextRepository securityContextRepository,
             TwoFactorAuthenticationManager twoFactorAuthenticationManager,
@@ -41,7 +44,8 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
             ServerRequestCache serverRequestCache,
             RiskControlService riskControlService,
             TotpAuthenticationFailureHandler failureHandler,
-            AuditService auditService) {
+            AuditService auditService,
+            SecurityProperties securityProperties) {
         this.securityContextRepository = securityContextRepository;
         this.twoFactorAuthenticationManager = twoFactorAuthenticationManager;
         this.loginHandlerEnhancer = loginHandlerEnhancer;
@@ -49,6 +53,7 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
         this.riskControlService = riskControlService;
         this.failureHandler = failureHandler;
         this.auditService = auditService;
+        this.securityProperties = securityProperties;
     }
 
     @Override
@@ -58,7 +63,11 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
         filter.setSecurityContextRepository(securityContextRepository);
         filter.setServerAuthenticationConverter(new TwoFactorCodeAuthenticationConverter(riskControlService));
         filter.setAuthenticationSuccessHandler(
-                new TotpAuthenticationSuccessHandler(loginHandlerEnhancer, serverRequestCache, auditService));
+                new TotpAuthenticationSuccessHandler(
+                        loginHandlerEnhancer,
+                        serverRequestCache,
+                        auditService,
+                        securityProperties.getPostLoginUrl()));
         filter.setAuthenticationFailureHandler(failureHandler);
         http.addFilterAt(filter, SecurityWebFiltersOrder.AUTHENTICATION);
     }

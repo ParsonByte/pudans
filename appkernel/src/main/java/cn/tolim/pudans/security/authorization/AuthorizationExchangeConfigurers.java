@@ -109,7 +109,7 @@ class AuthorizationExchangeConfigurers {
 
         return http -> http.authorizeExchange(spec -> spec.pathMatchers("/complete-profile/**")
                 .authenticated()
-                .pathMatchers("/", "/console/**", "/uc/**")
+                .pathMatchers("/")
                 .authenticated());
     }
 
