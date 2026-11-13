@@ -90,7 +90,6 @@ export function AuthLayout() {
         loop
         playsInline
         preload="auto"
-        poster={`${import.meta.env.BASE_URL}login-bg-poster.jpg`}
         disablePictureInPicture
         aria-hidden="true"
         tabIndex={-1}
