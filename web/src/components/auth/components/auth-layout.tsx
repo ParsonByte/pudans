@@ -54,7 +54,7 @@ export function AuthLayout() {
   const outlet = useOutlet();
   const isLegal = location.pathname.includes("/legal");
   const isSetup = location.pathname.includes("/setup");
-  const isSignedIn = location.pathname.includes("/done");
+  const isSignedIn = location.pathname.includes("/signed-in");
   // Signed-in redirects are enforced by the auth-entry route guard, not by the
   // layout, so every auth page shares the same redirect_uri handling.
 

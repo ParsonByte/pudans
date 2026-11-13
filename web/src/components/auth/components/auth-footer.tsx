@@ -10,9 +10,9 @@ export function AuthFooter() {
   return (
     <footer className={styles.footer}>
       <span>{t("copyright", { year, brand: BRAND_WORDMARK })}</span>
-      <Link to="/legal?tab=terms">{t("terms")}</Link>
-      <Link to="/legal?tab=privacy">{t("privacy")}</Link>
-      <Link to="/legal?tab=confidentiality">{t("dataConfidentiality")}</Link>
+      <Link to="/auth/legal?tab=terms">{t("terms")}</Link>
+      <Link to="/auth/legal?tab=privacy">{t("privacy")}</Link>
+      <Link to="/auth/legal?tab=confidentiality">{t("dataConfidentiality")}</Link>
     </footer>
   );
 }

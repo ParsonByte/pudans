@@ -81,12 +81,12 @@ export function useSetup() {
         password: values.password,
         email: values.email.trim() || undefined,
         siteTitle: values.siteTitle.trim(),
-        siteUrl: values.siteUrl.trim(),
+        externalUrl: values.siteUrl.trim(),
       });
       await refresh();
       const redirectUri = sanitizeRedirectUri(searchParams.get("redirect_uri"));
       navigate(
-        redirectUri ? `/auth/?redirect_uri=${encodeURIComponent(redirectUri)}` : "/auth/",
+        redirectUri ? `/auth?redirect_uri=${encodeURIComponent(redirectUri)}` : "/auth",
         { replace: true },
       );
     } catch (requestError) {

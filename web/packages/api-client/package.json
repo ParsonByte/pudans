@@ -1,7 +1,7 @@
 {
   "name": "@pudans/api-client",
   "version": "0.1.0",
-  "description": "Halo-aligned Pudans API client: resource API modules, models and one shared Axios instance.",
+  "description": "Pudans API client generated from the OpenAPI documents, aligned with Halo's api-client layout.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

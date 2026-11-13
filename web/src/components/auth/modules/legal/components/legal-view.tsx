@@ -57,7 +57,7 @@ export function LegalView() {
           <p className={styles.eyebrow}>LEGAL · {BRAND_WORDMARK}</p>
           <h1 className={styles.title}>{t("legalTitle")}</h1>
         </div>
-        <Link className={styles.back} to="/">
+        <Link className={styles.back} to="/auth">
           <Icon name="mdi:arrow-left" size={15} />
           {t("legalBack")}
         </Link>

@@ -4,25 +4,106 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from "axios";
-import { PudansApiError } from "../src/models/errors";
-
-/**
- * The one and only Axios instance used by every Pudans frontend application.
- *
- * Halo keeps its interceptors in the api-client package and lets the apps
- * consume the configured instance. All cross-cutting behaviour lives here:
- * request ids, credentials, authorization headers, 401/403 redirects and error
- * normalization. Pages and routers never inspect HTTP status codes themselves.
- */
-export const API_BASE_URL = "";
+import {
+  AnnotationSettingV1AlphaUcApi,
+  AnnotationSettingV1alpha1Api,
+  AuditLogV1alpha1Api,
+  AuthProviderV1alpha1Api,
+  AuthenticationApi,
+  ConfigMapV1alpha1Api,
+  Configuration,
+  DeviceV1alpha1UcApi,
+  ExtensionDefinitionV1alpha1Api,
+  ExtensionPointDefinitionV1alpha1Api,
+  LoginApi,
+  PasskeyV1alpha1PublicApi,
+  PasskeyV1alpha1UcApi,
+  PersonalAccessTokenV1alpha1Api,
+  PersonalAccessTokenV1alpha1UcApi,
+  PluginV1alpha1Api,
+  PluginV1alpha1ConsoleApi,
+  RememberMeTokenV1alpha1Api,
+  ReverseProxyV1alpha1Api,
+  RiskRuleV1alpha1Api,
+  RoleBindingV1alpha1Api,
+  RoleV1alpha1Api,
+  SecretV1alpha1Api,
+  SettingV1alpha1Api,
+  SystemConfigV1alpha1ConsoleApi,
+  SystemV1alpha1PublicApi,
+  TempRoleBindingV1alpha1Api,
+  TwoFactorAuthV1alpha1UcApi,
+  UserConnectionV1alpha1Api,
+  UserConnectionV1alpha1UcApi,
+  UserGroupBindingV1alpha1Api,
+  UserGroupV1alpha1Api,
+  UserPreferenceV1alpha1UcApi,
+  UserV1alpha1Api,
+  UserV1alpha1ConsoleApi,
+  UserV1alpha1UcApi,
+  WebhookV1alpha1Api,
+} from "../src";
+import type {
+  LoginProviderView,
+  LoginStatusView,
+  PublicKeyResponse,
+  ResetPasswordRequest,
+  SendCodeRequest,
+  SessionView,
+  SetupRequest,
+} from "../src";
 
 export const ACCESS_TOKEN_STORAGE_KEY = "pudans:access-token";
-
-export const AUTH_PATH = "/auth/";
+export const AUTH_PATH = "/auth";
 export const FORBIDDEN_PATH = "/forbidden";
 
 const REQUEST_ID_HEADER = "X-Request-Id";
-const AUTH_PATH_PREFIXES = ["/auth", "/setup", "/login"];
+const AUTH_API_BASE = "/apis/auth.api.pudans.tolim.cn/v1alpha1";
+const PUBLIC_API_BASE = "/apis/public.api.pudans.tolim.cn/v1alpha1";
+
+export interface PudansApiErrorOptions {
+  status?: number;
+  code?: string;
+  details?: unknown;
+  requestId?: string;
+  isNetworkError?: boolean;
+  cause?: unknown;
+}
+
+/** Normalized error thrown by every @pudans/api-client request. */
+export class PudansApiError extends Error {
+  readonly status: number | undefined;
+  readonly code: string;
+  readonly details: unknown;
+  readonly requestId: string | undefined;
+  readonly isNetworkError: boolean;
+
+  constructor(message: string, options: PudansApiErrorOptions = {}) {
+    super(message, options.cause === undefined ? undefined : { cause: options.cause });
+    this.name = "PudansApiError";
+    this.status = options.status;
+    this.code = options.code ?? "UNKNOWN_ERROR";
+    this.details = options.details;
+    this.requestId = options.requestId;
+    this.isNetworkError = options.isNetworkError ?? false;
+    Object.setPrototypeOf(this, new.target.prototype);
+  }
+}
+
+export function isPudansApiError(error: unknown): error is PudansApiError {
+  return error instanceof PudansApiError;
+}
+
+export interface LoginRequest {
+  username: string;
+  encryptedPassword: string;
+  rememberMe?: boolean;
+}
+
+export type LoginOutcome =
+  | { kind: "success" }
+  | { kind: "challenge"; location: string }
+  | { kind: "error"; code: string };
 
 function createRequestId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -39,7 +120,9 @@ function currentLocation(): string {
 }
 
 function isAuthRequestPath(pathname: string): boolean {
-  return AUTH_PATH_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(prefix + "/"));
+  return ["/auth", "/setup", "/login"].some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + "/"),
+  );
 }
 
 export function readAccessToken(): string | null {
@@ -64,28 +147,21 @@ export function setAccessToken(token: string | null): void {
       window.localStorage.removeItem(ACCESS_TOKEN_STORAGE_KEY);
     }
   } catch {
-    // Storage can be unavailable in private browsing; cookie auth still works.
+    // Cookie auth remains available when storage is blocked.
   }
 }
 
 /** Centralized expired-session handling for the 401 response interceptor. */
 export function redirectToLogin(): void {
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || isAuthRequestPath(window.location.pathname)) {
     return;
   }
-  if (isAuthRequestPath(window.location.pathname)) {
-    return;
-  }
-  const redirectUri = encodeURIComponent(currentLocation());
-  window.location.assign(`${AUTH_PATH}?redirect_uri=${redirectUri}`);
+  window.location.assign(`${AUTH_PATH}?redirect_uri=${encodeURIComponent(currentLocation())}`);
 }
 
 /** Centralized missing-permission handling for the 403 response interceptor. */
 export function redirectToForbidden(): void {
-  if (typeof window === "undefined") {
-    return;
-  }
-  if (window.location.pathname === FORBIDDEN_PATH) {
+  if (typeof window === "undefined" || window.location.pathname === FORBIDDEN_PATH) {
     return;
   }
   window.location.assign(FORBIDDEN_PATH);
@@ -106,24 +182,16 @@ function readHeader(headers: AxiosResponse["headers"] | undefined, name: string)
   return typeof value === "string" ? value : value === undefined ? undefined : String(value);
 }
 
-interface ProblemDetails {
-  message?: string;
-  code?: string;
-  requestId?: string;
-}
-
-function extractProblemDetails(data: unknown): ProblemDetails {
+function extractProblemDetails(data: unknown): { message?: string; code?: string; requestId?: string } {
   if (typeof data === "string") {
     return { message: data };
   }
   if (!isRecord(data)) {
     return {};
   }
-
   const message = [data.detail, data.message, data.title].find(
     (value): value is string => typeof value === "string" && value.trim().length > 0,
   );
-
   return {
     message,
     code: typeof data.code === "string" ? data.code : undefined,
@@ -131,12 +199,10 @@ function extractProblemDetails(data: unknown): ProblemDetails {
   };
 }
 
-/** Normalizes every transport failure into one public error shape. */
 export function normalizeApiError(error: unknown): PudansApiError {
   if (error instanceof PudansApiError) {
     return error;
   }
-
   if (axios.isAxiosError(error)) {
     const status = error.response?.status;
     const problem = extractProblemDetails(error.response?.data);
@@ -144,7 +210,6 @@ export function normalizeApiError(error: unknown): PudansApiError {
       problem.requestId ??
       (error.config?.headers?.[REQUEST_ID_HEADER] as string | undefined) ??
       readHeader(error.response?.headers, "x-request-id");
-
     return new PudansApiError(problem.message ?? error.message ?? "Request failed", {
       status,
       code: problem.code ?? error.code ?? (status ? `HTTP_${status}` : "NETWORK_ERROR"),
@@ -154,17 +219,15 @@ export function normalizeApiError(error: unknown): PudansApiError {
       cause: error,
     });
   }
-
   if (error instanceof Error) {
     return new PudansApiError(error.message, { cause: error });
   }
-
   return new PudansApiError("Unknown request error", { details: error });
 }
 
-export const http: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 20_000,
+/** The single Axios instance shared by every frontend application. */
+export const defaultAxiosInstance: AxiosInstance = axios.create({
+  baseURL: "",
   withCredentials: true,
   paramsSerializer: { indexes: null },
   headers: {
@@ -173,35 +236,201 @@ export const http: AxiosInstance = axios.create({
   },
 });
 
-http.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+defaultAxiosInstance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   config.headers = AxiosHeaders.from(config.headers);
-  const requestId = createRequestId();
-  config.headers.set(REQUEST_ID_HEADER, requestId);
+  config.headers.set(REQUEST_ID_HEADER, createRequestId());
   config.headers.set("X-Requested-With", "XMLHttpRequest");
-
   const token = readAccessToken();
   if (token) {
     config.headers.set("Authorization", `Bearer ${token}`);
   }
-
   return config;
 });
 
-http.interceptors.response.use(
+let suppressAuthRedirect = false;
+
+defaultAxiosInstance.interceptors.response.use(
   (response) => response,
   (error: unknown) => {
     const normalized = normalizeApiError(error);
-
-    if (normalized.status === 401) {
+    if (!suppressAuthRedirect && normalized.status === 401) {
       redirectToLogin();
-    } else if (normalized.status === 403) {
+    } else if (!suppressAuthRedirect && normalized.status === 403) {
       redirectToForbidden();
     }
-
     return Promise.reject(normalized);
   },
 );
 
-export function isRequestCancelled(error: unknown): boolean {
-  return axios.isCancel(error);
+const configuration = new Configuration({ basePath: "" });
+
+function createApi<T>(
+  ApiClass: new (
+    configuration?: Configuration,
+    basePath?: string,
+    axios?: AxiosInstance,
+  ) => T,
+): T {
+  return new ApiClass(configuration, "", defaultAxiosInstance);
 }
+
+/**
+ * Halo's createCoreApiClient pattern: one grouped object of generated
+ * resource API classes, all bound to the single configured Axios instance.
+ */
+export const coreApiClient = {
+  auth: {
+    authProvider: createApi(AuthProviderV1alpha1Api),
+    authentication: createApi(AuthenticationApi),
+    login: createApi(LoginApi),
+    userConnection: createApi(UserConnectionV1alpha1Api),
+    passkey: createApi(PasskeyV1alpha1UcApi),
+    twoFactor: createApi(TwoFactorAuthV1alpha1UcApi),
+    device: createApi(DeviceV1alpha1UcApi),
+    personalAccessToken: createApi(PersonalAccessTokenV1alpha1UcApi),
+    rememberMeToken: createApi(RememberMeTokenV1alpha1Api),
+  },
+  console: {
+    user: createApi(UserV1alpha1Api),
+    userConsole: createApi(UserV1alpha1ConsoleApi),
+    role: createApi(RoleV1alpha1Api),
+    roleBinding: createApi(RoleBindingV1alpha1Api),
+    tempRoleBinding: createApi(TempRoleBindingV1alpha1Api),
+    auditLog: createApi(AuditLogV1alpha1Api),
+    setting: createApi(SettingV1alpha1Api),
+    systemConfig: createApi(SystemConfigV1alpha1ConsoleApi),
+    configMap: createApi(ConfigMapV1alpha1Api),
+    riskRule: createApi(RiskRuleV1alpha1Api),
+    webhook: createApi(WebhookV1alpha1Api),
+    userGroup: createApi(UserGroupV1alpha1Api),
+    userGroupBinding: createApi(UserGroupBindingV1alpha1Api),
+    secret: createApi(SecretV1alpha1Api),
+    annotationSetting: createApi(AnnotationSettingV1alpha1Api),
+    plugin: createApi(PluginV1alpha1Api),
+    pluginConsole: createApi(PluginV1alpha1ConsoleApi),
+    extensionDefinition: createApi(ExtensionDefinitionV1alpha1Api),
+    extensionPointDefinition: createApi(ExtensionPointDefinitionV1alpha1Api),
+    reverseProxy: createApi(ReverseProxyV1alpha1Api),
+    personalAccessToken: createApi(PersonalAccessTokenV1alpha1Api),
+  },
+  uc: {
+    user: createApi(UserV1alpha1UcApi),
+    setting: createApi(SettingV1alpha1Api),
+    device: createApi(DeviceV1alpha1UcApi),
+    passkey: createApi(PasskeyV1alpha1UcApi),
+    twoFactor: createApi(TwoFactorAuthV1alpha1UcApi),
+    connection: createApi(UserConnectionV1alpha1UcApi),
+    annotationSetting: createApi(AnnotationSettingV1AlphaUcApi),
+    userPreference: createApi(UserPreferenceV1alpha1UcApi),
+    personalAccessToken: createApi(PersonalAccessTokenV1alpha1UcApi),
+  },
+  public: {
+    system: createApi(SystemV1alpha1PublicApi),
+    passkey: createApi(PasskeyV1alpha1PublicApi),
+  },
+};
+
+/** GET /login/status */
+export function getLoginStatus(): Promise<LoginStatusView> {
+  return defaultAxiosInstance
+    .get<LoginStatusView>(`${AUTH_API_BASE}/login/status`)
+    .then((response) => response.data);
+}
+
+/** GET /login/providers */
+export function listLoginProviders(): Promise<LoginProviderView[]> {
+  return defaultAxiosInstance
+    .get<LoginProviderView[]>(`${AUTH_API_BASE}/login/providers`)
+    .then((response) => response.data);
+}
+
+/** GET /login/public-key */
+export function getLoginPublicKey(): Promise<PublicKeyResponse> {
+  return defaultAxiosInstance
+    .get<PublicKeyResponse>(`${AUTH_API_BASE}/login/public-key`)
+    .then((response) => response.data);
+}
+
+/** GET /login/session */
+export function getLoginSession(): Promise<SessionView> {
+  return defaultAxiosInstance
+    .get<SessionView>(`${AUTH_API_BASE}/login/session`)
+    .then((response) => response.data);
+}
+
+/** POST /login (form-urlencoded, redirect based). */
+export async function login(payload: LoginRequest): Promise<LoginOutcome> {
+  const body = new URLSearchParams({
+    username: payload.username,
+    password: payload.encryptedPassword,
+    ...(payload.rememberMe === false ? {} : { "remember-me": "on" }),
+  });
+  const response = await defaultAxiosInstance.post("/login", body, {
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "*/*",
+    },
+    validateStatus: () => true,
+  });
+  const responseUrl = (response.request as { responseURL?: string } | undefined)?.responseURL;
+  if (responseUrl && typeof window !== "undefined") {
+    const finalUrl = new URL(responseUrl, window.location.origin);
+    if (finalUrl.pathname.startsWith("/challenges/")) {
+      return { kind: "challenge", location: finalUrl.pathname + finalUrl.search };
+    }
+    const errorCode = finalUrl.searchParams.get("error");
+    if (errorCode) {
+      return { kind: "error", code: errorCode };
+    }
+  }
+  return response.status >= 200 && response.status < 300
+    ? { kind: "success" }
+    : { kind: "error", code: "unknown" };
+}
+
+/** POST /logout. The caller owns the post-logout destination. */
+export async function logout(): Promise<void> {
+  suppressAuthRedirect = true;
+  try {
+    await defaultAxiosInstance.post<void>("/logout");
+  } finally {
+    suppressAuthRedirect = false;
+  }
+}
+
+/** POST /recovery/send-code */
+export function sendRecoveryCode(payload: SendCodeRequest): Promise<void> {
+  return defaultAxiosInstance
+    .post<void>(`${AUTH_API_BASE}/recovery/send-code`, payload)
+    .then(() => undefined);
+}
+
+/** POST /recovery/reset-password */
+export function resetPassword(payload: ResetPasswordRequest): Promise<void> {
+  return defaultAxiosInstance
+    .post<void>(`${AUTH_API_BASE}/recovery/reset-password`, payload)
+    .then(() => undefined);
+}
+
+/** POST /system/setup (form-urlencoded first-run initialization). */
+export function setupSystem(payload: SetupRequest): Promise<void> {
+  const body = new URLSearchParams({
+    username: payload.username,
+    password: payload.password,
+    siteTitle: payload.siteTitle,
+    externalUrl: payload.externalUrl,
+  });
+  if (payload.email) {
+    body.set("email", payload.email);
+  }
+  if (payload.language) {
+    body.set("language", payload.language);
+  }
+  return defaultAxiosInstance
+    .post<void>(`${PUBLIC_API_BASE}/system/setup`, body, {
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    })
+    .then(() => undefined);
+}
+
+export { AUTH_API_BASE, PUBLIC_API_BASE };

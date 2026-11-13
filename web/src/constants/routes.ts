@@ -2,10 +2,10 @@
 export const AUTH_BASENAME = "/auth";
 
 export const AUTH_ROUTES = {
-  login: "/auth/",
+  login: "/auth",
   recovery: "/auth/recovery",
   legal: "/auth/legal",
-  signedIn: "/auth/done",
+  signedIn: "/auth/signed-in",
 } as const;
 
 export const CONSOLE_HOME = "/console";

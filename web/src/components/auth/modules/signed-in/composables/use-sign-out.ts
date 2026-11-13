@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AUTH_ROUTES } from "../../../../../constants";
+import { beginLogout, endLogout } from "../../../../../session/logout-state";
 import { useSession } from "../../../../../session/use-session";
 
 export function useSignOut() {
@@ -10,9 +11,11 @@ export function useSignOut() {
 
   const submit = async (): Promise<void> => {
     setLoading(true);
+    beginLogout();
     try {
       await signOut();
-      navigate(AUTH_ROUTES.login, { replace: true });
+      navigate(AUTH_ROUTES.signedIn, { replace: true });
+      endLogout();
     } finally {
       setLoading(false);
     }

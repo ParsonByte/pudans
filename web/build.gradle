@@ -26,7 +26,7 @@ tasks.register('pnpmBuild', Exec) {
     workingDir layout.projectDirectory
     commandLine 'bash', '-lc', 'npx --yes pnpm@latest run build'
     inputs.files(fileTree(layout.projectDirectory) {
-        include 'packages/**', 'public/**', 'src/**', 'console-src/**', 'uc-src/**', '*.html', '*.json', '*.yaml', '*.ts'
+        include 'packages/**', 'public/**', 'src/**', 'app/**', '*.html', '*.json', '*.yaml', '*.ts'
         exclude '**/node_modules/**', '**/dist/**', 'build/**'
     })
     outputs.dir(frontendDist)

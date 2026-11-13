@@ -33,9 +33,8 @@ test("every literal translation key exists in the bundle", () => {
   const missing = new Set();
   for (const file of [
     ...componentSources(join(web, "src/components")),
-    ...componentSources(join(web, "console-src")),
-    ...componentSources(join(web, "uc-src")),
     ...componentSources(join(web, "src/layouts")),
+    ...componentSources(join(web, "app")),
   ]) {
     const source = readFileSync(file, "utf8");
     for (const match of source.matchAll(/\bt\(["']([A-Za-z0-9_]+)["']/g)) {

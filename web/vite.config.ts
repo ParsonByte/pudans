@@ -128,7 +128,7 @@ export default defineConfig({
       },
       {
         find: /^@pudans\/api-client$/,
-        replacement: fileURLToPath(new URL("./packages/api-client/src/index.ts", import.meta.url)),
+        replacement: fileURLToPath(new URL("./packages/api-client/entry/index.ts", import.meta.url)),
       },
       {
         find: /^@pudans\/components$/,

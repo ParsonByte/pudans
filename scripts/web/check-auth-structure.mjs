@@ -2,9 +2,8 @@
 /**
  * Multi-page structure gate.
  *
- * Enforces the Halo-aligned layout: separate auth/console/uc HTML entries,
- * console-src/uc-src applications, the four allowed workspace packages, the
- * api-client entry/api/models shape and the removal of self-built HTTP layers.
+ * Enforces the app/ layout, the Halo api-client layout and the removal of
+ * self-built HTTP layers.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
@@ -12,6 +11,7 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))), "web");
 const src = join(root, "src");
+const app = join(root, "app");
 const problems = [];
 
 function entries(dir) {
@@ -26,10 +26,24 @@ function isDir(path) {
   }
 }
 
+function walk(dir, out = []) {
+  if (!isDir(dir)) return out;
+  for (const name of entries(dir)) {
+    if (["node_modules", "dist", "build", "coverage"].includes(name)) continue;
+    const full = join(dir, name);
+    if (isDir(full)) walk(full, out);
+    else out.push(full);
+  }
+  return out;
+}
+
 const webDirs = entries(root).filter((name) => isDir(join(root, name)));
-const allowedWebDirs = new Set(["packages", "src", "public", "console-src", "uc-src", "node_modules"]);
+const allowedWebDirs = new Set(["app", "packages", "public", "src", "node_modules"]);
 for (const name of webDirs) {
   if (!allowedWebDirs.has(name)) problems.push("unexpected directory in web root: " + name);
+}
+for (const legacy of ["console-src", "uc-src"]) {
+  if (entries(root).includes(legacy)) problems.push("legacy -src app directory still present: " + legacy);
 }
 
 const htmlFiles = entries(root).filter((name) => name.endsWith(".html")).sort();
@@ -37,7 +51,6 @@ const expectedHtml = ["auth.html", "console.html", "uc.html"];
 if (JSON.stringify(htmlFiles) !== JSON.stringify(expectedHtml)) {
   problems.push("web must expose auth.html, console.html and uc.html, found: " + JSON.stringify(htmlFiles));
 }
-if (entries(root).includes("index.html")) problems.push("single-entry index.html must be removed");
 
 const srcEntries = entries(src);
 const allowedSrcDirs = ["components", "constants", "hooks", "layouts", "redux", "router", "session", "util"];
@@ -49,8 +62,8 @@ for (const name of srcDirs) {
 for (const name of allowedSrcDirs) {
   if (!srcDirs.includes(name)) problems.push("missing src directory: " + name);
 }
-if (srcFiles.length !== 1 || srcFiles[0] !== "main.tsx") {
-  problems.push("src may only contain main.tsx as its single build entry, found: " + JSON.stringify(srcFiles));
+if (srcFiles.length > 0) {
+  problems.push("src is shared runtime only; unexpected root files: " + JSON.stringify(srcFiles));
 }
 
 const packageDirs = entries(join(root, "packages")).sort();
@@ -65,56 +78,61 @@ for (const required of ["entry", "src", "package.json"]) {
   if (!apiEntries.includes(required)) problems.push("api-client is missing " + required);
 }
 if (apiEntries.includes("client")) problems.push("api-client must not contain a self-built client layer");
-const apiSrc = entries(join(apiClient, "src")).sort();
-if (JSON.stringify(apiSrc) !== JSON.stringify(["api", "index.ts", "models"])) {
-  problems.push("api-client/src must only contain api, models and index.ts, found: " + JSON.stringify(apiSrc));
+const apiSrcEntries = entries(join(apiClient, "src")).sort();
+for (const required of ["api", "models", "index.ts"]) {
+  if (!apiSrcEntries.includes(required)) problems.push("api-client/src is missing " + required);
 }
-for (const required of ["entry/index.ts", "entry/api-client.ts"]) {
-  if (!entries(join(apiClient, required.split("/")[0])).includes(required.split("/")[1])) {
-    problems.push("api-client is missing " + required);
+if (apiSrcEntries.includes("client")) problems.push("api-client/src must not contain client/");
+for (const file of ["entry/api-client.ts", "entry/index.ts", "entry/utils/index.ts", "entry/patch/thumbnail.ts"]) {
+  if (!entries(join(apiClient, dirname(file))).includes(file.split("/").pop())) {
+    problems.push("api-client is missing " + file);
   }
 }
-
-const appComponents = entries(join(src, "components")).sort();
-if (JSON.stringify(appComponents) !== JSON.stringify(["auth", "setup"])) {
-  problems.push("src/components must only contain auth and setup, found: " + JSON.stringify(appComponents));
+const apiDirFiles = entries(join(apiClient, "src", "api"));
+if (!apiDirFiles.some((name) => /-v1alpha1(-console|-uc|-public)?-api\.ts$/.test(name))) {
+  problems.push("api-client/src/api does not contain generated resource API files");
+}
+if (apiDirFiles.includes("auth.ts") || apiDirFiles.includes("user.ts")) {
+  problems.push("api-client/src/api contains hand-written resource modules");
 }
 
-for (const app of ["console-src", "uc-src"]) {
-  const appRoot = join(root, app);
-  if (!isDir(appRoot)) {
-    problems.push("missing " + app);
+const authRoot = join(app, "auth");
+const consoleRoot = join(app, "console");
+const ucRoot = join(app, "uc");
+for (const [name, rootDir] of [["app/auth", authRoot], ["app/console", consoleRoot], ["app/uc", ucRoot]]) {
+  if (!isDir(rootDir)) {
+    problems.push("missing " + name);
     continue;
   }
-  for (const required of ["main.tsx", "app.tsx", "layouts", "router", "modules"]) {
-    if (!entries(appRoot).includes(required)) problems.push(app + " is missing " + required);
+  if (!entries(rootDir).includes("main.tsx")) problems.push(name + " is missing main.tsx");
+}
+for (const [name, appRoot] of [["app/console", consoleRoot], ["app/uc", ucRoot]]) {
+  for (const required of ["app.tsx", "layouts", "router", "modules"]) {
+    if (!entries(appRoot).includes(required)) problems.push(name + " is missing " + required);
   }
   for (const page of entries(join(appRoot, "modules"))) {
     const pageDir = join(appRoot, "modules", page);
     if (!isDir(pageDir)) continue;
     for (const required of ["module.ts", "index.tsx", "components", "composables"]) {
-      if (!entries(pageDir).includes(required)) problems.push(app + " page " + page + " is missing " + required);
+      if (!entries(pageDir).includes(required)) problems.push(name + " page " + page + " is missing " + required);
     }
     const moduleSource = readFileSync(join(pageDir, "module.ts"), "utf8");
-    if (!moduleSource.includes("definePlugin")) problems.push(app + " page " + page + " does not use definePlugin");
-    if (!moduleSource.includes("meta:")) problems.push(app + " page " + page + " has no route meta");
+    if (!moduleSource.includes("definePlugin")) problems.push(name + " page " + page + " does not use definePlugin");
+    if (!moduleSource.includes("meta:")) problems.push(name + " page " + page + " has no route meta");
   }
 }
+if (!entries(join(authRoot, "router")).includes("index.tsx")) problems.push("app/auth is missing router/index.tsx");
 
-const authRouter = readFileSync(join(src, "router/index.tsx"), "utf8");
-for (const route of ["/auth", "/setup", "/forbidden"]) {
+const authRouter = readFileSync(join(authRoot, "router", "index.tsx"), "utf8");
+for (const route of ["/auth", "/setup", "/forbidden", "signed-in"]) {
   if (!authRouter.includes(route)) problems.push("auth router is missing " + route);
 }
-if (authRouter.includes("components/console") || authRouter.includes("components/uc")) {
+if (/from\s+["'][^"']*app\/(console|uc)/.test(authRouter) || /path:\s*["']\/(console|uc)/.test(authRouter)) {
   problems.push("auth router still mounts console/uc pages");
 }
-if (authRouter.includes('path: "/console"') || authRouter.includes('path: "/uc"')) {
-  problems.push("console/uc routes must not be statically registered in src/router");
-}
 
-// Self-built HTTP transports are only allowed inside the api-client package.
 const bannedTransport = [/axios\.create\s*\(/, /new\s+axios\s*\(/, /\bfetch\s*\(/, /new\s+XMLHttpRequest\s*\(/];
-for (const dir of [src, join(root, "console-src"), join(root, "uc-src"), join(root, "packages", "components", "src"), join(root, "packages", "shared", "src")]) {
+for (const dir of [src, app, join(root, "packages", "components", "src"), join(root, "packages", "shared", "src")]) {
   for (const file of walk(dir)) {
     if (!/\.(ts|tsx)$/.test(file)) continue;
     const source = readFileSync(file, "utf8");
@@ -122,6 +140,12 @@ for (const dir of [src, join(root, "console-src"), join(root, "uc-src"), join(ro
       if (pattern.test(source)) problems.push("self-built HTTP transport in " + relative(root, file));
     }
   }
+}
+
+for (const file of walk(root)) {
+  if (!/\.(ts|tsx|css|html|md|json|mjs)$/.test(file)) continue;
+  const source = readFileSync(file, "utf8");
+  if (source.includes("/auth/?")) problems.push("trailing-slash auth redirect_uri in " + relative(root, file));
 }
 
 const bannedBrand = ["cloud", "reve"].join("");
@@ -147,16 +171,6 @@ const bannedBrand = ["cloud", "reve"].join("");
   }
 })(dirname(root));
 
-function walk(dir, out = []) {
-  if (!isDir(dir)) return out;
-  for (const name of entries(dir)) {
-    const full = join(dir, name);
-    if (isDir(full)) walk(full, out);
-    else out.push(full);
-  }
-  return out;
-}
-
 if (problems.length > 0) {
   console.error("Structure check failed:");
   for (const problem of problems) console.error(" - " + problem);
@@ -167,8 +181,9 @@ console.log(
     htmlFiles.join(", ") +
     "; src/" +
     srcDirs.join(", ") +
-    "; console/uc modules: " +
-    entries(join(root, "console-src", "modules")).length +
-    "/" +
-    entries(join(root, "uc-src", "modules")).length,
+    "; app/auth, app/console (" +
+    entries(join(consoleRoot, "modules")).filter((name) => isDir(join(consoleRoot, "modules", name))).length +
+    "), app/uc (" +
+    entries(join(ucRoot, "modules")).filter((name) => isDir(join(ucRoot, "modules", name))).length +
+    ").",
 );

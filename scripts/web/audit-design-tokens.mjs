@@ -14,8 +14,7 @@ const root = join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))), "we
 const repoRoot = dirname(root);
 const scanRoots = [
   join(root, "src"),
-  join(root, "console-src"),
-  join(root, "uc-src"),
+  join(root, "app"),
   join(root, "packages/components/src"),
   join(root, "packages/shared/src"),
 ];

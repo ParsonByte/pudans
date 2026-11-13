@@ -43,10 +43,10 @@ export function currentLocationWithSearch(): string {
 
 export function loginLocation(): string {
   const current = currentLocationWithSearch();
-  if (current.startsWith("/auth/")) {
-    return "/auth/";
+  if (current.startsWith("/auth")) {
+    return "/auth";
   }
-  return `/auth/?redirect_uri=${encodeURIComponent(current)}`;
+  return `/auth?redirect_uri=${encodeURIComponent(current)}`;
 }
 
 export function useRedirectUri(): string | null {

@@ -2,7 +2,7 @@
   "name": "@pudans/web",
   "version": "0.1.0",
   "private": true,
-  "description": "Pudans multi-page React frontend: auth, console and user centre.",
+  "description": "Pudans multi-page React frontend: auth, console and user centre under web/app.",
   "type": "module",
   "packageManager": "pnpm@12.21.0",
   "engines": {
@@ -30,7 +30,7 @@
     "check:boundary": "node ../scripts/web/check-component-boundary.mjs",
     "audit:tokens": "node ../scripts/web/audit-design-tokens.mjs --strict",
     "check:structure": "node ../scripts/web/check-auth-structure.mjs",
-    "verify": "pnpm typecheck && pnpm typecheck:packages && pnpm check:structure && pnpm check:cycles && pnpm check:exports && pnpm check:boundary && pnpm audit:tokens && pnpm test && pnpm lint && pnpm build"
+    "verify": "pnpm typecheck && pnpm typecheck:packages && pnpm check:structure && pnpm check:cycles && pnpm check:exports && pnpm check:boundary && pnpm audit:tokens && pnpm test && pnpm lint && pnpm build:packages && pnpm build"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

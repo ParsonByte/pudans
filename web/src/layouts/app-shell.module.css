@@ -1,0 +1,24 @@
+.pageFrame {
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.page {
+  animation: page-fade var(--pd-duration-fast) var(--pd-ease-standard);
+}
+
+@keyframes page-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    animation: none;
+  }
+}

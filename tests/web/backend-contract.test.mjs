@@ -3,8 +3,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const repo = new URL("../../", import.meta.url).pathname;
-const authApi = readFileSync(repo + "web/packages/api-client/src/api/auth.ts", "utf8");
-const systemApi = readFileSync(repo + "web/packages/api-client/src/api/system.ts", "utf8");
+const apiClientEntry = readFileSync(repo + "web/packages/api-client/entry/api-client.ts", "utf8");
 const publicEndpoint = readFileSync(
   repo + "appkernel/src/main/java/cn/tolim/pudans/security/authentication/login/LoginPublicEndpoint.java",
   "utf8",
@@ -38,17 +37,17 @@ const role = readFileSync(
   "utf8",
 );
 
-test("api-client resource modules match backend auth handlers", () => {
-  assert.ok(authApi.includes('"/apis/auth.api.pudans.tolim.cn/v1alpha1"'));
+test("api-client entry matches backend auth handlers", () => {
+  assert.ok(apiClientEntry.includes('"/apis/auth.api.pudans.tolim.cn/v1alpha1"'));
   for (const route of ["login/status", "login/providers", "login/session"]) {
-    assert.ok(authApi.includes(route), route);
+    assert.ok(apiClientEntry.includes(route), route);
     assert.ok(publicEndpoint.includes(route), route);
   }
-  assert.ok(authApi.includes("/login/public-key"));
+  assert.ok(apiClientEntry.includes("/login/public-key"));
   assert.ok(publicKey.includes("/login/public-key"));
   assert.ok(recovery.includes("/send-code"));
   assert.ok(recovery.includes("/reset-password"));
-  assert.ok(systemApi.includes("/apis/public.api.pudans.tolim.cn/v1alpha1"));
+  assert.ok(apiClientEntry.includes("/apis/public.api.pudans.tolim.cn/v1alpha1"));
 });
 
 test("auth, session, provider and status routes are public", () => {

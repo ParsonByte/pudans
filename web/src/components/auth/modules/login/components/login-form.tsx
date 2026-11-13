@@ -92,7 +92,7 @@ export function LoginForm() {
         />
 
         <div className={styles.formMeta}>
-          <Link className={styles.forgot} to="/recovery">
+          <Link className={styles.forgot} to="/auth/recovery">
             {t("forgot")}
           </Link>
         </div>
@@ -123,7 +123,7 @@ export function LoginForm() {
 
         <p className={styles.agreement}>
           {t("agreementPrefix")}
-          <Link to="/legal">{t("agreementTerms")}</Link>
+          <Link to="/auth/legal">{t("agreementTerms")}</Link>
         </p>
 
         {providers.length > 0 ? (

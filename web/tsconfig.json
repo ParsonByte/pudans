@@ -5,27 +5,43 @@
     "noEmit": true,
     "declaration": false,
     "declarationMap": false,
-    "types": ["node", "vite/client"],
+    "types": [
+      "node",
+      "vite/client"
+    ],
     "baseUrl": ".",
     "paths": {
-      "@pudans/api-client": ["./packages/api-client/src/index.ts"],
-      "@pudans/components": ["./packages/components/src/index.ts"],
-      "@pudans/shared": ["./packages/shared/src/index.ts"],
-      "@pudans/shared/theme": ["./packages/shared/src/theme/index.ts"],
-      "@pudans/shared/icons": ["./packages/shared/src/icons/index.ts"],
-      "@pudans/shared/hooks": ["./packages/shared/src/hooks/index.ts"]
+      "@pudans/api-client": [
+        "./packages/api-client/entry/index.ts"
+      ],
+      "@pudans/components": [
+        "./packages/components/src/index.ts"
+      ],
+      "@pudans/shared": [
+        "./packages/shared/src/index.ts"
+      ],
+      "@pudans/shared/theme": [
+        "./packages/shared/src/theme/index.ts"
+      ],
+      "@pudans/shared/icons": [
+        "./packages/shared/src/icons/index.ts"
+      ],
+      "@pudans/shared/hooks": [
+        "./packages/shared/src/hooks/index.ts"
+      ]
     }
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
-    "console-src/**/*.ts",
-    "console-src/**/*.tsx",
-    "uc-src/**/*.ts",
-    "uc-src/**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
     "vite.config.ts",
     "packages/*/vite.config.ts"
   ],
-  "exclude": ["**/node_modules", "**/dist"]
+  "exclude": [
+    "**/node_modules",
+    "**/dist"
+  ]
 }

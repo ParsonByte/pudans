@@ -8,8 +8,8 @@ import {
   getLoginStatus,
   listLoginProviders,
   login,
-  type LoginProvider,
-  type LoginStatus,
+  type LoginProviderView,
+  type LoginStatusView,
 } from "@pudans/api-client";
 import { useRedirectUri } from "../../../../../hooks/use-auth-navigation";
 import { encryptPassword } from "../../../../../util/password-crypto";
@@ -59,8 +59,8 @@ export function useLogin() {
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [providers, setProviders] = useState<LoginProvider[]>([]);
-  const [status, setStatus] = useState<LoginStatus | null>(null);
+  const [providers, setProviders] = useState<LoginProviderView[]>([]);
+  const [status, setStatus] = useState<LoginStatusView | null>(null);
   const [error, setError] = useState<string | null>(() => {
     if (typeof window === "undefined") {
       return null;
