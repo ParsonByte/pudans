@@ -15,6 +15,7 @@ export default definePlugin({
           name: "navSecurity",
           group: "security",
           icon: "mdi:shield-lock-outline",
+          iconActive: "mdi:shield-lock",
           priority: 10,
           mobile: true,
         },

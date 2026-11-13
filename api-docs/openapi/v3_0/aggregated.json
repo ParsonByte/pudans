@@ -1,15 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "pudans API",
-    "version": "1.0.0",
-    "description": "pudans enterprise identity and permission management API."
+    "title": "pudans",
+    "version": "1.0.0-SNAPSHOT"
   },
-  "servers": [
-    {
-      "url": "http://localhost:8090"
-    }
-  ],
   "security": [
     {
       "basicAuth": [],
@@ -38,8 +32,10 @@
         },
         "tags": [
           "AuthV1alpha1Auth"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/auth-providers/{name}/disable": {
       "put": {
@@ -71,7 +67,8 @@
         "tags": [
           "AuthV1alpha1Auth"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/auth-providers/{name}/enable": {
       "put": {
@@ -103,7 +100,8 @@
         "tags": [
           "AuthV1alpha1Auth"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/settings": {
       "get": {
@@ -123,8 +121,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/settings/disabled": {
       "put": {
@@ -153,8 +153,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/settings/enabled": {
       "put": {
@@ -183,8 +185,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/totp": {
       "post": {
@@ -213,8 +217,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/totp/-": {
       "delete": {
@@ -243,8 +249,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/totp/auth-link": {
       "get": {
@@ -264,8 +272,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authproviders": {
       "get": {
@@ -367,8 +377,10 @@
         },
         "tags": [
           "AuthProviderV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authproviders/{name}": {
       "delete": {
@@ -502,7 +514,8 @@
         "tags": [
           "AuthProviderV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/devices": {
       "get": {
@@ -618,8 +631,10 @@
         },
         "tags": [
           "DeviceV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/devices/{deviceId}": {
       "delete": {
@@ -644,7 +659,8 @@
         "tags": [
           "DeviceV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/devices/{name}": {
       "delete": {
@@ -778,7 +794,34 @@
         "tags": [
           "DeviceV1alpha1"
         ]
-      }
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/login/providers": {
+      "get": {
+        "description": "Lists the enabled non-form auth providers shown on the sign-in page.",
+        "operationId": "listLoginProviders",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoginProviderView"
+                  }
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuthV1alpha1Login"
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/login/public-key": {
       "get": {
@@ -798,8 +841,56 @@
         },
         "tags": [
           "Login"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/login/session": {
+      "get": {
+        "description": "Returns the current browser session for the auth application.",
+        "operationId": "getLoginSession",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuthV1alpha1Login"
+        ],
+        "parameters": []
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/login/status": {
+      "get": {
+        "description": "Returns the first-run state and post-login destination.",
+        "operationId": "getLoginStatus",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginStatusView"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuthV1alpha1Login"
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys": {
       "get": {
@@ -822,8 +913,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys/assertion/options": {
       "post": {
@@ -852,8 +945,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Public"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys/assertion/verify": {
       "post": {
@@ -883,8 +978,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Public"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys/registration/options": {
       "post": {
@@ -904,8 +1001,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys/registration/verify": {
       "post": {
@@ -935,8 +1034,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/personalaccesstokens": {
       "get": {
@@ -1063,8 +1164,10 @@
         "tags": [
           "PersonalAccessTokenV1alpha1",
           "PersonalAccessTokenV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/personalaccesstokens/{name}": {
       "delete": {
@@ -1073,15 +1176,6 @@
         "parameters": [
           {
             "description": "Name of personalaccesstoken",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "metadata.name of the PAT to delete.",
             "in": "path",
             "name": "name",
             "required": true,
@@ -1116,15 +1210,6 @@
         "parameters": [
           {
             "description": "Name of personalaccesstoken",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "metadata.name of the PAT to fetch.",
             "in": "path",
             "name": "name",
             "required": true,
@@ -1238,7 +1323,8 @@
         "tags": [
           "PersonalAccessTokenV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/personalaccesstokens/{name}/actions/restoration": {
       "put": {
@@ -1270,7 +1356,8 @@
         "tags": [
           "PersonalAccessTokenV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/personalaccesstokens/{name}/actions/revocation": {
       "put": {
@@ -1302,7 +1389,58 @@
         "tags": [
           "PersonalAccessTokenV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/recovery/reset-password": {
+      "post": {
+        "operationId": "resetPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "password-recovery-endpoint"
+        ],
+        "parameters": []
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/recovery/send-code": {
+      "post": {
+        "operationId": "sendCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "password-recovery-endpoint"
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/remembermetokens": {
       "get": {
@@ -1404,8 +1542,10 @@
         },
         "tags": [
           "RememberMeTokenV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/remembermetokens/{name}": {
       "delete": {
@@ -1539,7 +1679,8 @@
         "tags": [
           "RememberMeTokenV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections": {
       "get": {
@@ -1655,8 +1796,10 @@
         },
         "tags": [
           "UserConnectionV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections/oidc/bind": {
       "post": {
@@ -1686,8 +1829,10 @@
         },
         "tags": [
           "UserConnectionV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections/oidc/providers": {
       "get": {
@@ -1710,8 +1855,10 @@
         },
         "tags": [
           "UserConnectionV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections/oidc/{registrationId}/authorize-url": {
       "get": {
@@ -1750,7 +1897,8 @@
         "tags": [
           "UserConnectionV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections/{name}": {
       "delete": {
@@ -1759,14 +1907,6 @@
         "parameters": [
           {
             "description": "Name of userconnection",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "in": "path",
             "name": "name",
             "required": true,
@@ -1903,7 +2043,8 @@
         "tags": [
           "UserConnectionV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/auditlogs": {
       "get": {
@@ -1911,9 +2052,17 @@
         "operationId": "ListAuditLogs",
         "parameters": [
           {
-            "description": "Audit id cursor. Records with an id greater than the cursor are returned.",
+            "description": "Audit id cursor. With the default desc order, records with an id smaller than the cursor are returned; with order=asc, records with an id greater than the cursor are returned.",
             "in": "query",
             "name": "cursor",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Sort direction by audit id: desc (default) or asc.",
+            "in": "query",
+            "name": "order",
             "schema": {
               "type": "string"
             }
@@ -1999,7 +2148,8 @@
         "tags": [
           "AuditLogV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/auditlogs/graph": {
       "get": {
@@ -2040,7 +2190,8 @@
         "tags": [
           "AuditLogV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/auditlogs/replay/{traceFlowId}": {
       "get": {
@@ -2071,7 +2222,8 @@
         "tags": [
           "AuditLogV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/auditlogs/{auditId}/trace": {
       "get": {
@@ -2102,7 +2254,8 @@
         "tags": [
           "AuditLogV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/configmaps": {
       "get": {
@@ -2204,8 +2357,10 @@
         },
         "tags": [
           "ConfigMapV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/configmaps/{name}": {
       "delete": {
@@ -2339,7 +2494,31 @@
         "tags": [
           "ConfigMapV1alpha1"
         ]
-      }
+      },
+      "parameters": []
+    },
+    "/apis/console.api.pudans.tolim.cn/v1alpha1/dashboard/overview": {
+      "get": {
+        "description": "Aggregated overview and security posture statistics for the console dashboard.",
+        "operationId": "GetDashboardOverview",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardOverview"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "DashboardV1alpha1"
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/riskrules": {
       "get": {
@@ -2441,8 +2620,46 @@
         },
         "tags": [
           "RiskRuleV1alpha1"
+        ],
+        "parameters": []
+      },
+      "parameters": []
+    },
+    "/apis/console.api.pudans.tolim.cn/v1alpha1/riskrules/unban": {
+      "delete": {
+        "description": "Lift the active ban of a scene subject, e.g. an IP address.",
+        "operationId": "UnbanRiskSubject",
+        "parameters": [
+          {
+            "description": "Risk scene of the ban, e.g. request-flood.",
+            "in": "query",
+            "name": "scene",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Banned subject, e.g. the client IP.",
+            "in": "query",
+            "name": "subject",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {},
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "RiskRuleV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/riskrules/{name}": {
       "delete": {
@@ -2576,7 +2793,8 @@
         "tags": [
           "RiskRuleV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/rolebindings": {
       "get": {
@@ -2678,8 +2896,10 @@
         },
         "tags": [
           "RoleBindingV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/rolebindings/{name}": {
       "delete": {
@@ -2813,7 +3033,8 @@
         "tags": [
           "RoleBindingV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/roles": {
       "get": {
@@ -2915,8 +3136,10 @@
         },
         "tags": [
           "RoleV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/roles/{name}": {
       "delete": {
@@ -3050,7 +3273,8 @@
         "tags": [
           "RoleV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/secrets": {
       "get": {
@@ -3152,8 +3376,10 @@
         },
         "tags": [
           "SecretV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/secrets/{name}": {
       "delete": {
@@ -3287,7 +3513,8 @@
         "tags": [
           "SecretV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/systemconfigs/{group}": {
       "get": {
@@ -3353,7 +3580,8 @@
         "tags": [
           "SystemConfigV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/temprolebindings": {
       "get": {
@@ -3445,21 +3673,14 @@
         "description": "Apply for a temporary role binding.",
         "operationId": "ApplyTempRoleBinding",
         "requestBody": {
+          "required": true,
           "content": {
             "*/*": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/ApplyRequest"
-                  },
-                  {
-                    "$ref": "#/components/schemas/TempRoleBinding"
-                  }
-                ]
+                "$ref": "#/components/schemas/ApplyRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -3485,8 +3706,10 @@
         },
         "tags": [
           "TempRoleBindingV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/temprolebindings/{name}": {
       "delete": {
@@ -3630,7 +3853,8 @@
         "tags": [
           "TempRoleBindingV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/temprolebindings/{name}/approve": {
       "post": {
@@ -3650,8 +3874,19 @@
         },
         "tags": [
           "TempRoleBindingV1alpha1"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/temprolebindings/{name}/revoke": {
       "post": {
@@ -3671,8 +3906,19 @@
         },
         "tags": [
           "TempRoleBindingV1alpha1"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/usergroupbindings": {
       "get": {
@@ -3774,8 +4020,10 @@
         },
         "tags": [
           "UserGroupBindingV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/usergroupbindings/{name}": {
       "delete": {
@@ -3909,7 +4157,8 @@
         "tags": [
           "UserGroupBindingV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/usergroups": {
       "get": {
@@ -4011,8 +4260,10 @@
         },
         "tags": [
           "UserGroupV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/usergroups/{name}": {
       "delete": {
@@ -4146,7 +4397,8 @@
         "tags": [
           "UserGroupV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users": {
       "get": {
@@ -4203,6 +4455,14 @@
                 "type": "string"
               }
             }
+          },
+          {
+            "description": "Case-insensitive fuzzy match against displayName and email. Disables database paging and filters in memory.",
+            "in": "query",
+            "name": "keyword",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -4235,21 +4495,14 @@
         "description": "Create a local user backed by a Feishu identity.",
         "operationId": "CreateUser",
         "requestBody": {
+          "required": true,
           "content": {
             "*/*": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/CreateUserRequest"
-                  },
-                  {
-                    "$ref": "#/components/schemas/User"
-                  }
-                ]
+                "$ref": "#/components/schemas/CreateUserRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -4275,8 +4528,10 @@
         },
         "tags": [
           "UserV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/-": {
       "get": {
@@ -4296,7 +4551,8 @@
         },
         "tags": [
           "UserV1alpha1"
-        ]
+        ],
+        "parameters": []
       },
       "put": {
         "description": "Update the current user's local profile. displayName and email are read-only.",
@@ -4325,8 +4581,10 @@
         },
         "tags": [
           "UserV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/-/batch": {
       "post": {
@@ -4356,8 +4614,10 @@
         },
         "tags": [
           "UserV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/-/password": {
       "put": {
@@ -4387,8 +4647,10 @@
         },
         "tags": [
           "UserV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/-/permissions": {
       "get": {
@@ -4408,8 +4670,33 @@
         },
         "tags": [
           "UserV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
+    },
+    "/apis/console.api.pudans.tolim.cn/v1alpha1/users/-/ui-permissions": {
+      "get": {
+        "description": "Get the aggregated ui permission tags of the current user.",
+        "operationId": "GetMyUiPermissions",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "UserV1alpha1"
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/{name}": {
       "delete": {
@@ -4418,14 +4705,6 @@
         "parameters": [
           {
             "description": "Name of user",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "in": "path",
             "name": "name",
             "required": true,
@@ -4459,14 +4738,6 @@
         "parameters": [
           {
             "description": "Name of user",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "in": "path",
             "name": "name",
             "required": true,
@@ -4552,32 +4823,17 @@
             "schema": {
               "type": "string"
             }
-          },
-          {
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
           }
         ],
         "requestBody": {
+          "required": true,
           "content": {
             "*/*": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/UpdateProfileRequest"
-                  },
-                  {
-                    "$ref": "#/components/schemas/User"
-                  }
-                ]
+                "$ref": "#/components/schemas/UpdateProfileRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -4604,7 +4860,8 @@
         "tags": [
           "UserV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/{name}/password": {
       "put": {
@@ -4645,7 +4902,8 @@
         "tags": [
           "UserV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/{name}/permissions": {
       "get": {
@@ -4676,7 +4934,8 @@
         "tags": [
           "UserV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/{name}/usergroup": {
       "delete": {
@@ -4775,7 +5034,8 @@
         "tags": [
           "UserV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/{username}/disable": {
       "post": {
@@ -4807,7 +5067,8 @@
         "tags": [
           "UserV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/users/{username}/enable": {
       "post": {
@@ -4839,7 +5100,8 @@
         "tags": [
           "UserV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/webhooks": {
       "get": {
@@ -4941,8 +5203,10 @@
         },
         "tags": [
           "WebhookV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/console.api.pudans.tolim.cn/v1alpha1/webhooks/{name}": {
       "delete": {
@@ -5076,7 +5340,8 @@
         "tags": [
           "WebhookV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensiondefinitions": {
       "get": {
@@ -5178,8 +5443,10 @@
         },
         "tags": [
           "ExtensionDefinitionV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensiondefinitions/{name}": {
       "delete": {
@@ -5313,7 +5580,8 @@
         "tags": [
           "ExtensionDefinitionV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensionpointdefinitions": {
       "get": {
@@ -5415,8 +5683,10 @@
         },
         "tags": [
           "ExtensionPointDefinitionV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensionpointdefinitions/{name}": {
       "delete": {
@@ -5550,64 +5820,14 @@
         "tags": [
           "ExtensionPointDefinitionV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins": {
       "get": {
         "description": "List plugins using query criteria and sort params",
         "operationId": "ListPlugins",
         "parameters": [
-          {
-            "description": "Page number. Default is 0.",
-            "in": "query",
-            "name": "page",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "description": "Size number. Default is 0.",
-            "in": "query",
-            "name": "size",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "description": "Label selector. e.g.: hidden!=true",
-            "in": "query",
-            "name": "labelSelector",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          {
-            "description": "Field selector. e.g.: metadata.name==pudans",
-            "in": "query",
-            "name": "fieldSelector",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          {
-            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
-            "in": "query",
-            "name": "sort",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
           {
             "description": "Page number. Default is 0.",
             "in": "query",
@@ -5730,8 +5950,10 @@
         },
         "tags": [
           "PluginV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/-/install-from-uri": {
       "post": {
@@ -5761,8 +5983,10 @@
         },
         "tags": [
           "PluginV1alpha1Console"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/install": {
       "post": {
@@ -5792,8 +6016,10 @@
         },
         "tags": [
           "PluginV1alpha1Console"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}": {
       "delete": {
@@ -5927,7 +6153,8 @@
         "tags": [
           "PluginV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/json-config": {
       "get": {
@@ -5993,7 +6220,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/plugin-state": {
       "put": {
@@ -6035,7 +6263,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/reload": {
       "put": {
@@ -6067,7 +6296,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/reset-config": {
       "put": {
@@ -6099,7 +6329,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/setting": {
       "get": {
@@ -6131,7 +6362,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/upgrade": {
       "post": {
@@ -6173,7 +6405,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/upgrade-from-uri": {
       "post": {
@@ -6215,7 +6448,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/reverseproxies": {
       "get": {
@@ -6317,8 +6551,10 @@
         },
         "tags": [
           "ReverseProxyV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/reverseproxies/{name}": {
       "delete": {
@@ -6452,7 +6688,8 @@
         "tags": [
           "ReverseProxyV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/public.api.pudans.tolim.cn/v1alpha1/system/setup": {
       "get": {
@@ -6472,7 +6709,8 @@
         },
         "tags": [
           "SystemV1alpha1Public"
-        ]
+        ],
+        "parameters": []
       },
       "post": {
         "description": "Setup system",
@@ -6495,8 +6733,10 @@
         },
         "tags": [
           "SystemV1alpha1Public"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/annotationsettings": {
       "get": {
@@ -6621,8 +6861,10 @@
         },
         "tags": [
           "AnnotationSettingV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/annotationsettings/{name}": {
       "delete": {
@@ -6756,7 +6998,8 @@
         "tags": [
           "AnnotationSettingV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/settings": {
       "get": {
@@ -6858,8 +7101,10 @@
         },
         "tags": [
           "SettingV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/settings/{name}": {
       "delete": {
@@ -6993,7 +7238,8 @@
         "tags": [
           "SettingV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/user-preferences/{group}": {
       "get": {
@@ -7058,7 +7304,8 @@
         "tags": [
           "UserPreferenceV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/users/-": {
       "get": {
@@ -7078,8 +7325,10 @@
         },
         "tags": [
           "UserV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/users/-/password": {
       "put": {
@@ -7109,8 +7358,10 @@
         },
         "tags": [
           "UserV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/users/-/permissions": {
       "get": {
@@ -7130,8 +7381,10 @@
         },
         "tags": [
           "UserV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu": {
       "get": {
@@ -7164,7 +7417,8 @@
           }
         },
         "security": []
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/authorization/feishu": {
       "get": {
@@ -7178,8 +7432,10 @@
             "description": "Redirect to Feishu authorization endpoint."
           }
         },
-        "security": []
-      }
+        "security": [],
+        "parameters": []
+      },
+      "parameters": []
     }
   },
   "components": {
@@ -7922,6 +8178,56 @@
           }
         }
       },
+      "DashboardOverview": {
+        "description": "Aggregated dashboard overview with site info and security posture counters.",
+        "properties": {
+          "globalInfo": {
+            "$ref": "#/components/schemas/GlobalInfoSummary"
+          },
+          "loginTrend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoginTrendPoint"
+            }
+          },
+          "recentAuditLogs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecentOperation"
+            }
+          },
+          "roleDistribution": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleUserCount"
+            }
+          },
+          "todayOperations": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalRiskRules": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalRoles": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalUserGroups": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalUsers": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalWebhooks": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "Device": {
         "properties": {
           "apiVersion": {
@@ -8301,6 +8607,33 @@
           }
         }
       },
+      "GlobalInfoSummary": {
+        "description": "Basic site information aggregated from the system info service.",
+        "properties": {
+          "externalUrl": {
+            "type": "string"
+          },
+          "locale": {
+            "type": "string"
+          },
+          "siteSubtitle": {
+            "type": "string"
+          },
+          "siteTitle": {
+            "type": "string"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "uptimeSeconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "version": {
+            "type": "string"
+          }
+        }
+      },
       "GroupKind": {
         "properties": {
           "group": {
@@ -8435,6 +8768,47 @@
           "registeredAt": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "LoginProviderView": {
+        "properties": {
+          "authenticationUrl": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "helpPage": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginStatusView": {
+        "properties": {
+          "postLoginUrl": {
+            "type": "string"
+          },
+          "setupRequired": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LoginTrendPoint": {
+        "description": "Successful login count of one UTC day.",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string"
           }
         }
       },
@@ -9011,6 +9385,33 @@
           }
         }
       },
+      "RecentOperation": {
+        "description": "One recent audit operation rendered on the dashboard.",
+        "properties": {
+          "auditId": {
+            "type": "string"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "operator": {
+            "type": "string"
+          },
+          "resourceName": {
+            "type": "string"
+          },
+          "resourceType": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "RememberMeToken": {
         "properties": {
           "apiVersion": {
@@ -9203,6 +9604,32 @@
             "type": "string"
           }
         }
+      },
+      "ResetPasswordRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\d{6}"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "minLength": 0
+          },
+          "newPassword": {
+            "type": "string",
+            "maxLength": 257,
+            "minLength": 8,
+            "pattern": "^[A-Za-z0-9!@#$%^&*.?]+$"
+          }
+        },
+        "required": [
+          "code",
+          "email",
+          "newPassword"
+        ]
       },
       "ReverseProxy": {
         "properties": {
@@ -9557,6 +9984,21 @@
           }
         }
       },
+      "RoleUserCount": {
+        "description": "Number of accounts holding one role.",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string"
+          },
+          "users": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "Secret": {
         "properties": {
           "apiVersion": {
@@ -9648,6 +10090,47 @@
           "total",
           "totalPages"
         ]
+      },
+      "SendCodeRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "SessionView": {
+        "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "consoleAccessDisallowed": {
+            "type": "boolean"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "redirectUrl": {
+            "type": "string"
+          },
+          "uiPermissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "username": {
+            "type": "string"
+          }
+        }
       },
       "Setting": {
         "properties": {

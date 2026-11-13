@@ -1,15 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "pudans Extension API",
-    "version": "1.0.0",
-    "description": "pudans enterprise identity and permission management API."
+    "title": "pudans",
+    "version": "1.0.0-SNAPSHOT"
   },
-  "servers": [
-    {
-      "url": "http://localhost:8090"
-    }
-  ],
   "security": [
     {
       "basicAuth": [],
@@ -117,8 +111,10 @@
         },
         "tags": [
           "ExtensionDefinitionV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensiondefinitions/{name}": {
       "delete": {
@@ -252,7 +248,8 @@
         "tags": [
           "ExtensionDefinitionV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensionpointdefinitions": {
       "get": {
@@ -354,8 +351,10 @@
         },
         "tags": [
           "ExtensionPointDefinitionV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/extensionpointdefinitions/{name}": {
       "delete": {
@@ -489,64 +488,14 @@
         "tags": [
           "ExtensionPointDefinitionV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins": {
       "get": {
         "description": "List plugins using query criteria and sort params",
         "operationId": "ListPlugins",
         "parameters": [
-          {
-            "description": "Page number. Default is 0.",
-            "in": "query",
-            "name": "page",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "description": "Size number. Default is 0.",
-            "in": "query",
-            "name": "size",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          },
-          {
-            "description": "Label selector. e.g.: hidden!=true",
-            "in": "query",
-            "name": "labelSelector",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          {
-            "description": "Field selector. e.g.: metadata.name==pudans",
-            "in": "query",
-            "name": "fieldSelector",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          {
-            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
-            "in": "query",
-            "name": "sort",
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          },
           {
             "description": "Page number. Default is 0.",
             "in": "query",
@@ -669,8 +618,10 @@
         },
         "tags": [
           "PluginV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/-/install-from-uri": {
       "post": {
@@ -700,8 +651,10 @@
         },
         "tags": [
           "PluginV1alpha1Console"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/install": {
       "post": {
@@ -731,8 +684,10 @@
         },
         "tags": [
           "PluginV1alpha1Console"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}": {
       "delete": {
@@ -866,7 +821,8 @@
         "tags": [
           "PluginV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/json-config": {
       "get": {
@@ -932,7 +888,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/plugin-state": {
       "put": {
@@ -974,7 +931,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/reload": {
       "put": {
@@ -1006,7 +964,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/reset-config": {
       "put": {
@@ -1038,7 +997,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/setting": {
       "get": {
@@ -1070,7 +1030,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/upgrade": {
       "post": {
@@ -1112,7 +1073,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/plugins/{name}/upgrade-from-uri": {
       "post": {
@@ -1154,7 +1116,8 @@
         "tags": [
           "PluginV1alpha1Console"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/reverseproxies": {
       "get": {
@@ -1256,8 +1219,10 @@
         },
         "tags": [
           "ReverseProxyV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/extension.api.pudans.tolim.cn/v1alpha1/reverseproxies/{name}": {
       "delete": {
@@ -1391,7 +1356,8 @@
         "tags": [
           "ReverseProxyV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     }
   },
   "components": {

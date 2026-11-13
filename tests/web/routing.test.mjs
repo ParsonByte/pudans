@@ -77,6 +77,19 @@ test("vite builds auth, console and uc app entries into ui-assets", () => {
   }
 });
 
+test("dashboard shell has page and icon transitions", () => {
+  const shell = readFileSync(join(web, "src/layouts/app-shell.tsx"), "utf8");
+  assert.ok(shell.includes("SwitchTransition"));
+  assert.ok(shell.includes("CSSTransition"));
+  assert.ok(shell.includes("styles.pageEnter"));
+  assert.ok(shell.includes("item.iconActive"));
+  const dashboard = readFileSync(join(web, "app/console/modules/dashboard/module.ts"), "utf8");
+  assert.ok(dashboard.includes("iconActive"));
+  const css = readFileSync(join(web, "src/layouts/app-shell.module.css"), "utf8");
+  assert.ok(css.includes(".pageEnterActive"));
+  assert.ok(css.includes("var(--pd-duration-fast)"));
+});
+
 test("signed-in and recovery routes are reachable from auth links", () => {
   const authRouter = readFileSync(join(web, "app/auth/router/index.tsx"), "utf8");
   assert.ok(authRouter.includes('path: "recovery"'));

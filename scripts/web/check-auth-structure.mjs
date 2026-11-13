@@ -2,7 +2,7 @@
 /**
  * Multi-page structure gate.
  *
- * Enforces the app/ layout, the Halo api-client layout and the removal of
+ * Enforces the app/ layout, the reference api-client layout and the removal of
  * self-built HTTP layers.
  */
 import { readFileSync, readdirSync, statSync } from "node:fs";

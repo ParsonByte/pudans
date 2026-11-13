@@ -1,15 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "pudans Auth API",
-    "version": "1.0.0",
-    "description": "pudans enterprise identity and permission management API."
+    "title": "pudans",
+    "version": "1.0.0-SNAPSHOT"
   },
-  "servers": [
-    {
-      "url": "http://localhost:8090"
-    }
-  ],
   "security": [
     {
       "basicAuth": [],
@@ -38,8 +32,10 @@
         },
         "tags": [
           "AuthV1alpha1Auth"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/auth-providers/{name}/disable": {
       "put": {
@@ -71,7 +67,8 @@
         "tags": [
           "AuthV1alpha1Auth"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/auth-providers/{name}/enable": {
       "put": {
@@ -103,7 +100,8 @@
         "tags": [
           "AuthV1alpha1Auth"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/settings": {
       "get": {
@@ -123,8 +121,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/settings/disabled": {
       "put": {
@@ -153,8 +153,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/settings/enabled": {
       "put": {
@@ -183,8 +185,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/totp": {
       "post": {
@@ -213,8 +217,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/totp/-": {
       "delete": {
@@ -243,8 +249,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authentications/two-factor/totp/auth-link": {
       "get": {
@@ -264,8 +272,10 @@
         },
         "tags": [
           "TwoFactorAuthV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authproviders": {
       "get": {
@@ -367,8 +377,10 @@
         },
         "tags": [
           "AuthProviderV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/authproviders/{name}": {
       "delete": {
@@ -502,7 +514,8 @@
         "tags": [
           "AuthProviderV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/devices": {
       "get": {
@@ -618,8 +631,10 @@
         },
         "tags": [
           "DeviceV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/devices/{deviceId}": {
       "delete": {
@@ -644,7 +659,8 @@
         "tags": [
           "DeviceV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/devices/{name}": {
       "delete": {
@@ -778,7 +794,34 @@
         "tags": [
           "DeviceV1alpha1"
         ]
-      }
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/login/providers": {
+      "get": {
+        "description": "Lists the enabled non-form auth providers shown on the sign-in page.",
+        "operationId": "listLoginProviders",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LoginProviderView"
+                  }
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuthV1alpha1Login"
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/login/public-key": {
       "get": {
@@ -798,8 +841,56 @@
         },
         "tags": [
           "Login"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/login/session": {
+      "get": {
+        "description": "Returns the current browser session for the auth application.",
+        "operationId": "getLoginSession",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionView"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuthV1alpha1Login"
+        ],
+        "parameters": []
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/login/status": {
+      "get": {
+        "description": "Returns the first-run state and post-login destination.",
+        "operationId": "getLoginStatus",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginStatusView"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuthV1alpha1Login"
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys": {
       "get": {
@@ -822,8 +913,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys/assertion/options": {
       "post": {
@@ -852,8 +945,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Public"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys/assertion/verify": {
       "post": {
@@ -883,8 +978,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Public"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys/registration/options": {
       "post": {
@@ -904,8 +1001,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/passkeys/registration/verify": {
       "post": {
@@ -935,8 +1034,10 @@
         },
         "tags": [
           "PasskeyV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/personalaccesstokens": {
       "get": {
@@ -1063,8 +1164,10 @@
         "tags": [
           "PersonalAccessTokenV1alpha1",
           "PersonalAccessTokenV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/personalaccesstokens/{name}": {
       "delete": {
@@ -1073,15 +1176,6 @@
         "parameters": [
           {
             "description": "Name of personalaccesstoken",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "metadata.name of the PAT to delete.",
             "in": "path",
             "name": "name",
             "required": true,
@@ -1116,15 +1210,6 @@
         "parameters": [
           {
             "description": "Name of personalaccesstoken",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "metadata.name of the PAT to fetch.",
             "in": "path",
             "name": "name",
             "required": true,
@@ -1238,7 +1323,8 @@
         "tags": [
           "PersonalAccessTokenV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/personalaccesstokens/{name}/actions/restoration": {
       "put": {
@@ -1270,7 +1356,8 @@
         "tags": [
           "PersonalAccessTokenV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/personalaccesstokens/{name}/actions/revocation": {
       "put": {
@@ -1302,7 +1389,58 @@
         "tags": [
           "PersonalAccessTokenV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/recovery/reset-password": {
+      "post": {
+        "operationId": "resetPassword",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "password-recovery-endpoint"
+        ],
+        "parameters": []
+      },
+      "parameters": []
+    },
+    "/apis/auth.api.pudans.tolim.cn/v1alpha1/recovery/send-code": {
+      "post": {
+        "operationId": "sendCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "password-recovery-endpoint"
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/remembermetokens": {
       "get": {
@@ -1404,8 +1542,10 @@
         },
         "tags": [
           "RememberMeTokenV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/remembermetokens/{name}": {
       "delete": {
@@ -1539,7 +1679,8 @@
         "tags": [
           "RememberMeTokenV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections": {
       "get": {
@@ -1655,8 +1796,10 @@
         },
         "tags": [
           "UserConnectionV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections/oidc/bind": {
       "post": {
@@ -1686,8 +1829,10 @@
         },
         "tags": [
           "UserConnectionV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections/oidc/providers": {
       "get": {
@@ -1710,8 +1855,10 @@
         },
         "tags": [
           "UserConnectionV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections/oidc/{registrationId}/authorize-url": {
       "get": {
@@ -1750,7 +1897,8 @@
         "tags": [
           "UserConnectionV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/userconnections/{name}": {
       "delete": {
@@ -1759,14 +1907,6 @@
         "parameters": [
           {
             "description": "Name of userconnection",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
             "in": "path",
             "name": "name",
             "required": true,
@@ -1903,7 +2043,8 @@
         "tags": [
           "UserConnectionV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu": {
       "get": {
@@ -1936,7 +2077,8 @@
           }
         },
         "security": []
-      }
+      },
+      "parameters": []
     },
     "/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/authorization/feishu": {
       "get": {
@@ -1950,8 +2092,10 @@
             "description": "Redirect to Feishu authorization endpoint."
           }
         },
-        "security": []
-      }
+        "security": [],
+        "parameters": []
+      },
+      "parameters": []
     }
   },
   "components": {
@@ -2367,6 +2511,35 @@
           "displayName",
           "name"
         ]
+      },
+      "LoginProviderView": {
+        "properties": {
+          "authenticationUrl": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "helpPage": {
+            "type": "string"
+          },
+          "logo": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginStatusView": {
+        "properties": {
+          "postLoginUrl": {
+            "type": "string"
+          },
+          "setupRequired": {
+            "type": "boolean"
+          }
+        }
       },
       "Metadata": {
         "properties": {
@@ -2822,6 +2995,73 @@
           "path",
           "value"
         ]
+      },
+      "ResetPasswordRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "\\d{6}"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "minLength": 0
+          },
+          "newPassword": {
+            "type": "string",
+            "maxLength": 257,
+            "minLength": 8,
+            "pattern": "^[A-Za-z0-9!@#$%^&*.?]+$"
+          }
+        },
+        "required": [
+          "code",
+          "email",
+          "newPassword"
+        ]
+      },
+      "SendCodeRequest": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "maxLength": 254,
+            "minLength": 0
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "SessionView": {
+        "properties": {
+          "authenticated": {
+            "type": "boolean"
+          },
+          "avatar": {
+            "type": "string"
+          },
+          "consoleAccessDisallowed": {
+            "type": "boolean"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "redirectUrl": {
+            "type": "string"
+          },
+          "uiPermissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "username": {
+            "type": "string"
+          }
+        }
       },
       "SettingRef": {
         "properties": {

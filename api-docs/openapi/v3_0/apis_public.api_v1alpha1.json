@@ -1,15 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "pudans Public API",
-    "version": "1.0.0",
-    "description": "pudans enterprise identity and permission management API."
+    "title": "pudans",
+    "version": "1.0.0-SNAPSHOT"
   },
-  "servers": [
-    {
-      "url": "http://localhost:8090"
-    }
-  ],
   "security": [
     {
       "basicAuth": [],
@@ -35,7 +29,8 @@
         },
         "tags": [
           "SystemV1alpha1Public"
-        ]
+        ],
+        "parameters": []
       },
       "post": {
         "description": "Setup system",
@@ -58,8 +53,10 @@
         },
         "tags": [
           "SystemV1alpha1Public"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     }
   },
   "components": {

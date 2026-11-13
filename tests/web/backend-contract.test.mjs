@@ -4,6 +4,18 @@ import test from "node:test";
 
 const repo = new URL("../../", import.meta.url).pathname;
 const apiClientEntry = readFileSync(repo + "web/packages/api-client/entry/api-client.ts", "utf8");
+const loginApiClass = readFileSync(
+  repo + "web/packages/api-client/src/api/auth-v1alpha1-login-api.ts",
+  "utf8",
+);
+const publicKeyApiClass = readFileSync(
+  repo + "web/packages/api-client/src/api/login-api.ts",
+  "utf8",
+);
+const recoveryApiClass = readFileSync(
+  repo + "web/packages/api-client/src/api/password-recovery-endpoint-api.ts",
+  "utf8",
+);
 const publicEndpoint = readFileSync(
   repo + "appkernel/src/main/java/cn/tolim/pudans/security/authentication/login/LoginPublicEndpoint.java",
   "utf8",
@@ -37,16 +49,20 @@ const role = readFileSync(
   "utf8",
 );
 
-test("api-client entry matches backend auth handlers", () => {
-  assert.ok(apiClientEntry.includes('"/apis/auth.api.pudans.tolim.cn/v1alpha1"'));
+test("generated api-client classes match backend auth handlers", () => {
+  assert.ok(loginApiClass.includes("/apis/auth.api.pudans.tolim.cn/v1alpha1"));
   for (const route of ["login/status", "login/providers", "login/session"]) {
-    assert.ok(apiClientEntry.includes(route), route);
+    assert.ok(loginApiClass.includes(route), route);
     assert.ok(publicEndpoint.includes(route), route);
   }
-  assert.ok(apiClientEntry.includes("/login/public-key"));
+  assert.ok(publicKeyApiClass.includes("/login/public-key"));
   assert.ok(publicKey.includes("/login/public-key"));
+  assert.ok(recoveryApiClass.includes("/send-code"));
+  assert.ok(recoveryApiClass.includes("/reset-password"));
   assert.ok(recovery.includes("/send-code"));
   assert.ok(recovery.includes("/reset-password"));
+  assert.ok(apiClientEntry.includes("coreApiClient.auth.loginSession"));
+  assert.ok(apiClientEntry.includes("coreApiClient.auth.recovery"));
   assert.ok(apiClientEntry.includes("/apis/public.api.pudans.tolim.cn/v1alpha1"));
 });
 

@@ -1,6 +1,7 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation, useMatches } from "react-router-dom";
+import { NavLink, useLocation, useMatches, useOutlet } from "react-router-dom";
+import { CSSTransition, SwitchTransition } from "react-transition-group";
 import {
   AppBar,
   Avatar,
@@ -17,12 +18,13 @@ import {
   MenuItem,
   Stack,
   Toolbar,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
 import { darken, lighten } from "@mui/material/styles";
-import { Icon, LanguageSwitcher, ThemeSwitch } from "@pudans/components";
+import { Icon, ThemeSwitch } from "@pudans/components";
 import type { RegisteredMenu } from "@pudans/shared";
 import { BRAND_MARK, BRAND_NAME, BRAND_WORDMARK } from "../constants";
 import { navigateToApp } from "../hooks/use-auth-navigation";
@@ -92,6 +94,8 @@ export function AppShell({
   const { session, signOut } = useSession();
   const location = useLocation();
   const matches = useMatches();
+  const outlet = useOutlet();
+  const pageRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
   const theme = useTheme();
   const mobile = useMediaQuery(theme.breakpoints.down("sm"));
@@ -170,8 +174,41 @@ export function AppShell({
           },
         }}
       >
-        <Box sx={{ width: 20, height: 20, mr: "14px", display: "flex", alignItems: "center", color: active ? "primary.main" : "action.active" }}>
-          <Icon name={item.icon} size={20} />
+        <Box
+          sx={{
+            position: "relative",
+            width: 20,
+            height: 20,
+            mr: "14px",
+            color: active ? "primary.main" : "action.active",
+          }}
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: active ? 0 : 1,
+              transition: theme.transitions.create("opacity"),
+            }}
+          >
+            <Icon name={item.icon} size={20} />
+          </Box>
+          <Box
+            sx={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: active ? 1 : 0,
+              transition: theme.transitions.create("opacity"),
+            }}
+          >
+            <Icon name={item.iconActive} size={20} />
+          </Box>
         </Box>
         <Typography variant="body2" noWrap sx={{ color: active ? "text.primary" : "text.secondary" }}>
           {t(item.name)}
@@ -304,9 +341,10 @@ export function AppShell({
         >
           {drawerContent}
         </Drawer>
-      ) : sidebarOpen ? (
+      ) : (
         <Box
           component="aside"
+          aria-hidden={!sidebarOpen}
           sx={{
             position: "fixed",
             top: 0,
@@ -316,11 +354,17 @@ export function AppShell({
             zIndex: theme.zIndex.drawer,
             backgroundColor: shellBg,
             overflow: "hidden",
+            transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+            pointerEvents: sidebarOpen ? "auto" : "none",
+            transition: theme.transitions.create("transform", {
+              easing: theme.transitions.easing.easeInOut,
+              duration: theme.transitions.duration.standard,
+            }),
           }}
         >
           {drawerContent}
         </Box>
-      ) : null}
+      )}
 
       <AppBar
         position="fixed"
@@ -333,8 +377,8 @@ export function AppShell({
           color: "text.primary",
           boxShadow: "none",
           transition: theme.transitions.create(["width", "margin"], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
+            easing: theme.transitions.easing.easeInOut,
+            duration: theme.transitions.duration.standard,
           }),
         }}
       >
@@ -359,19 +403,15 @@ export function AppShell({
           <Box sx={{ flexGrow: 1 }} />
           <Stack direction="row" spacing={0} sx={{ alignItems: "center" }}>
             <ThemeSwitch size="sm" aria-label={t("theme")} />
-            <LanguageSwitcher
-              compact
-              ariaLabel={t("language")}
-              languages={[
-                { code: "zh-CN", label: t("languageZh") },
-                { code: "en-US", label: t("languageEn") },
-              ]}
-              value={currentLanguage}
-              onChange={(locale) => {
-                dispatch(setLocale(locale));
-                void i18n.changeLanguage(locale);
-              }}
-            />
+            <Tooltip title={t("accountSettings")}>
+              <IconButton
+                size="large"
+                aria-label={t("accountSettings")}
+                onClick={() => navigateToApp("/uc/security")}
+              >
+                <Icon name="mdi:cog-outline" size={22} />
+              </IconButton>
+            </Tooltip>
             <IconButton
               size="large"
               aria-label={t("account")}
@@ -402,8 +442,8 @@ export function AppShell({
           mr: mobile ? 0 : 1,
           mb: mobile ? 0 : 1,
           transition: theme.transitions.create("margin", {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
+            easing: theme.transitions.easing.easeInOut,
+            duration: theme.transitions.duration.standard,
           }),
         }}
       >
@@ -422,24 +462,38 @@ export function AppShell({
           }}
         >
           <Container maxWidth="xl" sx={{ py: 4 }}>
-            <Box sx={{ mb: 4 }}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5, color: "text.secondary" }}>
-                {[t(brandSubKey), ...titles].map((crumb, index, all) => (
-                  <Fragment key={crumb + index}>
-                    <Typography variant="body2" sx={{ color: index === all.length - 1 ? "text.primary" : "text.secondary" }}>
-                      {crumb}
+            <SwitchTransition mode="out-in">
+              <CSSTransition
+                key={location.pathname}
+                nodeRef={pageRef}
+                timeout={150}
+                classNames={{
+                  enter: styles.pageEnter,
+                  enterActive: styles.pageEnterActive,
+                  exit: styles.pageExit,
+                  exitActive: styles.pageExitActive,
+                }}
+              >
+                <Box ref={pageRef}>
+                  <Box sx={{ mb: 4 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5, color: "text.secondary" }}>
+                      {[t(brandSubKey), ...titles].map((crumb, index, all) => (
+                        <Fragment key={crumb + index}>
+                          <Typography variant="body2" sx={{ color: index === all.length - 1 ? "text.primary" : "text.secondary" }}>
+                            {crumb}
+                          </Typography>
+                          {index < all.length - 1 ? <Icon name="mdi:chevron-right" size={14} /> : null}
+                        </Fragment>
+                      ))}
+                    </Box>
+                    <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                      {pageTitle}
                     </Typography>
-                    {index < all.length - 1 ? <Icon name="mdi:chevron-right" size={14} /> : null}
-                  </Fragment>
-                ))}
-              </Box>
-              <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                {pageTitle}
-              </Typography>
-            </Box>
-            <Box key={location.pathname} className={styles.page}>
-              <Outlet />
-            </Box>
+                  </Box>
+                  {outlet}
+                </Box>
+              </CSSTransition>
+            </SwitchTransition>
           </Container>
         </Box>
       </Box>
@@ -475,6 +529,34 @@ export function AppShell({
             <ListItemText>{t(switchTarget.labelKey)}</ListItemText>
           </MenuItem>
         ) : null}
+        <Divider />
+        <MenuItem
+          selected={currentLanguage === "zh-CN"}
+          onClick={() => {
+            setUserMenuAnchor(null);
+            dispatch(setLocale("zh-CN"));
+            void i18n.changeLanguage("zh-CN");
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 32 }}>
+            <Icon name="mdi:translate" size={16} />
+          </ListItemIcon>
+          <ListItemText>{t("languageZh")}</ListItemText>
+        </MenuItem>
+        <MenuItem
+          selected={currentLanguage === "en-US"}
+          onClick={() => {
+            setUserMenuAnchor(null);
+            dispatch(setLocale("en-US"));
+            void i18n.changeLanguage("en-US");
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 32 }}>
+            <Icon name="mdi:translate" size={16} />
+          </ListItemIcon>
+          <ListItemText>{t("languageEn")}</ListItemText>
+        </MenuItem>
+        <Divider />
         <MenuItem
           onClick={() => {
             setUserMenuAnchor(null);

@@ -1,15 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "pudans User Center API",
-    "version": "1.0.0",
-    "description": "pudans enterprise identity and permission management API."
+    "title": "pudans",
+    "version": "1.0.0-SNAPSHOT"
   },
-  "servers": [
-    {
-      "url": "http://localhost:8090"
-    }
-  ],
   "security": [
     {
       "basicAuth": [],
@@ -140,8 +134,10 @@
         },
         "tags": [
           "AnnotationSettingV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/annotationsettings/{name}": {
       "delete": {
@@ -275,7 +271,8 @@
         "tags": [
           "AnnotationSettingV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/settings": {
       "get": {
@@ -377,8 +374,10 @@
         },
         "tags": [
           "SettingV1alpha1"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/settings/{name}": {
       "delete": {
@@ -512,7 +511,8 @@
         "tags": [
           "SettingV1alpha1"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/user-preferences/{group}": {
       "get": {
@@ -577,7 +577,8 @@
         "tags": [
           "UserPreferenceV1alpha1Uc"
         ]
-      }
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/users/-": {
       "get": {
@@ -597,8 +598,10 @@
         },
         "tags": [
           "UserV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/users/-/password": {
       "put": {
@@ -628,8 +631,10 @@
         },
         "tags": [
           "UserV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     },
     "/apis/uc.api.pudans.tolim.cn/v1alpha1/users/-/permissions": {
       "get": {
@@ -649,8 +654,10 @@
         },
         "tags": [
           "UserV1alpha1Uc"
-        ]
-      }
+        ],
+        "parameters": []
+      },
+      "parameters": []
     }
   },
   "components": {

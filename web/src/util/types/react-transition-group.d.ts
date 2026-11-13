@@ -39,7 +39,13 @@ declare module "react-transition-group" {
     children?: ReactNode;
   }
 
+  export interface SwitchTransitionProps {
+    mode?: "out-in" | "in-out";
+    children?: ReactNode;
+  }
+
   export const CSSTransition: ComponentType<CSSTransitionProps>;
+  export const SwitchTransition: ComponentType<SwitchTransitionProps>;
   export const Transition: ComponentType<Record<string, unknown>>;
   export const TransitionGroup: ComponentType<TransitionGroupProps>;
 }

@@ -15,6 +15,7 @@ export default definePlugin({
           name: "navAuthorizations",
           group: "security",
           icon: "mdi:key-variant",
+          iconActive: "mdi:key-variant",
           priority: 20,
           mobile: true,
         },

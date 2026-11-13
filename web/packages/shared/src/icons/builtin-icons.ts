@@ -106,6 +106,21 @@ export const builtinMdiCollection = {
     "alert-circle-outline": {
       body: '<path fill="currentColor" d="M11 15h2v2h-2zm0-8h2v6h-2zm1-5C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2m0 18a8 8 0 0 1-8-8a8 8 0 0 1 8-8a8 8 0 0 1 8 8a8 8 0 0 1-8 8"/>',
     },
+    "view-dashboard": {
+      body: '<path fill="currentColor" d="M13 3v6h8V3m-8 18h8V11h-8M3 21h8v-6H3m0-2h8V3H3z"/>',
+    },
+    "account-group": {
+      body: '<path fill="currentColor" d="M12 5.5A3.5 3.5 0 0 1 15.5 9a3.5 3.5 0 0 1-3.5 3.5A3.5 3.5 0 0 1 8.5 9A3.5 3.5 0 0 1 12 5.5M12 2a7 7 0 0 0-7 7a7 7 0 0 0 7 7a7 7 0 0 0 7-7a7 7 0 0 0-7-7m0 18c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4Z"/>',
+    },
+    "file-document": {
+      body: '<path fill="currentColor" d="M13 9V3.5L18.5 9M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6H6Z"/>',
+    },
+    "account-circle": {
+      body: '<path fill="currentColor" d="M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2m0 5a3 3 0 0 1 3 3a3 3 0 0 1-3 3a3 3 0 0 1-3-3a3 3 0 0 1 3-3m0 12c-2.5 0-4.71-1.28-6-3.22c.03-1.99 4-3.08 6-3.08c2 0 5.97 1.09 6 3.08C16.71 17.72 14.5 19 12 19Z"/>',
+    },
+    "shield-lock": {
+      body: '<path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12c5.16-1.26 9-6.45 9-12V5zm0 2.18L19 6.3V11c0 4.34-2.93 8.58-7 9.82C7.93 19.58 5 15.34 5 11V6.3zM12 9a2 2 0 0 0-1 3.73V16h2v-3.27A2 2 0 0 0 12 9"/>',
+    },
     "view-dashboard-outline": {
       body: '<path fill="currentColor" d="M19 5v2h-4V5zM9 5v6H5V5zm10 8v6h-4v-6zM9 17v2H5v-2zM21 3h-8v6h8zM11 3H3v10h8zm10 8h-8v10h8zm-10 4H3v6h8z"/>',
     },

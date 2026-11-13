@@ -8,6 +8,8 @@ export interface MenuMeta {
   group: string;
   /** Iconify identifier, for example "mdi:view-dashboard-outline". */
   icon: string;
+  /** Filled icon shown while the item is active. */
+  iconActive?: string;
   /** Lower values sort first. Defaults to 100. */
   priority?: number;
   /** Whether the item may appear in the mobile navigation. Defaults to true. */
@@ -51,6 +53,7 @@ export interface RegisteredMenu {
   name: string;
   group: string;
   icon: string;
+  iconActive: string;
   priority: number;
   mobile: boolean;
   /** Router-relative path, for example "/users". */

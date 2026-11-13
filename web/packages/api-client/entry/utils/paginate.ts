@@ -8,7 +8,7 @@ type ListResponse<TItem> = {
 /**
  * Query all items from a generated list function.
  *
- * Mirrors Halo's entry/utils/paginate helper so infinite pagination is shared
+ * Mirrors the reference entry/utils/paginate helper so infinite pagination is shared
  * by every resource instead of being reimplemented per page.
  */
 export async function paginate<TParams extends { page?: number }, TItem>(

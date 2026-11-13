@@ -8,7 +8,7 @@ import type {
 } from "@pudans/shared";
 
 export interface PluginRouteRegistrationOptions {
-  /** module.ts entries keyed by their Vite glob path, exactly like Halo. */
+  /** module.ts entries keyed by their Vite glob path, exactly like reference. */
   modules: Record<string, PluginModule>;
   platform: "console" | "uc";
   permissions: readonly string[];
@@ -63,7 +63,7 @@ function toRouterPath(path: string): string {
 }
 
 /**
- * Halo's route registration, translated to React Router: module routes are
+ * the reference route registration, translated to React Router: module routes are
  * filtered by their meta.permissions before they are registered, the menu is
  * collected from the same surviving set, and parentName attaches a route to
  * the layout route. A filtered route is remembered so a direct URL lands on
@@ -187,6 +187,7 @@ function collectMenu(nodes: readonly RouteNode[]): RegisteredMenu[] {
         name: meta.name,
         group: meta.group,
         icon: meta.icon,
+        iconActive: meta.iconActive ?? meta.icon,
         priority: meta.priority ?? 100,
         mobile: meta.mobile ?? true,
         path: node.fullPath,

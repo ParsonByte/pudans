@@ -6,8 +6,10 @@ api/annotation-setting-v1alpha1-api.ts
 api/audit-log-v1alpha1-api.ts
 api/auth-provider-v1alpha1-api.ts
 api/auth-v1alpha1-auth-api.ts
+api/auth-v1alpha1-login-api.ts
 api/authentication-api.ts
 api/config-map-v1alpha1-api.ts
+api/dashboard-v1alpha1-api.ts
 api/device-v1alpha1-api.ts
 api/device-v1alpha1-uc-api.ts
 api/extension-definition-v1alpha1-api.ts
@@ -15,6 +17,7 @@ api/extension-point-definition-v1alpha1-api.ts
 api/login-api.ts
 api/passkey-v1alpha1-public-api.ts
 api/passkey-v1alpha1-uc-api.ts
+api/password-recovery-endpoint-api.ts
 api/personal-access-token-v1alpha1-api.ts
 api/personal-access-token-v1alpha1-uc-api.ts
 api/plugin-v1alpha1-api.ts
@@ -49,7 +52,6 @@ models/annotation-setting-list.ts
 models/annotation-setting-spec.ts
 models/annotation-setting.ts
 models/apply-request.ts
-models/apply-temp-role-binding-request.ts
 models/assign-group-request.ts
 models/audit-edge.ts
 models/audit-graph.ts
@@ -69,8 +71,8 @@ models/config-map-list.ts
 models/config-map-ref.ts
 models/config-map.ts
 models/copy-operation.ts
-models/create-user-request-payload.ts
 models/create-user-request.ts
+models/dashboard-overview.ts
 models/device-list.ts
 models/device-spec.ts
 models/device-status.ts
@@ -83,6 +85,7 @@ models/extension-point-spec.ts
 models/extension-spec.ts
 models/feishu-user-item.ts
 models/file-reverse-proxy-provider.ts
+models/global-info-summary.ts
 models/group-kind.ts
 models/index.ts
 models/install-from-uri-request.ts
@@ -90,6 +93,9 @@ models/json-patch-inner.ts
 models/license.ts
 models/listed-auth-provider.ts
 models/listed-user.ts
+models/login-provider-view.ts
+models/login-status-view.ts
+models/login-trend-point.ts
 models/metadata.ts
 models/move-operation.ts
 models/oidc-authorize-url-vo.ts
@@ -111,12 +117,14 @@ models/plugin-status.ts
 models/plugin.ts
 models/policy-rule.ts
 models/public-key-response.ts
+models/recent-operation.ts
 models/remember-me-token-list.ts
 models/remember-me-token-spec.ts
 models/remember-me-token.ts
 models/remove-operation.ts
 models/replace-operation.ts
 models/replay-step.ts
+models/reset-password-request.ts
 models/reverse-proxy-list.ts
 models/reverse-proxy-rule.ts
 models/reverse-proxy.ts
@@ -126,9 +134,12 @@ models/role-binding-list.ts
 models/role-binding.ts
 models/role-list.ts
 models/role-ref.ts
+models/role-user-count.ts
 models/role.ts
 models/secret-list.ts
 models/secret.ts
+models/send-code-request.ts
+models/session-view.ts
 models/setting-form.ts
 models/setting-list.ts
 models/setting-ref.ts
@@ -146,7 +157,6 @@ models/totp-request.ts
 models/trace-step.ts
 models/two-factor-auth-settings.ts
 models/update-profile-request.ts
-models/update-user-request.ts
 models/upgrade-from-uri-request.ts
 models/user-connection-list.ts
 models/user-connection-spec.ts

@@ -16,6 +16,7 @@ export default definePlugin({
           name: "navAudit",
           group: "access",
           icon: "mdi:file-document-outline",
+          iconActive: "mdi:file-document",
           priority: 20,
           mobile: true,
         },

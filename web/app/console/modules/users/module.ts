@@ -16,6 +16,7 @@ export default definePlugin({
           name: "navUsers",
           group: "access",
           icon: "mdi:account-group-outline",
+          iconActive: "mdi:account-group",
           priority: 10,
           mobile: true,
         },

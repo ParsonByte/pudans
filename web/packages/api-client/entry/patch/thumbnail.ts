@@ -1,5 +1,5 @@
 /**
- * Compatibility shim mirroring Halo's entry/patch/thumbnail export. Pudans
+ * Compatibility shim mirroring the reference entry/patch/thumbnail export. Pudans
  * attachment thumbnail sizes use the same short names as the legacy contract.
  */
 export const ThumbnailSpecSize = {

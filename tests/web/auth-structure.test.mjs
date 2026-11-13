@@ -80,7 +80,7 @@ test("auth router owns only basic routes and links to recovery/legal", () => {
   assert.ok(login.includes('/auth/legal'));
 });
 
-test("api-client uses the Halo entry/src-api/src-models layout", () => {
+test("api-client uses the reference entry/src-api/src-models layout", () => {
   const pkg = join(web, "packages/api-client");
   assert.ok(dirs(pkg).includes("entry"));
   assert.deepEqual(dirs(join(pkg, "src")).filter((name) => !["api.ts", "base.ts", "common.ts", "configuration.ts", "git_push.sh", "index.ts"].includes(name)), [

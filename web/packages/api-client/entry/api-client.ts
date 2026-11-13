@@ -9,15 +9,18 @@ import {
   AnnotationSettingV1alpha1Api,
   AuditLogV1alpha1Api,
   AuthProviderV1alpha1Api,
+  AuthV1alpha1LoginApi,
   AuthenticationApi,
   ConfigMapV1alpha1Api,
   Configuration,
+  DashboardV1alpha1Api,
   DeviceV1alpha1UcApi,
   ExtensionDefinitionV1alpha1Api,
   ExtensionPointDefinitionV1alpha1Api,
   LoginApi,
   PasskeyV1alpha1PublicApi,
   PasskeyV1alpha1UcApi,
+  PasswordRecoveryEndpointApi,
   PersonalAccessTokenV1alpha1Api,
   PersonalAccessTokenV1alpha1UcApi,
   PluginV1alpha1Api,
@@ -275,7 +278,7 @@ function createApi<T>(
 }
 
 /**
- * Halo's createCoreApiClient pattern: one grouped object of generated
+ * the reference createCoreApiClient pattern: one grouped object of generated
  * resource API classes, all bound to the single configured Axios instance.
  */
 export const coreApiClient = {
@@ -283,6 +286,8 @@ export const coreApiClient = {
     authProvider: createApi(AuthProviderV1alpha1Api),
     authentication: createApi(AuthenticationApi),
     login: createApi(LoginApi),
+    loginSession: createApi(AuthV1alpha1LoginApi),
+    recovery: createApi(PasswordRecoveryEndpointApi),
     userConnection: createApi(UserConnectionV1alpha1Api),
     passkey: createApi(PasskeyV1alpha1UcApi),
     twoFactor: createApi(TwoFactorAuthV1alpha1UcApi),
@@ -291,6 +296,7 @@ export const coreApiClient = {
     rememberMeToken: createApi(RememberMeTokenV1alpha1Api),
   },
   console: {
+    dashboard: createApi(DashboardV1alpha1Api),
     user: createApi(UserV1alpha1Api),
     userConsole: createApi(UserV1alpha1ConsoleApi),
     role: createApi(RoleV1alpha1Api),
@@ -332,30 +338,22 @@ export const coreApiClient = {
 
 /** GET /login/status */
 export function getLoginStatus(): Promise<LoginStatusView> {
-  return defaultAxiosInstance
-    .get<LoginStatusView>(`${AUTH_API_BASE}/login/status`)
-    .then((response) => response.data);
+  return coreApiClient.auth.loginSession.getLoginStatus().then((response) => response.data);
 }
 
 /** GET /login/providers */
 export function listLoginProviders(): Promise<LoginProviderView[]> {
-  return defaultAxiosInstance
-    .get<LoginProviderView[]>(`${AUTH_API_BASE}/login/providers`)
-    .then((response) => response.data);
+  return coreApiClient.auth.loginSession.listLoginProviders().then((response) => response.data);
 }
 
 /** GET /login/public-key */
 export function getLoginPublicKey(): Promise<PublicKeyResponse> {
-  return defaultAxiosInstance
-    .get<PublicKeyResponse>(`${AUTH_API_BASE}/login/public-key`)
-    .then((response) => response.data);
+  return coreApiClient.auth.login.getPublicKey().then((response) => response.data);
 }
 
 /** GET /login/session */
 export function getLoginSession(): Promise<SessionView> {
-  return defaultAxiosInstance
-    .get<SessionView>(`${AUTH_API_BASE}/login/session`)
-    .then((response) => response.data);
+  return coreApiClient.auth.loginSession.getLoginSession().then((response) => response.data);
 }
 
 /** POST /login (form-urlencoded, redirect based). */
@@ -400,15 +398,15 @@ export async function logout(): Promise<void> {
 
 /** POST /recovery/send-code */
 export function sendRecoveryCode(payload: SendCodeRequest): Promise<void> {
-  return defaultAxiosInstance
-    .post<void>(`${AUTH_API_BASE}/recovery/send-code`, payload)
+  return coreApiClient.auth.recovery
+    .sendCode({ sendCodeRequest: payload })
     .then(() => undefined);
 }
 
 /** POST /recovery/reset-password */
 export function resetPassword(payload: ResetPasswordRequest): Promise<void> {
-  return defaultAxiosInstance
-    .post<void>(`${AUTH_API_BASE}/recovery/reset-password`, payload)
+  return coreApiClient.auth.recovery
+    .resetPassword({ resetPasswordRequest: payload })
     .then(() => undefined);
 }
 

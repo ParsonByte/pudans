@@ -10,7 +10,7 @@ export function SystemProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async (): Promise<void> => {
     try {
       const result = await getLoginStatus();
-      setSetupRequired(result.setupRequired);
+      setSetupRequired(result.setupRequired === true);
       setStatus("ready");
     } catch {
       setStatus("error");

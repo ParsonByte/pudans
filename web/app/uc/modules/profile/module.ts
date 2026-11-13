@@ -15,6 +15,7 @@ export default definePlugin({
           name: "navProfile",
           group: "account",
           icon: "mdi:account-circle-outline",
+          iconActive: "mdi:account-circle",
           priority: 0,
           mobile: true,
         },
