@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@pudans/components";
+import { isRoutePermitted } from "@pudans/shared";
 import {
-  authApiClient,
+  getLoginPublicKey,
+  getLoginSession,
+  getLoginStatus,
+  listLoginProviders,
+  login,
   type LoginProvider,
   type LoginStatus,
 } from "@pudans/api-client";
@@ -79,8 +84,8 @@ export function useLogin() {
     let active = true;
     void (async () => {
       const [statusResult, providersResult] = await Promise.allSettled([
-        authApiClient.getStatus(),
-        authApiClient.getProviders(),
+        getLoginStatus(),
+        listLoginProviders(),
       ]);
       if (!active) {
         return;
@@ -117,14 +122,14 @@ export function useLogin() {
 
     setLoading(true);
     try {
-      const publicKeyResponse = await authApiClient.getPublicKey();
+      const publicKeyResponse = await getLoginPublicKey();
       const publicKey = publicKeyResponse.base64Format;
       if (!publicKey) {
         throw new Error("The server returned an empty public key.");
       }
 
       const encrypted = encryptPassword(password, publicKey);
-      const outcome = await authApiClient.login(username.trim(), encrypted);
+      const outcome = await login({ username: username.trim(), encryptedPassword: encrypted });
 
       if (outcome.kind === "challenge") {
         window.location.assign(outcome.location);
@@ -137,10 +142,23 @@ export function useLogin() {
 
       let redirectUrl = redirectUri ?? status?.postLoginUrl ?? "/console";
       try {
-        const session = await authApiClient.getSession();
-        redirectUrl = session.consoleAccessDisallowed
-          ? "/uc"
-          : redirectUri ?? (session.redirectUrl || "/console");
+        const session = await getLoginSession();
+        const permissions = session.uiPermissions ?? [];
+        const hasPermission = (permission: string): boolean =>
+          permissions.includes("*") || permissions.includes(permission);
+        const permittedRedirect =
+          redirectUri && isRoutePermitted(redirectUri, hasPermission) ? redirectUri : null;
+
+        if (session.consoleAccessDisallowed) {
+          // The disallowed-console rule outranks redirect_uri, including a
+          // console redirect_uri supplied by the login link.
+          redirectUrl =
+            permittedRedirect?.startsWith("/uc") ? permittedRedirect : "/uc";
+        } else if (permittedRedirect) {
+          redirectUrl = permittedRedirect;
+        } else {
+          redirectUrl = session.redirectUrl || "/console";
+        }
       } catch {
         // The session snapshot is an optimisation; the server-provided default
         // remains a valid destination.

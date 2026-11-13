@@ -31,7 +31,12 @@ test("English and Chinese bundles expose the same keys", () => {
 test("every literal translation key exists in the bundle", () => {
   const known = new Set(keysFor("en-US"));
   const missing = new Set();
-  for (const file of componentSources(join(web, "src/components"))) {
+  for (const file of [
+    ...componentSources(join(web, "src/components")),
+    ...componentSources(join(web, "console-src")),
+    ...componentSources(join(web, "uc-src")),
+    ...componentSources(join(web, "src/layouts")),
+  ]) {
     const source = readFileSync(file, "utf8");
     for (const match of source.matchAll(/\bt\(["']([A-Za-z0-9_]+)["']/g)) {
       if (!known.has(match[1])) missing.add(match[1] + " in " + file);

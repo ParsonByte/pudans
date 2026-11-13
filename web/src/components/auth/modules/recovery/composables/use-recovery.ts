@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { authApiClient, isPudansApiError } from "@pudans/api-client";
+import { isPudansApiError, resetPassword, sendRecoveryCode } from "@pudans/api-client";
 
 export type RecoveryStep = 1 | 2 | 3;
 
@@ -65,7 +65,7 @@ export function useRecovery() {
 
     setCodeSending(true);
     try {
-      await authApiClient.sendRecoveryCode({ email: account.trim() });
+      await sendRecoveryCode({ email: account.trim() });
       setCodeSent(true);
     } catch (requestError) {
       setError(messageFor(requestError));
@@ -110,7 +110,7 @@ export function useRecovery() {
 
       setLoading(true);
       try {
-        await authApiClient.resetPassword({
+        await resetPassword({
           email: account.trim(),
           code: code.trim(),
           newPassword: password,

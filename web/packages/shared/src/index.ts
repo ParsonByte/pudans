@@ -1,4 +1,5 @@
 export * from "./constants";
+export * from "./plugin";
 export * from "./i18n";
 export * from "./types";
 export * from "./utils/async";

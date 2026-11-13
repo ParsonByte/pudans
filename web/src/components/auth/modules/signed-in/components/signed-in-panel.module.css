@@ -2,14 +2,46 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   height: 100%;
-  padding: 30px;
+  padding: 40px 36px 32px;
+  text-align: center;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+
+.brandMark {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--pd-radius-lg);
+  background: rgb(var(--pd-brand-primary));
+  color: rgb(var(--pd-brand-contrast));
+  font-size: var(--pd-text-lg);
+  font-weight: 700;
+  box-shadow: var(--pd-shadow-sm);
+}
+
+.brandWordmark {
+  color: var(--login-text);
+  font-size: var(--pd-text-sm);
+  font-weight: 700;
+  letter-spacing: 0.16em;
 }
 
 .header {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
+  max-width: 340px;
 }
 
 .eyebrow {
@@ -39,21 +71,24 @@
 .account {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
+  width: 100%;
+  max-width: 360px;
   margin-top: 30px;
-  padding: 20px;
+  padding: 16px 18px;
   border: 1px solid var(--login-card-border);
   border-radius: var(--pd-radius-xl);
   background: var(--login-field);
+  text-align: left;
 }
 
 .avatar {
   flex: 0 0 auto;
-  width: 52px !important;
-  height: 52px !important;
+  width: 46px !important;
+  height: 46px !important;
   background: rgb(var(--pd-brand-primary) / 0.14) !important;
   color: var(--login-brand) !important;
-  font-size: var(--pd-text-lg) !important;
+  font-size: var(--pd-text-md) !important;
   font-weight: 600 !important;
 }
 
@@ -61,7 +96,7 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -93,19 +128,40 @@
   color: rgb(var(--pd-state-success));
 }
 
-.submit {
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 360px;
+  margin-top: 30px;
+}
+
+.action,
+.signOut {
   height: 46px;
-  margin-top: auto;
   font-size: var(--pd-text-sm);
   font-weight: 600;
 }
 
+.signOut {
+  margin-top: 4px;
+}
+
 @media (max-width: 760px) {
   .view {
-    padding: 24px;
+    padding: 28px 22px 22px;
   }
 
   .title {
     font-size: var(--pd-text-2xl);
+  }
+
+  .account {
+    margin-top: 22px;
+  }
+
+  .actions {
+    margin-top: 22px;
   }
 }

@@ -1,7 +1,6 @@
 package cn.tolim.pudans.infra.webfilter;
 
 import java.util.Map;
-import java.util.Set;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -11,42 +10,52 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
 /**
- * Serves the single SPA entry file for every application root and its
- * client-side routes. The web build has one HTML entry, so direct links such as
- * /console/users or /uc/security survive a reload.
+ * Serves the correct multi-page HTML entry for every application root and its
+ * client-side routes, mirroring Halo's production mapping:
+ *
+ * <ul>
+ *   <li>{@code /console/**} to {@code static/console.html}</li>
+ *   <li>{@code /uc/**} to {@code static/uc.html}</li>
+ *   <li>{@code /auth/**}, {@code /setup}, {@code /forbidden} to {@code static/auth.html}</li>
+ * </ul>
+ *
+ * <p>There is deliberately no environment-based base path: console and UC are
+ * fixed mounts, exactly like the Vite {@code createWebHistory} bases.
  */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE - 200)
 public class SpaIndexWebFilter implements WebFilter {
 
-    private static final String INDEX = "/index.html";
+    private static final String AUTH_ENTRY = "/auth.html";
+    private static final String CONSOLE_ENTRY = "/console.html";
+    private static final String UC_ENTRY = "/uc.html";
 
-    private static final Map<String, String> SPA_ROOTS = Map.of(
-            "/auth", INDEX,
-            "/auth/", INDEX,
-            "/console", INDEX,
-            "/console/", INDEX,
-            "/uc", INDEX,
-            "/uc/", INDEX,
-            "/setup", INDEX,
-            "/setup/", INDEX,
-            "/forbidden", INDEX,
-            "/forbidden/", INDEX);
-
-    private static final Set<String> SPA_PREFIXES = Set.of("/auth/", "/console/", "/uc/", "/setup/");
-
-    private static final Set<String> INDEX_DOCUMENTS = Set.of(INDEX);
+    private static final Map<String, String> EXACT_ENTRIES = Map.ofEntries(
+            Map.entry("/", AUTH_ENTRY),
+            Map.entry("/auth", AUTH_ENTRY),
+            Map.entry("/auth/", AUTH_ENTRY),
+            Map.entry("/setup", AUTH_ENTRY),
+            Map.entry("/setup/", AUTH_ENTRY),
+            Map.entry("/forbidden", AUTH_ENTRY),
+            Map.entry("/forbidden/", AUTH_ENTRY),
+            Map.entry("/console", CONSOLE_ENTRY),
+            Map.entry("/console/", CONSOLE_ENTRY),
+            Map.entry("/uc", UC_ENTRY),
+            Map.entry("/uc/", UC_ENTRY));
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         var path = exchange.getRequest().getPath().value();
-        var indexPath = SPA_ROOTS.get(path);
 
-        if (indexPath == null && isClientRoute(path)) {
-            indexPath = INDEX;
+        if (path.endsWith(".html") || path.contains(".")) {
+            return chain.filter(exchange);
         }
 
-        if (indexPath == null && !INDEX_DOCUMENTS.contains(path)) {
+        var entry = EXACT_ENTRIES.get(path);
+        if (entry == null) {
+            entry = prefixEntry(path);
+        }
+        if (entry == null) {
             return chain.filter(exchange);
         }
 
@@ -58,15 +67,20 @@ public class SpaIndexWebFilter implements WebFilter {
             return Mono.empty();
         });
 
-        var request =
-                indexPath == null ? exchange.getRequest() : exchange.getRequest().mutate().path(indexPath).build();
+        var request = exchange.getRequest().mutate().path(entry).build();
         return chain.filter(exchange.mutate().request(request).build());
     }
 
-    private static boolean isClientRoute(String path) {
-        if (path.endsWith(".html") || path.contains(".")) {
-            return false;
+    private static String prefixEntry(String path) {
+        if (path.startsWith("/console/")) {
+            return CONSOLE_ENTRY;
         }
-        return SPA_PREFIXES.stream().anyMatch(path::startsWith);
+        if (path.startsWith("/uc/")) {
+            return UC_ENTRY;
+        }
+        if (path.startsWith("/auth/") || path.startsWith("/setup/") || path.startsWith("/forbidden/")) {
+            return AUTH_ENTRY;
+        }
+        return null;
     }
 }

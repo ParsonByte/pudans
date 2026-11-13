@@ -1,10 +1,4 @@
-import {
-  createBrowserRouter,
-  Navigate,
-  Outlet,
-  RouterProvider,
-  type RouteObject,
-} from "react-router-dom";
+import { createBrowserRouter, Navigate, Outlet, RouterProvider } from "react-router-dom";
 import { AuthLayout } from "../components/auth/components/auth-layout";
 import { LoginView } from "../components/auth/modules/login";
 import { RecoveryView } from "../components/auth/modules/recovery";
@@ -12,27 +6,20 @@ import { LegalView } from "../components/auth/modules/legal";
 import { SignedInView } from "../components/auth/modules/signed-in";
 import { SetupView } from "../components/setup";
 import {
-  ConsoleAuditView,
-  ConsoleLayout,
-  ConsoleOverviewView,
-  ConsoleUsersView,
-} from "../components/console";
-import {
-  UcAuthorizationsView,
-  UcLayout,
-  UcProfileView,
-  UcSecurityView,
-} from "../components/uc";
-import {
   AppBootstrap,
   ForbiddenView,
+  NotFoundView,
   RedirectIfAuthenticated,
-  RequirePermission,
   RequireSession,
   RootRedirect,
 } from "./guards";
 
-const routes: RouteObject[] = [
+/**
+ * Basic auth routes only. Console and UC are independent multi-page apps with
+ * their own dynamic module routes; nothing product-specific is registered in
+ * the auth router.
+ */
+const routes = [
   {
     element: (
       <AppBootstrap>
@@ -77,56 +64,9 @@ const routes: RouteObject[] = [
         element: <AuthLayout />,
         children: [{ index: true, element: <SetupView /> }],
       },
-      {
-        path: "/console",
-        element: (
-          <RequireSession access="console">
-            <ConsoleLayout />
-          </RequireSession>
-        ),
-        children: [
-          {
-            index: true,
-            element: (
-              <RequirePermission permissions={["dashboard:view"]}>
-                <ConsoleOverviewView />
-              </RequirePermission>
-            ),
-          },
-          {
-            path: "users",
-            element: (
-              <RequirePermission permissions={["users:manage"]}>
-                <ConsoleUsersView />
-              </RequirePermission>
-            ),
-          },
-          {
-            path: "audit",
-            element: (
-              <RequirePermission permissions={["audit:view"]}>
-                <ConsoleAuditView />
-              </RequirePermission>
-            ),
-          },
-        ],
-      },
-      {
-        path: "/uc",
-        element: (
-          <RequireSession>
-            <UcLayout />
-          </RequireSession>
-        ),
-        children: [
-          { index: true, element: <UcProfileView /> },
-          { path: "security", element: <UcSecurityView /> },
-          { path: "authorizations", element: <UcAuthorizationsView /> },
-        ],
-      },
       { path: "/forbidden", element: <ForbiddenView /> },
       { path: "/", element: <RootRedirect /> },
-      { path: "*", element: <Navigate to="/" replace /> },
+      { path: "*", element: <NotFoundView /> },
     ],
   },
 ];

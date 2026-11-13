@@ -1,8 +1,8 @@
 import { AppRouter } from "../../router";
 
 /**
- * Root of the single-page application. Auth, setup, console and UC routes all
- * share one router, one session snapshot and one centralized api-client.
+ * Auth/setup application root. Console and UC are separate multi-page entries
+ * with their own dynamic routers; this app only owns the basic auth routes.
  */
 export function App() {
   return <AppRouter />;

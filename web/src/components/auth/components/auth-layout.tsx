@@ -54,6 +54,7 @@ export function AuthLayout() {
   const outlet = useOutlet();
   const isLegal = location.pathname.includes("/legal");
   const isSetup = location.pathname.includes("/setup");
+  const isSignedIn = location.pathname.includes("/done");
   // Signed-in redirects are enforced by the auth-entry route guard, not by the
   // layout, so every auth page shares the same redirect_uri handling.
 
@@ -102,9 +103,9 @@ export function AuthLayout() {
       <div className={styles.videoTint} aria-hidden="true" />
 
       <AuthTopbar />
-      <AuthBranding showSlogan={!isLegal} />
+      <AuthBranding showSlogan={!isLegal && !isSignedIn} />
 
-      {!isLegal && !isSetup ? (
+      {!isLegal && !isSetup && !isSignedIn ? (
         <button
           type="button"
           className={styles.videoControl}
@@ -121,7 +122,7 @@ export function AuthLayout() {
         </button>
       ) : null}
 
-      <section className={styles.content}>
+      <section className={cn(styles.content, isSignedIn && styles.centered)}>
         <AuthCard>
           <TransitionGroup component="div" className={styles.routeStage}>
             <RoutePanel key={location.pathname}>{outlet}</RoutePanel>

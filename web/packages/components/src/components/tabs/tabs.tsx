@@ -51,7 +51,8 @@ export const StyledTabs = StyledTabsBase as unknown as typeof MuiTabs;
  */
 const StyledTabBase = styled(MuiTab)(({ theme }) => ({
   padding: `${theme.spacing(1)} 0px`,
-  overflow: "initial",
+  overflow: "hidden",
+  isolation: "isolate",
   minHeight: 36,
   minWidth: 0,
   transition: theme.transitions.create(["background-color", "color"]),
@@ -63,7 +64,11 @@ const StyledTabBase = styled(MuiTab)(({ theme }) => ({
     bottom: theme.spacing(0.5),
     left: 0,
     right: 0,
+    pointerEvents: "none",
     transition: theme.transitions.create(["background-color"]),
+  },
+  "&:focus-visible::after": {
+    boxShadow: `inset 0 0 0 2px ${theme.palette.primary.main}`,
   },
   "&.MuiTab-root>.MuiTab-iconWrapper": {
     height: 20,
@@ -81,6 +86,8 @@ const StyledTabBase = styled(MuiTab)(({ theme }) => ({
     bottom: theme.spacing(0.5),
     left: 0,
     right: 0,
+    overflow: "hidden",
+    pointerEvents: "none",
   },
   "&:hover": {
     "&:not(.Mui-selected)": { color: theme.palette.text.primary },

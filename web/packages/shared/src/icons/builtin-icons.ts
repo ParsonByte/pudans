@@ -67,6 +67,18 @@ export const builtinMdiCollection = {
     "plus-outline": {
       body: '<path fill="currentColor" d="M4 9h5V4h6v5h5v6h-5v5H9v-5H4zm7 4v5h2v-5h5v-2h-5V6h-2v5H6v2z"/>',
     },
+    "chevron-left": {
+      body: '<path fill="currentColor" d="M15.41 7.41L14 6l-6 6l6 6l1.41-1.41L10.83 12z"/>',
+    },
+    "chevron-right": {
+      body: '<path fill="currentColor" d="M8.59 16.59L10 18l6-6l-6-6l-1.41 1.41L13.17 12z"/>',
+    },
+    "shield-lock-outline": {
+      body: '<path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12c5.16-1.26 9-6.45 9-12V5zm0 2.18L19 6.3V11c0 4.34-2.93 8.58-7 9.82C7.93 19.58 5 15.34 5 11V6.3zM12 9a2 2 0 0 0-1 3.73V16h2v-3.27A2 2 0 0 0 12 9"/>',
+    },
+    "key-variant": {
+      body: '<path fill="currentColor" d="M7 14a2 2 0 1 1 0-4a2 2 0 0 1 0 4m0-6a4 4 0 1 0 3.67 5.55H14V16h2v-2.45h2V11h-7.33A4 4 0 0 0 7 8m13 3v2h2v-2z"/>',
+    },
     "shield-account-outline": {
       body: '<path fill="currentColor" d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12c5.16-1.26 9-6.45 9-12V5zm0 2.18l7 3.12v4.92c0 1.7-.5 3.43-1.35 4.95C16 14.94 13.26 14.5 12 14.5s-4 .44-5.65 1.67C5.5 14.65 5 12.92 5 11.22V6.3zM12 6a3.5 3.5 0 0 0-3.5 3.5A3.5 3.5 0 0 0 12 13a3.5 3.5 0 0 0 3.5-3.5A3.5 3.5 0 0 0 12 6m0 2a1.5 1.5 0 0 1 1.5 1.5A1.5 1.5 0 0 1 12 11a1.5 1.5 0 0 1-1.5-1.5A1.5 1.5 0 0 1 12 8m0 8.5c1.57 0 3.64.61 4.53 1.34C15.29 19.38 13.7 20.55 12 21c-1.7-.45-3.29-1.62-4.53-3.16c.9-.73 2.96-1.34 4.53-1.34"/>',
     },

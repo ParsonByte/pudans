@@ -105,6 +105,17 @@ public class WebFluxConfig implements WebFluxConfigurer {
         }
         final var useLastModified = resourceProperties.getCache().isUseLastModified();
         var staticPath = pudansProp.getWorkDir().resolve("static");
+
+        // Halo's UI asset mount: HTML entries reference /ui-assets/**, while
+        // the Vite build writes the files to classpath:/static/assets/**.
+        registry.addResourceHandler("/ui-assets/**")
+                .addResourceLocations("classpath:/static/assets/")
+                .setCacheControl(cacheControl)
+                .setUseLastModified(useLastModified)
+                .resourceChain(true)
+                .addResolver(new EncodedResourceResolver())
+                .addResolver(new PathResourceResolver());
+
         registry.addResourceHandler("/**")
                 .addResourceLocations(FILE_URL_PREFIX + staticPath + "/")
                 .addResourceLocations(resourceProperties.getStaticLocations())
@@ -115,6 +126,14 @@ public class WebFluxConfig implements WebFluxConfigurer {
                 .addResolver(new PathResourceResolver());
     }
 
+
+    @Bean
+    @org.springframework.boot.autoconfigure.condition.ConditionalOnProperty(
+            name = "pudans.ui.proxy.enabled", havingValue = "true")
+    @Order(Ordered.HIGHEST_PRECEDENCE + 2)
+    cn.tolim.pudans.infra.webfilter.UiProxyFilter uiProxyFilter() {
+        return new cn.tolim.pudans.infra.webfilter.UiProxyFilter(pudansProp.getUi().getProxy());
+    }
 
     @Bean
     @Order(-101)

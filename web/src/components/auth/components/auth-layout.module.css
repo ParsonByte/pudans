@@ -95,6 +95,11 @@
   padding: 112px clamp(24px, 7vw, 112px) 96px;
 }
 
+.centered {
+  justify-content: center;
+  padding-right: clamp(24px, 7vw, 112px);
+}
+
 @media (max-width: 1024px) {
   .content {
     padding-right: clamp(24px, 5vw, 64px);

@@ -12,6 +12,8 @@ const roots = [
   join(root, "packages/components/src"),
   join(root, "packages/shared/src"),
   join(root, "src"),
+  join(root, "console-src"),
+  join(root, "uc-src"),
 ];
 
 function walk(dir, out = []) {

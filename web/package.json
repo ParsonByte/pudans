@@ -2,7 +2,7 @@
   "name": "@pudans/web",
   "version": "0.1.0",
   "private": true,
-  "description": "Pudans auth-only React frontend and workspace packages.",
+  "description": "Pudans multi-page React frontend: auth, console and user centre.",
   "type": "module",
   "packageManager": "pnpm@12.21.0",
   "engines": {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { authApiClient, type SessionView } from "@pudans/api-client";
+import { getLoginSession, logout, type SessionView } from "@pudans/api-client";
 import { ALL_PERMISSIONS } from "@pudans/shared";
 import { SessionContext, type SessionContextValue, type SessionStatus } from "./session-context";
 
@@ -17,7 +17,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
-      const next = await authApiClient.getSession();
+      const next = await getLoginSession();
       setSession(next);
       setStatus(next.authenticated ? "authenticated" : "anonymous");
     } catch {
@@ -36,7 +36,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
-      await authApiClient.logout();
+      await logout();
     } finally {
       setSession(null);
       setStatus("anonymous");

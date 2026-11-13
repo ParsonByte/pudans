@@ -101,7 +101,9 @@ public class AuthenticatedAuthPageWebFilter implements WebFilter {
                 return securityProperties.getPostLoginUrl();
             }
             var path = uri.getPath();
-            if (path == null || !ALLOWED_REDIRECT_PREFIXES.stream().anyMatch(path::startsWith)) {
+            if (path == null
+                    || !ALLOWED_REDIRECT_PREFIXES.stream()
+                            .anyMatch(prefix -> path.equals(prefix) || path.startsWith(prefix + "/"))) {
                 return securityProperties.getPostLoginUrl();
             }
             return raw;

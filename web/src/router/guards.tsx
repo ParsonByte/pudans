@@ -1,16 +1,15 @@
-import { useEffect, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Navigate, useLocation, useNavigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { Box } from "@mui/material";
 import { Button, EmptyState } from "@pudans/components";
-import { useLandingPath } from "../hooks/use-auth-navigation";
+import { navigateToApp, useLandingPath } from "../hooks/use-auth-navigation";
 import { useSession } from "../session/use-session";
 import { useSystem } from "../session/use-system";
 
 /**
- * Bootstraps the single-page application before any route renders:
- * an uninitialized instance always lands on /setup; an initialized instance
- * never keeps showing /setup.
+ * Boots the auth app before any route renders: an uninitialized instance
+ * always lands on /setup, an initialized instance never keeps showing it.
  */
 export function AppBootstrap({ children }: { children: ReactNode }) {
   const { status: systemStatus, setupRequired } = useSystem();
@@ -32,65 +31,14 @@ export function AppBootstrap({ children }: { children: ReactNode }) {
   return children;
 }
 
-/** Halo setupAuthCheckGuard: protected routes require an authenticated session. */
-export function RequireSession({
-  access = "any",
-  children,
-}: {
-  access?: "any" | "console";
-  children: ReactNode;
-}) {
-  const { status, consoleAccessDisallowed } = useSession();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    if (status === "loading") {
-      return;
-    }
-    if (access === "console") {
-      // Disallowed-console check has priority over login and redirect_uri.
-      if (consoleAccessDisallowed) {
-        navigate("/uc", { replace: true });
-        return;
-      }
-    }
-    if (status === "anonymous") {
-      if (location.pathname.startsWith("/auth")) {
-        return;
-      }
-      const current = `${location.pathname}${location.search}`;
-      navigate(`/auth/?redirect_uri=${encodeURIComponent(current)}`, {
-        replace: true,
-        state: { from: location.pathname },
-      });
-    }
-  }, [access, consoleAccessDisallowed, location.pathname, location.search, navigate, status]);
-
-  if (status !== "authenticated") {
-    return null;
-  }
-  if (access === "console" && consoleAccessDisallowed) {
-    return null;
-  }
-  return children;
-}
-
-/** Halo setupPermissionGuard: route metadata permissions gate direct URLs. */
-export function RequirePermission({
-  permissions,
-  children,
-}: {
-  permissions: readonly string[];
-  children: ReactNode;
-}) {
-  const { status, hasPermission } = useSession();
-
+/** The signed-in landing page is the only auth route that needs a session. */
+export function RequireSession({ children }: { children: ReactNode }) {
+  const { status } = useSession();
   if (status === "loading") {
     return null;
   }
-  if (!hasPermission(...permissions)) {
-    return <Navigate to="/forbidden" replace />;
+  if (status === "anonymous") {
+    return <Navigate to="/auth/" replace />;
   }
   return children;
 }
@@ -118,7 +66,6 @@ export function RootRedirect() {
 export function ForbiddenView() {
   const { t } = useTranslation("common");
   const landingPath = useLandingPath();
-  const navigate = useNavigate();
 
   return (
     <Box sx={{ display: "grid", placeItems: "center", minHeight: "100svh" }}>
@@ -130,10 +77,28 @@ export function ForbiddenView() {
           <Button
             variant="primary"
             onClick={() => {
-              navigate(landingPath, { replace: true });
+              navigateToApp(landingPath);
             }}
           >
             {t("forbiddenBack")}
+          </Button>
+        }
+      />
+    </Box>
+  );
+}
+
+export function NotFoundView() {
+  const { t } = useTranslation("common");
+  return (
+    <Box sx={{ display: "grid", placeItems: "center", minHeight: "100svh" }}>
+      <EmptyState
+        variant="not-found"
+        title={t("notFoundTitle")}
+        description={t("notFoundDescription")}
+        action={
+          <Button variant="primary" onClick={() => navigateToApp("/auth/")}>
+            {t("backToLogin")}
           </Button>
         }
       />

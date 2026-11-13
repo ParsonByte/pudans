@@ -1,4 +1,5 @@
 import { useSearchParams } from "react-router-dom";
+import { isRoutePermitted } from "@pudans/shared";
 import { useSession } from "../session/use-session";
 
 /** Pages a redirect_uri may point at after authentication completes. */
@@ -13,6 +14,9 @@ export function sanitizeRedirectUri(value: string | null | undefined): string | 
     if (url.origin !== window.location.origin) {
       return null;
     }
+    if (value.startsWith("//") || value.includes("\\")) {
+      return null;
+    }
     const path = url.pathname;
     if (!ALLOWED_REDIRECT_PREFIXES.some((prefix) => path === prefix || path.startsWith(prefix + "/"))) {
       return null;
@@ -21,6 +25,16 @@ export function sanitizeRedirectUri(value: string | null | undefined): string | 
   } catch {
     return null;
   }
+}
+
+/** Full-page navigation between the separately bundled console/uc/auth apps. */
+export function navigateToApp(href: string): void {
+  window.location.assign(href);
+}
+
+/** Same as navigateToApp, but replaces the current history entry. */
+export function replaceWithApp(href: string): void {
+  window.location.replace(href);
 }
 
 export function currentLocationWithSearch(): string {
@@ -40,13 +54,32 @@ export function useRedirectUri(): string | null {
   return sanitizeRedirectUri(searchParams.get("redirect_uri"));
 }
 
+/**
+ * Resolves the post-login destination.
+ *
+ * Order matters:
+ * 1. a disallowed-console account always lands in UC, even with a console
+ *    redirect_uri (the console restriction outranks redirect_uri);
+ * 2. a whitelisted redirect_uri is used only when its route policy passes;
+ * 3. otherwise the default is /console, falling back to /uc.
+ */
 export function useLandingPath(): string {
   const redirectUri = useRedirectUri();
-  const { consoleAccessDisallowed } = useSession();
-  // Disallowed-console accounts always land in the user centre, even when a
-  // console redirect_uri was supplied.
+  const { consoleAccessDisallowed, hasPermission } = useSession();
+
   if (consoleAccessDisallowed) {
+    if (redirectUri?.startsWith("/uc") && isRoutePermitted(redirectUri, hasPermission)) {
+      return redirectUri;
+    }
     return "/uc";
   }
-  return redirectUri ?? "/console";
+
+  if (redirectUri) {
+    if (isRoutePermitted(redirectUri, hasPermission)) {
+      return redirectUri;
+    }
+    return "/forbidden";
+  }
+
+  return "/console";
 }

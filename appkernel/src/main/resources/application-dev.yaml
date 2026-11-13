@@ -13,6 +13,9 @@ spring:
         use-last-modified: false
 
 pudans:
+  ui:
+    proxy:
+      enabled: ${PUDANS_UI_PROXY_ENABLED:true}
   security:
     basic-auth:
       disabled: false

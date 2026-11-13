@@ -55,12 +55,17 @@
   margin-top: 2px;
 }
 
+.tabs :global(.MuiTabs-scroller) {
+  overflow: hidden !important;
+}
+
 .tabs :global(.MuiTabs-flexContainer) {
   gap: 2px;
 }
 
 .tabs :global(.MuiTab-root) {
   min-height: 44px;
+  margin: 0;
   padding: 9px 4px;
   color: var(--login-muted);
   font-size: var(--pd-text-xs);

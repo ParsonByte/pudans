@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { authApiClient } from "@pudans/api-client";
+import { getLoginStatus } from "@pudans/api-client";
 import { SystemContext, type SystemContextValue, type SystemStatus } from "./system-context";
 
 export function SystemProvider({ children }: { children: ReactNode }) {
@@ -9,7 +9,7 @@ export function SystemProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
-      const result = await authApiClient.getStatus();
+      const result = await getLoginStatus();
       setSetupRequired(result.setupRequired);
       setStatus("ready");
     } catch {

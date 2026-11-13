@@ -20,6 +20,10 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/**/*.d.ts",
+    "console-src/**/*.ts",
+    "console-src/**/*.tsx",
+    "uc-src/**/*.ts",
+    "uc-src/**/*.tsx",
     "vite.config.ts",
     "packages/*/vite.config.ts"
   ],

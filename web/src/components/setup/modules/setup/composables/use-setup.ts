@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { authApiClient, isPudansApiError } from "@pudans/api-client";
+import { isPudansApiError, setupSystem } from "@pudans/api-client";
 import { sanitizeRedirectUri } from "../../../../../hooks/use-auth-navigation";
 import { useSystem } from "../../../../../session/use-system";
 
@@ -76,7 +76,7 @@ export function useSetup() {
     setLoading(true);
     setError(null);
     try {
-      await authApiClient.setupSystem({
+      await setupSystem({
         username: values.username.trim(),
         password: values.password,
         email: values.email.trim() || undefined,
