@@ -2,7 +2,7 @@ import {
   Pagination as MuiPagination,
   type PaginationProps as MuiPaginationProps,
 } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import styles from "./pagination.module.css";
 
 export type PaginationSize = "sm" | "md";

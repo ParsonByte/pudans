@@ -1,7 +1,7 @@
 import { createInstance } from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { initReactI18next } from "react-i18next";
-import { createI18nConfig, DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@pudans/utils";
+import { createI18nConfig, DEFAULT_LOCALE, SUPPORTED_LOCALES } from "@pudans/shared";
 import { resources } from "./i18n-resources";
 
 export const LOCALE_STORAGE_KEY = "pudans:locale";
@@ -23,7 +23,7 @@ void i18n
       resources,
       lng: DEFAULT_LOCALE,
       fallbackLng: "en-US",
-      ns: ["common", "auth"],
+      ns: ["common", "auth", "setup", "console", "uc"],
     }),
     supportedLngs: [...SUPPORTED_LOCALES],
     load: "currentOnly",

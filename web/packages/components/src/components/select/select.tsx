@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 import type { Theme } from "@mui/material/styles";
 import type { InputSize } from "../input";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export interface SelectOption {
   label: ReactNode;

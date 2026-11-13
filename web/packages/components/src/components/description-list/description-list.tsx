@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export interface DescriptionItem {
   key: string;

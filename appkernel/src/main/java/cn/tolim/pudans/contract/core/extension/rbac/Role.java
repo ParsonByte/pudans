@@ -27,6 +27,10 @@ public class Role extends AbstractExtension {
     public static final String ROLE_DEPENDENCIES_ANNO = "rbac.authorization.pudans.tolim.cn/dependencies";
     public static final String UI_PERMISSIONS_ANNO = "rbac.authorization.pudans.tolim.cn/ui-permissions";
 
+    /** Mirrors Halo's rbac.authorization.halo.run/disallow-access-console. */
+    public static final String DISALLOW_ACCESS_CONSOLE_ANNO =
+            "rbac.authorization.pudans.tolim.cn/disallow-access-console";
+
     public static final String SYSTEM_RESERVED_LABELS = "rbac.authorization.pudans.tolim.cn/system-reserved";
     public static final String HIDDEN_LABEL_NAME = "pudans.tolim.cn/hidden";
     public static final String TEMPLATE_LABEL_NAME = "pudans.tolim.cn/role-template";

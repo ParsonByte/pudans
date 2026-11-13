@@ -1,6 +1,6 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { Box, useTheme, type SxProps, type Theme } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import { Icon } from "../icon";
 
 export type FileIconTone = "brand" | "success" | "warning" | "danger" | "info" | "neutral";

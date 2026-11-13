@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Avatar, Button, Icon } from "@pudans/components";
-import type { SessionView } from "../../../../../util/api-types";
+import type { SessionView } from "@pudans/api-client";
 import styles from "./signed-in-panel.module.css";
 
 export interface SignedInPanelProps {

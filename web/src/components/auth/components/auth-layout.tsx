@@ -3,13 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useOutlet } from "react-router-dom";
 import { CSSTransition, TransitionGroup } from "react-transition-group";
 import { Icon } from "@pudans/components";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import { AuthBranding } from "./auth-branding";
 import { AuthCard } from "./auth-card";
 import { AuthFooter } from "./auth-footer";
 import { AuthTopbar } from "./auth-topbar";
 import { useThemeVideo } from "../composables/use-theme-video";
-import { useSignedInRedirect } from "../../../hooks/use-signed-in-redirect";
 import styles from "./auth-layout.module.css";
 
 const routeTransitionClasses = {
@@ -54,10 +53,9 @@ export function AuthLayout() {
   const location = useLocation();
   const outlet = useOutlet();
   const isLegal = location.pathname.includes("/legal");
-  const isDone = location.pathname.includes("/done");
-  // Legal documents stay public; signed-in confirmation and every other auth
-  // route bounce visitors who already hold a session to the post-login page.
-  useSignedInRedirect(!isLegal && !isDone);
+  const isSetup = location.pathname.includes("/setup");
+  // Signed-in redirects are enforced by the auth-entry route guard, not by the
+  // layout, so every auth page shares the same redirect_uri handling.
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoPlaying, setVideoPlaying] = useState(true);
@@ -106,7 +104,7 @@ export function AuthLayout() {
       <AuthTopbar />
       <AuthBranding showSlogan={!isLegal} />
 
-      {!isLegal ? (
+      {!isLegal && !isSetup ? (
         <button
           type="button"
           className={styles.videoControl}

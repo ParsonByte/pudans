@@ -14,6 +14,6 @@ class LandingControllerTest {
 
         assertThat(response).isNotNull();
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
-        assertThat(response.getHeaders().getLocation()).hasToString("/auth/done");
+        assertThat(response.getHeaders().getLocation()).hasToString("/console");
     }
 }

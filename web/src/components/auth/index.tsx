@@ -1,9 +1,9 @@
-import { AuthRouter } from "../../router";
+import { AppRouter } from "../../router";
 
 /**
- * Root of the auth-only application. Public providers live in src/session so
- * every auth page shares one session snapshot and one theme/AI context.
+ * Root of the single-page application. Auth, setup, console and UC routes all
+ * share one router, one session snapshot and one centralized api-client.
  */
-export function AuthApp() {
-  return <AuthRouter />;
+export function App() {
+  return <AppRouter />;
 }

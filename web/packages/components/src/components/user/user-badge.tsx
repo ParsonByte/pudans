@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { ButtonBase, Typography } from "@mui/material";
 import type { AvatarStatus } from "../avatar";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import { UserAvatar } from "./user-avatar";
 
 export type UserBadgeSize = "sm" | "md" | "lg";

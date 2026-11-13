@@ -11,7 +11,7 @@ export interface TooltipProps extends Omit<MuiTooltipProps, "arrow" | "slotProps
  * Legacy MUI Tooltip: all surface tokens (label size, padding, overlay
  * background, shape radius) come from the MUI theme; the
  * only project override in the legacy App.tsx was enterDelay 500 (applied
- * globally by @pudans/theme), mirrored here through the delay prop.
+ * globally by @pudans/shared/theme), mirrored here through the delay prop.
  */
 export function Tooltip({ arrow = false, delay = 500, children, ...props }: TooltipProps) {
   return (

@@ -1,6 +1,6 @@
 import { forwardRef, type HTMLAttributes } from "react";
 import Paper from "@mui/material/Paper";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export type CardPadding = "none" | "sm" | "md" | "lg";
 export type CardVariant = "outlined" | "elevated";

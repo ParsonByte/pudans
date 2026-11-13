@@ -1,4 +1,4 @@
-import { usePudansTheme } from "@pudans/theme";
+import { usePudansTheme } from "@pudans/shared/theme";
 import { useAppSelector } from "../../../redux/store";
 
 /** Bridges the persisted appearance preference with the auth page variables. */

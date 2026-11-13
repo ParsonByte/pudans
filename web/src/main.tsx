@@ -1,11 +1,11 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "@pudans/theme/style.css";
+import "@pudans/shared/theme/style.css";
 import { BRAND_NAME } from "./constants";
-import { AuthApp } from "./components/auth";
+import { App } from "./components/auth";
 import { AppProviders } from "./session";
 
-document.title = `${BRAND_NAME} · Authentication`;
+document.title = BRAND_NAME;
 
 const container = document.getElementById("root");
 if (!container) {
@@ -15,7 +15,7 @@ if (!container) {
 createRoot(container).render(
   <StrictMode>
     <AppProviders>
-      <AuthApp />
+      <App />
     </AppProviders>
   </StrictMode>,
 );

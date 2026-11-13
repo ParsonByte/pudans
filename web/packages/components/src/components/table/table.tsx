@@ -7,7 +7,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import { EmptyState } from "../empty-state";
 import { Skeleton } from "../skeleton";
 

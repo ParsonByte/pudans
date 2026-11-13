@@ -63,7 +63,7 @@ spring:
 pudans:
   work-dir: ${PUDANS_WORK_DIR:${user.home}/.pudans}
   security:
-    post-login-url: ${PUDANS_POST_LOGIN_URL:/auth/done}
+    post-login-url: ${PUDANS_POST_LOGIN_URL:/console}
     basic-auth:
       disabled: true
     two-factor-auth:

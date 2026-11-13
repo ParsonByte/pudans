@@ -38,6 +38,35 @@ public class UiPermissionService {
                 });
     }
 
+    /**
+     * Halo-compatible console access rule: the super role always keeps access;
+     * otherwise every assigned role must carry the disallow annotation.
+     */
+    public Mono<Boolean> isConsoleAccessDisallowed(String username) {
+        return userGroupService
+                .getRoleNamesByUsername(username)
+                .collectList()
+                .flatMap(roleNames -> {
+                    if (roleNames.isEmpty()
+                            || AuthorityUtils.containsSuperRole(Set.copyOf(roleNames))) {
+                        return Mono.just(false);
+                    }
+                    return roleService
+                            .list(Set.copyOf(roleNames))
+                            .collectList()
+                            .map(roles -> !roles.isEmpty()
+                                    && roles.stream().allMatch(role -> {
+                                        var annotations = role.getMetadata() == null
+                                                ? null
+                                                : role.getMetadata().getAnnotations();
+                                        return annotations != null
+                                                && "true"
+                                                        .equals(annotations.get(
+                                                                Role.DISALLOW_ACCESS_CONSOLE_ANNO));
+                                    }));
+                });
+    }
+
     private Mono<List<String>> aggregate(Set<String> roleNames) {
         return roleService
                 .listPermissions(roleNames)

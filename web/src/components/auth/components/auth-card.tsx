@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { useLocation } from "react-router-dom";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import styles from "./auth-card.module.css";
 
 export interface AuthCardProps {
@@ -14,7 +14,7 @@ export interface AuthCardProps {
  */
 export function AuthCard({ children, className }: AuthCardProps) {
   const { pathname } = useLocation();
-  const expanded = pathname.includes("/legal");
+  const expanded = pathname.includes("/legal") || pathname.includes("/setup");
 
   return (
     <div

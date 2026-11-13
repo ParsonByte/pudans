@@ -54,7 +54,12 @@ class AuthenticatedAuthPageWebFilterTest {
     }
 
     private static ServerWebExchange exchange(String path, Authentication authentication) {
-        var delegate = MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
+        return exchange(MockServerHttpRequest.get(path), authentication);
+    }
+
+    private static ServerWebExchange exchange(
+            MockServerHttpRequest.BaseBuilder<?> builder, Authentication authentication) {
+        var delegate = MockServerWebExchange.from(builder.build());
         return new ServerWebExchangeDecorator(delegate) {
             @Override
             public Mono<Principal> getPrincipal() {
@@ -65,7 +70,7 @@ class AuthenticatedAuthPageWebFilterTest {
 
     private static void assertRedirect(ServerWebExchange exchange) {
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FOUND);
-        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/auth/done");
+        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/console");
         assertThat(exchange.getResponse().getHeaders().getCacheControl()).isEqualTo("no-store");
     }
 
@@ -116,6 +121,29 @@ class AuthenticatedAuthPageWebFilterTest {
 
         assertThat(called[0]).isTrue();
         assertThat(exchange.getResponse().getStatusCode()).isNull();
+    }
+
+    @Test
+    void whitelistedRedirectUriWinsOverTheDefaultLanding() {
+        var exchange = exchange(
+                MockServerHttpRequest.get("/auth/").queryParam("redirect_uri", "/uc/security"),
+                user("alice", "super-role"));
+
+        StepVerifier.create(filter.filter(exchange, noRedirectChain())).verifyComplete();
+
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FOUND);
+        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/uc/security");
+    }
+
+    @Test
+    void externalRedirectUriFallsBackToTheDefaultLanding() {
+        var exchange = exchange(
+                MockServerHttpRequest.get("/auth/").queryParam("redirect_uri", "https://example.com/steal"),
+                user("alice", "super-role"));
+
+        StepVerifier.create(filter.filter(exchange, noRedirectChain())).verifyComplete();
+
+        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/console");
     }
 
     @Test

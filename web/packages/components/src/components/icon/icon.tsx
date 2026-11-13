@@ -2,8 +2,8 @@ import { Icon as NetworkIcon } from "@iconify/react";
 import { Icon as OfflineIcon, type IconProps as IconifyProps } from "@iconify/react/offline";
 import { Box, useTheme } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
-import { cn } from "@pudans/utils";
-import { isRegisteredIcon, registerBuiltinIcons, registerLegacyIcons } from "@pudans/icons";
+import { cn } from "@pudans/shared";
+import { isRegisteredIcon, registerBuiltinIcons, registerLegacyIcons } from "@pudans/shared/icons";
 import styles from "./icon.module.css";
 
 registerBuiltinIcons();

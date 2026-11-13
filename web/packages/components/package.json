@@ -28,9 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@pudans/icons": "workspace:*",
-    "@pudans/theme": "workspace:*",
-    "@pudans/utils": "workspace:*",
+    "@pudans/shared": "workspace:*",
     "@iconify/react": "catalog:",
     "@mui/x-date-pickers": "catalog:",
     "@mui/x-tree-view": "catalog:",
@@ -58,9 +56,7 @@
     "@emotion/react": "catalog:",
     "@emotion/styled": "catalog:",
     "@mui/material": "catalog:",
-    "@pudans/icons": "workspace:*",
-    "@pudans/theme": "workspace:*",
-    "@pudans/utils": "workspace:*",
+    "@pudans/shared": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vitejs/plugin-react-swc": "catalog:",

@@ -10,11 +10,7 @@ import { fileURLToPath } from "node:url";
 const root = join(dirname(dirname(dirname(fileURLToPath(import.meta.url)))), "web");
 const roots = [
   join(root, "packages/components/src"),
-  join(root, "packages/theme/src"),
-  join(root, "packages/hooks/src"),
-  join(root, "packages/utils/src"),
-  join(root, "packages/icons/src"),
-  join(root, "packages/layouts/src"),
+  join(root, "packages/shared/src"),
   join(root, "src"),
 ];
 

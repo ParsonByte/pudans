@@ -4,7 +4,7 @@
  * - verifies every folder under packages/components/src/components has a barrel and is re-exported
  * - verifies named exports are unique across folders
  * - verifies the component package root barrel exports ONLY ./components
- * - verifies theme/layouts/hooks/icons packages expose their expected entries
+ * - verifies the shared package exposes its expected entries
  * Usage: node scripts/check-exports.mjs
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
@@ -69,15 +69,23 @@ for (const folder of ["hooks", "layouts", "utils", "styles"]) {
   if (existsSync(join(src, folder))) problems.push("non-component directory found in component package: " + folder);
 }
 
-for (const [pkg, entries] of [
-  ["theme", ["tokens.ts", "create-theme.ts", "theme-provider.tsx", "variables.css", "global.css", "index.ts"]],
-  ["layouts", ["index.ts", "app-shell/app-shell.tsx", "page-layout/page-layout.tsx"]],
-  ["hooks", ["index.ts", "use-overflow.ts"]],
-  ["icons", ["index.ts", "legacy-icons.ts"]],
-  ["utils", ["index.ts", "utils/classnames.ts"]],
-]) {
-  for (const entry of entries) {
-    if (!existsSync(join(root, "packages", pkg, "src", entry))) problems.push("missing " + pkg + " entry: " + entry);
+const sharedEntries = [
+  "index.ts",
+  "theme/tokens.ts",
+  "theme/create-theme.ts",
+  "theme/theme-provider.tsx",
+  "theme/variables.css",
+  "theme/global.css",
+  "theme/index.ts",
+  "icons/index.ts",
+  "icons/legacy-icons.ts",
+  "hooks/index.ts",
+  "hooks/use-overflow.ts",
+  "utils/classnames.ts",
+];
+for (const entry of sharedEntries) {
+  if (!existsSync(join(root, "packages", "shared", "src", entry))) {
+    problems.push("missing shared entry: " + entry);
   }
 }
 

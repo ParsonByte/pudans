@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { styled } from "@mui/material/styles";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import { Icon } from "../icon";
 import styles from "./code.module.css";
 

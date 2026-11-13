@@ -4,7 +4,7 @@ import MuiCircularProgress from "@mui/material/CircularProgress";
 import MuiLinearProgress from "@mui/material/LinearProgress";
 import Typography from "@mui/material/Typography";
 import type { Theme } from "@mui/material/styles";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export type ProgressTone = "brand" | "success" | "warning" | "danger" | "neutral";
 export type ProgressSize = "sm" | "md" | "lg";
@@ -42,7 +42,7 @@ function toneColor(theme: Theme, tone: ProgressTone, circular = false): string {
       return theme.palette.grey[500];
     default:
       // BorderLinearProgress used dedicated light/dark blues; the closest
-      // theme tokens are the brand-450 / brand-400 ramps in @pudans/theme.
+      // theme tokens are the brand-450 / brand-400 ramps in @pudans/shared/theme.
       return circular
         ? theme.palette.primary.main
         : theme.palette.mode === "light"

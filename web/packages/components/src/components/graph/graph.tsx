@@ -16,7 +16,7 @@ import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import { useTheme } from "@mui/material/styles";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import styles from "./graph.module.css";
 
 export type GraphNodeTone = "neutral" | "brand" | "success" | "warning" | "danger";

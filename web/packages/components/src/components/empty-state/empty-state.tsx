@@ -1,6 +1,6 @@
 import { forwardRef, type HTMLAttributes, type ReactNode } from "react";
 import { Box, Typography, useTheme } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import { Icon } from "../icon";
 
 export type EmptyStateVariant =

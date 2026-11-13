@@ -1,6 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import { InputAdornment, TextField, type TextFieldProps } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export type InputSize = "sm" | "md" | "lg";
 

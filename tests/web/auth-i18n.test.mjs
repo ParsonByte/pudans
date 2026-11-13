@@ -14,36 +14,34 @@ function keysFor(locale) {
   return [...new Set([...block.matchAll(/^\s{6}([A-Za-z0-9_]+):/gm)].map((match) => match[1]))].sort();
 }
 
-function authSources(dir, out = []) {
+function componentSources(dir, out = []) {
   for (const name of readdirSync(dir)) {
     const full = join(dir, name);
-    if (statSync(full).isDirectory()) authSources(full, out);
+    if (statSync(full).isDirectory()) componentSources(full, out);
     else if (/\.(ts|tsx)$/.test(name)) out.push(full);
   }
   return out;
 }
 
-test("English and Chinese auth namespaces expose the same keys", () => {
+test("English and Chinese bundles expose the same keys", () => {
   assert.deepEqual(keysFor("zh-CN"), keysFor("en-US"));
-  assert.ok(keysFor("en-US").length > 80);
+  assert.ok(keysFor("en-US").length > 100);
 });
 
-test("every literal auth translation key exists in both locales", () => {
+test("every literal translation key exists in the bundle", () => {
   const known = new Set(keysFor("en-US"));
   const missing = new Set();
-  for (const file of authSources(join(web, "src/components/auth"))) {
+  for (const file of componentSources(join(web, "src/components"))) {
     const source = readFileSync(file, "utf8");
-    for (const match of source.matchAll(/t\(["']([A-Za-z0-9_]+)["']/g)) {
+    for (const match of source.matchAll(/\bt\(["']([A-Za-z0-9_]+)["']/g)) {
       if (!known.has(match[1])) missing.add(match[1] + " in " + file);
     }
   }
   assert.deepEqual([...missing], []);
 });
 
-test("auth namespaces are the only bundled namespaces", () => {
-  assert.ok(resources.includes("common:"));
-  assert.ok(resources.includes("auth:"));
-  for (const removed of ["setup:", "console:", "uc:"]) {
-    assert.ok(!resources.includes("    " + removed), removed);
+test("auth, setup, console and uc namespaces are bundled", () => {
+  for (const namespace of ["common:", "auth:", "setup:", "console:", "uc:"]) {
+    assert.ok(resources.includes("    " + namespace), namespace);
   }
 });

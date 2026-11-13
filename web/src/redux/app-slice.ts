@@ -1,7 +1,7 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { accentPresets } from "@pudans/theme";
-import type { PudansColorModePreference } from "@pudans/theme";
-import { DEFAULT_LOCALE } from "@pudans/utils";
+import { accentPresets } from "@pudans/shared/theme";
+import type { PudansColorModePreference } from "@pudans/shared/theme";
+import { DEFAULT_LOCALE } from "@pudans/shared";
 
 export const COLOR_MODE_STORAGE_KEY = "pudans:color-mode";
 export const ACCENT_COLOR_STORAGE_KEY = "pudans:accent-color";

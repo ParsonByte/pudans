@@ -44,6 +44,9 @@ public class AuthenticatedAuthPageWebFilter implements WebFilter {
 
     private final SecurityProperties securityProperties;
 
+    private static final java.util.List<String> ALLOWED_REDIRECT_PREFIXES =
+            java.util.List.of("/console", "/uc", "/setup", "/auth/legal");
+
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
     @Override
@@ -77,8 +80,33 @@ public class AuthenticatedAuthPageWebFilter implements WebFilter {
     private Mono<Void> redirect(ServerWebExchange exchange) {
         var response = exchange.getResponse();
         response.setStatusCode(HttpStatus.FOUND);
-        response.getHeaders().setLocation(URI.create(securityProperties.getPostLoginUrl()));
+        response.getHeaders().setLocation(URI.create(resolveDestination(exchange)));
         response.getHeaders().setCacheControl("no-store");
         return response.setComplete();
+    }
+
+    /**
+     * Only same-origin application pages may be used as redirect_uri. Console
+     * and UC guards still run after the redirect, so a disallowed account can
+     * never bypass the console restriction through this parameter.
+     */
+    private String resolveDestination(ServerWebExchange exchange) {
+        var raw = exchange.getRequest().getQueryParams().getFirst("redirect_uri");
+        if (raw == null || raw.isBlank()) {
+            return securityProperties.getPostLoginUrl();
+        }
+        try {
+            var uri = URI.create(raw);
+            if (uri.getHost() != null || uri.getScheme() != null) {
+                return securityProperties.getPostLoginUrl();
+            }
+            var path = uri.getPath();
+            if (path == null || !ALLOWED_REDIRECT_PREFIXES.stream().anyMatch(path::startsWith)) {
+                return securityProperties.getPostLoginUrl();
+            }
+            return raw;
+        } catch (IllegalArgumentException ignored) {
+            return securityProperties.getPostLoginUrl();
+        }
     }
 }

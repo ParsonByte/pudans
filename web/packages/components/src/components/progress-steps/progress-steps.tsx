@@ -4,7 +4,7 @@ import Step from "@mui/material/Step";
 import StepLabel from "@mui/material/StepLabel";
 import Stepper from "@mui/material/Stepper";
 import Typography from "@mui/material/Typography";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export type ProgressStepStatus = "pending" | "active" | "complete" | "error";
 

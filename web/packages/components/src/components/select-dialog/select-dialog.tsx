@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { List, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import { Dialog } from "../dialog";
 import styles from "./select-dialog.module.css";
 

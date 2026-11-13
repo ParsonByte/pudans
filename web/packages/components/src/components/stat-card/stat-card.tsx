@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import { alpha } from "@mui/material/styles";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export type StatCardTone = "brand" | "success" | "warning" | "info" | "danger";
 

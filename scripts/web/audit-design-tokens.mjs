@@ -15,20 +15,16 @@ const repoRoot = dirname(root);
 const scanRoots = [
   join(root, "src"),
   join(root, "packages/components/src"),
-  join(root, "packages/layouts/src"),
-  join(root, "packages/hooks/src"),
-  join(root, "packages/utils/src"),
-  join(root, "packages/theme/src"),
-  join(root, "packages/icons/src"),
+  join(root, "packages/shared/src"),
 ];
 const allowlist = [
-  "packages/theme/src/tokens.ts",
-  "packages/theme/src/variables.css",
-  "packages/theme/src/create-theme.ts",
-  "packages/theme/src/global.css",
-  "packages/theme/src/index.css",
-  "packages/icons/src/legacy-icons.ts",
-  "packages/icons/src/builtin-icons.ts",
+  "packages/shared/src/theme/tokens.ts",
+  "packages/shared/src/theme/variables.css",
+  "packages/shared/src/theme/create-theme.ts",
+  "packages/shared/src/theme/global.css",
+  "packages/shared/src/theme/index.css",
+  "packages/shared/src/icons/legacy-icons.ts",
+  "packages/shared/src/icons/builtin-icons.ts",
 ];
 const strict = process.argv.includes("--strict");
 

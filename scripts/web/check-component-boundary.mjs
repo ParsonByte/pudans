@@ -56,7 +56,6 @@ const forbiddenImports = [
   /from\s+"@pudans\/api-client/,
   /from\s+"react-router-dom"/,
   /from\s+"i18next/,
-  /from\s+"@pudans\/hooks/,
   /from\s+"@pudans\/layouts/,
 ];
 for (const file of walk(src).filter((f) => /\.(ts|tsx)$/.test(f))) {
@@ -64,7 +63,7 @@ for (const file of walk(src).filter((f) => /\.(ts|tsx)$/.test(f))) {
   for (const rule of forbiddenImports) {
     if (rule.test(source)) problems.push("forbidden dependency in " + relative(pkg, file) + ": " + rule);
   }
-  if (/from\s+"@pudans\/[a-z-]+\//.test(source)) {
+  if (/from\s+"@pudans\/(?!shared(?:\/|"))[a-z-]+\//.test(source)) {
     problems.push("deep import into another package: " + relative(pkg, file));
   }
 }

@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 import { Provider } from "react-redux";
 import { ConfirmProvider, SelectProvider, ToastProvider } from "@pudans/components";
-import { PudansThemeProvider } from "@pudans/theme";
+import { PudansThemeProvider } from "@pudans/shared/theme";
 import { useAppDispatch, useAppSelector } from "../redux";
 import { setThemePreference } from "../redux/app-slice";
 import { store } from "../redux/store";
 import "../util/i18n";
 import { SessionProvider } from "./session-provider";
+import { SystemProvider } from "./system-provider";
 
 function ThemedTree({ children }: { children: ReactNode }) {
   const dispatch = useAppDispatch();
@@ -20,13 +21,15 @@ function ThemedTree({ children }: { children: ReactNode }) {
       onPreferenceChange={(next) => dispatch(setThemePreference(next))}
     >
       <SessionProvider>
-        <ConfirmProvider>
+        <SystemProvider>
+          <ConfirmProvider>
           <SelectProvider>
             <ToastProvider maxSnack={3} anchorOrigin={{ vertical: "top", horizontal: "right" }}>
               {children}
             </ToastProvider>
           </SelectProvider>
-        </ConfirmProvider>
+          </ConfirmProvider>
+        </SystemProvider>
       </SessionProvider>
     </PudansThemeProvider>
   );

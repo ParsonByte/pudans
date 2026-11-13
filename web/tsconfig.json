@@ -8,11 +8,12 @@
     "types": ["node", "vite/client"],
     "baseUrl": ".",
     "paths": {
+      "@pudans/api-client": ["./packages/api-client/src/index.ts"],
       "@pudans/components": ["./packages/components/src/index.ts"],
-      "@pudans/theme": ["./packages/theme/src/index.ts"],
-      "@pudans/icons": ["./packages/icons/src/index.ts"],
-      "@pudans/hooks": ["./packages/hooks/src/index.ts"],
-      "@pudans/utils": ["./packages/utils/src/index.ts"]
+      "@pudans/shared": ["./packages/shared/src/index.ts"],
+      "@pudans/shared/theme": ["./packages/shared/src/theme/index.ts"],
+      "@pudans/shared/icons": ["./packages/shared/src/icons/index.ts"],
+      "@pudans/shared/hooks": ["./packages/shared/src/hooks/index.ts"]
     }
   },
   "include": [

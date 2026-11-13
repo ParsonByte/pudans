@@ -1,0 +1,6 @@
+import { useTranslation } from "react-i18next";
+
+export function useOverviewPage() {
+  const { t } = useTranslation("console");
+  return { title: t("overviewTitle"), description: t("overviewDescription") };
+}

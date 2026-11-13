@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { authApi } from "../util/api";
-import type { SessionView } from "../util/api-types";
+import { authApiClient, type SessionView } from "@pudans/api-client";
+import { ALL_PERMISSIONS } from "@pudans/shared";
 import { SessionContext, type SessionContextValue, type SessionStatus } from "./session-context";
+
+function hasPermission(permissions: readonly string[], required: readonly string[]): boolean {
+  if (permissions.includes(ALL_PERMISSIONS)) {
+    return true;
+  }
+  return required.some((permission) => permissions.includes(permission));
+}
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<SessionView | null>(null);
@@ -10,7 +17,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async (): Promise<void> => {
     try {
-      const next = await authApi.getSession();
+      const next = await authApiClient.getSession();
       setSession(next);
       setStatus(next.authenticated ? "authenticated" : "anonymous");
     } catch {
@@ -29,16 +36,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async (): Promise<void> => {
     try {
-      await authApi.logout();
+      await authApiClient.logout();
     } finally {
       setSession(null);
       setStatus("anonymous");
     }
   }, []);
 
+  const permissions = useMemo<readonly string[]>(
+    () => (session?.uiPermissions ?? []) as readonly string[],
+    [session?.uiPermissions],
+  );
+
   const value = useMemo<SessionContextValue>(
-    () => ({ status, session, refresh, signOut }),
-    [status, session, refresh, signOut],
+    () => ({
+      status,
+      session,
+      permissions,
+      consoleAccessDisallowed: session?.consoleAccessDisallowed === true,
+      hasPermission: (...required: string[]) => hasPermission(permissions, required),
+      refresh,
+      signOut,
+    }),
+    [status, session, permissions, refresh, signOut],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

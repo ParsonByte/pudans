@@ -1,8 +1,12 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@pudans/components";
-import { authApi } from "../../../../../util/api";
-import type { LoginProvider, LoginStatus } from "../../../../../util/api-types";
+import {
+  authApiClient,
+  type LoginProvider,
+  type LoginStatus,
+} from "@pudans/api-client";
+import { useRedirectUri } from "../../../../../hooks/use-auth-navigation";
 import { encryptPassword } from "../../../../../util/password-crypto";
 import { safeRedirectPath } from "../../../../../util/url";
 
@@ -45,6 +49,7 @@ function clearErrorQuery(): void {
 export function useLogin() {
   const { t } = useTranslation("auth");
   const toast = useToast();
+  const redirectUri = useRedirectUri();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [passwordVisible, setPasswordVisible] = useState(false);
@@ -74,8 +79,8 @@ export function useLogin() {
     let active = true;
     void (async () => {
       const [statusResult, providersResult] = await Promise.allSettled([
-        authApi.getStatus(),
-        authApi.getProviders(),
+        authApiClient.getStatus(),
+        authApiClient.getProviders(),
       ]);
       if (!active) {
         return;
@@ -112,14 +117,14 @@ export function useLogin() {
 
     setLoading(true);
     try {
-      const publicKeyResponse = await authApi.getPublicKey();
+      const publicKeyResponse = await authApiClient.getPublicKey();
       const publicKey = publicKeyResponse.base64Format;
       if (!publicKey) {
         throw new Error("The server returned an empty public key.");
       }
 
       const encrypted = encryptPassword(password, publicKey);
-      const outcome = await authApi.submitLogin(username.trim(), encrypted);
+      const outcome = await authApiClient.login(username.trim(), encrypted);
 
       if (outcome.kind === "challenge") {
         window.location.assign(outcome.location);
@@ -130,15 +135,17 @@ export function useLogin() {
         return;
       }
 
-      let redirectUrl = status?.postLoginUrl ?? "/auth/done";
+      let redirectUrl = redirectUri ?? status?.postLoginUrl ?? "/console";
       try {
-        const session = await authApi.getSession();
-        redirectUrl = session.redirectUrl || redirectUrl;
+        const session = await authApiClient.getSession();
+        redirectUrl = session.consoleAccessDisallowed
+          ? "/uc"
+          : redirectUri ?? (session.redirectUrl || "/console");
       } catch {
         // The session snapshot is an optimisation; the server-provided default
         // remains a valid destination.
       }
-      window.location.assign(safeRedirectPath(redirectUrl, "/auth/done"));
+      window.location.assign(safeRedirectPath(redirectUrl, "/console"));
     } catch (requestError) {
       const cryptoFailure =
         requestError instanceof Error && /public key|crypto|password is too long/i.test(requestError.message);

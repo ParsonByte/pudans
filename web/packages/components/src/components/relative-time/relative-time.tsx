@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 import { Tooltip, Typography } from "@mui/material";
 import type { TypographyProps } from "@mui/material";
-import { formatDateTime, formatRelativeTime } from "@pudans/utils";
+import { formatDateTime, formatRelativeTime } from "@pudans/shared";
 
 export interface RelativeTimeProps extends Omit<TypographyProps<"time">, "children"> {
   datetime: string | number | Date;

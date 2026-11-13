@@ -56,25 +56,34 @@ if (srcFiles.length !== 1 || srcFiles[0] !== "main.tsx") {
   problems.push("src may only contain main.tsx as its single build entry, found: " + JSON.stringify(srcFiles));
 }
 
-const componentDirs = entries(join(src, "components"));
-if (componentDirs.length !== 1 || componentDirs[0] !== "auth") {
-  problems.push("src/components must contain only auth, found: " + JSON.stringify(componentDirs));
+const packageDirs = entries(join(root, "packages")).sort();
+const expectedPackages = ["api-client", "components", "shared", "ui-plugin-bundler-kit"];
+if (JSON.stringify(packageDirs) !== JSON.stringify(expectedPackages)) {
+  problems.push("web/packages must contain api-client/components/shared/ui-plugin-bundler-kit, found: " + JSON.stringify(packageDirs));
 }
 
-const authRoot = join(src, "components/auth");
-for (const required of ["index.tsx", "components", "composables", "modules"]) {
-  if (!entries(authRoot).includes(required)) problems.push("auth root is missing " + required);
+const componentDirs = entries(join(src, "components")).sort();
+const expectedComponents = ["auth", "console", "setup", "uc"];
+if (JSON.stringify(componentDirs) !== JSON.stringify(expectedComponents)) {
+  problems.push("src/components must contain auth/console/setup/uc, found: " + JSON.stringify(componentDirs));
 }
-for (const page of entries(join(authRoot, "modules"))) {
-  const pageDir = join(authRoot, "modules", page);
-  for (const required of ["index.tsx", "components", "composables"]) {
-    if (!entries(pageDir).includes(required)) problems.push("auth page " + page + " is missing " + required);
+for (const app of expectedComponents) {
+  const appRoot = join(src, "components", app);
+  const requiredRoot = app === "setup" ? ["index.tsx", "modules"] : ["index.tsx", "components", "composables", "modules"];
+  for (const required of requiredRoot) {
+    if (!entries(appRoot).includes(required)) problems.push(app + " root is missing " + required);
+  }
+  for (const page of entries(join(appRoot, "modules"))) {
+    const pageDir = join(appRoot, "modules", page);
+    for (const required of ["index.tsx", "components", "composables"]) {
+      if (!entries(pageDir).includes(required)) problems.push(app + " page " + page + " is missing " + required);
+    }
   }
 }
 
 const routerSource = readFileSync(join(src, "router/index.tsx"), "utf8");
-for (const forbidden of ["console", "setup", "lab", "/uc"]) {
-  if (routerSource.includes(forbidden)) problems.push("non-auth route reference in router: " + forbidden);
+for (const route of ["/auth", "/console", "/uc", "/setup", "/forbidden"]) {
+  if (!routerSource.includes(route)) problems.push("router is missing " + route);
 }
 
 const forbiddenPaths = ["app", "tests", "scripts", "build", ".husky"].filter((name) =>
@@ -117,6 +126,8 @@ console.log(
     "; src/" +
     srcDirs.join(", ") +
     "; " +
-    entries(join(authRoot, "modules")).length +
-    " auth pages.",
+    expectedComponents
+      .map((app) => app + ":" + entries(join(src, "components", app, "modules")).length)
+      .join(" ") +
+    ".",
 );

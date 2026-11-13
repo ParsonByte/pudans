@@ -4,7 +4,7 @@ import ReactAnimateHeight, {
   type Height,
 } from "react-animate-height";
 import { useTheme } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import styles from "./animate-height.module.css";
 
 export interface AnimateHeightProps extends Omit<ReactAnimateHeightProps, "height"> {

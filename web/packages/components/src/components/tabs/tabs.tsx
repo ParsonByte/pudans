@@ -61,8 +61,8 @@ const StyledTabBase = styled(MuiTab)(({ theme }) => ({
     position: "absolute",
     top: theme.spacing(0.5),
     bottom: theme.spacing(0.5),
-    left: theme.spacing(-1),
-    right: theme.spacing(-1),
+    left: 0,
+    right: 0,
     transition: theme.transitions.create(["background-color"]),
   },
   "&.MuiTab-root>.MuiTab-iconWrapper": {
@@ -79,8 +79,8 @@ const StyledTabBase = styled(MuiTab)(({ theme }) => ({
     borderRadius: theme.spacing(1),
     top: theme.spacing(0.5),
     bottom: theme.spacing(0.5),
-    left: theme.spacing(-1),
-    right: theme.spacing(-1),
+    left: 0,
+    right: 0,
   },
   "&:hover": {
     "&:not(.Mui-selected)": { color: theme.palette.text.primary },

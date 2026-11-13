@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type HTMLAttributes, type ReactNode } from "react";
 import { Box, Button, Typography, useTheme } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export function resolveErrorMessage(error: unknown): string {
   if (error instanceof Error) {

@@ -32,6 +32,7 @@ export interface HttpClientOptions {
   retry?: RetryOptions | false;
   getAccessToken?: () => string | null | undefined | Promise<string | null | undefined>;
   onUnauthorized?: (error: PudansApiError) => void;
+  onForbidden?: (error: PudansApiError) => void;
   onRequest?: (config: InternalAxiosRequestConfig) => void;
   onResponse?: (response: AxiosResponse) => void;
   onError?: (error: PudansApiError) => void;

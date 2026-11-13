@@ -4,7 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 const web = new URL("../../web/", import.meta.url).pathname;
-const variables = readFileSync(join(web, "packages/theme/src/variables.css"), "utf8");
+const variables = readFileSync(join(web, "packages/shared/src/theme/variables.css"), "utf8");
 
 function authCss(dir, out = []) {
   for (const name of readdirSync(dir)) {

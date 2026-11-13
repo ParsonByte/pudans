@@ -253,6 +253,9 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
       if (normalized.status === 401) {
         options.onUnauthorized?.(normalized);
       }
+      if (normalized.status === 403) {
+        options.onForbidden?.(normalized);
+      }
       options.onError?.(normalized);
       throw normalized;
     },

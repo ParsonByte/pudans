@@ -1,6 +1,6 @@
 import { forwardRef, type ReactNode } from "react";
 import { Avatar as MuiAvatar, type AvatarProps as MuiAvatarProps, useTheme } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export type AvatarSize = "sm" | "md" | "lg" | "xl" | number;
 export type AvatarStatus = "online" | "offline" | "away" | "busy";

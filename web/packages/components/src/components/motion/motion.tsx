@@ -7,8 +7,8 @@ import {
   type GrowProps,
   type SlideProps,
 } from "@mui/material";
-import { cn } from "@pudans/utils";
-import { motionDurations } from "@pudans/theme";
+import { cn } from "@pudans/shared";
+import { motionDurations } from "@pudans/shared/theme";
 import styles from "./motion.module.css";
 
 export interface MotionTimeout {

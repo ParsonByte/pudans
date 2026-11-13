@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, type ReactNode } from "react";
 import { Box, Grow, Typography, useTheme } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import { Button } from "../button";
 import { Icon } from "../icon";
 

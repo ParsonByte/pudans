@@ -15,14 +15,20 @@ function dirs(path) {
 test("web root only exposes packages, src, public and one index.html", () => {
   const dirsInRoot = dirs(web).filter((name) => name !== "node_modules");
   assert.deepEqual(dirsInRoot, ["packages", "public", "src"]);
-  const html = [];
-  for (const name of readdirSync(web)) {
-    if (name.endsWith(".html")) html.push(name);
-  }
+  const html = readdirSync(web).filter((name) => name.endsWith(".html"));
   assert.deepEqual(html, ["index.html"]);
 });
 
-test("src keeps the seven auth runtime directories and a single entry", () => {
+test("packages are limited to api-client, components, shared and the bundler kit", () => {
+  assert.deepEqual(dirs(join(web, "packages")), [
+    "api-client",
+    "components",
+    "shared",
+    "ui-plugin-bundler-kit",
+  ]);
+});
+
+test("src keeps the seven runtime directories and a single entry", () => {
   assert.deepEqual(dirs(join(web, "src")), [
     "components",
     "constants",
@@ -38,26 +44,61 @@ test("src keeps the seven auth runtime directories and a single entry", () => {
   assert.deepEqual(files, ["main.tsx"]);
 });
 
-test("components contains only auth and every page follows the agreed shape", () => {
-  assert.deepEqual(dirs(join(web, "src/components")), ["auth"]);
-  const auth = join(web, "src/components/auth");
-  for (const required of ["index.tsx", "components", "composables", "modules"]) {
-    assert.ok(readdirSync(auth).includes(required), required);
-  }
-  for (const page of dirs(join(auth, "modules"))) {
-    const pageDir = join(auth, "modules", page);
-    for (const required of ["index.tsx", "components", "composables"]) {
-      assert.ok(readdirSync(pageDir).includes(required), page + "/" + required);
+test("auth, setup, console and uc keep the agreed module shape", () => {
+  assert.deepEqual(dirs(join(web, "src/components")), ["auth", "console", "setup", "uc"]);
+  for (const app of ["auth", "console", "setup", "uc"]) {
+    const appRoot = join(web, "src/components", app);
+    const requiredRoot = app === "setup" ? ["index.tsx", "modules"] : ["index.tsx", "components", "composables", "modules"];
+    for (const required of requiredRoot) {
+      assert.ok(readdirSync(appRoot).includes(required), app + "/" + required);
+    }
+    for (const page of dirs(join(appRoot, "modules"))) {
+      const pageDir = join(appRoot, "modules", page);
+      for (const required of ["index.tsx", "components", "composables"]) {
+        assert.ok(readdirSync(pageDir).includes(required), app + "/" + page + "/" + required);
+      }
     }
   }
 });
 
-test("the router only reaches auth pages", () => {
+test("the router mounts every application root", () => {
   const source = readFileSync(join(web, "src/router/index.tsx"), "utf8");
-  for (const route of ["LoginView", "RecoveryView", "LegalView", "SignedInView"]) {
+  for (const route of ["/auth", "/console", "/uc", "/setup", "/forbidden"]) {
     assert.ok(source.includes(route), route);
   }
-  for (const forbidden of ["setup", "console", "lab", "uc"]) {
-    assert.ok(!source.toLowerCase().includes(forbidden), forbidden);
+});
+
+test("no page or non-api package creates its own HTTP transport", () => {
+  const roots = [join(web, "src"), join(web, "packages/components/src"), join(web, "packages/shared/src")];
+  const findings = [];
+  function walk(dir) {
+    for (const name of readdirSync(dir)) {
+      const full = join(dir, name);
+      if (statSync(full).isDirectory()) {
+        walk(full);
+      } else if (/\.(ts|tsx)$/.test(name)) {
+        const source = readFileSync(full, "utf8");
+        for (const pattern of [
+          /axios\.create\s*\(/,
+          /new\s+axios\s*\(/,
+          /\bfetch\s*\(/,
+          /new\s+XMLHttpRequest\s*\(/,
+          /from\s+["']axios["']/,
+        ]) {
+          if (pattern.test(source)) findings.push(full + " matches " + pattern);
+        }
+      }
+    }
   }
+  for (const root of roots) walk(root);
+  assert.deepEqual(findings, []);
+});
+
+test("the api-client owns the single Axios instance", () => {
+  const source = readFileSync(join(web, "packages/api-client/src/client/http.ts"), "utf8");
+  assert.match(source, /axios\.create\(/);
+  const auth = readFileSync(join(web, "packages/api-client/src/client/index.ts"), "utf8");
+  assert.ok(auth.includes("authApiClient"));
+  assert.ok(auth.includes("consoleApiClient"));
+  assert.ok(auth.includes("ucApiClient"));
 });

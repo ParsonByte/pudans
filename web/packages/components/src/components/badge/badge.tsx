@@ -1,7 +1,7 @@
 import { forwardRef, type HTMLAttributes, type Ref } from "react";
 import Box from "@mui/material/Box";
 import Chip, { type ChipProps } from "@mui/material/Chip";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export type BadgeTone = "neutral" | "brand" | "success" | "warning" | "danger" | "info";
 export type BadgeVariant = "soft" | "solid" | "outline";

@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import { Box, Fade, useTheme } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 import styles from "./split-pane.module.css";
 
 export interface SplitPaneProps {

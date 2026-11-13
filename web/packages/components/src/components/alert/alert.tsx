@@ -1,7 +1,7 @@
 import { forwardRef, type ReactNode } from "react";
 import MuiAlert, { type AlertProps as MuiAlertProps } from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export type AlertSeverity = "info" | "success" | "warning" | "error";
 

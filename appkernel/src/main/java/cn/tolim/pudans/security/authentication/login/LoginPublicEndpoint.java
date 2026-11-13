@@ -2,6 +2,7 @@ package cn.tolim.pudans.security.authentication.login;
 
 import cn.tolim.pudans.contract.core.extension.AuthProvider;
 import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.core.rbac.service.UiPermissionService;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
@@ -41,6 +42,8 @@ public class LoginPublicEndpoint implements CustomEndpoint {
 
     private final InitializationStateGetter initializationStateGetter;
 
+    private final UiPermissionService uiPermissionService;
+
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
     @Override
@@ -73,22 +76,43 @@ public class LoginPublicEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> session(ServerRequest request) {
         return currentAuthentication(request)
                 .filter(this::isSignedIn)
-                .flatMap(authentication -> userService
-                        .getUser(authentication.getName())
-                        .map(user -> new SessionView(
-                                true,
-                                authentication.getName(),
-                                user.getSpec().getDisplayName(),
-                                user.getSpec().getAvatar(),
-                                securityProperties.getPostLoginUrl()))
-                        .defaultIfEmpty(new SessionView(
-                                true,
-                                authentication.getName(),
-                                authentication.getName(),
-                                null,
-                                securityProperties.getPostLoginUrl())))
+                .flatMap(this::signedInSession)
                 .switchIfEmpty(Mono.just(SessionView.anonymous(securityProperties.getPostLoginUrl())))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
+    }
+
+    private Mono<SessionView> signedInSession(Authentication authentication) {
+        var username = authentication.getName();
+        var user = userService
+                .getUser(username)
+                .map(found -> new SessionView(
+                        true,
+                        username,
+                        found.getSpec().getDisplayName(),
+                        found.getSpec().getAvatar(),
+                        securityProperties.getPostLoginUrl(),
+                        false,
+                        List.of()))
+                .defaultIfEmpty(new SessionView(
+                        true,
+                        username,
+                        username,
+                        null,
+                        securityProperties.getPostLoginUrl(),
+                        false,
+                        List.of()));
+        return Mono.zip(
+                        user,
+                        uiPermissionService.uiPermissionsOf(username).defaultIfEmpty(List.of()),
+                        uiPermissionService.isConsoleAccessDisallowed(username).defaultIfEmpty(false))
+                .map(tuple -> new SessionView(
+                        true,
+                        tuple.getT1().username(),
+                        tuple.getT1().displayName(),
+                        tuple.getT1().avatar(),
+                        securityProperties.getPostLoginUrl(),
+                        tuple.getT3(),
+                        tuple.getT2()));
     }
 
     private Mono<ServerResponse> providers(ServerRequest request) {
@@ -131,9 +155,15 @@ public class LoginPublicEndpoint implements CustomEndpoint {
     }
 
     public record SessionView(
-            boolean authenticated, String username, String displayName, String avatar, String redirectUrl) {
+            boolean authenticated,
+            String username,
+            String displayName,
+            String avatar,
+            String redirectUrl,
+            boolean consoleAccessDisallowed,
+            List<String> uiPermissions) {
         static SessionView anonymous(String redirectUrl) {
-            return new SessionView(false, null, null, null, redirectUrl);
+            return new SessionView(false, null, null, null, redirectUrl, false, List.of());
         }
     }
 

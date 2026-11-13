@@ -13,34 +13,38 @@ const proxyTarget = process.env.VITE_PROXY_TARGET ?? "http://localhost:8090";
  */
 export default defineConfig({
   root: webRoot,
-  base: "/auth/",
+  base: "/",
   envDir: webRoot,
   plugins: [react(), ...(useHttps ? [mkcert()] : [])],
   resolve: {
     alias: [
       {
-        find: /^@pudans\/theme\/style\.css$/,
-        replacement: fileURLToPath(new URL("./packages/theme/src/index.css", import.meta.url)),
+        find: /^@pudans\/shared\/theme\/style\.css$/,
+        replacement: fileURLToPath(new URL("./packages/shared/src/theme/index.css", import.meta.url)),
+      },
+      {
+        find: /^@pudans\/shared\/theme$/,
+        replacement: fileURLToPath(new URL("./packages/shared/src/theme/index.ts", import.meta.url)),
+      },
+      {
+        find: /^@pudans\/shared\/icons$/,
+        replacement: fileURLToPath(new URL("./packages/shared/src/icons/index.ts", import.meta.url)),
+      },
+      {
+        find: /^@pudans\/shared\/hooks$/,
+        replacement: fileURLToPath(new URL("./packages/shared/src/hooks/index.ts", import.meta.url)),
+      },
+      {
+        find: /^@pudans\/shared$/,
+        replacement: fileURLToPath(new URL("./packages/shared/src/index.ts", import.meta.url)),
+      },
+      {
+        find: /^@pudans\/api-client$/,
+        replacement: fileURLToPath(new URL("./packages/api-client/src/index.ts", import.meta.url)),
       },
       {
         find: /^@pudans\/components$/,
         replacement: fileURLToPath(new URL("./packages/components/src/index.ts", import.meta.url)),
-      },
-      {
-        find: /^@pudans\/theme$/,
-        replacement: fileURLToPath(new URL("./packages/theme/src/index.ts", import.meta.url)),
-      },
-      {
-        find: /^@pudans\/icons$/,
-        replacement: fileURLToPath(new URL("./packages/icons/src/index.ts", import.meta.url)),
-      },
-      {
-        find: /^@pudans\/hooks$/,
-        replacement: fileURLToPath(new URL("./packages/hooks/src/index.ts", import.meta.url)),
-      },
-      {
-        find: /^@pudans\/utils$/,
-        replacement: fileURLToPath(new URL("./packages/utils/src/index.ts", import.meta.url)),
       },
     ],
   },
@@ -69,7 +73,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: "../build/dist/auth",
+    outDir: "../build/dist",
     emptyOutDir: true,
     sourcemap: true,
     target: "es2022",

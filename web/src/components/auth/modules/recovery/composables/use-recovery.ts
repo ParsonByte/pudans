@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { authApi } from "../../../../../util/api";
-import { isApiError } from "../../../../../util/errors";
+import { authApiClient, isPudansApiError } from "@pudans/api-client";
 
 export type RecoveryStep = 1 | 2 | 3;
 
@@ -35,7 +34,7 @@ export function useRecovery() {
   };
 
   const messageFor = (requestError: unknown): string => {
-    if (!isApiError(requestError)) {
+    if (!isPudansApiError(requestError)) {
       return t("recoveryServiceUnavailable");
     }
     switch (requestError.code) {
@@ -66,7 +65,7 @@ export function useRecovery() {
 
     setCodeSending(true);
     try {
-      await authApi.sendRecoveryCode(account.trim());
+      await authApiClient.sendRecoveryCode({ email: account.trim() });
       setCodeSent(true);
     } catch (requestError) {
       setError(messageFor(requestError));
@@ -111,7 +110,7 @@ export function useRecovery() {
 
       setLoading(true);
       try {
-        await authApi.resetPassword({
+        await authApiClient.resetPassword({
           email: account.trim(),
           code: code.trim(),
           newPassword: password,
@@ -119,7 +118,7 @@ export function useRecovery() {
         setStep(3);
       } catch (requestError) {
         setError(messageFor(requestError));
-        if (isApiError(requestError) && requestError.code === "recovery-code-invalid") {
+        if (isPudansApiError(requestError) && requestError.code === "recovery-code-invalid") {
           setStep(1);
         }
       } finally {

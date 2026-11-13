@@ -21,7 +21,7 @@ tasks.register('pnpmInstall', Exec) {
 
 tasks.register('pnpmBuild', Exec) {
     group = 'frontend'
-    description = 'Builds the auth entry into the repository build/dist/auth.'
+    description = 'Builds the single web entry into the repository build/dist.'
     dependsOn tasks.named('pnpmInstall')
     workingDir layout.projectDirectory
     commandLine 'bash', '-lc', 'npx --yes pnpm@latest run build'
@@ -34,7 +34,7 @@ tasks.register('pnpmBuild', Exec) {
 
 tasks.register('bundleFrontend') {
     group = 'frontend'
-    description = 'Compatibility alias for the auth build.'
+    description = 'Compatibility alias for the single-entry web build.'
     dependsOn tasks.named('pnpmBuild')
 }
 

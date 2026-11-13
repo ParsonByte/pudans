@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const repo = new URL("../../", import.meta.url).pathname;
-const apiConstants = readFileSync(repo + "web/src/constants/api.ts", "utf8");
+const authClient = readFileSync(
+  repo + "web/packages/api-client/src/client/auth-api.ts",
+  "utf8",
+);
 const publicEndpoint = readFileSync(
   repo + "appkernel/src/main/java/cn/tolim/pudans/security/authentication/login/LoginPublicEndpoint.java",
   "utf8",
@@ -24,28 +27,51 @@ const spa = readFileSync(
   repo + "appkernel/src/main/java/cn/tolim/pudans/infra/webfilter/SpaIndexWebFilter.java",
   "utf8",
 );
+const sessionService = readFileSync(
+  repo + "appkernel/src/main/java/cn/tolim/pudans/core/rbac/service/UiPermissionService.java",
+  "utf8",
+);
+const role = readFileSync(
+  repo + "appkernel/src/main/java/cn/tolim/pudans/contract/core/extension/rbac/Role.java",
+  "utf8",
+);
 
-test("frontend auth API constants match the backend routes", () => {
-  assert.match(apiConstants, /AUTH_API_BASE = "\/apis\/auth\.api\.pudans\.tolim\.cn\/v1alpha1"/);
-  for (const route of ["login/session", "login/providers", "login/status"]) {
+test("api-client auth routes match backend handlers", () => {
+  assert.ok(authClient.includes('AUTH_API_BASE = "/apis/auth.api.pudans.tolim.cn/v1alpha1"'));
+  for (const route of ["login/status", "login/providers", "login/session"]) {
+    assert.ok(authClient.includes(route), route);
     assert.ok(publicEndpoint.includes(route), route);
   }
+  assert.ok(authClient.includes("/login/public-key"));
+  assert.ok(publicKey.includes("/login/public-key"));
   assert.ok(recovery.includes("/send-code"));
   assert.ok(recovery.includes("/reset-password"));
-  assert.ok(apiConstants.includes("recovery/send-code"));
-  assert.ok(apiConstants.includes("recovery/reset-password"));
-  assert.ok(apiConstants.includes("/login/public-key"));
-  assert.ok(publicKey.includes("/login/public-key"));
 });
 
-test("login, session, provider and status routes are public", () => {
+test("auth, session, provider and status routes are public", () => {
   assert.ok(authorization.includes('"/apis/" + ApiGroups.AUTH + "/v1alpha1/login/**"'));
 });
 
-test("single-entry build is mounted at /auth", () => {
-  assert.ok(spa.includes('"/auth/index.html"'));
-  assert.ok(!spa.includes("/console/index.html"));
-  assert.ok(!spa.includes("/uc/index.html"));
+test("one SPA entry serves auth, setup, console, UC and forbidden", () => {
+  assert.ok(spa.includes('"/index.html"'));
+  for (const root of ["/auth", "/console", "/uc", "/setup", "/forbidden"]) {
+    assert.ok(spa.includes(root), root);
+  }
+});
+
+test("console disallow annotation is exposed through the auth session", () => {
+  assert.ok(role.includes("DISALLOW_ACCESS_CONSOLE_ANNO"));
+  assert.ok(sessionService.includes("isConsoleAccessDisallowed"));
+  assert.ok(publicEndpoint.includes("consoleAccessDisallowed"));
+  assert.ok(publicEndpoint.includes("uiPermissions"));
+});
+
+test("post-login landing defaults to the console", () => {
+  const properties = readFileSync(
+    repo + "appkernel/src/main/java/cn/tolim/pudans/infra/properties/SecurityProperties.java",
+    "utf8",
+  );
+  assert.ok(properties.includes('private String postLoginUrl = "/console"'));
 });
 
 test("recovery failures expose stable machine codes", () => {

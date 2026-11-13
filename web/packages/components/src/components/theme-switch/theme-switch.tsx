@@ -9,8 +9,8 @@ import {
   type SxProps,
   type Theme,
 } from "@mui/material";
-import { usePudansTheme } from "@pudans/theme";
-import type { PudansColorModePreference } from "@pudans/theme";
+import { usePudansTheme } from "@pudans/shared/theme";
+import type { PudansColorModePreference } from "@pudans/shared/theme";
 import { Icon } from "../icon";
 
 export interface ThemeSwitchLabels {

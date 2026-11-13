@@ -1,5 +1,5 @@
 import { Skeleton as MuiSkeleton, type SkeletonProps as MuiSkeletonProps } from "@mui/material";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export type SkeletonVariant = "text" | "circular" | "rectangular" | "rounded";
 

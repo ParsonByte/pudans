@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { cn } from "@pudans/utils";
+import { cn } from "@pudans/shared";
 
 export const CHART_COLORS = [
   "rgb(var(--pd-chart-1))",
