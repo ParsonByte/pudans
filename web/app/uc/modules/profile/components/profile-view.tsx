@@ -1,100 +1,123 @@
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
-import { Avatar, Box, Stack, Typography } from "@mui/material";
-import { Button, Icon } from "@pudans/components";
-import { ContentCard, DescriptionRow } from "../../../../../src/layouts/content-card";
+import { Alert, Box, CircularProgress, Stack, Typography } from "@mui/material";
+import { FormItem, Input, UserAvatar } from "@pudans/components";
+import { coreApiClient, type UserView } from "@pudans/api-client";
 import { useProfilePage } from "../composables/use-profile-page";
+import { UcSettingsPage } from "../../../components/settings-page";
 
+function formatTimestamp(value?: string): string {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+}
+
+/** Reference ProfileSetting: avatar column on the right (row-reverse) and the
+ * identity fields on the left, each under a SettingForm-style label. */
 export function UcProfileView() {
   const { t } = useTranslation("uc");
-  const navigate = useNavigate();
-  const { description, session, permissions } = useProfilePage();
-  const displayName = session?.displayName || session?.username || t("account");
-  const username = session?.username || "-";
+  const { session, permissions } = useProfilePage();
+  const [detail, setDetail] = useState<UserView>();
+  const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    coreApiClient.uc.user
+      .getMyUserDetail()
+      .then((response) => {
+        if (active) {
+          setDetail(response.data);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setFailed(true);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const spec = detail?.spec;
+  const displayName = spec?.displayName || session?.displayName || session?.username || "-";
+  const email = spec?.email || "-";
+  const userId = spec?.uid || detail?.metadata?.name || "-";
   const allPermissions = permissions.includes("*");
 
   return (
-    <Box
-      sx={{
-        display: "grid",
-        gridTemplateColumns: { xs: "1fr", lg: "repeat(2, minmax(0, 1fr))" },
-        gap: 3,
-      }}
-    >
-      <Box sx={{ gridColumn: { xs: "auto", lg: "1 / -1" } }}>
-        <ContentCard
-          title={t("profileIdentityTitle")}
-          description={t("profileIdentityDescription")}
-          icon="mdi:account-circle-outline"
-        >
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2.5} sx={{ alignItems: { xs: "flex-start", sm: "center" } }}>
-            <Avatar
-              src={session?.avatar || undefined}
-              sx={{
-                width: 68,
-                height: 68,
-                backgroundColor: "primary.main",
-                color: "primary.contrastText",
-                fontSize: "1.5rem",
-                fontWeight: 600,
-              }}
-            >
-              {displayName.slice(0, 1).toUpperCase()}
-            </Avatar>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography variant="h5" sx={{ fontWeight: 600 }} noWrap>
-                {displayName}
-              </Typography>
-              <Typography sx={{ mt: 0.5, color: "text.secondary", fontSize: "0.875rem" }} noWrap>
-                @{username}
-              </Typography>
-              <Typography sx={{ mt: 1, color: "text.secondary", fontSize: "0.875rem" }}>
-                {description}
-              </Typography>
+    <UcSettingsPage>
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 20 }}>
+          <CircularProgress size={28} />
+        </Box>
+      ) : (
+        <Stack spacing={3}>
+          {failed ? <Alert severity="warning">{t("profileLoadError")}</Alert> : null}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", md: "row-reverse" },
+              gap: { xs: 3, md: 4 },
+              alignItems: "flex-start",
+              width: "100%",
+            }}
+          >
+            <Box sx={{ width: { xs: "100%", md: "50%" }, minWidth: 0 }}>
+              <FormItem label={t("profileAvatar")}>
+                <UserAvatar
+                  name={displayName}
+                  src={spec?.avatar || session?.avatar || undefined}
+                  size={200}
+                  square
+                />
+              </FormItem>
             </Box>
-          </Stack>
-        </ContentCard>
-      </Box>
 
-      <ContentCard
-        title={t("profileAccountTitle")}
-        description={t("profileAccountDescription")}
-        icon="mdi:account-outline"
-      >
-        <DescriptionRow label={t("profileDisplayName")} value={displayName} />
-        <DescriptionRow label={t("profileUsername")} value={username} />
-        <DescriptionRow
-          label={t("profilePermissions")}
-          value={allPermissions ? t("profileAllPermissions") : String(permissions.length)}
-        />
-      </ContentCard>
-
-      <ContentCard
-        title={t("profileSecurityTitle")}
-        description={t("profileSecurityDescription")}
-        icon="mdi:shield-lock-outline"
-      >
-        <Stack spacing={1.25}>
-          <Button
-            type="button"
-            variant="outline"
-            block
-            startIcon={<Icon name="mdi:shield-lock-outline" size={18} />}
-            onClick={() => navigate("/uc/security")}
-          >
-            {t("profileManageSecurity")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            block
-            startIcon={<Icon name="mdi:key-variant" size={18} />}
-            onClick={() => navigate("/uc/authorizations")}
-          >
-            {t("profileManageAuthorizations")}
-          </Button>
+            <Box sx={{ width: { xs: "100%", md: "50%" }, minWidth: 0 }}>
+              <Stack spacing={3}>
+                <FormItem label={t("profileEmail")}>
+                  <Input size="sm" value={email} disabled fullWidth />
+                </FormItem>
+                <FormItem label={t("profileDisplayName")}>
+                  <Input size="sm" value={displayName} disabled fullWidth />
+                </FormItem>
+                <Box sx={{ display: "flex", gap: 4 }}>
+                  <Box sx={{ width: "50%", minWidth: 0 }}>
+                    <FormItem label={t("profileUid")}>
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {userId}
+                      </Typography>
+                    </FormItem>
+                  </Box>
+                  <Box sx={{ width: "50%", minWidth: 0 }}>
+                    <FormItem label={t("profileRegisteredAt")}>
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {formatTimestamp(spec?.registeredAt)}
+                      </Typography>
+                    </FormItem>
+                  </Box>
+                </Box>
+                <FormItem label={t("profilePermissions")}>
+                  <Typography variant="body2" color="text.secondary">
+                    {allPermissions
+                      ? t("profileAllPermissions")
+                      : t("profilePermissionCount", { count: permissions.length })}
+                  </Typography>
+                </FormItem>
+              </Stack>
+            </Box>
+          </Box>
         </Stack>
-      </ContentCard>
-    </Box>
+      )}
+    </UcSettingsPage>
   );
 }

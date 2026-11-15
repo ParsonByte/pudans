@@ -56,7 +56,7 @@ LegacyContentBase.displayName = "StyledSnackbarContent";
  */
 const StyledMaterialDesignContent = styled(LegacyContentBase)(({ theme }) => ({
   "&.notistack-MuiContent": {
-    borderRadius: theme.shape.borderRadius,
+    borderRadius: `${theme.shape.borderRadius}px`,
   },
   "&.notistack-MuiContent-success": {
     backgroundColor: theme.palette.success.main,

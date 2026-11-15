@@ -98,7 +98,7 @@ export function Accordion({
         disableGutters
         elevation={0}
         sx={{
-          borderRadius: (theme) => theme.shape.borderRadius,
+          borderRadius: (theme) => `${theme.shape.borderRadius}px`,
           backgroundColor: ghost ? "transparent" : (theme: Theme) => (expanded ? surfaceColor(theme) : "transparent"),
           boxShadow: "none",
           "&::before": { display: "none" },

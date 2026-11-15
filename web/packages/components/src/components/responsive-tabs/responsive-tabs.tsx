@@ -40,7 +40,7 @@ function renderLabel(item: ResponsiveTabItem): ReactElement {
             display: "inline-flex",
             alignItems: "center",
             px: 0.75,
-            borderRadius: (theme) => theme.shape.borderRadius,
+            borderRadius: (theme) => `${theme.shape.borderRadius}px`,
             backgroundColor: "action.selected",
             color: "primary.main",
             fontSize: (theme) => theme.typography.caption.fontSize,
@@ -129,6 +129,7 @@ export function ResponsiveTabs<T extends string = string>({
               {otherItems.map((item) => (
                 <MenuItem
                   key={item.key}
+                  dense
                   onClick={() => {
                     moreOptionState.close();
                     onChange(item.key);

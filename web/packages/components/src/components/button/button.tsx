@@ -52,13 +52,13 @@ function radiusStyles(radius: ButtonRadius, theme: Theme) {
     case "full":
       return { borderRadius: theme.spacing(10) };
     default:
-      return { borderRadius: theme.shape.borderRadius };
+      return { borderRadius: `${theme.shape.borderRadius}px` };
   }
 }
 
 const VARIANT_PROPS: Record<ButtonVariant, Pick<MuiButtonProps, "variant" | "color">> = {
   primary: { variant: "contained", color: "primary" },
-  secondary: { variant: "text", color: "inherit" },
+  secondary: { variant: "contained", color: "inherit" },
   outline: { variant: "outlined", color: "primary" },
   ghost: { variant: "text", color: "primary" },
   danger: { variant: "contained", color: "error" },

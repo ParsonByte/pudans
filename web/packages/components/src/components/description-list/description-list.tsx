@@ -47,7 +47,7 @@ export function DescriptionList({
           ? {
               padding: theme.spacing(2),
               border: `var(--pd-border-width-thin) solid ${theme.palette.divider}`,
-              borderRadius: theme.shape.borderRadius,
+              borderRadius: `${theme.shape.borderRadius}px`,
             }
           : {}),
       }}

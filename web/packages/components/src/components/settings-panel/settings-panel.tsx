@@ -59,9 +59,9 @@ export interface FormItemProps {
 }
 
 /**
- * Setting row from the legacy Pages/Setting SettingForm: body2/600 label with
- * caption helper text (12px / text.secondary) above the control, 4px title gap.
- * inline renders the label/help left and the control right for switches.
+ * Setting row from the legacy Pages/Setting SettingForm: body2/600 label with a
+ * 4px gap to the control. Non-inline rows render the caption helper text below
+ * the control; inline rows keep label/help left and the control right.
  */
 export function FormItem({
   label,
@@ -73,6 +73,40 @@ export function FormItem({
   children,
 }: FormItemProps) {
   const theme = useTheme();
+  const labelBlock = (
+    <Box sx={{ minWidth: 0 }}>
+      {label ? (
+        <Typography
+          component="label"
+          htmlFor={htmlFor}
+          variant="body2"
+          sx={{
+            display: "block",
+            fontWeight: 600,
+            color: theme.palette.text.primary,
+            marginBottom: theme.spacing(0.5),
+          }}
+        >
+          {label}
+          {required ? (
+            <Box component="span" sx={{ marginLeft: theme.spacing(0.25), color: "error.main" }}>
+              *
+            </Box>
+          ) : null}
+        </Typography>
+      ) : null}
+      {inline && description ? (
+        <Typography
+          component="p"
+          variant="caption"
+          sx={{ margin: 0, color: theme.palette.text.secondary, lineHeight: 1.66 }}
+        >
+          {description}
+        </Typography>
+      ) : null}
+    </Box>
+  );
+
   return (
     <Box
       className={cn(className)}
@@ -88,40 +122,26 @@ export function FormItem({
           : { minWidth: 0 }
       }
     >
-      <Box sx={{ minWidth: 0 }}>
-        {label ? (
-          <Typography
-            component="label"
-            htmlFor={htmlFor}
-            variant="body2"
-            sx={{
-              display: "block",
-              fontWeight: 600,
-              color: theme.palette.text.primary,
-              marginBottom: description ? theme.spacing(0.5) : 0,
-            }}
-          >
-            {label}
-            {required ? (
-              <Box component="span" sx={{ marginLeft: theme.spacing(0.25), color: "error.main" }}>
-                *
-              </Box>
-            ) : null}
-          </Typography>
-        ) : null}
-        {description ? (
-          <Typography
-            component="p"
-            variant="caption"
-            sx={{ margin: 0, color: theme.palette.text.secondary, lineHeight: 1.66 }}
-          >
-            {description}
-          </Typography>
-        ) : null}
-      </Box>
-      <Box sx={{ minWidth: 0, ...(inline ? {} : { marginTop: description ? theme.spacing(1) : 0 }) }}>
-        {children}
-      </Box>
+      {inline ? (
+        <>
+          {labelBlock}
+          <Box sx={{ minWidth: 0 }}>{children}</Box>
+        </>
+      ) : (
+        <Box sx={{ minWidth: 0 }}>
+          {labelBlock}
+          <Box sx={{ minWidth: 0 }}>{children}</Box>
+          {description ? (
+            <Typography
+              component="p"
+              variant="caption"
+              sx={{ margin: 0, marginTop: theme.spacing(1), color: theme.palette.text.secondary, lineHeight: 1.66 }}
+            >
+              {description}
+            </Typography>
+          ) : null}
+        </Box>
+      )}
     </Box>
   );
 }
@@ -210,7 +230,7 @@ export function SettingsPanel<T extends object>({
             gap: theme.spacing(1),
             padding: theme.spacing(2),
             border: "var(--pd-border-width-thin) solid " + theme.palette.divider,
-            borderRadius: theme.shape.borderRadius,
+            borderRadius: `${theme.shape.borderRadius}px`,
             backgroundColor: theme.palette.background.paper,
           }}
         >

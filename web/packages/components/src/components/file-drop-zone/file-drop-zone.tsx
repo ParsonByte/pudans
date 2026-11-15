@@ -193,7 +193,7 @@ export function FileDropZone({
         minHeight: (theme) => theme.spacing(20),
         padding: (theme) => theme.spacing(3),
         border: (theme) => `${theme.spacing(0.25)} dashed ${theme.palette.divider}`,
-        borderRadius: (theme) => theme.shape.borderRadius,
+        borderRadius: (theme) => `${theme.shape.borderRadius}px`,
         backgroundColor: dragging ? "action.selected" : "action.hover",
         color: dragging ? "primary.main" : "text.secondary",
         textAlign: "center",

@@ -1,21 +1,22 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, useLocation, useMatches, useOutlet } from "react-router-dom";
+import { NavLink, useLocation, useMatches, useNavigate, useOutlet } from "react-router-dom";
 import { CSSTransition, SwitchTransition } from "react-transition-group";
 import {
   AppBar,
   Avatar,
   Box,
   ButtonBase,
-  Container,
+  Collapse,
   Divider,
   Drawer,
   Fade,
   IconButton,
   ListItemIcon,
   ListItemText,
-  Menu,
   MenuItem,
+  MenuList,
+  Popover,
   Stack,
   Toolbar,
   Tooltip,
@@ -65,23 +66,26 @@ function readSidebarOpen(): boolean {
 
 function groupMenu(menu: readonly RegisteredMenu[]): RegisteredMenu[][] {
   const groups: RegisteredMenu[][] = [];
+  let lastGroup: string | undefined;
   for (const item of menu) {
-    const group = groups.find((candidate) => candidate[0]?.group === item.group);
-    if (group) {
-      group.push(item);
-    } else {
+    if (groups.length === 0 || item.group !== lastGroup) {
       groups.push([item]);
+      lastGroup = item.group;
+    } else {
+      groups[groups.length - 1].push(item);
     }
   }
   return groups;
 }
 
 /**
- * Dashboard shell:
- * - 240px flat sidebar on grey[100]/grey[900] with 90px pill navigation
- * - fixed 64px app bar with the same surface colour
- * - rounded bordered page frame inset by 8px, page header inside
- * - var(--pd-duration-fast) opacity page switch, no page remount of the shell
+ * Dashboard shell copied from the reference NavBarFrame:
+ * - 240px persistent drawer over grey[100]/grey[900] with a 90px pill nav
+ * - fixed 64px app bar sharing the drawer surface colour
+ * - main column inset 16px on the right and pulled 16px under the drawer when
+ *   the sidebar is closed, exactly like the reference AppMain margin
+ * - pages own their bordered, rounded PageContainer (12px theme radius)
+ * - var(--pd-duration-fast) opacity page switch, the shell never remounts
  */
 export function AppShell({
   namespace,
@@ -95,6 +99,7 @@ export function AppShell({
   const location = useLocation();
   const matches = useMatches();
   const outlet = useOutlet();
+  const navigate = useNavigate();
   const pageRef = useRef<HTMLDivElement>(null);
   const dispatch = useAppDispatch();
   const theme = useTheme();
@@ -102,6 +107,7 @@ export function AppShell({
   const [sidebarOpen, setSidebarOpen] = useState(readSidebarOpen);
   const [headerHovered, setHeaderHovered] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileAnchor, setMobileAnchor] = useState<HTMLElement | null>(null);
   const [userMenuAnchor, setUserMenuAnchor] = useState<HTMLElement | null>(null);
 
   const groups = useMemo(() => groupMenu(menu), [menu]);
@@ -137,17 +143,42 @@ export function AppShell({
     }
   };
 
-  const isActive = (href: string): boolean =>
-    href === "/" ? location.pathname === href : location.pathname === href || location.pathname.startsWith(href + "/");
+  const closeMobileMenu = (): void => {
+    setMobileOpen(false);
+    setMobileAnchor(null);
+  };
+
+  const openAccountSettings = (): void => {
+    setUserMenuAnchor(null);
+    if (namespace === "uc") {
+      navigate("/profile");
+    } else {
+      navigateToApp("/uc/profile");
+    }
+  };
+
+  /** useLocation inside a basename router is already stripped of the basename. */
+  const isActive = (href: string): boolean => {
+    const path = routerPath(href);
+    return location.pathname === path || location.pathname.startsWith(path + "/");
+  };
+
+  /** Router links are resolved against the router basename, so strip basePath. */
+  const routerPath = (href: string): string =>
+    href === basePath ? "/" : href.startsWith(basePath + "/") ? href.slice(basePath.length) : href;
 
   const navItem = (item: RegisteredMenu) => {
     const active = isActive(item.href);
+    const activeBackground =
+      theme.palette.mode === "light"
+        ? lighten(theme.palette.primary.main, 0.7)
+        : darken(theme.palette.primary.main, 0.7);
     return (
       <ButtonBase
         key={item.href}
         component={NavLink}
-        to={item.href}
-        onClick={() => setMobileOpen(false)}
+        to={routerPath(item.href)}
+        onClick={closeMobileMenu}
         aria-current={active ? "page" : undefined}
         focusRipple
         sx={{
@@ -159,18 +190,10 @@ export function AppShell({
           padding: "4px",
           paddingLeft: "28px",
           borderRadius: "90px",
-          backgroundColor: active
-            ? theme.palette.mode === "light"
-              ? lighten(theme.palette.primary.main, 0.7)
-              : darken(theme.palette.primary.main, 0.7)
-            : "initial",
+          backgroundColor: active ? activeBackground : "initial",
           transition: theme.transitions.create("background-color"),
           "&:hover": {
-            backgroundColor: active
-              ? theme.palette.mode === "light"
-                ? lighten(theme.palette.primary.main, 0.7)
-                : darken(theme.palette.primary.main, 0.7)
-              : theme.palette.action.hover,
+            backgroundColor: active ? activeBackground : theme.palette.action.hover,
           },
         }}
       >
@@ -180,7 +203,7 @@ export function AppShell({
             width: 20,
             height: 20,
             mr: "14px",
-            color: active ? "primary.main" : "action.active",
+            color: "action.active",
           }}
         >
           <Box
@@ -210,28 +233,70 @@ export function AppShell({
             <Icon name={item.iconActive} size={20} />
           </Box>
         </Box>
-        <Typography variant="body2" noWrap sx={{ color: active ? "text.primary" : "text.secondary" }}>
+        <Typography variant="body2" noWrap>
           {t(item.name)}
         </Typography>
       </ButtonBase>
     );
   };
 
+  const switchItem = switchTarget ? (
+    <ButtonBase
+      onClick={() => {
+        closeMobileMenu();
+        navigateToApp(switchTarget.href);
+      }}
+      focusRipple
+      sx={{
+        width: "100%",
+        height: 32,
+        display: "flex",
+        justifyContent: "flex-start",
+        alignItems: "center",
+        padding: "4px",
+        paddingLeft: "28px",
+        borderRadius: "90px",
+        transition: theme.transitions.create("background-color"),
+        "&:hover": { backgroundColor: theme.palette.action.hover },
+      }}
+    >
+      <Box
+        sx={{
+          width: 20,
+          height: 20,
+          mr: "14px",
+          display: "flex",
+          alignItems: "center",
+          color: "action.active",
+        }}
+      >
+        <Icon name={switchTarget.icon} size={20} />
+      </Box>
+      <Typography variant="body2" noWrap>
+        {t(switchTarget.labelKey)}
+      </Typography>
+    </ButtonBase>
+  ) : null;
+
   const drawerContent = (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", backgroundColor: shellBg }}>
+    <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Box
         onMouseEnter={() => setHeaderHovered(true)}
         onMouseLeave={() => setHeaderHovered(false)}
         sx={{
+          ...theme.mixins.toolbar,
           display: "flex",
           alignItems: "center",
-          minHeight: 64,
-          padding: "0 8px",
+          padding: theme.spacing(0, 1),
+          justifyContent: "flex-end",
           flex: "0 0 auto",
         }}
       >
         <Box
-          onClick={() => navigateToApp(basePath)}
+          onClick={() => {
+            closeMobileMenu();
+            navigateToApp(basePath);
+          }}
           sx={{
             width: "100%",
             pl: 2,
@@ -249,7 +314,7 @@ export function AppShell({
               placeItems: "center",
               width: 34,
               height: 34,
-              borderRadius: 2,
+              borderRadius: 1,
               backgroundColor: "primary.main",
               color: "primary.contrastText",
               fontSize: "0.9375rem",
@@ -260,23 +325,18 @@ export function AppShell({
             {BRAND_MARK}
           </Box>
           <Box sx={{ minWidth: 0 }}>
-            <Typography sx={{ fontWeight: 700, letterSpacing: "0.10em", fontSize: "0.9375rem", lineHeight: 1.2 }} noWrap>
+            <Typography sx={{ fontWeight: 700, letterSpacing: "0.04em", fontSize: "1.25rem", lineHeight: 1.2 }} noWrap>
               {BRAND_WORDMARK}
-            </Typography>
-            <Typography sx={{ color: "text.secondary", fontSize: "0.75rem", lineHeight: 1.2 }} noWrap>
-              {t(brandSubKey)}
             </Typography>
           </Box>
         </Box>
         {!mobile ? (
           <Fade in={headerHovered}>
             <IconButton
-              size="small"
               aria-label={t("collapseSidebar")}
               onClick={() => setOpen(false)}
-              sx={{ color: "text.secondary" }}
             >
-              <Icon name="mdi:chevron-left" size={20} />
+              <Icon name="mdi:chevron-left" size={24} />
             </IconButton>
           </Fade>
         ) : null}
@@ -285,40 +345,12 @@ export function AppShell({
       <Stack
         direction="column"
         spacing={2}
-        sx={{ px: 1, pb: 1, flexGrow: 1, mx: 1, overflowY: "auto", overflowX: "hidden" }}
+        sx={{ px: 1, pb: 1, flexGrow: 1, mx: 1, overflow: "auto" }}
       >
         {groups.map((group) => (
           <Box key={group[0].group}>{group.map((item) => navItem(item))}</Box>
         ))}
-        {switchTarget ? (
-          <Box>
-            <ButtonBase
-              onClick={() => {
-                setMobileOpen(false);
-                navigateToApp(switchTarget.href);
-              }}
-              focusRipple
-              sx={{
-                width: "100%",
-                height: 32,
-                display: "flex",
-                justifyContent: "flex-start",
-                alignItems: "center",
-                padding: "4px",
-                paddingLeft: "28px",
-                borderRadius: "90px",
-                "&:hover": { backgroundColor: "action.hover" },
-              }}
-            >
-              <Box sx={{ width: 20, height: 20, mr: "14px", display: "flex", alignItems: "center", color: "action.active" }}>
-                <Icon name={switchTarget.icon} size={20} />
-              </Box>
-              <Typography variant="body2" noWrap sx={{ color: "text.secondary" }}>
-                {t(switchTarget.labelKey)}
-              </Typography>
-            </ButtonBase>
-          </Box>
-        ) : null}
+        {switchTarget ? <Box>{switchItem}</Box> : null}
       </Stack>
     </Box>
   );
@@ -332,39 +364,25 @@ export function AppShell({
         backgroundColor: shellBg,
       }}
     >
-      {mobile ? (
+      {!mobile ? (
         <Drawer
-          open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
-          ModalProps={{ keepMounted: true }}
-          sx={{ "& .MuiDrawer-paper": { width: DRAWER_WIDTH, boxSizing: "border-box", borderRight: "initial" } }}
-        >
-          {drawerContent}
-        </Drawer>
-      ) : (
-        <Box
-          component="aside"
-          aria-hidden={!sidebarOpen}
+          variant="persistent"
+          anchor="left"
+          open={sidebarOpen}
           sx={{
-            position: "fixed",
-            top: 0,
-            bottom: 0,
-            left: 0,
             width: DRAWER_WIDTH,
-            zIndex: theme.zIndex.drawer,
-            backgroundColor: shellBg,
-            overflow: "hidden",
-            transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
-            pointerEvents: sidebarOpen ? "auto" : "none",
-            transition: theme.transitions.create("transform", {
-              easing: theme.transitions.easing.easeInOut,
-              duration: theme.transitions.duration.standard,
-            }),
+            flexShrink: 0,
+            "& .MuiDrawer-paper": {
+              width: DRAWER_WIDTH,
+              boxSizing: "border-box",
+              backgroundColor: shellBg,
+              borderRight: "initial",
+            },
           }}
         >
           {drawerContent}
-        </Box>
-      )}
+        </Drawer>
+      ) : null}
 
       <AppBar
         position="fixed"
@@ -374,44 +392,72 @@ export function AppShell({
           width: mobile || !sidebarOpen ? "100%" : `calc(100% - ${DRAWER_WIDTH}px)`,
           ml: mobile || !sidebarOpen ? 0 : `${DRAWER_WIDTH}px`,
           backgroundColor: shellBg,
-          color: "text.primary",
+          color: theme.palette.getContrastText(shellBg),
           boxShadow: "none",
           transition: theme.transitions.create(["width", "margin"], {
-            easing: theme.transitions.easing.easeInOut,
-            duration: theme.transitions.duration.standard,
+            easing: sidebarOpen ? theme.transitions.easing.easeOut : theme.transitions.easing.sharp,
+            duration: sidebarOpen
+              ? theme.transitions.duration.enteringScreen
+              : theme.transitions.duration.leavingScreen,
           }),
         }}
       >
         <Toolbar
           sx={{
-            minHeight: "64px !important",
-            pl: !mobile && sidebarOpen ? 0 : { xs: 1, sm: 2 },
-            pr: { xs: 1, sm: 2 },
+            paddingLeft: !mobile && sidebarOpen ? 0 : theme.spacing(mobile ? 2 : 3),
+            transition: theme.transitions.create("padding", {
+              easing: theme.transitions.easing.easeInOut,
+              duration: theme.transitions.duration.standard,
+            }),
           }}
         >
-          {mobile || !sidebarOpen ? (
+          <Collapse orientation="horizontal" in={mobile || !sidebarOpen}>
             <IconButton
               color="inherit"
               aria-label={t("openSidebar")}
               edge="start"
-              onClick={() => (mobile ? setMobileOpen(true) : setOpen(true))}
-              sx={{ mr: 1, ml: mobile ? -1 : -1.5 }}
+              onClick={(event) => {
+                if (mobile) {
+                  setMobileAnchor(event.currentTarget);
+                  setMobileOpen(true);
+                } else {
+                  setOpen(true);
+                }
+              }}
+              sx={{ mr: mobile ? 1 : 2, ml: mobile ? -1 : -1.5 }}
             >
-              <Icon name="mdi:menu-open" size={22} />
+              <Icon name="mdi:menu" size={24} />
             </IconButton>
-          ) : null}
+          </Collapse>
           <Box sx={{ flexGrow: 1 }} />
-          <Stack direction="row" spacing={0} sx={{ alignItems: "center" }}>
-            <ThemeSwitch size="sm" aria-label={t("theme")} />
-            <Tooltip title={t("accountSettings")}>
-              <IconButton
-                size="large"
-                aria-label={t("accountSettings")}
-                onClick={() => navigateToApp("/uc/security")}
-              >
-                <Icon name="mdi:cog-outline" size={22} />
-              </IconButton>
-            </Tooltip>
+          <Stack
+            direction="row"
+            spacing={mobile ? 1 : 0}
+            sx={{
+              alignItems: "center",
+            }}
+          >
+            {!mobile ? (
+              <>
+                <ThemeSwitch
+                  aria-label={t("theme")}
+                  labels={{
+                    light: t("themeLight"),
+                    system: t("themeSystem"),
+                    dark: t("themeDark"),
+                  }}
+                />
+                <Tooltip title={t("accountSettings")}>
+                  <IconButton
+                    size="large"
+                    aria-label={t("accountSettings")}
+                    onClick={openAccountSettings}
+                  >
+                    <Icon name="mdi:cog-outline" size={24} />
+                  </IconButton>
+                </Tooltip>
+              </>
+            ) : null}
             <IconButton
               size="large"
               aria-label={t("account")}
@@ -421,7 +467,13 @@ export function AppShell({
             >
               <Avatar
                 src={session?.avatar || undefined}
-                sx={{ width: 30, height: 30, backgroundColor: "primary.main", color: "primary.contrastText", fontSize: "0.875rem" }}
+                sx={{
+                  width: 30,
+                  height: 30,
+                  backgroundColor: "primary.main",
+                  color: "primary.contrastText",
+                  fontSize: "0.875rem",
+                }}
               >
                 {(displayName || "?").slice(0, 1).toUpperCase()}
               </Avatar>
@@ -435,143 +487,167 @@ export function AppShell({
         sx={{
           flexGrow: 1,
           height: "100svh",
+          minWidth: 0,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          ml: mobile ? 0 : sidebarOpen ? `${DRAWER_WIDTH - CONTENT_OVERLAP}px` : 0,
-          mr: mobile ? 0 : 1,
-          mb: mobile ? 0 : 1,
+          ml: mobile ? 0 : sidebarOpen ? 0 : `-${DRAWER_WIDTH - CONTENT_OVERLAP}px`,
+          mr: mobile ? 0 : 2,
           transition: theme.transitions.create("margin", {
-            easing: theme.transitions.easing.easeInOut,
-            duration: theme.transitions.duration.standard,
+            easing: sidebarOpen ? theme.transitions.easing.easeOut : theme.transitions.easing.sharp,
+            duration: sidebarOpen
+              ? theme.transitions.duration.enteringScreen
+              : theme.transitions.duration.leavingScreen,
           }),
         }}
       >
-        <Toolbar sx={{ minHeight: "64px !important" }} />
-        <Box
-          className={styles.pageFrame}
-          sx={{
-            flexGrow: 1,
-            minHeight: 0,
-            overflowY: "auto",
-            overflowX: "hidden",
-            borderRadius: mobile ? 0 : 3,
-            border: mobile ? 0 : 1,
-            borderColor: "divider",
-            backgroundColor: "background.paper",
-          }}
-        >
-          <Container maxWidth="xl" sx={{ py: 4 }}>
-            <SwitchTransition mode="out-in">
-              <CSSTransition
-                key={location.pathname}
-                nodeRef={pageRef}
-                timeout={150}
-                classNames={{
-                  enter: styles.pageEnter,
-                  enterActive: styles.pageEnterActive,
-                  exit: styles.pageExit,
-                  exitActive: styles.pageExitActive,
-                }}
-              >
-                <Box ref={pageRef}>
-                  <Box sx={{ mb: 4 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5, color: "text.secondary" }}>
-                      {[t(brandSubKey), ...titles].map((crumb, index, all) => (
-                        <Fragment key={crumb + index}>
-                          <Typography variant="body2" sx={{ color: index === all.length - 1 ? "text.primary" : "text.secondary" }}>
-                            {crumb}
-                          </Typography>
-                          {index < all.length - 1 ? <Icon name="mdi:chevron-right" size={14} /> : null}
-                        </Fragment>
-                      ))}
-                    </Box>
-                    <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                      {pageTitle}
-                    </Typography>
-                  </Box>
-                  {outlet}
-                </Box>
-              </CSSTransition>
-            </SwitchTransition>
-          </Container>
-        </Box>
+        <Box sx={{ ...theme.mixins.toolbar, flexShrink: 0 }} />
+        <SwitchTransition mode="out-in">
+          <CSSTransition
+            key={namespace === "uc" ? "uc-settings" : location.pathname}
+            nodeRef={pageRef}
+            timeout={150}
+            classNames={{
+              enter: styles.pageEnter,
+              enterActive: styles.pageEnterActive,
+              exit: styles.pageExit,
+              exitActive: styles.pageExitActive,
+            }}
+          >
+            <Box
+              ref={pageRef}
+              sx={{
+                flexGrow: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              {outlet}
+            </Box>
+          </CSSTransition>
+        </SwitchTransition>
       </Box>
 
-      <Menu
-        anchorEl={userMenuAnchor}
+      {mobile ? (
+        <Popover
+          open={mobileOpen}
+          anchorEl={mobileAnchor}
+          onClose={closeMobileMenu}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          transformOrigin={{ vertical: "top", horizontal: "left" }}
+          slotProps={{
+            paper: {
+              sx: {
+                width: "70vw",
+                maxHeight: "calc(100vh - 64px)",
+                display: "flex",
+                flexDirection: "column",
+              },
+            },
+          }}
+        >
+          {drawerContent}
+        </Popover>
+      ) : null}
+
+      <Popover
         open={Boolean(userMenuAnchor)}
+        anchorEl={userMenuAnchor}
         onClose={() => setUserMenuAnchor(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         transformOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <MenuItem disabled sx={{ opacity: "1 !important" }}>
-          <Box sx={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <Typography sx={{ fontWeight: 600, fontSize: "0.875rem" }} noWrap>
+        <Box
+          sx={{
+            px: "12px",
+            py: "10px",
+            minWidth: "230px",
+            display: "flex",
+            maxWidth: "300px",
+            width: "100%",
+            flexDirection: "column",
+            gap: "4px",
+          }}
+        >
+          <Box sx={{ display: "flex", minWidth: 0 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1 }} noWrap>
               {displayName}
             </Typography>
-            <Typography sx={{ color: "text.secondary", fontSize: "0.75rem" }} noWrap>
-              {session?.username}
+            <Typography variant="body2" sx={{ ml: 1, lineHeight: 1 }} color="textSecondary" noWrap>
+              {t(brandSubKey)}
             </Typography>
           </Box>
-        </MenuItem>
+          <Typography variant="caption" color="textSecondary" noWrap>
+            {session?.username}
+          </Typography>
+        </Box>
         <Divider />
-        {switchTarget ? (
+        <MenuList dense sx={{ mx: 0.5 }}>
+          {switchTarget ? (
+            <MenuItem
+              onClick={() => {
+                setUserMenuAnchor(null);
+                navigateToApp(switchTarget.href);
+              }}
+            >
+              <ListItemIcon>
+                <Icon name={switchTarget.icon} size={20} />
+              </ListItemIcon>
+              <ListItemText>{t(switchTarget.labelKey)}</ListItemText>
+            </MenuItem>
+          ) : null}
+          <MenuItem onClick={openAccountSettings}>
+            <ListItemIcon>
+              <Icon name="mdi:cog-outline" size={20} />
+            </ListItemIcon>
+            <ListItemText>{t("accountSettings")}</ListItemText>
+          </MenuItem>
+          <Divider sx={{ my: 0.5 }} />
+          <MenuItem
+            selected={currentLanguage === "zh-CN"}
+            onClick={() => {
+              setUserMenuAnchor(null);
+              dispatch(setLocale("zh-CN"));
+              void i18n.changeLanguage("zh-CN");
+            }}
+          >
+            <ListItemIcon>
+              <Icon name="mdi:translate" size={20} />
+            </ListItemIcon>
+            <ListItemText>{t("languageZh")}</ListItemText>
+          </MenuItem>
+          <MenuItem
+            selected={currentLanguage === "en-US"}
+            onClick={() => {
+              setUserMenuAnchor(null);
+              dispatch(setLocale("en-US"));
+              void i18n.changeLanguage("en-US");
+            }}
+          >
+            <ListItemIcon>
+              <Icon name="mdi:translate" size={20} />
+            </ListItemIcon>
+            <ListItemText>{t("languageEn")}</ListItemText>
+          </MenuItem>
+          <Divider sx={{ my: 0.5 }} />
           <MenuItem
             onClick={() => {
               setUserMenuAnchor(null);
-              navigateToApp(switchTarget.href);
+              beginLogout();
+              void signOut()
+                .catch(() => undefined)
+                .finally(() => navigateToApp("/auth/signed-in"));
             }}
           >
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <Icon name={switchTarget.icon} size={16} />
+            <ListItemIcon>
+              <Icon name="mdi:logout" size={20} />
             </ListItemIcon>
-            <ListItemText>{t(switchTarget.labelKey)}</ListItemText>
+            <ListItemText>{t("logout")}</ListItemText>
           </MenuItem>
-        ) : null}
-        <Divider />
-        <MenuItem
-          selected={currentLanguage === "zh-CN"}
-          onClick={() => {
-            setUserMenuAnchor(null);
-            dispatch(setLocale("zh-CN"));
-            void i18n.changeLanguage("zh-CN");
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: 32 }}>
-            <Icon name="mdi:translate" size={16} />
-          </ListItemIcon>
-          <ListItemText>{t("languageZh")}</ListItemText>
-        </MenuItem>
-        <MenuItem
-          selected={currentLanguage === "en-US"}
-          onClick={() => {
-            setUserMenuAnchor(null);
-            dispatch(setLocale("en-US"));
-            void i18n.changeLanguage("en-US");
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: 32 }}>
-            <Icon name="mdi:translate" size={16} />
-          </ListItemIcon>
-          <ListItemText>{t("languageEn")}</ListItemText>
-        </MenuItem>
-        <Divider />
-        <MenuItem
-          onClick={() => {
-            setUserMenuAnchor(null);
-            beginLogout();
-            void signOut()
-              .catch(() => undefined)
-              .finally(() => navigateToApp("/auth/signed-in"));
-          }}
-        >
-          <ListItemIcon sx={{ minWidth: 32 }}>
-            <Icon name="mdi:logout" size={16} />
-          </ListItemIcon>
-          <ListItemText>{t("logout")}</ListItemText>
-        </MenuItem>
-      </Menu>
+        </MenuList>
+      </Popover>
     </Box>
   );
 }

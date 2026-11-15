@@ -153,7 +153,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(functi
           height: theme.spacing(5.25),
           paddingLeft: theme.spacing(2),
           paddingRight: theme.spacing(2),
-          borderRadius: theme.shape.borderRadius,
+          borderRadius: `${theme.shape.borderRadius}px`,
           backgroundColor: theme.palette.background.default,
           "& fieldset": { borderColor: theme.palette.divider },
           "&:hover fieldset": { borderColor: theme.palette.primary.main },

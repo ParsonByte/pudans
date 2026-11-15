@@ -112,7 +112,7 @@ export function FormSection({
         ...(bordered
           ? {
               border: (theme) => `${theme.spacing(0.125)} solid ${theme.palette.divider}`,
-              borderRadius: (theme) => theme.shape.borderRadius,
+              borderRadius: (theme) => `${theme.shape.borderRadius}px`,
             }
           : {}),
       }}
@@ -181,7 +181,7 @@ export function SettingItem({
         py: 0.5,
         px: 2,
         border: (theme) => `${theme.spacing(0.125)} solid ${alpha(theme.palette.text.primary, 0.23)}`,
-        borderRadius: (theme) => theme.shape.borderRadius,
+        borderRadius: (theme) => `${theme.shape.borderRadius}px`,
       }}
     >
       <Box sx={{ minWidth: 0, flex: "1 1 auto" }}>

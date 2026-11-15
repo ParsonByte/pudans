@@ -159,7 +159,7 @@ export function ThemeSwitch({
             aria-label={ariaLabel}
             onClick={(event) => setAnchorEl(event.currentTarget)}
           >
-            <Icon name="pd:DarkTheme" size={size === "sm" ? 20 : 28} />
+            <Icon name="pd:DarkTheme" size={size === "sm" ? 20 : 24} />
           </IconButton>
         </span>
       </Tooltip>

@@ -101,7 +101,7 @@ export const EmptyState = forwardRef<HTMLDivElement, EmptyStateProps>(function E
         ...(bordered
           ? {
               border: `var(--pd-border-width-thin) dashed ${theme.palette.divider}`,
-              borderRadius: theme.shape.borderRadius,
+              borderRadius: `${theme.shape.borderRadius}px`,
             }
           : {}),
       }}
