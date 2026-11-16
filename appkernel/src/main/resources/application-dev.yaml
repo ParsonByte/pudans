@@ -5,17 +5,8 @@ spring:
   output:
     ansi:
       enabled: always
-  web:
-    resources:
-      cache:
-        cachecontrol:
-          no-cache: true
-        use-last-modified: false
 
 pudans:
-  ui:
-    proxy:
-      enabled: ${PUDANS_UI_PROXY_ENABLED:true}
   security:
     basic-auth:
       disabled: false

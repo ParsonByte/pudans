@@ -6,9 +6,6 @@
 
 ## Verification
 
-- `cd web && pnpm lint` — <pass/fail>
-- `cd web && pnpm typecheck` — <pass/fail>
-- `cd web && pnpm test` — <pass/fail>
 - `./gradlew test` — <pass/fail>
 
 ## Dependencies

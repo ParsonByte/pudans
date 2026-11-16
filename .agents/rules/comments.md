@@ -2,7 +2,7 @@
 
 ## Scope
 
-- Comments are allowed only in code files, for example `.java`, `.ts` or `.tsx`.
+- Comments are allowed only in code files, for example `.java`.
 - Non-code files (config, Markdown, JSON, scripts) carry no comments unless the format itself requires them; Gradle scripts must not use double-slash comments.
 
 ## Format

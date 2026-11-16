@@ -51,10 +51,6 @@ spring:
     error:
       whitelabel:
         enabled: false
-    resources:
-      cache:
-        cachecontrol:
-          max-age: 365d
   threads:
     virtual:
       enabled: true
@@ -62,12 +58,8 @@ spring:
 
 pudans:
   work-dir: ${PUDANS_WORK_DIR:${user.home}/.pudans}
-  ui:
-    proxy:
-      enabled: ${PUDANS_UI_PROXY_ENABLED:false}
-      endpoint: ${PUDANS_UI_PROXY_ENDPOINT:http://localhost:3000}
   security:
-    post-login-url: ${PUDANS_POST_LOGIN_URL:/console}
+    post-login-url: ${PUDANS_POST_LOGIN_URL:/}
     basic-auth:
       disabled: true
     two-factor-auth:

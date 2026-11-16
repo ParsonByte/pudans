@@ -1,6 +1,6 @@
 ---
 name: development
-description: "Run the repository development workflow end to end: branch from main, implement in small commits, pass lint, type checks and tests, then open a focused pull request with change and verification notes. Use when starting feature work, preparing a PR, changing dependencies or merging."
+description: "Run the repository development workflow end to end: branch from main, implement in small commits, pass tests, then open a focused pull request with change and verification notes. Use when starting feature work, preparing a PR, changing dependencies or merging."
 ---
 
 # development
@@ -13,7 +13,7 @@ Execute `.agents/rules/development.md`: isolated branches, verified commits, sma
 
 - Starting a feature, fix or refactor that will be committed or pushed.
 - Preparing, updating or merging a pull request.
-- Changing a dependency in `gradle/libs.versions.toml`, `web/package.json` or the lockfiles.
+- Changing a dependency in `gradle/libs.versions.toml`.
 - Any moment before pushing a branch.
 
 ## Steps
@@ -26,14 +26,12 @@ Execute `.agents/rules/development.md`: isolated branches, verified commits, sma
 2. Branch from the main branch before editing:
    ```bash
    git switch main && git pull
-   git switch -c feat/console-audit-list
+   git switch -c feat/plugin-audit-list
    ```
 3. Implement in small, coherent changes; commit with the `commit` skill (single-line Conventional Commits).
-4. Run the gates before every push:
+4. Run the gate before every push:
    ```bash
-   cd web && pnpm lint && pnpm typecheck && pnpm test
-   cd web && pnpm verify        # full gate when the change is broad
-   ./gradlew test               # backend
+   ./gradlew test
    ```
 5. Scan the diff for secrets and local configuration before staging:
    ```bash
@@ -50,7 +48,7 @@ Execute `.agents/rules/development.md`: isolated branches, verified commits, sma
 ## Constraints
 
 - Never commit or push to main; no direct pushes, no force-push to shared branches.
-- Never bypass lint, type checks or tests, and never merge with failing checks.
+- Never bypass tests, and never merge with failing checks.
 - Dependency changes always state the reason and the impact in the pull request.
 - Secrets, tokens, certificates and local environment files never enter the repository.
 - One pull request solves one problem; split unrelated work.

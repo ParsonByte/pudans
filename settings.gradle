@@ -9,6 +9,5 @@ rootProject.name = 'pudans'
 
 include ':api-docs'
 include ':appkernel'
-include ':web'
 include ':platform:appkernel'
 include ':platform:plugin'

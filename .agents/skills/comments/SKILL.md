@@ -11,18 +11,18 @@ Keep comments in the codebase minimal and compliant: short single-line English c
 
 ## Triggers
 
-- Writing or editing a `.java`, `.ts`, `.tsx`, `.js` or `.mjs` file that needs an explanatory comment.
+- Writing or editing a `.java` file that needs an explanatory comment.
 - Reviewing a diff that adds block comments, Javadoc, banners or commented-out code.
-- A lint or review note asks for "a comment" and the correct form must be chosen.
+- A review note asks for "a comment" and the correct form must be chosen.
 
 ## Steps
 
 1. Restrict the work to code files. Config, Markdown, JSON and shell files get no comments.
 2. Decide whether a comment is needed at all. If naming can carry the meaning, rename instead of commenting.
 3. Write the comment as one short English line directly above the statement it explains, indented with the code:
-   ```ts
+   ```java
    // Keep the retry budget below the gateway timeout.
-   const maxAttempts = 3;
+   var maxAttempts = 3;
    ```
 4. Remove violations in the touched files:
    - `/* ... */` block comments and Javadoc `/** ... */`.
@@ -31,8 +31,8 @@ Keep comments in the codebase minimal and compliant: short single-line English c
    - Commented-out code.
 5. Check the touched files:
    ```bash
-   grep -rn '/\*' --include='*.ts' --include='*.tsx' --include='*.java' .
-   awk 'prev ~ /^[[:space:]]*\/\// && $0 ~ /^[[:space:]]*\/\// { print FILENAME": "NR } { prev = $0 }' $(git diff --name-only -- '*.java' '*.ts' '*.tsx')
+   grep -rn '/\*' --include='*.java' .
+   awk 'prev ~ /^[[:space:]]*\/\// && $0 ~ /^[[:space:]]*\/\// { print FILENAME": "NR } { prev = $0 }' $(git diff --name-only -- '*.java')
    ```
 6. Report which files gained or lost comments and why each remaining comment earns its place.
 

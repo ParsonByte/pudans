@@ -2,8 +2,8 @@
 
 ## Formatting and static checks
 
-- Follow the project formatting and lint configuration: `.editorconfig`, `web/.prettierrc`, `web/eslint.config.js`.
-- Do not reformat existing code by hand and do not bypass checks with `eslint-disable`, `@SuppressWarnings` or similar.
+- Follow the project formatting configuration: `.editorconfig`.
+- Do not reformat existing code by hand and do not bypass checks with `@SuppressWarnings` or similar.
 
 ## Design
 
@@ -13,7 +13,7 @@
 
 ## Types and errors
 
-- Types are explicit: annotate public APIs, parameters and return values. TypeScript must not abuse `any`; prefer `unknown` with narrowing.
+- Types are explicit: annotate public APIs, parameters and return values.
 - Handle errors explicitly: log or translate and rethrow after catching. Empty catches and swallowed errors are forbidden.
 
 ## Cleanup

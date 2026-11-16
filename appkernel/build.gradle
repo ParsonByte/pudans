@@ -169,12 +169,3 @@ tasks.named('jar') {
 tasks.named('test') {
     useJUnitPlatform()
 }
-
-// Mount the build-only frontend bundle into the jar's static resource path.
-// Nothing under src/main/resources is touched by the frontend build.
-tasks.named('processResources') {
-    dependsOn project(':web').tasks.named('assemble')
-    from(project(':web').layout.projectDirectory.dir('../build/dist')) {
-        into 'static'
-    }
-}
