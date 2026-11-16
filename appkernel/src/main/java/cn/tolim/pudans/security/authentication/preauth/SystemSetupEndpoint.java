@@ -29,7 +29,6 @@ import cn.tolim.pudans.infra.setting.SystemConfigFetcher;
 import cn.tolim.pudans.infra.setting.SystemState;
 import cn.tolim.pudans.infra.utils.PudansUtils;
 import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
-import cn.tolim.pudans.plugin.PluginService;
 import cn.tolim.pudans.security.authentication.SuperAdminInitializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
@@ -92,7 +91,6 @@ public class SystemSetupEndpoint {
     private final SystemConfigFetcher systemConfigFetcher;
     private final SuperAdminInitializer superAdminInitializer;
     private final ReactiveExtensionClient client;
-    private final PluginService pluginService;
     private final Validator validator;
     private final ObjectProvider<R2dbcConnectionDetails> connectionDetails;
     private final ExternalUrlSupplier externalUrl;
@@ -145,7 +143,7 @@ public class SystemSetupEndpoint {
         final var tag = "SystemV1alpha1Public";
         return SpringdocRouteBuilder.route()
                 .GET(
-                        path(ApiGroups.PUBLIC_SETUP_PATH).and(accept(MediaType.TEXT_HTML)),
+                        path(ApiGroups.SETUP_PATH).and(accept(MediaType.TEXT_HTML)),
                         this::setupPage,
                         builder -> builder.operationId("JumpToSetupPage")
                                 .description("Jump to setup page")
@@ -154,7 +152,7 @@ public class SystemSetupEndpoint {
                                         .content(Builder.contentBuilder().mediaType(MediaType.TEXT_HTML_VALUE))
                                         .implementation(String.class)))
                 .POST(
-                        ApiGroups.PUBLIC_SETUP_PATH,
+                        ApiGroups.SETUP_PATH,
                         contentType(
                                 MediaType.APPLICATION_FORM_URLENCODED,
                                 MediaType.APPLICATION_JSON),
@@ -304,8 +302,6 @@ public class SystemSetupEndpoint {
         return superUserMono
                 .then(basicConfigMono)
                 .then(Mono.defer(() -> initializeNecessaryData(username)))
-                .then(Mono.defer(pluginService::installPresetPlugins))
-
                 .then(Mono.defer(() -> SystemState.upsetSystemState(client, state -> state.setIsSetup(true))));
     }
 

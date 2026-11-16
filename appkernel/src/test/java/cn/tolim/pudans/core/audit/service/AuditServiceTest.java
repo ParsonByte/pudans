@@ -27,9 +27,6 @@ class AuditServiceTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AuditSinkDispatcher auditSinkDispatcher;
-
-    @Mock
     AuditWal auditWal;
 
     private static AuditRecord record() {
@@ -46,7 +43,7 @@ class AuditServiceTest {
     @Test
     void overflowedRecordsAreWrittenToTheLocalWal() {
         when(auditStore.append(any())).thenReturn(Mono.never());
-        var service = new AuditService(auditStore, client, auditSinkDispatcher, auditWal);
+        var service = new AuditService(auditStore, client, auditWal);
         service.start();
 
         for (var i = 0; i < 10_050; i++) {
@@ -61,7 +58,7 @@ class AuditServiceTest {
     @Test
     void persistedRecordsAreTruncatedToTheColumnWidths() {
         when(auditStore.append(any())).thenReturn(Mono.empty());
-        var service = new AuditService(auditStore, client, auditSinkDispatcher, auditWal);
+        var service = new AuditService(auditStore, client, auditWal);
         service.start();
         var record = record();
         record.setTraceFlowId("f".repeat(500));
@@ -86,7 +83,7 @@ class AuditServiceTest {
     @Test
     void missingFlowIdIsSynthesizedAndMarked() {
         when(auditStore.append(any())).thenReturn(Mono.empty());
-        var service = new AuditService(auditStore, client, auditSinkDispatcher, auditWal);
+        var service = new AuditService(auditStore, client, auditWal);
         service.start();
         var record = record();
         record.setTraceFlowId(null);

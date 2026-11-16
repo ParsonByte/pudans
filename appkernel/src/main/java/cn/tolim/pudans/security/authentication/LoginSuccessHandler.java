@@ -2,7 +2,6 @@ package cn.tolim.pudans.security.authentication;
 
 import static cn.tolim.pudans.security.authentication.SecurityConstant.REMEMBER_ME_PARAMETER_NAME;
 
-import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
 import java.net.URI;
@@ -23,7 +22,7 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
 
     private final ServerResponse.Context context;
 
-    private final LoginHandlerEnhancer loginHandlerEnhancer;
+    private final LoginFlowHandler loginFlowHandler;
 
     private final LoginParameterRequestCache parameterRequestCache;
 
@@ -33,12 +32,12 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
 
     public LoginSuccessHandler(
             ServerResponse.Context context,
-            LoginHandlerEnhancer loginHandlerEnhancer,
+            LoginFlowHandler loginFlowHandler,
             LoginParameterRequestCache parameterRequestCache,
             ServerRequestCache serverRequestCache,
             String postLoginUrl) {
         this.context = context;
-        this.loginHandlerEnhancer = loginHandlerEnhancer;
+        this.loginFlowHandler = loginFlowHandler;
         this.parameterRequestCache = parameterRequestCache;
         var successHandler = new RedirectServerAuthenticationSuccessHandler(postLoginUrl);
         successHandler.setRequestCache(serverRequestCache);
@@ -73,7 +72,7 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
         exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
         exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "SUCCESS");
         exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, "local");
-        return loginHandlerEnhancer
+        return loginFlowHandler
                 .onLoginSuccess(exchange, authentication)
                 .then(xhrMatcher
                         .matches(exchange)

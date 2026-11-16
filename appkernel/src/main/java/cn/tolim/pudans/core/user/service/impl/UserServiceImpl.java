@@ -32,7 +32,6 @@ import cn.tolim.pudans.contract.extension.router.selector.FieldSelector;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
 import cn.tolim.pudans.contract.security.device.DeviceService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.user.service.PasswordPolicyValidator;
 import cn.tolim.pudans.event.user.PasswordChangedEvent;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
@@ -60,8 +59,6 @@ public class UserServiceImpl implements UserService {
     private final ReactiveSessionRegistry sessionRegistry;
 
     private final DomainEventPublisher domainEventPublisher;
-
-    private final PasswordPolicyValidator passwordPolicyValidator;
 
     private Clock clock = Clock.systemUTC();
 
@@ -100,9 +97,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Mono<User> updateWithRawPassword(String username, String rawPassword) {
-        return passwordPolicyValidator
-                .validate(username, rawPassword)
-                .then(Mono.defer(() -> updateWithRawPasswordInternal(username, rawPassword)));
+        return updateWithRawPasswordInternal(username, rawPassword);
     }
 
     private Mono<User> updateWithRawPasswordInternal(String username, String rawPassword) {

@@ -3,7 +3,6 @@ package cn.tolim.pudans.security.authorization;
 import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.RbacRuleEnricherService;
 import cn.tolim.pudans.core.rbac.service.TempRoleService;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
@@ -44,26 +43,17 @@ class AuthorizationExchangeConfigurers {
     @Bean
     @Order(0)
     SecurityConfigurer apiAuthorizationConfigurer(
-            RoleService roleService,
-            TempRoleService tempRoleService,
-            AuditService auditService,
-            RbacRuleEnricherService rbacRuleEnricherService) {
-        return http -> http.authorizeExchange(spec -> spec.pathMatchers("/apis/" + ApiGroups.PUBLIC + "/**")
+            RoleService roleService, TempRoleService tempRoleService, AuditService auditService) {
+        return http -> http.authorizeExchange(spec -> spec.pathMatchers(ApiGroups.SETUP_PATH)
                 .permitAll()
                 .pathMatchers(
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/passkeys/assertion/**",
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/oauth2/**",
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/login/**",
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/recovery/**")
+                        ApiGroups.API_PREFIX + "/passkeys/assertion/**",
+                        ApiGroups.API_PREFIX + "/oauth2/**",
+                        ApiGroups.API_PREFIX + "/login/**",
+                        ApiGroups.API_PREFIX + "/recovery/**")
                 .permitAll()
-                .pathMatchers(
-                        "/apis/" + ApiGroups.CONSOLE + "/**",
-                        "/apis/" + ApiGroups.UC + "/**",
-                        "/apis/" + ApiGroups.EXTENSION + "/**",
-                        "/apis/" + ApiGroups.AUTH + "/**",
-                        "/actuator/**")
-                .access(new RequestInfoAuthorizationManager(
-                        roleService, tempRoleService, auditService, rbacRuleEnricherService)));
+                .pathMatchers(ApiGroups.API_ROOT + "/**", "/actuator/**")
+                .access(new RequestInfoAuthorizationManager(roleService, tempRoleService, auditService)));
     }
 
     @Bean

@@ -18,7 +18,6 @@ import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.RbacRuleEnricherService;
 import cn.tolim.pudans.core.rbac.service.TempRoleService;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
@@ -34,25 +33,19 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
 
     private static final String PAT_NAME_CLAIM = "pat_name";
 
-    private static final String ENRICHER_SOURCE = "RBAC rule enricher";
-
     private RoleService roleService;
 
     private TempRoleService tempRoleService;
 
     private AuditService auditService;
 
-    private RbacRuleEnricherService rbacRuleEnricherService;
-
     public DefaultRuleResolver(
             RoleService roleService,
             TempRoleService tempRoleService,
-            AuditService auditService,
-            RbacRuleEnricherService rbacRuleEnricherService) {
+            AuditService auditService) {
         this.roleService = roleService;
         this.tempRoleService = tempRoleService;
         this.auditService = auditService;
-        this.rbacRuleEnricherService = rbacRuleEnricherService;
     }
 
     @Override
@@ -88,8 +81,8 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
 
         var stopVisiting = new AtomicBoolean(false);
         return resolveRoleNames(authentication)
-                .flatMap(roleNames -> visitRoleRules(authentication, roleNames, visitor, stopVisiting)
-                        .then(Mono.defer(() -> enrichRules(authentication, roleNames, visitor, stopVisiting))))
+                .flatMap(roleNames -> visitRoleRules(authentication, roleNames, visitor, stopVisiting))
+                .thenReturn(visitor)
                 .onErrorResume(t -> {
                     log.error("Error occurred when visiting rules", t);
                     visitor.visit(null, null, t);
@@ -121,30 +114,6 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
                 })
                 .takeUntil(item -> stopVisiting.get())
                 .then();
-    }
-
-    private Mono<AuthorizingVisitor> enrichRules(
-            Authentication authentication,
-            Set<String> roleNames,
-            AuthorizingVisitor visitor,
-            AtomicBoolean stopVisiting) {
-        if (visitor.isAllowed()
-                || stopVisiting.get()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return Mono.just(visitor);
-        }
-        return rbacRuleEnricherService
-                .enrich(authentication.getName(), roleNames)
-                .doOnNext(rules -> rules.forEach(rule -> visitor.visit(ENRICHER_SOURCE, rule, null)))
-                .thenReturn(visitor)
-                .onErrorResume(error -> {
-                    log.warn(
-                            "RBAC rule enrichment failed for [{}], denying the request",
-                            authentication.getName(),
-                            error);
-                    visitor.visit(null, null, error);
-                    return Mono.just(visitor);
-                });
     }
 
     private Mono<Set<String>> resolveRoleNames(Authentication authentication) {

@@ -2,7 +2,7 @@ package cn.tolim.pudans.security.authentication.twofactor;
 
 import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
 
-import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
+import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
@@ -25,7 +25,7 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
 
     private final TwoFactorAuthenticationManager twoFactorAuthenticationManager;
 
-    private final LoginHandlerEnhancer loginHandlerEnhancer;
+    private final LoginFlowHandler loginFlowHandler;
 
     private final ServerRequestCache serverRequestCache;
 
@@ -40,7 +40,7 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
     public TwoFactorAuthSecurityConfigurer(
             ServerSecurityContextRepository securityContextRepository,
             TwoFactorAuthenticationManager twoFactorAuthenticationManager,
-            LoginHandlerEnhancer loginHandlerEnhancer,
+            LoginFlowHandler loginFlowHandler,
             ServerRequestCache serverRequestCache,
             RiskControlService riskControlService,
             TotpAuthenticationFailureHandler failureHandler,
@@ -48,7 +48,7 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
             SecurityProperties securityProperties) {
         this.securityContextRepository = securityContextRepository;
         this.twoFactorAuthenticationManager = twoFactorAuthenticationManager;
-        this.loginHandlerEnhancer = loginHandlerEnhancer;
+        this.loginFlowHandler = loginFlowHandler;
         this.serverRequestCache = serverRequestCache;
         this.riskControlService = riskControlService;
         this.failureHandler = failureHandler;
@@ -64,7 +64,7 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
         filter.setServerAuthenticationConverter(new TwoFactorCodeAuthenticationConverter(riskControlService));
         filter.setAuthenticationSuccessHandler(
                 new TotpAuthenticationSuccessHandler(
-                        loginHandlerEnhancer,
+                        loginFlowHandler,
                         serverRequestCache,
                         auditService,
                         securityProperties.getPostLoginUrl()));

@@ -6,7 +6,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
 rules:
-  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources:
       [
         "userconnections",

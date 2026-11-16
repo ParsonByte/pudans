@@ -10,13 +10,13 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Users Management"
     rbac.authorization.pudans.tolim.cn/display-name: "User Manage"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "users", "users/batch", "users/usergroup" ]
     verbs: [ "create", "update", "delete" ]
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "users/password" ]
     verbs: [ "update" ]
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "users/usergroup", "users/permissions" ]
     verbs: [ "get" ]
 ---
@@ -30,7 +30,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Users Management"
     rbac.authorization.pudans.tolim.cn/display-name: "User View"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "users" ]
     verbs: [ "get", "list" ]
 ---
@@ -46,7 +46,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Users Management"
     rbac.authorization.pudans.tolim.cn/display-name: "User Group Manage"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "usergroups", "usergroupbindings" ]
     verbs: [ "create", "update", "patch", "delete" ]
 ---
@@ -60,6 +60,6 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Users Management"
     rbac.authorization.pudans.tolim.cn/display-name: "User Group View"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "usergroups", "usergroupbindings" ]
     verbs: [ "get", "list" ]

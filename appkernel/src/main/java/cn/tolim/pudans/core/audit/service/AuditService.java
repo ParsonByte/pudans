@@ -5,7 +5,6 @@ import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -52,8 +51,6 @@ public class AuditService {
 
     private final ReactiveExtensionClient client;
 
-    private final AuditSinkDispatcher auditSinkDispatcher;
-
     private final AuditWal auditWal;
 
     private static final int QUEUE_CAPACITY = 10_000;
@@ -96,7 +93,6 @@ public class AuditService {
         writer = sink.asFlux()
                 .flatMap(record -> auditStore
                         .append(record)
-                        .doOnSuccess(ignored -> auditSinkDispatcher.dispatch(record))
                         .onErrorResume(e -> {
                             log.error(
                                     "Unable to persist audit record {}, writing it to the local WAL",

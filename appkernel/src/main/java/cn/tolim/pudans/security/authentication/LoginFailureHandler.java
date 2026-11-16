@@ -19,7 +19,6 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
@@ -34,7 +33,7 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
 
     private final MessageSource messageSource;
 
-    private final LoginHandlerEnhancer loginHandlerEnhancer;
+    private final LoginFlowHandler loginFlowHandler;
 
     private final DomainEventPublisher domainEventPublisher;
 
@@ -44,12 +43,12 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
             String loginMethod,
             ServerResponse.Context context,
             MessageSource messageSource,
-            LoginHandlerEnhancer loginHandlerEnhancer,
+            LoginFlowHandler loginFlowHandler,
             DomainEventPublisher domainEventPublisher) {
         this.loginMethod = loginMethod;
         this.context = context;
         this.messageSource = messageSource;
-        this.loginHandlerEnhancer = loginHandlerEnhancer;
+        this.loginFlowHandler = loginFlowHandler;
         this.domainEventPublisher = domainEventPublisher;
     }
 
@@ -60,7 +59,7 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
         exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
         exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, exception.getClass().getSimpleName());
         publishLoginFailure(exchange, exception);
-        return loginHandlerEnhancer
+        return loginFlowHandler
                 .onLoginFailure(exchange, exception)
                 .then(ignoringMediaTypeAll(APPLICATION_JSON).matches(exchange).flatMap(matchResult -> {
                     if (matchResult.isMatch()) {

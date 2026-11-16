@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.oauth2;
 
-import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
+import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.contract.security.authentication.oauth2.PudansOAuth2AuthenticationToken;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -20,7 +20,7 @@ public class OAuth2AuthenticationSession {
 
     private final ServerSecurityContextRepository securityContextRepository;
 
-    private final LoginHandlerEnhancer loginHandlerEnhancer;
+    private final LoginFlowHandler loginFlowHandler;
 
     public Mono<Void> establish(ServerWebExchange exchange, String username, OAuth2AuthenticationToken original) {
         return establishAndGetAuthentication(exchange, username, original).then();
@@ -33,7 +33,7 @@ public class OAuth2AuthenticationSession {
                 .map(userDetails -> PudansOAuth2AuthenticationToken.authenticated(userDetails, original))
                 .flatMap(authentication -> securityContextRepository
                         .save(exchange, new SecurityContextImpl(authentication))
-                        .then(loginHandlerEnhancer.onLoginSuccess(exchange, authentication))
+                        .then(loginFlowHandler.onLoginSuccess(exchange, authentication))
                         .thenReturn(authentication));
     }
 }

@@ -41,21 +41,24 @@ class UcUserEndpoint implements CustomEndpoint {
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "UserV1alpha1Uc";
         return SpringdocRouteBuilder.route()
-                .GET("/users/-", this::me, builder -> builder.operationId("GetMyUserDetail")
+                .GET("/users/-/self", this::me, builder -> builder.operationId("GetMySelfUserDetail")
                         .tag(tag)
                         .description("Get the current user's profile and roles.")
                         .response(responseBuilder().implementation(UserView.class)))
-                .GET("/users/-/permissions", this::permissions, builder -> builder.operationId("GetMyPermissions")
+                .GET("/users/-/self/permissions", this::permissions, builder -> builder.operationId("GetMySelfPermissions")
                         .tag(tag)
                         .description("Get permissions of the current user.")
                         .response(responseBuilder().implementation(UserPermissionVo.class)))
-                .PUT("/users/-/password", this::changeMyPassword, builder -> builder.operationId("ChangeMyPassword")
-                        .tag(tag)
-                        .description("Change the password of the current user.")
-                        .requestBody(requestBodyBuilder()
-                                .required(true)
-                                .implementation(ChangeMyPasswordRequest.class))
-                        .response(responseBuilder().implementation(UserView.class)))
+                .PUT(
+                        "/users/-/self/password",
+                        this::changeMyPassword,
+                        builder -> builder.operationId("ChangeMySelfPassword")
+                                .tag(tag)
+                                .description("Change the password of the current user.")
+                                .requestBody(requestBodyBuilder()
+                                        .required(true)
+                                        .implementation(ChangeMyPasswordRequest.class))
+                                .response(responseBuilder().implementation(UserView.class)))
                 .build();
     }
 
@@ -116,7 +119,7 @@ class UcUserEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.UC + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
 

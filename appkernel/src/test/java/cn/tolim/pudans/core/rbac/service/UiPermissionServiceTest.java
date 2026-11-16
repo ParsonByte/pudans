@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -98,6 +99,21 @@ class UiPermissionServiceTest {
 
         StepVerifier.create(service.uiPermissionsOf("carol"))
                 .assertNext(permissions -> assertThat(permissions).containsExactly("settings:manage"))
+                .verifyComplete();
+    }
+
+    @Test
+    void guestRoleWithTheDisallowAnnotationCannotAccessTheConsole() {
+        var metadata = new Metadata();
+        metadata.setName("guest");
+        metadata.setAnnotations(Map.of(Role.DISALLOW_ACCESS_CONSOLE_ANNO, "true"));
+        var guest = new Role();
+        guest.setMetadata(metadata);
+        when(userGroupService.getRoleNamesByUsername("guest")).thenReturn(Flux.just("guest"));
+        when(roleService.list(Set.of("guest"))).thenReturn(Flux.just(guest));
+
+        StepVerifier.create(service.isConsoleAccessDisallowed("guest"))
+                .expectNext(true)
                 .verifyComplete();
     }
 

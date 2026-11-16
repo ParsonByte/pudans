@@ -8,7 +8,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Audit Logs"
     rbac.authorization.pudans.tolim.cn/display-name: "Audit Log View"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources:
       [
         "auditlogs",

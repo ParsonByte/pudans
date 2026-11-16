@@ -2,7 +2,6 @@ package cn.tolim.pudans.security.authentication.recovery;
 
 import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.exception.PasswordPolicyViolationException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -88,14 +87,7 @@ public class PasswordRecoveryService {
                             .next()
                             .switchIfEmpty(Mono.error(invalidCode()))
                             .flatMap(user -> userService
-                                    .updateWithRawPassword(user.getMetadata().getName(), newPassword)
-                                    .onErrorMap(
-                                            PasswordPolicyViolationException.class,
-                                            error -> new ApiException(
-                                                    HttpStatus.BAD_REQUEST,
-                                                    "recovery-password-invalid",
-                                                    "The new password does not satisfy the password policy.",
-                                                    error)))
+                                    .updateWithRawPassword(user.getMetadata().getName(), newPassword))
                             .then(Mono.defer(() -> redisTemplate
                                     .delete(codeKey)
                                     .then(redisTemplate.delete(attemptsKey))))

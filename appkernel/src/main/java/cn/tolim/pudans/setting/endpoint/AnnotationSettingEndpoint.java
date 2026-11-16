@@ -9,16 +9,12 @@ import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.index.query.Condition;
 import cn.tolim.pudans.contract.extension.index.query.Queries;
-import cn.tolim.pudans.plugin.PluginConst;
-import cn.tolim.pudans.plugin.PluginService;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.fn.builders.apiresponse.Builder;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -33,8 +29,6 @@ class AnnotationSettingEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
-    private final PluginService pluginService;
-
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "AnnotationSettingV1AlphaUc";
@@ -44,8 +38,7 @@ class AnnotationSettingEndpoint implements CustomEndpoint {
                         this::listAvailableAnnotationSettings,
                         builder -> builder.operationId("listAvailableAnnotationSettings")
                                 .description("""
-                                        List available AnnotationSettings for the given targetRef. \
-                                        The available AnnotationSettings are determined by the started plugins.""")
+                                        List available AnnotationSettings for the given targetRef.""")
                                 .tag(tag)
                                 .parameter(parameterBuilder()
                                         .name("targetRef")
@@ -67,30 +60,15 @@ class AnnotationSettingEndpoint implements CustomEndpoint {
         if (targetRef == null) {
             return Mono.error(new ServerWebInputException("Query param 'targetRef' is required"));
         }
-        var getStartedPlugins = pluginService.getStartedPluginNames().collectList();
-        var annotationSettings = getStartedPlugins.flatMapMany(pluginNames -> {
-            Condition labelConditions = null;
-            if (!CollectionUtils.isEmpty(pluginNames)) {
-                var pluginLabelCondition = Queries.labelIn(PluginConst.PLUGIN_NAME_LABEL_NAME, pluginNames);
-                if (labelConditions == null) {
-                    labelConditions = pluginLabelCondition;
-                } else {
-                    labelConditions = labelConditions.or(pluginLabelCondition);
-                }
-            }
-            if (labelConditions == null) {
-                labelConditions = Queries.empty();
-            }
-            var builder = ListOptions.builder()
-                    .andQuery(labelConditions)
-                    .andQuery(Queries.equal("spec.targetRef", targetRef));
-            return client.listAll(AnnotationSetting.class, builder.build(), defaultSort());
-        });
+        var options = ListOptions.builder()
+                .andQuery(Queries.equal("spec.targetRef", targetRef))
+                .build();
+        var annotationSettings = client.listAll(AnnotationSetting.class, options, defaultSort());
         return ServerResponse.ok().body(annotationSettings, AnnotationSetting.class);
     }
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.UC + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 }

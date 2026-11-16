@@ -2,6 +2,7 @@ package cn.tolim.pudans.infra.config;
 
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
+import cn.tolim.pudans.contract.extension.SchemeManager;
 import cn.tolim.pudans.core.rbac.BuiltinEntityDefinitions;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -31,9 +32,10 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Order(0)
 public class EndpointApiGroupSelfCheck implements ApplicationRunner {
 
-    private static final Set<String> PUBLIC_API_GROUPS = Set.of(ApiGroups.PUBLIC);
-
     private static final Set<String> ALLOWED_API_GROUPS = ApiGroups.ALL;
+
+    private static final Set<String> EXPLICITLY_ALLOWED_RESOURCES =
+            Set.of("system", "login", "recovery", "oauth2", "passkeys");
 
     private static final String API_GROUP_ALL = "*";
 
@@ -56,6 +58,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         var endpoints = applicationContext.getBeansOfType(CustomEndpoint.class).values();
         var routeErrors = new ArrayList<String>();
+        var allRoutes = new TreeSet<String>();
 
         for (var endpoint : endpoints) {
             var groupVersion = endpoint.groupVersion();
@@ -85,6 +88,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                 continue;
             }
             for (var route : routes) {
+                allRoutes.add(route);
                 if (!route.startsWith("/")) {
                     routeErrors.add(endpoint.getClass().getName() + " route '" + route
                             + "' must start with '/'.");
@@ -100,20 +104,28 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                     + String.join("\n - ", routeErrors));
         }
 
-        var coveredGroups = coveredApiGroups();
-        var uncoveredGroups = endpoints.stream()
-                .map(endpoint -> endpoint.groupVersion().group())
-                .filter(StringUtils::hasText)
-                .filter(group -> !PUBLIC_API_GROUPS.contains(group))
-                .filter(group -> !coveredGroups.contains(group))
+        var coveredResources = coveredResources();
+        var schemeManager = applicationContext.getBeanProvider(SchemeManager.class).getIfAvailable();
+        if (schemeManager != null) {
+            schemeManager.schemes().stream()
+                    .map(scheme -> "/" + scheme.plural())
+                    .forEach(allRoutes::add);
+        }
+        var uncoveredPaths = allRoutes.stream()
+                .filter(route -> !route.startsWith("/api/") && !route.startsWith("/apis/"))
+                .filter(route -> {
+                    var resource = topLevelResource(route);
+                    return !coveredResources.contains(resource) && !EXPLICITLY_ALLOWED_RESOURCES.contains(resource);
+                })
                 .collect(Collectors.toCollection(TreeSet::new));
-        if (!uncoveredGroups.isEmpty()) {
+        if (!uncoveredPaths.isEmpty()) {
             throw new IllegalStateException(
-                    "The following custom endpoint API groups are not covered by any built-in role rule: "
-                            + uncoveredGroups
-                            + ". Add a matching apiGroups entry to BuiltinEntityDefinitions and to the"
-                            + " role-template-*.yaml files. Covered groups: "
-                            + coveredGroups);
+                    "The following custom endpoint paths are not covered by a built-in role rule or an explicit"
+                            + " permit-all rule: "
+                            + uncoveredPaths
+                            + ". Add a matching resource to BuiltinEntityDefinitions and to the role-template-*.yaml"
+                            + " files, or add the path to the explicit permit-all list. Covered resources: "
+                            + coveredResources);
         }
     }
 
@@ -182,13 +194,24 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
         return paths;
     }
 
-    private static Set<String> coveredApiGroups() {
+    private static Set<String> coveredResources() {
         return Stream.of(
                         BuiltinEntityDefinitions.systemAdminRole(), BuiltinEntityDefinitions.normalRole())
                 .flatMap(role -> role.getRules().stream())
-                .flatMap(rule -> Arrays.stream(rule.getApiGroups()))
+                .filter(rule -> Arrays.asList(rule.getApiGroups()).contains(ApiGroups.API))
+                .flatMap(rule -> Arrays.stream(rule.getResources()))
                 .filter(StringUtils::hasText)
-                .filter(group -> !API_GROUP_ALL.equals(group))
+                .filter(resource -> !API_GROUP_ALL.equals(resource))
+                .map(resource -> {
+                    var separator = resource.indexOf('/');
+                    return separator < 0 ? resource : resource.substring(0, separator);
+                })
                 .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    private static String topLevelResource(String route) {
+        var path = route.startsWith("/") ? route.substring(1) : route;
+        var separator = path.indexOf('/');
+        return separator < 0 ? path : path.substring(0, separator);
     }
 }

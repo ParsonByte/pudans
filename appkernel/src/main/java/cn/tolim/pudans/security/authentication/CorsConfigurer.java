@@ -52,8 +52,7 @@ public class CorsConfigurer implements SecurityConfigurer {
                 HttpHeaders.COOKIE));
         configuration.setAllowCredentials(true);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
-        ApiGroups.ALL.forEach(group ->
-                source.registerCorsConfiguration("/apis/" + group + "/**", configuration));
+        source.registerCorsConfiguration(ApiGroups.API_ROOT + "/**", configuration);
         return source;
     }
 }

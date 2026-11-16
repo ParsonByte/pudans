@@ -5,7 +5,7 @@ import static cn.tolim.pudans.security.authorization.AuthorityUtils.AUTHENTICATE
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
 
 import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
+import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
@@ -37,7 +37,7 @@ import reactor.core.publisher.Mono;
 public class FeishuOAuth2LoginWebFilter implements WebFilter {
 
     public static final String REGISTRATION_ID = FeishuUserService.PROVIDER;
-    private static final String AUTH_API_PREFIX = "/apis/" + ApiGroups.AUTH + "/v1alpha1";
+    private static final String AUTH_API_PREFIX = ApiGroups.API_PREFIX;
     static final String AUTHORIZATION_PATH = AUTH_API_PREFIX + "/oauth2/authorization/feishu";
     static final String CALLBACK_PATH = AUTH_API_PREFIX + "/oauth2/callback/feishu";
     private static final String STATE_ATTRIBUTE = FeishuOAuth2LoginWebFilter.class.getName() + ".STATE";
@@ -51,7 +51,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
 
     private final ServerSecurityContextRepository securityContextRepository;
 
-    private final LoginHandlerEnhancer loginHandlerEnhancer;
+    private final LoginFlowHandler loginFlowHandler;
 
     private final DomainEventPublisher domainEventPublisher;
 
@@ -150,7 +150,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                                 exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
                                 exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "SUCCESS");
                             }))
-                            .then(loginHandlerEnhancer.onLoginSuccess(exchange, authentication))
+                            .then(loginFlowHandler.onLoginSuccess(exchange, authentication))
                             .then(redirect(exchange, securityProperties.getPostLoginUrl()));
                 });
     }

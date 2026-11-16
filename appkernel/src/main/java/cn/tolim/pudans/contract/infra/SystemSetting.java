@@ -3,7 +3,6 @@ package cn.tolim.pudans.contract.infra;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -100,10 +99,5 @@ public class SystemSetting {
         private String name;
         private boolean enabled;
         private int priority;
-    }
-
-    public static class ExtensionPointEnabled extends LinkedHashMap<String, LinkedHashSet<String>> {
-
-        public static final String GROUP = "extensionPointEnabled";
     }
 }

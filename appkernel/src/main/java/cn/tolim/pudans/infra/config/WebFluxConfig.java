@@ -1,11 +1,7 @@
 package cn.tolim.pudans.infra.config;
 
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.plugin.extensionpoint.ExtensionGetter;
 import cn.tolim.pudans.infra.SecureRequestMappingHandlerAdapter;
-import cn.tolim.pudans.infra.webfilter.AdditionalWebFilterChainProxy;
-import cn.tolim.pudans.plugin.endpoint.CustomEndpointsBuilder;
-import cn.tolim.pudans.plugin.endpoint.WebSocketHandlerMapping;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.webflux.autoconfigure.WebFluxRegistrations;
@@ -73,19 +69,6 @@ public class WebFluxConfig implements WebFluxConfigurer {
         var builder = new CustomEndpointsBuilder();
         context.getBeansOfType(CustomEndpoint.class).values().forEach(builder::add);
         return builder.build();
-    }
-
-    @Bean
-    public WebSocketHandlerMapping webSocketHandlerMapping() {
-        WebSocketHandlerMapping handlerMapping = new WebSocketHandlerMapping();
-        handlerMapping.setOrder(-2);
-        return handlerMapping;
-    }
-
-    @Bean
-    @Order(-101)
-    AdditionalWebFilterChainProxy additionalWebFilterChainProxy(ExtensionGetter extensionGetter) {
-        return new AdditionalWebFilterChainProxy(extensionGetter);
     }
 
     @Bean

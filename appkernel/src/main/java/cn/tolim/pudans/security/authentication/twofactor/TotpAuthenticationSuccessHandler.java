@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.twofactor;
 
-import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
+import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -15,14 +15,14 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuccessHandler {
 
-    private final LoginHandlerEnhancer loginEnhancer;
+    private final LoginFlowHandler loginEnhancer;
 
     private final ServerAuthenticationSuccessHandler successHandler;
 
     private final AuditService auditService;
 
     public TotpAuthenticationSuccessHandler(
-            LoginHandlerEnhancer loginEnhancer,
+            LoginFlowHandler loginEnhancer,
             ServerRequestCache serverRequestCache,
             AuditService auditService,
             String postLoginUrl) {

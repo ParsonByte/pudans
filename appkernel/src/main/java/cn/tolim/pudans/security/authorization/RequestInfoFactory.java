@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authorization;
 
-import cn.tolim.pudans.plugin.endpoint.WebSocketUtils;
+import cn.tolim.pudans.contract.extension.ApiGroups;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
@@ -62,12 +62,15 @@ public class RequestInfoFactory {
 
             requestInfo.apiGroup = StringUtils.defaultString(currentParts[0]);
             currentParts = Arrays.copyOfRange(currentParts, 1, currentParts.length);
+            if (!ApiGroups.API.equals(requestInfo.apiGroup)) {
+                requestInfo.isResourceRequest = false;
+                return requestInfo;
+            }
         }
         requestInfo.isResourceRequest = true;
         requestInfo.apiVersion = currentParts[0];
         currentParts = Arrays.copyOfRange(currentParts, 1, currentParts.length);
 
-        Set<String> specialVerbs = Set.of("proxy", "watch");
         if (specialVerbs.contains(currentParts[0])) {
             if (currentParts.length < 2) {
                 throw new IllegalArgumentException(
@@ -161,9 +164,6 @@ public class RequestInfoFactory {
             if (Boolean.parseBoolean(deleteAll)) {
                 requestInfo.verb = "deletecollection";
             }
-        }
-        if ("list".equals(requestInfo.verb) && WebSocketUtils.isWebSocketUpgrade(request.getHeaders())) {
-            requestInfo.verb = "watch";
         }
         return requestInfo;
     }

@@ -34,13 +34,8 @@ class CsrfConfigurer implements SecurityConfigurer {
                 new NegatedServerWebExchangeMatcher(
 
                         pathMatchers(
-                                "/apis/" + ApiGroups.CONSOLE + "/**",
-                                "/apis/" + ApiGroups.UC + "/**",
-                                "/apis/" + ApiGroups.PUBLIC + "/**",
-                                "/apis/" + ApiGroups.EXTENSION + "/**",
-                                "/apis/" + ApiGroups.AUTH + "/**",
+                                ApiGroups.API_ROOT + "/**",
                                 "/actuator/**",
-                                ApiGroups.PUBLIC_SETUP_PATH,
                                 "/sudo/**",
                                 "/login",
                                 "/logout")),
