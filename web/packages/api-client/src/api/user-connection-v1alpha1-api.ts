@@ -115,7 +115,7 @@ export const UserConnectionV1alpha1ApiAxiosParamCreator = function (configuratio
         },
         /**
          * List the current user\'s identity bindings (Feishu, OIDC and Passkeys).
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -339,7 +339,7 @@ export const UserConnectionV1alpha1ApiFp = function(configuration?: Configuratio
         },
         /**
          * List the current user\'s identity bindings (Feishu, OIDC and Passkeys).
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -482,7 +482,7 @@ export interface UserConnectionV1alpha1ApiGetUserConnectionRequest {
  */
 export interface UserConnectionV1alpha1ApiListMyConnectionsRequest {
     /**
-     * Page number. Default is 0.
+     * Page number, starts from 1. Values below 1 are treated as 1.
      */
     readonly page?: number
 

@@ -228,7 +228,7 @@
         "operationId": "listConfigMap",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -491,7 +491,7 @@
         "operationId": "listRiskRule",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -767,7 +767,7 @@
         "operationId": "listRoleBinding",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -1007,7 +1007,7 @@
         "operationId": "listRole",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -1247,7 +1247,7 @@
         "operationId": "listSecret",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -1554,7 +1554,7 @@
         "operationId": "ListTempRoleBindings",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -1891,7 +1891,7 @@
         "operationId": "listUserGroupBinding",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -2131,7 +2131,7 @@
         "operationId": "listUserGroup",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -2371,7 +2371,7 @@
         "operationId": "ListUsers",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -3074,7 +3074,7 @@
         "operationId": "listWebhook",
         "parameters": [
           {
-            "description": "Page number. Default is 0.",
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
             "in": "query",
             "name": "page",
             "schema": {
@@ -3677,7 +3677,7 @@
           "page": {
             "type": "integer",
             "format": "int32",
-            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+            "description": "Page number, starts from 1. Empty results may report 0."
           },
           "size": {
             "type": "integer",
@@ -4203,7 +4203,7 @@
           "page": {
             "type": "integer",
             "format": "int32",
-            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+            "description": "Page number, starts from 1. Empty results may report 0."
           },
           "size": {
             "type": "integer",
@@ -4313,7 +4313,7 @@
           "page": {
             "type": "integer",
             "format": "int32",
-            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+            "description": "Page number, starts from 1. Empty results may report 0."
           },
           "size": {
             "type": "integer",
@@ -4371,7 +4371,7 @@
           "page": {
             "type": "integer",
             "format": "int32",
-            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+            "description": "Page number, starts from 1. Empty results may report 0."
           },
           "size": {
             "type": "integer",
@@ -4491,7 +4491,7 @@
           "page": {
             "type": "integer",
             "format": "int32",
-            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+            "description": "Page number, starts from 1. Empty results may report 0."
           },
           "size": {
             "type": "integer",
@@ -4626,7 +4626,7 @@
           "page": {
             "type": "integer",
             "format": "int32",
-            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+            "description": "Page number, starts from 1. Empty results may report 0."
           },
           "size": {
             "type": "integer",
@@ -4852,7 +4852,7 @@
           "page": {
             "type": "integer",
             "format": "int32",
-            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+            "description": "Page number, starts from 1. Empty results may report 0."
           },
           "size": {
             "type": "integer",
@@ -4910,7 +4910,7 @@
           "page": {
             "type": "integer",
             "format": "int32",
-            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+            "description": "Page number, starts from 1. Empty results may report 0."
           },
           "size": {
             "type": "integer",
@@ -5112,7 +5112,7 @@
           "page": {
             "type": "integer",
             "format": "int32",
-            "description": "Page number, starts from 1. If not set or equal to 0, it means no pagination."
+            "description": "Page number, starts from 1. Empty results may report 0."
           },
           "size": {
             "type": "integer",

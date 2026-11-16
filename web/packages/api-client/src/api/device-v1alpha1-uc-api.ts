@@ -32,7 +32,7 @@ export const DeviceV1alpha1UcApiAxiosParamCreator = function (configuration?: Co
     return {
         /**
          * List all user devices
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -143,7 +143,7 @@ export const DeviceV1alpha1UcApiFp = function(configuration?: Configuration) {
     return {
         /**
          * List all user devices
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -204,7 +204,7 @@ export const DeviceV1alpha1UcApiFactory = function (configuration?: Configuratio
  */
 export interface DeviceV1alpha1UcApiListDevicesRequest {
     /**
-     * Page number. Default is 0.
+     * Page number, starts from 1. Values below 1 are treated as 1.
      */
     readonly page?: number
 

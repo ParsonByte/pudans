@@ -231,10 +231,11 @@ public class UserEndpoint implements CustomEndpoint {
     }
 
     private UserList pagedUserList(List<User> users, SortableRequest sortable) {
-        var page = sortable.getPage();
+        // Page numbers are 1-based, matching PageRequestImpl.
+        var page = Math.max(1, sortable.getPage());
         var size = sortable.getSize();
         var total = users.size();
-        var from = size > 0 ? Math.min((long) page * size, total) : 0L;
+        var from = size > 0 ? Math.min((long) (page - 1) * size, total) : 0L;
         var to = size > 0 ? Math.min(from + size, total) : (long) total;
         var items = users.subList((int) from, (int) to).stream().map(ListedUser::from).toList();
         return new UserList(page, size, total, items, sortable.getSort().toString());

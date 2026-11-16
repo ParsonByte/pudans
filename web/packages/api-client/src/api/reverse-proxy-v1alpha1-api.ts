@@ -155,7 +155,7 @@ export const ReverseProxyV1alpha1ApiAxiosParamCreator = function (configuration?
         },
         /**
          * List ReverseProxy
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -350,7 +350,7 @@ export const ReverseProxyV1alpha1ApiFp = function(configuration?: Configuration)
         },
         /**
          * List ReverseProxy
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -491,7 +491,7 @@ export interface ReverseProxyV1alpha1ApiGetReverseProxyRequest {
  */
 export interface ReverseProxyV1alpha1ApiListReverseProxyRequest {
     /**
-     * Page number. Default is 0.
+     * Page number, starts from 1. Values below 1 are treated as 1.
      */
     readonly page?: number
 

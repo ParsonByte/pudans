@@ -158,7 +158,7 @@ export const PersonalAccessTokenV1alpha1ApiAxiosParamCreator = function (configu
         },
         /**
          * Obtain PAT list.
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -353,7 +353,7 @@ export const PersonalAccessTokenV1alpha1ApiFp = function(configuration?: Configu
         },
         /**
          * Obtain PAT list.
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -491,7 +491,7 @@ export interface PersonalAccessTokenV1alpha1ApiObtainPatRequest {
  */
 export interface PersonalAccessTokenV1alpha1ApiObtainPatsRequest {
     /**
-     * Page number. Default is 0.
+     * Page number, starts from 1. Values below 1 are treated as 1.
      */
     readonly page?: number
 
