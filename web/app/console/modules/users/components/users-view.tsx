@@ -51,7 +51,7 @@ export function ConsoleUsersView() {
     setFailed(false);
     coreApiClient.console.user
       .listUsers({
-        page: page - 1,
+        page,
         size: pageSize,
         keyword: keyword || undefined,
         sort: [`${orderBy},${orderDirection}`],

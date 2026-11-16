@@ -155,7 +155,7 @@ export const RememberMeTokenV1alpha1ApiAxiosParamCreator = function (configurati
         },
         /**
          * List RememberMeToken
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -350,7 +350,7 @@ export const RememberMeTokenV1alpha1ApiFp = function(configuration?: Configurati
         },
         /**
          * List RememberMeToken
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -491,7 +491,7 @@ export interface RememberMeTokenV1alpha1ApiGetRememberMeTokenRequest {
  */
 export interface RememberMeTokenV1alpha1ApiListRememberMeTokenRequest {
     /**
-     * Page number. Default is 0.
+     * Page number, starts from 1. Values below 1 are treated as 1.
      */
     readonly page?: number
 

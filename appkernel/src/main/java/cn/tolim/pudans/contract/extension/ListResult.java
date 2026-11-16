@@ -20,7 +20,7 @@ import org.springframework.util.Assert;
 public class ListResult<T> implements Iterable<T>, Supplier<Stream<T>> {
 
     @Schema(
-            description = "Page number, starts from 1. If not set or equal to 0, it means no " + "pagination.",
+            description = "Page number, starts from 1. Empty results may report 0.",
             requiredMode = REQUIRED)
     private final int page;
 

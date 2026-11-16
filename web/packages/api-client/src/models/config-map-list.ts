@@ -39,7 +39,7 @@ export interface ConfigMapList {
      */
     'last': boolean;
     /**
-     * Page number, starts from 1. If not set or equal to 0, it means no pagination.
+     * Page number, starts from 1. Empty results may report 0.
      */
     'page': number;
     /**

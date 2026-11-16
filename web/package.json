@@ -25,6 +25,7 @@
     "format:check": "prettier --check .",
     "clean": "rm -rf ../build/dist",
     "test": "node --test ../tests/web/",
+    "test:unit": "vitest run",
     "check:cycles": "node ../scripts/web/check-cycles.mjs",
     "check:exports": "node ../scripts/web/check-exports.mjs",
     "check:boundary": "node ../scripts/web/check-component-boundary.mjs",
@@ -53,6 +54,8 @@
     "react-transition-group": "^4.4.5"
   },
   "devDependencies": {
+    "@testing-library/dom": "10.4.0",
+    "@testing-library/react": "16.1.0",
     "@types/node": "^26.6.6",
     "@types/react": "^18.3.31",
     "@types/react-dom": "^18.3.7",
@@ -64,10 +67,12 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.8",
     "globals": "^17.14.0",
+    "jsdom": "25.0.1",
     "prettier": "^3.6.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.72.2",
     "vite": "^5.4.6",
-    "vite-plugin-mkcert": "^2.1.0"
+    "vite-plugin-mkcert": "^2.1.0",
+    "vitest": "2.1.9"
   }
 }

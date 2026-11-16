@@ -21,7 +21,7 @@ public interface IListRequest {
                         .name("page")
                         .implementation(Integer.class)
                         .required(false)
-                        .description("Page number. Default is 0."))
+                        .description("Page number, starts from 1. Values below 1 are treated as 1."))
                 .parameter(parameterBuilder()
                         .in(ParameterIn.QUERY)
                         .name("size")
@@ -42,7 +42,7 @@ public interface IListRequest {
                         .implementationArray(String.class));
     }
 
-    @Schema(description = "The page number. Zero indicates no page.")
+    @Schema(description = "The page number, starts from 1. Values below 1 are treated as 1.")
     Integer getPage();
 
     @Schema(description = "Size of one page. Zero indicates no limit.")
