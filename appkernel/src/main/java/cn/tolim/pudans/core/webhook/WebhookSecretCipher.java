@@ -2,71 +2,177 @@ package cn.tolim.pudans.core.webhook;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.codec.Hex;
 import org.springframework.security.crypto.encrypt.AesBytesEncryptor;
 import org.springframework.security.crypto.encrypt.BytesEncryptor;
 import org.springframework.security.crypto.keygen.KeyGenerators;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
+@Slf4j
 @Component
 public class WebhookSecretCipher {
 
     private static final String PREFIX = "enc:";
 
-    private static final char[] PASSWORD = "changeit".toCharArray();
+    // One-time migration path for keystores created before the password became configurable.
+    private static final char[] LEGACY_PASSWORD = "changeit".toCharArray();
 
     private static final String ALIAS = "webhook-secret-key";
+
+    private static final String KEYSTORE_FILE = "webhook.keystore";
+
+    private static final String SECURE_PERMISSIONS = "rw-------";
 
     private final BytesEncryptor encryptor;
 
     public WebhookSecretCipher(PudansProperties properties) {
-        this.encryptor = loadOrCreate(properties.getWorkDir().resolve("keys"));
+        var configuredPassword = properties.getWebhook().getKeystorePassword();
+        if (!StringUtils.hasText(configuredPassword)) {
+            throw new IllegalStateException(
+                    "pudans.webhook.keystore-password (PUDANS_WEBHOOK_KEYSTORE_PASSWORD) must be set.");
+        }
+        this.encryptor = loadOrCreate(
+                properties.getWorkDir().resolve("keys"), configuredPassword.toCharArray());
     }
 
-    private static BytesEncryptor loadOrCreate(Path keysRoot) {
+    private static BytesEncryptor loadOrCreate(Path keysRoot, char[] password) {
         try {
             if (Files.notExists(keysRoot)) {
                 Files.createDirectories(keysRoot);
             }
-            var keyStorePath = keysRoot.resolve("webhook.keystore");
-            var keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            var keyStorePath = keysRoot.resolve(KEYSTORE_FILE);
             if (Files.notExists(keyStorePath)) {
-                keyStore.load(null, PASSWORD);
-            } else {
-                try (var is = Files.newInputStream(keyStorePath, READ)) {
-                    keyStore.load(is, PASSWORD);
-                }
+                return createNew(keyStorePath, password);
             }
-            var entry = keyStore.getEntry(ALIAS, new KeyStore.PasswordProtection(PASSWORD));
-            SecretKey secretKey = null;
-            if (entry instanceof KeyStore.SecretKeyEntry secretKeyEntry
-                    && "AES".equalsIgnoreCase(secretKeyEntry.getSecretKey().getAlgorithm())) {
-                secretKey = secretKeyEntry.getSecretKey();
+            var keyStore = load(keyStorePath, password);
+            if (keyStore != null) {
+                warnIfInsecurePermissions(keyStorePath);
+                return encryptorWithExistingKey(keyStore, password, keyStorePath);
             }
-            if (secretKey == null) {
-                var generator = KeyGenerator.getInstance("AES");
-                generator.init(256);
-                secretKey = generator.generateKey();
-                keyStore.setEntry(ALIAS, new KeyStore.SecretKeyEntry(secretKey),
-                        new KeyStore.PasswordProtection(PASSWORD));
-                try (var os = Files.newOutputStream(keyStorePath, CREATE)) {
-                    keyStore.store(os, PASSWORD);
-                }
+            var legacyKeyStore = load(keyStorePath, LEGACY_PASSWORD);
+            if (legacyKeyStore == null) {
+                throw new IllegalStateException(
+                        "Unable to open the webhook keystore. Check pudans.webhook.keystore-password.");
             }
-            return new AesBytesEncryptor(secretKey, KeyGenerators.secureRandom(32),
-                    AesBytesEncryptor.CipherAlgorithm.GCM);
+            var legacyKey = getAesKey(legacyKeyStore, LEGACY_PASSWORD);
+            if (legacyKey == null) {
+                throw new IllegalStateException(
+                        "The webhook keystore does not contain an AES key readable with the legacy password.");
+            }
+            legacyKeyStore.setEntry(
+                    ALIAS,
+                    new KeyStore.SecretKeyEntry(legacyKey),
+                    new KeyStore.PasswordProtection(password));
+            store(legacyKeyStore, keyStorePath, password);
+            restrictPermissions(keyStorePath);
+            log.warn(
+                    "Migrated the webhook keystore to the configured password. "
+                            + "Existing webhook secrets remain decryptable.");
+            return encryptor(legacyKey);
         } catch (IOException | GeneralSecurityException e) {
             throw new IllegalStateException("Unable to initialize webhook secret cipher", e);
+        }
+    }
+
+    private static BytesEncryptor createNew(Path keyStorePath, char[] password)
+            throws GeneralSecurityException, IOException {
+        var keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        keyStore.load(null, password);
+        var secretKey = generateKey();
+        keyStore.setEntry(
+                ALIAS, new KeyStore.SecretKeyEntry(secretKey), new KeyStore.PasswordProtection(password));
+        store(keyStore, keyStorePath, password);
+        restrictPermissions(keyStorePath);
+        return encryptor(secretKey);
+    }
+
+    private static BytesEncryptor encryptorWithExistingKey(
+            KeyStore keyStore, char[] password, Path keyStorePath) throws GeneralSecurityException {
+        var secretKey = getAesKey(keyStore, password);
+        if (secretKey == null) {
+            throw new IllegalStateException(
+                    "The webhook keystore does not contain an AES key readable with the configured password. "
+                            + "Check pudans.webhook.keystore-password (" + keyStorePath + ").");
+        }
+        return encryptor(secretKey);
+    }
+
+    private static KeyStore load(Path keyStorePath, char[] password) {
+        try {
+            var keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+            try (var is = Files.newInputStream(keyStorePath, READ)) {
+                keyStore.load(is, password);
+                return keyStore;
+            }
+        } catch (IOException | GeneralSecurityException e) {
+            return null;
+        }
+    }
+
+    private static SecretKey getAesKey(KeyStore keyStore, char[] password) throws GeneralSecurityException {
+        var entry = keyStore.getEntry(ALIAS, new KeyStore.PasswordProtection(password));
+        if (entry instanceof KeyStore.SecretKeyEntry secretKeyEntry
+                && "AES".equalsIgnoreCase(secretKeyEntry.getSecretKey().getAlgorithm())) {
+            return secretKeyEntry.getSecretKey();
+        }
+        return null;
+    }
+
+    private static SecretKey generateKey() throws GeneralSecurityException {
+        var generator = KeyGenerator.getInstance("AES");
+        generator.init(256);
+        return generator.generateKey();
+    }
+
+    private static void store(KeyStore keyStore, Path keyStorePath, char[] password)
+            throws GeneralSecurityException, IOException {
+        try (var os = Files.newOutputStream(keyStorePath, CREATE, TRUNCATE_EXISTING)) {
+            keyStore.store(os, password);
+        }
+    }
+
+    private static BytesEncryptor encryptor(SecretKey secretKey) {
+        return new AesBytesEncryptor(
+                secretKey, KeyGenerators.secureRandom(32), AesBytesEncryptor.CipherAlgorithm.GCM);
+    }
+
+    private static void restrictPermissions(Path keyStorePath) {
+        try {
+            Files.setPosixFilePermissions(keyStorePath, PosixFilePermissions.fromString(SECURE_PERMISSIONS));
+        } catch (UnsupportedOperationException | IOException e) {
+            log.debug("Unable to set webhook keystore permissions on {}", keyStorePath, e);
+        }
+    }
+
+    private static void warnIfInsecurePermissions(Path keyStorePath) {
+        try {
+            var permissions = Files.getPosixFilePermissions(keyStorePath);
+            var expected = PosixFilePermissions.fromString(SECURE_PERMISSIONS);
+            if (!permissions.equals(expected)) {
+                log.warn(
+                        "Webhook keystore [{}] has permissions [{}]; expected [{}].",
+                        keyStorePath,
+                        PosixFilePermissions.toString(permissions),
+                        SECURE_PERMISSIONS);
+            }
+        } catch (UnsupportedOperationException e) {
+            log.debug("POSIX permissions are not supported on this platform");
+        } catch (IOException e) {
+            log.warn("Unable to inspect webhook keystore permissions on {}", keyStorePath, e);
         }
     }
 

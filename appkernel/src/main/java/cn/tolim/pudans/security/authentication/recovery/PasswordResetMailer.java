@@ -3,9 +3,11 @@ package cn.tolim.pudans.security.authentication.recovery;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
@@ -23,6 +25,18 @@ public class PasswordResetMailer {
     private final ObjectProvider<JavaMailSender> mailSenderProvider;
 
     private final PudansProperties pudansProperties;
+
+    private final Environment environment;
+
+    @PostConstruct
+    void warnIfLogCodesEnabledOutsideDev() {
+        var options = pudansProperties.getSecurity().getPasswordReset();
+        if (options.isLogCodes() && !environment.matchesProfiles("dev", "test")) {
+            log.warn(
+                    "Password reset logCodes is enabled outside dev/test; verification codes may be "
+                            + "written to the application log when email delivery is not configured.");
+        }
+    }
 
     public Mono<Void> sendCode(String email, String code) {
         var options = pudansProperties.getSecurity().getPasswordReset();

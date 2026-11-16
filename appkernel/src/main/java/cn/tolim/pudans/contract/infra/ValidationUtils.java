@@ -18,6 +18,16 @@ public class ValidationUtils {
 
     public static final Pattern PASSWORD_PATTERN = Pattern.compile(PASSWORD_REGEX);
 
+    public static final int PASSWORD_MIN_LENGTH = 8;
+
+    public static final int PASSWORD_MAX_LENGTH = 257;
+
+    public static boolean isPasswordLengthValid(String password) {
+        return password != null
+                && password.length() >= PASSWORD_MIN_LENGTH
+                && password.length() <= PASSWORD_MAX_LENGTH;
+    }
+
 
     public static BindingResult validate(
             Object target, String objectName, Validator validator, ServerWebExchange exchange) {

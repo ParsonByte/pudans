@@ -382,10 +382,10 @@ public class SystemSetupEndpoint {
         @Pattern(regexp = ValidationUtils.NAME_REGEX, message = "{validation.error.username.pattern}")
         private String username;
 
-        @Schema(requiredMode = REQUIRED, minLength = 5, maxLength = 257)
+        @Schema(requiredMode = REQUIRED, minLength = 8, maxLength = 257)
         @NotBlank
         @Pattern(regexp = ValidationUtils.PASSWORD_REGEX, message = "{validation.error.password.pattern}")
-        @Size(min = 5, max = 257)
+        @Size(min = 8, max = 257)
         private String password;
 
         @Email

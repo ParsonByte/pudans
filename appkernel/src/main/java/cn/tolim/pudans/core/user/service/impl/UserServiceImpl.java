@@ -101,6 +101,9 @@ public class UserServiceImpl implements UserService {
     }
 
     private Mono<User> updateWithRawPasswordInternal(String username, String rawPassword) {
+        if (!ValidationUtils.isPasswordLengthValid(rawPassword)) {
+            return Mono.error(new UnsatisfiedAttributeValueException("validation.error.password.length"));
+        }
         if (!ValidationUtils.PASSWORD_PATTERN.matcher(rawPassword).matches()) {
             return Mono.error(new UnsatisfiedAttributeValueException("validation.error.password.pattern"));
         }

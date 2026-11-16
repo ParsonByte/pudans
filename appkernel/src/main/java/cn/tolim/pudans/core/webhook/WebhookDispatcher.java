@@ -21,7 +21,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -39,7 +38,6 @@ import reactor.util.retry.Retry;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class WebhookDispatcher implements InitializingBean, DisposableBean {
 
     private static final int CONCURRENCY = 4;
@@ -62,11 +60,26 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
 
     private final OutboundRequestValidator outboundRequestValidator;
 
-    private final WebClient webClient = WebClient.builder()
-            .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
-                    .followRedirect(false)
-                    .responseTimeout(Duration.ofSeconds(30))))
-            .build();
+    private final WebClient webClient;
+
+    public WebhookDispatcher(
+            WebhookEventBus eventBus,
+            ReactiveExtensionClient client,
+            WebhookSecretCipher secretCipher,
+            AuditService auditService,
+            OutboundRequestValidator outboundRequestValidator) {
+        this.eventBus = eventBus;
+        this.client = client;
+        this.secretCipher = secretCipher;
+        this.auditService = auditService;
+        this.outboundRequestValidator = outboundRequestValidator;
+        this.webClient = WebClient.builder()
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+                        .resolver(new ValidatingAddressResolverGroup(outboundRequestValidator))
+                        .followRedirect(false)
+                        .responseTimeout(Duration.ofSeconds(30))))
+                .build();
+    }
 
     private volatile CountDownLatch drained;
 

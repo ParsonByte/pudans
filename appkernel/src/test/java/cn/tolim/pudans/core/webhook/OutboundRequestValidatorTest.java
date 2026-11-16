@@ -46,6 +46,44 @@ class OutboundRequestValidatorTest {
     }
 
     @Test
+    void ipv6NonRoutableTargetsAreRejected() {
+        assertThatThrownBy(() -> validator.validate("http://[::1]/hook"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("non routable");
+        assertThatThrownBy(() -> validator.validate("http://[fc00::1]/hook"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("non routable");
+        assertThatThrownBy(() -> validator.validate("http://[fe80::1]/hook"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("non routable");
+    }
+
+    @Test
+    void cidrBoundariesAreClassified() throws Exception {
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("10.0.0.0")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("10.255.255.255")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("11.0.0.1")))
+                .isFalse();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("172.16.0.1")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("172.31.255.255")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("172.32.0.1")))
+                .isFalse();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("192.168.255.255")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("fc00::1")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("fdff:ffff::1")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(
+                        java.net.InetAddress.getByName("2001:4860:4860::8888")))
+                .isFalse();
+    }
+
+    @Test
     void nonHttpSchemeIsRejected() {
         assertThatThrownBy(() -> validator.validate("ftp://example.com/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
