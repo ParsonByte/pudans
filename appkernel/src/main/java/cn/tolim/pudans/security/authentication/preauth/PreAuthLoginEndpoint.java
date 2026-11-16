@@ -4,7 +4,6 @@ import static cn.tolim.pudans.security.authentication.SecurityConstant.REMEMBER_
 import static org.springframework.web.reactive.function.server.RequestPredicates.path;
 
 import cn.tolim.pudans.contract.core.extension.AuthProvider;
-import cn.tolim.pudans.infra.exception.ProblemDetailFactory;
 import cn.tolim.pudans.infra.utils.PudansUtils;
 import cn.tolim.pudans.security.authentication.AuthProviderService;
 import cn.tolim.pudans.security.authentication.LoginParameterRequestCache;
@@ -15,7 +14,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
@@ -28,8 +26,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class PreAuthLoginEndpoint {
 
-    private static final String LOGIN_PAGE_REMOVED = "login-page-removed";
-
     private final AuthProviderService authProviderService;
 
     private final LoginParameterRequestCache parameterRequestCache;
@@ -40,12 +36,6 @@ class PreAuthLoginEndpoint {
         return RouterFunctions.nest(
                 path("/login"),
                 RouterFunctions.route()
-                        .GET("", request -> ServerResponse.status(HttpStatus.GONE)
-                                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                                .bodyValue(ProblemDetailFactory.create(
-                                        HttpStatus.GONE,
-                                        LOGIN_PAGE_REMOVED,
-                                        "The sign-in page is not served by the backend.")))
                         .POST("/social/{authProviderName}", this::socialLogin)
                         .before(PudansUtils.noCache())
                         .build());
@@ -59,7 +49,7 @@ class PreAuthLoginEndpoint {
                 .filter(ap -> !AuthProvider.AuthType.FORM.equals(ap.getSpec().getAuthType()))
                 .next()
                 .switchIfEmpty(Mono.error(() -> new ServerWebInputException(
-                        "Auth provider " + authProviderName + " not found or not enabled.")))
+                        "认证提供方 " + authProviderName + " 不存在或未启用。")))
                 .flatMap(ap -> {
                     var authenticationUrl = ap.getSpec().getAuthenticationUrl();
                     return parameterRequestCache

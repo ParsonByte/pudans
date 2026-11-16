@@ -44,18 +44,6 @@ class AuthorizationExchangeConfigurers {
     }
 
     @Bean
-    @Order(100)
-    SecurityConfigurer unauthenticatedAuthorizationConfigurer() {
-        return http -> http.authorizeExchange(spec -> {
-            spec.pathMatchers(HttpMethod.GET, "/login")
-                    .access((authentication, context) -> authentication
-                            .map(a -> !authenticationTrustResolver.isAuthenticated(a))
-                            .defaultIfEmpty(true)
-                            .map(AuthorizationDecision::new));
-        });
-    }
-
-    @Bean
     @Order(200)
     SecurityConfigurer preAuthenticationAuthorizationConfigurer() {
         return http -> http.authorizeExchange(spec -> spec.pathMatchers("/sudo", "/sudo/**")
@@ -78,13 +66,6 @@ class AuthorizationExchangeConfigurers {
                         .map(a -> !authenticationTrustResolver.isAnonymous(a))
                         .<AuthorizationResult>map(AuthorizationDecision::new)
                         .switchIfEmpty(Mono.fromSupplier(() -> new AuthorizationDecision(false)))));
-    }
-
-    @Bean
-    @Order(300)
-    SecurityConfigurer authenticatedAuthorizationConfigurer() {
-
-        return http -> http.authorizeExchange(spec -> spec.pathMatchers("/").authenticated());
     }
 
     @Bean
