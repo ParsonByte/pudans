@@ -29,13 +29,13 @@ public class AuditWebFilter implements WebFilter {
 
     private static final int MAX_ID_LENGTH = 64;
 
-    private static final String[] STATIC_PREFIXES = {
-        "/assets/", "/images/", "/js/", "/styles/", "/webjars/", "/favicon.ico"
-    };
+    private static final String[] STATIC_PREFIXES = {"/webjars/"};
 
     private final AuditService auditService;
 
     private final ReactiveExtensionClient client;
+
+    private final AuditRecordRuleEvaluator ruleEvaluator;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -85,17 +85,22 @@ public class AuditWebFilter implements WebFilter {
                 : client.fetch(User.class, username)
                         .map(user -> user.getSpec().getUid())
                         .defaultIfEmpty("unknown");
+        var operation = resolvedOperation(exchange);
+        var type = resourceType(exchange);
         return uidMono.onErrorResume(e -> {
                     log.warn("Unable to resolve the uid of the audit record", e);
                     return Mono.just("unknown");
                 })
-                .doOnNext(uid -> {
+                .flatMap(uid -> ruleEvaluator.shouldRecord(operation, type).flatMap(record -> {
+                    if (!Boolean.TRUE.equals(record)) {
+                        return Mono.empty();
+                    }
                     exchange.getAttributes().put(AuditService.UID_ATTRIBUTE, uid);
                     try {
                         auditService.record(
                                 exchange,
-                                resolvedOperation(exchange),
-                                resourceType(exchange),
+                                operation,
+                                type,
                                 resourceName(exchange),
                                 result(exchange, error),
                                 System.currentTimeMillis() - start,
@@ -106,7 +111,8 @@ public class AuditWebFilter implements WebFilter {
                                 .getPath()
                                 .value(), e);
                     }
-                })
+                    return Mono.<Void>empty();
+                }))
                 .then();
     }
 
@@ -222,6 +228,7 @@ public class AuditWebFilter implements WebFilter {
                 case "userconnections" -> "UserConnection";
                 case "passkeys" -> "Passkey";
                 case "settings", "configmaps" -> "Setting";
+                case "parameter-settings", "systemconfigs" -> "ParameterSetting";
                 default -> resource;
             };
         }

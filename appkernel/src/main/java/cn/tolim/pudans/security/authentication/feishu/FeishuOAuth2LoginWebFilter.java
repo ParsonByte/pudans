@@ -6,6 +6,7 @@ import cn.tolim.pudans.security.authentication.LoginRejectedException;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
+import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -44,6 +46,8 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     private final DomainEventPublisher domainEventPublisher;
 
     private final SecurityProperties securityProperties;
+
+    private final ServerResponse.Context context;
 
     private static Mono<Void> redirect(ServerWebExchange exchange, String location) {
         exchange.getResponse().setStatusCode(HttpStatus.FOUND);
@@ -135,7 +139,8 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
         exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
         exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
-        return redirect(exchange, "/auth/?error=" + reason);
+        return ProblemDetailResponses.write(
+                exchange, context, HttpStatus.FORBIDDEN, reason, "Feishu sign-in was rejected.");
     }
 
     private Mono<Void> loginFailure(ServerWebExchange exchange, String reason) {
@@ -143,8 +148,8 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
         exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
         publishLoginFailure(exchange, reason);
-        var location = "/auth/?error=" + reason + ("feishu_not_bound".equals(reason) ? "&need_binding=true" : "");
-        return redirect(exchange, location);
+        return ProblemDetailResponses.write(
+                exchange, context, HttpStatus.UNAUTHORIZED, reason, "Feishu sign-in failed.");
     }
 
     private void publishLoginFailure(ServerWebExchange exchange, String reason) {

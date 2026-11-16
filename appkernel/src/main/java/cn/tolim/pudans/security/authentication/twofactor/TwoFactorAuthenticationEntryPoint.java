@@ -4,9 +4,7 @@ import cn.tolim.pudans.infra.exception.Exceptions;
 import java.net.URI;
 import org.springframework.context.MessageSource;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.server.DefaultServerRedirectStrategy;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
-import org.springframework.security.web.server.ServerRedirectStrategy;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
@@ -15,17 +13,10 @@ import reactor.core.publisher.Mono;
 public class TwoFactorAuthenticationEntryPoint implements ServerAuthenticationEntryPoint {
 
     private static final URI REDIRECT_LOCATION = URI.create("/challenges/two-factor/totp");
-    private static final ServerWebExchangeMatcher XHR_MATCHER = exchange -> {
-        if (exchange.getRequest().getHeaders().getOrEmpty("X-Requested-With").contains("XMLHttpRequest")) {
-            return ServerWebExchangeMatcher.MatchResult.match();
-        }
-        return ServerWebExchangeMatcher.MatchResult.notMatch();
-    };
     public static ServerWebExchangeMatcher MATCHER = exchange -> exchange.getPrincipal()
             .filter(TwoFactorAuthentication.class::isInstance)
             .flatMap(a -> ServerWebExchangeMatcher.MatchResult.match())
             .switchIfEmpty(ServerWebExchangeMatcher.MatchResult.notMatch());
-    private final ServerRedirectStrategy redirectStrategy = new DefaultServerRedirectStrategy();
     private final MessageSource messageSource;
     private final ServerResponse.Context context;
 
@@ -36,18 +27,10 @@ public class TwoFactorAuthenticationEntryPoint implements ServerAuthenticationEn
 
     @Override
     public Mono<Void> commence(ServerWebExchange exchange, AuthenticationException ex) {
-        return XHR_MATCHER
-                .matches(exchange)
-                .filter(ServerWebExchangeMatcher.MatchResult::isMatch)
-                .switchIfEmpty(redirectStrategy
-                        .sendRedirect(exchange, REDIRECT_LOCATION)
-                        .then(Mono.empty()))
-                .flatMap(isXhr -> {
-                    var errorResponse = Exceptions.createErrorResponse(
-                            new TwoFactorAuthRequiredException(REDIRECT_LOCATION), null, exchange, messageSource);
-                    return ServerResponse.status(errorResponse.getStatusCode())
-                            .bodyValue(errorResponse.getBody())
-                            .flatMap(response -> response.writeTo(exchange, context));
-                });
+        var errorResponse = Exceptions.createErrorResponse(
+                new TwoFactorAuthRequiredException(REDIRECT_LOCATION), null, exchange, messageSource);
+        return ServerResponse.status(errorResponse.getStatusCode())
+                .bodyValue(errorResponse.getBody())
+                .flatMap(response -> response.writeTo(exchange, context));
     }
 }

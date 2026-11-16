@@ -12,6 +12,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.server.ServerResponse;
 
 
 @Slf4j
@@ -31,25 +32,29 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
 
     private final SecurityProperties securityProperties;
 
+    private final ServerResponse.Context context;
+
     public FeishuOAuth2SecurityConfigurer(
             FeishuProperties properties,
             FeishuClient feishuClient,
             FeishuUserService feishuUserService,
             ExternalLoginCompletionService externalLoginCompletionService,
             DomainEventPublisher domainEventPublisher,
-            SecurityProperties securityProperties) {
+            SecurityProperties securityProperties,
+            ServerResponse.Context context) {
         this.properties = properties;
         this.feishuClient = feishuClient;
         this.feishuUserService = feishuUserService;
         this.externalLoginCompletionService = externalLoginCompletionService;
         this.domainEventPublisher = domainEventPublisher;
         this.securityProperties = securityProperties;
+        this.context = context;
     }
 
     @Override
     public void configure(ServerHttpSecurity http) {
         if (!properties.isEnabled()) {
-            log.info("Feishu login is disabled; authorization and callback requests will redirect to /auth with an error.");
+            log.info("Feishu login is disabled; authorization and callback requests will return a JSON error.");
         }
         var filter = new FeishuOAuth2LoginWebFilter(
                 properties,
@@ -57,7 +62,8 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
                 feishuUserService,
                 externalLoginCompletionService,
                 domainEventPublisher,
-                securityProperties);
+                securityProperties,
+                context);
         http.addFilterAt(filter, SecurityWebFiltersOrder.OAUTH2_AUTHORIZATION_CODE);
     }
 

@@ -1,7 +1,6 @@
 package cn.tolim.pudans.security.authentication.preauth;
 
 import static cn.tolim.pudans.contract.infra.ValidationUtils.validate;
-import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
@@ -18,14 +17,15 @@ import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.Unstructured;
 import cn.tolim.pudans.contract.infra.ExternalUrlSupplier;
-import cn.tolim.pudans.contract.infra.SystemSetting;
+import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.infra.exception.ProblemDetailFactory;
 import cn.tolim.pudans.infra.exception.RequestBodyValidationException;
 import cn.tolim.pudans.infra.setting.ExternalUrlChangedEvent;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
-import cn.tolim.pudans.infra.setting.SystemConfigFetcher;
+import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import cn.tolim.pudans.infra.setting.SystemState;
 import cn.tolim.pudans.infra.utils.PudansUtils;
 import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
@@ -42,7 +42,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Data;
@@ -50,9 +49,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.fn.builders.content.Builder;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
-import org.springframework.boot.r2dbc.autoconfigure.R2dbcConnectionDetails;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
@@ -82,36 +79,23 @@ import reactor.util.retry.Retry;
 @Component
 @RequiredArgsConstructor
 public class SystemSetupEndpoint {
-    static final String SETUP_TEMPLATE = "setup";
     static final PropertyPlaceholderHelper PROPERTY_PLACEHOLDER_HELPER = new PropertyPlaceholderHelper(
             PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX,
             PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_SUFFIX);
 
+    private static final String SETUP_COMPLETED = "setup-completed";
+    private static final String SETUP_PAGE_REMOVED = "setup-page-removed";
+
     private final InitializationStateGetter initializationStateGetter;
-    private final SystemConfigFetcher systemConfigFetcher;
+    private final ParameterSettingFetcher systemConfigFetcher;
     private final SuperAdminInitializer superAdminInitializer;
     private final ReactiveExtensionClient client;
     private final Validator validator;
-    private final ObjectProvider<R2dbcConnectionDetails> connectionDetails;
     private final ExternalUrlSupplier externalUrl;
     private final ApplicationEventPublisher eventPublisher;
 
-    private static Mono<ServerResponse> handleSetupSuccessfully(ServerRequest request) {
-        if (isHtmlRequest(request)) {
-            return redirectToConsole();
-        }
+    private static Mono<ServerResponse> handleSetupSuccessfully() {
         return ServerResponse.noContent().build();
-    }
-
-    private static boolean isHtmlRequest(ServerRequest request) {
-        return request.headers().accept().contains(MediaType.TEXT_HTML)
-                && !PudansUtils.isXhr(request.headers().asHttpHeaders());
-    }
-
-    private static Mono<ServerResponse> redirectToConsole() {
-        return ServerResponse.status(HttpStatus.FOUND)
-                .location(URI.create("/auth/"))
-                .build();
     }
 
     private static String mergeToBasicConfig(SetupRequest body, ConfigMap configMap) {
@@ -120,8 +104,8 @@ public class SystemSetupEndpoint {
             data = new LinkedHashMap<>();
             configMap.setData(data);
         }
-        String basic = data.getOrDefault(SystemSetting.Basic.GROUP, "{}");
-        var basicSetting = JsonUtils.jsonToObject(basic, SystemSetting.Basic.class);
+        String basic = data.getOrDefault(ParameterSetting.Basic.GROUP, "{}");
+        var basicSetting = JsonUtils.jsonToObject(basic, ParameterSetting.Basic.class);
 
 
         if (!StringUtils.hasText(basicSetting.getTitle())) {
@@ -133,8 +117,26 @@ public class SystemSetupEndpoint {
         if (!StringUtils.hasText(basicSetting.getExternalUrl())) {
             basicSetting.setExternalUrl(body.getExternalUrl());
         }
-        data.put(SystemSetting.Basic.GROUP, JsonUtils.objectToJson(basicSetting));
+        data.put(ParameterSetting.Basic.GROUP, JsonUtils.objectToJson(basicSetting));
         return basicSetting.getExternalUrl();
+    }
+
+    private static String mergeToSiteConfig(SetupRequest body, ConfigMap configMap) {
+        Map<String, String> data = configMap.getData();
+        if (data == null) {
+            data = new LinkedHashMap<>();
+            configMap.setData(data);
+        }
+        String siteJson = data.getOrDefault(ParameterSetting.Site.GROUP, "{}");
+        var site = JsonUtils.jsonToObject(siteJson, ParameterSetting.Site.class);
+        if (!StringUtils.hasText(site.getSiteName())) {
+            site.setSiteName(body.getSiteTitle());
+        }
+        if (!StringUtils.hasText(site.getSiteUrl())) {
+            site.setSiteUrl(body.getExternalUrl());
+        }
+        data.put(ParameterSetting.Site.GROUP, JsonUtils.objectToJson(site));
+        return StringUtils.hasText(site.getSiteUrl()) ? site.getSiteUrl() : body.getExternalUrl();
     }
 
     @Bean
@@ -144,7 +146,7 @@ public class SystemSetupEndpoint {
         return SpringdocRouteBuilder.route()
                 .GET(
                         path(ApiGroups.SETUP_PATH).and(accept(MediaType.TEXT_HTML)),
-                        this::setupPage,
+                        request -> setupPage(request),
                         builder -> builder.operationId("JumpToSetupPage")
                                 .description("Jump to setup page")
                                 .tag(tag)
@@ -180,17 +182,17 @@ public class SystemSetupEndpoint {
 
                     var bindingResult = validate(setupRequest, validator, request.exchange());
                     if (bindingResult.hasErrors()) {
-                        return handleValidationErrors(bindingResult, request);
+                        return handleValidationErrors(bindingResult);
                     }
                     return doInitialization(setupRequest, setupRequest.getUsername())
-                            .then(handleSetupSuccessfully(request))
+                            .then(handleSetupSuccessfully())
                             .onErrorResume(DuplicateNameException.class, error -> {
                                 bindingResult.rejectValue(
                                         "username",
                                         "problemDetail.user.duplicateName",
                                         new Object[] {setupRequest.getUsername()},
                                         "The username already exists.");
-                                return handleValidationErrors(bindingResult, request);
+                                return handleValidationErrors(bindingResult);
                             })
                             .onErrorResume(BadCredentialsException.class, error -> {
                                 bindingResult.rejectValue(
@@ -198,10 +200,15 @@ public class SystemSetupEndpoint {
                                         "problemDetail.org.springframework.security.authentication"
                                                 + ".BadCredentialsException",
                                         "The username or password is incorrect.");
-                                return handleValidationErrors(bindingResult, request);
+                                return handleValidationErrors(bindingResult);
                             });
                 }))
-                .switchIfEmpty(redirectToConsole());
+                .switchIfEmpty(ServerResponse.status(HttpStatus.CONFLICT)
+                        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                        .bodyValue(ProblemDetailFactory.create(
+                                HttpStatus.CONFLICT,
+                                SETUP_COMPLETED,
+                                "System setup has already been completed.")));
     }
 
     private static Mono<SetupRequest> readSetupRequest(ServerRequest request) {
@@ -213,18 +220,7 @@ public class SystemSetupEndpoint {
         return json ? request.bodyToMono(SetupRequest.class) : request.bind(SetupRequest.class);
     }
 
-    private Mono<ServerResponse> handleValidationErrors(BindingResult bindingResult, ServerRequest request) {
-        if (isHtmlRequest(request)) {
-            return findSetupUsernameInProgress()
-                    .map(username -> true)
-                    .defaultIfEmpty(false)
-                    .flatMap(resumingSetup -> {
-                        var model = bindingResult.getModel();
-                        model.put("resumingSetup", resumingSetup);
-                        model.put("usingH2database", usingH2database());
-                        return ServerResponse.status(HttpStatus.BAD_REQUEST).render(SETUP_TEMPLATE, model);
-                    });
-        }
+    private Mono<ServerResponse> handleValidationErrors(BindingResult bindingResult) {
         return Mono.error(new RequestBodyValidationException(bindingResult));
     }
 
@@ -283,7 +279,8 @@ public class SystemSetupEndpoint {
                                                 "The system config ConfigMap is missing, so the basic settings cannot"
                                                         + " be initialized.")))
                         .flatMap(configMap -> {
-                            var effectiveExternalUrl = mergeToBasicConfig(body, configMap);
+                            mergeToBasicConfig(body, configMap);
+                            var effectiveExternalUrl = mergeToSiteConfig(body, configMap);
                             return client.update(configMap).thenReturn(effectiveExternalUrl);
                         }))
                 .retryWhen(Retry.backoff(5, Duration.ofMillis(100))
@@ -330,26 +327,13 @@ public class SystemSetupEndpoint {
                 .filter(StringUtils::hasText);
     }
 
-    private Mono<ServerResponse> setupPage(ServerRequest request) {
-        return initializationStateGetter.setupRequired().flatMap(setupRequired -> {
-            if (!setupRequired) {
-                return redirectToConsole();
-            }
-            return ServerResponse.temporaryRedirect(URI.create("/auth/")).build();
-        });
-    }
-
-    private boolean usingH2database() {
-        var rcd = connectionDetails.getIfUnique();
-        if (rcd == null) {
-
-            return true;
-        }
-        var options = rcd.getConnectionFactoryOptions();
-        return Optional.ofNullable(options.getValue(DRIVER))
-                .map(Object::toString)
-                .map("h2"::equalsIgnoreCase)
-                .orElse(false);
+    private Mono<ServerResponse> setupPage(ServerRequest ignored) {
+        return ServerResponse.status(HttpStatus.GONE)
+                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                .bodyValue(ProblemDetailFactory.create(
+                        HttpStatus.GONE,
+                        SETUP_PAGE_REMOVED,
+                        "The setup page is not served by the backend."));
     }
 
     Flux<Unstructured> loadPresetExtensions(String username) {

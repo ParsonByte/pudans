@@ -1,31 +1,21 @@
 package cn.tolim.pudans.security.authentication;
 
-import static cn.tolim.pudans.security.authentication.WebExchangeMatchers.ignoringMediaTypeAll;
-
 import cn.tolim.pudans.core.user.service.UserLoginOrLogoutProcessing;
-import java.net.URI;
 import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.server.DefaultServerRedirectStrategy;
-import org.springframework.security.web.server.ServerRedirectStrategy;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.logout.DelegatingServerLogoutHandler;
 import org.springframework.security.web.server.authentication.logout.SecurityContextServerLogoutHandler;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutHandler;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
-import org.springframework.security.web.server.savedrequest.ServerRequestCache;
-import org.springframework.security.web.server.savedrequest.WebSessionServerRequestCache;
-import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -39,8 +29,6 @@ class LogoutSecurityConfigurer implements SecurityConfigurer {
     private final ApplicationContext applicationContext;
 
     private final UserLoginOrLogoutProcessing userLoginOrLogoutProcessing;
-
-    private final ServerRequestCache serverRequestCache = new PudansServerRequestCache();
 
     private final ServerSecurityContextRepository securityContextRepository;
 
@@ -65,65 +53,21 @@ class LogoutSecurityConfigurer implements SecurityConfigurer {
     @Bean
     RouterFunction<ServerResponse> logoutPage() {
         return RouterFunctions.route()
-                .GET("/logout", request -> ServerResponse.status(HttpStatus.FOUND)
-                        .location(URI.create("/auth/"))
-                        .build())
+                .GET("/logout", request -> ServerResponse.noContent().build())
                 .build();
     }
 
-    private static class RequestCacheRedirectLogoutSuccessHandler implements ServerLogoutSuccessHandler {
-
-        private final ServerRedirectStrategy redirectStrategy = new DefaultServerRedirectStrategy();
-
-        private URI location = URI.create("/login?logout");
-
-        private ServerRequestCache requestCache = new WebSessionServerRequestCache();
-
-        public RequestCacheRedirectLogoutSuccessHandler() {}
-
-        public RequestCacheRedirectLogoutSuccessHandler(String location) {
-            this.location = URI.create(location);
-        }
-
-        public void setRequestCache(ServerRequestCache requestCache) {
-            Assert.notNull(requestCache, "requestCache cannot be null");
-            this.requestCache = requestCache;
-        }
-
-        @Override
-        public Mono<Void> onLogoutSuccess(WebFilterExchange exchange, Authentication authentication) {
-            return this.requestCache
-                    .getRedirectUri(exchange.getExchange())
-                    .defaultIfEmpty(this.location)
-                    .flatMap(location -> this.redirectStrategy.sendRedirect(exchange.getExchange(), location));
-        }
-    }
-
     private class LogoutSuccessHandler implements ServerLogoutSuccessHandler {
-
-        private final ServerLogoutSuccessHandler defaultHandler;
-
-        public LogoutSuccessHandler() {
-            var redirectHandler = new RequestCacheRedirectLogoutSuccessHandler();
-            redirectHandler.setRequestCache(serverRequestCache);
-            this.defaultHandler = redirectHandler;
-        }
 
         @Override
         public Mono<Void> onLogoutSuccess(WebFilterExchange exchange, Authentication authentication) {
             return userLoginOrLogoutProcessing
                     .logoutProcessing(authentication.getName())
-                    .then(ignoringMediaTypeAll(MediaType.APPLICATION_JSON)
-                            .matches(exchange.getExchange())
-                            .filter(ServerWebExchangeMatcher.MatchResult::isMatch)
-                            .switchIfEmpty(Mono.defer(() -> defaultHandler
-                                    .onLogoutSuccess(exchange, authentication)
-                                    .then(Mono.empty())))
-                            .flatMap(match -> {
-                                var response = exchange.getExchange().getResponse();
-                                response.setStatusCode(HttpStatus.NO_CONTENT);
-                                return response.setComplete();
-                            }));
+                    .then(Mono.defer(() -> {
+                        var response = exchange.getExchange().getResponse();
+                        response.setStatusCode(HttpStatus.NO_CONTENT);
+                        return response.setComplete();
+                    }));
         }
     }
 }

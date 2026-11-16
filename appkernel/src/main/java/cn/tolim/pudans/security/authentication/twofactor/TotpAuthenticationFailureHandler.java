@@ -5,9 +5,9 @@ import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
 import cn.tolim.pudans.core.risk.service.RiskDecision;
 import cn.tolim.pudans.core.risk.service.RiskScene;
+import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import cn.tolim.pudans.security.authentication.exception.TooManyRequestsException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;
@@ -17,11 +17,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.web.server.DefaultServerRedirectStrategy;
-import org.springframework.security.web.server.ServerRedirectStrategy;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -29,15 +28,15 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class TotpAuthenticationFailureHandler implements ServerAuthenticationFailureHandler {
 
-    private static final URI DEFAULT_REDIRECT = URI.create("/challenges/two-factor/totp?error=invalid-totp-code");
-
-    private final ServerRedirectStrategy redirectStrategy = new DefaultServerRedirectStrategy();
+    static final String INVALID_TOTP_CODE = "invalid-totp-code";
 
     private final AuditService auditService;
 
     private final RiskControlService riskControlService;
 
     private final DomainEventPublisher domainEventPublisher;
+
+    private final ServerResponse.Context context;
 
     private static Mono<String> currentUsername(ServerWebExchange exchange) {
         var attribute = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
@@ -72,7 +71,12 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
                 .then(rateLimited ? Mono.just(true) : escalate(exchange))
                 .flatMap(blocked -> blocked
                         ? tooManyRequests(exchange)
-                        : redirectStrategy.sendRedirect(exchange, DEFAULT_REDIRECT));
+                        : ProblemDetailResponses.write(
+                                exchange,
+                                context,
+                                HttpStatus.UNAUTHORIZED,
+                                INVALID_TOTP_CODE,
+                                "Invalid TOTP code."));
     }
 
     private Mono<Boolean> escalate(ServerWebExchange exchange) {

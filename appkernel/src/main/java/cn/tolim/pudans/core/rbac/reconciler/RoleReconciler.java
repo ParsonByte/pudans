@@ -36,7 +36,6 @@ public class RoleReconciler implements Reconciler<Request> {
             }
             Map<String, String> annotations = MetadataUtil.nullSafeAnnotations(role);
             annotations.put(Role.ROLE_DEPENDENCY_RULES, "[]");
-            annotations.put(Role.UI_PERMISSIONS_AGGREGATED_ANNO, "[]");
             updateLabelsAndAnnotations(role);
         });
         return Result.doNotRetry();

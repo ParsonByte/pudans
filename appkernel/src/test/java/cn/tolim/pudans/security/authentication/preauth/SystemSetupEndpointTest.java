@@ -9,15 +9,13 @@ import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
-import cn.tolim.pudans.infra.setting.SystemConfigFetcher;
+import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import cn.tolim.pudans.security.authentication.SuperAdminInitializer;
 import java.util.HashMap;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.boot.r2dbc.autoconfigure.R2dbcConnectionDetails;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.validation.Validator;
 import reactor.core.publisher.Mono;
@@ -30,7 +28,7 @@ class SystemSetupEndpointTest {
     InitializationStateGetter initializationStateGetter;
 
     @Mock
-    SystemConfigFetcher systemConfigFetcher;
+    ParameterSettingFetcher parameterSettingFetcher;
 
     @Mock
     SuperAdminInitializer superAdminInitializer;
@@ -40,9 +38,6 @@ class SystemSetupEndpointTest {
 
     @Mock
     Validator validator;
-
-    @Mock
-    ObjectProvider<R2dbcConnectionDetails> connectionDetails;
 
     @Mock
     cn.tolim.pudans.contract.infra.ExternalUrlSupplier externalUrlSupplier;
@@ -60,11 +55,11 @@ class SystemSetupEndpointTest {
 
     @Test
     void initializesTheSystemWithoutPresetInstallations() {
-        var systemConfig = new ConfigMap();
-        systemConfig.setMetadata(new Metadata());
-        systemConfig.getMetadata().setName("system");
-        systemConfig.setData(new HashMap<>());
-        when(systemConfigFetcher.getConfigMap()).thenReturn(Mono.just(systemConfig));
+        var parameterSettings = new ConfigMap();
+        parameterSettings.setMetadata(new Metadata());
+        parameterSettings.getMetadata().setName("parameter-settings");
+        parameterSettings.setData(new HashMap<>());
+        when(parameterSettingFetcher.getConfigMap()).thenReturn(Mono.just(parameterSettings));
         when(superAdminInitializer.initialize(any())).thenReturn(Mono.empty());
         when(client.update(any(ConfigMap.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(client.fetch(ConfigMap.class, "system-states")).thenReturn(Mono.empty());
@@ -78,11 +73,10 @@ class SystemSetupEndpointTest {
 
         var endpoint = new SystemSetupEndpoint(
                 initializationStateGetter,
-                systemConfigFetcher,
+                parameterSettingFetcher,
                 superAdminInitializer,
                 client,
                 validator,
-                connectionDetails,
                 externalUrlSupplier,
                 eventPublisher);
         var request = new SystemSetupEndpoint.SetupRequest();
