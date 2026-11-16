@@ -33,7 +33,7 @@ export const AnnotationSettingV1AlphaUcApiAxiosParamCreator = function (configur
         /**
          * List available AnnotationSettings for the given targetRef. The available AnnotationSettings are determined by the started plugins.
          * @param {string} targetRef The targetRef of the AnnotationSetting. e.g.: \&#39;content.pudans.tolim.cn/Post
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -111,7 +111,7 @@ export const AnnotationSettingV1AlphaUcApiFp = function(configuration?: Configur
         /**
          * List available AnnotationSettings for the given targetRef. The available AnnotationSettings are determined by the started plugins.
          * @param {string} targetRef The targetRef of the AnnotationSetting. e.g.: \&#39;content.pudans.tolim.cn/Post
-         * @param {number} [page] Page number. Default is 0.
+         * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
          * @param {Array<string>} [labelSelector] Label selector. e.g.: hidden!&#x3D;true
          * @param {Array<string>} [fieldSelector] Field selector. e.g.: metadata.name&#x3D;&#x3D;pudans
@@ -156,7 +156,7 @@ export interface AnnotationSettingV1AlphaUcApiListAvailableAnnotationSettingsReq
     readonly targetRef: string
 
     /**
-     * Page number. Default is 0.
+     * Page number, starts from 1. Values below 1 are treated as 1.
      */
     readonly page?: number
 
