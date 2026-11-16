@@ -563,7 +563,9 @@
             "type": "string"
           },
           "password": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 257,
+            "minLength": 8
           }
         }
       },
@@ -1299,6 +1301,12 @@
           },
           "username": {
             "type": "string"
+          },
+          "twoFactorRequired": {
+            "type": "boolean"
+          },
+          "redirectUrl": {
+            "type": "string"
           }
         }
       },
@@ -1315,7 +1323,9 @@
       "PasswordRequest": {
         "properties": {
           "password": {
-            "type": "string"
+            "type": "string",
+            "maxLength": 257,
+            "minLength": 8
           }
         }
       },
@@ -2293,7 +2303,7 @@
           "password": {
             "type": "string",
             "maxLength": 257,
-            "minLength": 5,
+            "minLength": 8,
             "pattern": "^[A-Za-z0-9!@#$%^&*.?]+$"
           },
           "siteTitle": {
@@ -6912,6 +6922,9 @@
           "204": {
             "content": {},
             "description": "No Content"
+          },
+          "400": {
+            "description": "400 when the password is shorter than 8 characters or longer than 257 characters."
           }
         },
         "tags": [
@@ -8481,6 +8494,9 @@
               }
             },
             "description": "default response"
+          },
+          "400": {
+            "description": "400 when the password does not satisfy the policy (validation.error.password.length; 8-257 characters)."
           }
         },
         "tags": [
@@ -8560,6 +8576,9 @@
               }
             },
             "description": "default response"
+          },
+          "400": {
+            "description": "400 when the password does not satisfy the policy (validation.error.password.length; 8-257 characters)."
           }
         },
         "tags": [
@@ -8814,6 +8833,9 @@
               }
             },
             "description": "default response"
+          },
+          "400": {
+            "description": "400 when the password does not satisfy the policy (validation.error.password.length; 8-257 characters)."
           }
         },
         "tags": [
