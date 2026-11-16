@@ -22,6 +22,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
+import cn.tolim.pudans.core.user.service.RefreshTokenService;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
 import cn.tolim.pudans.security.authentication.PudansUserDetailsContract;
 import cn.tolim.pudans.security.authentication.LoginFlowHandler;
@@ -33,6 +34,7 @@ import cn.tolim.pudans.security.authentication.LoginFailureHandler;
 import cn.tolim.pudans.security.authentication.LoginSuccessHandler;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
+import cn.tolim.pudans.security.captcha.CaptchaService;
 
 @Component
 @Order(0)
@@ -68,6 +70,10 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
 
     private final SecurityProperties securityProperties;
 
+    private final CaptchaService captchaService;
+
+    private final RefreshTokenService refreshTokenService;
+
     public LoginSecurityConfigurer(
             ObservationRegistry observationRegistry,
             ReactiveUserDetailsService userDetailsService,
@@ -83,7 +89,9 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
             LoginParameterRequestCache parameterRequestCache,
             DomainEventPublisher domainEventPublisher,
             ServerRequestCache serverRequestCache,
-            SecurityProperties securityProperties) {
+            SecurityProperties securityProperties,
+            CaptchaService captchaService,
+            RefreshTokenService refreshTokenService) {
         this.observationRegistry = observationRegistry;
         this.userDetailsService = userDetailsService;
         this.passwordService = passwordService;
@@ -99,6 +107,8 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
         this.domainEventPublisher = domainEventPublisher;
         this.serverRequestCache = serverRequestCache;
         this.securityProperties = securityProperties;
+        this.captchaService = captchaService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     @Override
@@ -115,7 +125,7 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
             }
         };
         var requiresMatcher = ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST, "/login");
-        var authConverter = new LoginAuthenticationConverter(cryptoService, riskControlService);
+        var authConverter = new LoginAuthenticationConverter(cryptoService, riskControlService, captchaService);
         authConverter.setUsernameParameter(SecurityConstant.USERNAME_PARAMETER_NAME);
         authConverter.setPasswordParameter(SecurityConstant.PASSWORD_PARAMETER_NAME);
         filter.setRequiresAuthenticationMatcher(requiresMatcher);
@@ -125,7 +135,8 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
                         loginFlowHandler,
                         parameterRequestCache,
                         serverRequestCache,
-                        securityProperties.getPostLoginUrl()));
+                        securityProperties.getPostLoginUrl(),
+                        refreshTokenService));
         filter.setAuthenticationFailureHandler(
                 new LoginFailureHandler("local", context, messageSource, loginFlowHandler, domainEventPublisher));
         filter.setServerAuthenticationConverter(authConverter);

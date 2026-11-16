@@ -48,6 +48,27 @@ class DefaultRuleResolverTest {
     }
 
     @Test
+    void normalRoleAllowsOwnAvatarAndAnnouncementState() {
+        assertAllowed(normalRoleRequest("users", "-", "avatar", null, "create"));
+        assertAllowed(normalRoleRequest("users", "-", "avatar", null, "delete"));
+        assertAllowed(normalRoleRequest("users", "-", "announcement-state", null, "get"));
+        assertAllowed(normalRoleRequest("users", "-", "announcement-state", "dismiss", "create"));
+        assertAllowed(normalRoleRequest("avatars", "alice-1.png", "", null, "get"));
+    }
+
+    @Test
+    void aRoleWithoutRulesCannotUseTheNewEndpoints() {
+        var role = BuiltinEntityDefinitions.normalRole();
+        role.setRules(List.of());
+        StepVerifier.create(resolve(role, "alice", request("users", "-", "avatar", null, "create")))
+                .assertNext(visitor -> assertThat(visitor.isAllowed()).isFalse())
+                .verifyComplete();
+        StepVerifier.create(resolve(role, "alice", request("users", "-", "announcement-state", null, "get")))
+                .assertNext(visitor -> assertThat(visitor.isAllowed()).isFalse())
+                .verifyComplete();
+    }
+
+    @Test
     void systemAdminRoleAllowsManagementEndpoints() {
         var managementRequest = request("users", "bob", "", null, "get");
 
@@ -63,6 +84,17 @@ class DefaultRuleResolverTest {
         StepVerifier.create(resolve(BuiltinEntityDefinitions.superRole(), "root", request))
                 .assertNext(visitor -> assertThat(visitor.isAllowed()).isTrue())
                 .verifyComplete();
+    }
+
+    private void assertAllowed(RequestInfo requestInfo) {
+        StepVerifier.create(resolve(BuiltinEntityDefinitions.normalRole(), "alice", requestInfo))
+                .assertNext(visitor -> assertThat(visitor.isAllowed()).isTrue())
+                .verifyComplete();
+    }
+
+    private static RequestInfo normalRoleRequest(
+            String resource, String name, String subresource, String subName, String verb) {
+        return request(resource, name, subresource, subName, verb);
     }
 
     private Mono<AuthorizingVisitor> resolve(Role role, String username, RequestInfo requestInfo) {

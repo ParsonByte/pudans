@@ -18,6 +18,9 @@ import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.controller.Reconciler.Request;
 import cn.tolim.pudans.contract.security.device.DeviceService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
+import cn.tolim.pudans.core.user.service.AnnouncementStateService;
+import cn.tolim.pudans.core.user.service.AvatarStorageService;
+import cn.tolim.pudans.core.user.service.HashIdService;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,11 +37,26 @@ class UserReconcilerTest {
     @Mock
     DomainEventPublisher domainEventPublisher;
 
+    @Mock
+    AvatarStorageService avatarStorageService;
+
+    @Mock
+    HashIdService hashIdService;
+
+    @Mock
+    AnnouncementStateService announcementStateService;
+
     private UserReconciler reconciler;
 
     @BeforeEach
     void setUp() {
-        reconciler = new UserReconciler(client, deviceService, domainEventPublisher);
+        reconciler = new UserReconciler(
+                client,
+                deviceService,
+                domainEventPublisher,
+                avatarStorageService,
+                hashIdService,
+                announcementStateService);
     }
 
     private static User user(String name) {

@@ -94,5 +94,9 @@ public class User extends AbstractExtension {
 
 
         private String permalink;
+
+
+        @Schema(readOnly = true)
+        private String hashId;
     }
 }

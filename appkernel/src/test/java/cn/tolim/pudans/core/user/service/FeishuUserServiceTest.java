@@ -3,16 +3,21 @@ package cn.tolim.pudans.core.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.core.extension.user.UserConnection;
 import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
+import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -44,6 +49,31 @@ class FeishuUserServiceTest {
     @Mock
     ReactiveTransaction transaction;
 
+    @Mock
+    ParameterSettingGroupService parameterSettingGroupService;
+
+    @Test
+    void assignsTheConfiguredDefaultUserGroup() {
+        var session = new ParameterSetting.Session();
+        session.setDefaultUserGroup("viewers");
+        when(parameterSettingGroupService.getSession()).thenReturn(Mono.just(session));
+        var group = new UserGroup();
+        var metadata = new Metadata();
+        metadata.setName("viewers");
+        group.setMetadata(metadata);
+        when(client.fetch(UserGroup.class, "viewers")).thenReturn(Mono.just(group));
+        when(userGroupService.assignUserGroup("bob", "viewers"))
+                .thenReturn(Mono.just(new UserGroupBinding()));
+
+        var service = new FeishuUserService(
+                client, userService, userGroupService, domainEventPublisher, transactionManager,
+                parameterSettingGroupService);
+
+        StepVerifier.create(service.assignDefaultUserGroup("bob")).verifyComplete();
+
+        verify(userGroupService).assignUserGroup("bob", "viewers");
+    }
+
     @Test
     void createsAUserAndConnectionWithoutProvisioningHooks() {
         when(client.listAll(eq(UserConnection.class), any(), any())).thenReturn(Flux.empty());
@@ -53,9 +83,9 @@ class FeishuUserServiceTest {
                 .thenReturn(Mono.just(new UserGroupBinding()));
         when(transactionManager.getReactiveTransaction(any())).thenReturn(Mono.just(transaction));
         when(transactionManager.commit(transaction)).thenReturn(Mono.empty());
-
         var service = new FeishuUserService(
-                client, userService, userGroupService, domainEventPublisher, transactionManager);
+                client, userService, userGroupService, domainEventPublisher, transactionManager,
+                parameterSettingGroupService);
         var data = new FeishuUserService.FeishuUserData(
                 "alice", "Alice", "Alice@Example.com", "open-1", "union-1", null);
 

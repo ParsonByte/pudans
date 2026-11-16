@@ -34,11 +34,11 @@ class UserEndpointPaginationTest {
     }
 
     private static UserEndpoint.UserList paged(List<User> users, int page, int size) throws Exception {
-        var endpoint = new UserEndpoint(null, null, null, null, null, null, null, null, null);
+        var endpoint = new UserEndpoint(null, null, null, null, null, null, null, null, null, null);
         Method method = UserEndpoint.class.getDeclaredMethod(
-                "pagedUserList", List.class, SortableRequest.class);
+                "pagedUserList", List.class, SortableRequest.class, boolean.class);
         method.setAccessible(true);
-        return (UserEndpoint.UserList) method.invoke(endpoint, users, request(page, size));
+        return (UserEndpoint.UserList) method.invoke(endpoint, users, request(page, size), true);
     }
 
     private static SortableRequest request(int page, int size) {

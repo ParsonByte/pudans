@@ -1,0 +1,125 @@
+package cn.tolim.pudans.core.user.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import cn.tolim.pudans.contract.infra.ParameterSetting;
+import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.rbac.service.UserGroupService;
+import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.ReactiveValueOperations;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+@ExtendWith(MockitoExtension.class)
+class RefreshTokenServiceTest {
+
+    @Mock
+    ReactiveStringRedisTemplate redisTemplate;
+
+    @Mock
+    ReactiveValueOperations<String, String> valueOperations;
+
+    @Mock
+    ParameterSettingGroupService parameterSettingGroupService;
+
+    @Mock
+    PatService patService;
+
+    @Mock
+    UserGroupService userGroupService;
+
+    private RefreshTokenService service;
+
+    @BeforeEach
+    void setUp() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        service = new RefreshTokenService(
+                redisTemplate, parameterSettingGroupService, patService, userGroupService);
+    }
+
+    @Test
+    void issuesARefreshTokenWithTheConfiguredTtl() {
+        when(parameterSettingGroupService.getServer()).thenReturn(Mono.just(server(900, 3600)));
+        when(valueOperations.set(anyString(), eq("alice"), any(Duration.class)))
+                .thenReturn(Mono.just(true));
+
+        StepVerifier.create(service.issue("alice"))
+                .assertNext(token -> assertThat(token).isNotBlank())
+                .verifyComplete();
+
+        var ttl = ArgumentCaptor.forClass(Duration.class);
+        verify(valueOperations).set(anyString(), eq("alice"), ttl.capture());
+        assertThat(ttl.getValue()).isEqualTo(Duration.ofSeconds(3600));
+    }
+
+    @Test
+    void rotatesTheRefreshTokenAndIssuesAnAccessToken() {
+        when(parameterSettingGroupService.getServer()).thenReturn(Mono.just(server(900, 3600)));
+        when(valueOperations.getAndDelete(anyString())).thenReturn(Mono.just("alice"));
+        var pat = new PersonalAccessToken();
+        when(userGroupService.getRoleNamesByUsername("alice")).thenReturn(Flux.just("normal-role"));
+        when(patService.create(any(PersonalAccessToken.class), eq("alice"))).thenReturn(Mono.just(pat));
+        when(patService.generateToken(pat)).thenReturn(Mono.just("access-token"));
+        when(valueOperations.set(anyString(), eq("alice"), any(Duration.class)))
+                .thenReturn(Mono.just(true));
+
+        StepVerifier.create(service.rotate("old-refresh-token"))
+                .assertNext(result -> {
+                    assertThat(result.accessToken()).isEqualTo("access-token");
+                    assertThat(result.refreshToken()).isNotBlank().isNotEqualTo("old-refresh-token");
+                    assertThat(result.accessTokenTtlSeconds()).isEqualTo(900);
+                    assertThat(result.refreshTokenTtlSeconds()).isEqualTo(3600);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void expiredTokensAreRejected() {
+        when(parameterSettingGroupService.getServer()).thenReturn(Mono.just(server(900, 3600)));
+        when(valueOperations.getAndDelete(anyString())).thenReturn(Mono.empty());
+
+        StepVerifier.create(service.rotate("expired"))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(ApiException.class);
+                    assertThat(((ApiException) error).getCode()).isEqualTo("refresh-token-invalid");
+                })
+                .verify();
+    }
+
+    @Test
+    void aRefreshTokenCanBeUsedOnlyOnce() {
+        when(parameterSettingGroupService.getServer()).thenReturn(Mono.just(server(900, 3600)));
+        when(valueOperations.getAndDelete(anyString())).thenReturn(Mono.just("alice"), Mono.empty());
+        var pat = new PersonalAccessToken();
+        when(userGroupService.getRoleNamesByUsername("alice")).thenReturn(Flux.just("normal-role"));
+        when(patService.create(any(PersonalAccessToken.class), eq("alice"))).thenReturn(Mono.just(pat));
+        when(patService.generateToken(pat)).thenReturn(Mono.just("access-token"));
+        when(valueOperations.set(anyString(), eq("alice"), any(Duration.class)))
+                .thenReturn(Mono.just(true));
+
+        StepVerifier.create(service.rotate("one-time")).expectNextCount(1).verifyComplete();
+        StepVerifier.create(service.rotate("one-time")).expectError(ApiException.class).verify();
+    }
+
+    private static ParameterSetting.Server server(int accessTtl, int refreshTtl) {
+        var server = new ParameterSetting.Server();
+        server.setAccessTokenTtlSeconds(accessTtl);
+        server.setRefreshTokenTtlSeconds(refreshTtl);
+        return server;
+    }
+}
