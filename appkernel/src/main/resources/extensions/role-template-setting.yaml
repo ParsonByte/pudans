@@ -9,21 +9,62 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Settings Management"
     rbac.authorization.pudans.tolim.cn/display-name: "Setting Manage"
 rules:
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "settings" ]
-    verbs: [ "create", "update", "patch", "delete" ]
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "configmaps" ]
-    verbs: [ "create", "update", "patch", "delete" ]
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "systemconfigs" ]
-    verbs: [ "get", "list", "update" ]
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "authproviders" ]
-    verbs: [ "create", "update", "patch", "delete" ]
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "auth-providers", "auth-providers/enable", "auth-providers/disable" ]
-    verbs: [ "get", "list", "update" ]
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "settings"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "configmaps"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "parameter-settings"
+      - "parameter-settings/-"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "systemconfigs"
+    verbs:
+      - "get"
+      - "list"
+      - "update"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "authproviders"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "auth-providers"
+      - "auth-providers/enable"
+      - "auth-providers/disable"
+    verbs:
+      - "get"
+      - "list"
+      - "update"
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role
@@ -35,18 +76,43 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Settings Management"
     rbac.authorization.pudans.tolim.cn/display-name: "Setting View"
 rules:
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "settings" ]
-    verbs: [ "get", "list" ]
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "configmaps" ]
-    verbs: [ "get", "list" ]
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "systemconfigs" ]
-    verbs: [ "get" ]
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "authproviders" ]
-    verbs: [ "get", "list" ]
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "auth-providers" ]
-    verbs: [ "get", "list" ]
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "settings"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "configmaps"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "parameter-settings"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "systemconfigs"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "authproviders"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "auth-providers"
+    verbs:
+      - "get"
+      - "list"

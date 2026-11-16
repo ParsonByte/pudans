@@ -48,6 +48,8 @@ spring:
   messages:
     basename: config.i18n.messages
   web:
+    locale: zh_CN
+    locale-resolver: accept-header
     error:
       whitelabel:
         enabled: false
@@ -85,7 +87,7 @@ pudans:
     rp-name: pudans
     origins: ${WEBAUTHN_ORIGINS:http://localhost:8090}
   oidc:
-    providers: [ ]
+    providers: []
 
 springdoc:
   api-docs:

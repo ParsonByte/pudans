@@ -8,9 +8,13 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Webhook"
     rbac.authorization.pudans.tolim.cn/display-name: "Webhook View"
 rules:
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "webhooks" ]
-    verbs: [ "get", "list" ]
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "webhooks"
+    verbs:
+      - "get"
+      - "list"
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role
@@ -24,6 +28,12 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Webhook"
     rbac.authorization.pudans.tolim.cn/display-name: "Webhook Manage"
 rules:
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "webhooks" ]
-    verbs: [ "create", "update", "patch", "delete" ]
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "webhooks"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"

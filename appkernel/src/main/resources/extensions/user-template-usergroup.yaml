@@ -12,7 +12,6 @@ roleRefs:
   - kind: Role
     name: super-role
     apiGroup: pudans.tolim.cn
-
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: UserGroup
@@ -28,7 +27,6 @@ roleRefs:
   - kind: Role
     name: system-admin-role
     apiGroup: pudans.tolim.cn
-
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: UserGroup

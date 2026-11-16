@@ -103,16 +103,16 @@ class UiPermissionServiceTest {
     }
 
     @Test
-    void guestRoleWithTheDisallowAnnotationCannotAccessTheConsole() {
+    void roleWithTheDisallowAnnotationCannotAccessTheConsole() {
         var metadata = new Metadata();
-        metadata.setName("guest");
+        metadata.setName("limited-role");
         metadata.setAnnotations(Map.of(Role.DISALLOW_ACCESS_CONSOLE_ANNO, "true"));
-        var guest = new Role();
-        guest.setMetadata(metadata);
-        when(userGroupService.getRoleNamesByUsername("guest")).thenReturn(Flux.just("guest"));
-        when(roleService.list(Set.of("guest"))).thenReturn(Flux.just(guest));
+        var limitedRole = new Role();
+        limitedRole.setMetadata(metadata);
+        when(userGroupService.getRoleNamesByUsername("limited")).thenReturn(Flux.just("limited-role"));
+        when(roleService.list(Set.of("limited-role"))).thenReturn(Flux.just(limitedRole));
 
-        StepVerifier.create(service.isConsoleAccessDisallowed("guest"))
+        StepVerifier.create(service.isConsoleAccessDisallowed("limited"))
                 .expectNext(true)
                 .verifyComplete();
     }
