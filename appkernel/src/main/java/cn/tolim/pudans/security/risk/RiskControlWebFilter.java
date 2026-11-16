@@ -37,14 +37,7 @@ import cn.tolim.pudans.infra.utils.IpAddressUtils;
 @RequiredArgsConstructor
 public class RiskControlWebFilter implements WebFilter {
 
-    private static final String[] IGNORED_PREFIXES = {
-        "/assets/",
-        "/images/",
-        "/js/",
-        "/styles/",
-        "/webjars/",
-        "/favicon.ico"
-    };
+    private static final String[] IGNORED_PREFIXES = {"/webjars/"};
 
     private static final String LOGIN_PATH = "/login";
 

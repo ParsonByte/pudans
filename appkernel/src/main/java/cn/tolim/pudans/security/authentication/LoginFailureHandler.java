@@ -3,16 +3,10 @@ package cn.tolim.pudans.security.authentication;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static cn.tolim.pudans.infra.exception.Exceptions.createErrorResponse;
-import static cn.tolim.pudans.security.authentication.WebExchangeMatchers.ignoringMediaTypeAll;
 
-import java.net.URI;
 import java.util.LinkedHashMap;
 import org.springframework.context.MessageSource;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.server.DefaultServerRedirectStrategy;
-import org.springframework.security.web.server.ServerRedirectStrategy;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler;
 import org.springframework.web.ErrorResponse;
@@ -22,7 +16,6 @@ import reactor.core.publisher.Mono;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
-import cn.tolim.pudans.security.authentication.exception.TooManyRequestsException;
 import cn.tolim.pudans.security.authentication.login.LoginAuthenticationConverter;
 
 public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
@@ -36,8 +29,6 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
     private final LoginFlowHandler loginFlowHandler;
 
     private final DomainEventPublisher domainEventPublisher;
-
-    private final ServerRedirectStrategy redirectStrategy = new DefaultServerRedirectStrategy();
 
     public LoginFailureHandler(
             String loginMethod,
@@ -61,13 +52,7 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
         publishLoginFailure(exchange, exception);
         return loginFlowHandler
                 .onLoginFailure(exchange, exception)
-                .then(ignoringMediaTypeAll(APPLICATION_JSON).matches(exchange).flatMap(matchResult -> {
-                    if (matchResult.isMatch()) {
-                        return handleAuthenticationException(exception, exchange);
-                    }
-                    var location = buildRedirectLocation(exception);
-                    return redirectStrategy.sendRedirect(exchange, location);
-                }));
+                .then(handleAuthenticationException(exception, exchange));
     }
 
     private void publishLoginFailure(ServerWebExchange exchange, AuthenticationException exception) {
@@ -85,19 +70,6 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
                 "user.login.failed",
                 payload,
                 (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
-    }
-
-    private URI buildRedirectLocation(AuthenticationException exception) {
-        if (exception instanceof DisabledException) {
-            return URI.create("/auth/?error=account-disabled&method=" + loginMethod);
-        }
-        if (exception instanceof BadCredentialsException) {
-            return URI.create("/auth/?error=invalid-credential&method=" + loginMethod);
-        }
-        if (exception instanceof TooManyRequestsException) {
-            return URI.create("/auth/?error=rate-limit-exceeded&method=" + loginMethod);
-        }
-        return URI.create("/auth/?error&method=" + loginMethod);
     }
 
     private Mono<Void> handleAuthenticationException(Throwable exception, ServerWebExchange exchange) {

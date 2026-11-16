@@ -26,10 +26,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-/**
- * Public contract consumed by the auth application: the current session, the
- * enabled OAuth2 providers and the first-run state of the instance.
- */
+// Public login contract: current session, enabled OAuth2 providers and first-run state.
 @Component
 @RequiredArgsConstructor
 public class LoginPublicEndpoint implements CustomEndpoint {

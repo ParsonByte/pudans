@@ -2,7 +2,6 @@ package cn.tolim.pudans.security.authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.infra.properties.SecurityProperties;
 import java.security.Principal;
 import java.util.Arrays;
 import java.util.List;
@@ -27,10 +26,10 @@ class AuthenticatedAuthPageWebFilterTest {
 
     @BeforeEach
     void setUp() {
-        filter = new AuthenticatedAuthPageWebFilter(new SecurityProperties());
+        filter = new AuthenticatedAuthPageWebFilter();
     }
 
-    private static WebFilterChain noRedirectChain() {
+    private static WebFilterChain noFallThroughChain() {
         return exchange -> Mono.error(new AssertionError("the filter must not fall through"));
     }
 
@@ -68,41 +67,50 @@ class AuthenticatedAuthPageWebFilterTest {
         };
     }
 
-    private static void assertRedirect(ServerWebExchange exchange) {
-        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FOUND);
-        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/");
+    private static void assertNoContent(ServerWebExchange exchange) {
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        assertThat(exchange.getResponse().getHeaders().getLocation()).isNull();
         assertThat(exchange.getResponse().getHeaders().getCacheControl()).isEqualTo("no-store");
     }
 
     @Test
-    void signInEntryRedirectsAuthenticatedUsersToThePostLoginPage() {
+    void signInEntryReturnsNoContentForSignedInUsers() {
         var exchange = exchange("/auth/", user("alice", "super-role"));
 
-        StepVerifier.create(filter.filter(exchange, noRedirectChain())).verifyComplete();
+        StepVerifier.create(filter.filter(exchange, noFallThroughChain())).verifyComplete();
 
-        assertRedirect(exchange);
+        assertNoContent(exchange);
     }
 
     @Test
-    void recoveryRedirectsAuthenticatedUsers() {
+    void recoveryReturnsNoContentForSignedInUsers() {
         var exchange = exchange("/auth/recovery", user("bob", "normal-role"));
 
-        StepVerifier.create(filter.filter(exchange, noRedirectChain())).verifyComplete();
+        StepVerifier.create(filter.filter(exchange, noFallThroughChain())).verifyComplete();
 
-        assertRedirect(exchange);
+        assertNoContent(exchange);
     }
 
     @Test
-    void indexDocumentPathRedirectsSignedInUsers() {
+    void indexDocumentPathReturnsNoContentForSignedInUsers() {
         var exchange = exchange("/auth/index.html", user("alice", "super-role"));
 
-        StepVerifier.create(filter.filter(exchange, noRedirectChain())).verifyComplete();
+        StepVerifier.create(filter.filter(exchange, noFallThroughChain())).verifyComplete();
 
-        assertRedirect(exchange);
+        assertNoContent(exchange);
     }
 
     @Test
-    void anonymousVisitorsKeepTheSignInPage() {
+    void loginPageReturnsNoContentForSignedInUsers() {
+        var exchange = exchange("/auth/login", user("alice", "super-role"));
+
+        StepVerifier.create(filter.filter(exchange, noFallThroughChain())).verifyComplete();
+
+        assertNoContent(exchange);
+    }
+
+    @Test
+    void anonymousVisitorsPassThrough() {
         var called = new boolean[1];
         var exchange = exchange("/auth/", anonymous());
 
@@ -121,29 +129,6 @@ class AuthenticatedAuthPageWebFilterTest {
 
         assertThat(called[0]).isTrue();
         assertThat(exchange.getResponse().getStatusCode()).isNull();
-    }
-
-    @Test
-    void whitelistedRedirectUriWinsOverTheDefaultLanding() {
-        var exchange = exchange(
-                MockServerHttpRequest.get("/auth/").queryParam("redirect_uri", "/uc/security"),
-                user("alice", "super-role"));
-
-        StepVerifier.create(filter.filter(exchange, noRedirectChain())).verifyComplete();
-
-        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FOUND);
-        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/uc/security");
-    }
-
-    @Test
-    void externalRedirectUriFallsBackToTheDefaultLanding() {
-        var exchange = exchange(
-                MockServerHttpRequest.get("/auth/").queryParam("redirect_uri", "https://example.com/steal"),
-                user("alice", "super-role"));
-
-        StepVerifier.create(filter.filter(exchange, noRedirectChain())).verifyComplete();
-
-        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/");
     }
 
     @Test
