@@ -46,7 +46,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
             Pattern.compile("^v[0-9]+(?:(?:alpha|beta)[0-9]+)?$");
 
     private static final Pattern ROUTE_PATH_PATTERN =
-            Pattern.compile("(?<![A-Za-z0-9_-])(/[A-Za-z0-9_{}.*-]+)");
+            Pattern.compile("(?<![A-Za-z0-9_-])(/[A-Za-z0-9_{}.*-]+(?:/[A-Za-z0-9_{}.*-]+)*)");
 
     private final ApplicationContext applicationContext;
 
@@ -63,20 +63,20 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
         for (var endpoint : endpoints) {
             var groupVersion = endpoint.groupVersion();
             if (groupVersion == null) {
-                routeErrors.add(endpoint.getClass().getName() + " returned a null groupVersion.");
+                routeErrors.add(endpoint.getClass().getName() + " 返回了空的 groupVersion。");
                 continue;
             }
             if (!API_GROUP_PATTERN.matcher(groupVersion.group()).matches()) {
-                routeErrors.add(endpoint.getClass().getName() + " has invalid API group '"
-                        + groupVersion.group() + "'. Expected a DNS-like group containing a dot.");
+                routeErrors.add(endpoint.getClass().getName() + " 的 API 组 '"
+                        + groupVersion.group() + "' 无效。应为包含点号的 DNS 风格组名。");
             }
             if (!ALLOWED_API_GROUPS.contains(groupVersion.group())) {
-                routeErrors.add(endpoint.getClass().getName() + " uses non-canonical API group '"
-                        + groupVersion.group() + "'. Allowed groups: " + ALLOWED_API_GROUPS);
+                routeErrors.add(endpoint.getClass().getName() + " 使用了非规范 API 组 '"
+                        + groupVersion.group() + "'。允许的组：" + ALLOWED_API_GROUPS);
             }
             if (!API_VERSION_PATTERN.matcher(groupVersion.version()).matches()) {
-                routeErrors.add(endpoint.getClass().getName() + " has invalid API version '"
-                        + groupVersion.version() + "'.");
+                routeErrors.add(endpoint.getClass().getName() + " 的 API 版本 '"
+                        + groupVersion.version() + "' 无效。");
             }
 
             var routePathErrors = new ArrayList<String>();
@@ -84,23 +84,23 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                     endpoint.endpoint(), endpoint.getClass().getName(), routePathErrors);
             routeErrors.addAll(routePathErrors);
             if (routes.isEmpty() && routePathErrors.isEmpty()) {
-                routeErrors.add(endpoint.getClass().getName() + " exposes no route path.");
+                routeErrors.add(endpoint.getClass().getName() + " 未暴露任何路由路径。");
                 continue;
             }
             for (var route : routes) {
                 allRoutes.add(route);
                 if (!route.startsWith("/")) {
-                    routeErrors.add(endpoint.getClass().getName() + " route '" + route
-                            + "' must start with '/'.");
+                    routeErrors.add(endpoint.getClass().getName() + " 的路由 '" + route
+                            + "' 必须以 '/' 开头。");
                 } else if (route.startsWith("/api/") || route.startsWith("/apis/")) {
-                    routeErrors.add(endpoint.getClass().getName() + " route '" + route
-                            + "' must be relative; the /apis/{group}/{version} prefix is added by the endpoint builder.");
+                    routeErrors.add(endpoint.getClass().getName() + " 的路由 '" + route
+                            + "' 必须是相对路径；/apis/{group}/{version} 前缀由端点构建器添加。");
                 }
             }
         }
 
         if (!routeErrors.isEmpty()) {
-            throw new IllegalStateException("Invalid custom endpoint route registration:\n - "
+            throw new IllegalStateException("自定义端点路由注册无效：\n - "
                     + String.join("\n - ", routeErrors));
         }
 
@@ -120,11 +120,11 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                 .collect(Collectors.toCollection(TreeSet::new));
         if (!uncoveredPaths.isEmpty()) {
             throw new IllegalStateException(
-                    "The following custom endpoint paths are not covered by a built-in role rule or an explicit"
-                            + " permit-all rule: "
+                    "以下自定义端点路径未被内置角色规则或显式"
+                            + "放行规则覆盖："
                             + uncoveredPaths
-                            + ". Add a matching resource to BuiltinEntityDefinitions and to the role-template-*.yaml"
-                            + " files, or add the path to the explicit permit-all list. Covered resources: "
+                            + "。请将匹配的资源添加到 BuiltinEntityDefinitions 和 role-template-*.yaml"
+                            + " 文件，或将路径添加到显式放行列表。已覆盖的资源："
                             + coveredResources);
         }
     }
@@ -155,7 +155,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                 var paths = pathsOf(predicate);
                 if (paths.isEmpty()) {
                     if (nestedPrefixes.isEmpty() || nestedPrefixes.stream().allMatch(String::isEmpty)) {
-                        pathErrors.add(endpointName + " route predicate has no absolute path: " + text);
+                        pathErrors.add(endpointName + " 的路由谓词没有绝对路径：" + text);
                         return;
                     }
                     routes.add(String.join("", nestedPrefixes));
@@ -169,17 +169,17 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
             public void resources(
                     java.util.function.Function<org.springframework.web.reactive.function.server.ServerRequest,
                             reactor.core.publisher.Mono<org.springframework.core.io.Resource>> lookupFunction) {
-                // No-op.
+                // 空实现。
             }
 
             @Override
             public void attributes(Map<String, Object> attributes) {
-                // No-op.
+                // 空实现。
             }
 
             @Override
             public void unknown(RouterFunction<?> router) {
-                // No-op.
+                // 空实现。
             }
         });
         return routes;
