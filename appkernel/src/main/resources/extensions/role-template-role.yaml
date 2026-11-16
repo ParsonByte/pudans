@@ -10,9 +10,16 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Roles Management"
     rbac.authorization.pudans.tolim.cn/display-name: "Role Manage"
 rules:
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "roles", "rolebindings" ]
-    verbs: [ "create", "update", "patch", "delete" ]
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "roles"
+      - "rolebindings"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role
@@ -24,6 +31,11 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Roles Management"
     rbac.authorization.pudans.tolim.cn/display-name: "Role View"
 rules:
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "roles", "rolebindings" ]
-    verbs: [ "get", "list" ]
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "roles"
+      - "rolebindings"
+    verbs:
+      - "get"
+      - "list"

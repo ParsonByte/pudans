@@ -10,8 +10,6 @@ public final class BuiltinEntities {
 
     public static final String NORMAL_ROLE = "normal-role";
 
-    public static final String GUEST_ROLE = "guest";
-
     public static final String SUPER_ADMINS_GROUP = "super-admins";
 
     public static final String SYSTEM_ADMINS_GROUP = "system-admins";

@@ -8,5 +8,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Cache"
     rbac.authorization.pudans.tolim.cn/display-name: "Cache Manage"
 rules:
-  - nonResourceURLs: [ "/actuator/caches" ]
-    verbs: [ "get" ]
+  - nonResourceURLs:
+      - "/actuator/caches"
+    verbs:
+      - "get"

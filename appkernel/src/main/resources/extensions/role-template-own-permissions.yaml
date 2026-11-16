@@ -6,11 +6,21 @@ metadata:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
 rules:
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "users/permissions", "users/ui-permissions" ]
-    resourceNames: [ "-" ]
-    verbs: [ "get", "list" ]
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "users/self" ]
-    resourceNames: [ "-" ]
-    verbs: [ "get" ]
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/permissions"
+      - "users/ui-permissions"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/self"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
