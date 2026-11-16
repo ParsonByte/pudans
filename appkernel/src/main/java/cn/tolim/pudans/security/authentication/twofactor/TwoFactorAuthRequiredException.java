@@ -8,9 +8,8 @@ public class TwoFactorAuthRequiredException extends ResponseStatusException {
 
     private static final URI type = URI.create("https://pudans.tolim.cn/probs/2fa-required");
 
-    public TwoFactorAuthRequiredException(URI redirectURI) {
-        super(HttpStatus.UNAUTHORIZED, "Two-factor authentication required");
+    public TwoFactorAuthRequiredException() {
+        super(HttpStatus.UNAUTHORIZED, "请先完成双重验证。");
         setType(type);
-        getBody().setProperty("redirectURI", redirectURI);
     }
 }

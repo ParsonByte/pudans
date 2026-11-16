@@ -6,11 +6,13 @@ import cn.tolim.pudans.security.authentication.LoginRejectedException;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
+import cn.tolim.pudans.infra.exception.Exceptions;
 import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
+import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthRequiredException;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.UUID;
@@ -121,7 +123,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                                     LoginRejectedException.class,
                                     error -> loginRejected(exchange, error.getReason()))
                             .onErrorResume(error -> {
-                                log.warn("Feishu login failed", error);
+                                log.warn("飞书登录失败", error);
                                 return loginFailure(exchange, "feishu_login_failed");
                             });
                 });
@@ -131,8 +133,15 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         return externalLoginCompletionService
                 .complete(exchange, username, "feishu")
                 .flatMap(result -> result.twoFactorRequired()
-                        ? redirect(exchange, "/challenges/two-factor/totp")
+                        ? twoFactorRequired(exchange)
                         : redirect(exchange, securityProperties.getPostLoginUrl()));
+    }
+
+    private Mono<Void> twoFactorRequired(ServerWebExchange exchange) {
+        var errorResponse = Exceptions.createErrorResponse(new TwoFactorAuthRequiredException(), null, exchange);
+        return ServerResponse.status(errorResponse.getStatusCode())
+                .bodyValue(errorResponse.getBody())
+                .flatMap(response -> response.writeTo(exchange, context));
     }
 
     private Mono<Void> loginRejected(ServerWebExchange exchange, String reason) {
@@ -140,7 +149,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
         exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
         return ProblemDetailResponses.write(
-                exchange, context, HttpStatus.FORBIDDEN, reason, "Feishu sign-in was rejected.");
+                exchange, context, HttpStatus.FORBIDDEN, reason, "飞书登录被拒绝。");
     }
 
     private Mono<Void> loginFailure(ServerWebExchange exchange, String reason) {
@@ -149,7 +158,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
         publishLoginFailure(exchange, reason);
         return ProblemDetailResponses.write(
-                exchange, context, HttpStatus.UNAUTHORIZED, reason, "Feishu sign-in failed.");
+                exchange, context, HttpStatus.UNAUTHORIZED, reason, "飞书登录失败。");
     }
 
     private void publishLoginFailure(ServerWebExchange exchange, String reason) {

@@ -1,20 +1,20 @@
 package cn.tolim.pudans.security.authentication.oauth2;
 
 import cn.tolim.pudans.core.user.service.UserConnectionService;
-import java.net.URI;
+import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import lombok.Setter;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.web.server.DefaultServerRedirectStrategy;
-import org.springframework.security.web.server.ServerRedirectStrategy;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.logout.SecurityContextServerLogoutHandler;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutHandler;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -36,7 +36,7 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
 
     private final ServerLogoutHandler logoutHandler;
 
-    private final ServerRedirectStrategy redirectStrategy = new DefaultServerRedirectStrategy();
+    private final ServerResponse.Context context;
 
     @Setter
     private AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
@@ -45,11 +45,13 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
             ServerSecurityContextRepository securityContextRepository,
             UserConnectionService connectionService,
             OAuth2AuthenticationSession authenticationSession,
-            OAuth2AuthenticationTokenCache authenticationCache) {
+            OAuth2AuthenticationTokenCache authenticationCache,
+            ServerResponse.Context context) {
         this.connectionService = connectionService;
         this.securityContextRepository = securityContextRepository;
         this.authenticationSession = authenticationSession;
         this.authenticationCache = authenticationCache;
+        this.context = context;
         var logoutHandler = new SecurityContextServerLogoutHandler();
         logoutHandler.setSecurityContextRepository(securityContextRepository);
         this.logoutHandler = logoutHandler;
@@ -92,9 +94,12 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
 
                                                     return logoutHandler.logout(webFilterExchange, oauth2Token);
                                                 }))
-                                                .then(Mono.defer(() -> redirectStrategy.sendRedirect(
-                                                        exchange, URI.create("/login?oauth2_select"))))
-
+                                                .then(Mono.defer(() -> ProblemDetailResponses.write(
+                                                        exchange,
+                                                        context,
+                                                        HttpStatus.UNAUTHORIZED,
+                                                        "oauth2-connection-required",
+                                                        "请先绑定该第三方账号。")))
                                                 .then(Mono.empty());
                                     }))
 

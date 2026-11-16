@@ -65,7 +65,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
         return passkeyLoginEnabled()
                 .flatMap(enabled -> Boolean.FALSE.equals(enabled)
                         ? Mono.error(new org.springframework.web.server.ResponseStatusException(
-                                HttpStatus.FORBIDDEN, "Passkey login is disabled."))
+                                HttpStatus.FORBIDDEN, "Passkey 登录已禁用。"))
                         : doAssertionOptions(request));
     }
 
@@ -109,7 +109,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
         return passkeyLoginEnabled()
                 .flatMap(enabled -> Boolean.FALSE.equals(enabled)
                         ? Mono.error(new org.springframework.web.server.ResponseStatusException(
-                                HttpStatus.FORBIDDEN, "Passkey login is disabled."))
+                                HttpStatus.FORBIDDEN, "Passkey 登录已禁用。"))
                         : doVerifyAssertion(request));
     }
 
@@ -119,24 +119,19 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                 .map(session -> {
                     var challenge = (String) session.getAttributes().remove(CHALLENGE_ATTRIBUTE);
                     if (challenge == null) {
-                        throw new ServerWebInputException("Assertion challenge is missing or expired.");
+                        throw new ServerWebInputException("断言挑战缺失或已过期。");
                     }
                     return challenge;
                 })
                 .flatMap(challenge -> request.bodyToMono(String.class)
-                        .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                         .flatMap(json -> passkeyService.verifyAssertion(json, challenge)))
                 .flatMap(result -> externalLoginCompletionService.complete(
                         request.exchange(), result.username(), "passkey"))
                 .flatMap(completion -> ServerResponse.ok()
                         .bodyValue(completion.twoFactorRequired()
-                                ? new PasskeyAssertionResult(
-                                        false,
-                                        completion.username(),
-                                        true,
-                                        "/challenges/two-factor/totp")
-                                : new PasskeyAssertionResult(
-                                        true, completion.username(), false, null)))
+                                ? new PasskeyAssertionResult(false, completion.username(), true)
+                                : new PasskeyAssertionResult(true, completion.username(), false)))
                 .onErrorResume(
                         LoginRejectedException.class,
                         error -> ServerResponse.status(HttpStatus.FORBIDDEN)
@@ -155,6 +150,5 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
     record PasskeyAssertionOptionsVo(Map<String, Object> publicKey) {}
 
 
-    record PasskeyAssertionResult(
-            boolean authenticated, String username, boolean twoFactorRequired, String redirectUrl) {}
+    record PasskeyAssertionResult(boolean authenticated, String username, boolean twoFactorRequired) {}
 }

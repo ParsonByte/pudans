@@ -907,9 +907,6 @@
           "externalUrl": {
             "type": "string"
           },
-          "locale": {
-            "type": "string"
-          },
           "siteSubtitle": {
             "type": "string"
           },
@@ -1246,9 +1243,6 @@
           },
           "twoFactorRequired": {
             "type": "boolean"
-          },
-          "redirectUrl": {
-            "type": "string"
           }
         }
       },
@@ -2242,10 +2236,6 @@
           "externalUrl": {
             "type": "string",
             "pattern": "^(http|https).*"
-          },
-          "language": {
-            "type": "string",
-            "pattern": "^(zh-CN|zh-TW|en|es)$"
           },
           "password": {
             "type": "string",
@@ -4834,7 +4824,7 @@
         "tags": [
           "Authentication"
         ],
-        "summary": "Feishu OAuth2 authorization code callback. Unbound identities are redirected to the binding flow; no user is auto-created.",
+        "summary": "Feishu OAuth2 authorization code callback. Unbound identities are rejected; no user is auto-created.",
         "parameters": [
           {
             "name": "code",
@@ -4855,7 +4845,10 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirect to the configured post-login URL on success or /login?error=feishu_not_bound when the identity is not bound."
+            "description": "Redirect to the configured post-login URL on success."
+          },
+          "401": {
+            "description": "Problem detail when the identity is not bound or the account must complete two-factor authentication."
           }
         },
         "security": []
@@ -6994,26 +6987,6 @@
       "parameters": []
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/system/setup": {
-      "get": {
-        "description": "Jump to setup page",
-        "operationId": "JumpToSetupPage",
-        "responses": {
-          "default": {
-            "content": {
-              "text/html": {
-                "schema": {
-                  "type": "string"
-                }
-              }
-            },
-            "description": "default response"
-          }
-        },
-        "tags": [
-          "SystemV1alpha1Public"
-        ],
-        "parameters": []
-      },
       "post": {
         "description": "Setup system",
         "operationId": "SetupSystem",

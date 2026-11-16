@@ -7,6 +7,7 @@ import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.server.ServerResponse;
 
 
 @Component
@@ -21,21 +22,25 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
 
     private final OAuth2AuthenticationTokenCache authenticationCache;
 
+    private final ServerResponse.Context context;
+
     public OAuth2SecurityConfigurer(
             ServerSecurityContextRepository securityContextRepository,
             UserConnectionService connectionService,
             OAuth2AuthenticationSession authenticationSession,
-            OAuth2AuthenticationTokenCache authenticationCache) {
+            OAuth2AuthenticationTokenCache authenticationCache,
+            ServerResponse.Context context) {
         this.securityContextRepository = securityContextRepository;
         this.connectionService = connectionService;
         this.authenticationSession = authenticationSession;
         this.authenticationCache = authenticationCache;
+        this.context = context;
     }
 
     @Override
     public void configure(ServerHttpSecurity http) {
         var mapOAuth2Filter = new MapOAuth2AuthenticationFilter(
-                securityContextRepository, connectionService, authenticationSession, authenticationCache);
+                securityContextRepository, connectionService, authenticationSession, authenticationCache, context);
         http.addFilterBefore(mapOAuth2Filter, SecurityWebFiltersOrder.AUTHENTICATION);
     }
 }

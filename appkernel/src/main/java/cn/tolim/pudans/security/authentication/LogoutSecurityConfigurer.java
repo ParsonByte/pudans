@@ -4,7 +4,6 @@ import cn.tolim.pudans.core.user.service.UserLoginOrLogoutProcessing;
 import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -16,9 +15,6 @@ import org.springframework.security.web.server.authentication.logout.ServerLogou
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.server.RouterFunction;
-import org.springframework.web.reactive.function.server.RouterFunctions;
-import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -48,13 +44,6 @@ class LogoutSecurityConfigurer implements SecurityConfigurer {
             return logoutHandlers.getFirst();
         }
         return new DelegatingServerLogoutHandler(logoutHandlers);
-    }
-
-    @Bean
-    RouterFunction<ServerResponse> logoutPage() {
-        return RouterFunctions.route()
-                .GET("/logout", request -> ServerResponse.noContent().build())
-                .build();
     }
 
     private class LogoutSuccessHandler implements ServerLogoutSuccessHandler {
