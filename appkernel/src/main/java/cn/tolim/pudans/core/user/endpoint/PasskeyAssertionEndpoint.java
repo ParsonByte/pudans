@@ -7,6 +7,7 @@ import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.infra.properties.PasskeyProperties;
+import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
 import cn.tolim.pudans.infra.webauthn.PasskeyService;
 import cn.tolim.pudans.security.authentication.ExternalLoginCompletionService;
 import cn.tolim.pudans.security.authentication.LoginRejectedException;
@@ -32,6 +33,8 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
     private static final String USERNAME_ATTRIBUTE = PasskeyAssertionEndpoint.class.getName() + ".USERNAME";
 
     private final PasskeyService passkeyService;
+
+    private final ParameterSettingGroupService parameterSettingGroupService;
 
     private final PasskeyProperties properties;
 
@@ -59,6 +62,21 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> assertionOptions(ServerRequest request) {
+        return passkeyLoginEnabled()
+                .flatMap(enabled -> Boolean.FALSE.equals(enabled)
+                        ? Mono.error(new org.springframework.web.server.ResponseStatusException(
+                                HttpStatus.FORBIDDEN, "Passkey login is disabled."))
+                        : doAssertionOptions(request));
+    }
+
+    private Mono<Boolean> passkeyLoginEnabled() {
+        return parameterSettingGroupService
+                .getSession()
+                .map(session -> !Boolean.FALSE.equals(session.getPasskeyLoginEnabled()))
+                .defaultIfEmpty(true);
+    }
+
+    private Mono<ServerResponse> doAssertionOptions(ServerRequest request) {
         return request.bodyToMono(PasskeyAssertionOptionsRequest.class)
                 .defaultIfEmpty(new PasskeyAssertionOptionsRequest(null))
                 .flatMap(body -> {
@@ -88,6 +106,14 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> verifyAssertion(ServerRequest request) {
+        return passkeyLoginEnabled()
+                .flatMap(enabled -> Boolean.FALSE.equals(enabled)
+                        ? Mono.error(new org.springframework.web.server.ResponseStatusException(
+                                HttpStatus.FORBIDDEN, "Passkey login is disabled."))
+                        : doVerifyAssertion(request));
+    }
+
+    private Mono<ServerResponse> doVerifyAssertion(ServerRequest request) {
         return request.exchange()
                 .getSession()
                 .map(session -> {

@@ -6,13 +6,35 @@ metadata:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
 rules:
-  - apiGroups: [ "api.pudans.tolim.cn" ]
-    resources: [ "passkeys/assertion/options", "passkeys/assertion/verify" ]
-    verbs: [ "create" ]
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "passkeys/assertion/options"
+      - "passkeys/assertion/verify"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "captcha/challenge"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "auth/refresh"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "avatars"
+    verbs:
+      - "get"
   - nonResourceURLs:
-      [
-        "/actuator/globalinfo",
-        "/actuator/health",
-        "/actuator/health/*",
-      ]
-    verbs: [ "get", "post" ]
+      - "/actuator/globalinfo"
+      - "/actuator/health"
+      - "/actuator/health/*"
+    verbs:
+      - "get"
+      - "post"

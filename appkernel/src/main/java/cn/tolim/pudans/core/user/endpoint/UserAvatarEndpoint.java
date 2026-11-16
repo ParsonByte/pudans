@@ -1,0 +1,93 @@
+package cn.tolim.pudans.core.user.endpoint;
+
+import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
+import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
+import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
+
+import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.extension.ApiGroups;
+import cn.tolim.pudans.contract.extension.GroupVersion;
+import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.core.user.service.AvatarStorageService;
+import lombok.RequiredArgsConstructor;
+import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
+import org.springframework.http.MediaType;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.ServerRequest;
+import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ServerWebInputException;
+import reactor.core.publisher.Mono;
+
+@Component
+@RequiredArgsConstructor
+public class UserAvatarEndpoint implements CustomEndpoint {
+
+    private final UserService userService;
+
+    private final ReactiveExtensionClient client;
+
+    private final AvatarStorageService avatarStorageService;
+
+    @Override
+    public RouterFunction<ServerResponse> endpoint() {
+        var tag = "UserV1alpha1Uc";
+        return SpringdocRouteBuilder.route()
+                .POST("/users/-/avatar", this::upload, builder -> builder.operationId("UploadMyAvatar")
+                        .description("Upload and resize the current user's avatar.")
+                        .tag(tag)
+                        .requestBody(requestBodyBuilder()
+                                .required(true)
+                                .content(contentBuilder().mediaType(MediaType.MULTIPART_FORM_DATA_VALUE)))
+                        .response(responseBuilder().implementation(UserView.class)))
+                .DELETE("/users/-/avatar", this::delete, builder -> builder.operationId("DeleteMyAvatar")
+                        .description("Delete the current user's avatar.")
+                        .tag(tag)
+                        .response(responseBuilder().implementation(UserView.class)))
+                .build();
+    }
+
+    private Mono<ServerResponse> upload(ServerRequest request) {
+        return currentUser()
+                .flatMap(user -> request.multipartData()
+                        .flatMap(parts -> {
+                            var part = parts.getFirst("file");
+                            if (!(part instanceof org.springframework.http.codec.multipart.FilePart filePart)) {
+                                return Mono.error(
+                                        new ServerWebInputException("A multipart file field named file is required."));
+                            }
+                            return avatarStorageService.store(user, filePart);
+                        })
+                        .flatMap(url -> updateAvatar(user, url)))
+                .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user, true)));
+    }
+
+    private Mono<ServerResponse> delete(ServerRequest request) {
+        return currentUser()
+                .flatMap(user -> avatarStorageService.deleteForUser(user).thenReturn(user))
+                .flatMap(user -> updateAvatar(user, null))
+                .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user, true)));
+    }
+
+    private Mono<User> updateAvatar(User user, String avatar) {
+        user.getSpec().setAvatar(avatar);
+        return client.update(user);
+    }
+
+    private Mono<User> currentUser() {
+        return ReactiveSecurityContextHolder.getContext()
+                .mapNotNull(SecurityContext::getAuthentication)
+                .map(org.springframework.security.core.Authentication::getName)
+                .switchIfEmpty(Mono.error(new ServerWebInputException("Not authenticated")))
+                .flatMap(userService::getUser);
+    }
+
+    @Override
+    public GroupVersion groupVersion() {
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
+    }
+}

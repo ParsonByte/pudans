@@ -7,6 +7,7 @@ import cn.tolim.pudans.core.risk.service.RiskControlService;
 import cn.tolim.pudans.core.risk.service.RiskScene;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import cn.tolim.pudans.security.authentication.exception.TooManyRequestsException;
+import cn.tolim.pudans.security.captcha.CaptchaService;
 import java.util.Base64;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -26,15 +27,30 @@ public class LoginAuthenticationConverter extends ServerFormLoginAuthenticationC
 
     private final RiskControlService riskControlService;
 
-    public LoginAuthenticationConverter(CryptoService cryptoService, RiskControlService riskControlService) {
+    private final CaptchaService captchaService;
+
+    public LoginAuthenticationConverter(
+            CryptoService cryptoService, RiskControlService riskControlService, CaptchaService captchaService) {
         this.cryptoService = cryptoService;
         this.riskControlService = riskControlService;
+        this.captchaService = captchaService;
+    }
+
+    private Mono<Boolean> verifyCaptcha(ServerWebExchange exchange) {
+        return exchange.getFormData()
+                .flatMap(form -> captchaService.verify(
+                        form.getFirst("captchaChallengeId"), form.getFirst("captchaAnswer")));
     }
 
     @Override
     public Mono<Authentication> convert(ServerWebExchange exchange) {
         var clientIp = IpAddressUtils.getClientIp(exchange.getRequest());
-        return super.convert(exchange)
+        return captchaService
+                .loginEnabled()
+                .flatMap(enabled -> Boolean.TRUE.equals(enabled) ? verifyCaptcha(exchange) : Mono.just(true))
+                .flatMap(verified -> Boolean.TRUE.equals(verified)
+                        ? super.convert(exchange)
+                        : Mono.error(new BadCredentialsException("Captcha verification failed.")))
                 .<Authentication>flatMap(token -> {
                     if (token.getCredentials() == null) {
                         return Mono.error(new BadCredentialsException("Empty credentials."));

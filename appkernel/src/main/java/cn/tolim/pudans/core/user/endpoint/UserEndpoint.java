@@ -50,6 +50,7 @@ import cn.tolim.pudans.core.rbac.service.UiPermissionService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
 
 @Component
 @RequiredArgsConstructor
@@ -74,6 +75,8 @@ public class UserEndpoint implements CustomEndpoint {
     private final DomainEventPublisher domainEventPublisher;
 
     private final UiPermissionService uiPermissionService;
+
+    private final ParameterSettingGroupService parameterSettingGroupService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -187,13 +190,29 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> me(ServerRequest request) {
         return currentUsername()
                 .flatMap(userService::getUser)
-                .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
+                .flatMap(user -> ServerResponse.ok()
+                        .bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user, true)));
     }
 
     private Mono<ServerResponse> getUserByName(ServerRequest request) {
         return resolveName(request)
-                .flatMap(userService::getUser)
-                .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
+                .flatMap(name -> emailVisibilityFor(name)
+                        .flatMap(expose -> userService
+                                .getUser(name)
+                                .map(user -> cn.tolim.pudans.core.user.endpoint.UserView.from(user, expose))))
+                .flatMap(view -> ServerResponse.ok().bodyValue(view));
+    }
+
+    private Mono<Boolean> emailVisibility() {
+        return parameterSettingGroupService
+                .getSession()
+                .map(session -> Boolean.TRUE.equals(session.getExposeEmailToSignedInUsers()))
+                .defaultIfEmpty(false);
+    }
+
+    private Mono<Boolean> emailVisibilityFor(String name) {
+        return Mono.zip(emailVisibility(), currentUsername().defaultIfEmpty(""))
+                .map(tuple -> tuple.getT1() || tuple.getT2().equals(name));
     }
 
     private Mono<ServerResponse> listUsers(ServerRequest request) {
@@ -201,22 +220,26 @@ public class UserEndpoint implements CustomEndpoint {
         var listOptions = sortable.toListOptions();
         var keyword = request.queryParam("keyword").filter(StringUtils::hasText).map(String::trim).orElse(null);
         var pageRequest = sortable.toPageRequest();
-        if (keyword == null) {
-            return client.listBy(User.class, listOptions, pageRequest)
-                    .map(result -> new UserList(
-                            result.getPage(),
-                            result.getSize(),
-                            result.getTotal(),
-                            result.getItems().stream().map(ListedUser::from).toList(),
-                            sortable.getSort().toString()))
+        return emailVisibility().flatMap(expose -> {
+            if (keyword == null) {
+                return client.listBy(User.class, listOptions, pageRequest)
+                        .map(result -> new UserList(
+                                result.getPage(),
+                                result.getSize(),
+                                result.getTotal(),
+                                result.getItems().stream()
+                                        .map(user -> ListedUser.from(user, expose))
+                                        .toList(),
+                                sortable.getSort().toString()))
+                        .flatMap(list -> ServerResponse.ok().bodyValue(list));
+            }
+            return client
+                    .listAll(User.class, listOptions, sortable.getSort())
+                    .filter(user -> matchesKeyword(user, keyword))
+                    .collectList()
+                    .map(users -> pagedUserList(users, sortable, expose))
                     .flatMap(list -> ServerResponse.ok().bodyValue(list));
-        }
-        return client
-                .listAll(User.class, listOptions, sortable.getSort())
-                .filter(user -> matchesKeyword(user, keyword))
-                .collectList()
-                .map(users -> pagedUserList(users, sortable))
-                .flatMap(list -> ServerResponse.ok().bodyValue(list));
+        });
     }
 
     private static boolean matchesKeyword(User user, String keyword) {
@@ -231,14 +254,16 @@ public class UserEndpoint implements CustomEndpoint {
         return value != null && value.toLowerCase(java.util.Locale.ROOT).contains(needle);
     }
 
-    private UserList pagedUserList(List<User> users, SortableRequest sortable) {
+    private UserList pagedUserList(List<User> users, SortableRequest sortable, boolean exposeEmail) {
         // Page numbers are 1-based, matching PageRequestImpl.
         var page = Math.max(1, sortable.getPage());
         var size = sortable.getSize();
         var total = users.size();
         var from = size > 0 ? Math.min((long) (page - 1) * size, total) : 0L;
         var to = size > 0 ? Math.min(from + size, total) : (long) total;
-        var items = users.subList((int) from, (int) to).stream().map(ListedUser::from).toList();
+        var items = users.subList((int) from, (int) to).stream()
+                .map(user -> ListedUser.from(user, exposeEmail))
+                .toList();
         return new UserList(page, size, total, items, sortable.getSort().toString());
     }
 
@@ -485,10 +510,14 @@ public class UserEndpoint implements CustomEndpoint {
     
     public record ListedUser(String name, String displayName, String email, Instant registeredAt, boolean disabled) {
         static ListedUser from(User user) {
+            return from(user, true);
+        }
+
+        static ListedUser from(User user, boolean exposeEmail) {
             return new ListedUser(
                     user.getMetadata().getName(),
                     user.getSpec().getDisplayName(),
-                    user.getSpec().getEmail(),
+                    exposeEmail ? user.getSpec().getEmail() : null,
                     user.getSpec().getRegisteredAt(),
                     Boolean.TRUE.equals(user.getSpec().getDisabled()));
         }
