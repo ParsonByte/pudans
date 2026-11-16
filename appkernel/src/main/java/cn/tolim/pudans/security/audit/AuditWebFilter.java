@@ -31,7 +31,7 @@ public class AuditWebFilter implements AdditionalWebFilter {
     private static final int MAX_ID_LENGTH = 64;
 
     private static final String[] STATIC_PREFIXES = {
-        "/ui-assets/", "/assets/", "/images/", "/js/", "/styles/", "/webjars/", "/favicon.ico"
+        "/assets/", "/images/", "/js/", "/styles/", "/webjars/", "/favicon.ico"
     };
 
     private final AuditService auditService;

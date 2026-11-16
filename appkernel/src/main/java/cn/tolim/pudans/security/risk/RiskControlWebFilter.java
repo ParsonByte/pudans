@@ -38,7 +38,6 @@ import cn.tolim.pudans.infra.utils.IpAddressUtils;
 public class RiskControlWebFilter implements WebFilter {
 
     private static final String[] IGNORED_PREFIXES = {
-        "/ui-assets/",
         "/assets/",
         "/images/",
         "/js/",
