@@ -121,7 +121,7 @@ class RiskControlWebFilterTest {
 
     @Test
     void staticAssetsAreNotRateLimited() {
-        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/ui-assets/index.js").build());
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/assets/index.js").build());
 
         StepVerifier.create(filter.filter(exchange, ignored -> Mono.empty())).verifyComplete();
 

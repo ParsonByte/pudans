@@ -39,7 +39,7 @@ public class SecurityProperties {
      * point this at an external application or keep the bundled auth landing
      * page, which confirms the active session.
      */
-    private String postLoginUrl = "/console";
+    private String postLoginUrl = "/";
 
     @Data
     public static class BasicAuthOptions {

@@ -579,7 +579,10 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeviceList"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserDevice"
+                  }
                 }
               }
             },
@@ -1744,7 +1747,10 @@
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserConnectionList"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserConnection"
+                  }
                 }
               }
             },
@@ -7413,7 +7419,7 @@
         ],
         "responses": {
           "302": {
-            "description": "Redirect to /console/ on success or /login?error=feishu_not_bound when the identity is not bound."
+            "description": "Redirect to the configured post-login URL on success or /login?error=feishu_not_bound when the identity is not bound."
           }
         },
         "security": []

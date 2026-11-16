@@ -70,7 +70,7 @@ class AuthenticatedAuthPageWebFilterTest {
 
     private static void assertRedirect(ServerWebExchange exchange) {
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FOUND);
-        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/console");
+        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/");
         assertThat(exchange.getResponse().getHeaders().getCacheControl()).isEqualTo("no-store");
     }
 
@@ -143,7 +143,7 @@ class AuthenticatedAuthPageWebFilterTest {
 
         StepVerifier.create(filter.filter(exchange, noRedirectChain())).verifyComplete();
 
-        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/console");
+        assertThat(exchange.getResponse().getHeaders().getLocation()).hasToString("/");
     }
 
     @Test

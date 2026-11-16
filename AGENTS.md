@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Pudans is an enterprise identity and permission management platform. Backend: Java 25 / Spring Boot on a Gradle multi-module build. Frontend: pnpm workspace with React, served as multipage apps (auth, console, uc).
+Pudans is an enterprise identity and permission management platform. Backend: Java 25 / Spring Boot on a Gradle multi-module build.
 
 ## Agent rules
 
@@ -36,9 +36,6 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `api-docs/` | OpenAPI aggregation and validation, no business code |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
 | `platform/plugin/` | Plugin dependency constraints (BOM) |
-| `web/` | Frontend workspace root: `app/` (auth, console, uc) and `packages/` (shared, components, api-client, ui-plugin-bundler-kit) |
-| `tests/web/` | Frontend Node tests |
-| `scripts/web/` | Frontend structure, cycle, export and design-token checks |
 | `gradle/libs.versions.toml` | Version catalog; dependency changes go here |
 
 ## Commands
@@ -46,17 +43,10 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 ```bash
 ./gradlew test                # backend tests
 ./gradlew build               # backend build
-
-cd web
-pnpm install                  # install dependencies
-pnpm typecheck                # type check
-pnpm lint                     # ESLint
-pnpm test                     # frontend tests
-pnpm verify                   # typecheck + structure checks + tests + lint + build
 ```
 
-Lint, type checks and tests must pass before committing (see `.agents/rules/development.md`).
+Tests must pass before committing (see `.agents/rules/development.md`).
 
 ## Formatting sources
 
-`.editorconfig` (Java, Gradle, JSON, Markdown, ...), `web/.prettierrc` and `web/eslint.config.js` are the only sources of truth for formatting and lint. Never reformat by hand and never bypass checks with disable comments.
+`.editorconfig` is the only source of truth for formatting. Never reformat by hand and never bypass checks with disable comments.

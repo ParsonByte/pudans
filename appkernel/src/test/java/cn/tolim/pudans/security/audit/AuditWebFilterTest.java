@@ -83,7 +83,7 @@ class AuditWebFilterTest {
     @Test
     void staticResourcesAreNotAudited() {
         var exchange = MockServerWebExchange.from(
-                MockServerHttpRequest.get("/ui-assets/app.js").build());
+                MockServerHttpRequest.get("/assets/app.js").build());
 
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 

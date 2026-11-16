@@ -24,7 +24,7 @@ Turn a set of changes into one or more commits whose messages are single-line Co
    git diff --stat
    git diff --staged --stat
    ```
-2. Confirm the work is coherent and verified. Lint, type checks and tests must pass first; see `.agents/rules/development.md`.
+2. Confirm the work is coherent and verified. Tests must pass first; see `.agents/rules/development.md`.
 3. Pick the type: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `build`, `ci`, `perf`, `style`.
 4. Draft the subject as `<type>: <area> <lowercase imperative phrase>`, at most 72 characters, no trailing period, no capital after the type.
 5. Stage only the intended paths; never stage build output, `.env`, local config or lockfile noise that does not belong to the change.

@@ -155,7 +155,9 @@ public class SystemSetupEndpoint {
                                         .implementation(String.class)))
                 .POST(
                         ApiGroups.PUBLIC_SETUP_PATH,
-                        contentType(MediaType.APPLICATION_FORM_URLENCODED),
+                        contentType(
+                                MediaType.APPLICATION_FORM_URLENCODED,
+                                MediaType.APPLICATION_JSON),
                         this::setup,
                         builder -> builder.operationId("SetupSystem")
                                 .description("Setup system")
@@ -176,7 +178,7 @@ public class SystemSetupEndpoint {
         return initializationStateGetter
                 .setupRequired()
                 .filter(Boolean::booleanValue)
-                .flatMap(ignored -> request.bind(SetupRequest.class).flatMap(setupRequest -> {
+                .flatMap(ignored -> readSetupRequest(request).flatMap(setupRequest -> {
 
                     var bindingResult = validate(setupRequest, validator, request.exchange());
                     if (bindingResult.hasErrors()) {
@@ -202,6 +204,15 @@ public class SystemSetupEndpoint {
                             });
                 }))
                 .switchIfEmpty(redirectToConsole());
+    }
+
+    private static Mono<SetupRequest> readSetupRequest(ServerRequest request) {
+        var json = request
+                .headers()
+                .contentType()
+                .map(contentType -> contentType.isCompatibleWith(MediaType.APPLICATION_JSON))
+                .orElse(false);
+        return json ? request.bodyToMono(SetupRequest.class) : request.bind(SetupRequest.class);
     }
 
     private Mono<ServerResponse> handleValidationErrors(BindingResult bindingResult, ServerRequest request) {
