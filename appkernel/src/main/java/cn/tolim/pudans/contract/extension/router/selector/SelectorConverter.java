@@ -15,7 +15,7 @@ public class SelectorConverter implements Converter<String, SelectorCriteria> {
         return Arrays.stream(Operator.values())
                 .sorted(Comparator.comparing(Operator::getOrder))
                 .map(operator -> {
-                    log.debug("Resolving selector: {} with operator: {}", selector, operator);
+                    log.debug("正在解析选择器：{}，操作符：{}", selector, operator);
                     return operator.convert(selector);
                 })
                 .filter(Objects::nonNull)

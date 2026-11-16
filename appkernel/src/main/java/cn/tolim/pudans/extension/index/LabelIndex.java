@@ -183,7 +183,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
     record LabelEntry(String labelKey, @Nullable String labelValue) implements Comparable<LabelEntry> {
 
         public LabelEntry {
-            Objects.requireNonNull(labelKey, "labelKey must not be null");
+            Objects.requireNonNull(labelKey, "labelKey 不能为 null");
         }
 
         @Override

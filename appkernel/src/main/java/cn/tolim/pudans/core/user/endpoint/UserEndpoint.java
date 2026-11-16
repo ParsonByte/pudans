@@ -179,7 +179,7 @@ public class UserEndpoint implements CustomEndpoint {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 .map(org.springframework.security.core.Authentication::getName)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Not authenticated")));
+                .switchIfEmpty(Mono.error(new ServerWebInputException("未认证")));
     }
 
     private Mono<String> resolveName(ServerRequest request) {
@@ -255,7 +255,7 @@ public class UserEndpoint implements CustomEndpoint {
     }
 
     private UserList pagedUserList(List<User> users, SortableRequest sortable, boolean exposeEmail) {
-        // Page numbers are 1-based, matching PageRequestImpl.
+        // 页码从 1 开始，与 PageRequestImpl 保持一致。
         var page = Math.max(1, sortable.getPage());
         var size = sortable.getSize();
         var total = users.size();
@@ -269,17 +269,17 @@ public class UserEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> createUser(ServerRequest request) {
         return request.bodyToMono(CreateUserRequest.class)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                 .flatMap(body -> feishuUserService.createFromFeishu(body.toFeishuData(), body.userGroup()))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
     private Mono<ServerResponse> batchCreateUsers(ServerRequest request) {
         return request.bodyToMono(BatchCreateRequest.class)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                 .flatMap(body -> {
                     if (CollectionUtils.isEmpty(body.users())) {
-                        return Mono.error(new ServerWebInputException("users must not be empty."));
+                        return Mono.error(new ServerWebInputException("users 不能为空。"));
                     }
                     return Flux.fromIterable(body.users())
                             .concatMap(item -> feishuUserService
@@ -321,7 +321,7 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> updateSelf(ServerRequest request) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(UpdateProfileRequest.class)
-                        .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                         .flatMap(update -> applyProfileUpdate(request.exchange(), username, update)))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
@@ -329,7 +329,7 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> updateUser(ServerRequest request) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(UpdateProfileRequest.class)
-                        .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                         .flatMap(update -> applyProfileUpdate(request.exchange(), username, update)))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
@@ -340,11 +340,11 @@ public class UserEndpoint implements CustomEndpoint {
             var spec = user.getSpec();
             if (update.displayName() != null && !Objects.equals(update.displayName(), spec.getDisplayName())) {
                 return Mono.error(new ServerWebInputException(
-                        "displayName is read-only: user data must come from Feishu."));
+                        "displayName 为只读字段：用户数据必须来自飞书。"));
             }
             if (update.email() != null && !Objects.equals(update.email(), spec.getEmail())) {
                 return Mono.error(
-                        new ServerWebInputException("email is read-only: user data must come from Feishu."));
+                        new ServerWebInputException("email 为只读字段：用户数据必须来自飞书。"));
             }
             var changedFields = new ArrayList<String>();
             if (update.avatar() != null) {
@@ -438,7 +438,7 @@ public class UserEndpoint implements CustomEndpoint {
         return resolveName(request)
                 .flatMap(userGroupService::getUserGroupByUsername)
                 .flatMap(group -> ServerResponse.ok().bodyValue(group))
-                .switchIfEmpty(Mono.error(new ServerWebInputException("The user has no user group.")));
+                .switchIfEmpty(Mono.error(new ServerWebInputException("用户未加入任何用户组。")));
     }
 
     private Mono<ServerResponse> assignUserGroup(ServerRequest request) {

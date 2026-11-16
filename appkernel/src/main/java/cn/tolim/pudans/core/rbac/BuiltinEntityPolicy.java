@@ -105,7 +105,7 @@ public class BuiltinEntityPolicy {
                                 configMap.getMetadata().getName())
                         || cn.tolim.pudans.contract.infra.ParameterSetting.LEGACY_PARAMETER_SETTINGS_DEFAULT.equals(
                                 configMap.getMetadata().getName()))) {
-            return Mono.error(denied("The parameter settings configuration cannot be deleted."));
+            return Mono.error(denied("参数设置配置不可删除。"));
         }
         return Mono.empty();
     }
@@ -113,7 +113,7 @@ public class BuiltinEntityPolicy {
     public Mono<Void> checkRoleMutation(String name) {
         return Mono.fromRunnable(() -> {
             if (isBuiltinRole(name)) {
-                throw denied("The built-in role [" + name + "] cannot be modified or deleted.");
+                throw denied("内置角色 [" + name + "] 不可修改或删除。");
             }
         });
     }
@@ -121,7 +121,7 @@ public class BuiltinEntityPolicy {
     public Mono<Void> checkGroupMutation(String name) {
         return Mono.fromRunnable(() -> {
             if (isBuiltinGroup(name)) {
-                throw denied("The built-in user group [" + name + "] cannot be modified or deleted.");
+                throw denied("内置用户组 [" + name + "] 不可修改或删除。");
             }
         });
     }
@@ -130,7 +130,7 @@ public class BuiltinEntityPolicy {
         return Mono.defer(() -> superAdminResolver
                 .hasSuperAdminBinding(user.getMetadata().getName())
                 .flatMap(superAdmin -> Boolean.TRUE.equals(superAdmin)
-                        ? Mono.<Void>error(denied("The super administrator account cannot be deleted."))
+                        ? Mono.<Void>error(denied("超级管理员账户不可删除。"))
                         : Mono.empty()));
     }
 
@@ -140,7 +140,7 @@ public class BuiltinEntityPolicy {
         }
         if (isSuperAdminsTarget(binding)) {
             if (deleting) {
-                return Mono.error(denied("The membership binding of the super administrator cannot be changed."));
+                return Mono.error(denied("超级管理员的成员绑定不可更改。"));
             }
             return checkSuperAdminsBinding(binding);
         }
@@ -154,10 +154,10 @@ public class BuiltinEntityPolicy {
         var targetSuperAdmins = BuiltinEntities.SUPER_ADMINS_GROUP.equals(groupName);
         return superAdminResolver.hasSuperAdminBinding(username).flatMap(superAdmin -> {
             if (Boolean.TRUE.equals(superAdmin) && !targetSuperAdmins) {
-                return Mono.<Void>error(denied("The super administrator must stay in the super-admins group."));
+                return Mono.<Void>error(denied("超级管理员必须保留在 super-admins 用户组中。"));
             }
             if (!Boolean.TRUE.equals(superAdmin) && targetSuperAdmins) {
-                return Mono.<Void>error(denied("Only the super administrator can join the super-admins group."));
+                return Mono.<Void>error(denied("只有超级管理员可以加入 super-admins 用户组。"));
             }
             return Mono.empty();
         });
@@ -168,7 +168,7 @@ public class BuiltinEntityPolicy {
                 .hasSuperAdminBinding(username)
                 .flatMap(superAdmin -> Boolean.TRUE.equals(superAdmin)
                         ? Mono.<Void>error(
-                                denied("The super administrator cannot be removed from the super-admins group."))
+                                denied("不能将超级管理员从 super-admins 用户组中移除。"))
                         : Mono.empty());
     }
 
@@ -192,27 +192,27 @@ public class BuiltinEntityPolicy {
     private Mono<Void> checkSuperAdminsBinding(UserGroupBinding binding) {
         var subjects = binding.getSubjects();
         if (CollectionUtils.isEmpty(subjects) || subjects.size() != 1) {
-            return Mono.error(denied("Only the super administrator can join the super-admins group."));
+            return Mono.error(denied("只有超级管理员可以加入 super-admins 用户组。"));
         }
         var subject = subjects.get(0);
         if (!User.KIND.equals(subject.getKind())) {
-            return Mono.error(denied("Only the super administrator can join the super-admins group."));
+            return Mono.error(denied("只有超级管理员可以加入 super-admins 用户组。"));
         }
         var expected =
                 BuiltinEntityDefinitions.membershipBindingName(subject.getName(), BuiltinEntities.SUPER_ADMINS_GROUP);
         var name = binding.getMetadata() == null ? null : binding.getMetadata().getName();
         if (!expected.equals(name)) {
-            return Mono.error(denied("Only the built-in membership binding of the super administrator is allowed."));
+            return Mono.error(denied("只允许使用超级管理员的内置成员绑定。"));
         }
         return client.fetch(User.class, subject.getName())
-                .switchIfEmpty(Mono.error(denied("Only an existing user can join the super-admins group.")))
+                .switchIfEmpty(Mono.error(denied("只有已存在的用户可以加入 super-admins 用户组。")))
                 .filter(user -> !Boolean.TRUE.equals(user.getSpec().getDisabled()))
-                .switchIfEmpty(Mono.error(denied("A disabled user cannot join the super-admins group.")))
+                .switchIfEmpty(Mono.error(denied("已禁用的用户不能加入 super-admins 用户组。")))
                 .then(superAdminResolver.isCanonicalSuperAdmin(subject.getName()))
                 .flatMap(canonical -> Boolean.TRUE.equals(canonical)
                         ? Mono.<Void>empty()
                         : Mono.error(denied(
-                                "Only the existing super administrator can join the super-admins group.")));
+                                "只有已存在的超级管理员可以加入 super-admins 用户组。")));
     }
 
     private Mono<Void> denySuperAdminMembership(UserGroupBinding binding) {
@@ -227,42 +227,42 @@ public class BuiltinEntityPolicy {
                 .filter(Boolean::booleanValue)
                 .next()
                 .flatMap(ignored -> Mono.<Void>error(
-                        denied("The super administrator must stay in the super-admins group.")))
+                        denied("超级管理员必须保留在 super-admins 用户组中。")))
                 .switchIfEmpty(Mono.empty());
     }
 
     private Mono<Void> checkUserCreate(User user) {
         if (user.getMetadata() == null || !StringUtils.hasText(user.getMetadata().getName())) {
-            return Mono.error(new ServerWebInputException("metadata.name is required."));
+            return Mono.error(new ServerWebInputException("metadata.name 为必填项。"));
         }
         var reserved = reservedLabels(user.getMetadata().getLabels());
         if (!reserved.isEmpty()) {
-            return Mono.error(denied("Reserved labels of a User are read-only."));
+            return Mono.error(denied("用户的保留标签为只读。"));
         }
         if (user.getMetadata().getDeletionTimestamp() != null) {
-            return Mono.error(denied("metadata.deletionTimestamp is a protected field."));
+            return Mono.error(denied("metadata.deletionTimestamp 是受保护的字段。"));
         }
         return Mono.empty();
     }
 
     private Mono<Void> checkUserUpdate(User user) {
         if (user.getMetadata() == null) {
-            return Mono.error(new ServerWebInputException("metadata is required."));
+            return Mono.error(new ServerWebInputException("metadata 为必填项。"));
         }
         return client.get(User.class, user.getMetadata().getName())
                 .flatMap(existing -> {
                     if (user.getMetadata().getDeletionTimestamp() != null) {
-                        return Mono.<Void>error(denied("metadata.deletionTimestamp is a protected field."));
+                        return Mono.<Void>error(denied("metadata.deletionTimestamp 是受保护的字段。"));
                     }
                     var requestedFinalizers = nullSafe(user.getMetadata().getFinalizers());
                     if (!requestedFinalizers.isEmpty()
                             && !requestedFinalizers.equals(nullSafe(existing.getMetadata().getFinalizers()))) {
-                        return Mono.<Void>error(denied("metadata.finalizers is a protected field."));
+                        return Mono.<Void>error(denied("metadata.finalizers 是受保护的字段。"));
                     }
                     var requestedReserved = reservedLabels(user.getMetadata().getLabels());
                     var existingReserved = reservedLabels(existing.getMetadata().getLabels());
                     if (!requestedReserved.isEmpty() && !requestedReserved.equals(existingReserved)) {
-                        return Mono.<Void>error(denied("Reserved labels of a User are read-only."));
+                        return Mono.<Void>error(denied("用户的保留标签为只读。"));
                     }
                     return checkProtectedUserSecrets(user, existing);
                 });
@@ -276,11 +276,11 @@ public class BuiltinEntityPolicy {
         }
         if (!Objects.equals(requestedSpec.getPassword(), existingSpec.getPassword())) {
             return Mono.<Void>error(denied(
-                    "spec.password of a User can only be changed through the dedicated password endpoints."));
+                    "用户的 spec.password 只能通过专用密码接口修改。"));
         }
         if (!Objects.equals(requestedSpec.getTotpEncryptedSecret(), existingSpec.getTotpEncryptedSecret())) {
             return Mono.<Void>error(denied(
-                    "spec.totpEncryptedSecret of a User can only be changed through the dedicated authentication endpoints."));
+                    "用户的 spec.totpEncryptedSecret 只能通过专用认证接口修改。"));
         }
         return Mono.empty();
     }
@@ -322,7 +322,7 @@ public class BuiltinEntityPolicy {
                 })
                 .onErrorMap(
                         error -> new ServerWebInputException(
-                                "Unable to read the request body as " + type.getSimpleName() + "."));
+                                "无法将请求体读取为 " + type.getSimpleName() + "。"));
     }
 
     private static AccessDeniedException denied(String reason) {

@@ -36,8 +36,6 @@ public class ParameterInfoGetterImpl implements ParameterInfoGetter {
         var systemInfo = new SystemInfo()
                 .setVersion(systemVersionSupplier.get())
                 .setUrl(getExternalUrl())
-
-                .setLocale(Locale.getDefault())
                 .setTimeZone(TimeZone.getDefault());
 
         var siteMono = environmentFetcher
@@ -85,7 +83,7 @@ public class ParameterInfoGetterImpl implements ParameterInfoGetter {
             return URI.create(StringUtils.removeEnd(uriStr, "/")).toURL();
         } catch (MalformedURLException e) {
 
-            throw new RuntimeException("Cannot create URL from server properties.", e);
+            throw new RuntimeException("无法根据服务器属性创建 URL。", e);
         }
     }
 }

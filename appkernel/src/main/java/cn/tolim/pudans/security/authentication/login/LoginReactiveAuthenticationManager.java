@@ -46,7 +46,7 @@ class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManage
                 .publishOn(scheduler)
                 .filter(userDetails -> password != null && passwordEncoder.matches(password, userDetails.getPassword()))
                 .next()
-                .switchIfEmpty(Mono.error(() -> new BadCredentialsException("Invalid Credentials")))
+                .switchIfEmpty(Mono.error(() -> new BadCredentialsException("用户名或密码错误。")))
                 .delayUntil(UserAccountStatusChecker::check)
                 .flatMap(userDetails -> upgradePasswordIfNeeded(userDetails, password))
                 .map(userDetails -> UsernamePasswordAuthenticationToken.authenticated(

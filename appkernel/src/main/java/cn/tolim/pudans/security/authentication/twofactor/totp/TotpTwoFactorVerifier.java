@@ -23,7 +23,7 @@ public class TotpTwoFactorVerifier {
         var spec = user.getSpec();
         var secret = spec == null ? null : spec.getTotpEncryptedSecret();
         if (StringUtils.isBlank(secret)) {
-            return Mono.error(new TwoFactorAuthException("TOTP secret not configured."));
+            return Mono.error(new TwoFactorAuthException("未配置 TOTP 密钥。"));
         }
         return Mono.fromCallable(() -> {
                     var parsed = Integer.parseInt(code == null ? "" : code.trim());
@@ -31,6 +31,6 @@ public class TotpTwoFactorVerifier {
                 })
                 .onErrorMap(
                         NumberFormatException.class,
-                        error -> new TwoFactorAuthException("Invalid TOTP code.", error));
+                        error -> new TwoFactorAuthException("TOTP 验证码无效。", error));
     }
 }

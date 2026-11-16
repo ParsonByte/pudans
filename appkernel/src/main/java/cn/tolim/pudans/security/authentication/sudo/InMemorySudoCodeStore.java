@@ -25,18 +25,18 @@ class InMemorySudoCodeStore {
     private Clock clock = Clock.systemUTC();
 
     void setClock(Clock clock) {
-        Assert.notNull(clock, "Clock must not be null");
+        Assert.notNull(clock, "时钟不能为空");
         this.clock = clock;
     }
 
     Mono<String> generate(String key) {
-        Assert.state(StringUtils.isNotBlank(key), "Key must not be blank");
+        Assert.state(StringUtils.isNotBlank(key), "键不能为空");
         return Mono.fromCallable(() -> generateCode(key)).subscribeOn(Schedulers.boundedElastic());
     }
 
     Mono<Void> verify(String key, String code) {
-        Assert.state(StringUtils.isNotBlank(key), "Key must not be blank");
-        Assert.state(StringUtils.isNotBlank(code), "Code must not be blank");
+        Assert.state(StringUtils.isNotBlank(key), "键不能为空");
+        Assert.state(StringUtils.isNotBlank(code), "验证码不能为空");
         return Mono.fromRunnable(() -> verifyCode(key, code));
     }
 

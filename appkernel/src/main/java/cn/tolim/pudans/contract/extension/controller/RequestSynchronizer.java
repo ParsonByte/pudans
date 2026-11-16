@@ -47,7 +47,7 @@ public class RequestSynchronizer implements Synchronizer<Request> {
         if (isDisposed() || started) {
             return;
         }
-        log.info("Starting request({}) synchronizer...", type);
+        log.info("正在启动请求({})同步器...", type);
         started = true;
 
         if (syncAllOnStart) {
@@ -67,7 +67,7 @@ public class RequestSynchronizer implements Synchronizer<Request> {
             }
         }
         client.watch(this.watcher);
-        log.info("Started request({}) synchronizer.", type);
+        log.info("请求({})同步器已启动。", type);
     }
 
     @Override

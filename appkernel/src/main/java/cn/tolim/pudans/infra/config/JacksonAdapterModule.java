@@ -45,7 +45,7 @@ public class JacksonAdapterModule extends SimpleModule {
             try {
                 return objectMapper.get().readValue(json, JsonExtension.class);
             } catch (JsonProcessingException e) {
-                throw InvalidFormatException.from(p, "Failed to deserialize JsonExtension");
+                throw InvalidFormatException.from(p, "无法反序列化 JsonExtension");
             }
         }
     }
@@ -59,7 +59,7 @@ public class JacksonAdapterModule extends SimpleModule {
                 var raw = objectMapper.get().writeValueAsString(value);
                 gen.writeRawValue(raw);
             } catch (JsonProcessingException e) {
-                throw InvalidFormatException.from(gen, "Failed to serialize JsonExtension");
+                throw InvalidFormatException.from(gen, "无法序列化 JsonExtension");
             }
         }
 
@@ -76,7 +76,7 @@ public class JacksonAdapterModule extends SimpleModule {
             try {
                 gen.writeRawValue(objectMapper.get().writeValueAsString(value));
             } catch (JsonProcessingException e) {
-                throw InvalidFormatException.from(gen, "Failed to serialize JsonPatch");
+                throw InvalidFormatException.from(gen, "无法序列化 JsonPatch");
             }
         }
 
@@ -93,7 +93,7 @@ public class JacksonAdapterModule extends SimpleModule {
             try {
                 gen.writeRawValue(objectMapper.get().writeValueAsString(value));
             } catch (JsonProcessingException e) {
-                throw InvalidFormatException.from(gen, "Failed to serialize JsonNode");
+                throw InvalidFormatException.from(gen, "无法序列化 JsonNode");
             }
         }
 
@@ -115,11 +115,11 @@ public class JacksonAdapterModule extends SimpleModule {
         public T deserialize(JsonParser p, DeserializationContext ctxt) throws JacksonException {
             var json = p.readValueAsTree().toString();
             var mapper = objectMapper.get();
-            Assert.notNull(mapper, "Legacy ObjectMapper must not be null");
+            Assert.notNull(mapper, "旧版 ObjectMapper 不能为空");
             try {
                 return mapper.readValue(json, type);
             } catch (JsonProcessingException e) {
-                throw JsonNodeException.from(p, "Failed to bridge legacy JSON node", e);
+                throw JsonNodeException.from(p, "桥接旧版 JSON 节点失败", e);
             }
         }
     }

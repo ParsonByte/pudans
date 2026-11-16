@@ -95,7 +95,7 @@ public class AuditService {
                         .append(record)
                         .onErrorResume(e -> {
                             log.error(
-                                    "Unable to persist audit record {}, writing it to the local WAL",
+                                    "无法持久化审计记录 {}，正在写入本地 WAL",
                                     metadataName(record),
                                     e);
                             auditWal.append(record);
@@ -113,7 +113,7 @@ public class AuditService {
         if (latch != null) {
             try {
                 if (!latch.await(5, TimeUnit.SECONDS)) {
-                    log.warn("Timed out while draining the audit write queue");
+                    log.warn("排空审计写入队列时超时");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -153,7 +153,7 @@ public class AuditService {
         }
         if (result.isFailure()) {
             log.error(
-                    "The audit writer rejected record {} ({}), it will be written to the local WAL instead",
+                    "审计写入器拒绝了记录 {}（{}），将改为写入本地 WAL",
                     metadataName(record),
                     result);
             writeToWal(record);

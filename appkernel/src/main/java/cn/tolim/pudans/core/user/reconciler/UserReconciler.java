@@ -98,7 +98,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
         return announcementStateService
                 .deleteForUser(username)
                 .onErrorResume(error -> {
-                    log.warn("Unable to delete the announcement state of user [{}]", username, error);
+                    log.warn("无法删除用户 [{}] 的公告状态", username, error);
                     return Mono.empty();
                 });
     }
@@ -107,7 +107,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
         return avatarStorageService
                 .deleteForUser(user)
                 .onErrorResume(error -> {
-                    log.warn("Unable to delete the avatar of user [{}]", user.getMetadata().getName(), error);
+                    log.warn("无法删除用户 [{}] 的头像", user.getMetadata().getName(), error);
                     return Mono.empty();
                 });
     }

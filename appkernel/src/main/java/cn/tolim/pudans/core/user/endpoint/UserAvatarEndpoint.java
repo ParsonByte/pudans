@@ -58,7 +58,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
                             var part = parts.getFirst("file");
                             if (!(part instanceof org.springframework.http.codec.multipart.FilePart filePart)) {
                                 return Mono.error(
-                                        new ServerWebInputException("A multipart file field named file is required."));
+                                        new ServerWebInputException("需要名为 file 的 multipart 文件字段。"));
                             }
                             return avatarStorageService.store(user, filePart);
                         })
@@ -82,7 +82,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 .map(org.springframework.security.core.Authentication::getName)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Not authenticated")))
+                .switchIfEmpty(Mono.error(new ServerWebInputException("未认证")))
                 .flatMap(userService::getUser);
     }
 

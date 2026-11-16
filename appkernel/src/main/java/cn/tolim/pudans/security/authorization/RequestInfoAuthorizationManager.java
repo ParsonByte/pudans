@@ -39,7 +39,7 @@ public class RequestInfoAuthorizationManager implements ReactiveAuthorizationMan
 
     private void showErrorMessage(List<Throwable> errors) {
         if (errors != null) {
-            errors.forEach(error -> log.error("Access decision error", error));
+            errors.forEach(error -> log.error("访问决策错误", error));
         }
     }
 }

@@ -103,11 +103,11 @@ public enum ParameterSettingUtils {
                 .stream()
                 .anyMatch(existingChecksum -> Objects.equals(checksum, existingChecksum));
         if (notChanged) {
-            log.debug("ConfigMap '{}' has not changed.", configMap.getMetadata().getName());
+            log.debug("ConfigMap '{}' 未发生变化。", configMap.getMetadata().getName());
             return false;
         }
         log.debug(
-                "ConfigMap '{}' has changed, updating checksum {}.",
+                "ConfigMap '{}' 已发生变化，正在更新校验和 {}。",
                 configMap.getMetadata().getName(),
                 checksum);
         if (metadata.getAnnotations() == null) {

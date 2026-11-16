@@ -40,8 +40,8 @@ public enum HttpSecurityUtils {
                                 if (remainder < 0) {
                                     DataBufferUtils.release(buffer);
                                     sink.error(new DataBufferLimitException(
-                                            "Response body exceeds the maximum allowed size of " + maxByteCount
-                                                    + " bytes"));
+                                            "响应体超过允许的最大大小 " + maxByteCount
+                                                    + " 字节"));
                                 } else {
                                     sink.next(buffer);
                                 }

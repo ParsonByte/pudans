@@ -29,7 +29,7 @@ public class FeishuAlertNotifier {
         return feishuClient
                 .sendAlertCard(properties.getAlertChatId(), JsonUtils.objectToJson(card(alert)))
                 .timeout(Duration.ofSeconds(5))
-                .doOnError(error -> log.warn("Unable to send risk alert to Feishu", error))
+                .doOnError(error -> log.warn("无法向飞书发送风险告警", error))
                 .onErrorResume(error -> Mono.empty());
     }
 

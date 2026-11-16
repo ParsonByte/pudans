@@ -11,19 +11,19 @@ public enum Queries {
 
 
     public static Condition and(Condition condition, Condition... additionalConditions) {
-        Assert.notNull(condition, "Condition must not be null");
+        Assert.notNull(condition, "条件不能为 null");
         return Arrays.stream(additionalConditions).reduce(condition, Condition::and);
     }
 
 
     public static Condition or(Condition condition, Condition... additionalConditions) {
-        Assert.notNull(condition, "Condition must not be null");
+        Assert.notNull(condition, "条件不能为 null");
         return Arrays.stream(additionalConditions).reduce(condition, Condition::or);
     }
 
 
     public static Condition not(Condition condition) {
-        Assert.notNull(condition, "Condition must not be null");
+        Assert.notNull(condition, "条件不能为 null");
         return condition.not();
     }
 
@@ -50,7 +50,7 @@ public enum Queries {
 
 
     public static Condition equal(String fieldName, Object attributeValue) {
-        Assert.notNull(attributeValue, "Attribute key of field " + fieldName + " must not be null");
+        Assert.notNull(attributeValue, "字段 " + fieldName + " 的属性键不能为 null");
         return new EqualCondition(fieldName, attributeValue);
     }
 
@@ -67,7 +67,7 @@ public enum Queries {
 
     @SuppressWarnings("unchecked")
     public static Condition in(String fieldName, Object attributeValue, Object... additionalValues) {
-        Assert.notNull(attributeValue, "Attribute key of field " + fieldName + " must not be null");
+        Assert.notNull(attributeValue, "字段 " + fieldName + " 的属性键不能为 null");
         if (attributeValue instanceof Collection<?> collection) {
 
             return in(fieldName, (Collection<Object>) collection);
@@ -83,7 +83,7 @@ public enum Queries {
 
 
     public static Condition in(String fieldName, Collection<Object> values) {
-        Assert.notNull(values, "Values must not be null");
+        Assert.notNull(values, "值不能为 null");
         if (values.size() == 1) {
             var value = values.iterator().next();
             return equal(fieldName, value);

@@ -29,30 +29,30 @@ public class TwoFactorAuthenticationManager implements ReactiveAuthenticationMan
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         if (!(authentication instanceof TwoFactorAuthenticationToken token)) {
-            return Mono.error(new TwoFactorAuthException("Unsupported two-factor authentication token."));
+            return Mono.error(new TwoFactorAuthException("不支持的双重验证令牌。"));
         }
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .filter(TwoFactorAuthentication.class::isInstance)
                 .map(TwoFactorAuthentication.class::cast)
                 .map(TwoFactorAuthentication::getPrevious)
-                .switchIfEmpty(Mono.error(() -> new TwoFactorAuthException("MFA Authentication required.")))
+                .switchIfEmpty(Mono.error(() -> new TwoFactorAuthException("需要完成多重身份验证。")))
                 .flatMap(previous -> verify(token, previous));
     }
 
     private Mono<Authentication> verify(TwoFactorAuthenticationToken token, Authentication previous) {
         if (!(previous.getPrincipal() instanceof PudansUserDetailsContract)) {
-            return Mono.error(new TwoFactorAuthException("Invalid authentication principal."));
+            return Mono.error(new TwoFactorAuthException("无效的认证主体。"));
         }
         if (!TotpTwoFactorVerifier.TYPE.equalsIgnoreCase(token.getType())) {
-            return Mono.error(new TwoFactorAuthException("Unsupported two-factor type " + token.getType()));
+            return Mono.error(new TwoFactorAuthException("不支持的双重验证类型 " + token.getType()));
         }
         return userService
                 .getUser(previous.getName())
                 .flatMap(user -> totpVerifier.verify(user, token.getCode()).timeout(TIMEOUT))
                 .flatMap(valid -> {
                     if (!Boolean.TRUE.equals(valid)) {
-                        return Mono.error(new TwoFactorAuthException("Invalid two-factor code."));
+                        return Mono.error(new TwoFactorAuthException("双重验证码无效。"));
                     }
                     if (previous instanceof CredentialsContainer container) {
                         container.eraseCredentials();

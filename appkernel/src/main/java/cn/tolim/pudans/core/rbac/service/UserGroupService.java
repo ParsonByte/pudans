@@ -129,15 +129,15 @@ public class UserGroupService {
 
     public Mono<UserGroupBinding> assignUserGroup(String username, String groupName) {
         if (!StringUtils.hasText(groupName)) {
-            return Mono.error(new ServerWebInputException("User group name must not be blank."));
+            return Mono.error(new ServerWebInputException("用户组名称不能为空。"));
         }
         return builtinEntityPolicy
                 .checkUserGroupAssignment(username, groupName)
                 .then(client.fetch(User.class, username))
-                .switchIfEmpty(Mono.error(new ServerWebInputException("User [" + username + "] is not found.")))
+                .switchIfEmpty(Mono.error(new ServerWebInputException("未找到用户 [" + username + "]。")))
                 .then(getUserGroup(groupName))
                 .switchIfEmpty(
-                        Mono.error(new ServerWebInputException("User group [" + groupName + "] is not found.")))
+                        Mono.error(new ServerWebInputException("未找到用户组 [" + groupName + "]。")))
                 .then(listMembershipBindings(username).collectList())
                 .flatMap(existing -> {
                     var alreadyAssigned = existing.stream()

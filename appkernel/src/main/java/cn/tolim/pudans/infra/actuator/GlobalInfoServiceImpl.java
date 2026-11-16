@@ -4,7 +4,6 @@ import cn.tolim.pudans.contract.infra.ExternalUrlSupplier;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import java.util.ArrayList;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.TimeZone;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +30,6 @@ public class GlobalInfoServiceImpl implements GlobalInfoService {
     public Mono<GlobalInfo> getGlobalInfo() {
         final var info = new GlobalInfo();
         info.setExternalUrl(externalUrl.getRaw());
-        info.setLocale(Locale.getDefault());
         info.setTimeZone(TimeZone.getDefault());
         info.setAllowRegistration(false);
         info.setMustVerifyEmailOnRegistration(false);
@@ -64,6 +62,5 @@ public class GlobalInfoServiceImpl implements GlobalInfoService {
         info.setSiteDescription(firstText(site.getSiteDescription(), basic.getSubtitle()));
         info.setLogoDark(firstText(site.getLogoDark(), basic.getLogo()));
         info.setLogoLight(firstText(site.getLogoLight(), basic.getLogo()));
-        basic.useSystemLocale().ifPresent(info::setLocale);
     }
 }

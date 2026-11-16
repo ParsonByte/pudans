@@ -51,9 +51,9 @@ public abstract class FileUtils {
         var unzip = Mono.fromCallable(() -> {
                     try (var is = subscriberInputStream(content, 1);
                          var zis = new ZipInputStream(is)) {
-                        log.debug("Unzipping to target path: {}", targetPath);
+                        log.debug("正在解压到目标路径：{}", targetPath);
                         unzip(zis, targetPath);
-                        log.debug("Unzipped to target path: {}", targetPath);
+                        log.debug("已解压到目标路径：{}", targetPath);
                     }
                     return null;
                 })
@@ -67,8 +67,8 @@ public abstract class FileUtils {
     public static void unzip(ZipInputStream zis, Path targetPath) throws IOException {
 
 
-        Assert.notNull(zis, "Zip input stream must not be null");
-        Assert.notNull(targetPath, "Target path must not be null");
+        Assert.notNull(zis, "Zip 输入流不能为空");
+        Assert.notNull(targetPath, "目标路径不能为空");
 
 
         createIfAbsent(targetPath);
@@ -136,26 +136,26 @@ public abstract class FileUtils {
 
 
     public static void createIfAbsent(Path path) throws IOException {
-        Assert.notNull(path, "Path must not be null");
+        Assert.notNull(path, "路径不能为空");
 
         if (Files.notExists(path)) {
 
             Files.createDirectories(path);
 
-            log.debug("Created directory: [{}]", path);
+            log.debug("已创建目录：[{}]", path);
         }
     }
 
 
     public static void ensureEmpty(Path path) throws IOException {
         if (!isEmpty(path)) {
-            throw new DirectoryNotEmptyException("Target directory: " + path + " was not empty");
+            throw new DirectoryNotEmptyException("目标目录 " + path + " 不为空");
         }
     }
 
 
     public static boolean isEmpty(Path path) throws IOException {
-        Assert.notNull(path, "Path must not be null");
+        Assert.notNull(path, "路径不能为空");
 
         if (!Files.isDirectory(path) || Files.notExists(path)) {
             return true;
@@ -185,17 +185,15 @@ public abstract class FileUtils {
 
 
     public static void checkDirectoryTraversal(Path parentPath, Path pathToCheck) {
-        Assert.notNull(parentPath, "Parent path must not be null");
-        Assert.notNull(pathToCheck, "Path to check must not be null");
+        Assert.notNull(parentPath, "父路径不能为空");
+        Assert.notNull(pathToCheck, "待检查的路径不能为空");
 
         if (pathToCheck.normalize().startsWith(parentPath)) {
             return;
         }
 
         throw new AccessDeniedException(
-                "Directory traversal detected: " + pathToCheck,
-                "problemDetail.directoryTraversal",
-                new Object[] {parentPath, pathToCheck});
+                "检测到目录遍历。基础路径为 " + parentPath + "，但真实路径为 " + pathToCheck);
     }
 
 
@@ -213,7 +211,7 @@ public abstract class FileUtils {
         try {
             var deleted = deleteRecursively(root);
             if (log.isDebugEnabled()) {
-                log.debug("Delete {} result: {}", root, deleted);
+                log.debug("删除 {} 的结果：{}", root, deleted);
             }
         } catch (IOException ignored) {
 

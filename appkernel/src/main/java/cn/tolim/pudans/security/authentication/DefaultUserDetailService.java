@@ -45,7 +45,7 @@ public class DefaultUserDetailService implements ReactiveUserDetailsService, Rea
     public Mono<UserDetails> findByUsername(String username) {
         var getUser = userService.getUser(username);
         return getUser.switchIfEmpty(Mono.error(() -> new UserNotFoundException(username)))
-                .onErrorMap(UserNotFoundException.class, ignored -> new BadCredentialsException("Invalid Credentials"))
+                .onErrorMap(UserNotFoundException.class, ignored -> new BadCredentialsException("用户名或密码错误。"))
                 .flatMap(user -> {
                     var name = user.getMetadata().getName();
                     var disabled = requireNonNullElse(user.getSpec().getDisabled(), false);

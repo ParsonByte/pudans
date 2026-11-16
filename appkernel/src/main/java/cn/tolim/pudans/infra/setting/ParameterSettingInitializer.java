@@ -47,7 +47,7 @@ class ParameterSettingInitializer {
                     return client.fetch(ConfigMap.class, legacyName)
                             .flatMap(legacy -> {
                                 log.info(
-                                        "Migrating legacy parameter settings ConfigMap [{}] to [{}]",
+                                        "正在将旧版参数设置 ConfigMap [{}] 迁移为 [{}]",
                                         legacyName,
                                         targetName);
                                 return client.create(migratedConfigMap(legacy, targetName, legacyName));
@@ -143,7 +143,7 @@ class ParameterSettingInitializer {
             var node = JsonMapper.shared().readTree(json);
             return node.isObject() ? (ObjectNode) node : null;
         } catch (RuntimeException e) {
-            log.warn("Ignoring malformed legacy parameter setting group JSON");
+            log.warn("忽略格式错误的旧版参数设置组 JSON");
             return null;
         }
     }
@@ -151,7 +151,7 @@ class ParameterSettingInitializer {
     private Mono<Void> ensureConfigMap(String name) {
         return client.fetch(ConfigMap.class, name)
                 .switchIfEmpty(Mono.defer(() -> {
-                    log.info("Initializing parameter settings ConfigMap [{}]...", name);
+                    log.info("正在初始化参数设置 ConfigMap [{}]...", name);
                     var configMap = new ConfigMap();
                     configMap.setMetadata(new Metadata());
                     configMap.getMetadata().setName(name);

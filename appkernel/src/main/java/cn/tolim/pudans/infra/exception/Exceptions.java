@@ -5,17 +5,19 @@ import static org.springframework.core.annotation.MergedAnnotations.SearchStrate
 import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import java.net.URI;
 import java.time.Instant;
-import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.springframework.context.MessageSource;
 import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.dao.ConcurrencyFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
+import org.springframework.security.authentication.AccountExpiredException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.CredentialsExpiredException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ResponseStatusException;
@@ -41,7 +43,7 @@ public enum Exceptions {
             BadCredentialsException.class, INVALID_CREDENTIAL_TYPE);
 
     public static ErrorResponse createErrorResponse(
-            Throwable t, @Nullable HttpStatusCode status, ServerWebExchange exchange, MessageSource messageSource) {
+            Throwable t, @Nullable HttpStatusCode status, ServerWebExchange exchange) {
         final ErrorResponse errorResponse;
         if (t instanceof ErrorResponse er) {
             errorResponse = er;
@@ -52,11 +54,10 @@ public enum Exceptions {
             }
             errorResponse = er;
         }
-        var locale = getLocale(exchange);
-        var problemDetail = errorResponse.updateAndGetBody(messageSource, locale);
+        var problemDetail = errorResponse.getBody();
+        applyChineseText(errorResponse, problemDetail);
 
 
-        resolveLocalizedDetail(errorResponse, messageSource, locale);
         if (t instanceof ApiException apiException) {
             problemDetail.setProperty("code", apiException.getCode());
         }
@@ -66,24 +67,35 @@ public enum Exceptions {
         return errorResponse;
     }
 
-    private static void resolveLocalizedDetail(
-            ErrorResponse errorResponse, MessageSource messageSource, Locale locale) {
-        var detailCode = errorResponse.getDetailMessageCode();
-        var detail = detailCode == null
-                ? null
-                : messageSource.getMessage(
-                        detailCode, errorResponse.getDetailMessageArguments(messageSource, locale), null, locale);
-        if (detail == null && errorResponse instanceof ResponseStatusException statusException) {
+    private static void applyChineseText(ErrorResponse errorResponse, ProblemDetail problemDetail) {
+        var titleCode = errorResponse.getTitleMessageCode();
+        var title = titleCode == null ? null : ProblemDetailMessages.title(titleCode);
+        problemDetail.setTitle(title == null ? statusTitle(problemDetail.getStatus()) : title);
 
-            var reason = statusException.getReason();
-            if (reason != null) {
-                detail = messageSource.getMessage(
-                        reason, statusException.getDetailMessageArguments(messageSource, locale), null, locale);
-            }
+        var args = errorResponse.getDetailMessageArguments();
+        var detailCode = errorResponse.getDetailMessageCode();
+        var detail = detailCode == null ? null : ProblemDetailMessages.detail(detailCode, args);
+        if (detail == null && problemDetail.getDetail() != null) {
+            detail = ProblemDetailMessages.detail(problemDetail.getDetail(), args);
         }
         if (detail != null) {
-            errorResponse.getBody().setDetail(detail);
+            problemDetail.setDetail(detail);
         }
+    }
+
+    private static String statusTitle(int status) {
+        return switch (status) {
+            case 400 -> "请求参数有误";
+            case 401 -> "认证失败";
+            case 403 -> "访问被拒绝";
+            case 404 -> "资源不存在";
+            case 405 -> "请求方法不允许";
+            case 406 -> "不可接受的响应类型";
+            case 409 -> "冲突";
+            case 415 -> "不支持的媒体类型";
+            case 429 -> "请求过于频繁";
+            default -> status >= 500 ? "服务器内部错误" : "请求失败";
+        };
     }
 
     private static ErrorResponse handleException(Throwable t, @Nullable HttpStatusCode status) {
@@ -93,11 +105,17 @@ public enum Exceptions {
             status = responseStatusAnno.getValue("code", HttpStatus.class).orElse(HttpStatus.INTERNAL_SERVER_ERROR);
         }
         var type = EXCEPTION_TYPE_MAP.getOrDefault(t.getClass(), DEFAULT_TYPE);
-        var detail = responseStatusAnno.getValue("reason", String.class).orElseGet(t::getMessage);
+        var detail = switch (t) {
+            case BadCredentialsException ignored -> "用户名或密码错误。";
+            case LockedException ignored -> "账户已锁定，请联系管理员。";
+            case DisabledException ignored -> "账户或访问令牌已停用或不可用。";
+            case AccountExpiredException ignored -> "账户已过期，请联系管理员。";
+            case CredentialsExpiredException ignored -> "登录凭据已过期，请重置密码。";
+            default -> responseStatusAnno.getValue("reason", String.class).orElseGet(t::getMessage);
+        };
         var builder = ErrorResponse.builder(t, status, detail).type(URI.create(type));
         if (status.is5xxServerError()) {
-            builder.detailMessageCode("problemDetail.internalServerError")
-                    .titleMessageCode("problemDetail.title.internalServerError");
+            builder.title("服务器内部错误").detail("服务器内部发生错误，请稍候再试。");
         }
         return builder.build();
     }
@@ -106,15 +124,10 @@ public enum Exceptions {
         if (t instanceof ConcurrencyFailureException) {
             return ErrorResponse.builder(t, ProblemDetail.forStatus(HttpStatus.CONFLICT))
                     .type(URI.create(CONFLICT_TYPE))
-                    .titleMessageCode("problemDetail.title.conflict")
-                    .detailMessageCode("problemDetail.conflict")
+                    .title("冲突")
+                    .detail("检测到冲突，请检查数据后重试。")
                     .build();
         }
         return null;
-    }
-
-    public static Locale getLocale(ServerWebExchange exchange) {
-        var locale = exchange.getLocaleContext().getLocale();
-        return locale == null ? Locale.getDefault() : locale;
     }
 }

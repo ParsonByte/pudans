@@ -23,12 +23,12 @@ public class MailAttachmentLoader {
 
     private static MailAttachment load(ParameterSetting.MailTemplateAttachment attachment) {
         if (!StringUtils.hasText(attachment.getClasspath())) {
-            throw new TemplateRenderException("A mail attachment requires a classpath");
+            throw new TemplateRenderException("邮件附件必须指定类路径");
         }
         var resource = new ClassPathResource(attachment.getClasspath());
         if (!resource.exists()) {
             throw new TemplateRenderException(
-                    "Mail attachment not found on the classpath: " + attachment.getClasspath());
+                    "在类路径上未找到邮件附件：" + attachment.getClasspath());
         }
         try (var input = resource.getInputStream()) {
             var fileName = StringUtils.hasText(attachment.getFileName())
@@ -36,7 +36,7 @@ public class MailAttachmentLoader {
                     : resource.getFilename();
             return new MailAttachment(fileName == null ? "attachment" : fileName, input.readAllBytes());
         } catch (IOException e) {
-            throw new TemplateRenderException("Unable to read mail attachment: " + attachment.getClasspath());
+            throw new TemplateRenderException("无法读取邮件附件：" + attachment.getClasspath());
         }
     }
 

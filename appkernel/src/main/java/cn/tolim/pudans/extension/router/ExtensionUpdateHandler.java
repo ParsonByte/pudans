@@ -32,7 +32,7 @@ class ExtensionUpdateHandler implements UpdateHandler {
         String name = request.pathVariable("name");
         return request.bodyToMono(Unstructured.class)
                 .switchIfEmpty(Mono.error(
-                        () -> new ServerWebInputException("Cannot read body to " + scheme.groupVersionKind())))
+                        () -> new ServerWebInputException("无法将请求体读取为 " + scheme.groupVersionKind())))
                 .flatMap(unstructured -> {
                     ExtensionIdentity.requireUnchanged(scheme, name, unstructured);
                     return builtinEntityPolicy

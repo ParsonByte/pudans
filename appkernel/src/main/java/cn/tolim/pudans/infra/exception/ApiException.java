@@ -3,10 +3,7 @@ package cn.tolim.pudans.infra.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-/**
- * ResponseStatusException with a stable machine-readable code. The code is
- * copied into the RFC 7807 body so clients never have to parse human text.
- */
+// 带稳定机器可读码的 ResponseStatusException；该码会写入 RFC 7807 响应体，客户端无需解析人类可读文本。
 public class ApiException extends ResponseStatusException {
 
     private final String code;

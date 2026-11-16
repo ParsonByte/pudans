@@ -88,7 +88,7 @@ public class AuditWebFilter implements WebFilter {
         var operation = resolvedOperation(exchange);
         var type = resourceType(exchange);
         return uidMono.onErrorResume(e -> {
-                    log.warn("Unable to resolve the uid of the audit record", e);
+                    log.warn("无法解析审计记录的用户 ID", e);
                     return Mono.just("unknown");
                 })
                 .flatMap(uid -> ruleEvaluator.shouldRecord(operation, type).flatMap(record -> {
@@ -106,7 +106,7 @@ public class AuditWebFilter implements WebFilter {
                                 System.currentTimeMillis() - start,
                                 context(exchange, username, error));
                     } catch (RuntimeException e) {
-                        log.error("Unable to build the audit record for request {}", exchange
+                        log.error("无法为请求 {} 构建审计记录", exchange
                                 .getRequest()
                                 .getPath()
                                 .value(), e);

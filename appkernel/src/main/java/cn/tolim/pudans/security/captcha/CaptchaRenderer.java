@@ -81,11 +81,11 @@ public class CaptchaRenderer {
         }
         try (var output = new ByteArrayOutputStream()) {
             if (!ImageIO.write(image, "png", output)) {
-                throw new IllegalStateException("PNG captcha encoding is not available");
+                throw new IllegalStateException("PNG 验证码编码不可用");
             }
             return output.toByteArray();
         } catch (IOException e) {
-            throw new IllegalStateException("Unable to encode the captcha image", e);
+            throw new IllegalStateException("无法编码验证码图片", e);
         }
     }
 

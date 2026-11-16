@@ -27,7 +27,7 @@ public class Role extends AbstractExtension {
     public static final String ROLE_DEPENDENCIES_ANNO = "rbac.authorization.pudans.tolim.cn/dependencies";
     public static final String UI_PERMISSIONS_ANNO = "rbac.authorization.pudans.tolim.cn/ui-permissions";
 
-    /** Mirrors Halo's rbac.authorization.halo.run/disallow-access-console. */
+    // 禁止角色访问控制台的注解键。
     public static final String DISALLOW_ACCESS_CONSOLE_ANNO =
             "rbac.authorization.pudans.tolim.cn/disallow-access-console";
 

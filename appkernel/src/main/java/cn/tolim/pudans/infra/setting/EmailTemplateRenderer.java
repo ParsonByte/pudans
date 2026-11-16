@@ -38,7 +38,7 @@ public class EmailTemplateRenderer {
                 nodes.add(new TextNode(template.substring(index[0])));
                 index[0] = template.length();
                 if (stopTag != null) {
-                    throw new TemplateRenderException("Missing closing tag for block " + stopTag);
+                    throw new TemplateRenderException("块 " + stopTag + " 缺少结束标签");
                 }
                 return new ParseResult(nodes, null);
             }
@@ -47,34 +47,34 @@ public class EmailTemplateRenderer {
             }
             var close = template.indexOf(CLOSE, open + OPEN.length());
             if (close < 0) {
-                throw new TemplateRenderException("Unclosed template tag at position " + open);
+                throw new TemplateRenderException("位置 " + open + " 处的模板标签未闭合");
             }
             var tag = template.substring(open + OPEN.length(), close).trim();
             index[0] = close + CLOSE.length();
             if (tag.equals("else") || tag.startsWith("/")) {
                 if (stopTag == null) {
-                    throw new TemplateRenderException("Unexpected template tag: " + tag);
+                    throw new TemplateRenderException("意外的模板标签：" + tag);
                 }
                 if (tag.equals("else") || tag.equals("/" + stopTag)) {
                     return new ParseResult(nodes, tag);
                 }
-                throw new TemplateRenderException("Unexpected template tag: " + tag);
+                throw new TemplateRenderException("意外的模板标签：" + tag);
             }
             if (tag.startsWith("#if ")) {
                 var condition = tag.substring(4).trim();
                 if (condition.isEmpty()) {
-                    throw new TemplateRenderException("An if block requires a condition");
+                    throw new TemplateRenderException("if 块必须提供条件");
                 }
                 var thenResult = parse(template, index, "if");
                 var elseNodes = new ArrayList<Node>();
                 if ("else".equals(thenResult.stopTag())) {
                     var elseResult = parse(template, index, "if");
                     if (!"/if".equals(elseResult.stopTag())) {
-                        throw new TemplateRenderException("Missing closing tag for if block");
+                        throw new TemplateRenderException("if 块缺少结束标签");
                     }
                     elseNodes.addAll(elseResult.nodes());
                 } else if (!"/if".equals(thenResult.stopTag())) {
-                    throw new TemplateRenderException("Missing closing tag for if block");
+                    throw new TemplateRenderException("if 块缺少结束标签");
                 }
                 nodes.add(new IfNode(condition, thenResult.nodes(), elseNodes));
                 continue;
@@ -82,22 +82,22 @@ public class EmailTemplateRenderer {
             if (tag.startsWith("#each ")) {
                 var key = tag.substring(6).trim();
                 if (key.isEmpty()) {
-                    throw new TemplateRenderException("An each block requires a collection name");
+                    throw new TemplateRenderException("each 块必须提供集合名称");
                 }
                 var bodyResult = parse(template, index, "each");
                 if (!"/each".equals(bodyResult.stopTag())) {
-                    throw new TemplateRenderException("Missing closing tag for each block");
+                    throw new TemplateRenderException("each 块缺少结束标签");
                 }
                 nodes.add(new EachNode(key, bodyResult.nodes()));
                 continue;
             }
             if (tag.isEmpty()) {
-                throw new TemplateRenderException("An empty template tag is not allowed");
+                throw new TemplateRenderException("不允许使用空的模板标签");
             }
             nodes.add(new VariableNode(tag));
         }
         if (stopTag != null) {
-            throw new TemplateRenderException("Missing closing tag for block " + stopTag);
+            throw new TemplateRenderException("块 " + stopTag + " 缺少结束标签");
         }
         return new ParseResult(nodes, null);
     }
@@ -122,7 +122,7 @@ public class EmailTemplateRenderer {
     private void renderEach(EachNode each, Deque<Map<String, ?>> contexts, StringBuilder output) {
         var value = lookup(each.collection(), contexts);
         if (!(value instanceof Collection<?> collection)) {
-            throw new TemplateRenderException("Template value [" + each.collection() + "] is not a collection");
+            throw new TemplateRenderException("模板值 [" + each.collection() + "] 不是集合");
         }
         for (var item : collection) {
             if (item instanceof Map<?, ?> map) {
@@ -155,7 +155,7 @@ public class EmailTemplateRenderer {
             case "upper" -> value.toUpperCase(Locale.ROOT);
             case "lower" -> value.toLowerCase(Locale.ROOT);
             case "trim" -> value.trim();
-            default -> throw new TemplateRenderException("Unknown template filter: " + filter);
+            default -> throw new TemplateRenderException("未知的模板过滤器：" + filter);
         };
     }
 
@@ -170,7 +170,7 @@ public class EmailTemplateRenderer {
     private Object lookup(String key, Deque<Map<String, ?>> contexts) {
         var value = lookupOptional(key, contexts);
         if (value == null && contexts.stream().noneMatch(context -> context.containsKey(key))) {
-            throw new TemplateRenderException("Missing template variable: " + key);
+            throw new TemplateRenderException("缺少模板变量：" + key);
         }
         return value;
     }

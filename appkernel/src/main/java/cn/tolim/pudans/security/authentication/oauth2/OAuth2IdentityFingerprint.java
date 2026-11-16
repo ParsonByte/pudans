@@ -21,7 +21,7 @@ public final class OAuth2IdentityFingerprint {
             digest.update(token.getPrincipal().getName().getBytes(UTF_8));
             return HexFormat.of().formatHex(digest.digest());
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is unavailable", e);
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 }

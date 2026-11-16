@@ -2,7 +2,7 @@ package cn.tolim.pudans.contract.extension;
 
 import java.util.Set;
 
-/** The only API group allowed by the pudans HTTP contract. */
+// pudans HTTP 契约唯一允许的 API 组。
 public final class ApiGroups {
 
     public static final String API = "api.pudans.tolim.cn";

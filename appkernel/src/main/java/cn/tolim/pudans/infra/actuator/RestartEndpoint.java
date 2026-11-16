@@ -32,7 +32,7 @@ class RestartEndpoint implements ApplicationListener<ApplicationStartedEvent> {
                 try {
                     closeable.close();
                 } catch (IOException e) {
-                    log.error("Cannot close context: {}", ctx.getId(), e);
+                    log.error("无法关闭上下文：{}", ctx.getId(), e);
                 }
             }
             ctx = ctx.getParent();
@@ -52,7 +52,7 @@ class RestartEndpoint implements ApplicationListener<ApplicationStartedEvent> {
     }
 
     private synchronized void doRestart() {
-        log.info("Restarting...");
+        log.info("正在重启...");
         if (this.context != null) {
             try {
                 closeRecursively(this.context);
@@ -62,9 +62,9 @@ class RestartEndpoint implements ApplicationListener<ApplicationStartedEvent> {
                     runnable.run();
                 }
                 this.context = this.application.run(args);
-                log.info("Restarted");
+                log.info("已重启");
             } catch (Throwable t) {
-                log.error("Failed to restart.", t);
+                log.error("重启失败。", t);
             }
         }
     }

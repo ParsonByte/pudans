@@ -81,7 +81,7 @@ public class AvatarStorageService {
         return parameterSettingGroupService.getSession().flatMap(session -> Mono.fromCallable(() -> {
             var path = directory(session).resolve(filename).normalize();
             if (!path.startsWith(directory(session)) || Files.notExists(path) || !Files.isRegularFile(path)) {
-                throw new ApiException(HttpStatus.NOT_FOUND, "avatar-not-found", "The avatar does not exist.");
+                throw new ApiException(HttpStatus.NOT_FOUND, "avatar-not-found", "头像不存在。");
             }
             return (Resource) new FileSystemResource(path);
         }).subscribeOn(Schedulers.boundedElastic()));
@@ -90,18 +90,18 @@ public class AvatarStorageService {
     private void validateContentType(FilePart file) {
         var contentType = file.headers().getContentType();
         if (contentType == null) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "avatar-invalid-type", "Avatar content type is required.");
+            throw new ApiException(HttpStatus.BAD_REQUEST, "avatar-invalid-type", "头像内容类型为必填项。");
         }
         var subtype = contentType.getSubtype().toLowerCase(Locale.ROOT);
         if ("webp".equals(subtype) && !webpSupport.isAvailable()) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
                     "avatar-webp-unavailable",
-                    "The WebP decoder is not installed on this server.");
+                    "此服务器未安装 WebP 解码器。");
         }
         if (!"png".equals(subtype) && !"jpeg".equals(subtype) && !"jpg".equals(subtype) && !"webp".equals(subtype)) {
             throw new ApiException(
-                    HttpStatus.BAD_REQUEST, "avatar-invalid-type", "Only png, jpg, jpeg and webp avatars are allowed.");
+                    HttpStatus.BAD_REQUEST, "avatar-invalid-type", "仅允许使用 png、jpg、jpeg 和 webp 格式的头像。");
         }
     }
 
@@ -126,7 +126,7 @@ public class AvatarStorageService {
         return DataBufferUtils.join(file.content())
                 .map(buffer -> toBytes(buffer, maxSize))
                 .switchIfEmpty(Mono.error(new ApiException(
-                        HttpStatus.BAD_REQUEST, "avatar-empty", "The avatar file is empty.")));
+                        HttpStatus.BAD_REQUEST, "avatar-empty", "头像文件为空。")));
     }
 
     private static byte[] toBytes(DataBuffer buffer, long maxSize) {
@@ -146,7 +146,7 @@ public class AvatarStorageService {
         return new ApiException(
                 HttpStatus.PAYLOAD_TOO_LARGE,
                 "avatar-too-large",
-                "The avatar must be at most " + maxSize + " bytes.");
+                "头像大小不能超过 " + maxSize + " 字节。");
     }
 
     private byte[] resize(byte[] sourceBytes, int dimension) {
@@ -154,7 +154,7 @@ public class AvatarStorageService {
             var source = ImageIO.read(new ByteArrayInputStream(sourceBytes));
             if (source == null) {
                 throw new ApiException(
-                        HttpStatus.BAD_REQUEST, "avatar-invalid-image", "The avatar is not a readable image.");
+                        HttpStatus.BAD_REQUEST, "avatar-invalid-image", "头像不是可读取的图片。");
             }
             var resized = new BufferedImage(dimension, dimension, BufferedImage.TYPE_INT_ARGB);
             var graphics = resized.createGraphics();
@@ -171,13 +171,13 @@ public class AvatarStorageService {
             try (var output = new ByteArrayOutputStream()) {
                 if (!ImageIO.write(resized, "png", output)) {
                     throw new ApiException(
-                            HttpStatus.INTERNAL_SERVER_ERROR, "avatar-encode-failed", "PNG encoding is unavailable.");
+                            HttpStatus.INTERNAL_SERVER_ERROR, "avatar-encode-failed", "PNG 编码不可用。");
                 }
                 return output.toByteArray();
             }
         } catch (IOException e) {
             throw new ApiException(
-                    HttpStatus.BAD_REQUEST, "avatar-invalid-image", "The avatar could not be read.", e);
+                    HttpStatus.BAD_REQUEST, "avatar-invalid-image", "无法读取头像。", e);
         }
     }
 
@@ -189,7 +189,7 @@ public class AvatarStorageService {
                     var target = directory.resolve(filename).normalize();
                     if (!target.startsWith(directory)) {
                         throw new ApiException(
-                                HttpStatus.BAD_REQUEST, "avatar-invalid-path", "The avatar path is not allowed.");
+                                HttpStatus.BAD_REQUEST, "avatar-invalid-path", "不允许使用该头像路径。");
                     }
                     Files.write(target, bytes);
                     deleteAvatar(user.getSpec().getAvatar(), directory);
@@ -201,7 +201,7 @@ public class AvatarStorageService {
                         error -> new ApiException(
                                 HttpStatus.INTERNAL_SERVER_ERROR,
                                 "avatar-storage-failed",
-                                "The avatar could not be stored.",
+                                "无法存储头像。",
                                 error));
     }
 
@@ -211,7 +211,7 @@ public class AvatarStorageService {
         var relative = StringUtils.hasText(configured) ? configured : DEFAULT_AVATAR_PATH;
         var resolved = workDir.resolve(relative).normalize();
         if (!resolved.startsWith(workDir)) {
-            log.warn("Ignoring avatar storage path outside the data directory: {}", configured);
+            log.warn("忽略数据目录之外的头像存储路径：{}", configured);
             return workDir.resolve(DEFAULT_AVATAR_PATH);
         }
         return resolved;
@@ -232,7 +232,7 @@ public class AvatarStorageService {
         try {
             Files.deleteIfExists(path);
         } catch (IOException e) {
-            log.warn("Unable to delete the previous avatar [{}]", path, e);
+            log.warn("无法删除之前的头像 [{}]", path, e);
         }
     }
 

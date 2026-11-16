@@ -4,7 +4,6 @@ import static org.springframework.security.web.server.util.matcher.ServerWebExch
 
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthenticationEntryPoint;
 import java.util.ArrayList;
-import org.springframework.context.MessageSource;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.server.resource.web.access.server.BearerTokenServerAccessDeniedHandler;
@@ -19,12 +18,9 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Order(0)
 public class ExceptionSecurityConfigurer implements SecurityConfigurer {
 
-    private final MessageSource messageSource;
-
     private final ServerResponse.Context context;
 
-    public ExceptionSecurityConfigurer(MessageSource messageSource, ServerResponse.Context context) {
-        this.messageSource = messageSource;
+    public ExceptionSecurityConfigurer(ServerResponse.Context context) {
         this.context = context;
     }
 
@@ -42,7 +38,7 @@ public class ExceptionSecurityConfigurer implements SecurityConfigurer {
             var entryPoints = new ArrayList<DelegatingServerAuthenticationEntryPoint.DelegateEntry>(2);
             entryPoints.add(new DelegatingServerAuthenticationEntryPoint.DelegateEntry(
                     TwoFactorAuthenticationEntryPoint.MATCHER,
-                    new TwoFactorAuthenticationEntryPoint(messageSource, context)));
+                    new TwoFactorAuthenticationEntryPoint(context)));
             entryPoints.add(new DelegatingServerAuthenticationEntryPoint.DelegateEntry(
                     anyExchange(), new DefaultServerAuthenticationEntryPoint(context)));
 

@@ -37,10 +37,10 @@ public class AuthTokenEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> refresh(ServerRequest request) {
         return request.bodyToMono(RefreshRequest.class)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                 .flatMap(body -> {
                     if (body.refreshToken() == null || body.refreshToken().isBlank()) {
-                        return Mono.error(new ServerWebInputException("refreshToken is required."));
+                        return Mono.error(new ServerWebInputException("refreshToken 为必填项。"));
                     }
                     return refreshTokenService.rotate(body.refreshToken());
                 })

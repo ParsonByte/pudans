@@ -110,7 +110,7 @@ class DeviceServiceImpl implements DeviceService {
         return Mono.defer(() -> client.fetch(Device.class, deviceId).flatMap(device -> {
                     if (!Objects.equals(username, device.getSpec().getPrincipalName())) {
                         log.debug(
-                                "Principal name mismatch for device {}, expected {}, actual {}, " + "revoking device",
+                                "设备 {} 的主体名称不匹配，预期 {}，实际 {}，正在撤销设备",
                                 deviceId,
                                 username,
                                 device.getSpec().getPrincipalName());
@@ -134,7 +134,7 @@ class DeviceServiceImpl implements DeviceService {
             if (!Objects.equals(deviceUa, userAgent)) {
 
                 log.debug(
-                        "User agent changed for device {}, expected {}, actual {}, revoking device",
+                        "设备 {} 的 User-Agent 已变化，预期 {}，实际 {}，正在撤销设备",
                         existingDevice.getMetadata().getName(),
                         deviceUa,
                         userAgent);
@@ -147,7 +147,7 @@ class DeviceServiceImpl implements DeviceService {
                             return Mono.empty();
                         }
                         log.debug(
-                                "Session ID changed for device {}, deleting old session {}",
+                                "设备 {} 的会话 ID 已变化，正在删除旧会话 {}",
                                 existingDevice.getMetadata().getName(),
                                 sessionId);
                         return sessionRepository.deleteById(sessionId);
@@ -205,14 +205,14 @@ class DeviceServiceImpl implements DeviceService {
             return Mono.empty();
         }
         log.debug(
-                "Removing remember-me token for seriesId: {} for device {}",
+                "正在删除序列 ID 为 {} 的记住我令牌（设备 {}）",
                 seriesId,
                 device.getMetadata().getName());
         return rememberMeTokenRepository.removeToken(seriesId);
     }
 
     Mono<Device> createDevice(ServerWebExchange exchange, Authentication authentication) {
-        Assert.notNull(authentication, "Authentication must not be null.");
+        Assert.notNull(authentication, "认证信息不能为空。");
         return Mono.fromSupplier(() -> {
                     var device = new Device();
                     device.setMetadata(new Metadata());

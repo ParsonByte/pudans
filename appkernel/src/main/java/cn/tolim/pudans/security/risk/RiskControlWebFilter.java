@@ -112,7 +112,7 @@ public class RiskControlWebFilter implements WebFilter {
                 .evaluate(scene, ip)
                 .flatMap(decision -> decision.allowed() ? Mono.empty() : escalate(scene, ip, decision, exchange))
                 .onErrorResume(error -> {
-                    log.warn("Unable to evaluate risk scene [{}]", scene, error);
+                    log.warn("无法评估风险场景 [{}]", scene, error);
                     return Mono.empty();
                 });
     }
@@ -237,8 +237,8 @@ public class RiskControlWebFilter implements WebFilter {
             response.getHeaders().set("Retry-After", String.valueOf(decision.retryAfter().toSeconds()));
         }
         var body = "{\"type\":\"https://pudans.tolim.cn/probs/risk-blocked\","
-                + "\"title\":\"Too Many Requests\",\"status\":429,"
-                + "\"detail\":\"Request blocked by risk control.\"}";
+                + "\"title\":\"请求过于频繁\",\"status\":429,"
+                + "\"detail\":\"请求已被风险控制拦截。\"}";
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8))));
     }
 

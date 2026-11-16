@@ -7,7 +7,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class AccessDeniedException extends ResponseStatusException {
 
     public AccessDeniedException() {
-        this("Access to the resource is forbidden");
+        this("访问被拒绝。");
     }
 
     public AccessDeniedException(String reason) {

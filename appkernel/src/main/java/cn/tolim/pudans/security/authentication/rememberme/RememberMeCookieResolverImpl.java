@@ -32,7 +32,7 @@ class RememberMeCookieResolverImpl implements RememberMeCookieResolver {
 
     @Override
     public void setRememberMeCookie(ServerWebExchange exchange, String value) {
-        Assert.notNull(value, "'value' is required");
+        Assert.notNull(value, "'value' 不能为空");
         exchange.getResponse()
                 .beforeCommit(() -> Mono.fromRunnable(() -> {
                     var cookie = initCookie(exchange, value).build();

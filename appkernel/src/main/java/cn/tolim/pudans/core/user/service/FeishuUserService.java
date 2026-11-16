@@ -91,18 +91,18 @@ public class FeishuUserService {
     public Mono<User> createFromFeishu(FeishuUserData data, String userGroupName) {
         if (data == null || (!StringUtils.hasText(data.unionId()) && !StringUtils.hasText(data.openId()))) {
             return Mono.error(new ServerWebInputException(
-                    "A Feishu union_id or open_id is required to provision a local user."));
+                    "创建本地用户需要飞书的 union_id 或 open_id。"));
         }
         if (!StringUtils.hasText(data.displayName()) || !StringUtils.hasText(data.email())) {
             return Mono.error(new ServerWebInputException(
-                    "displayName and email must come from Feishu and are required."));
+                    "displayName 和 email 为必填项，且必须来自飞书。"));
         }
         var providerUserId =
                 StringUtils.hasText(data.unionId()) ? data.unionId() : data.openId();
         return findConnection(providerUserId)
                 .flatMap(existing -> Mono.<User>error(new ServerWebInputException(
-                        "Feishu identity [" + providerUserId + "] is already bound to user ["
-                                + existing.getSpec().getUsername() + "].")))
+                        "飞书身份 [" + providerUserId + "] 已绑定到用户 ["
+                                + existing.getSpec().getUsername() + "]。")))
                 .then(Mono.defer(() -> {
                     var username = StringUtils.hasText(data.username())
                             ? data.username()

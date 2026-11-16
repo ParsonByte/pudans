@@ -45,7 +45,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
 
         if (binding.getRoleRef() != null && hasSuperAdminSubject(binding)) {
             log.warn(
-                    "Binding [{}] grants super administrator membership outside of the canonical binding, removing it",
+                    "绑定 [{}] 在规范绑定之外授予了超级管理员成员资格，正在移除",
                     bindingName);
             deleteBinding(binding);
         }
@@ -56,14 +56,14 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
         var owner = superAdminResolver.ownerOf(binding);
         if (owner == null || client.fetch(User.class, owner).isEmpty()) {
             log.warn(
-                    "Super administrator binding [{}] does not reference an existing user, removing it",
+                    "超级管理员绑定 [{}] 未引用现有用户，正在移除",
                     binding.getMetadata().getName());
             deleteBinding(binding);
             return;
         }
         if (superAdminResolver.hasOtherCanonicalSuperAdmin(owner)) {
             log.warn(
-                    "Binding [{}] is a forged duplicate of an existing super administrator binding, removing it",
+                    "绑定 [{}] 是现有超级管理员绑定的伪造副本，正在移除",
                     binding.getMetadata().getName());
             deleteBinding(binding);
             return;
@@ -95,7 +95,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
             return;
         }
         log.warn(
-                "Membership binding [{}] of the super administrator has been tampered with, restoring it in place",
+                "超级管理员的成员绑定 [{}] 已被篡改，正在原地恢复",
                 binding.getMetadata().getName());
         client.update(binding);
     }

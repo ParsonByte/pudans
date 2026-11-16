@@ -97,7 +97,7 @@ public class MailSettingsService {
                 return Mono.error(new ApiException(
                         HttpStatus.SERVICE_UNAVAILABLE,
                         "mail-not-configured",
-                        "SMTP is not configured. Set the mail parameter settings first."));
+                        "SMTP 尚未配置。请先设置邮件参数。"));
             }
             var template = mail.getMailTemplates() == null
                     ? null
@@ -110,7 +110,7 @@ public class MailSettingsService {
                 .onErrorMap(MailException.class, error -> new ApiException(
                         HttpStatus.SERVICE_UNAVAILABLE,
                         "mail-send-failed",
-                        "Could not send the email.",
+                        "无法发送邮件。",
                         error))
                 .then();
     }
@@ -134,7 +134,7 @@ public class MailSettingsService {
         } else {
             sendWithAttachments(sender, mail, to, subject, text, attachments);
         }
-        log.info("Mail [{}] sent through the configured SMTP server", subject);
+        log.info("邮件 [{}] 已通过配置的 SMTP 服务器发送", subject);
     }
 
     private static void sendWithAttachments(
@@ -163,7 +163,7 @@ public class MailSettingsService {
             sender.send(message);
         } catch (MessagingException e) {
             throw new ApiException(
-                    HttpStatus.INTERNAL_SERVER_ERROR, "mail-prepare-failed", "Could not prepare the email.", e);
+                    HttpStatus.INTERNAL_SERVER_ERROR, "mail-prepare-failed", "无法准备邮件。", e);
         }
     }
 

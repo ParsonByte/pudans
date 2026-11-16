@@ -30,7 +30,7 @@ public class RememberTokenCleaner {
                 .deleteInitialBatch(RememberMeToken.class, getExpiredTokensListOptions())
                 .then()
                 .block(BLOCKING_TIMEOUT);
-        log.info("Expired remember me tokens have been cleaned up.");
+        log.info("已清理过期的记住我令牌。");
     }
 
     ListOptions getExpiredTokensListOptions() {

@@ -64,7 +64,7 @@ public class CacheMigrator implements DisposableBean {
         }
         if (result.isFailure()) {
             scheduled.remove(id);
-            log.warn("Cache migration queue is full, deferred key [{}] of cache [{}]", key, cache.getName());
+            log.warn("缓存迁移队列已满，已延迟键 {}（缓存 {}）", key, cache.getName());
         }
     }
 
@@ -72,7 +72,7 @@ public class CacheMigrator implements DisposableBean {
         try {
             task.cache().put(task.key(), task.value());
         } catch (RuntimeException e) {
-            log.warn("Unable to migrate cache key [{}] of cache [{}]", task.key(), task.cache().getName(), e);
+            log.warn("无法迁移键 {}（缓存 {}）", task.key(), task.cache().getName(), e);
         } finally {
             scheduled.remove(task.id());
         }
@@ -85,7 +85,7 @@ public class CacheMigrator implements DisposableBean {
         if (latch != null) {
             try {
                 if (!latch.await(SHUTDOWN_TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
-                    log.warn("Timed out while draining the cache migration queue");
+                    log.warn("排空缓存迁移队列时超时");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

@@ -69,7 +69,7 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
     }
 
     public void setParameterName(String parameterName) {
-        Assert.hasText(parameterName, "Parameter name must not be blank");
+        Assert.hasText(parameterName, "参数名不能为空");
         this.parameterName = parameterName;
     }
 
@@ -79,14 +79,14 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
         if (rememberMeCookie == null) {
             return Mono.empty();
         }
-        log.debug("Remember-me cookie detected");
+        log.debug("检测到记住我 Cookie");
         return Mono.defer(() -> {
                     String[] cookieTokens = decodeCookie(rememberMeCookie.getValue());
                     return processAutoLoginCookie(cookieTokens, exchange);
                 })
                 .flatMap(user -> {
                     this.userDetailsChecker.check(user);
-                    log.debug("Remember-me cookie accepted");
+                    log.debug("已接受记住我 Cookie");
                     return createSuccessfulAuthentication(exchange, user);
                 })
                 .onErrorResume(ex -> handleError(exchange, ex));
@@ -95,16 +95,16 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
     private Mono<Authentication> handleError(ServerWebExchange exchange, Throwable ex) {
         cancelCookie(exchange);
         if (ex instanceof CookieTheftException) {
-            log.error("Cookie theft detected", ex);
+            log.error("检测到 Cookie 盗用", ex);
             return Mono.error(ex);
         } else if (ex instanceof UsernameNotFoundException) {
-            log.debug("Remember-me login was valid but corresponding user not found.", ex);
+            log.debug("记住我登录有效，但未找到对应用户。", ex);
         } else if (ex instanceof InvalidCookieException) {
-            log.debug("Invalid remember-me cookie: {}", ex.getMessage());
+            log.debug("无效的记住我 Cookie：{}", ex.getMessage());
         } else if (ex instanceof AccountStatusException) {
-            log.debug("Invalid UserDetails: {}", ex.getMessage());
+            log.debug("无效的用户详情：{}", ex.getMessage());
         } else if (ex instanceof RememberMeAuthenticationException) {
-            log.debug(ex.getMessage());
+            log.debug("记住我登录失败：{}", ex.getMessage());
         }
         return Mono.empty();
     }
@@ -116,19 +116,19 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
     protected Mono<UserDetails> processAutoLoginCookie(String[] cookieTokens, ServerWebExchange exchange) {
         if (!isValidCookieTokensLength(cookieTokens)) {
             throw new InvalidCookieException(
-                    "Cookie token did not contain 3 or 4 tokens, but contained '" + Arrays.asList(cookieTokens) + "'");
+                    "Cookie 令牌应包含 3 或 4 个令牌，实际包含 '" + Arrays.asList(cookieTokens) + "'");
         }
 
         long tokenExpiryTime = getTokenExpiryTime(cookieTokens);
         if (isTokenExpired(tokenExpiryTime)) {
-            throw new InvalidCookieException("Cookie token[1] has expired (expired on '" + new Date(tokenExpiryTime)
-                    + "'; current time is '" + new Date() + "')");
+            throw new InvalidCookieException("Cookie 令牌[1] 已过期（过期时间 '" + new Date(tokenExpiryTime)
+                    + "'；当前时间 '" + new Date() + "'）");
         }
 
 
         return getUserDetailsService()
                 .findByUsername(cookieTokens[0])
-                .switchIfEmpty(Mono.error(new UsernameNotFoundException("User '" + cookieTokens[0] + "' not found")))
+                .switchIfEmpty(Mono.error(new UsernameNotFoundException("未找到用户 '" + cookieTokens[0] + "'")))
                 .flatMap(userDetails -> {
 
 
@@ -150,8 +150,8 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
                             .doOnNext(expectedTokenSignature -> {
                                 if (!equals(expectedTokenSignature, actualTokenSignature)) {
                                     throw new InvalidCookieException(
-                                            "Cookie contained signature '" + actualTokenSignature
-                                                    + "' but expected '"
+                                            "Cookie 中的签名 '" + actualTokenSignature
+                                                    + "' 与预期签名 '"
                                                     + expectedTokenSignature + "'");
                                 }
                             })
@@ -168,7 +168,7 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
             return Long.parseLong(cookieTokens[1]);
         } catch (NumberFormatException nfe) {
             throw new InvalidCookieException(
-                    "Cookie token[1] did not contain a valid number (contained '" + cookieTokens[1] + "')");
+                    "Cookie 令牌[1] 不是有效数字（实际内容为 '" + cookieTokens[1] + "'）");
         }
     }
 
@@ -183,7 +183,7 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
 
     @Override
     public Mono<Void> loginFail(ServerWebExchange exchange) {
-        log.debug("Interactive login attempt was unsuccessful.");
+        log.debug("交互式登录尝试未成功。");
         cancelCookie(exchange);
         return parameterRequestCache.saveParameter(exchange, parameterName);
     }
@@ -211,7 +211,7 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
                                         exchange);
                                 if (log.isDebugEnabled()) {
                                     log.debug(
-                                            "Added remember-me cookie for user '{}', expiry: '{}'",
+                                            "已为用户 '{}' 添加记住我 Cookie，过期时间：'{}'",
                                             username,
                                             new Date(expiryTimeMs));
                                 }
@@ -241,14 +241,14 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
 
 
             if (!StringUtils.hasLength(username)) {
-                log.debug("Unable to retrieve username");
+                log.debug("无法获取用户名");
                 return Mono.empty();
             }
             if (!StringUtils.hasLength(password)) {
                 return getUserDetailsService().findByUsername(username).flatMap(user -> {
                     String existingPassword = user.getPassword();
                     if (!StringUtils.hasLength(existingPassword)) {
-                        log.debug("Unable to obtain password for user: {}", username);
+                        log.debug("无法获取用户 {} 的密码", username);
                         return Mono.empty();
                     }
                     return Mono.just(new UsernamePassword(username, existingPassword));
@@ -279,7 +279,7 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
         try {
             cookieAsPlainText = new String(Base64.getDecoder().decode(cookieValue.getBytes()));
         } catch (IllegalArgumentException ex) {
-            throw new InvalidCookieException("Cookie token was not Base64 encoded; value was '" + cookieValue + "'");
+            throw new InvalidCookieException("Cookie 令牌不是 Base64 编码；值为 '" + cookieValue + "'");
         }
         String[] tokens = StringUtils.delimitedListToStringArray(cookieAsPlainText, DELIMITER);
         for (int i = 0; i < tokens.length; i++) {
@@ -314,12 +314,12 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
                 }))
                 .onErrorMap(
                         NoSuchAlgorithmException.class,
-                        ex -> new IllegalStateException("No " + algorithm + " algorithm available!", ex));
+                        ex -> new IllegalStateException("没有可用的 " + algorithm + " 算法！", ex));
     }
 
     protected String retrieveUserName(Authentication authentication) {
         var principal = authentication.getPrincipal();
-        Assert.notNull(principal, "Authentication principal cannot be null");
+        Assert.notNull(principal, "认证主体不能为空");
         if (principal instanceof UserDetails userDetails) {
             return userDetails.getUsername();
         }
@@ -345,7 +345,7 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
     @Override
     public Mono<Void> logout(WebFilterExchange exchange, Authentication authentication) {
         if (log.isDebugEnabled()) {
-            log.debug("Logout of user {}", (authentication != null) ? authentication.getName() : "Unknown");
+            log.debug("用户 {} 退出登录", (authentication != null) ? authentication.getName() : "未知");
         }
         return loginFail(exchange.getExchange()).then(onLogout(exchange, authentication));
     }

@@ -30,7 +30,7 @@ public interface PageRequest {
 
 
     default Sort getSortOr(Sort sort) {
-        Assert.notNull(sort, "Fallback Sort must not be null");
+        Assert.notNull(sort, "备用排序条件不能为 null");
         return getSort().isSorted() ? getSort() : sort;
     }
 }

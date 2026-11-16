@@ -50,7 +50,7 @@ public class DomainEventPublisher implements InitializingBean, DisposableBean {
         subscription = sink.asFlux()
                 .publishOn(Schedulers.boundedElastic())
                 .concatMap(event -> Mono.fromRunnable(() -> dispatch(event)).onErrorResume(error -> {
-                    log.warn("Unable to dispatch domain event [{}]", event.getType(), error);
+                    log.warn("无法分发领域事件 [{}]", event.getType(), error);
                     return Mono.empty();
                 }))
                 .doFinally(signal -> latch.countDown())
@@ -64,7 +64,7 @@ public class DomainEventPublisher implements InitializingBean, DisposableBean {
         if (latch != null) {
             try {
                 if (!latch.await(SHUTDOWN_TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
-                    log.warn("Timed out while draining the domain event queue");
+                    log.warn("排空领域事件队列时超时");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -89,7 +89,7 @@ public class DomainEventPublisher implements InitializingBean, DisposableBean {
             result = sink.tryEmitNext(event);
         }
         if (result.isFailure()) {
-            log.warn("Unable to emit domain event [{}]: {}", type, result);
+            log.warn("无法发送领域事件 [{}]：{}", type, result);
         }
     }
 

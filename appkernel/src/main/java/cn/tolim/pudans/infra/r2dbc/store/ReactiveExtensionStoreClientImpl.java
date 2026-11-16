@@ -37,13 +37,13 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
     private int fetchSize = DEFAULT_FETCH_SIZE;
 
     void setFetchSize(int fetchSize) {
-        Assert.isTrue(fetchSize >= 0, "fetchSize must be greater than or equal to 0");
+        Assert.isTrue(fetchSize >= 0, "fetchSize 必须大于或等于 0");
         this.fetchSize = fetchSize;
     }
 
     @Override
     public Flux<ExtensionStore> listByNamePrefix(String prefix) {
-        Assert.hasText(prefix, "Prefix must not be blank");
+        Assert.hasText(prefix, "前缀不能为空");
 
         prefix = Strings.CS.appendIfMissing(prefix, "/");
         return entityOperations
@@ -56,7 +56,7 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
 
     @Override
     public Mono<Page<ExtensionStore>> listByNamePrefix(String prefix, Pageable pageable) {
-        Assert.hasText(prefix, "Prefix must not be blank");
+        Assert.hasText(prefix, "前缀不能为空");
 
         var q = Query.query(Criteria.where("name").like(prefix + "%")).sort(Sort.by(Sort.Direction.ASC, "name"));
         var getItems = entityOperations
@@ -70,8 +70,8 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
 
     @Override
     public Flux<ExtensionStore> listBy(String prefix, @Nullable String nameCursor, int limit) {
-        Assert.hasText(prefix, "Prefix must not be blank");
-        Assert.isTrue(limit > 0, "Limit must be greater than 0");
+        Assert.hasText(prefix, "前缀不能为空");
+        Assert.isTrue(limit > 0, "limit 必须大于 0");
 
         prefix = Strings.CS.appendIfMissing(prefix, "/");
         var criteria = Criteria.where("name").like(prefix + "%");
@@ -88,7 +88,7 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
 
     @Override
     public Mono<Long> countByNamePrefix(String prefix) {
-        Assert.hasText(prefix, "Prefix must not be blank");
+        Assert.hasText(prefix, "前缀不能为空");
 
         var q = Query.query(Criteria.where("name").like(prefix + "%")).sort(Sort.by(Sort.Direction.ASC, "name"));
         return entityOperations.select(ExtensionStore.class).matching(q).count();
@@ -116,7 +116,7 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
         return repository
                 .save(new ExtensionStore(name, data))
                 .onErrorMap(
-                        DuplicateKeyException.class, t -> new DuplicateNameException("Duplicate name detected.", t));
+                        DuplicateKeyException.class, t -> new DuplicateNameException("检测到重复名称。", t));
     }
 
     @Override

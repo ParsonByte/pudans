@@ -69,7 +69,7 @@ class GcReconciler implements Reconciler<GcRequest> {
 
     @Override
     public Result reconcile(GcRequest request) {
-        log.debug("Extension {} is being deleted", request);
+        log.debug("扩展 {} 正在被删除", request);
         var scheme = schemeManager.get(request.gvk());
         client.fetch(scheme.type(), request.name())
                 .filter(deletable())
@@ -88,7 +88,7 @@ class GcReconciler implements Reconciler<GcRequest> {
                 .as(tx::transactional)
                 .then()
                 .doOnSuccess(ignored -> log.info(
-                        "Extension {}/{} was deleted",
+                        "扩展 {}/{} 已删除",
                         extension.groupVersionKind(),
                         extension.getMetadata().getName()));
     }

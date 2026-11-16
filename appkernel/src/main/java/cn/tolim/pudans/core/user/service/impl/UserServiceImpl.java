@@ -102,10 +102,11 @@ public class UserServiceImpl implements UserService {
 
     private Mono<User> updateWithRawPasswordInternal(String username, String rawPassword) {
         if (!ValidationUtils.isPasswordLengthValid(rawPassword)) {
-            return Mono.error(new UnsatisfiedAttributeValueException("validation.error.password.length"));
+            return Mono.error(new UnsatisfiedAttributeValueException("密码长度必须在 8 到 257 之间"));
         }
         if (!ValidationUtils.PASSWORD_PATTERN.matcher(rawPassword).matches()) {
-            return Mono.error(new UnsatisfiedAttributeValueException("validation.error.password.pattern"));
+            return Mono.error(new UnsatisfiedAttributeValueException(
+                    "密码只能使用大小写字母 (A-Z, a-z)、数字 (0-9)，以及以下特殊字符: !@#$%^&*.?"));
         }
         return getUser(username)
                 .filter(user -> {
@@ -132,15 +133,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Mono<User> createUser(User user) {
-        Assert.notNull(user, "User must not be null");
+        Assert.notNull(user, "用户不能为 null");
         return client.fetch(User.class, user.getMetadata().getName())
                 .hasElement()
                 .flatMap(hasUser -> {
                     if (hasUser) {
                         return Mono.error(new DuplicateNameException(
-                                "User name is already in use", null, "problemDetail.user.duplicateName", new Object[] {
-                                    user.getMetadata().getName()
-                                }));
+                                "用户名 " + user.getMetadata().getName() + " 已存在，请更换用户名后重试。", null));
                     }
                     return client.create(user);
                 });
@@ -198,7 +197,7 @@ public class UserServiceImpl implements UserService {
                 .getAllSessions(username)
                 .flatMap(reactiveSessionInformation -> {
                     log.info(
-                            "Invalidating session {} for user {}", reactiveSessionInformation.getSessionId(), username);
+                            "正在失效会话 {}（用户 {}）", reactiveSessionInformation.getSessionId(), username);
                     return reactiveSessionInformation.invalidate();
                 })
                 .then();

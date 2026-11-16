@@ -50,7 +50,7 @@ public class FeishuClient {
         if (error instanceof FeishuException) {
             return error;
         }
-        var message = error.getMessage() == null ? "Feishu SDK request failed" : error.getMessage();
+        var message = error.getMessage() == null ? "飞书 SDK 请求失败" : error.getMessage();
         return new FeishuException(message, error);
     }
 

@@ -36,8 +36,7 @@ public class PasswordResetMailer {
         var options = pudansProperties.getSecurity().getPasswordReset();
         if (options.isLogCodes() && !environment.matchesProfiles("dev", "test")) {
             log.warn(
-                    "Password reset logCodes is enabled outside dev/test; verification codes may be "
-                            + "written to the application log when email delivery is not configured.");
+                    "密码重置的 logCodes 在非开发/测试环境已启用；未配置邮件投递时，验证码可能会写入应用日志。");
         }
     }
 
@@ -60,10 +59,10 @@ public class PasswordResetMailer {
                 return Mono.error(new ApiException(
                         HttpStatus.SERVICE_UNAVAILABLE,
                         "recovery-mail-unavailable",
-                        "Email delivery is not configured. Set spring.mail.* before using password recovery."));
+                        "未配置邮件投递。使用密码找回功能前，请先配置 spring.mail.*。"));
             }
             log.warn(
-                    "No JavaMailSender is configured. Password reset code for {} is {} (development log delivery).",
+                    "未配置 JavaMailSender。{} 的密码重置验证码为 {}（开发日志投递）。",
                     email,
                     code);
             return Mono.empty();
@@ -91,7 +90,7 @@ public class PasswordResetMailer {
                         error -> new ApiException(
                                 HttpStatus.SERVICE_UNAVAILABLE,
                                 "recovery-mail-unavailable",
-                                "Could not send the verification email.",
+                                "无法发送验证邮件。",
                                 error))
                 .then();
     }

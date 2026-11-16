@@ -190,7 +190,7 @@ public class DefaultRoleService implements RoleService {
                         return Flux.empty();
                     }
                     if (log.isTraceEnabled()) {
-                        log.trace("Expand role: {}", role.getMetadata().getName());
+                        log.trace("展开角色：{}", role.getMetadata().getName());
                     }
                     visited.add(name);
                     var annotations = MetadataUtil.nullSafeAnnotations(role);

@@ -43,7 +43,7 @@ class LoginAuthenticationConverterTest {
         StepVerifier.create(converter.convert(exchange))
                 .expectErrorSatisfies(error -> assertThat(error)
                         .isInstanceOf(BadCredentialsException.class)
-                        .hasMessageContaining("Captcha"))
+                        .hasMessageContaining("验证码"))
                 .verify();
     }
 

@@ -38,10 +38,10 @@ class ParameterSettingReconciler implements Reconciler<Reconciler.Request> {
     public Result reconcile(Request request) {
         Assert.state(
                 Objects.equals(ParameterSetting.PARAMETER_SETTINGS, request.name()),
-                "Only system config reconciler is supported to reconcile system config.");
+                "仅支持通过系统配置协调器协调系统配置。");
         client.fetch(ConfigMap.class, request.name()).ifPresent(configMap -> {
             if (ExtensionUtil.isDeleted(configMap)) {
-                log.warn("Parameter settings ConfigMap was attempted to be deleted");
+                log.warn("有人尝试删除参数设置 ConfigMap");
                 return;
             }
 
@@ -50,7 +50,7 @@ class ParameterSettingReconciler implements Reconciler<Reconciler.Request> {
             if (ParameterSettingUtils.populateChecksum(configMap)) {
                 ParameterSettingUtils.updateDataSnapshot(configMap);
                 client.update(configMap);
-                log.info("Parameter settings have been detected as changed");
+                log.info("检测到参数设置已变更");
                 eventPublisher.publishEvent(computeChangedEvent(configMap, dataSnapshot));
             }
 

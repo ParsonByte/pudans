@@ -47,7 +47,7 @@ class JSONExtensionConverter implements ExtensionConverter {
 
 
     void setObjectMapper(ObjectMapper objectMapper) {
-        Assert.notNull(objectMapper, "ObjectMapper must not be null");
+        Assert.notNull(objectMapper, "ObjectMapper 不能为 null");
         this.objectMapper = objectMapper;
     }
 
@@ -69,7 +69,7 @@ class JSONExtensionConverter implements ExtensionConverter {
             validator.validate(extensionJsonNode, validation);
             if (!validation.isValid()) {
                 log.debug(
-                        "Failed to validate Extension: {}, and errors were: {}",
+                        "扩展校验失败：{}，错误信息：{}",
                         extension.getClass(),
                         validation.results());
                 throw new SchemaViolationException(extension.groupVersionKind(), validation.results());
@@ -80,9 +80,9 @@ class JSONExtensionConverter implements ExtensionConverter {
             var data = objectMapper.writeValueAsBytes(extensionJsonNode);
             return new ExtensionStore(storeName, data, version);
         } catch (IOException e) {
-            throw new ExtensionConvertException("Failed write Extension as bytes", e);
+            throw new ExtensionConvertException("无法将扩展写入为字节", e);
         } catch (ResolutionException e) {
-            throw new RuntimeException("Failed to create schema validator", e);
+            throw new RuntimeException("创建 Schema 校验器失败", e);
         }
     }
 
@@ -93,7 +93,7 @@ class JSONExtensionConverter implements ExtensionConverter {
             extension.getMetadata().setVersion(extensionStore.getVersion());
             return extension;
         } catch (IOException e) {
-            throw new ExtensionConvertException("Failed to read Extension " + type + " from bytes", e);
+            throw new ExtensionConvertException("无法从字节读取扩展 " + type + " 失败", e);
         }
     }
 
@@ -103,11 +103,11 @@ class JSONExtensionConverter implements ExtensionConverter {
         if (log.isDebugEnabled()) {
             if (removed == null) {
                 log.debug(
-                        "No available validator found while removing validator for scheme: {}",
+                        "移除方案 {} 的校验器时未找到可用的校验器",
                         event.getScheme().groupVersionKind());
             } else {
                 log.debug(
-                        "Removed schema validator {} for scheme: {}",
+                        "已移除数据结构校验器 {}，方案：{}",
                         removed,
                         event.getScheme().groupVersionKind());
             }
@@ -121,7 +121,7 @@ class JSONExtensionConverter implements ExtensionConverter {
                 context.setFastFail(false);
                 var validator = new SchemaValidator(context, null, scheme.openApiSchema());
                 if (log.isDebugEnabled()) {
-                    log.debug("Created schema validator {} for scheme: {}", validator, scheme.groupVersionKind());
+                    log.debug("已创建数据结构校验器 {}，方案：{}", validator, scheme.groupVersionKind());
                 }
                 return validator;
             } catch (ResolutionException | MalformedURLException e) {

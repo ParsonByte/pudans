@@ -35,7 +35,7 @@ public class AuditArchiveTask {
                 Flux.interval(Duration.ofSeconds(archiveIntervalSeconds), Duration.ofSeconds(archiveIntervalSeconds))
                         .onBackpressureDrop()
                         .concatMap(ignored -> archive())
-                        .onErrorContinue((error, ignored) -> log.error("Audit archival failed", error))
+                        .onErrorContinue((error, ignored) -> log.error("审计归档失败", error))
                         .subscribe();
     }
 
@@ -43,7 +43,7 @@ public class AuditArchiveTask {
         var cutoff = Instant.now().minus(Math.max(1, retentionDays), ChronoUnit.DAYS);
         return auditStore
                 .archiveBefore(cutoff)
-                .doOnNext(count -> log.info("Archived {} audit records older than {}", count, cutoff));
+                .doOnNext(count -> log.info("已归档 {} 条早于 {} 的审计记录", count, cutoff));
     }
 
     @PreDestroy

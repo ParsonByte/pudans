@@ -72,21 +72,21 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
     @Override
     protected Mono<UserDetails> processAutoLoginCookie(String[] cookieTokens, ServerWebExchange exchange) {
         if (cookieTokens.length != 2) {
-            return Mono.error(new InvalidCookieException("Cookie token did not contain %d tokens, but contained '%s'"
+            return Mono.error(new InvalidCookieException("Cookie 令牌应包含 %d 个令牌，实际包含 '%s'"
                     .formatted(2, Arrays.asList(cookieTokens))));
         }
         var presentedSeries = cookieTokens[0];
         var presentedToken = cookieTokens[1];
-        log.debug("Processing remember-me auto-login for series '{}'", presentedSeries);
+        log.debug("正在处理序列 '{}' 的记住我自动登录", presentedSeries);
         return this.tokenRepository
                 .getTokenForSeries(presentedSeries)
                 .switchIfEmpty(Mono.error(() -> {
-                    log.debug("No remember-me token found for series '{}'", presentedSeries);
+                    log.debug("未找到序列 '{}' 的记住我令牌", presentedSeries);
                     return new RememberMeAuthenticationException(
-                            "No persistent token found for series id: " + presentedSeries);
+                            "未找到持久化令牌，序列 ID：" + presentedSeries);
                 }))
                 .doOnNext(token -> log.debug(
-                        "Found remember-me token for user '{}', series '{}', lastUsed={}, tokenMatch={}",
+                        "找到用户 '{}' 的记住我令牌，序列 '{}'，lastUsed={}，tokenMatch={}",
                         token.getSpec().getUsername(),
                         token.getSpec().getSeries(),
                         token.getSpec().getLastUsed(),
@@ -96,33 +96,32 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                     if (!Objects.equals(token.getSpec().getTokenValue(), presentedToken)) {
                         if (isTokenStolen(token, presentedToken)) {
                             log.warn(
-                                    "Cookie theft detected for user '{}', series '{}': "
-                                            + "presentedToken does not match stored token "
-                                            + "and is outside cooldown or does not match previous token. "
-                                            + "Removing all tokens for this user.",
+                                    "检测到用户 '{}' 的 Cookie 盗用，序列 '{}'："
+                                            + "presentedToken 与存储的令牌不匹配，"
+                                            + "且超出冷却时间或与上一个令牌不匹配。"
+                                            + "正在移除该用户的所有令牌。",
                                     token.getSpec().getUsername(),
                                     token.getSpec().getSeries());
                             return this.tokenRepository
                                     .removeUserTokens(token.getSpec().getUsername())
                                     .then(Mono.error(() -> new CookieTheftException("""
-                                            Invalid remember-me token (Series/token) mismatch. \
-                                            Implies previous cookie theft attack.""")));
+                                            记住我令牌无效（序列/令牌）不匹配。\
+                                            这表明此前发生了 Cookie 盗用攻击。""")));
                         }
                         log.debug(
-                                "Previous remember-me token accepted for user '{}', series '{}'",
+                                "已接受用户 '{}' 之前的记住我令牌，序列 '{}'",
                                 token.getSpec().getUsername(),
                                 token.getSpec().getSeries());
                     }
                     if (isTokenExpired(token)) {
                         log.warn(
-                                "Remember-me token expired for user '{}', series '{}', lastUsed={}, removing all user"
-                                        + " tokens",
+                                "用户 '{}' 的记住我令牌已过期，序列 '{}'，lastUsed={}，正在移除该用户的所有令牌",
                                 token.getSpec().getUsername(),
                                 token.getSpec().getSeries(),
                                 token.getSpec().getLastUsed());
                         return this.tokenRepository
                                 .removeUserTokens(token.getSpec().getUsername())
-                                .then(Mono.error(new InvalidCookieException("Remember-me login has expired")));
+                                .then(Mono.error(new InvalidCookieException("记住我登录已过期")));
                     }
                     return Mono.empty();
                 })
@@ -132,8 +131,8 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                     }
                     if (isRecentlyRotated(token)) {
                         log.debug(
-                                "Skipping remember-me token rotation for user '{}', series '{}': "
-                                        + "last rotated {} ago, cooldown is {}",
+                                "跳过用户 '{}' 的记住我令牌轮换，序列 '{}'："
+                                        + "上次轮换距今 {}，冷却时间为 {}",
                                 token.getSpec().getUsername(),
                                 token.getSpec().getSeries(),
                                 Duration.between(token.getSpec().getLastUsed(), clock.instant()),
@@ -141,7 +140,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                         return Mono.just(token);
                     }
                     log.debug(
-                            "Rotating remember-me token for user '{}', series '{}'",
+                            "正在轮换用户 '{}' 的记住我令牌，序列 '{}'",
                             token.getSpec().getUsername(),
                             token.getSpec().getSeries());
                     token.getSpec().setPreviousTokenValue(presentedToken);
@@ -150,14 +149,13 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                     return tokenRepository
                             .updateToken(token)
                             .doOnNext(updated -> log.debug(
-                                    "Remember-me token rotated successfully for user '{}', series '{}'",
+                                    "已成功轮换用户 '{}' 的记住我令牌，序列 '{}'",
                                     updated.getSpec().getUsername(),
                                     updated.getSpec().getSeries()))
                             .onErrorResume(OptimisticLockingFailureException.class, e -> {
                                 log.warn(
-                                        "Optimistic locking failure during token rotation "
-                                                + "for user '{}', series '{}', "
-                                                + "falling back to fresh token",
+                                        "轮换用户 '{}' 的令牌（序列 '{}'）时发生乐观锁冲突，"
+                                                + "回退到使用新令牌",
                                         token.getSpec().getUsername(),
                                         token.getSpec().getSeries());
                                 return tokenRepository
@@ -174,23 +172,23 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                 .resolveCurrentDevice(exchange)
                 .switchIfEmpty(Mono.error(() -> {
                     log.debug(
-                            "Remember-me device validation failed for user '{}', series '{}': "
-                                    + "no device cookie found",
+                            "用户 '{}' 的记住我设备校验失败，序列 '{}'："
+                                    + "未找到设备 Cookie",
                             token.getSpec().getUsername(),
                             token.getSpec().getSeries());
                     return new RememberMeAuthenticationException(
-                            "Unable to determine device for remember-me authentication");
+                            "无法确定用于记住我认证的设备");
                 }))
                 .filter(d -> Objects.equals(
                         d.getSpec().getRememberMeSeriesId(), token.getSpec().getSeries()))
                 .switchIfEmpty(Mono.error(() -> {
                     log.warn(
-                            "Remember-me device validation failed for user '{}', series '{}': "
-                                    + "device series ID does not match token series",
+                            "用户 '{}' 的记住我设备校验失败，序列 '{}'："
+                                    + "设备序列 ID 与令牌序列不匹配",
                             token.getSpec().getUsername(),
                             token.getSpec().getSeries());
                     return new RememberMeAuthenticationException(
-                            "Remember-me series ID does not match current device's series ID");
+                            "记住我序列 ID 与当前设备的序列 ID 不匹配");
                 }))
                 .then();
     }
@@ -226,7 +224,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
     @Override
     protected Mono<Void> onLoginSuccess(ServerWebExchange exchange, Authentication successfulAuthentication) {
         var username = successfulAuthentication.getName();
-        log.debug("Creating new remember-me persistent login for user '{}'", username);
+        log.debug("正在为用户 '{}' 创建新的记住我持久登录", username);
         var t = new RememberMeToken();
         t.setMetadata(new Metadata());
         t.setSpec(new RememberMeToken.Spec());
@@ -241,13 +239,13 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                 .createNewToken(t)
                 .doOnNext(created -> {
                     log.debug(
-                            "Remember-me token created for user '{}', series '{}'",
+                            "已为用户 '{}' 创建记住我令牌，序列 '{}'",
                             username,
                             created.getSpec().getSeries());
                     addCookie(created, exchange);
                 })
                 .doOnError(e -> log.error(
-                        "Remember-me token could not be created for user '{}', series '{}'", username, seriesId, e))
+                        "无法为用户 '{}' 创建记住我令牌，序列 '{}'", username, seriesId, e))
                 .onErrorComplete()
                 .then();
     }

@@ -71,7 +71,7 @@ public class ParameterGarbageCollector {
         parameterSettingGroupService.getServer().subscribe(
                 server -> schedule(server.getGcCron()),
                 error -> {
-                    log.warn("Unable to read the garbage collection cron; using the default", error);
+                    log.warn("无法读取垃圾回收 cron 表达式，使用默认值", error);
                     schedule(DEFAULT_GC_CRON);
                 });
     }
@@ -84,10 +84,10 @@ public class ParameterGarbageCollector {
                 ? cron
                 : DEFAULT_GC_CRON;
         if (!expression.equals(cron)) {
-            log.warn("Invalid garbage collection cron [{}]; using [{}]", cron, DEFAULT_GC_CRON);
+            log.warn("无效的垃圾回收 cron 表达式 [{}]，使用 [{}]", cron, DEFAULT_GC_CRON);
         }
         currentTask = taskScheduler.schedule(this::run, new CronTrigger(expression));
-        log.info("Parameter garbage collection scheduled with cron [{}]", expression);
+        log.info("参数垃圾回收已按 cron 表达式 [{}] 调度", expression);
     }
 
     void run() {
@@ -95,12 +95,12 @@ public class ParameterGarbageCollector {
             try {
                 cleanTempFiles();
             } catch (RuntimeException e) {
-                log.error("Unable to clean expired temporary files", e);
+                log.error("无法清理过期的临时文件", e);
             }
             try {
                 rememberTokenCleaner.cleanUpExpiredTokens();
             } catch (RuntimeException e) {
-                log.error("Unable to clean expired remember-me tokens", e);
+                log.error("无法清理过期的记住我令牌", e);
             }
         });
     }
@@ -117,10 +117,10 @@ public class ParameterGarbageCollector {
                     .filter(path -> olderThan(path, threshold))
                     .forEach(path -> delete(path, deleted));
         } catch (IOException e) {
-            log.warn("Unable to scan the temporary directory [{}]", directory, e);
+            log.warn("无法扫描临时目录 [{}]", directory, e);
         }
         if (deleted[0] > 0) {
-            log.info("Removed {} expired temporary files from [{}]", deleted[0], directory);
+            log.info("已删除 {} 个过期临时文件，来源目录 [{}]", deleted[0], directory);
         }
         return deleted[0];
     }
@@ -139,7 +139,7 @@ public class ParameterGarbageCollector {
                 deleted[0]++;
             }
         } catch (IOException e) {
-            log.warn("Unable to delete the temporary file [{}]", path, e);
+            log.warn("无法删除临时文件 [{}]", path, e);
         }
     }
 }

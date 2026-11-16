@@ -44,7 +44,7 @@ public class FeishuSdkClient {
             if (!response.success()
                     || response.getData() == null
                     || !StringUtils.hasText(response.getData().getAccessToken())) {
-                throw new FeishuSdkException(failure("Feishu token exchange failed", response.getCode(), response.getMsg()));
+                throw new FeishuSdkException(failure("飞书令牌交换失败", response.getCode(), response.getMsg()));
             }
             var data = response.getData();
             return new Token(
@@ -60,7 +60,7 @@ public class FeishuSdkClient {
                     .build();
             var response = client.authen().v1().userInfo().get(options);
             if (!response.success() || response.getData() == null) {
-                throw new FeishuSdkException(failure("Feishu user info request failed", response.getCode(), response.getMsg()));
+                throw new FeishuSdkException(failure("飞书用户信息请求失败", response.getCode(), response.getMsg()));
             }
             var data = response.getData();
             return new UserInfo(
@@ -84,7 +84,7 @@ public class FeishuSdkClient {
             if (!response.success()
                     || response.getData() == null
                     || !StringUtils.hasText(response.getData().getTenantAccessToken())) {
-                throw new FeishuSdkException(failure("Feishu tenant access token request failed", response.getCode(), response.getMsg()));
+                throw new FeishuSdkException(failure("飞书租户访问令牌请求失败", response.getCode(), response.getMsg()));
             }
             return response.getData().getTenantAccessToken();
         });
@@ -101,7 +101,7 @@ public class FeishuSdkClient {
             if (!response.success()
                     || response.getData() == null
                     || response.getData().getUser() == null) {
-                throw new FeishuSdkException(failure("Feishu contact user request failed", response.getCode(), response.getMsg()));
+                throw new FeishuSdkException(failure("飞书通讯录用户请求失败", response.getCode(), response.getMsg()));
             }
             var user = response.getData().getUser();
             var avatar = user.getAvatar() == null ? null : user.getAvatar().getAvatar640();
@@ -126,7 +126,7 @@ public class FeishuSdkClient {
                     .build();
             var response = client.im().v1().message().create(request);
             if (!response.success()) {
-                throw new FeishuSdkException(failure("Feishu message request failed", response.getCode(), response.getMsg()));
+                throw new FeishuSdkException(failure("飞书消息请求失败", response.getCode(), response.getMsg()));
             }
             return response;
         }).then();

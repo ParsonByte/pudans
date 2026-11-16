@@ -59,7 +59,7 @@ class SudoService {
     }
 
     void setClock(Clock clock) {
-        Assert.notNull(clock, "Clock must not be null");
+        Assert.notNull(clock, "时钟不能为空");
         this.clock = clock;
     }
 
@@ -92,9 +92,9 @@ class SudoService {
                         (user, provider) -> provider.verify(user, code))
                         .then(Mono.defer(() -> activate(exchange)))
                         .doOnSuccess(
-                                unused -> log.info("Sudo confirmed for user '{}' via '{}'", auth.getName(), method))
+                                unused -> log.info("用户 '{}' 已通过 '{}' 完成安全确认", auth.getName(), method))
                         .doOnError(error ->
-                                log.info("Sudo confirmation failed for user '{}' via '{}'", auth.getName(), method)));
+                                log.info("用户 '{}' 通过 '{}' 的安全确认失败", auth.getName(), method)));
     }
 
     private <T> Mono<T> invoke(
@@ -153,14 +153,14 @@ class SudoService {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 .filter(SudoService::isSessionAuthentication)
-                .switchIfEmpty(Mono.error(() -> new AccessDeniedException("Sudo APIs require a browser session")));
+                .switchIfEmpty(Mono.error(() -> new AccessDeniedException("Sudo API 需要浏览器会话")));
     }
 
     private Mono<SudoVerificationProvider> requireSupported(User user, String method) {
         return supportedProviders(user)
                 .filter(provider -> provider.method().equals(method))
                 .next()
-                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("Sudo method is not available")));
+                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("Sudo 验证方式不可用")));
     }
 
     private Mono<Void> activate(ServerWebExchange exchange) {

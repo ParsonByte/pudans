@@ -58,7 +58,7 @@ public class DefaultController<R> implements Controller {
             Duration maxDelay,
             Executor executor,
             int workerCount) {
-        Assert.isTrue(workerCount > 0, "Worker count must not be less than 1");
+        Assert.isTrue(workerCount > 0, "工作线程数不能小于 1");
         this.name = name;
         this.reconciler = reconciler;
         this.nowSupplier = nowSupplier;
@@ -107,7 +107,7 @@ public class DefaultController<R> implements Controller {
     private static Executor executor(String name) {
         return Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
                 .name(name, 1)
-                .uncaughtExceptionHandler((t, e) -> log.error("Uncaught exception in thread: {}", t.getName(), e))
+                .uncaughtExceptionHandler((t, e) -> log.error("线程中发生未捕获异常：{}", t.getName(), e))
                 .factory());
     }
 
@@ -145,21 +145,21 @@ public class DefaultController<R> implements Controller {
     @Override
     public void start() {
         if (isStarted() || isDisposed()) {
-            log.warn("Controller {} is already started or disposed.", getName());
+            log.warn("控制器 {} 已启动或已销毁。", getName());
             return;
         }
         this.started = true;
         if (synchronizer != null) {
             executor.execute(synchronizer::start);
         }
-        log.info("Starting controller {}", name);
+        log.info("正在启动控制器 {}", name);
         IntStream.range(0, getWorkerCount()).mapToObj(i -> new Worker()).forEach(executor::execute);
     }
 
     @Override
     public void dispose() {
         disposed = true;
-        log.info("Disposing controller {}", name);
+        log.info("正在销毁控制器 {}", name);
 
         if (synchronizer != null) {
             synchronizer.dispose();
@@ -173,13 +173,13 @@ public class DefaultController<R> implements Controller {
             } else if (executor instanceof AutoCloseable closeable) {
                 closeable.close();
                 if (Thread.currentThread().isInterrupted()) {
-                    log.warn("Wait timeout for controller {} shutdown", name);
+                    log.warn("等待控制器 {} 关闭超时", name);
                 } else {
-                    log.info("Controller {} is disposed", name);
+                    log.info("控制器 {} 已销毁", name);
                 }
             }
         } catch (Exception e) {
-            log.warn("Interrupted while waiting for controller {} shutdown", name);
+            log.warn("等待控制器 {} 关闭时被中断", name);
         } finally {
             queue.dispose();
         }
@@ -208,20 +208,20 @@ public class DefaultController<R> implements Controller {
 
         @Override
         public void run() {
-            log.info("Controller worker {} started", this.name);
+            log.info("控制器工作线程 {} 已启动", this.name);
             while (!isDisposed() && !Thread.currentThread().isInterrupted()) {
                 try {
                     var entry = queue.take();
                     Reconciler.Result result;
                     try {
                         log.debug(
-                                "{} >>> Reconciling request {} at {}", this.name, entry.getEntry(), nowSupplier.get());
+                                "{} >>> 正在协调请求 {}，时间 {}", this.name, entry.getEntry(), nowSupplier.get());
                         var watch = new StopWatch(this.name + ":reconcile: " + entry.getEntry());
                         watch.start("reconciliation");
                         result = reconciler.reconcile(entry.getEntry());
                         watch.stop();
                         log.debug(
-                                "{} >>> Reconciled request: {} with result: {}, usage: {}",
+                                "{} >>> 请求协调完成：{}，结果：{}，耗时：{}",
                                 this.name,
                                 entry.getEntry(),
                                 result,
@@ -230,14 +230,14 @@ public class DefaultController<R> implements Controller {
                         result = new Reconciler.Result(true, null);
                         if (t instanceof OptimisticLockingFailureException) {
                             log.warn(
-                                    "Optimistic locking failure when reconciling request: {}/{}",
+                                    "协调请求时发生乐观锁冲突：{}/{}",
                                     this.name,
                                     entry.getEntry());
                         } else if (t instanceof RequeueException re) {
-                            log.warn("{}: Requeue {} due to {}", this.name, entry.getEntry(), re.getMessage());
+                            log.warn("{}：重新入队 {}，原因：{}", this.name, entry.getEntry(), re.getMessage());
                             result = re.getResult();
                         } else {
-                            log.error("Reconciler in " + this.name + " aborted with an error, re-enqueuing...", t);
+                            log.error("协调器 " + this.name + " 因错误中止，正在重新入队...", t);
                         }
                     } finally {
                         queue.done(entry.getEntry());
@@ -272,10 +272,10 @@ public class DefaultController<R> implements Controller {
                     queue.add(new DelayedEntry<>(entry.getEntry(), retryAfter, nowSupplier));
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    log.info("Controller worker {} interrupted", name);
+                    log.info("控制器工作线程 {} 被中断", name);
                 }
             }
-            log.info("Controller worker {} is stopped", name);
+            log.info("控制器工作线程 {} 已停止", name);
         }
     }
 }

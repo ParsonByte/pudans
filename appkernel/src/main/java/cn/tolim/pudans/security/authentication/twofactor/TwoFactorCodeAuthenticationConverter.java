@@ -41,12 +41,12 @@ public class TwoFactorCodeAuthenticationConverter implements ServerAuthenticatio
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .filter(TwoFactorAuthentication.class::isInstance)
-                .switchIfEmpty(Mono.error(() -> new TwoFactorAuthException("MFA Authentication required.")))
+                .switchIfEmpty(Mono.error(() -> new TwoFactorAuthException("需要完成多重身份验证。")))
                 .flatMap(authentication -> exchange.getFormData()
                         .<Authentication>handle((formData, sink) -> {
                             var code = formData.getFirst(CODE_PARAMETER);
                             if (StringUtils.isBlank(code)) {
-                                sink.error(new TwoFactorAuthException("Empty code parameter."));
+                                sink.error(new TwoFactorAuthException("验证码参数为空。"));
                                 return;
                             }
                             sink.next(new TwoFactorAuthenticationToken(resolveType(exchange), code));

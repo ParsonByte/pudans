@@ -22,8 +22,8 @@ public class WatcherExtensionMatchers {
             ExtensionMatcher onAddMatcher,
             ExtensionMatcher onUpdateMatcher,
             ExtensionMatcher onDeleteMatcher) {
-        Assert.notNull(client, "The client must not be null.");
-        Assert.notNull(gvk, "The gvk must not be null.");
+        Assert.notNull(client, "客户端不能为 null。");
+        Assert.notNull(gvk, "gvk 不能为 null。");
         this.client = client;
         this.gvk = gvk;
         this.onAddMatcher = Objects.requireNonNullElseGet(onAddMatcher, () -> emptyMatcher(client, gvk));

@@ -52,8 +52,8 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
         response.setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         var body = "{\"type\":\"https://pudans.tolim.cn/probs/risk-blocked\","
-                + "\"title\":\"Too Many Requests\",\"status\":429,"
-                + "\"detail\":\"Too many TOTP verification attempts.\"}";
+                + "\"title\":\"请求过于频繁\",\"status\":429,"
+                + "\"detail\":\"TOTP 验证尝试次数过多。\"}";
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8))));
     }
 
@@ -76,7 +76,7 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
                                 context,
                                 HttpStatus.UNAUTHORIZED,
                                 INVALID_TOTP_CODE,
-                                "Invalid TOTP code."));
+                                "TOTP 验证码无效。"));
     }
 
     private Mono<Boolean> escalate(ServerWebExchange exchange) {

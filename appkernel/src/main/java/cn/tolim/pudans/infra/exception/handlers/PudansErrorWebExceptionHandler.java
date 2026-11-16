@@ -39,7 +39,7 @@ public class PudansErrorWebExceptionHandler extends DefaultErrorWebExceptionHand
         if (throwable instanceof WebExchangeBindException) {
             if (logger.isDebugEnabled()) {
                 logger.debug(
-                        "Resolved [{}] for HTTP {} {}",
+                        "已解析 [{}]，HTTP {} {}",
                         throwable.getClass().getSimpleName(),
                         request.method(),
                         request.path());

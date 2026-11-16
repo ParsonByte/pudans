@@ -5,10 +5,7 @@ import cn.tolim.pudans.infra.properties.SecurityProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Exposes the nested security configuration as an injectable bean so the auth
- * filters and endpoints can read the post-login destination directly.
- */
+// 将嵌套的安全配置暴露为可注入的 Bean，便于认证过滤器和端点直接读取登录后跳转地址。
 @Configuration(proxyBeanMethods = false)
 class SecurityPropertiesConfiguration {
 

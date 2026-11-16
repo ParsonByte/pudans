@@ -6,6 +6,6 @@ import org.springframework.web.server.ServerWebInputException;
 public class SudoVerificationFailedException extends ServerWebInputException {
 
     public SudoVerificationFailedException() {
-        super("Verification failed", null, null, "problemDetail.sudo.verificationFailed", null);
+        super("验证失败。");
     }
 }

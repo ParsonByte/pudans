@@ -43,7 +43,7 @@ public class HashIdService {
     void refreshSalt() {
         parameterSettingGroupService.getServer().subscribe(
                 server -> applySalt(server.getHashIdSalt()),
-                error -> log.warn("Unable to read the hash id salt; keeping the previous salt", error));
+                error -> log.warn("无法读取哈希 ID 盐值，保留之前的盐值", error));
     }
 
     void applySalt(String value) {
@@ -62,7 +62,7 @@ public class HashIdService {
             System.arraycopy(digest, 0, truncated, 0, HASH_BYTES);
             return Base64.getUrlEncoder().withoutPadding().encodeToString(truncated);
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to generate the hash id", e);
+            throw new IllegalStateException("无法生成哈希 ID", e);
         }
     }
 }

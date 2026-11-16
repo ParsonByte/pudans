@@ -47,7 +47,7 @@ class ParameterSettingSiteIdInitializer {
                     return client.update(configMap)
                             .retryWhen(Retry.backoff(5, Duration.ofMillis(100))
                                     .filter(OptimisticLockingFailureException.class::isInstance))
-                            .doOnSuccess(updated -> log.info("Initialized the parameter settings site ID"));
+                            .doOnSuccess(updated -> log.info("已初始化参数设置的站点 ID"));
                 })
                 .then();
     }
@@ -60,7 +60,7 @@ class ParameterSettingSiteIdInitializer {
             var node = JsonMapper.shared().readTree(json);
             return node.isObject() ? (ObjectNode) node : JsonMapper.shared().createObjectNode();
         } catch (RuntimeException e) {
-            log.warn("Ignoring malformed parameter server group JSON");
+            log.warn("忽略格式错误的参数服务器组 JSON");
             return JsonMapper.shared().createObjectNode();
         }
     }

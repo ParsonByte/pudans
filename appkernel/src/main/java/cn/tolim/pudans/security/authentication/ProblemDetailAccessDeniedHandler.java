@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 public class ProblemDetailAccessDeniedHandler implements ServerAccessDeniedHandler {
 
     private static final String ACCESS_DENIED_CODE = "access-denied";
-    private static final String ACCESS_DENIED_DETAIL = "Access denied.";
+    private static final String ACCESS_DENIED_DETAIL = "访问被拒绝。";
 
     private final ServerResponse.Context context;
 

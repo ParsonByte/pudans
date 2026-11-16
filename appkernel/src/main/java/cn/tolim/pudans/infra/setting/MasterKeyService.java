@@ -37,7 +37,7 @@ public class MasterKeyService {
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
         parameterSettingGroupService.getServer().subscribe(
                 server -> initialize(server.getMasterKey()),
-                error -> log.warn("Unable to read the master key; token signing stays on the legacy hash", error));
+                error -> log.warn("无法读取主密钥；令牌签名继续使用旧版哈希", error));
     }
 
     void initialize(String masterKey) {
@@ -59,10 +59,10 @@ public class MasterKeyService {
             }
             writeVersion(versionFile, version, fingerprint);
         } catch (IOException | NumberFormatException e) {
-            log.warn("Unable to read the master key version file; using version 0", e);
+            log.warn("无法读取主密钥版本文件，使用版本 0", e);
         }
         state.set(new State(key, version));
-        log.info("Master key snapshot captured with version {}", version);
+        log.info("已捕获主密钥快照，版本 {}", version);
     }
 
     public int currentVersion() {
@@ -73,7 +73,7 @@ public class MasterKeyService {
         return StringUtils.hasText(state.get().key());
     }
 
-    // Master-key rotation covers PAT and refresh access tokens; RSA JWTs stay on the existing decoder.
+    // 主密钥轮换覆盖 PAT 和刷新访问令牌；RSA JWT 仍使用现有解码器。
     public String hash(String secret) {
         return hash(secret, state.get().key());
     }
@@ -104,7 +104,7 @@ public class MasterKeyService {
             mac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
             return HexFormat.of().formatHex(mac.doFinal(secret.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to sign with the master key", e);
+            throw new IllegalStateException("无法使用主密钥进行签名", e);
         }
     }
 
@@ -113,7 +113,7 @@ public class MasterKeyService {
             return HexFormat.of().formatHex(
                     MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 
@@ -139,7 +139,7 @@ public class MasterKeyService {
         try {
             Files.setPosixFilePermissions(file, PosixFilePermissions.fromString("rw-------"));
         } catch (UnsupportedOperationException e) {
-            log.debug("POSIX permissions are not supported for {}", file);
+            log.debug("{} 不支持 POSIX 权限", file);
         }
     }
 

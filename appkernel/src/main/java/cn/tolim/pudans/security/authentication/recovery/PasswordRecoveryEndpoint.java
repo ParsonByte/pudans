@@ -54,7 +54,7 @@ public class PasswordRecoveryEndpoint {
                             : Mono.error(new ApiException(
                                     HttpStatus.BAD_REQUEST,
                                     "recovery-captcha-invalid",
-                                    "Captcha verification failed.")));
+                                    "验证码校验失败。")));
         });
     }
 

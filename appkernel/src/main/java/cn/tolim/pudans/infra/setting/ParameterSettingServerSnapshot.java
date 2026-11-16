@@ -24,11 +24,11 @@ public class ParameterSettingServerSnapshot {
                             StringUtils.hasText(server.getMasterKey()),
                             StringUtils.hasText(server.getHashIdSalt())));
                     log.info(
-                            "Parameter server snapshot captured: masterKeyConfigured={}, hashIdSaltConfigured={}",
+                            "已捕获参数服务器快照：masterKeyConfigured={}，hashIdSaltConfigured={}",
                             snapshot.get().masterKeyConfigured(),
                             snapshot.get().hashIdSaltConfigured());
                 },
-                error -> log.warn("Unable to capture the parameter server snapshot", error));
+                error -> log.warn("无法捕获参数服务器快照", error));
     }
 
     public Snapshot current() {

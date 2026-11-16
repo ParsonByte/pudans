@@ -60,17 +60,17 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
         }
 
         Flux.fromIterable(locations)
-                .doOnNext(location -> log.debug("Trying to initialize extension resources from location: {}", location))
+                .doOnNext(location -> log.debug("尝试从位置 {} 初始化扩展资源", location))
                 .map(this::listResources)
                 .distinct()
                 .flatMapIterable(resources -> resources)
-                .doOnNext(resource -> log.debug("Initializing extension resource from location: {}", resource))
+                .doOnNext(resource -> log.debug("正在从位置 {} 初始化扩展资源", resource))
                 .map(resource -> new YamlUnstructuredLoader(resource).load())
                 .flatMapIterable(extensions -> extensions)
                 .doOnNext(extension -> {
                     if (log.isDebugEnabled()) {
                         log.debug(
-                                "Initializing extension resource: {}/{}",
+                                "正在初始化扩展资源：{}/{}",
                                 extension.groupVersionKind(),
                                 extension.getMetadata().getName());
                     }
@@ -79,7 +79,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
                 .doOnNext(extension -> {
                     if (log.isDebugEnabled()) {
                         log.debug(
-                                "Initialized extension resource: {}/{}",
+                                "已初始化扩展资源：{}/{}",
                                 extension.groupVersionKind(),
                                 extension.getMetadata().getName());
                     }
@@ -114,7 +114,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
                 .flatMap(existingExt -> {
                     if (ExtensionUtil.hasDoNotOverwriteLabel(existingExt)) {
                         log.debug(
-                                "Extension {} is marked as do-not-overwrite, skipping update",
+                                "扩展 {} 标记为不覆盖，跳过更新",
                                 existingExt.getMetadata().getName());
                         
                         return Mono.just(existingExt);
@@ -137,7 +137,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
         try {
             return List.of(resolver.getResources(location));
         } catch (IOException ie) {
-            throw new IllegalArgumentException("Invalid extension location: " + location, ie);
+            throw new IllegalArgumentException("扩展位置无效：" + location, ie);
         }
     }
 }
