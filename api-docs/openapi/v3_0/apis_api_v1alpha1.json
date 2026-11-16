@@ -828,64 +828,6 @@
           "status"
         ]
       },
-      "DeviceList": {
-        "properties": {
-          "first": {
-            "type": "boolean",
-            "description": "Indicates whether current page is the first page."
-          },
-          "hasNext": {
-            "type": "boolean",
-            "description": "Indicates whether current page has next page."
-          },
-          "hasPrevious": {
-            "type": "boolean",
-            "description": "Indicates whether current page has previous page."
-          },
-          "items": {
-            "type": "array",
-            "description": "A chunk of items.",
-            "items": {
-              "$ref": "#/components/schemas/Device"
-            }
-          },
-          "last": {
-            "type": "boolean",
-            "description": "Indicates whether current page is the last page."
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Page number, starts from 1. Empty results may report 0."
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Size of each page. If not set or equal to 0, it means no pagination."
-          },
-          "total": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Total elements."
-          },
-          "totalPages": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Indicates total pages."
-          }
-        },
-        "required": [
-          "first",
-          "hasNext",
-          "hasPrevious",
-          "items",
-          "last",
-          "page",
-          "size",
-          "total",
-          "totalPages"
-        ]
-      },
       "DeviceSpec": {
         "properties": {
           "ipAddress": {
@@ -1372,6 +1314,11 @@
           },
           "username": {
             "type": "string"
+          },
+          "keyVersion": {
+            "type": "integer",
+            "format": "int32",
+            "readOnly": true
           }
         },
         "required": [
@@ -2364,6 +2311,10 @@
         "properties": {
           "permalink": {
             "type": "string"
+          },
+          "hashId": {
+            "type": "string",
+            "readOnly": true
           }
         }
       },
@@ -2659,64 +2610,6 @@
           "kind",
           "metadata",
           "spec"
-        ]
-      },
-      "UserConnectionList": {
-        "properties": {
-          "first": {
-            "type": "boolean",
-            "description": "Indicates whether current page is the first page."
-          },
-          "hasNext": {
-            "type": "boolean",
-            "description": "Indicates whether current page has next page."
-          },
-          "hasPrevious": {
-            "type": "boolean",
-            "description": "Indicates whether current page has previous page."
-          },
-          "items": {
-            "type": "array",
-            "description": "A chunk of items.",
-            "items": {
-              "$ref": "#/components/schemas/UserConnection"
-            }
-          },
-          "last": {
-            "type": "boolean",
-            "description": "Indicates whether current page is the last page."
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Page number, starts from 1. Empty results may report 0."
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32",
-            "description": "Size of each page. If not set or equal to 0, it means no pagination."
-          },
-          "total": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Total elements."
-          },
-          "totalPages": {
-            "type": "integer",
-            "format": "int64",
-            "description": "Indicates total pages."
-          }
-        },
-        "required": [
-          "first",
-          "hasNext",
-          "hasPrevious",
-          "items",
-          "last",
-          "page",
-          "size",
-          "total",
-          "totalPages"
         ]
       },
       "UserConnectionSpec": {
@@ -3752,6 +3645,62 @@
       },
       "parameters": []
     },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auth/token/refresh": {
+      "post": {
+        "description": "Rotate a refresh token and issue a new access token.",
+        "operationId": "RefreshAccessToken",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "refreshToken": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "refreshToken": {
+                      "type": "string"
+                    },
+                    "accessTokenTtlSeconds": {
+                      "type": "integer",
+                      "format": "int64"
+                    },
+                    "refreshTokenTtlSeconds": {
+                      "type": "integer",
+                      "format": "int64"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "default response"
+          },
+          "401": {
+            "description": "The refresh token is invalid, expired or already used."
+          }
+        },
+        "tags": [
+          "AuthV1alpha1Login"
+        ],
+        "parameters": []
+      }
+    },
     "/apis/api.pudans.tolim.cn/v1alpha1/authentications/two-factor/settings": {
       "get": {
         "description": "Get Two-factor authentication settings.",
@@ -4165,6 +4114,61 @@
         ]
       },
       "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/avatars/{filename}": {
+      "get": {
+        "description": "Get a stored avatar image.",
+        "operationId": "GetAvatar",
+        "parameters": [
+          {
+            "description": "Stored avatar file name.",
+            "in": "path",
+            "name": "filename",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AvatarV1alpha1Public"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/captcha/challenge": {
+      "get": {
+        "description": "Create an image captcha challenge.",
+        "operationId": "GetCaptchaChallenge",
+        "responses": {
+          "default": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "CaptchaV1alpha1Public"
+        ],
+        "parameters": []
+      }
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/configmaps": {
       "get": {
@@ -4855,6 +4859,111 @@
           }
         },
         "security": []
+      },
+      "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/parameter-settings/mail/-/test": {
+      "post": {
+        "description": "Send a test email using the configured SMTP settings.",
+        "operationId": "SendParameterSettingTestMail",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "to": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "content": {},
+            "description": "No Content"
+          },
+          "400": {
+            "description": "The recipient address is invalid."
+          },
+          "503": {
+            "description": "SMTP is not configured or the message could not be sent."
+          }
+        },
+        "tags": [
+          "ParameterSettingV1alpha1Console"
+        ],
+        "parameters": []
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/parameter-settings/{group}": {
+      "get": {
+        "description": "Get parameter settings by group. Sensitive fields are masked.",
+        "operationId": "getParameterSettingByGroup",
+        "parameters": [
+          {
+            "description": "Group of the parameter settings",
+            "in": "path",
+            "name": "group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "application/json": {}
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "ParameterSettingV1alpha1Console"
+        ]
+      },
+      "put": {
+        "description": "Update parameter settings by group. Send ******** for a sensitive field to keep the stored value.",
+        "operationId": "updateParameterSettingByGroup",
+        "parameters": [
+          {
+            "description": "Group of the parameter settings",
+            "in": "path",
+            "name": "group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204 NO_CONTENT": {
+            "content": {},
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "ParameterSettingV1alpha1Console"
+        ]
       },
       "parameters": []
     },
@@ -6936,7 +7045,7 @@
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/systemconfigs/{group}": {
       "get": {
-        "description": "Get system config by group",
+        "description": "Deprecated: use /parameter-settings/{group} instead.",
         "operationId": "getSystemConfigByGroup",
         "parameters": [
           {
@@ -6964,10 +7073,11 @@
         },
         "tags": [
           "SystemConfigV1alpha1Console"
-        ]
+        ],
+        "deprecated": true
       },
       "put": {
-        "description": "Update system config by group",
+        "description": "Deprecated: use /parameter-settings/{group} instead.",
         "operationId": "updateSystemConfigByGroup",
         "parameters": [
           {
@@ -6997,7 +7107,8 @@
         },
         "tags": [
           "SystemConfigV1alpha1Console"
-        ]
+        ],
+        "deprecated": true
       },
       "parameters": []
     },
@@ -8436,6 +8547,138 @@
         "parameters": []
       },
       "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/users/-/announcement-state": {
+      "get": {
+        "description": "Get the current user announcement dismissed state.",
+        "operationId": "GetMyAnnouncementState",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string"
+                    },
+                    "dismissedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "dismissed": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "UserV1alpha1Uc"
+        ],
+        "parameters": []
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/users/-/announcement-state/dismiss": {
+      "post": {
+        "description": "Dismiss the current announcement version for the current user.",
+        "operationId": "DismissMyAnnouncement",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string"
+                    },
+                    "dismissedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "dismissed": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "UserV1alpha1Uc"
+        ],
+        "parameters": []
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/users/-/avatar": {
+      "post": {
+        "description": "Upload and resize the current user avatar.",
+        "operationId": "UploadMyAvatar",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            },
+            "description": "default response"
+          },
+          "400": {
+            "description": "The avatar type or image is invalid."
+          },
+          "413": {
+            "description": "The avatar exceeds avatarMaxSize."
+          }
+        },
+        "tags": [
+          "UserV1alpha1Uc"
+        ],
+        "parameters": []
+      },
+      "delete": {
+        "description": "Delete the current user avatar.",
+        "operationId": "DeleteMyAvatar",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "UserV1alpha1Uc"
+        ],
+        "parameters": []
+      }
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/users/-/batch": {
       "post": {
