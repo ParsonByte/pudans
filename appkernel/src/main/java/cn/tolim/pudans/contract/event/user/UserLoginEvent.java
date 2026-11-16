@@ -1,12 +1,10 @@
 package cn.tolim.pudans.contract.event.user;
 
 import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.plugin.SharedEvent;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
 
-@SharedEvent
 public class UserLoginEvent extends ApplicationEvent {
 
     @Getter

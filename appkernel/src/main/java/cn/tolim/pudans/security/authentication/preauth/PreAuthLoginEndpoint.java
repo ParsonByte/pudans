@@ -5,6 +5,7 @@ import static cn.tolim.pudans.security.authentication.oauth2.OAuth2IdentityFinge
 import static org.springframework.web.reactive.function.server.RequestPredicates.path;
 
 import cn.tolim.pudans.contract.core.extension.AuthProvider;
+import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.security.authentication.CryptoService;
 import cn.tolim.pudans.infra.actuator.GlobalInfoService;
 import cn.tolim.pudans.infra.utils.PudansUtils;
@@ -62,7 +63,8 @@ class PreAuthLoginEndpoint {
                                         + "<input name='username' placeholder='Username'>"
                                         + "<input type='password' name='password' placeholder='Password'>"
                                         + "<button type='submit'>Sign in</button></form>"
-                                        + "<a href='/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/authorization/feishu'>Sign in with Feishu</a>"
+                                        + "<a href='" + ApiGroups.API_PREFIX
+                                        + "/oauth2/authorization/feishu'>Sign in with Feishu</a>"
                                         + "</body></html>"))
                         .POST("/social/{authProviderName}", request -> {
                             var authProviderName = request.pathVariable("authProviderName");

@@ -21,7 +21,7 @@ public class PublicKeyRouteBuilder {
     public RouterFunction<ServerResponse> build() {
         return SpringdocRouteBuilder.route()
                 .GET(
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/login/public-key",
+                        ApiGroups.API_PREFIX + "/login/public-key",
                         request -> cryptoService.readPublicKey().flatMap(publicKey -> {
                             var base64Format = Base64.getEncoder().encodeToString(publicKey);
                             var response = new PublicKeyResponse();

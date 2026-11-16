@@ -103,6 +103,6 @@ public class SystemConfigEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return new GroupVersion(ApiGroups.CONSOLE, "v1alpha1");
+        return new GroupVersion(ApiGroups.API, ApiGroups.VERSION);
     }
 }

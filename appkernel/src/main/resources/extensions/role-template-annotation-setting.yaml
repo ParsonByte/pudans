@@ -6,6 +6,6 @@ metadata:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
 rules:
-  - apiGroups: [ "uc.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "annotationsettings" ]
     verbs: [ "get", "list" ]

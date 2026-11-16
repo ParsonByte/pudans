@@ -6,9 +6,7 @@ import static java.util.Objects.requireNonNullElse;
 import cn.tolim.pudans.contract.core.extension.AnnotationSetting;
 import cn.tolim.pudans.contract.core.extension.AuthProvider;
 import cn.tolim.pudans.contract.core.extension.Device;
-import cn.tolim.pudans.contract.core.extension.Plugin;
 import cn.tolim.pudans.contract.core.extension.RememberMeToken;
-import cn.tolim.pudans.contract.core.extension.ReverseProxy;
 import cn.tolim.pudans.contract.core.extension.RiskRule;
 import cn.tolim.pudans.contract.core.extension.Setting;
 import cn.tolim.pudans.contract.core.extension.Webhook;
@@ -24,8 +22,6 @@ import cn.tolim.pudans.contract.extension.SchemeManager;
 import cn.tolim.pudans.contract.extension.Secret;
 import cn.tolim.pudans.contract.extension.index.IndexSpecs;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
-import cn.tolim.pudans.plugin.extensionpoint.ExtensionDefinition;
-import cn.tolim.pudans.plugin.extensionpoint.ExtensionPointDefinition;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.Set;
@@ -141,24 +137,6 @@ class SchemeInitializer implements SmartLifecycle {
                         .indexFunc(token -> token.getSpec().getUsername())));
 
         schemeManager.register(AuthProvider.class);
-        schemeManager.register(Plugin.class, is -> {
-            is.add(IndexSpecs.<Plugin, String>single("spec.displayName", String.class)
-                    .indexFunc(plugin -> Optional.ofNullable(plugin.getSpec())
-                            .map(Plugin.PluginSpec::getDisplayName)
-                            .orElse(null)));
-            is.add(IndexSpecs.<Plugin, Boolean>single("spec.enabled", Boolean.class)
-                    .indexFunc(plugin -> Optional.ofNullable(plugin.getSpec())
-                            .map(Plugin.PluginSpec::getEnabled)
-                            .orElse(false))
-                    .nullable(false));
-        });
-        schemeManager.register(ExtensionPointDefinition.class, is -> is.add(
-                IndexSpecs.<ExtensionPointDefinition, String>single("spec.className", String.class)
-                        .indexFunc(definition -> definition.getSpec().getClassName())));
-        schemeManager.register(ExtensionDefinition.class, is -> is.add(
-                IndexSpecs.<ExtensionDefinition, String>single("spec.extensionPointName", String.class)
-                        .indexFunc(definition -> definition.getSpec().getExtensionPointName())));
-        schemeManager.register(ReverseProxy.class);
         schemeManager.register(Setting.class);
         schemeManager.register(AnnotationSetting.class, is -> is.add(
                 IndexSpecs.<AnnotationSetting, String>single("spec.targetRef", String.class)

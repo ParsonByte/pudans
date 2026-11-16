@@ -1,13 +1,11 @@
 package cn.tolim.pudans.contract.event;
 
-import cn.tolim.pudans.contract.plugin.SharedEvent;
 import java.time.Instant;
 import java.util.Map;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
 @Getter
-@SharedEvent
 public class DomainEvent extends ApplicationEvent {
 
     private final String eventId;

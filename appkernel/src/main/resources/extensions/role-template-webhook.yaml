@@ -8,7 +8,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Webhook"
     rbac.authorization.pudans.tolim.cn/display-name: "Webhook View"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "webhooks" ]
     verbs: [ "get", "list" ]
 ---
@@ -24,6 +24,6 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Webhook"
     rbac.authorization.pudans.tolim.cn/display-name: "Webhook Manage"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "webhooks" ]
     verbs: [ "create", "update", "patch", "delete" ]

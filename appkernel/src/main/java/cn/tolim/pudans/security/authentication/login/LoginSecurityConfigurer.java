@@ -23,9 +23,8 @@ import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
-import cn.tolim.pudans.contract.plugin.extensionpoint.ExtensionGetter;
 import cn.tolim.pudans.security.authentication.PudansUserDetailsContract;
-import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
+import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.security.authentication.LoginParameterRequestCache;
 import cn.tolim.pudans.security.authentication.SecurityConstant;
 import cn.tolim.pudans.contract.security.authentication.CryptoService;
@@ -53,21 +52,17 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
 
     private final CryptoService cryptoService;
 
-    private final ExtensionGetter extensionGetter;
-
     private final ServerResponse.Context context;
 
     private final MessageSource messageSource;
 
     private final RiskControlService riskControlService;
 
-    private final LoginHandlerEnhancer loginHandlerEnhancer;
+    private final LoginFlowHandler loginFlowHandler;
 
     private final LoginParameterRequestCache parameterRequestCache;
 
     private final DomainEventPublisher domainEventPublisher;
-
-    private final cn.tolim.pudans.core.audit.service.PluginInvocationAuditor pluginInvocationAuditor;
 
     private final ServerRequestCache serverRequestCache;
 
@@ -81,14 +76,12 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
             PasswordEncoder passwordEncoder,
             ServerSecurityContextRepository securityContextRepository,
             CryptoService cryptoService,
-            ExtensionGetter extensionGetter,
             ServerResponse.Context context,
             MessageSource messageSource,
             RiskControlService riskControlService,
-            LoginHandlerEnhancer loginHandlerEnhancer,
+            LoginFlowHandler loginFlowHandler,
             LoginParameterRequestCache parameterRequestCache,
             DomainEventPublisher domainEventPublisher,
-            cn.tolim.pudans.core.audit.service.PluginInvocationAuditor pluginInvocationAuditor,
             ServerRequestCache serverRequestCache,
             SecurityProperties securityProperties) {
         this.observationRegistry = observationRegistry;
@@ -98,14 +91,12 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
         this.passwordEncoder = passwordEncoder;
         this.securityContextRepository = securityContextRepository;
         this.cryptoService = cryptoService;
-        this.extensionGetter = extensionGetter;
         this.context = context;
         this.messageSource = messageSource;
         this.riskControlService = riskControlService;
-        this.loginHandlerEnhancer = loginHandlerEnhancer;
+        this.loginFlowHandler = loginFlowHandler;
         this.parameterRequestCache = parameterRequestCache;
         this.domainEventPublisher = domainEventPublisher;
-        this.pluginInvocationAuditor = pluginInvocationAuditor;
         this.serverRequestCache = serverRequestCache;
         this.securityProperties = securityProperties;
     }
@@ -131,12 +122,12 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
         filter.setAuthenticationSuccessHandler(
                 new LoginSuccessHandler(
                         context,
-                        loginHandlerEnhancer,
+                        loginFlowHandler,
                         parameterRequestCache,
                         serverRequestCache,
                         securityProperties.getPostLoginUrl()));
         filter.setAuthenticationFailureHandler(
-                new LoginFailureHandler("local", context, messageSource, loginHandlerEnhancer, domainEventPublisher));
+                new LoginFailureHandler("local", context, messageSource, loginFlowHandler, domainEventPublisher));
         filter.setServerAuthenticationConverter(authConverter);
         filter.setSecurityContextRepository(securityContextRepository);
 
@@ -144,9 +135,7 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
     }
 
     ReactiveAuthenticationManager authenticationManager() {
-        var manager = new UsernamePasswordDelegatingAuthenticationManager(
-                extensionGetter, defaultAuthenticationManager(), pluginInvocationAuditor);
-        return new ObservationReactiveAuthenticationManager(observationRegistry, manager);
+        return new ObservationReactiveAuthenticationManager(observationRegistry, defaultAuthenticationManager());
     }
 
     ReactiveAuthenticationManager defaultAuthenticationManager() {

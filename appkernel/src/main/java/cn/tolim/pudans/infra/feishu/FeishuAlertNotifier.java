@@ -2,7 +2,6 @@ package cn.tolim.pudans.infra.feishu;
 
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.contract.risk.RiskAlert;
-import cn.tolim.pudans.contract.risk.RiskAlertChannel;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -17,7 +16,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class FeishuAlertNotifier implements RiskAlertChannel {
+public class FeishuAlertNotifier {
 
     private final FeishuClient feishuClient;
 

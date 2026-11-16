@@ -30,7 +30,7 @@ metadata:
   finalizers:
     - system-protection
 rules:
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources:
       [
         "users",
@@ -40,10 +40,10 @@ rules:
         "users/usergroup",
       ]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["usergroups", "usergroupbindings"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources:
       [
         "roles",
@@ -53,7 +53,7 @@ rules:
         "temprolebindings/revoke",
       ]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources:
       [
         "auditlogs",
@@ -62,21 +62,18 @@ rules:
         "auditlogs/replay",
       ]
     verbs: ["get", "list"]
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["riskrules", "webhooks"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
-  - apiGroups: ["auth.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["authproviders"]
     verbs: ["get", "list"]
-  - apiGroups: ["uc.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["settings"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["configmaps"]
     verbs: ["get", "list", "create", "update", "patch", "delete"]
-  - apiGroups: ["extension.api.pudans.tolim.cn"]
-    resources: ["plugins"]
-    verbs: ["get", "list"]
 
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
@@ -91,39 +88,39 @@ metadata:
   finalizers:
     - system-protection
 rules:
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["users", "users/permissions"]
     resourceNames: ["-"]
     verbs: ["get", "list"]
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["users"]
     resourceNames: ["-"]
     verbs: ["update"]
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["users/password"]
     resourceNames: ["-"]
     verbs: ["update"]
-  - apiGroups: ["uc.api.pudans.tolim.cn"]
-    resources: ["users", "users/permissions"]
+  - apiGroups: ["api.pudans.tolim.cn"]
+    resources: ["users/self"]
     resourceNames: ["-"]
     verbs: ["get"]
-  - apiGroups: ["uc.api.pudans.tolim.cn"]
-    resources: ["users/password"]
+  - apiGroups: ["api.pudans.tolim.cn"]
+    resources: ["users/self"]
     resourceNames: ["-"]
     verbs: ["update"]
-  - apiGroups: ["auth.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["authentications", "authentications/totp", "authentications/settings"]
     verbs: ["*"]
-  - apiGroups: ["auth.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["personalaccesstokens"]
     verbs: ["*"]
-  - apiGroups: ["auth.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["devices"]
     verbs: ["get", "list", "delete"]
-  - apiGroups: ["uc.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["user-preferences", "annotationsettings"]
     verbs: ["get", "list", "create", "update", "patch"]
-  - apiGroups: ["auth.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources:
       [
         "userconnections",
@@ -131,14 +128,11 @@ rules:
         "userconnections/oidc/bind",
       ]
     verbs: ["create", "get", "list", "delete"]
-  - apiGroups: ["auth.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["passkeys", "passkeys/registration/options", "passkeys/registration/verify"]
     verbs: ["create", "get", "list"]
-  - apiGroups: ["console.api.pudans.tolim.cn"]
+  - apiGroups: ["api.pudans.tolim.cn"]
     resources: ["authproviders"]
-    verbs: ["get", "list"]
-  - apiGroups: ["extension.api.pudans.tolim.cn"]
-    resources: ["plugins"]
     verbs: ["get", "list"]
 
 ---

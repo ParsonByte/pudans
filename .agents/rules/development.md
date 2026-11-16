@@ -4,7 +4,7 @@
 
 - `main` is the stable/release branch; `dev` is the integration branch.
 - Branch feature, fix and chore work from `dev`; never commit or push directly to `main` or `dev`.
-- Branch names are kebab-case with a type prefix, for example `feat/plugin-audit-list` or `fix/auth-redirect`.
+- Branch names are kebab-case with a type prefix, for example `feat/audit-list` or `fix/auth-redirect`.
 - Hotfixes may branch from `main` only for an urgent release fix; after merging to `main`, merge the fix back into `dev`.
 
 ## Merge strategy

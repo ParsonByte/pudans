@@ -1,0 +1,73 @@
+package cn.tolim.pudans.security.authentication.oauth2;
+
+import cn.tolim.pudans.core.user.service.UserConnectionService;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.core.Authentication;
+import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+
+@Slf4j
+@Component
+public class DefaultOAuth2LoginFlowEnhancer implements OAuth2LoginFlowEnhancer {
+
+    private final UserConnectionService connectionService;
+
+    private final OAuth2AuthenticationTokenCache oauth2TokenCache;
+
+    private final OAuth2BindIntent bindIntent;
+
+    private final AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
+
+    public DefaultOAuth2LoginFlowEnhancer(
+            UserConnectionService connectionService,
+            OAuth2AuthenticationTokenCache oauth2TokenCache,
+            OAuth2BindIntent bindIntent) {
+        this.connectionService = connectionService;
+        this.oauth2TokenCache = oauth2TokenCache;
+        this.bindIntent = bindIntent;
+    }
+
+    @Override
+    public Mono<Void> loginSuccess(ServerWebExchange exchange, Authentication authentication) {
+        if (!authenticationTrustResolver.isFullyAuthenticated(authentication)) {
+
+
+            return Mono.when(oauth2TokenCache.removeToken(exchange), bindIntent.clear(exchange));
+        }
+        return bindIntent
+                .consume(exchange)
+                .flatMap(oauth2Identity ->
+                        bind(exchange, authentication, oauth2Identity).thenReturn(true))
+                .defaultIfEmpty(false)
+                .flatMap(bindAttempted -> bindAttempted ? Mono.empty() : oauth2TokenCache.removeToken(exchange));
+    }
+
+    private Mono<Void> bind(ServerWebExchange exchange, Authentication authentication, String expectedOAuth2Identity) {
+        var binding = oauth2TokenCache.getToken(exchange).flatMap(oauth2Token -> {
+            if (!OAuth2IdentityFingerprint.from(oauth2Token).equals(expectedOAuth2Identity)) {
+                log.warn("Refused to bind an OAuth2 identity that changed during local login");
+                return Mono.empty();
+            }
+            var oauth2User = oauth2Token.getPrincipal();
+            var username = authentication.getName();
+            var registrationId = oauth2Token.getAuthorizedClientRegistrationId();
+            return connectionService
+                    .updateUserConnectionIfPresent(registrationId, oauth2User)
+                    .doOnNext(connection -> {
+                        if (log.isDebugEnabled()) {
+                            log.debug("User connection already exists, skip creating. connection: [{}]", connection);
+                        }
+                    })
+                    .switchIfEmpty(Mono.defer(
+                            () -> connectionService.createUserConnection(username, registrationId, oauth2User)))
+                    .then();
+        });
+        return binding.then(Mono.defer(() -> oauth2TokenCache.removeToken(exchange)))
+                .onErrorResume(error ->
+                        Mono.defer(() -> oauth2TokenCache.removeToken(exchange)).then(Mono.error(error)));
+    }
+}

@@ -72,7 +72,7 @@ pudans:
     enabled: ${FEISHU_ENABLED:false}
     app-id: ${FEISHU_APP_ID:}
     app-secret: ${FEISHU_APP_SECRET:}
-    redirect-uri: ${FEISHU_REDIRECT_URI:{baseUrl}/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu}
+    redirect-uri: ${FEISHU_REDIRECT_URI:{baseUrl}/apis/api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu}
     sync-interval-seconds: ${FEISHU_SYNC_INTERVAL:21600}
     alert-chat-id: ${FEISHU_ALERT_CHAT_ID:}
   audit:

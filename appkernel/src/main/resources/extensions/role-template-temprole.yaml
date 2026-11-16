@@ -9,7 +9,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Just-In-Time Access"
     rbac.authorization.pudans.tolim.cn/display-name: "Temporary Role View"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "temprolebindings" ]
     verbs: [ "get", "list" ]
 ---
@@ -26,10 +26,10 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Just-In-Time Access"
     rbac.authorization.pudans.tolim.cn/display-name: "Temporary Role Apply"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "temprolebindings" ]
     verbs: [ "create" ]
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "temprolebindings/revoke" ]
     verbs: [ "create" ]
 ---
@@ -45,9 +45,9 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Just-In-Time Access"
     rbac.authorization.pudans.tolim.cn/display-name: "Temporary Role Approve"
 rules:
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "temprolebindings/approve" ]
     verbs: [ "create" ]
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "temprolebindings/revoke" ]
     verbs: [ "create" ]

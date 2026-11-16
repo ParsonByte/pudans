@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/apis/" + ApiGroups.AUTH + "/v1alpha1/recovery")
+@RequestMapping(ApiGroups.API_PREFIX + "/recovery")
 @RequiredArgsConstructor
 public class PasswordRecoveryEndpoint {
 

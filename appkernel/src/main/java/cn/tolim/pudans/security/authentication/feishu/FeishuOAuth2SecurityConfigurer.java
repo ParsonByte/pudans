@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.feishu;
 
-import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
+import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
@@ -31,7 +31,7 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
 
     private final ServerSecurityContextRepository securityContextRepository;
 
-    private final LoginHandlerEnhancer loginHandlerEnhancer;
+    private final LoginFlowHandler loginFlowHandler;
 
     private final DomainEventPublisher domainEventPublisher;
 
@@ -43,7 +43,7 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
             FeishuUserService feishuUserService,
             UserGroupService userGroupService,
             ServerSecurityContextRepository securityContextRepository,
-            LoginHandlerEnhancer loginHandlerEnhancer,
+            LoginFlowHandler loginFlowHandler,
             DomainEventPublisher domainEventPublisher,
             SecurityProperties securityProperties) {
         this.properties = properties;
@@ -51,7 +51,7 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
         this.feishuUserService = feishuUserService;
         this.userGroupService = userGroupService;
         this.securityContextRepository = securityContextRepository;
-        this.loginHandlerEnhancer = loginHandlerEnhancer;
+        this.loginFlowHandler = loginFlowHandler;
         this.domainEventPublisher = domainEventPublisher;
         this.securityProperties = securityProperties;
     }
@@ -67,7 +67,7 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
                 feishuUserService,
                 userGroupService,
                 securityContextRepository,
-                loginHandlerEnhancer,
+                loginFlowHandler,
                 domainEventPublisher,
                 securityProperties);
         http.addFilterAt(filter, SecurityWebFiltersOrder.OAUTH2_AUTHORIZATION_CODE);

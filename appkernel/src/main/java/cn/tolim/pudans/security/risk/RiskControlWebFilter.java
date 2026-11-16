@@ -22,13 +22,13 @@ import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.contract.risk.RiskAlert;
-import cn.tolim.pudans.core.risk.service.RiskAlertDispatcher;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
 import cn.tolim.pudans.core.risk.service.RiskDecision;
 import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
 import cn.tolim.pudans.core.risk.service.RiskScene;
 
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.infra.feishu.FeishuAlertNotifier;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 
 @Slf4j
@@ -56,7 +56,7 @@ public class RiskControlWebFilter implements WebFilter {
 
     private final AuditService auditService;
 
-    private final RiskAlertDispatcher alertDispatcher;
+    private final FeishuAlertNotifier alertNotifier;
 
     private final DomainEventPublisher domainEventPublisher;
 
@@ -219,7 +219,7 @@ public class RiskControlWebFilter implements WebFilter {
                 "risk.alert",
                 payload,
                 (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
-        alertDispatcher.dispatch(alert);
+        alertNotifier.send(alert).subscribe();
     }
 
     private void publishBlocked(

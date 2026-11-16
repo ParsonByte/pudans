@@ -20,12 +20,8 @@ dependencies {
         api libs.bundles.therapi
         api libs.springdoc.openapi
         api libs.openapi.schema.validator
-        api libs.bouncycastle.bcpkix
-        api libs.encoding.base62
-        api libs.pf4j
         api libs.webauthn4j
         api libs.guava
-        api libs.jsoup
         api libs.json.patch
         api libs.bundles.resilience4j
         api libs.twofactor.auth

@@ -9,19 +9,19 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Settings Management"
     rbac.authorization.pudans.tolim.cn/display-name: "Setting Manage"
 rules:
-  - apiGroups: [ "uc.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "settings" ]
     verbs: [ "create", "update", "patch", "delete" ]
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "configmaps" ]
     verbs: [ "create", "update", "patch", "delete" ]
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "systemconfigs" ]
     verbs: [ "get", "list", "update" ]
-  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "authproviders" ]
     verbs: [ "create", "update", "patch", "delete" ]
-  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "auth-providers", "auth-providers/enable", "auth-providers/disable" ]
     verbs: [ "get", "list", "update" ]
 ---
@@ -35,18 +35,18 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Settings Management"
     rbac.authorization.pudans.tolim.cn/display-name: "Setting View"
 rules:
-  - apiGroups: [ "uc.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "settings" ]
     verbs: [ "get", "list" ]
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "configmaps" ]
     verbs: [ "get", "list" ]
-  - apiGroups: [ "console.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "systemconfigs" ]
     verbs: [ "get" ]
-  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "authproviders" ]
     verbs: [ "get", "list" ]
-  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "auth-providers" ]
     verbs: [ "get", "list" ]

@@ -28,7 +28,7 @@ metadata:
 spec:
   displayName: Feishu
   description: Sign in with a Feishu account. Local users must be provisioned and bound first.
-  authenticationUrl: /apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/authorization/feishu
+  authenticationUrl: /apis/api.pudans.tolim.cn/v1alpha1/oauth2/authorization/feishu
   method: get
   rememberMeSupport: false
   authType: oauth2

@@ -4,12 +4,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
-import org.springframework.boot.integration.autoconfigure.IntegrationAutoConfiguration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 
 @EnableScheduling
-@SpringBootApplication(scanBasePackages = "cn.tolim.pudans", exclude = IntegrationAutoConfiguration.class)
+@SpringBootApplication(scanBasePackages = "cn.tolim.pudans")
 @ConfigurationPropertiesScan(basePackages = "cn.tolim.pudans.infra.properties")
 public class Application {
 

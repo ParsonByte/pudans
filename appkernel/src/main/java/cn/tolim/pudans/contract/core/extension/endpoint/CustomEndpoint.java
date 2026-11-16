@@ -11,6 +11,6 @@ public interface CustomEndpoint {
     RouterFunction<ServerResponse> endpoint();
 
     default GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.CONSOLE + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 }

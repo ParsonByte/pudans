@@ -11,6 +11,8 @@ Read the matching rule under `.agents/rules` before starting a task, and follow 
 | Commit | `.agents/rules/commit.md` | Single-line Conventional Commits, title only |
 | Comments | `.agents/rules/comments.md` | Code files only, `//` single-line English comments only |
 | Code style | `.agents/rules/code-style.md` | Formatting, naming, single responsibility, types, errors |
+| SQL | `.agents/rules/sql.md` | R2DBC only; no new SQL files; no JDBC or migrations |
+| Tech stack | `.agents/rules/tech-stack.md` | Required versions, prohibited stacks, dependency and configuration rules |
 | Development | `.agents/rules/development.md` | Branching, pre-commit checks, PRs, dependencies, secrets, review |
 | Skill authoring | `.agents/rules/skills.md` | `.agents/skills/<name>/` layout and SKILL.md requirements |
 
@@ -35,7 +37,6 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `appkernel/` | Backend core: identity, permissions and the extension mechanism |
 | `api-docs/` | OpenAPI aggregation and validation, no business code |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
-| `platform/plugin/` | Plugin dependency constraints (BOM) |
 | `gradle/libs.versions.toml` | Version catalog; dependency changes go here |
 
 ## Commands

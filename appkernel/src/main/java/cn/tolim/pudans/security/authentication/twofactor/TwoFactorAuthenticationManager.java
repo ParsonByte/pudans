@@ -1,11 +1,9 @@
 package cn.tolim.pudans.security.authentication.twofactor;
 
 import cn.tolim.pudans.contract.core.user.service.UserService;
-import cn.tolim.pudans.contract.plugin.extensionpoint.ExtensionGetter;
-import cn.tolim.pudans.contract.security.TwoFactorVerifier;
-import cn.tolim.pudans.core.audit.service.PluginInvocationAuditor;
 import cn.tolim.pudans.security.authentication.PudansUserDetailsContract;
 import cn.tolim.pudans.security.authentication.exception.TwoFactorAuthException;
+import cn.tolim.pudans.security.authentication.twofactor.totp.TotpTwoFactorVerifier;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,9 +24,7 @@ public class TwoFactorAuthenticationManager implements ReactiveAuthenticationMan
 
     private final UserService userService;
 
-    private final ExtensionGetter extensionGetter;
-
-    private final PluginInvocationAuditor pluginInvocationAuditor;
+    private final TotpTwoFactorVerifier totpVerifier;
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
@@ -48,14 +44,12 @@ public class TwoFactorAuthenticationManager implements ReactiveAuthenticationMan
         if (!(previous.getPrincipal() instanceof PudansUserDetailsContract)) {
             return Mono.error(new TwoFactorAuthException("Invalid authentication principal."));
         }
+        if (!TotpTwoFactorVerifier.TYPE.equalsIgnoreCase(token.getType())) {
+            return Mono.error(new TwoFactorAuthException("Unsupported two-factor type " + token.getType()));
+        }
         return userService
                 .getUser(previous.getName())
-                .flatMap(user -> resolveVerifier(token.getType())
-                        .flatMap(verifier -> pluginInvocationAuditor.audit(
-                                "two-factor-verifier",
-                                verifier,
-                                previous.getName(),
-                                Mono.defer(() -> verifier.verify(user, token.getCode())).timeout(TIMEOUT))))
+                .flatMap(user -> totpVerifier.verify(user, token.getCode()).timeout(TIMEOUT))
                 .flatMap(valid -> {
                     if (!Boolean.TRUE.equals(valid)) {
                         return Mono.error(new TwoFactorAuthException("Invalid two-factor code."));
@@ -65,14 +59,5 @@ public class TwoFactorAuthenticationManager implements ReactiveAuthenticationMan
                     }
                     return Mono.just(previous);
                 });
-    }
-
-    private Mono<TwoFactorVerifier> resolveVerifier(String type) {
-        return extensionGetter
-                .getEnabledExtensions(TwoFactorVerifier.class)
-                .filter(verifier -> verifier.getType() != null && verifier.getType().equalsIgnoreCase(type))
-                .next()
-                .switchIfEmpty(Mono.error(
-                        () -> new TwoFactorAuthException("Unsupported two-factor type " + type)));
     }
 }

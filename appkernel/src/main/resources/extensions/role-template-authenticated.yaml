@@ -18,9 +18,6 @@ metadata:
         "role-template-own-connections"
       ]
 rules:
-  - apiGroups: [ "auth.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "authproviders" ]
-    verbs: [ "get", "list" ]
-  - apiGroups: [ "extension.api.pudans.tolim.cn" ]
-    resources: [ "plugins" ]
     verbs: [ "get", "list" ]

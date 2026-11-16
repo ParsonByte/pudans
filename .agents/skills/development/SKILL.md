@@ -26,7 +26,7 @@ Execute `.agents/rules/development.md`: isolated branches, verified commits, sma
 2. Branch from the integration branch before editing:
    ```bash
    git switch dev && git pull --ff-only
-   git switch -c feat/plugin-audit-list
+   git switch -c feat/audit-list
    ```
 3. Implement in small, coherent changes; commit with the `commit` skill (single-line Conventional Commits).
 4. Run the gate before every push:

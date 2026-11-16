@@ -11,20 +11,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.audit.TraceContext;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.security.AdditionalWebFilter;
 import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.infra.PudansAttributes;
 
 @Slf4j
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE)
 @RequiredArgsConstructor
-public class AuditWebFilter implements AdditionalWebFilter {
+public class AuditWebFilter implements WebFilter {
 
     private static final String AUDITED_ATTRIBUTE = AuditWebFilter.class.getName() + ".AUDITED";
 
@@ -206,10 +205,6 @@ public class AuditWebFilter implements AdditionalWebFilter {
     }
 
     static String resourceType(ServerWebExchange exchange) {
-        var pluginId = (String) exchange.getAttributes().get(PudansAttributes.PLUGIN_ID_ATTRIBUTE);
-        if (pluginId != null && !pluginId.isBlank()) {
-            return "plugin:" + pluginId;
-        }
         var parts = apiParts(exchange);
         if (parts.size() >= 4) {
             var resource = parts.get(3);
@@ -243,10 +238,5 @@ public class AuditWebFilter implements AdditionalWebFilter {
         return java.util.Arrays.stream(path.split("/"))
                 .filter(segment -> !segment.isBlank())
                 .toList();
-    }
-
-    @Override
-    public int getOrder() {
-        return Ordered.LOWEST_PRECEDENCE;
     }
 }

@@ -6,7 +6,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
 rules:
-  - apiGroups: [ "public.api.pudans.tolim.cn" ]
+  - apiGroups: [ "api.pudans.tolim.cn" ]
     resources: [ "passkeys/assertion/options", "passkeys/assertion/verify" ]
     verbs: [ "create" ]
   - nonResourceURLs:
@@ -14,8 +14,5 @@ rules:
         "/actuator/globalinfo",
         "/actuator/health",
         "/actuator/health/*",
-        "/login/public-key",
-        "/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/authorization/feishu",
-        "/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu",
       ]
     verbs: [ "get", "post" ]

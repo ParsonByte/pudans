@@ -1,0 +1,57 @@
+# Tech stack rule
+
+## Scope
+
+- Applies to every backend module, Gradle build file, dependency declaration and application configuration file.
+- Applies to new dependencies and changes to the runtime stack.
+
+## Required
+
+- Use Java 25 with the Gradle toolchain declared in `appkernel/build.gradle`.
+- Use Spring Boot `4.2.0-RC2` with WebFlux, Spring Security Reactive, Spring Data R2DBC, Spring Session Redis and Spring Cache Redis.
+- Use PostgreSQL through the PostgreSQL R2DBC driver; use reactive Redis for sessions, cache, RBAC and risk control.
+- Use Gradle with the version catalog at `gradle/libs.versions.toml`; platform constraints live under `platform/appkernel`.
+- Use JUnit 5, Mockito and Reactor Test for backend tests.
+- Use the project's Jackson setup: Jackson 3 for application JSON and the Jackson 2 compatibility module for legacy Redis session/cache values.
+- Use Argon2 as the default password encoder and BCrypt only for verification of existing credentials.
+- Keep HTTP APIs on the single `api.pudans.tolim.cn` group and the `/apis/api.pudans.tolim.cn/v1alpha1/` prefix.
+
+## Prohibited
+
+- Do not introduce frontend technology: Node, pnpm, npm, Vite, React, TypeScript, frontend build tools or package manager files.
+- Do not introduce PF4J, plugin runtimes, plugin SPI, the extension API group, `ExtensionDefinition`, `ExtensionPointDefinition`, `Plugin` or `ReverseProxy`.
+- Do not introduce JDBC, `JdbcTemplate`, JPA, Hibernate, MyBatis, jOOQ or blocking database access.
+- Do not introduce Flyway or Liquibase.
+- Do not introduce Spring MVC or direct Servlet API usage; the backend is WebFlux.
+- Do not replace Redis sessions or the Redis cache with a local or alternative distributed store.
+- Do not make a blocking dependency mandatory for the request path.
+
+## Dependency management
+
+- Declare every new dependency version in `gradle/libs.versions.toml`; reference it from a build file through a `libs.*` alias.
+- Raw coordinates are allowed only when Spring Boot or the platform BOM supplies the version; do not hard-code a version string in a build file.
+- State the purpose, reactive compatibility and overlap with existing dependencies when adding a dependency.
+- Do not maintain two implementations of the same capability, such as two primary HTTP clients or two primary JSON libraries.
+
+## Configuration
+
+- Declare new configuration properties in a `@ConfigurationProperties` class and document the key in `application.yaml`.
+- Keep sensitive values in environment variables; do not hard-code credentials, keys, tokens or passwords.
+- Keep the existing `pudans.*` property structure; do not add an undocumented `@Value` key.
+- Keep the existing profiles: `application.yaml` for defaults and `application-dev.yaml` for local development overrides.
+
+## Legacy allowances
+
+- Resilience4j is allowed for Webhook retry and the existing `RequestNotPermitted` mapping; do not extend it into a general retry framework.
+- OpenAPI4j is allowed for extension schema validation; do not use it for runtime document generation.
+- Springdoc is allowed only for route annotations and build-time OpenAPI authoring; runtime `/v3/api-docs` remains disabled.
+- Jackson 2 is allowed only for legacy Redis session/cache compatibility; new application JSON uses Jackson 3.
+- BCrypt is allowed only for verifying passwords previously encoded with BCrypt; new passwords use Argon2.
+- The `@Value` audit retention properties are existing configuration and remain allowed; new configuration uses `@ConfigurationProperties`.
+- Raw dependency coordinates without a version are allowed when the Spring Boot BOM or `platform/appkernel` supplies the version.
+
+## Verification
+
+- Run `./gradlew :appkernel:compileJava --console=plain` and `./gradlew :appkernel:test --console=plain`.
+- Run `./gradlew :api-docs:validateOpenApiDocs --console=plain`.
+- Run `rg -n 'node|pnpm|npm|vite|react|typescript|pf4j|jdbc|jpa|hibernate|mybatis|jooq|flyway|liquibase' appkernel gradle platform --glob '!**/build/**'` and confirm only documented allowances remain.

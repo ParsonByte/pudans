@@ -140,21 +140,11 @@ public class ExtensionRouterFunctionFactory {
 
         static String buildExtensionPathPattern(Scheme scheme) {
             var gvk = scheme.groupVersionKind();
-            var group = routeGroup(scheme);
-            return "/apis/"
-                    + group
+            return ApiGroups.API_ROOT
                     + "/"
                     + gvk.version()
                     + "/"
                     + scheme.plural();
-        }
-
-        static String routeGroup(Scheme scheme) {
-            var group = ApiGroups.extensionGroup(scheme.groupVersionKind().kind());
-            if (!ApiGroups.ALL.contains(group)) {
-                throw new IllegalStateException("Extension route group is not canonical: " + group);
-            }
-            return group;
         }
 
         String pathPattern();
