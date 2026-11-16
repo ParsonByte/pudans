@@ -27,7 +27,7 @@ Read the matching rule under `.agents/rules` before starting a task, and follow 
 | Rule | File | Summary |
 | --- | --- | --- |
 | Commit | `.agents/rules/commit.md` | Single-line Conventional Commits, title only |
-| Comments | `.agents/rules/comments.md` | Code files only, `//` single-line English comments only |
+| Comments | `.agents/rules/comments.md` | Code files only, `//` single-line Chinese comments only |
 | Code style | `.agents/rules/code-style.md` | Formatting, naming, single responsibility, types, errors |
 | SQL | `.agents/rules/sql.md` | R2DBC only; no new SQL files; no JDBC or migrations |
 | Tech stack | `.agents/rules/tech-stack.md` | Required versions, prohibited stacks, dependency and configuration rules |
