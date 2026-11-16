@@ -12,7 +12,8 @@ Read this rule and `.agents/skills/comments/SKILL.md` before adding, changing or
 
 ## Format
 
-- A comment is a short single-line English comment, formatted exactly as `// comment`.
+- A comment is a short single-line Chinese comment, formatted exactly as `// 注释`.
+- Comments are written in Chinese only; English comments are forbidden.
 - Multi-line comments are forbidden: no `/* */`, no Javadoc `/** */`, no block of consecutive `//` lines.
 - Double slash serves line comments only: never as a separator, decoration, disabled code, banner or any other marker.
 
