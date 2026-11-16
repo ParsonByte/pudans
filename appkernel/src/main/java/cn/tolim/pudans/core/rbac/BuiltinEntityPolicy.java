@@ -97,9 +97,15 @@ public class BuiltinEntityPolicy {
 
     private Mono<Void> checkConfigMapDeletion(ConfigMap configMap) {
         if (configMap.getMetadata() != null
-                && cn.tolim.pudans.contract.infra.SystemSetting.SYSTEM_CONFIG.equals(
-                        configMap.getMetadata().getName())) {
-            return Mono.error(denied("The system configuration cannot be deleted."));
+                && (cn.tolim.pudans.contract.infra.ParameterSetting.PARAMETER_SETTINGS.equals(
+                                configMap.getMetadata().getName())
+                        || cn.tolim.pudans.contract.infra.ParameterSetting.PARAMETER_SETTINGS_DEFAULT.equals(
+                                configMap.getMetadata().getName())
+                        || cn.tolim.pudans.contract.infra.ParameterSetting.LEGACY_PARAMETER_SETTINGS.equals(
+                                configMap.getMetadata().getName())
+                        || cn.tolim.pudans.contract.infra.ParameterSetting.LEGACY_PARAMETER_SETTINGS_DEFAULT.equals(
+                                configMap.getMetadata().getName()))) {
+            return Mono.error(denied("The parameter settings configuration cannot be deleted."));
         }
         return Mono.empty();
     }

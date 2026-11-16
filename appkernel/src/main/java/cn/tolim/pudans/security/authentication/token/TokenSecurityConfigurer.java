@@ -3,6 +3,7 @@ package cn.tolim.pudans.security.authentication.token;
 import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.security.authentication.CryptoService;
+import cn.tolim.pudans.infra.setting.MasterKeyService;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,11 +31,14 @@ class TokenSecurityConfigurer implements SecurityConfigurer {
 
     private final RoleService roleService;
 
+    private final MasterKeyService masterKeyService;
+
     @Override
     public void configure(ServerHttpSecurity http) {
         var jwtDecoder =
                 withJwkSource(signedJWT -> Flux.just(cryptoService.getJwk())).build();
-        var tokenAuthenticationManager = new TokenAuthenticationManager(client, jwtDecoder, roleService);
+        var tokenAuthenticationManager =
+                new TokenAuthenticationManager(client, jwtDecoder, roleService, masterKeyService);
 
         var entryPoint = new BearerTokenServerAuthenticationEntryPoint();
         var failureHandler = new ServerAuthenticationEntryPointFailureHandler(entryPoint);

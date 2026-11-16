@@ -11,11 +11,9 @@ import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.ExtensionUtil;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.infra.setting.MasterKeyService;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
-import com.google.common.hash.HashCode;
-import com.google.common.hash.Hashing;
 import com.nimbusds.jwt.JWTClaimNames;
-import java.security.MessageDigest;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -48,13 +46,19 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
 
     private final RoleService roleService;
 
+    private final MasterKeyService masterKeyService;
+
     private Clock clock;
 
     public PatAuthenticationManager(
-            ReactiveExtensionClient client, ReactiveAuthenticationManager delegate, RoleService roleService) {
+            ReactiveExtensionClient client,
+            ReactiveAuthenticationManager delegate,
+            RoleService roleService,
+            MasterKeyService masterKeyService) {
         this.client = client;
         this.delegate = delegate;
         this.roleService = roleService;
+        this.masterKeyService = masterKeyService;
         this.clock = Clock.systemDefaultZone();
     }
 
@@ -72,15 +76,9 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
         return new String[] {decoded.substring(0, separator), decoded.substring(separator + 1)};
     }
 
-    private static boolean secretMatches(String tokenId, String secret) {
-        final HashCode expected;
-        try {
-            expected = HashCode.fromString(tokenId);
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-        var actual = Hashing.sha256().hashString(secret, UTF_8);
-        return MessageDigest.isEqual(expected.asBytes(), actual.asBytes());
+    private boolean secretMatches(PersonalAccessToken pat, String secret) {
+        return masterKeyService.matches(
+                pat.getSpec().getTokenId(), secret, pat.getSpec().getKeyVersion());
     }
 
     private static void addScopeAuthorities(PersonalAccessToken pat, List<GrantedAuthority> authorities) {
@@ -109,7 +107,10 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 .map(t -> Strings.CS.removeStart(t.getToken(), PAT_TOKEN_PREFIX))
                 .flatMap(token -> {
                     if (token.indexOf('.') >= 0) {
-
+                        if (masterKeyService.currentVersion() != 0) {
+                            return Mono.error(new InvalidBearerTokenException(
+                                    "Legacy personal access tokens are invalid after a master key rotation."));
+                        }
                         return legacyAuthenticate(token);
                     }
                     return authenticateOpaque(token);
@@ -151,7 +152,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
         if (expiresAt != null && expiresAt.isBefore(clock.instant())) {
             return Mono.error(new InvalidBearerTokenException("Token has expired."));
         }
-        if (!secretMatches(spec.getTokenId(), secret)) {
+        if (!secretMatches(pat, secret)) {
             return Mono.error(
                     new InvalidBearerTokenException("Token secret does not match the personal access token."));
         }

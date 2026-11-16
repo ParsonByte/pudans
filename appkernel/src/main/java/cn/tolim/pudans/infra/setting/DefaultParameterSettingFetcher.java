@@ -1,14 +1,14 @@
 package cn.tolim.pudans.infra.setting;
 
-import static cn.tolim.pudans.contract.infra.SystemSetting.SYSTEM_CONFIG;
-import static cn.tolim.pudans.contract.infra.SystemSetting.SYSTEM_CONFIG_DEFAULT;
+import static cn.tolim.pudans.contract.infra.ParameterSetting.PARAMETER_SETTINGS;
+import static cn.tolim.pudans.contract.infra.ParameterSetting.PARAMETER_SETTINGS_DEFAULT;
 
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.infra.SystemSetting;
+import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.contract.infra.utils.JsonParseException;
 import cn.tolim.pudans.infra.utils.ReactiveUtils;
-import cn.tolim.pudans.infra.utils.SystemConfigUtils;
+import cn.tolim.pudans.infra.utils.ParameterSettingUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Duration;
 import java.util.Map;
@@ -26,7 +26,8 @@ import tools.jackson.databind.json.JsonMapper;
 @Component
 @RequiredArgsConstructor
 @Order(Ordered.HIGHEST_PRECEDENCE)
-class DefaultSystemConfigFetcher implements SystemConfigFetcher, ApplicationListener<SystemConfigChangedEvent> {
+class DefaultParameterSettingFetcher
+        implements ParameterSettingFetcher, ApplicationListener<ParameterSettingChangedEvent> {
 
     private static final Duration BLOCKING_TIMEOUT = ReactiveUtils.DEFAULT_TIMEOUT;
 
@@ -43,7 +44,7 @@ class DefaultSystemConfigFetcher implements SystemConfigFetcher, ApplicationList
                 if (currentValue != null) {
                     return Mono.just(currentValue);
                 }
-                return computeSystemConfig()
+                return computeParameterSettings()
                         .mapNotNull(configMap -> {
                             if (configMapCache.compareAndSet(null, configMap.getData())) {
                                 return configMap.getData();
@@ -59,7 +60,7 @@ class DefaultSystemConfigFetcher implements SystemConfigFetcher, ApplicationList
             });
 
     @Override
-    public void onApplicationEvent(SystemConfigChangedEvent event) {
+    public void onApplicationEvent(ParameterSettingChangedEvent event) {
         configMapCache.set(event.getNewData());
     }
 
@@ -77,9 +78,9 @@ class DefaultSystemConfigFetcher implements SystemConfigFetcher, ApplicationList
     }
 
     @Override
-    public Mono<SystemSetting.Basic> getBasic() {
-        return fetch(SystemSetting.Basic.GROUP, SystemSetting.Basic.class)
-                .switchIfEmpty(Mono.fromSupplier(SystemSetting.Basic::new));
+    public Mono<ParameterSetting.Basic> getBasic() {
+        return fetch(ParameterSetting.Basic.GROUP, ParameterSetting.Basic.class)
+                .switchIfEmpty(Mono.fromSupplier(ParameterSetting.Basic::new));
     }
 
     private Mono<Map<String, String>> getValuesInternal() {
@@ -94,7 +95,7 @@ class DefaultSystemConfigFetcher implements SystemConfigFetcher, ApplicationList
 
     @Override
     public Mono<ConfigMap> getConfigMap() {
-        return extensionClient.fetch(ConfigMap.class, SYSTEM_CONFIG);
+        return extensionClient.fetch(ConfigMap.class, PARAMETER_SETTINGS);
     }
 
 
@@ -103,10 +104,10 @@ class DefaultSystemConfigFetcher implements SystemConfigFetcher, ApplicationList
         return getConfigMap().blockOptional(BLOCKING_TIMEOUT);
     }
 
-    private Mono<ConfigMap> computeSystemConfig() {
-        var getOverrideConfigMap = extensionClient.fetch(ConfigMap.class, SYSTEM_CONFIG);
+    private Mono<ConfigMap> computeParameterSettings() {
+        var getOverrideConfigMap = extensionClient.fetch(ConfigMap.class, PARAMETER_SETTINGS);
         var getDefaultConfigMap = extensionClient
-                .fetch(ConfigMap.class, SYSTEM_CONFIG_DEFAULT)
+                .fetch(ConfigMap.class, PARAMETER_SETTINGS_DEFAULT)
                 .switchIfEmpty(Mono.fromSupplier(() -> {
                     var defaultConfigMap = new ConfigMap();
                     defaultConfigMap.setData(Map.of());
@@ -114,7 +115,7 @@ class DefaultSystemConfigFetcher implements SystemConfigFetcher, ApplicationList
                 }));
         return Mono.zip(getDefaultConfigMap, getOverrideConfigMap, (defaultConfigMap, overrideConfigMap) -> {
             try {
-                return SystemConfigUtils.mergeConfigMap(defaultConfigMap, overrideConfigMap);
+                return ParameterSettingUtils.mergeConfigMap(defaultConfigMap, overrideConfigMap);
             } catch (JsonProcessingException e) {
                 throw new JsonParseException(e);
             }

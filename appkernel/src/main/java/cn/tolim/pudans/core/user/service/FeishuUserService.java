@@ -30,6 +30,7 @@ import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
 
 @Slf4j
 @Service
@@ -47,6 +48,8 @@ public class FeishuUserService {
     private final DomainEventPublisher domainEventPublisher;
 
     private final ReactiveTransactionManager transactionManager;
+
+    private final ParameterSettingGroupService parameterSettingGroupService;
 
     private Clock clock = Clock.systemUTC();
 
@@ -142,7 +145,16 @@ public class FeishuUserService {
     }
 
     Mono<Void> assignDefaultUserGroup(String username) {
-        return client.fetch(UserGroup.class, BuiltinEntities.NORMAL_USERS_GROUP)
+        return parameterSettingGroupService
+                .getSession()
+                .map(session -> StringUtils.hasText(session.getDefaultUserGroup())
+                        ? session.getDefaultUserGroup()
+                        : BuiltinEntities.NORMAL_USERS_GROUP)
+                .defaultIfEmpty(BuiltinEntities.NORMAL_USERS_GROUP)
+                .onErrorResume(error -> Mono.just(BuiltinEntities.NORMAL_USERS_GROUP))
+                .flatMap(groupName -> client.fetch(UserGroup.class, groupName)
+                        .switchIfEmpty(Mono.defer(
+                                () -> client.fetch(UserGroup.class, BuiltinEntities.NORMAL_USERS_GROUP))))
                 .flatMap(group -> userGroupService.assignUserGroup(username, group.getMetadata().getName()))
                 .then();
     }

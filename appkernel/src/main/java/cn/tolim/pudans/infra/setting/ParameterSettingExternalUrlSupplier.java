@@ -1,7 +1,7 @@
 package cn.tolim.pudans.infra.setting;
 
 import cn.tolim.pudans.contract.infra.ExternalUrlSupplier;
-import cn.tolim.pudans.contract.infra.SystemSetting;
+import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.utils.ExternalUrlUtils;
 import java.net.MalformedURLException;
@@ -22,21 +22,21 @@ import reactor.core.Exceptions;
 
 @Slf4j
 @Component
-class SystemConfigFirstExternalUrlSupplier implements ExternalUrlSupplier {
+class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
 
     private final PudansProperties pudansProperties;
 
     private final WebFluxProperties webFluxProperties;
 
-    private final SystemConfigFetcher systemConfigFetcher;
+    private final ParameterSettingFetcher systemConfigFetcher;
 
     @Nullable
     private URL externalUrl;
 
-    public SystemConfigFirstExternalUrlSupplier(
+    public ParameterSettingExternalUrlSupplier(
             PudansProperties pudansProperties,
             WebFluxProperties webFluxProperties,
-            SystemConfigFetcher systemConfigFetcher) {
+            ParameterSettingFetcher systemConfigFetcher) {
         this.pudansProperties = pudansProperties;
         this.webFluxProperties = webFluxProperties;
         this.systemConfigFetcher = systemConfigFetcher;
@@ -73,8 +73,12 @@ class SystemConfigFirstExternalUrlSupplier implements ExternalUrlSupplier {
 
     Optional<URL> refetchExternalUrl() {
         return systemConfigFetcher
-                .getBasic()
-                .mapNotNull(SystemSetting.Basic::getExternalUrl)
+                .fetch(ParameterSetting.Site.GROUP, ParameterSetting.Site.class)
+                .map(ParameterSetting.Site::getSiteUrl)
+                .filter(StringUtils::hasText)
+                .switchIfEmpty(systemConfigFetcher
+                        .getBasic()
+                        .map(ParameterSetting.Basic::getExternalUrl))
                 .filter(StringUtils::hasText)
                 .mapNotNull(externalUrlString -> {
                     try {
@@ -82,7 +86,7 @@ class SystemConfigFirstExternalUrlSupplier implements ExternalUrlSupplier {
                                 .toURL();
                     } catch (MalformedURLException e) {
                         log.error("""
-                                Cannot parse external URL {} from system config. Fallback to default \
+                                Cannot parse external URL {} from parameter settings. Fallback to default \
                                 external URL supplier from properties.\
                                 """, externalUrlString, e);
 

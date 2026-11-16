@@ -14,7 +14,7 @@ import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.infra.SystemInfoGetter;
+import cn.tolim.pudans.contract.infra.ParameterInfoGetter;
 import cn.tolim.pudans.contract.infra.SystemInfo;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
@@ -58,7 +58,7 @@ public class DashboardEndpoint implements CustomEndpoint {
 
     private final AuditService auditService;
 
-    private final SystemInfoGetter systemInfoGetter;
+    private final ParameterInfoGetter systemInfoGetter;
 
     private final UserGroupService userGroupService;
 

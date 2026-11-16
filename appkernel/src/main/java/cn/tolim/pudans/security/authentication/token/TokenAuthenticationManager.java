@@ -4,6 +4,7 @@ import static cn.tolim.pudans.contract.security.PersonalAccessToken.PAT_TOKEN_PR
 
 import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.setting.MasterKeyService;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -26,10 +27,14 @@ class TokenAuthenticationManager implements ReactiveAuthenticationManager {
 
     private final ReactiveAuthenticationManager jwtAuthManager;
 
-    TokenAuthenticationManager(ReactiveExtensionClient client, ReactiveJwtDecoder jwtDecoder, RoleService roleService) {
+    TokenAuthenticationManager(
+            ReactiveExtensionClient client,
+            ReactiveJwtDecoder jwtDecoder,
+            RoleService roleService,
+            MasterKeyService masterKeyService) {
         this.client = client;
         this.jwtDecoder = jwtDecoder;
-        this.patAuthManager = createPatAuthManager(roleService);
+        this.patAuthManager = createPatAuthManager(roleService, masterKeyService);
         this.jwtAuthManager = createJwtAuthManager();
     }
 
@@ -45,9 +50,10 @@ class TokenAuthenticationManager implements ReactiveAuthenticationManager {
         return jwtAuthManager.authenticate(a);
     }
 
-    private ReactiveAuthenticationManager createPatAuthManager(RoleService roleService) {
+    private ReactiveAuthenticationManager createPatAuthManager(
+            RoleService roleService, MasterKeyService masterKeyService) {
         var delegate = new JwtReactiveAuthenticationManager(this.jwtDecoder);
-        return new PatAuthenticationManager(client, delegate, roleService);
+        return new PatAuthenticationManager(client, delegate, roleService, masterKeyService);
     }
 
     private ReactiveAuthenticationManager createJwtAuthManager() {
