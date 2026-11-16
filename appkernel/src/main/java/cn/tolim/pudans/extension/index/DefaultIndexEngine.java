@@ -200,7 +200,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
     @Override
     public <E extends Extension> Iterable<String> retrieveTopN(
             Class<E> type, ListOptions options, Sort sort, int topN) {
-        Assert.isTrue(topN > 0, "topN must be greater than 0");
+        Assert.isTrue(topN > 0, "topN 必须大于 0");
         if (options == null) {
             options = ListOptions.builder().build();
         }
@@ -234,7 +234,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
     }
 
     void setIndicesManager(IndicesManager indicesManager) {
-        Assert.notNull(indicesManager, "indicesManager must not be null");
+        Assert.notNull(indicesManager, "indicesManager 不能为 null");
         this.indicesManager = indicesManager;
     }
 
@@ -253,7 +253,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
             } else if (index instanceof SingleValueIndex<?, ?> singleValueIndex) {
                 accessor = singleValueIndex::getKey;
             } else {
-                throw new UnsupportedOperationException("Unsupported index type for sorting: " + index.getClass());
+                throw new UnsupportedOperationException("不支持用于排序的索引类型：" + index.getClass());
             }
             sortOrders.add(new SortOrder(accessor, order.isDescending()));
         }

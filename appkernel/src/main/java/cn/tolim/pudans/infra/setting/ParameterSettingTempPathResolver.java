@@ -31,7 +31,7 @@ public class ParameterSettingTempPathResolver {
         var workDir = pudansProperties.getWorkDir().toAbsolutePath().normalize();
         var resolved = workDir.resolve(relative).normalize();
         if (!resolved.startsWith(workDir)) {
-            log.warn("Ignoring parameter temp path outside the data directory: {}", tempPath);
+            log.warn("忽略数据目录之外的参数临时路径：{}", tempPath);
             return workDir.resolve(DEFAULT_TEMP_PATH);
         }
         return resolved;

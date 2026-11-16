@@ -57,7 +57,7 @@ public class AnnouncementStateEndpoint implements CustomEndpoint {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 .map(Authentication::getName)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Not authenticated")));
+                .switchIfEmpty(Mono.error(new ServerWebInputException("未认证")));
     }
 
     @Override

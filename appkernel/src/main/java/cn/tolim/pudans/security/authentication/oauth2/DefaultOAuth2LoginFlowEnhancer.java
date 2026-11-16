@@ -49,7 +49,7 @@ public class DefaultOAuth2LoginFlowEnhancer implements OAuth2LoginFlowEnhancer {
     private Mono<Void> bind(ServerWebExchange exchange, Authentication authentication, String expectedOAuth2Identity) {
         var binding = oauth2TokenCache.getToken(exchange).flatMap(oauth2Token -> {
             if (!OAuth2IdentityFingerprint.from(oauth2Token).equals(expectedOAuth2Identity)) {
-                log.warn("Refused to bind an OAuth2 identity that changed during local login");
+                log.warn("拒绝绑定在本地登录期间发生变化的 OAuth2 身份");
                 return Mono.empty();
             }
             var oauth2User = oauth2Token.getPrincipal();
@@ -59,7 +59,7 @@ public class DefaultOAuth2LoginFlowEnhancer implements OAuth2LoginFlowEnhancer {
                     .updateUserConnectionIfPresent(registrationId, oauth2User)
                     .doOnNext(connection -> {
                         if (log.isDebugEnabled()) {
-                            log.debug("User connection already exists, skip creating. connection: [{}]", connection);
+                            log.debug("用户连接已存在，跳过创建。连接：[{}]", connection);
                         }
                     })
                     .switchIfEmpty(Mono.defer(

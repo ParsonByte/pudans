@@ -10,7 +10,7 @@ public class ExtensionNotFoundException extends ExtensionException {
     public static final URI TYPE = URI.create("https://www.pudans.tolim.cn/api/errors/extension-not-found");
 
     public ExtensionNotFoundException(GroupVersionKind gvk, String name) {
-        super(HttpStatus.NOT_FOUND, "Extension " + gvk + "/" + name + " was not found.", null, null, new Object[] {
+        super(HttpStatus.NOT_FOUND, "扩展 " + gvk + "/" + name + " 不存在。", null, null, new Object[] {
                 gvk, name
         });
         setType(TYPE);

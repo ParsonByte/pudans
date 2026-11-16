@@ -95,7 +95,7 @@ public class AnnouncementStateService {
         try {
             return JsonUtils.jsonToObject(configMap.getData().get(STATE_KEY), StoredState.class);
         } catch (RuntimeException e) {
-            log.warn("Ignoring malformed announcement state for [{}]", configMap.getMetadata().getName());
+            log.warn("忽略 [{}] 的格式错误的公告状态", configMap.getMetadata().getName());
             return new StoredState();
         }
     }

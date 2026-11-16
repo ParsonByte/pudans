@@ -106,7 +106,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
             }
             return "sha256=" + hex;
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to sign webhook payload", e);
+            throw new IllegalStateException("无法对 Webhook 载荷进行签名", e);
         }
     }
 
@@ -139,11 +139,11 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         subscription = eventBus
                 .events()
                 .flatMap(this::dispatch, CONCURRENCY)
-                .doOnError(error -> log.warn("Webhook dispatcher encountered an error", error))
+                .doOnError(error -> log.warn("Webhook 分发器发生错误", error))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1))
                         .maxBackoff(Duration.ofMinutes(1))
                         .doBeforeRetry(signal -> log.warn(
-                                "Re-subscribing the webhook dispatcher after an error", signal.failure())))
+                                "发生错误后重新订阅 Webhook 分发器", signal.failure())))
                 .doFinally(signal -> latch.countDown())
                 .subscribe();
     }
@@ -155,7 +155,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         if (latch != null) {
             try {
                 if (!latch.await(SHUTDOWN_TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
-                    log.warn("Timed out while draining the webhook event bus");
+                    log.warn("排空 Webhook 事件总线时超时");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -175,7 +175,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                 .concatMap(webhook -> deliver(webhook, event))
                 .then()
                 .onErrorResume(error -> {
-                    log.warn("Unable to dispatch webhook event [{}]", event.type(), error);
+                    log.warn("无法分发 Webhook 事件 [{}]", event.type(), error);
                     return Mono.empty();
                 });
     }
@@ -307,7 +307,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                         .retryWhen(Retry.backoff(3, RETRY_INTERVAL)
                                 .filter(OptimisticLockingFailureException.class::isInstance)))
                 .onErrorResume(error -> {
-                    log.warn("Unable to persist the delivery status of webhook [{}]", webhookName, error);
+                    log.warn("无法持久化 Webhook [{}] 的投递状态", webhookName, error);
                     return Mono.empty();
                 })
                 .subscribe();

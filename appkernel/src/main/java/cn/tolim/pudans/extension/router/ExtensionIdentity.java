@@ -15,13 +15,13 @@ final class ExtensionIdentity {
     static void requireUnchanged(Scheme scheme, String name, Extension extension) {
         if (!matches(scheme, name, extension)) {
             throw new ServerWebInputException(
-                    "Cannot change apiVersion, kind, or metadata.name of " + scheme.groupVersionKind());
+                    "无法更改以下对象的 apiVersion、kind 或 metadata.name：" + scheme.groupVersionKind());
         }
     }
 
     static void requireGroupVersionKind(Scheme scheme, Extension extension) {
         if (!matchesGroupVersionKind(scheme, extension)) {
-            throw new ServerWebInputException("apiVersion and kind must match " + scheme.groupVersionKind());
+            throw new ServerWebInputException("apiVersion 和 kind 必须与以下对象一致：" + scheme.groupVersionKind());
         }
     }
 

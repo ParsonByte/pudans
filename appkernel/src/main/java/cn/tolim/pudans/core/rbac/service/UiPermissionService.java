@@ -38,10 +38,7 @@ public class UiPermissionService {
                 });
     }
 
-    /**
-     * Halo-compatible console access rule: the super role always keeps access;
-     * otherwise every assigned role must carry the disallow annotation.
-     */
+    // 控制台访问规则：超级角色始终可访问，否则所有已分配角色都必须带有禁用注解。
     public Mono<Boolean> isConsoleAccessDisallowed(String username) {
         return userGroupService
                 .getRoleNamesByUsername(username)
@@ -91,7 +88,7 @@ public class UiPermissionService {
             List<String> permissions = JsonUtils.jsonToObject(raw, new TypeReference<>() {});
             return permissions == null ? List.of() : permissions.stream().filter(StringUtils::isNotBlank).toList();
         } catch (Exception e) {
-            log.warn("Unable to parse the ui-permissions annotation of role [{}]", role.getMetadata().getName(), e);
+            log.warn("无法解析角色 [{}] 的 UI 权限注解", role.getMetadata().getName(), e);
             return List.of();
         }
     }

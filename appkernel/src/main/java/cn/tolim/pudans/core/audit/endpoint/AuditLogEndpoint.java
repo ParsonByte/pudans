@@ -185,15 +185,15 @@ public class AuditLogEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> graph(ServerRequest request) {
         var uid = request.queryParam("uid")
                 .filter(StringUtils::hasText)
-                .orElseThrow(() -> new ServerWebInputException("Query param 'uid' is required."));
+                .orElseThrow(() -> new ServerWebInputException("查询参数 'uid' 为必填项。"));
         var dateValue = request.queryParam("date")
                 .filter(StringUtils::hasText)
-                .orElseThrow(() -> new ServerWebInputException("Query param 'date' is required."));
+                .orElseThrow(() -> new ServerWebInputException("查询参数 'date' 为必填项。"));
         final LocalDate date;
         try {
             date = LocalDate.parse(dateValue);
         } catch (Exception e) {
-            throw new ServerWebInputException("Query param 'date' must be an ISO date, e.g. 2026-11-14.");
+            throw new ServerWebInputException("查询参数 'date' 必须是 ISO 日期，例如 2026-11-14。");
         }
         var from = date.atStartOfDay(ZoneOffset.UTC).toInstant();
         var to = from.plus(Duration.ofDays(1));
@@ -209,7 +209,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return auditService
                 .findById(auditId)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Audit record [" + auditId + "] was not found.")))
+                        HttpStatus.NOT_FOUND, "审计记录 [" + auditId + "] 不存在。")))
                 .flatMap(focus -> {
                     Flux<AuditRecord> steps = StringUtils.hasText(focus.getTraceFlowId())
                             ? auditService.findByTraceFlowId(focus.getTraceFlowId())
@@ -227,7 +227,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(records -> {
                     if (records.isEmpty()) {
                         return Mono.error(new ResponseStatusException(
-                                HttpStatus.NOT_FOUND, "Trace flow [" + traceFlowId + "] was not found."));
+                                HttpStatus.NOT_FOUND, "追踪流 [" + traceFlowId + "] 不存在。"));
                     }
                     var steps = records.stream()
                             .sorted(Comparator.comparing(

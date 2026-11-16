@@ -82,7 +82,7 @@ class PatServiceImpl implements PatService {
 
                 .filter(authTrustResolver::isAuthenticated)
                 .switchIfEmpty(Mono.error(
-                        () -> new UnsatisfiedAttributeValueException("problemDetail.authentication.required")))
+                        () -> new UnsatisfiedAttributeValueException("请先登录。")))
                 .flatMap(auth -> create(patRequest, auth.getName(), auth.getAuthorities()));
     }
 
@@ -99,13 +99,13 @@ class PatServiceImpl implements PatService {
 
         var expiresAt = patSpec.getExpiresAt();
         if (expiresAt != null && expiresAt.isBefore(clock.instant())) {
-            return Mono.error(new UnsatisfiedAttributeValueException("problemDetail.pat.invalidExpiry"));
+            return Mono.error(new UnsatisfiedAttributeValueException("令牌过期时间无效，请选择未来的时间。"));
         }
         var roles = patSpec.getRoles();
         return hasSufficientRoles(authorities, roles)
                 .filter(has -> has)
                 .switchIfEmpty(
-                        Mono.error(() -> new UnsatisfiedAttributeValueException("problemDetail.pat.insufficientRoles")))
+                        Mono.error(() -> new UnsatisfiedAttributeValueException("你没有授予所选角色的权限。")))
                 .map(has -> {
                     var pat = new PersonalAccessToken();
                     pat.setMetadata(new Metadata());
@@ -159,7 +159,7 @@ class PatServiceImpl implements PatService {
         return get(patName, username)
                 .filter(pat -> !pat.getSpec().isRevoked())
                 .switchIfEmpty(
-                        Mono.error(() -> new UnsatisfiedAttributeValueException("problemDetail.pat.alreadyRevoked")))
+                        Mono.error(() -> new UnsatisfiedAttributeValueException("令牌已撤销。")))
                 .doOnNext(pat -> {
                     pat.getSpec().setRevoked(true);
                     pat.getSpec().setRevokesAt(clock.instant());
@@ -171,7 +171,7 @@ class PatServiceImpl implements PatService {
     public Mono<PersonalAccessToken> restore(String patName, String username) {
         return get(patName, username)
                 .filter(pat -> pat.getSpec().isRevoked())
-                .switchIfEmpty(Mono.error(() -> new UnsatisfiedAttributeValueException("problemDetail.pat.notRevoked")))
+                .switchIfEmpty(Mono.error(() -> new UnsatisfiedAttributeValueException("令牌尚未撤销。")))
                 .doOnNext(pat -> {
                     pat.getSpec().setRevoked(false);
                     pat.getSpec().setRevokesAt(null);
@@ -188,8 +188,7 @@ class PatServiceImpl implements PatService {
     public Mono<PersonalAccessToken> get(String patName, String username) {
         return client.fetch(PersonalAccessToken.class, patName)
                 .filter(pat -> Objects.equals(pat.getSpec().getUsername(), username))
-                .switchIfEmpty(Mono.error(() -> new NotFoundException(
-                        "problemDetail.pat.notFound", null, "The personal access token was not found or deleted.")));
+                .switchIfEmpty(Mono.error(() -> new NotFoundException("个人访问令牌不存在或已删除。")));
     }
 
     @Override

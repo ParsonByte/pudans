@@ -84,7 +84,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
                 .flatMap(roleNames -> visitRoleRules(authentication, roleNames, visitor, stopVisiting))
                 .thenReturn(visitor)
                 .onErrorResume(t -> {
-                    log.error("Error occurred when visiting rules", t);
+                    log.error("访问规则时发生错误", t);
                     visitor.visit(null, null, t);
                     return Mono.just(visitor);
                 });
@@ -129,7 +129,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
                     return merged;
                 })
                 .onErrorResume(error -> {
-                    log.warn("Unable to resolve temporary roles for [{}]", authentication.getName(), error);
+                    log.warn("无法解析 [{}] 的临时角色", authentication.getName(), error);
                     return Mono.just(baseRoles);
                 })
                 .switchIfEmpty(Mono.just(baseRoles));

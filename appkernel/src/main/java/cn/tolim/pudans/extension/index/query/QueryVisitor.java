@@ -275,10 +275,10 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             var index = this.<K>getValueIndexQuery(indexName);
             if (!conversionService.canConvert(fromKey.getClass(), index.getKeyType())) {
                 throw new IllegalArgumentException(
-                        "Cannot convert key: " + fromKey + " to type: " + index.getKeyType());
+                        "无法转换键：" + fromKey + "，目标类型：" + index.getKeyType());
             }
             if (!conversionService.canConvert(toKey.getClass(), index.getKeyType())) {
-                throw new IllegalArgumentException("Cannot convert key: " + toKey + " to type: " + index.getKeyType());
+                throw new IllegalArgumentException("无法转换键：" + toKey + "，目标类型：" + index.getKeyType());
             }
             if (negated) {
                 return index.notBetween(
@@ -299,7 +299,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
                 String indexName, Object bound, boolean inclusive, boolean negated) {
             var index = this.<K>getValueIndexQuery(indexName);
             if (!conversionService.canConvert(bound.getClass(), index.getKeyType())) {
-                throw new IllegalArgumentException("Cannot convert key: " + bound + " to type: " + index.getKeyType());
+                throw new IllegalArgumentException("无法转换键：" + bound + "，目标类型：" + index.getKeyType());
             }
             if (negated) {
                 return index.greaterThan(conversionService.convert(bound, index.getKeyType()), inclusive);
@@ -311,7 +311,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
         private <K extends Comparable<K>> Set<String> equalQuery(String indexName, Object key, boolean negated) {
             var index = this.<K>getValueIndexQuery(indexName);
             if (!conversionService.canConvert(key.getClass(), index.getKeyType())) {
-                throw new IllegalArgumentException("Cannot convert key: " + key + " to type: " + index.getKeyType());
+                throw new IllegalArgumentException("无法转换键：" + key + "，目标类型：" + index.getKeyType());
             }
             if (negated) {
                 return index.notEqual(conversionService.convert(key, index.getKeyType()));
@@ -327,7 +327,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
                     .map(key -> {
                         if (!conversionService.canConvert(key.getClass(), index.getKeyType())) {
                             throw new IllegalArgumentException(
-                                    "Cannot convert key: " + key + " to type: " + index.getKeyType());
+                                    "无法转换键：" + key + "，目标类型：" + index.getKeyType());
                         }
                         return conversionService.convert(key, index.getKeyType());
                     })
@@ -342,7 +342,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
         private <K extends Comparable<K>> ValueIndexQuery<K> getValueIndexQuery(String indexName) {
             var index = indices.<K>getIndex(indexName);
             if (!(index instanceof ValueIndexQuery<?> valueIndexQuery)) {
-                throw new IllegalArgumentException("Index is not in-memory: " + indexName);
+                throw new IllegalArgumentException("索引不是内存索引：" + indexName);
             }
             return (ValueIndexQuery<K>) valueIndexQuery;
         }
@@ -351,7 +351,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             var indexName = "metadata.labels";
             var index = indices.<String>getIndex(indexName);
             if (!(index instanceof LabelIndexQuery labelIndexQuery)) {
-                throw new IllegalArgumentException("Index is not a label index: " + indexName);
+                throw new IllegalArgumentException("索引不是标签索引：" + indexName);
             }
             return labelIndexQuery;
         }

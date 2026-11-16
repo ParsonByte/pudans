@@ -41,7 +41,7 @@ public class ListResult<T> implements Iterable<T>, Supplier<Stream<T>> {
             @JsonProperty("size") int size,
             @JsonProperty("total") long total,
             @JsonProperty("items") List<T> items) {
-        Assert.isTrue(total >= 0, "Total elements must be greater than or equal to 0");
+        Assert.isTrue(total >= 0, "总元素数必须大于或等于 0");
         if (page < 0) {
             page = 0;
         }

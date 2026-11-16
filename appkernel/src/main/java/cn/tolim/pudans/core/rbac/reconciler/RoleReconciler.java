@@ -75,7 +75,7 @@ public class RoleReconciler implements Reconciler<Request> {
                         return false;
                     }
                     log.warn(
-                            "Built-in role [{}] has been modified or deleted, restoring the built-in definition",
+                            "内置角色 [{}] 已被修改或删除，正在恢复内置定义",
                             role.getMetadata().getName());
                     client.update(role);
                     return true;

@@ -58,7 +58,7 @@ class AnnotationSettingEndpoint implements CustomEndpoint {
                 .filter(StringUtils::hasText)
                 .orElse(null);
         if (targetRef == null) {
-            return Mono.error(new ServerWebInputException("Query param 'targetRef' is required"));
+            return Mono.error(new ServerWebInputException("查询参数 'targetRef' 为必填项"));
         }
         var options = ListOptions.builder()
                 .andQuery(Queries.equal("spec.targetRef", targetRef))

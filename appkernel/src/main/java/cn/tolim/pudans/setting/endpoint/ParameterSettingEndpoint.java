@@ -111,10 +111,10 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> sendTestMail(ServerRequest request) {
         return request.bodyToMono(TestMailRequest.class)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
                 .flatMap(body -> {
                     if (body.to() == null || !EMAIL_PATTERN.matcher(body.to()).matches()) {
-                        return Mono.error(new ServerWebInputException("to must be a valid email address."));
+                        return Mono.error(new ServerWebInputException("to 必须是有效的邮箱地址。"));
                     }
                     return mailSettingsService.sendTest(body.to()).then(ServerResponse.noContent().build());
                 });
@@ -129,7 +129,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
         var group = request.pathVariable(GROUP_PARAMETER);
         return request.bodyToMono(ObjectNode.class)
                 .switchIfEmpty(Mono.error(new org.springframework.web.server.ServerWebInputException(
-                        "Request body is required.")))
+                        "请求体不能为空。")))
                 .flatMap(body -> groupService.updateGroup(group, body))
                 .flatMap(result -> noContent(result.restartRequired()));
     }
@@ -143,7 +143,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
         var group = request.pathVariable(GROUP_PARAMETER);
         return request.bodyToMono(ObjectNode.class)
                 .switchIfEmpty(Mono.error(new org.springframework.web.server.ServerWebInputException(
-                        "Request body is required.")))
+                        "请求体不能为空。")))
                 .flatMap(body -> groupService.updateLegacyGroup(group, body))
                 .flatMap(result -> noContent(result.restartRequired()));
     }

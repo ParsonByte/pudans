@@ -85,10 +85,10 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
                                 .onAuthenticationSuccess(webFilterExchange, authentication)
                                 .then(Mono.empty())))
                         .flatMap(isXhr -> refreshTokenService
-                                // Refresh tokens: local password login only; passkey/OAuth2 keep their responses.
+                                // 仅本地密码登录签发刷新令牌；Passkey/OAuth2 保持原有响应。
                                 .issue(authentication.getName())
                                 .onErrorResume(error -> {
-                                    log.warn("Unable to issue a refresh token", error);
+                                    log.warn("无法签发刷新令牌", error);
                                     return Mono.just("");
                                 })
                                 .flatMap(refreshToken -> {

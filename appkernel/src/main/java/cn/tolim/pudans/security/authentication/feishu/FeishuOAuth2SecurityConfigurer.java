@@ -54,7 +54,7 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
     @Override
     public void configure(ServerHttpSecurity http) {
         if (!properties.isEnabled()) {
-            log.info("Feishu login is disabled; authorization and callback requests will return a JSON error.");
+            log.info("飞书登录已禁用；授权和回调请求将返回 JSON 错误。");
         }
         var filter = new FeishuOAuth2LoginWebFilter(
                 properties,

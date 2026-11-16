@@ -31,7 +31,7 @@ class SystemStateInitializer {
                 .defaultIfEmpty(false)
                 .flatMap(initialized -> initialized ? Mono.<Void>empty() : backfillLegacyInstallation())
                 .onErrorResume(error -> {
-                    log.error("Failed to backfill system states. Startup will continue.", error);
+                    log.error("回填系统状态失败，启动将继续。", error);
                     return Mono.empty();
                 })
                 .then();
@@ -44,7 +44,7 @@ class SystemStateInitializer {
 
                     if (systemState.getIsSetup() == null) {
                         systemState.setIsSetup(true);
-                        log.info("Backfilled system states for a legacy installation.");
+                        log.info("已为旧版安装回填系统状态。");
                     }
                 }))
                 .then();

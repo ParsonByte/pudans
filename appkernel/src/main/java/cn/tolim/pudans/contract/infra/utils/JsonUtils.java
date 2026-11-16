@@ -24,7 +24,7 @@ public class JsonUtils {
 
 
     public static String objectToJson(Object source) {
-        Assert.notNull(source, "Source object must not be null");
+        Assert.notNull(source, "源对象不能为 null");
         try {
             return DEFAULT_JSON_MAPPER.writeValueAsString(source);
         } catch (JsonProcessingException e) {

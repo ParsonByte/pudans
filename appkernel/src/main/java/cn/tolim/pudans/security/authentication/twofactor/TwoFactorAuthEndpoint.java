@@ -173,7 +173,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> deleteTotp(ServerRequest request) {
         var totpDeleteRequestMono = request.bodyToMono(PasswordRequest.class)
-                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("Request body required")))
+                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("请求体不能为空")))
                 .delayUntil(passwordRequest -> this.validateRequest(passwordRequest, "passwordRequest", request));
 
         var twoFactorAuthSettings = totpDeleteRequestMono.flatMap(passwordRequest -> getCurrentUser()
@@ -183,7 +183,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                     return this.passwordEncoder.matches(rawPassword, encodedPassword);
                 })
                 .switchIfEmpty(Mono.error(
-                        () -> new UnsatisfiedAttributeValueException("problemDetail.user.password.notMatch")))
+                        () -> new UnsatisfiedAttributeValueException("密码不匹配。")))
                 .delayUntil(user -> validateTotpCode(user, passwordRequest.getTotpCode()))
                 .doOnNext(user -> {
                     var spec = user.getSpec();
@@ -217,7 +217,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> toggleTwoFactor(ServerRequest request, boolean enabled) {
         return request.bodyToMono(PasswordRequest.class)
-                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("Request body required")))
+                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("请求体不能为空")))
                 .delayUntil(passwordRequest -> this.validateRequest(passwordRequest, "passwordRequest", request))
                 .flatMap(passwordRequest -> getCurrentUser()
                         .filter(user -> {
@@ -226,7 +226,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                             return passwordEncoder.matches(rawPassword, encodedPassword);
                         })
                         .switchIfEmpty(Mono.error(
-                                () -> new UnsatisfiedAttributeValueException("problemDetail.user.password.notMatch")))
+                                () -> new UnsatisfiedAttributeValueException("密码不匹配。")))
                         .delayUntil(user -> validateTotpCode(user, passwordRequest.getTotpCode()))
                         .doOnNext(user -> user.getSpec().setTwoFactorAuthEnabled(enabled))
                         .flatMap(client::update)
@@ -258,7 +258,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> configureTotp(ServerRequest request) {
         var totpRequestMono = request.bodyToMono(TotpRequest.class)
-                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("Request body required.")))
+                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("请求体不能为空。")))
                 .delayUntil(totpRequest -> this.validateRequest(totpRequest, "totp", request));
 
         var configuredUser = totpRequestMono.flatMap(totpRequest -> {
@@ -270,7 +270,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                         return passwordEncoder.matches(rawPassword, encodedPassword);
                     })
                     .switchIfEmpty(Mono.error(
-                            () -> new UnsatisfiedAttributeValueException("problemDetail.user.password.notMatch")))
+                            () -> new UnsatisfiedAttributeValueException("密码不匹配。")))
                     .delayUntil(user -> validateTotpCode(user, totpRequest.getCurrentTotpCode()))
                     .delayUntil(user -> {
                         var rawSecret = totpRequest.getSecret();
@@ -300,7 +300,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
     }
 
     private Mono<Void> validateRequest(Object target, String name, ServerRequest request) {
-        var bindingResult = ValidationUtils.validate(target, name, validator, request.exchange());
+        var bindingResult = ValidationUtils.validate(target, name, validator);
         if (bindingResult.hasErrors()) {
             return Mono.error(new RequestBodyValidationException(bindingResult));
         }
@@ -318,17 +318,17 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     private Mono<Void> validateTotpCode(String totpEncryptedSecret, String totpCode) {
         if (StringUtils.isBlank(totpCode)) {
-            return Mono.error(new UnsatisfiedAttributeValueException("problemDetail.user.twoFactor.code.required"));
+            return Mono.error(new UnsatisfiedAttributeValueException("请输入双重验证码。"));
         }
         int code;
         try {
             code = Integer.parseInt(totpCode);
         } catch (NumberFormatException e) {
-            return Mono.error(new UnsatisfiedAttributeValueException("problemDetail.user.twoFactor.code.invalid"));
+            return Mono.error(new UnsatisfiedAttributeValueException("双重验证码无效，请重试。"));
         }
         var rawSecret = totpAuthService.decryptSecret(totpEncryptedSecret);
         if (!totpAuthService.validateTotp(rawSecret, code)) {
-            return Mono.error(new UnsatisfiedAttributeValueException("problemDetail.user.twoFactor.code.invalid"));
+            return Mono.error(new UnsatisfiedAttributeValueException("双重验证码无效，请重试。"));
         }
         return Mono.empty();
     }

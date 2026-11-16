@@ -12,8 +12,8 @@ public enum MetadataUtil {
 
 
     public static Map<String, String> nullSafeLabels(AbstractExtension extension) {
-        Assert.notNull(extension, "The extension must not be null.");
-        Assert.notNull(extension.getMetadata(), "The extension metadata must not be null.");
+        Assert.notNull(extension, "扩展不能为 null。");
+        Assert.notNull(extension.getMetadata(), "扩展的 metadata 不能为 null。");
         Map<String, String> labels = extension.getMetadata().getLabels();
         if (labels == null) {
             labels = new HashMap<>();
@@ -24,8 +24,8 @@ public enum MetadataUtil {
 
 
     public static Map<String, String> nullSafeAnnotations(AbstractExtension extension) {
-        Assert.notNull(extension, "The extension must not be null.");
-        Assert.notNull(extension.getMetadata(), "The extension metadata must not be null.");
+        Assert.notNull(extension, "扩展不能为 null。");
+        Assert.notNull(extension.getMetadata(), "扩展的 metadata 不能为 null。");
         Map<String, String> annotations = extension.getMetadata().getAnnotations();
         if (annotations == null) {
             annotations = new HashMap<>();

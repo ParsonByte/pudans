@@ -25,7 +25,7 @@ class DeviceSessionFilter implements WebFilter {
                     return Mono.empty();
                 }
 
-                log.debug("Session ID changed from {} to {}, updating device info.", previousId, currentId);
+                log.debug("会话 ID 从 {} 变为 {}，正在更新设备信息。", previousId, currentId);
                 return deviceService.changeSessionId(exchange);
             }));
         });

@@ -48,12 +48,12 @@ public class OutboundRequestValidator {
 
     private static URI parse(String url) {
         if (!StringUtils.hasText(url)) {
-            throw new IllegalArgumentException("The webhook url must not be blank.");
+            throw new IllegalArgumentException("Webhook URL 不能为空。");
         }
         try {
             return new URI(url.trim());
         } catch (Exception e) {
-            throw new IllegalArgumentException("The webhook url is not a valid uri.", e);
+            throw new IllegalArgumentException("Webhook URL 不是有效的 URI。", e);
         }
     }
 
@@ -61,25 +61,25 @@ public class OutboundRequestValidator {
         var uri = parse(url);
         var scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
         if (!"http".equals(scheme) && !"https".equals(scheme)) {
-            throw new IllegalArgumentException("Only http and https webhook urls are allowed.");
+            throw new IllegalArgumentException("Webhook URL 仅允许使用 HTTP 和 HTTPS。");
         }
         var host = uri.getHost();
         if (!StringUtils.hasText(host)) {
-            throw new IllegalArgumentException("The webhook url must contain a host.");
+            throw new IllegalArgumentException("Webhook URL 必须包含主机名。");
         }
         if (FORBIDDEN_HOSTS.contains(host.toLowerCase(Locale.ROOT))) {
-            throw new IllegalArgumentException("The webhook target [" + host + "] is not allowed.");
+            throw new IllegalArgumentException("不允许使用 Webhook 目标 [" + host + "]。");
         }
         InetAddress[] addresses;
         try {
             addresses = InetAddress.getAllByName(host);
         } catch (UnknownHostException e) {
-            throw new IllegalArgumentException("Unable to resolve the webhook host [" + host + "].", e);
+            throw new IllegalArgumentException("无法解析 Webhook 主机 [" + host + "]。", e);
         }
         for (var address : addresses) {
             if (isBlocked(address)) {
                 throw new IllegalArgumentException(
-                        "The webhook target [" + host + "] resolves to a non routable address.");
+                        "Webhook 目标 [" + host + "] 解析到不可路由的地址。");
             }
         }
     }
@@ -95,7 +95,7 @@ public class OutboundRequestValidator {
             }
             var normalized = name.toLowerCase(Locale.ROOT);
             if (FORBIDDEN_HEADERS.contains(normalized) || normalized.startsWith("x-pudans-")) {
-                log.warn("Dropping the forbidden webhook header [{}]", name);
+                log.warn("丢弃被禁止的 Webhook 请求头 [{}]", name);
                 return;
             }
             sanitized.put(name, value);

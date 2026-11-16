@@ -2,11 +2,9 @@ package cn.tolim.pudans.contract.infra;
 
 import java.util.regex.Pattern;
 import lombok.experimental.UtilityClass;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Validator;
-import org.springframework.web.server.ServerWebExchange;
 
 @UtilityClass
 public class ValidationUtils {
@@ -33,19 +31,13 @@ public class ValidationUtils {
     }
 
 
-    public static BindingResult validate(
-            Object target, String objectName, Validator validator, ServerWebExchange exchange) {
+    public static BindingResult validate(Object target, String objectName, Validator validator) {
         BindingResult bindingResult = new BeanPropertyBindingResult(target, objectName);
-        try {
-            LocaleContextHolder.setLocaleContext(exchange.getLocaleContext());
-            validator.validate(target, bindingResult);
-            return bindingResult;
-        } finally {
-            LocaleContextHolder.resetLocaleContext();
-        }
+        validator.validate(target, bindingResult);
+        return bindingResult;
     }
 
-    public static BindingResult validate(Object target, Validator validator, ServerWebExchange exchange) {
-        return validate(target, "form", validator, exchange);
+    public static BindingResult validate(Object target, Validator validator) {
+        return validate(target, "form", validator);
     }
 }

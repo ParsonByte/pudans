@@ -25,7 +25,7 @@ public class WebhookEventBus {
             result = sink.tryEmitNext(event);
         }
         if (result.isFailure()) {
-            log.warn("Unable to emit webhook event [{}]: {}", event.type(), result);
+            log.warn("无法发送 Webhook 事件 [{}]：{}", event.type(), result);
         }
     }
 

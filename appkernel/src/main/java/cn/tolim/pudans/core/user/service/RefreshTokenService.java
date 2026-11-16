@@ -113,13 +113,13 @@ public class RefreshTokenService {
             return HEX.formatHex(
                     MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 
     private static ApiException invalidToken() {
         return new ApiException(
-                HttpStatus.UNAUTHORIZED, "refresh-token-invalid", "The refresh token is invalid or expired.");
+                HttpStatus.UNAUTHORIZED, "refresh-token-invalid", "刷新令牌无效或已过期。");
     }
 
     private record TtlSettings(Duration accessTokenTtl, Duration refreshTokenTtl) {}

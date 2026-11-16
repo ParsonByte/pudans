@@ -36,7 +36,7 @@ public class FeishuProfileSyncTask {
         subscription = Flux.interval(interval, interval)
                 .onBackpressureDrop()
                 .concatMap(ignored -> syncAll())
-                .onErrorContinue((error, ignored) -> log.error("Feishu profile synchronization failed", error))
+                .onErrorContinue((error, ignored) -> log.error("飞书资料同步失败", error))
                 .subscribe();
     }
 
@@ -49,15 +49,15 @@ public class FeishuProfileSyncTask {
                                 connection.getSpec().getUsername(), userInfo.name(), userInfo.email()))
                         .onErrorResume(error -> {
                             log.warn(
-                                    "Unable to sync Feishu profile for user {}",
+                                    "无法同步用户 {} 的飞书资料",
                                     connection.getSpec().getUsername(),
                                     error);
                             return Mono.empty();
                         }))
                 .then()
-                .doOnSuccess(ignored -> log.info("Feishu profile synchronization finished"))
+                .doOnSuccess(ignored -> log.info("飞书资料同步完成"))
                 .onErrorResume(error -> {
-                    log.warn("Feishu profile synchronization skipped: {}", error.getMessage());
+                    log.warn("飞书资料同步已跳过：{}", error.getMessage());
                     return Mono.empty();
                 });
     }

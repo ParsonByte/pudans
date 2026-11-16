@@ -45,11 +45,7 @@ spring:
   http:
     codecs:
       max-in-memory-size: 10MB
-  messages:
-    basename: config.i18n.messages
   web:
-    locale: zh_CN
-    locale-resolver: accept-header
     error:
       whitelabel:
         enabled: false

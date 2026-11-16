@@ -15,7 +15,7 @@ import reactor.core.publisher.Mono;
 public class DefaultServerAuthenticationEntryPoint implements ServerAuthenticationEntryPoint {
 
     private static final String UNAUTHORIZED_CODE = "unauthorized";
-    private static final String UNAUTHORIZED_DETAIL = "Authentication required.";
+    private static final String UNAUTHORIZED_DETAIL = "需要身份认证。";
     private static final String WWW_AUTHENTICATE = "FormLogin realm=\"console\"";
 
     private final ServerWebExchangeMatcher xhrMatcher = exchange -> {

@@ -10,7 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
 
-// Revalidates resolved addresses at connection time to reject DNS rebinding after the pre-flight check.
+// 在连接时重新校验解析出的地址，防止预检后发生 DNS 重绑定。
 final class ValidatingAddressResolverGroup extends AddressResolverGroup<InetSocketAddress> {
 
     private final OutboundRequestValidator validator;
@@ -126,7 +126,7 @@ final class ValidatingAddressResolverGroup extends AddressResolverGroup<InetSock
 
         private static IllegalArgumentException nonRoutable() {
             return new IllegalArgumentException(
-                    "The webhook target resolves to a non routable address.");
+                    "Webhook 目标解析到不可路由的地址。");
         }
     }
 }

@@ -34,7 +34,7 @@ public class ConfigurableCaptchaService implements CaptchaService {
                 .collect(Collectors.toUnmodifiableMap(CaptchaProvider::type, Function.identity()));
         this.fallback = this.providers.get(ImageCaptchaProvider.TYPE);
         if (fallback == null) {
-            throw new IllegalStateException("The image captcha provider is required.");
+            throw new IllegalStateException("必须配置图片验证码提供方。");
         }
     }
 
@@ -74,7 +74,7 @@ public class ConfigurableCaptchaService implements CaptchaService {
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
         parameterSettingGroupService.getCaptcha().subscribe(
                 config -> resolve(config.getCaptchaProvider()),
-                error -> log.warn("Unable to validate the captcha provider configuration", error));
+                error -> log.warn("无法校验验证码提供方配置", error));
     }
 
     CaptchaProvider resolve(String type) {
@@ -87,7 +87,7 @@ public class ConfigurableCaptchaService implements CaptchaService {
         }
         if (!type.equals(lastWarnedProvider.get())) {
             lastWarnedProvider.set(type);
-            log.warn("Unknown captcha provider [{}]; falling back to [{}]", type, ImageCaptchaProvider.TYPE);
+            log.warn("未知的验证码提供方 [{}]；回退到 [{}]", type, ImageCaptchaProvider.TYPE);
         }
         return fallback;
     }

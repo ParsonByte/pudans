@@ -49,7 +49,7 @@ class DefaultIndicesInitializer implements IndicesInitializer {
         var prefix = ExtensionStoreUtil.buildStoreNamePrefix(scheme);
         List<ExtensionStore> extensionStores;
         String nameCursor = null;
-        log.info("Start to initialize indices for type: {}, prefix: {}", type.getName(), prefix);
+        log.info("开始为类型 {} 初始化索引，前缀：{}", type.getName(), prefix);
         var watch = new StopWatch("Initialize indices for " + type.getName());
         var indexedCount = 0L;
         do {
@@ -64,7 +64,7 @@ class DefaultIndicesInitializer implements IndicesInitializer {
             watch.stop();
         } while (!extensionStores.isEmpty());
         log.info(
-                "Total indexed count: {}, initialization summary: {}",
+                "索引总数：{}，初始化摘要：{}",
                 indexedCount,
                 watch.prettyPrint(TimeUnit.MILLISECONDS));
     }

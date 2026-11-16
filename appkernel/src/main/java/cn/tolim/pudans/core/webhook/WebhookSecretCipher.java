@@ -28,7 +28,7 @@ public class WebhookSecretCipher {
 
     private static final String PREFIX = "enc:";
 
-    // One-time migration path for keystores created before the password became configurable.
+    // 兼容密码可配置之前创建的密钥库的一次性迁移路径。
     private static final char[] LEGACY_PASSWORD = "changeit".toCharArray();
 
     private static final String ALIAS = "webhook-secret-key";
@@ -43,7 +43,7 @@ public class WebhookSecretCipher {
         var configuredPassword = properties.getWebhook().getKeystorePassword();
         if (!StringUtils.hasText(configuredPassword)) {
             throw new IllegalStateException(
-                    "pudans.webhook.keystore-password (PUDANS_WEBHOOK_KEYSTORE_PASSWORD) must be set.");
+                    "必须设置 pudans.webhook.keystore-password (PUDANS_WEBHOOK_KEYSTORE_PASSWORD)。");
         }
         this.encryptor = loadOrCreate(
                 properties.getWorkDir().resolve("keys"), configuredPassword.toCharArray());
@@ -66,12 +66,12 @@ public class WebhookSecretCipher {
             var legacyKeyStore = load(keyStorePath, LEGACY_PASSWORD);
             if (legacyKeyStore == null) {
                 throw new IllegalStateException(
-                        "Unable to open the webhook keystore. Check pudans.webhook.keystore-password.");
+                        "无法打开 Webhook 密钥库，请检查 pudans.webhook.keystore-password。");
             }
             var legacyKey = getAesKey(legacyKeyStore, LEGACY_PASSWORD);
             if (legacyKey == null) {
                 throw new IllegalStateException(
-                        "The webhook keystore does not contain an AES key readable with the legacy password.");
+                        "Webhook 密钥库中不包含可用旧密码读取的 AES 密钥。");
             }
             legacyKeyStore.setEntry(
                     ALIAS,
@@ -80,11 +80,10 @@ public class WebhookSecretCipher {
             store(legacyKeyStore, keyStorePath, password);
             restrictPermissions(keyStorePath);
             log.warn(
-                    "Migrated the webhook keystore to the configured password. "
-                            + "Existing webhook secrets remain decryptable.");
+                    "已将 Webhook 密钥库迁移到配置的密码，现有 Webhook 密钥仍可解密。");
             return encryptor(legacyKey);
         } catch (IOException | GeneralSecurityException e) {
-            throw new IllegalStateException("Unable to initialize webhook secret cipher", e);
+            throw new IllegalStateException("无法初始化 Webhook 密钥加密器", e);
         }
     }
 
@@ -105,8 +104,8 @@ public class WebhookSecretCipher {
         var secretKey = getAesKey(keyStore, password);
         if (secretKey == null) {
             throw new IllegalStateException(
-                    "The webhook keystore does not contain an AES key readable with the configured password. "
-                            + "Check pudans.webhook.keystore-password (" + keyStorePath + ").");
+                    "Webhook 密钥库中不包含可用配置密码读取的 AES 密钥。"
+                            + "请检查 pudans.webhook.keystore-password（" + keyStorePath + "）。");
         }
         return encryptor(secretKey);
     }
@@ -154,7 +153,7 @@ public class WebhookSecretCipher {
         try {
             Files.setPosixFilePermissions(keyStorePath, PosixFilePermissions.fromString(SECURE_PERMISSIONS));
         } catch (UnsupportedOperationException | IOException e) {
-            log.debug("Unable to set webhook keystore permissions on {}", keyStorePath, e);
+            log.debug("无法设置 Webhook 密钥库 {} 的权限", keyStorePath, e);
         }
     }
 
@@ -164,15 +163,15 @@ public class WebhookSecretCipher {
             var expected = PosixFilePermissions.fromString(SECURE_PERMISSIONS);
             if (!permissions.equals(expected)) {
                 log.warn(
-                        "Webhook keystore [{}] has permissions [{}]; expected [{}].",
+                        "Webhook 密钥库 [{}] 的权限为 [{}]；预期为 [{}]。",
                         keyStorePath,
                         PosixFilePermissions.toString(permissions),
                         SECURE_PERMISSIONS);
             }
         } catch (UnsupportedOperationException e) {
-            log.debug("POSIX permissions are not supported on this platform");
+            log.debug("此平台不支持 POSIX 权限");
         } catch (IOException e) {
-            log.warn("Unable to inspect webhook keystore permissions on {}", keyStorePath, e);
+            log.warn("无法检查 Webhook 密钥库 {} 的权限", keyStorePath, e);
         }
     }
 

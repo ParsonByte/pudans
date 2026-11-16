@@ -72,7 +72,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
                 .map(SecurityContext::getAuthentication)
                 .transform(this::mustBeAuthenticated)
                 .flatMap(auth -> request.bodyToMono(PersonalAccessToken.class))
-                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("Missing request body.")))
+                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("缺少请求体。")))
                 .flatMap(patService::create)
                 .flatMap(pat -> patService
                         .generateToken(pat)

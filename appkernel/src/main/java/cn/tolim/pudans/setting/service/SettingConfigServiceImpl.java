@@ -22,8 +22,8 @@ class SettingConfigServiceImpl implements SettingConfigService {
 
     @Override
     public Mono<Void> upsertConfig(String configMapName, ObjectNode configJsonData) {
-        Assert.notNull(configMapName, "Config map name must not be null");
-        Assert.notNull(configJsonData, "Config json data must not be null");
+        Assert.notNull(configMapName, "ConfigMap 名称不能为空");
+        Assert.notNull(configJsonData, "ConfigMap 的 JSON 数据不能为空");
         var data = SettingUtils.settingConfigJsonToMap(configJsonData);
         return Mono.defer(() -> client.fetch(ConfigMap.class, configMapName).flatMap(persisted -> {
                     persisted.setData(data);

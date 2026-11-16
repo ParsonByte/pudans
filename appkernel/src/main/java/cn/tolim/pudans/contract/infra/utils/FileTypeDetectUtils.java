@@ -22,7 +22,7 @@ public class FileTypeDetectUtils {
 
 
     public static String detectMimeType(InputStream inputStream, String name) throws IOException {
-        Assert.notNull(name, "The name of the document must not be null");
+        Assert.notNull(name, "文档名称不能为 null");
         var metadata = new Metadata();
         metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, name);
         return doDetectMimeType(inputStream, metadata);
@@ -34,7 +34,7 @@ public class FileTypeDetectUtils {
     }
 
     private static String doDetectMimeType(InputStream inputStream, Metadata metadata) throws IOException {
-        Assert.notNull(inputStream, "The inputStream must not be null");
+        Assert.notNull(inputStream, "inputStream 不能为 null");
         try (var stream = (!inputStream.markSupported() ? new BufferedInputStream(inputStream) : inputStream)) {
             return detector.detect(TikaInputStream.get(stream), metadata, new ParseContext())
                     .toString();
@@ -53,7 +53,7 @@ public class FileTypeDetectUtils {
 
 
     public static String getFileExtension(String fileName) {
-        Assert.notNull(fileName, "The fileName must not be null");
+        Assert.notNull(fileName, "fileName 不能为 null");
         int lastDot = fileName.lastIndexOf(".");
         if (lastDot > 0) {
             return fileName.substring(lastDot).toLowerCase();
@@ -63,8 +63,8 @@ public class FileTypeDetectUtils {
 
 
     public boolean isValidExtensionForMime(String mimeType, String fileName) {
-        Assert.notNull(mimeType, "The mimeType must not be null");
-        Assert.notNull(fileName, "The fileName must not be null");
+        Assert.notNull(mimeType, "mimeType 不能为 null");
+        Assert.notNull(fileName, "fileName 不能为 null");
         String fileExtension = getFileExtension(fileName);
         try {
             List<String> detectedExtByMime = detectFileExtensions(mimeType);

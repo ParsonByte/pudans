@@ -78,9 +78,9 @@ public class DashboardEndpoint implements CustomEndpoint {
         return aggregate()
                 .flatMap(overview -> ServerResponse.ok().bodyValue(overview))
                 .onErrorResume(error -> {
-                    log.warn("Unable to aggregate the dashboard overview", error);
+                    log.warn("无法聚合仪表盘概览", error);
                     return Mono.error(new ResponseStatusException(
-                            HttpStatus.INTERNAL_SERVER_ERROR, "Dashboard aggregation failed."));
+                            HttpStatus.INTERNAL_SERVER_ERROR, "仪表盘聚合失败。"));
                 });
     }
 
@@ -94,7 +94,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .get()
                 .map(DashboardEndpoint::toSummary)
                 .onErrorResume(error -> {
-                    log.warn("Unable to resolve the system info", error);
+                    log.warn("无法解析系统信息", error);
                     return Mono.just(GlobalInfoSummary.empty());
                 });
         var realRoles = listRealRoles();
@@ -128,10 +128,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                                 roleDistribution)));
     }
 
-    /**
-     * Roles that may be shown as assignable: everything except the underlying
-     * role templates and hidden internal roles.
-     */
+    // 可展示为可分配的角色：排除底层角色模板和隐藏的内部角色。
     private Mono<List<Role>> listRealRoles() {
         return client
                 .listAll(Role.class, ListOptions.builder().andQuery(notDeleting()).build(), defaultSort())
@@ -262,7 +259,6 @@ public class DashboardEndpoint implements CustomEndpoint {
                 info.getSubtitle(),
                 info.getUrl() == null ? null : info.getUrl().toString(),
                 info.getTimeZone() == null ? null : info.getTimeZone().getID(),
-                info.getLocale() == null ? null : info.getLocale().toString(),
                 info.getVersion() == null ? null : info.getVersion().toString(),
                 uptimeSeconds());
     }
@@ -300,12 +296,11 @@ public class DashboardEndpoint implements CustomEndpoint {
             String siteSubtitle,
             String externalUrl,
             String timezone,
-            String locale,
             String version,
             long uptimeSeconds) {
 
         public static GlobalInfoSummary empty() {
-            return new GlobalInfoSummary(null, null, null, null, null, null, 0L);
+            return new GlobalInfoSummary(null, null, null, null, null, 0L);
         }
     }
 

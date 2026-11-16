@@ -29,13 +29,13 @@ public class LabelSelectorConverter implements Converter<SelectorCriteria, Label
             case IN -> {
                 return Queries.labelIn(criteria.key(), defaultIfNull(criteria.values(), Set.of()));
             }
-            default -> throw new IllegalArgumentException("Unsupported operator: " + criteria.operator());
+            default -> throw new IllegalArgumentException("不支持的操作符：" + criteria.operator());
         }
     }
 
     String getSingleValue(SelectorCriteria criteria) {
         if (CollectionUtils.isEmpty(criteria.values())) {
-            throw new IllegalArgumentException("No value present for label key: " + criteria.key());
+            throw new IllegalArgumentException("标签键没有对应的值：" + criteria.key());
         }
         return criteria.values().iterator().next();
     }

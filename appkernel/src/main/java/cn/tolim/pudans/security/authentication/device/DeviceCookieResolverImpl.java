@@ -27,7 +27,7 @@ class DeviceCookieResolverImpl implements DeviceCookieResolver {
 
     @Override
     public void setCookie(ServerWebExchange exchange, String value) {
-        Assert.notNull(value, "'value' is required");
+        Assert.notNull(value, "'value' 不能为空");
         exchange.getResponse()
                 .beforeCommit(() -> Mono.fromRunnable(() -> {
                     var deviceCookie = initCookie(exchange, value).build();

@@ -12,7 +12,7 @@ public class SchemaViolationException extends ExtensionException {
     private final ValidationResults errors;
 
     public SchemaViolationException(GroupVersionKind gvk, ValidationResults errors) {
-        super(HttpStatus.BAD_REQUEST, "Failed to validate " + gvk, null, null, new Object[] {gvk, errors});
+        super(HttpStatus.BAD_REQUEST, "数据结构校验失败：" + gvk, null, null, null);
         this.errors = errors;
     }
 

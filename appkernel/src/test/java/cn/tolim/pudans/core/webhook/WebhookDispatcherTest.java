@@ -123,7 +123,7 @@ class WebhookDispatcherTest {
         verify(auditService, timeout(5_000)).record(captor.capture());
         assertThat(captor.getValue().getResult()).isEqualTo("FAILURE");
         assertThat((String) captor.getValue().getContext().get("message"))
-                .contains("non routable");
+                .contains("不可路由");
     }
 
     @Test

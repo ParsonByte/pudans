@@ -34,7 +34,7 @@ public class SecurityProperties {
 
     private final List<String> trustedProxies = new ArrayList<>();
 
-    // Destination used after a successful interactive sign-in.
+    // 交互式登录成功后的跳转地址。
     private String postLoginUrl = "/";
 
     @Data
@@ -110,23 +110,19 @@ public class SecurityProperties {
     @Data
     public static class PasswordResetOptions {
 
-        /** How long an emailed verification code remains valid. */
+        // 邮件验证码的有效期。
         private Duration codeTtl = Duration.ofMinutes(10);
 
-        /** Maximum number of code attempts before the code is invalidated. */
+        // 验证码失效前的最大尝试次数。
         private int maxAttempts = 5;
 
-        /** Minimum interval between two send-code requests for the same email. */
+        // 同一邮箱两次发送验证码之间的最小间隔。
         private Duration resendCooldown = Duration.ofSeconds(60);
 
-        /** From address used for password reset emails. */
+        // 密码重置邮件的发件地址。
         private String from = "no-reply@pudans.local";
 
-        /**
-         * Development fallback: write the generated code to the application log
-         * when no JavaMailSender is configured. Disabled by default; enable
-         * explicitly for local development.
-         */
+        // 开发回退：未配置 JavaMailSender 时将验证码写入应用日志；默认关闭，仅在本地开发时显式启用。
         private boolean logCodes = false;
     }
 }

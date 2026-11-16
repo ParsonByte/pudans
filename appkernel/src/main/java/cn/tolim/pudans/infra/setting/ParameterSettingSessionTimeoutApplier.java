@@ -35,7 +35,7 @@ public class ParameterSettingSessionTimeoutApplier {
     void apply() {
         parameterSettingGroupService.getServer().subscribe(
                 server -> apply(server.getAccessTokenTtlSeconds()),
-                error -> log.warn("Unable to read the access token TTL", error));
+                error -> log.warn("无法读取访问令牌 TTL", error));
     }
 
     void apply(Integer accessTokenTtlSeconds) {
@@ -43,6 +43,6 @@ public class ParameterSettingSessionTimeoutApplier {
                 ? DEFAULT_ACCESS_TOKEN_TTL_SECONDS
                 : Math.max(60, accessTokenTtlSeconds);
         sessionRepository.setDefaultMaxInactiveInterval(Duration.ofSeconds(seconds));
-        log.info("Applied access token TTL of {} seconds to new sessions", seconds);
+        log.info("已将访问令牌 TTL 设置为 {} 秒，应用于新会话", seconds);
     }
 }

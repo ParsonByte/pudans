@@ -56,7 +56,7 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
             return URI.create(normalizedUrlString).toURL();
         } catch (IllegalArgumentException | MalformedURLException e) {
 
-            log.debug("Failed to normalize external URL: {}", externalUrlString, e);
+            log.debug("无法规范化外部 URL：{}", externalUrlString, e);
             return url;
         }
     }
@@ -86,8 +86,7 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
                                 .toURL();
                     } catch (MalformedURLException e) {
                         log.error("""
-                                Cannot parse external URL {} from parameter settings. Fallback to default \
-                                external URL supplier from properties.\
+                                无法从参数设置解析外部 URL {}，回退到属性中的默认外部 URL 提供器。\
                                 """, externalUrlString, e);
 
                         return null;
@@ -123,7 +122,7 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
         try {
             url = normalizeUrl(request.getURI().resolve(getBasePath()).toURL());
         } catch (MalformedURLException e) {
-            throw new RuntimeException("Cannot parse request URI to URL.", e);
+            throw new RuntimeException("无法将请求 URI 解析为 URL。", e);
         }
         return url;
     }

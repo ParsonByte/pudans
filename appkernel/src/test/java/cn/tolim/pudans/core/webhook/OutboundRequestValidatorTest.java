@@ -15,47 +15,47 @@ class OutboundRequestValidatorTest {
     void loopbackTargetIsRejected() {
         assertThatThrownBy(() -> validator.validate("http://127.0.0.1/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("non routable");
+                .hasMessageContaining("不可路由");
     }
 
     @Test
     void cloudMetadataTargetIsRejected() {
         assertThatThrownBy(() -> validator.validate("http://169.254.169.254/latest/meta-data"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("non routable");
+                .hasMessageContaining("不可路由");
     }
 
     @Test
     void privateNetworkTargetIsRejected() {
         assertThatThrownBy(() -> validator.validate("http://10.0.0.5/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("non routable");
+                .hasMessageContaining("不可路由");
         assertThatThrownBy(() -> validator.validate("http://192.168.1.10/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("non routable");
+                .hasMessageContaining("不可路由");
         assertThatThrownBy(() -> validator.validate("http://172.16.0.7/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("non routable");
+                .hasMessageContaining("不可路由");
     }
 
     @Test
     void localhostNameIsRejectedBeforeResolution() {
         assertThatThrownBy(() -> validator.validate("http://localhost:8080/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("not allowed");
+                .hasMessageContaining("不允许");
     }
 
     @Test
     void ipv6NonRoutableTargetsAreRejected() {
         assertThatThrownBy(() -> validator.validate("http://[::1]/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("non routable");
+                .hasMessageContaining("不可路由");
         assertThatThrownBy(() -> validator.validate("http://[fc00::1]/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("non routable");
+                .hasMessageContaining("不可路由");
         assertThatThrownBy(() -> validator.validate("http://[fe80::1]/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("non routable");
+                .hasMessageContaining("不可路由");
     }
 
     @Test
@@ -87,7 +87,7 @@ class OutboundRequestValidatorTest {
     void nonHttpSchemeIsRejected() {
         assertThatThrownBy(() -> validator.validate("ftp://example.com/hook"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("http and https");
+                .hasMessageContaining("HTTP 和 HTTPS");
     }
 
     @Test

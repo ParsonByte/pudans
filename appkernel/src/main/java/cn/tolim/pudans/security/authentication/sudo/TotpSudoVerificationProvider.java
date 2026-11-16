@@ -38,7 +38,7 @@ class TotpSudoVerificationProvider implements SudoVerificationProvider {
 
     @Override
     public Mono<Void> sendCode(User user) {
-        return Mono.error(new ServerWebInputException("TOTP does not send a verification code"));
+        return Mono.error(new ServerWebInputException("TOTP 无需发送验证码"));
     }
 
     @Override

@@ -61,7 +61,7 @@ class DefaultIndices<E extends Extension> implements Indices<E> {
             }
             ops.forEach(TransactionalOperation::commit);
         } catch (Exception e) {
-            log.warn("Failed to insert extension {} and trying to rollback", primaryKey, e);
+            log.warn("插入扩展 {} 失败，正在尝试回滚", primaryKey, e);
             ops.forEach(TransactionalOperation::rollback);
             throw e;
         } finally {
@@ -120,14 +120,14 @@ class DefaultIndices<E extends Extension> implements Indices<E> {
         ensureNotClosed();
         var index = (Index<E, K>) indexMap.get(indexName);
         if (index == null) {
-            throw new IllegalArgumentException("No index found with name: " + indexName);
+            throw new IllegalArgumentException("未找到具有以下名称的索引：" + indexName);
         }
         return index;
     }
 
     private void ensureNotClosed() {
         if (closed) {
-            throw new IllegalStateException("Indices has been closed");
+            throw new IllegalStateException("索引已关闭");
         }
     }
 }

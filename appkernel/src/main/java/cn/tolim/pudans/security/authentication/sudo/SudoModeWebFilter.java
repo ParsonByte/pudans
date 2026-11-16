@@ -56,7 +56,7 @@ class SudoModeWebFilter implements WebFilter {
     private static String requiredFormValue(MultiValueMap<String, String> form, String name) {
         var value = form.getFirst(name);
         if (!StringUtils.hasText(value)) {
-            throw new ServerWebInputException(name + " is required");
+            throw new ServerWebInputException(name + " 为必填项");
         }
         return value;
     }

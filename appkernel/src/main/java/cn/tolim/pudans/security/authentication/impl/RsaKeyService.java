@@ -55,7 +55,7 @@ public class RsaKeyService implements CryptoService, InitializingBean {
     public static final String ALGORITHM = "RSA";
 
     private static final String REGENERATION_WARNING =
-            "Generating a new key pair will invalidate JWTs signed with the previous key.";
+            "生成新的密钥对将使使用旧密钥签名的 JWT 失效。";
 
     private final Path keysRoot;
 
@@ -132,7 +132,7 @@ public class RsaKeyService implements CryptoService, InitializingBean {
             return new String(Hex.encode(md.digest(data)));
         } catch (NoSuchAlgorithmException e) {
 
-            throw new RuntimeException("Cannot obtain SHA-256 algorithm for message digest.", e);
+            throw new RuntimeException("无法获取用于消息摘要的 SHA-256 算法。", e);
         }
     }
 
@@ -157,21 +157,21 @@ public class RsaKeyService implements CryptoService, InitializingBean {
             var privKeyBytes = readKeyFileIfPresent(privKeyPath);
             var pubKeyBytes = readKeyFileIfPresent(pubKeyPath);
             if (privKeyBytes == null && pubKeyBytes != null) {
-                log.warn("RSA private key is missing at {}. " + REGENERATION_WARNING, privKeyPath);
+                log.warn("{} 处缺少 RSA 私钥。" + REGENERATION_WARNING, privKeyPath);
             }
             PrivateKey existingPrivateKey = null;
             if (privKeyBytes != null) {
                 try {
                     existingPrivateKey = keyFactory.generatePrivate(new PKCS8EncodedKeySpec(privKeyBytes));
                 } catch (InvalidKeySpecException e) {
-                    log.warn("Invalid RSA private key at {}. " + REGENERATION_WARNING, privKeyPath);
+                    log.warn("{} 处的 RSA 私钥无效。" + REGENERATION_WARNING, privKeyPath);
                 }
             }
             if (existingPrivateKey instanceof RSAPrivateCrtKey privateKey) {
                 var pubKey = keyFactory.generatePublic(
                         new RSAPublicKeySpec(privateKey.getModulus(), privateKey.getPublicExponent()));
                 if (!Arrays.equals(pubKey.getEncoded(), pubKeyBytes)) {
-                    log.warn("Restoring RSA public key at {} from the existing private key.", pubKeyPath);
+                    log.warn("正在从现有私钥恢复 {} 处的 RSA 公钥。", pubKeyPath);
                     writeKeyFileAtomically(pubKeyPath, pubKey.getEncoded());
                 }
                 return new KeyPair(pubKey, privateKey);
@@ -182,12 +182,12 @@ public class RsaKeyService implements CryptoService, InitializingBean {
                     return new KeyPair(pubKey, privateKey);
                 }
                 log.warn(
-                        "Cannot derive or verify the public key for the non-CRT RSA private key at {}. "
+                        "无法为 {} 处的非 CRT RSA 私钥派生或验证公钥。 "
                                 + REGENERATION_WARNING,
                         privKeyPath);
             }
 
-            log.info("Generating RSA keys for PAT.");
+            log.info("正在生成 PAT 的 RSA 密钥。");
             var rsaKey = new RSAKeyGenerator(4096).generate();
             var pubKey = rsaKey.toRSAPublicKey();
             var privKey = rsaKey.toRSAPrivateKey();
@@ -195,10 +195,10 @@ public class RsaKeyService implements CryptoService, InitializingBean {
 
             writeKeyFileAtomically(privKeyPath, privKey.getEncoded());
             writeKeyFileAtomically(pubKeyPath, pubKey.getEncoded());
-            log.info("Wrote RSA keys for PAT into {} and {}", privKeyPath, pubKeyPath);
+            log.info("已将 PAT 的 RSA 密钥写入 {} 和 {}", privKeyPath, pubKeyPath);
             return new KeyPair(pubKey, privKey);
         } catch (JOSEException | IOException | InvalidKeySpecException | NoSuchAlgorithmException e) {
-            throw new RuntimeException("Failed to generate or read RSA key pair", e);
+            throw new RuntimeException("无法生成或读取 RSA 密钥对", e);
         }
     }
 
@@ -213,9 +213,9 @@ public class RsaKeyService implements CryptoService, InitializingBean {
                         return Mono.just(cipher.doFinal(encryptedMessage));
                     } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException e) {
                         return Mono.error(
-                                new RuntimeException("Failed to read private key or the key was invalid.", e));
+                                new RuntimeException("无法读取私钥，或私钥无效。", e));
                     } catch (IllegalBlockSizeException | BadPaddingException e) {
-                        return Mono.error(new InvalidEncryptedMessageException("Invalid encrypted message."));
+                        return Mono.error(new InvalidEncryptedMessageException("加密消息无效。"));
                     }
                 })
                 .subscribeOn(Schedulers.boundedElastic());

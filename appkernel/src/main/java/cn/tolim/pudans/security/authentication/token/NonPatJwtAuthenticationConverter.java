@@ -17,8 +17,8 @@ record NonPatJwtAuthenticationConverter(Converter<Jwt, Mono<AbstractAuthenticati
 
         if (jwt.getClaims().containsKey("pat_name")) {
             log.warn(
-                    "Skip JWT authentication for PAT token: {}", jwt.getClaims().get("pat_name"));
-            return Mono.error(new InvalidBearerTokenException("PAT token is not allowed here"));
+                    "跳过 PAT 令牌的 JWT 认证：{}", jwt.getClaims().get("pat_name"));
+            return Mono.error(new InvalidBearerTokenException("此处不允许使用 PAT 令牌"));
         }
         return delegate.convert(jwt);
     }

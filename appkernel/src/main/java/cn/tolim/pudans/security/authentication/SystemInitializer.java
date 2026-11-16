@@ -109,7 +109,7 @@ public class SystemInitializer implements SuperAdminInitializer {
                     || Boolean.TRUE.equals(spec.getDisabled())
                     || !StringUtils.hasText(spec.getPassword())
                     || !passwordEncoder.matches(param.getPassword(), spec.getPassword())) {
-                throw new BadCredentialsException("The username or password is incorrect.");
+                throw new BadCredentialsException("用户名或密码错误。");
             }
             return admin;
         });

@@ -68,7 +68,7 @@ public class ParameterSettingGroupService {
 
     public Mono<ObjectNode> getGroup(String group) {
         if (!isKnownGroup(group)) {
-            return Mono.error(new ServerWebInputException("Unknown parameter setting group: " + group));
+            return Mono.error(new ServerWebInputException("未知的参数设置组：" + group));
         }
         return fetcher.fetch(group, ObjectNode.class)
                 .switchIfEmpty(Mono.fromSupplier(JsonMapper.shared()::createObjectNode))
@@ -95,11 +95,11 @@ public class ParameterSettingGroupService {
 
     public Mono<UpdateResult> updateLegacyGroup(String group, ObjectNode incoming) {
         if (incoming == null) {
-            return Mono.error(new ServerWebInputException("Request body is required."));
+            return Mono.error(new ServerWebInputException("请求体不能为空。"));
         }
         return fetcher.getConfigMap()
                 .switchIfEmpty(Mono.error(() -> new IllegalStateException(
-                        "The parameter settings ConfigMap is missing.")))
+                        "缺少参数设置 ConfigMap。")))
                 .flatMap(configMap -> {
                     if (configMap.getData() == null) {
                         configMap.setData(new HashMap<>());
@@ -123,14 +123,14 @@ public class ParameterSettingGroupService {
 
     public Mono<UpdateResult> updateGroup(String group, ObjectNode incoming) {
         if (!isKnownGroup(group)) {
-            return Mono.error(new ServerWebInputException("Unknown parameter setting group: " + group));
+            return Mono.error(new ServerWebInputException("未知的参数设置组：" + group));
         }
         if (incoming == null) {
-            return Mono.error(new ServerWebInputException("Request body is required."));
+            return Mono.error(new ServerWebInputException("请求体不能为空。"));
         }
         return fetcher.getConfigMap()
                 .switchIfEmpty(Mono.error(() -> new IllegalStateException(
-                        "The parameter settings ConfigMap is missing.")))
+                        "缺少参数设置 ConfigMap。")))
                 .flatMap(configMap -> updateConfigMap(group, incoming, configMap));
     }
 
@@ -189,7 +189,7 @@ public class ParameterSettingGroupService {
                 && StringUtils.hasText(requestedSiteId)
                 && !existingSiteId.equals(requestedSiteId)) {
             var errors = new BeanPropertyBindingResult(new ParameterSetting.Server(), ParameterSetting.Server.GROUP);
-            errors.rejectValue("siteId", "readOnly", "siteId is read-only.");
+            errors.rejectValue("siteId", "readOnly", "siteId 为只读。");
             throw new RequestBodyValidationException(errors);
         }
         var siteId = StringUtils.hasText(existingSiteId) ? existingSiteId : requestedSiteId;
@@ -209,13 +209,13 @@ public class ParameterSettingGroupService {
         try {
             model = JsonMapper.shared().convertValue(effective, type);
         } catch (RuntimeException e) {
-            throw new ServerWebInputException("The " + group + " settings cannot be read.", null, e);
+            throw new ServerWebInputException("无法读取 " + group + " 设置。", null, e);
         }
         var errors = new BeanPropertyBindingResult(model, group);
         validator.validate(model, errors);
         if ("server".equals(group) && model instanceof ParameterSetting.Server server) {
             if (StringUtils.hasText(server.getGcCron()) && !CronExpression.isValidExpression(server.getGcCron())) {
-                errors.rejectValue("gcCron", "invalid", "gcCron must be a valid six-field cron expression.");
+                errors.rejectValue("gcCron", "invalid", "gcCron 必须是有效的六段式 cron 表达式。");
             }
         }
         if ("audit".equals(group) && model instanceof ParameterSetting.Audit audit) {
@@ -235,7 +235,7 @@ public class ParameterSettingGroupService {
         if (StringUtils.hasText(mode)
                 && !"WHITELIST".equalsIgnoreCase(mode)
                 && !"BLACKLIST".equalsIgnoreCase(mode)) {
-            errors.rejectValue("auditRecordRules.mode", "invalid", "mode must be WHITELIST or BLACKLIST.");
+            errors.rejectValue("auditRecordRules.mode", "invalid", "mode 必须为 WHITELIST 或 BLACKLIST。");
         }
         validateRuleList(rules.getOperations(), "auditRecordRules.operations", errors);
         validateRuleList(rules.getResourceTypes(), "auditRecordRules.resourceTypes", errors);
@@ -246,10 +246,10 @@ public class ParameterSettingGroupService {
             return;
         }
         if (values.size() > 100) {
-            errors.rejectValue(field, "size", field + " must contain at most 100 entries.");
+            errors.rejectValue(field, "size", field + " 最多只能包含 100 个条目。");
         }
         if (values.stream().anyMatch(value -> value == null || value.isBlank() || value.length() > 128)) {
-            errors.rejectValue(field, "invalid", field + " entries must be 1-128 characters.");
+            errors.rejectValue(field, "invalid", field + " 的条目长度必须为 1-128 个字符。");
         }
     }
 
@@ -462,7 +462,7 @@ public class ParameterSettingGroupService {
             JsonNode node = JsonMapper.shared().readTree(json);
             return node.isObject() ? (ObjectNode) node : JsonMapper.shared().createObjectNode();
         } catch (RuntimeException e) {
-            log.warn("Ignoring malformed parameter setting group JSON");
+            log.warn("忽略格式错误的参数设置组 JSON");
             return JsonMapper.shared().createObjectNode();
         }
     }
@@ -498,7 +498,7 @@ public class ParameterSettingGroupService {
             var digest = MessageDigest.getInstance("SHA-256");
             return HexFormat.of().formatHex(digest.digest(announcement.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 

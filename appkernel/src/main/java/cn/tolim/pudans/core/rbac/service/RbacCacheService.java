@@ -92,7 +92,7 @@ public class RbacCacheService {
         } catch (RuntimeException e) {
             return;
         }
-        invalidateAll().subscribe(ignored -> {}, error -> log.warn("Unable to invalidate the rbac cache", error));
+        invalidateAll().subscribe(ignored -> {}, error -> log.warn("无法失效 RBAC 缓存", error));
     }
 
     public Mono<Void> invalidateAll() {

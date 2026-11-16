@@ -20,7 +20,7 @@ public class PathUtils {
             URI uri = new URI(uriString);
             return uri.isAbsolute();
         } catch (URISyntaxException e) {
-            log.debug("Failed to parse uri: " + uriString, e);
+            log.debug("无法解析 URI：" + uriString, e);
 
             return false;
         }

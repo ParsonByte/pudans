@@ -84,7 +84,7 @@ class UcUserEndpoint implements CustomEndpoint {
         return authenticated()
                 .map(Authentication::getName)
                 .flatMap(username -> request.bodyToMono(ChangeMyPasswordRequest.class)
-                        .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is empty")))
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为空")))
                         .flatMap(changeRequest -> userService.getUser(username).flatMap(user -> {
                             var passwordSet = StringUtils.hasText(user.getSpec().getPassword());
                             var verifyPassword = passwordSet
@@ -101,13 +101,13 @@ class UcUserEndpoint implements CustomEndpoint {
     private Mono<Boolean> verifyOldPassword(String username, String oldPassword) {
         if (!StringUtils.hasText(oldPassword)) {
             return Mono.error(new UnsatisfiedAttributeValueException(
-                    "Old password is required.", "problemDetail.user.oldPassword.required", null));
+                    "旧密码为必填项。"));
         }
         return userService
                 .confirmPassword(username, oldPassword)
                 .filter(Boolean::booleanValue)
                 .switchIfEmpty(Mono.error(new UnsatisfiedAttributeValueException(
-                        "Old password is incorrect.", "problemDetail.user.oldPassword.notMatch", null)));
+                        "旧密码不匹配。")));
     }
 
     private Mono<Authentication> authenticated() {
@@ -115,7 +115,7 @@ class UcUserEndpoint implements CustomEndpoint {
                 .mapNotNull(SecurityContext::getAuthentication)
                 .filter(trustResolver::isAuthenticated)
                 .switchIfEmpty(Mono.error(() -> new ResponseStatusException(
-                        HttpStatus.FORBIDDEN, "Anonymous user is not allowed to access user profile.")));
+                        HttpStatus.FORBIDDEN, "匿名用户不能访问用户资料。")));
     }
 
     @Override

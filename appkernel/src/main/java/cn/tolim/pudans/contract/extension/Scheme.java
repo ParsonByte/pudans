@@ -15,11 +15,11 @@ public record Scheme(
         String singular,
         ObjectNode openApiSchema) {
     public Scheme {
-        Assert.notNull(type, "Type of Extension must not be null");
-        Assert.notNull(groupVersionKind, "GroupVersionKind of Extension must not be null");
-        Assert.hasText(plural, "Plural name of Extension must not be blank");
-        Assert.hasText(singular, "Singular name of Extension must not be blank");
-        Assert.notNull(openApiSchema, "Json Schema must not be null");
+        Assert.notNull(type, "扩展的类型不能为 null");
+        Assert.notNull(groupVersionKind, "扩展的 GroupVersionKind 不能为 null");
+        Assert.hasText(plural, "扩展的复数名称不能为空");
+        Assert.hasText(singular, "扩展的单数名称不能为空");
+        Assert.notNull(openApiSchema, "JSON Schema 不能为 null");
     }
 
 
@@ -46,7 +46,7 @@ public record Scheme(
 
     public static GVK getGvkFromType(Class<? extends Extension> type) {
         var gvk = type.getAnnotation(GVK.class);
-        Assert.notNull(gvk, "Missing annotation " + GVK.class.getName() + " on type " + type.getName());
+        Assert.notNull(gvk, "缺少注解 " + GVK.class.getName() + "，类型为 " + type.getName());
         return gvk;
     }
 

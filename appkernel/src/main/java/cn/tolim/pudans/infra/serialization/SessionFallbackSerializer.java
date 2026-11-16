@@ -34,7 +34,7 @@ public class SessionFallbackSerializer implements RedisSerializer<Object> {
         }
         if (isJdkSerialized(bytes)) {
             if (JDK_WARNING_LOGGED.compareAndSet(false, true)) {
-                log.warn("Ignoring a legacy JDK serialized session value; JDK deserialization is disabled.");
+                log.warn("忽略旧版 JDK 序列化的会话值；JDK 反序列化已禁用。");
             }
             return null;
         }

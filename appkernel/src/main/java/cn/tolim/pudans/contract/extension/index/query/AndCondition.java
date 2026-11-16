@@ -5,8 +5,8 @@ import org.springframework.util.Assert;
 public record AndCondition(Condition left, Condition right) implements Condition {
 
     public AndCondition {
-        Assert.notNull(left, "Left condition must not be null");
-        Assert.notNull(right, "Right condition must not be null");
+        Assert.notNull(left, "左侧条件不能为 null");
+        Assert.notNull(right, "右侧条件不能为 null");
     }
 
     @Override

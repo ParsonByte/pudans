@@ -33,7 +33,7 @@ public class WebpSupport {
     @PostConstruct
     void warnIfUnavailable() {
         if (!available) {
-            log.warn("WebP ImageIO decoder is not installed; WebP avatar uploads will be rejected.");
+            log.warn("未安装 WebP ImageIO 解码器；WebP 头像上传将被拒绝。");
         }
     }
 

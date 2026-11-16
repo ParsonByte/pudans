@@ -81,7 +81,7 @@ public class RiskRuleRegistry {
             }
             rules = Map.copyOf(merged);
         } catch (RuntimeException e) {
-            log.warn("Unable to refresh risk rules, keeping previous rules", e);
+            log.warn("无法刷新风险规则，保留之前的规则", e);
         }
     }
 }

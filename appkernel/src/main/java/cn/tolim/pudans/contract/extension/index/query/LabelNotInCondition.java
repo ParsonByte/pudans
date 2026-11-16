@@ -6,7 +6,7 @@ import org.springframework.util.Assert;
 public record LabelNotInCondition(String labelKey, Collection<String> labelValues) implements LabelCondition {
 
     public LabelNotInCondition {
-        Assert.notNull(labelValues, "labelValues of " + labelKey + " must not be null");
+        Assert.notNull(labelValues, "标签 " + labelKey + " 的 labelValues 不能为 null");
     }
 
     @Override

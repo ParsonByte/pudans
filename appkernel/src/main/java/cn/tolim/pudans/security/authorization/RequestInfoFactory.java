@@ -74,7 +74,7 @@ public class RequestInfoFactory {
         if (specialVerbs.contains(currentParts[0])) {
             if (currentParts.length < 2) {
                 throw new IllegalArgumentException(
-                        String.format("unable to determine kind and namespace from url, %s", request.getPath()));
+                        String.format("无法从 URL %s 确定 kind 和 namespace", request.getPath()));
             }
             requestInfo.verb = currentParts[0];
             currentParts = Arrays.copyOfRange(currentParts, 1, currentParts.length);

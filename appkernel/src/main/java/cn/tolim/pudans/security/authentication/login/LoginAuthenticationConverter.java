@@ -50,23 +50,23 @@ public class LoginAuthenticationConverter extends ServerFormLoginAuthenticationC
                 .flatMap(enabled -> Boolean.TRUE.equals(enabled) ? verifyCaptcha(exchange) : Mono.just(true))
                 .flatMap(verified -> Boolean.TRUE.equals(verified)
                         ? super.convert(exchange)
-                        : Mono.error(new BadCredentialsException("Captcha verification failed.")))
+                        : Mono.error(new BadCredentialsException("验证码校验失败。")))
                 .<Authentication>flatMap(token -> {
                     if (token.getCredentials() == null) {
-                        return Mono.error(new BadCredentialsException("Empty credentials."));
+                        return Mono.error(new BadCredentialsException("凭据不能为空。"));
                     }
                     var credentials = (String) token.getCredentials();
                     byte[] credentialsBytes;
                     try {
                         credentialsBytes = Base64.getDecoder().decode(credentials);
                     } catch (IllegalArgumentException e) {
-                        return Mono.error(new BadCredentialsException("Invalid Base64 scheme."));
+                        return Mono.error(new BadCredentialsException("无效的 Base64 编码。"));
                     }
                     return cryptoService
                             .decrypt(credentialsBytes)
                             .onErrorMap(
                                     InvalidEncryptedMessageException.class,
-                                    error -> new BadCredentialsException("Invalid credential.", error))
+                                    error -> new BadCredentialsException("无效的凭据。", error))
                             .map(decryptedCredentials -> new UsernamePasswordAuthenticationToken(
                                     token.getPrincipal(), new String(decryptedCredentials, UTF_8)));
                 })

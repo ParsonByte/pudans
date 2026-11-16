@@ -26,7 +26,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-// Public login contract: current session, enabled OAuth2 providers and first-run state.
+// 公开登录契约：当前会话、已启用的 OAuth2 提供方以及首次运行状态。
 @Component
 @RequiredArgsConstructor
 public class LoginPublicEndpoint implements CustomEndpoint {

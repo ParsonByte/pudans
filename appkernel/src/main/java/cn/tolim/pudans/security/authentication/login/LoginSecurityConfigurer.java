@@ -1,7 +1,6 @@
 package cn.tolim.pudans.security.authentication.login;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.springframework.context.MessageSource;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.ObservationReactiveAuthenticationManager;
@@ -56,8 +55,6 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
 
     private final ServerResponse.Context context;
 
-    private final MessageSource messageSource;
-
     private final RiskControlService riskControlService;
 
     private final LoginFlowHandler loginFlowHandler;
@@ -83,7 +80,6 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
             ServerSecurityContextRepository securityContextRepository,
             CryptoService cryptoService,
             ServerResponse.Context context,
-            MessageSource messageSource,
             RiskControlService riskControlService,
             LoginFlowHandler loginFlowHandler,
             LoginParameterRequestCache parameterRequestCache,
@@ -100,7 +96,6 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
         this.securityContextRepository = securityContextRepository;
         this.cryptoService = cryptoService;
         this.context = context;
-        this.messageSource = messageSource;
         this.riskControlService = riskControlService;
         this.loginFlowHandler = loginFlowHandler;
         this.parameterRequestCache = parameterRequestCache;
@@ -138,7 +133,7 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
                         securityProperties.getPostLoginUrl(),
                         refreshTokenService));
         filter.setAuthenticationFailureHandler(
-                new LoginFailureHandler("local", context, messageSource, loginFlowHandler, domainEventPublisher));
+                new LoginFailureHandler("local", context, loginFlowHandler, domainEventPublisher));
         filter.setServerAuthenticationConverter(authConverter);
         filter.setSecurityContextRepository(securityContextRepository);
 

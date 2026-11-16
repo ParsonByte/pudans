@@ -7,12 +7,12 @@ import org.springframework.util.StringUtils;
 public record GroupVersionKind(String group, String version, String kind) {
 
     public GroupVersionKind {
-        Assert.hasText(version, "Version must not be blank");
-        Assert.hasText(kind, "Kind must not be blank");
+        Assert.hasText(version, "版本不能为空");
+        Assert.hasText(kind, "Kind 不能为空");
     }
 
     public static GroupVersionKind fromAPIVersionAndKind(String apiVersion, String kind) {
-        Assert.hasText(kind, "Kind must not be blank");
+        Assert.hasText(kind, "Kind 不能为空");
 
         var gv = GroupVersion.parseAPIVersion(apiVersion);
         return new GroupVersionKind(gv.group(), gv.version(), kind);

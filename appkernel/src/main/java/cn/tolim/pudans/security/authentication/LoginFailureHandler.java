@@ -5,7 +5,6 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static cn.tolim.pudans.infra.exception.Exceptions.createErrorResponse;
 
 import java.util.LinkedHashMap;
-import org.springframework.context.MessageSource;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler;
@@ -24,8 +23,6 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
 
     private final ServerResponse.Context context;
 
-    private final MessageSource messageSource;
-
     private final LoginFlowHandler loginFlowHandler;
 
     private final DomainEventPublisher domainEventPublisher;
@@ -33,12 +30,10 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
     public LoginFailureHandler(
             String loginMethod,
             ServerResponse.Context context,
-            MessageSource messageSource,
             LoginFlowHandler loginFlowHandler,
             DomainEventPublisher domainEventPublisher) {
         this.loginMethod = loginMethod;
         this.context = context;
-        this.messageSource = messageSource;
         this.loginFlowHandler = loginFlowHandler;
         this.domainEventPublisher = domainEventPublisher;
     }
@@ -73,7 +68,7 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
     }
 
     private Mono<Void> handleAuthenticationException(Throwable exception, ServerWebExchange exchange) {
-        var errorResponse = createErrorResponse(exception, UNAUTHORIZED, exchange, messageSource);
+        var errorResponse = createErrorResponse(exception, UNAUTHORIZED, exchange);
         return writeErrorResponse(errorResponse, exchange);
     }
 

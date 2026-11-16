@@ -30,7 +30,7 @@ public class IpAddressUtils {
             for (var proxy : proxies) {
                 var cidr = Cidr.parse(proxy);
                 if (cidr == null) {
-                    log.warn("Ignoring an invalid trusted proxy configuration entry [{}]", proxy);
+                    log.warn("忽略无效的受信代理配置项 [{}]", proxy);
                 } else {
                     parsed.add(cidr);
                 }
@@ -69,7 +69,7 @@ public class IpAddressUtils {
         try {
             return getClientIp(request.exchange().getRequest());
         } catch (Exception e) {
-            log.warn("Failed to obtain client IP, and fallback to unknown.", e);
+            log.warn("无法获取客户端 IP，回退为 unknown。", e);
             return UNKNOWN;
         }
     }

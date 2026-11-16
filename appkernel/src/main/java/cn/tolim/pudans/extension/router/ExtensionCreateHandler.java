@@ -32,7 +32,7 @@ class ExtensionCreateHandler implements CreateHandler {
     public Mono<ServerResponse> handle(ServerRequest request) {
         return request.bodyToMono(Unstructured.class)
                 .switchIfEmpty(Mono.error(
-                        () -> new ExtensionConvertException("Cannot read body to " + scheme.groupVersionKind())))
+                        () -> new ExtensionConvertException("无法将请求体读取为 " + scheme.groupVersionKind())))
                 .flatMap(unstructured -> {
                     ExtensionIdentity.requireGroupVersionKind(scheme, unstructured);
                     return builtinEntityPolicy

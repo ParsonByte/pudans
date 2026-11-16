@@ -45,7 +45,7 @@ public class PasswordRecoveryService {
                         return Mono.error(new ApiException(
                                 HttpStatus.TOO_MANY_REQUESTS,
                                 "recovery-code-cooldown",
-                                "Please wait before requesting another verification code."));
+                                "请稍后再请求新的验证码。"));
                     }
 
                     var code = generateCode();
@@ -135,7 +135,7 @@ public class PasswordRecoveryService {
             var digest = MessageDigest.getInstance("SHA-256");
             return HEX.formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 
@@ -146,6 +146,6 @@ public class PasswordRecoveryService {
 
     private static ApiException invalidCode() {
         return new ApiException(
-                HttpStatus.BAD_REQUEST, "recovery-code-invalid", "Invalid or expired verification code.");
+                HttpStatus.BAD_REQUEST, "recovery-code-invalid", "验证码无效或已过期。");
     }
 }

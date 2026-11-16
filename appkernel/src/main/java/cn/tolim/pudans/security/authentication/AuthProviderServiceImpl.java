@@ -205,7 +205,7 @@ public class AuthProviderServiceImpl implements AuthProviderService {
     private Mono<ConfigMap> getParameterSettingsConfigMap() {
         var systemFetcher = environmentFetcherProvider.getIfUnique();
         if (systemFetcher == null) {
-            return Mono.error(new IllegalStateException("No ParameterSettingFetcher found"));
+            return Mono.error(new IllegalStateException("未找到 ParameterSettingFetcher"));
         }
         return systemFetcher.getConfigMap();
     }

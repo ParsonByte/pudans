@@ -127,9 +127,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
     @Override
     public <E extends Extension> Flux<E> listAll(Class<E> type, ListOptions options, Sort sort) {
         var nullSafeSort = Optional.ofNullable(sort).orElseGet(() -> {
-            log.warn("The sort parameter is null, it is recommended to use Sort.unsorted() "
-                    + "instead and the compatibility support for null will be removed in the "
-                    + "subsequent version.");
+            log.warn("排序参数为空，建议改用 Sort.unsorted()；对 null 的兼容支持将在后续版本中移除。");
             return Sort.unsorted();
         });
         var scheme = schemeManager.get(type);
@@ -143,8 +141,8 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                     if (log.isDebugEnabled()) {
                         if (storeNames.size() > 500) {
                             log.warn("""
-                                The number of objects retrieved by listAll is too large ({}) \
-                                and it is recommended to use paging query.\
+                                通过 listAll 获取的对象数量过多（{}），\
+                                建议使用分页查询。\
                                 """, storeNames.size());
                         }
                     }
@@ -154,7 +152,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                             .concatMap(batch -> client.listByNames(batch)
                                     .map(extensionStore -> converter.convertFrom(type, extensionStore)))
                             .doOnComplete(() -> log.debug(
-                                    "Successfully retrieved all by names from db for {} in {}ms",
+                                    "已从数据库按名称成功检索 {} 的全部数据，耗时 {} 毫秒",
                                     scheme.groupVersionKind(),
                                     System.currentTimeMillis() - startTimeMs));
                 });
@@ -190,7 +188,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                     return client.listByNames(storeNames)
                             .map(extensionStore -> converter.convertFrom(type, extensionStore))
                             .doOnComplete(() -> log.debug(
-                                    "Successfully retrieved by names from db for {} in {}ms",
+                                    "已从数据库按名称成功检索 {}，耗时 {} 毫秒",
                                     scheme.groupVersionKind(),
                                     System.currentTimeMillis() - startTimeMs))
                             .collectList()
@@ -272,7 +270,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                     if (!hasText(metadata.getName())) {
                         if (!hasText(metadata.getGenerateName())) {
                             throw new IllegalArgumentException(
-                                    "The metadata.generateName must not be blank when metadata.name is " + "blank");
+                                    "当 metadata.name 为" + "空白时，metadata.generateName 不能为空");
                         }
 
                         
@@ -358,7 +356,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         var reserved = reservedLabels(metadata == null ? null : metadata.getLabels());
         if (!reserved.isEmpty()) {
             throw new AccessDeniedException(
-                    "Reserved labels of a User are read-only and cannot be set through an API request.");
+                    "用户的保留标签为只读，不能通过 API 请求设置。");
         }
     }
 
@@ -372,7 +370,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         var requestedDeletionTimestamp = newMetadata.getDeletionTimestamp();
         if (requestedDeletionTimestamp != null
                 && !Objects.equals(requestedDeletionTimestamp, oldMetadata.getDeletionTimestamp())) {
-            throw new AccessDeniedException("metadata.deletionTimestamp is a protected field.");
+            throw new AccessDeniedException("metadata.deletionTimestamp 是受保护的字段。");
         }
         newMetadata.setDeletionTimestamp(oldMetadata.getDeletionTimestamp());
 
@@ -386,7 +384,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                         oldMetadata.getFinalizers() == null
                                 ? Set.of()
                                 : new HashSet<>(oldMetadata.getFinalizers()))) {
-            throw new AccessDeniedException("metadata.finalizers is a protected field.");
+            throw new AccessDeniedException("metadata.finalizers 是受保护的字段。");
         }
         if (!deletionInProgress) {
             newMetadata.setFinalizers(oldMetadata.getFinalizers());
@@ -398,7 +396,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         var oldReservedLabels = reservedLabels(oldMetadata.getLabels());
         var requestedReservedLabels = reservedLabels(newMetadata.getLabels());
         if (!requestedReservedLabels.isEmpty() && !requestedReservedLabels.equals(oldReservedLabels)) {
-            throw new AccessDeniedException("Reserved labels of a User are read-only.");
+            throw new AccessDeniedException("用户的保留标签为只读。");
         }
         if (!oldReservedLabels.isEmpty()) {
             var merged = new HashMap<String, String>(
@@ -446,7 +444,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
     @Override
     public <E extends Extension> Mono<E> delete(E extension) {
         
-        Assert.notNull(extension.getMetadata().getVersion(), "Extension version must not be null");
+        Assert.notNull(extension.getMetadata().getVersion(), "扩展版本不能为 null");
         
         extension.getMetadata().setDeletionTimestamp(Instant.now());
         var es = converter.convertTo(extension);

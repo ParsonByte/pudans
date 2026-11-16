@@ -12,12 +12,9 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import org.apache.commons.lang3.StringUtils;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.convert.ApplicationConversionService;
 
@@ -50,13 +47,7 @@ public class ParameterSetting {
         String subtitle;
         String logo;
         String favicon;
-        String language;
         String externalUrl;
-
-        @JsonIgnore
-        public Optional<Locale> useSystemLocale() {
-            return Optional.ofNullable(language).filter(StringUtils::isNotBlank).map(Locale::forLanguageTag);
-        }
     }
 
     @Data

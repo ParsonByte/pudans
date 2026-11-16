@@ -59,7 +59,7 @@ public class AuditStore {
     public Mono<Void> append(AuditRecord record) {
         return entityOperations
                 .insert(AuditRecordEntity.from(record))
-                .doOnError(e -> log.error("Failed to append audit record {}", record.getMetadata().getName(), e))
+                .doOnError(e -> log.error("追加审计记录 {} 失败", record.getMetadata().getName(), e))
                 .then();
     }
 
