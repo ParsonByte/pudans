@@ -1,5 +1,6 @@
 package cn.tolim.pudans.security.authentication.preauth;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -48,6 +49,14 @@ class SystemSetupEndpointTest {
 
     @Mock
     ApplicationEventPublisher eventPublisher;
+
+    @Test
+    void setupPasswordUsesTheUnifiedMinimumLength() throws Exception {
+        var password = SystemSetupEndpoint.SetupRequest.class.getDeclaredField("password");
+
+        assertThat(password.getAnnotation(jakarta.validation.constraints.Size.class).min())
+                .isEqualTo(8);
+    }
 
     @Test
     void initializesTheSystemWithoutPresetInstallations() {

@@ -6,6 +6,7 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -473,7 +474,7 @@ public class UserEndpoint implements CustomEndpoint {
     public record UpdateProfileRequest(String displayName, String email, String avatar, String phone, String bio) {}
 
     
-    public record PasswordRequest(String password) {}
+    public record PasswordRequest(@Size(min = 8, max = 257) String password) {}
 
     
     public record AssignGroupRequest(String userGroup) {}

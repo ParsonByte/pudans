@@ -128,8 +128,9 @@ public class SecurityProperties {
 
         /**
          * Development fallback: write the generated code to the application log
-         * when no JavaMailSender is configured. Disable this outside local use.
+         * when no JavaMailSender is configured. Disabled by default; enable
+         * explicitly for local development.
          */
-        private boolean logCodes = true;
+        private boolean logCodes = false;
     }
 }

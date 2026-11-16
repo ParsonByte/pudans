@@ -1,26 +1,20 @@
 package cn.tolim.pudans.core.user.endpoint;
 
-import static cn.tolim.pudans.security.authorization.AuthorityUtils.ANONYMOUS_ROLE_NAME;
-import static cn.tolim.pudans.security.authorization.AuthorityUtils.AUTHENTICATED_ROLE_NAME;
-import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.properties.PasskeyProperties;
 import cn.tolim.pudans.infra.webauthn.PasskeyService;
+import cn.tolim.pudans.security.authentication.ExternalLoginCompletionService;
+import cn.tolim.pudans.security.authentication.LoginRejectedException;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextImpl;
-import org.springframework.security.web.server.context.ServerSecurityContextRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -41,9 +35,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
 
     private final PasskeyProperties properties;
 
-    private final UserGroupService userGroupService;
-
-    private final ServerSecurityContextRepository securityContextRepository;
+    private final ExternalLoginCompletionService externalLoginCompletionService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -108,40 +100,21 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                 .flatMap(challenge -> request.bodyToMono(String.class)
                         .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
                         .flatMap(json -> passkeyService.verifyAssertion(json, challenge)))
-                .flatMap(result -> establish(request, result.username()))
-                .flatMap(username -> ServerResponse.ok()
-                        .bodyValue(new PasskeyAssertionResult(true, username)));
-    }
-
-    private Mono<String> establish(ServerRequest request, String username) {
-        return userGroupService
-                .getRoleNamesByUsername(username)
-                .map(role -> new SimpleGrantedAuthority(ROLE_PREFIX + role))
-                .concatWithValues(
-                        new SimpleGrantedAuthority(ROLE_PREFIX + AUTHENTICATED_ROLE_NAME),
-                        new SimpleGrantedAuthority(ROLE_PREFIX + ANONYMOUS_ROLE_NAME))
-                .distinct()
-                .collectList()
-                .flatMap(authorities -> {
-                    var authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
-                    return securityContextRepository
-                            .save(request.exchange(), new SecurityContextImpl(authentication))
-                            .doOnSuccess(ignored -> {
-                                request.exchange()
-                                        .getAttributes()
-                                        .put(AuditService.USERNAME_ATTRIBUTE, username);
-                                request.exchange()
-                                        .getAttributes()
-                                        .put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
-                                request.exchange()
-                                        .getAttributes()
-                                        .put(AuditService.RESULT_ATTRIBUTE, "SUCCESS");
-                                request.exchange()
-                                        .getAttributes()
-                                        .put(AuditService.CONTEXT_ATTRIBUTE, "passkey");
-                            })
-                            .thenReturn(username);
-                });
+                .flatMap(result -> externalLoginCompletionService.complete(
+                        request.exchange(), result.username(), "passkey"))
+                .flatMap(completion -> ServerResponse.ok()
+                        .bodyValue(completion.twoFactorRequired()
+                                ? new PasskeyAssertionResult(
+                                        false,
+                                        completion.username(),
+                                        true,
+                                        "/challenges/two-factor/totp")
+                                : new PasskeyAssertionResult(
+                                        true, completion.username(), false, null)))
+                .onErrorResume(
+                        LoginRejectedException.class,
+                        error -> ServerResponse.status(HttpStatus.FORBIDDEN)
+                                .bodyValue(Map.of("error", error.getReason())));
     }
 
     @Override
@@ -156,5 +129,6 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
     record PasskeyAssertionOptionsVo(Map<String, Object> publicKey) {}
 
 
-    record PasskeyAssertionResult(boolean authenticated, String username) {}
+    record PasskeyAssertionResult(
+            boolean authenticated, String username, boolean twoFactorRequired, String redirectUrl) {}
 }

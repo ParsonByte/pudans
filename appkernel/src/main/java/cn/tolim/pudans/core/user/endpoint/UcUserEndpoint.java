@@ -9,6 +9,7 @@ import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.HttpStatus;
@@ -123,7 +124,7 @@ class UcUserEndpoint implements CustomEndpoint {
     }
 
 
-    record ChangeMyPasswordRequest(String oldPassword, String password) {}
+    record ChangeMyPasswordRequest(String oldPassword, @Size(min = 8, max = 257) String password) {}
 
 
     record UserPermissionVo(String username, java.util.List<String> roles) {}

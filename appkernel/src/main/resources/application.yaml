@@ -58,6 +58,8 @@ spring:
 
 pudans:
   work-dir: ${PUDANS_WORK_DIR:${user.home}/.pudans}
+  webhook:
+    keystore-password: ${PUDANS_WEBHOOK_KEYSTORE_PASSWORD:}
   security:
     post-login-url: ${PUDANS_POST_LOGIN_URL:/}
     basic-auth:
