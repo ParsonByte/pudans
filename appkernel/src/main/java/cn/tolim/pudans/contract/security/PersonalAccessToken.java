@@ -74,5 +74,8 @@ public class PersonalAccessToken extends AbstractExtension {
 
         @Schema(requiredMode = REQUIRED)
         private String tokenId;
+
+        @Schema(readOnly = true, description = "Master key version used to sign this token.")
+        private Integer keyVersion;
     }
 }

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.infra.setting.reconciler;
 
 import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
-import static cn.tolim.pudans.infra.utils.SystemConfigUtils.mergeMap;
+import static cn.tolim.pudans.infra.utils.ParameterSettingUtils.mergeMap;
 import static java.util.Objects.requireNonNullElse;
 
 import cn.tolim.pudans.contract.extension.ConfigMap;
@@ -12,9 +12,9 @@ import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.controller.Controller;
 import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
 import cn.tolim.pudans.contract.extension.controller.Reconciler;
-import cn.tolim.pudans.contract.infra.SystemSetting;
-import cn.tolim.pudans.infra.setting.SystemConfigChangedEvent;
-import cn.tolim.pudans.infra.utils.SystemConfigUtils;
+import cn.tolim.pudans.contract.infra.ParameterSetting;
+import cn.tolim.pudans.infra.setting.ParameterSettingChangedEvent;
+import cn.tolim.pudans.infra.utils.ParameterSettingUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Map;
 import java.util.Objects;
@@ -28,7 +28,7 @@ import org.springframework.util.Assert;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-class SystemConfigReconciler implements Reconciler<Reconciler.Request> {
+class ParameterSettingReconciler implements Reconciler<Reconciler.Request> {
 
     private final ExtensionClient client;
 
@@ -37,20 +37,20 @@ class SystemConfigReconciler implements Reconciler<Reconciler.Request> {
     @Override
     public Result reconcile(Request request) {
         Assert.state(
-                Objects.equals(SystemSetting.SYSTEM_CONFIG, request.name()),
+                Objects.equals(ParameterSetting.PARAMETER_SETTINGS, request.name()),
                 "Only system config reconciler is supported to reconcile system config.");
         client.fetch(ConfigMap.class, request.name()).ifPresent(configMap -> {
             if (ExtensionUtil.isDeleted(configMap)) {
-                log.warn("System config was attempted to be deleted");
+                log.warn("Parameter settings ConfigMap was attempted to be deleted");
                 return;
             }
 
 
-            var dataSnapshot = SystemConfigUtils.getDataSnapshot(configMap);
-            if (SystemConfigUtils.populateChecksum(configMap)) {
-                SystemConfigUtils.updateDataSnapshot(configMap);
+            var dataSnapshot = ParameterSettingUtils.getDataSnapshot(configMap);
+            if (ParameterSettingUtils.populateChecksum(configMap)) {
+                ParameterSettingUtils.updateDataSnapshot(configMap);
                 client.update(configMap);
-                log.info("System config has been detected as changed");
+                log.info("Parameter settings have been detected as changed");
                 eventPublisher.publishEvent(computeChangedEvent(configMap, dataSnapshot));
             }
 
@@ -61,11 +61,11 @@ class SystemConfigReconciler implements Reconciler<Reconciler.Request> {
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         ExtensionMatcher matcher =
-                extension -> Objects.equals(extension.getMetadata().getName(), SystemSetting.SYSTEM_CONFIG);
+                extension -> Objects.equals(extension.getMetadata().getName(), ParameterSetting.PARAMETER_SETTINGS);
         return builder.extension(new ConfigMap())
                 .syncAllOnStart(true)
                 .syncAllListOptions(ListOptions.builder()
-                        .fieldQuery(equal("metadata.name", SystemSetting.SYSTEM_CONFIG))
+                        .fieldQuery(equal("metadata.name", ParameterSetting.PARAMETER_SETTINGS))
                         .build())
                 .onAddMatcher(matcher)
                 .onUpdateMatcher(matcher)
@@ -73,19 +73,20 @@ class SystemConfigReconciler implements Reconciler<Reconciler.Request> {
                 .build();
     }
 
-    private SystemConfigChangedEvent computeChangedEvent(ConfigMap configMap, @Nullable Map<String, String> oldData) {
-        return client.fetch(ConfigMap.class, SystemSetting.SYSTEM_CONFIG_DEFAULT)
+    private ParameterSettingChangedEvent computeChangedEvent(
+            ConfigMap configMap, @Nullable Map<String, String> oldData) {
+        return client.fetch(ConfigMap.class, ParameterSetting.PARAMETER_SETTINGS_DEFAULT)
                 .map(defaultConfigMap -> {
                     var defaultData = requireNonNullElse(defaultConfigMap.getData(), Map.<String, String>of());
                     try {
                         var mergedOldData = mergeMap(defaultData, requireNonNullElse(oldData, Map.of()));
                         var mergedNewData = mergeMap(defaultData, requireNonNullElse(configMap.getData(), Map.of()));
-                        return new SystemConfigChangedEvent(this, mergedOldData, mergedNewData);
+                        return new ParameterSettingChangedEvent(this, mergedOldData, mergedNewData);
                     } catch (JsonProcessingException e) {
                         throw new RuntimeException(e);
                     }
                 })
-                .orElseGet(() ->
-                        new SystemConfigChangedEvent(this, oldData, requireNonNullElse(configMap.getData(), Map.of())));
+                .orElseGet(() -> new ParameterSettingChangedEvent(
+                        this, oldData, requireNonNullElse(configMap.getData(), Map.of())));
     }
 }

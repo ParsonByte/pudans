@@ -24,4 +24,12 @@ public class GlobalInfo {
     private Boolean mustVerifyEmailOnRegistration;
 
     private String siteTitle;
+
+    private String siteDescription;
+
+    private String logoDark;
+
+    private String logoLight;
+
+    private String siteId;
 }

@@ -18,7 +18,7 @@ import org.springframework.util.CollectionUtils;
 
 
 @Slf4j
-public enum SystemConfigUtils {
+public enum ParameterSettingUtils {
     ;
 
     private static final ObjectMapper mapper = JsonUtils.mapper();

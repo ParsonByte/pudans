@@ -124,6 +124,10 @@ public final class BuiltinEntityDefinitions {
                         .verbs("create")
                         .build(),
                 rule().apiGroups(ApiGroups.API)
+                        .resources("parameter-settings", "parameter-settings/-")
+                        .verbs("get", "list", "create", "update", "patch")
+                        .build(),
+                rule().apiGroups(ApiGroups.API)
                         .resources("systemconfigs")
                         .verbs("get", "list", "update", "patch")
                         .build(),
@@ -164,6 +168,15 @@ public final class BuiltinEntityDefinitions {
                         .resources("users/self")
                         .resourceNames("-")
                         .verbs("update")
+                        .build(),
+                rule().apiGroups(ApiGroups.API)
+                        .resources("users/avatar", "users/announcement-state")
+                        .resourceNames("-")
+                        .verbs("get", "create", "delete")
+                        .build(),
+                rule().apiGroups(ApiGroups.API)
+                        .resources("avatars")
+                        .verbs("get")
                         .build(),
                 rule().apiGroups(ApiGroups.API)
                         .resources("authentications", "authentications/totp", "authentications/settings")

@@ -18,6 +18,8 @@ public class SystemInfo {
 
     private String favicon;
 
+    private String siteId;
+
     private URL url;
 
     private Version version;

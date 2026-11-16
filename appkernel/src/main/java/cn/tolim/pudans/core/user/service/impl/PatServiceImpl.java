@@ -9,8 +9,8 @@ import cn.tolim.pudans.contract.security.PersonalAccessToken;
 import cn.tolim.pudans.core.user.service.PatService;
 import cn.tolim.pudans.infra.exception.NotFoundException;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.infra.setting.MasterKeyService;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
-import com.google.common.hash.Hashing;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -47,21 +47,23 @@ class PatServiceImpl implements PatService {
 
     private final ReactiveUserDetailsService userDetailsService;
 
+    private final MasterKeyService masterKeyService;
+
     private final SecureRandom secureRandom = new SecureRandom();
 
     private Clock clock;
 
     public PatServiceImpl(
-            RoleService roleService, ReactiveExtensionClient client, ReactiveUserDetailsService userDetailsService) {
+            RoleService roleService,
+            ReactiveExtensionClient client,
+            ReactiveUserDetailsService userDetailsService,
+            MasterKeyService masterKeyService) {
         this.roleService = roleService;
         this.client = client;
         this.userDetailsService = userDetailsService;
+        this.masterKeyService = masterKeyService;
         this.clock = Clock.systemUTC();
         idGenerator = new AlternativeJdkIdGenerator();
-    }
-
-    static String hashSecret(String secret) {
-        return Hashing.sha256().hashString(secret, UTF_8).toString();
     }
 
     static String buildToken(String patName, String secret) {
@@ -198,7 +200,8 @@ class PatServiceImpl implements PatService {
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(secret -> {
 
-                    pat.getSpec().setTokenId(hashSecret(secret));
+                    pat.getSpec().setTokenId(masterKeyService.hash(secret));
+                    pat.getSpec().setKeyVersion(masterKeyService.currentVersion());
                     return client.update(pat)
                             .thenReturn(buildToken(pat.getMetadata().getName(), secret));
                 });
