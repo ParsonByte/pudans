@@ -85,17 +85,17 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `api-docs/` | OpenAPI aggregation and validation, no business code |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
 | `gradle/libs.versions.toml` | Version catalog; backend dependency changes go here |
-| `web/` | Frontend: React 19, TypeScript, Vite, TanStack Router/Query, Tailwind CSS v4 and shadcn/ui |
+| `web/` | Frontend: React 19, TypeScript, Vite, TanStack Router/Query, Tailwind CSS v4 and shadcn/ui; bundled into the backend jar |
 
 ## Commands
 
 ```bash
-./gradlew test                 # backend tests
-./gradlew build                # backend build
+./gradlew test                 # backend tests (builds the bundled web)
+./gradlew build                # backend and bundled web build
 cd web && npm run dev          # frontend dev server
 cd web && npm run lint         # frontend lint
 cd web && npm run format:check # frontend formatting check
-cd web && npm run build        # frontend typecheck and production build
+cd web && npm run build        # frontend typecheck and standalone production build
 ```
 
 Backend tests and frontend checks must pass before committing (see `.agents/rules/development.md` and `.agents/rules/tech-stack.md`).
