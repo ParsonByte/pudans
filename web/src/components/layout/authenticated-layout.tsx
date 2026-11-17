@@ -11,9 +11,16 @@ import { cn } from "@/lib/utils";
 import { AppSidebar } from "./app-sidebar";
 import type { SidebarData } from "./types";
 
-type AuthenticatedLayoutProps = Partial<SidebarData>;
+type AuthenticatedLayoutProps = Partial<SidebarData> & {
+  onSignOut?: () => void;
+};
 
-export function AuthenticatedLayout({ user, workspaces, navGroups }: AuthenticatedLayoutProps) {
+export function AuthenticatedLayout({
+  user,
+  workspaces,
+  navGroups,
+  onSignOut,
+}: AuthenticatedLayoutProps) {
   const defaultOpen = getCookie("sidebar_state") === "true";
 
   return (
@@ -22,7 +29,12 @@ export function AuthenticatedLayout({ user, workspaces, navGroups }: Authenticat
         <LayoutProvider>
           <SidebarProvider defaultOpen={defaultOpen}>
             <SkipToMain />
-            <AppSidebar user={user} workspaces={workspaces} navGroups={navGroups} />
+            <AppSidebar
+              user={user}
+              workspaces={workspaces}
+              navGroups={navGroups}
+              onSignOut={onSignOut}
+            />
             <SidebarInset
               className={cn(
                 "@container/content",

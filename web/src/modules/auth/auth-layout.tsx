@@ -94,7 +94,7 @@ export function AuthLayout({ variant = "auth" }: AuthLayoutProps) {
       {variant === "auth" ? (
         <section className="pointer-events-none fixed bottom-[clamp(88px,12vh,132px)] left-[clamp(28px,6vw,104px)] z-10 hidden max-w-[min(620px,48vw)] text-white drop-shadow-[0_4px_30px_rgba(0,0,0,0.55)] md:block">
           <p className="mb-4 text-xs font-semibold tracking-[0.22em] text-white/55">
-            PUDANS · 数字身份
+            PUDANS · 数字空间
           </p>
           <h1 className="flex flex-col gap-0.5 text-[clamp(32px,4.1vw,58px)] leading-[1.16] font-semibold tracking-[-0.045em]">
             <span>让每一个灵感，</span>

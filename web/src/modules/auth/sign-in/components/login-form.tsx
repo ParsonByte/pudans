@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from "react";
 
-import { apiClient } from "@pudans-dev/api-client";
+import { apiClient, axiosInstance } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { isAxiosError } from "axios";
@@ -12,12 +12,41 @@ import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { resolvePostLoginRedirect } from "@/modules/auth/lib/post-login-redirect";
+import { getLoginSession } from "@/modules/auth/lib/session";
 
+import { encryptLoginPassword } from "../lib/login-crypto";
 import { getPasskeyAssertion, serializeAssertion } from "../lib/webauthn";
 
-export function LoginForm() {
+type LoginFormProps = {
+  redirectTo?: string;
+};
+
+function loginErrorMessage(error: unknown): string {
+  if (isAxiosError(error)) {
+    const status = error.response?.status;
+
+    if (status === 401) {
+      return "用户名或密码错误。";
+    }
+    if (status === 429) {
+      return "尝试次数过多，请稍后重试。";
+    }
+    if (status === 400) {
+      return "登录请求无效，请检查填写内容。";
+    }
+    if (!error.response) {
+      return "无法连接服务器，请稍后重试。";
+    }
+  }
+
+  return "登录失败，请稍后重试。";
+}
+
+export function LoginForm({ redirectTo }: LoginFormProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
 
   const providersQuery = useQuery({
@@ -34,8 +63,47 @@ export function LoginForm() {
     (provider) => provider.name?.toLowerCase() !== "feishu" && Boolean(provider.authenticationUrl),
   );
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const normalizedUsername = username.trim();
+
+    if (!normalizedUsername || !password) {
+      toast.error("请输入用户名和密码。");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const encryptedPassword = await encryptLoginPassword(password);
+      const response = await axiosInstance.post<{ twoFactorRequired?: boolean }>(
+        "/login",
+        new URLSearchParams({ username: normalizedUsername, password: encryptedPassword }),
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+      );
+
+      if (response.data?.twoFactorRequired) {
+        toast.error("该账号需要完成两步验证。");
+        return;
+      }
+
+      const session = await getLoginSession();
+
+      if (!session.authenticated) {
+        toast.error("登录状态未生效，请重试。");
+        return;
+      }
+
+      if (session.consoleAccessDisallowed) {
+        window.location.assign("/403");
+        return;
+      }
+
+      window.location.assign(resolvePostLoginRedirect(redirectTo, session.redirectUrl));
+    } catch (error) {
+      toast.error(loginErrorMessage(error));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handlePasskeyLogin = async () => {
@@ -61,7 +129,19 @@ export function LoginForm() {
       });
 
       if (result.data.authenticated) {
-        window.location.assign("/");
+        const session = await getLoginSession();
+
+        if (!session.authenticated) {
+          toast.error("登录状态未生效，请重试。");
+          return;
+        }
+
+        if (session.consoleAccessDisallowed) {
+          window.location.assign("/403");
+          return;
+        }
+
+        window.location.assign(resolvePostLoginRedirect(redirectTo, session.redirectUrl));
         return;
       }
 
@@ -98,9 +178,7 @@ export function LoginForm() {
       <div className="space-y-2">
         <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground">欢迎回来</p>
         <h2 className="text-2xl font-semibold tracking-tight">继续你的创作</h2>
-        <p className="text-sm leading-6 text-muted-foreground">
-          连接你的数字世界，管理所有身份与权限。
-        </p>
+        <p className="text-sm leading-6 text-muted-foreground">连接你的数字空间。</p>
       </div>
 
       <div className="space-y-2">
@@ -149,8 +227,8 @@ export function LoginForm() {
         </p>
       </div>
 
-      <Button type="submit" size="lg" className="mt-1 w-full">
-        <LogIn />
+      <Button type="submit" size="lg" className="mt-1 w-full" disabled={submitting}>
+        {submitting ? <Loader2 className="animate-spin" /> : <LogIn />}
         登录并继续
       </Button>
 
@@ -166,7 +244,7 @@ export function LoginForm() {
           variant="outline"
           size="lg"
           className="flex-1 justify-center"
-          disabled={passkeyLoading}
+          disabled={passkeyLoading || submitting}
           onClick={() => {
             void handlePasskeyLogin();
           }}
