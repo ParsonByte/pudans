@@ -15,6 +15,9 @@
 
 // May contain unused imports in some cases
 // @ts-ignore
+import type { ActiveUser } from './active-user';
+// May contain unused imports in some cases
+// @ts-ignore
 import type { GlobalInfoSummary } from './global-info-summary';
 // May contain unused imports in some cases
 // @ts-ignore
@@ -32,6 +35,10 @@ import type { RoleUserCount } from './role-user-count';
 export interface DashboardOverview {
     'globalInfo'?: GlobalInfoSummary;
     'loginTrend'?: Array<LoginTrendPoint>;
+    'operationTrend'?: Array<LoginTrendPoint>;
+    'riskRuleTrend'?: Array<LoginTrendPoint>;
+    'webhookTrend'?: Array<LoginTrendPoint>;
+    'activeUsers'?: Array<ActiveUser>;
     'recentAuditLogs'?: Array<RecentOperation>;
     'roleDistribution'?: Array<RoleUserCount>;
     'todayOperations'?: number;
