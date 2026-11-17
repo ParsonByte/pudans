@@ -22,14 +22,13 @@ export function Search({ className, placeholder = "搜索", ...props }: SearchPr
         className,
       )}
       aria-label={placeholder}
-      aria-keyshortcuts="Meta+K Control+K"
+      aria-keyshortcuts="/"
       onClick={() => setOpen(true)}
     >
       <SearchIcon aria-hidden="true" className="size-4 shrink-0" />
       <span className="hidden truncate text-start sm:inline">{placeholder}</span>
       <kbd className="pointer-events-none ms-auto hidden h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium select-none sm:flex">
-        <span className="text-xs leading-none">⌘</span>
-        <span className="leading-none">K</span>
+        <span className="text-xs leading-none">/</span>
       </kbd>
     </Button>
   );
