@@ -8,5 +8,5 @@
   "importOrderSeparation": true,
   "importOrderSortSpecifiers": true,
   "importOrderParserPlugins": ["typescript", "jsx"],
-  "tailwindStylesheet": "./src/index.css"
+  "tailwindStylesheet": "./src/styles/_global.css"
 }
