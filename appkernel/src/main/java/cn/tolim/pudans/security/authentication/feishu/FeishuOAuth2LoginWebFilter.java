@@ -69,8 +69,8 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> authorize(ServerWebExchange exchange) {
-        if (!properties.isEnabled()) {
-            return loginFailure(exchange, "feishu_disabled");
+        if (!configured()) {
+            return loginFailure(exchange, unavailableReason());
         }
         var state = UUID.randomUUID().toString();
         var redirectUri = resolveRedirectUri(exchange);
@@ -90,8 +90,8 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> callback(ServerWebExchange exchange) {
-        if (!properties.isEnabled()) {
-            return loginFailure(exchange, "feishu_disabled");
+        if (!configured()) {
+            return loginFailure(exchange, unavailableReason());
         }
         var code = exchange.getRequest().getQueryParams().getFirst("code");
         var state = exchange.getRequest().getQueryParams().getFirst("state");
@@ -150,6 +150,16 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
         return ProblemDetailResponses.write(
                 exchange, context, HttpStatus.FORBIDDEN, reason, "飞书登录被拒绝。");
+    }
+
+    private boolean configured() {
+        return properties.isEnabled()
+                && StringUtils.hasText(properties.getAppId())
+                && StringUtils.hasText(properties.getAppSecret());
+    }
+
+    private String unavailableReason() {
+        return properties.isEnabled() ? "feishu_not_configured" : "feishu_disabled";
     }
 
     private Mono<Void> loginFailure(ServerWebExchange exchange, String reason) {

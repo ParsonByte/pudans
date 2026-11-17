@@ -11,10 +11,14 @@ import org.springframework.security.oauth2.client.registration.ReactiveClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Configuration
 class OidcClientRegistrationConfiguration {
+
+    private static final ReactiveClientRegistrationRepository EMPTY_REGISTRATION_REPOSITORY =
+            registrationId -> Mono.empty();
 
     private static ClientRegistration registration(OidcProperties.Provider provider) {
         var authenticationMethod = StringUtils.hasText(provider.getClientSecret())
@@ -47,6 +51,7 @@ class OidcClientRegistrationConfiguration {
                 .toList();
         if (registrations.isEmpty()) {
             log.info("未配置 OIDC 客户端注册，OAuth2 登录端点保持不可用。");
+            return EMPTY_REGISTRATION_REPOSITORY;
         }
         return new InMemoryReactiveClientRegistrationRepository(registrations);
     }

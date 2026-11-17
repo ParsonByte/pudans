@@ -74,11 +74,11 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
     Optional<URL> refetchExternalUrl() {
         return systemConfigFetcher
                 .fetch(ParameterSetting.Site.GROUP, ParameterSetting.Site.class)
-                .map(ParameterSetting.Site::getSiteUrl)
+                .mapNotNull(ParameterSetting.Site::getSiteUrl)
                 .filter(StringUtils::hasText)
                 .switchIfEmpty(systemConfigFetcher
                         .getBasic()
-                        .map(ParameterSetting.Basic::getExternalUrl))
+                        .mapNotNull(ParameterSetting.Basic::getExternalUrl))
                 .filter(StringUtils::hasText)
                 .mapNotNull(externalUrlString -> {
                     try {
