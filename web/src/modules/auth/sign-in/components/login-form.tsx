@@ -4,7 +4,14 @@ import { apiClient, axiosInstance } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { isAxiosError } from "axios";
-import { CheckCircle2, Fingerprint, Loader2, LogIn, MessageCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Fingerprint,
+  Loader2,
+  LogIn,
+  MessageCircle,
+  TriangleAlert,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { IconFeishu } from "@/assets/custom/icon-feishu";
@@ -63,6 +70,16 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
     (provider) => provider.name?.toLowerCase() !== "feishu" && Boolean(provider.authenticationUrl),
   );
 
+  const loginStatusQuery = useQuery({
+    queryKey: ["login-status"],
+    queryFn: async () => (await apiClient.login.getLoginStatus()).data,
+    retry: false,
+    staleTime: 0,
+  });
+  const rsaEncryptionEnabled =
+    (loginStatusQuery.data as { rsaEncryptionEnabled?: boolean } | undefined)
+      ?.rsaEncryptionEnabled ?? true;
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalizedUsername = username.trim();
@@ -74,10 +91,17 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
 
     setSubmitting(true);
     try {
-      const encryptedPassword = await encryptLoginPassword(password);
+      let encryptPassword = rsaEncryptionEnabled;
+      if (!loginStatusQuery.data) {
+        const refreshed = await loginStatusQuery.refetch();
+        encryptPassword =
+          (refreshed.data as { rsaEncryptionEnabled?: boolean } | undefined)
+            ?.rsaEncryptionEnabled ?? true;
+      }
+      const submittedPassword = encryptPassword ? await encryptLoginPassword(password) : password;
       const response = await axiosInstance.post<{ twoFactorRequired?: boolean }>(
         "/login",
-        new URLSearchParams({ username: normalizedUsername, password: encryptedPassword }),
+        new URLSearchParams({ username: normalizedUsername, password: submittedPassword }),
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
       );
 
@@ -225,6 +249,12 @@ export function LoginForm({ redirectTo }: LoginFormProps) {
           <CheckCircle2 className="size-3.5 text-primary" />
           新设备登录会提醒你
         </p>
+        {!rsaEncryptionEnabled ? (
+          <p className="flex items-center gap-2 text-amber-600">
+            <TriangleAlert className="size-3.5" />
+            当前实例未启用登录传输加密，请确认通过 HTTPS 访问
+          </p>
+        ) : null}
       </div>
 
       <Button type="submit" size="lg" className="mt-1 w-full" disabled={submitting}>
