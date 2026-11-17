@@ -45,7 +45,7 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "PasskeyV1alpha1Uc";
+        var tag = "PasskeyV1alpha1";
         return SpringdocRouteBuilder.route()
                 .POST("/passkeys/registration/options", this::registrationOptions, builder -> builder
                         .operationId("PasskeyRegistrationOptions")

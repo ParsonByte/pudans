@@ -24,7 +24,7 @@ public class AuthTokenEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "AuthV1alpha1Login";
+        var tag = "AuthTokenV1alpha1";
         return SpringdocRouteBuilder.route()
                 .POST("/auth/token/refresh", this::refresh, builder -> builder
                         .operationId("RefreshAccessToken")

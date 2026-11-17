@@ -20,6 +20,8 @@ public enum AuthorityUtils {
 
     public static final String ANONYMOUS_ROLE_NAME = "anonymous";
 
+    public static final String TWO_FACTOR_AUTHENTICATED_ROLE_NAME = "two-factor-authenticated";
+
 
     public static Set<String> authoritiesToRoles(Collection<? extends GrantedAuthority> authorities) {
         return authorities.stream()

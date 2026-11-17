@@ -30,7 +30,7 @@ public class PublicKeyRouteBuilder {
                         }),
                         builder -> builder.operationId("GetPublicKey")
                                 .description("Read public key for encrypting password.")
-                                .tag("Login")
+                                .tag("LoginV1alpha1")
                                 .response(Builder.responseBuilder().implementation(PublicKeyResponse.class)))
                 .build();
     }

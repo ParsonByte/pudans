@@ -50,7 +50,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        final var tag = "AuthV1alpha1Login";
+        final var tag = "LoginV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET("/login/session", this::session, builder -> builder.operationId("getLoginSession")
                         .description("Returns the current browser session for the auth application.")

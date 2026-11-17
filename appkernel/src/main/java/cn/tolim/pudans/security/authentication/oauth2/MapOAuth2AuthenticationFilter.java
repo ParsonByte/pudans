@@ -23,9 +23,6 @@ import reactor.core.publisher.Mono;
 
 class MapOAuth2AuthenticationFilter implements WebFilter {
 
-    private static final String PRE_AUTHENTICATION =
-            MapOAuth2AuthenticationFilter.class.getName() + ".PRE_AUTHENTICATION";
-
     private final UserConnectionService connectionService;
 
     private final ServerSecurityContextRepository securityContextRepository;
@@ -65,7 +62,8 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
                 .filter(authentication -> !(authentication instanceof OAuth2AuthenticationToken))
                 .doOnNext(
 
-                        authentication -> exchange.getAttributes().put(PRE_AUTHENTICATION, authentication))
+                        authentication -> exchange.getAttributes().put(
+                                OAuth2LoginAttributes.PRE_AUTHENTICATION, authentication))
                 .then(chain.filter(exchange))
                 .then(Mono.defer(() -> securityContextRepository
                         .load(exchange)
@@ -79,7 +77,9 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
                             return connectionService
                                     .updateUserConnectionIfPresent(registrationId, oauth2User)
                                     .switchIfEmpty(Mono.defer(
-                                            () -> Mono.justOrEmpty((Object) exchange.getAttribute(PRE_AUTHENTICATION))
+                                            () -> Mono.justOrEmpty(
+                                                            (Object) exchange.getAttribute(
+                                                                    OAuth2LoginAttributes.PRE_AUTHENTICATION))
                                                     .filter(Authentication.class::isInstance)
                                                     .cast(Authentication.class)
                                                     .filter(authenticationTrustResolver::isAuthenticated)

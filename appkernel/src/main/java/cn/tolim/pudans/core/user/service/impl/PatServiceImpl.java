@@ -6,6 +6,7 @@ import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.user.service.PatService;
 import cn.tolim.pudans.infra.exception.NotFoundException;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
@@ -102,6 +103,10 @@ class PatServiceImpl implements PatService {
             return Mono.error(new UnsatisfiedAttributeValueException("令牌过期时间无效，请选择未来的时间。"));
         }
         var roles = patSpec.getRoles();
+        if (patSpec.isSudo() && !isAdmin(authorities)) {
+            return Mono.error(new UnsatisfiedAttributeValueException(
+                    "只有管理员可以创建带 sudo 能力的令牌。"));
+        }
         return hasSufficientRoles(authorities, roles)
                 .filter(has -> has)
                 .switchIfEmpty(
@@ -148,6 +153,7 @@ class PatServiceImpl implements PatService {
                         pat.getSpec().setScopeMode(patSpec.getScopeMode());
                     }
                     pat.getSpec().setExpiresAt(patSpec.getExpiresAt());
+                    pat.getSpec().setSudo(patSpec.isSudo());
                     pat.getSpec().setTokenId(idGenerator.generateId().toString());
                     return pat;
                 })
@@ -219,5 +225,11 @@ class PatServiceImpl implements PatService {
         }
         var grantedRoles = AuthorityUtils.authoritiesToRoles(grantedAuthorities);
         return roleService.contains(grantedRoles, requestRoles);
+    }
+
+    private static boolean isAdmin(Collection<? extends GrantedAuthority> authorities) {
+        var roles = AuthorityUtils.authoritiesToRoles(authorities);
+        return roles.contains(BuiltinEntities.SUPER_ROLE)
+                || roles.contains(BuiltinEntities.SYSTEM_ADMIN_ROLE);
     }
 }

@@ -31,7 +31,7 @@ class AnnotationSettingEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "AnnotationSettingV1AlphaUc";
+        var tag = "AnnotationSettingV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET(
                         "/annotationsettings",

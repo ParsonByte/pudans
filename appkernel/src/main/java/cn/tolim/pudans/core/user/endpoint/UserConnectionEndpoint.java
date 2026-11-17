@@ -72,7 +72,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserConnectionV1alpha1Uc";
+        var tag = "UserConnectionV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET("/userconnections", this::list, builder -> builder.operationId("ListMyConnections")
                         .description("List the current user's identity bindings (Feishu, OIDC and Passkeys).")

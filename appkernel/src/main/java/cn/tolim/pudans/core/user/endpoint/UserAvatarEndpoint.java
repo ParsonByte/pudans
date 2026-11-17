@@ -35,7 +35,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserV1alpha1Uc";
+        var tag = "UserV1alpha1";
         return SpringdocRouteBuilder.route()
                 .POST("/users/-/avatar", this::upload, builder -> builder.operationId("UploadMyAvatar")
                         .description("Upload and resize the current user's avatar.")

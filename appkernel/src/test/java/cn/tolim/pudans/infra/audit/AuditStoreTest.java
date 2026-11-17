@@ -2,8 +2,12 @@ package cn.tolim.pudans.infra.audit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,6 +20,8 @@ import org.springframework.data.relational.core.query.Query;
 import org.springframework.data.r2dbc.core.R2dbcEntityOperations;
 import org.springframework.transaction.ReactiveTransactionManager;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
 import cn.tolim.pudans.contract.extension.Metadata;
 
@@ -103,5 +109,25 @@ class AuditStoreTest {
 
         Long count = store.countSince(Instant.parse("2026-11-15T00:00:00Z")).block();
         assertThat(count).isEqualTo(3L);
+    }
+
+    @Test
+    void appendSkipsAnAuditRecordWhoseFingerprintAlreadyExists() {
+        var record = new AuditRecord();
+        var metadata = new Metadata();
+        metadata.setName("audit-1");
+        record.setMetadata(metadata);
+        record.setOperation("READ");
+        record.setResourceType("User");
+        record.setResourceName("alice");
+        record.setRequestMethod("GET");
+        record.setRequestPath("/apis/users/alice");
+        record.setResult("SUCCESS");
+        when(activeRepository.existsByFingerprint(anyString())).thenReturn(Mono.just(true));
+
+        StepVerifier.create(store.append(record)).verifyComplete();
+
+        verify(activeRepository).existsByFingerprint(anyString());
+        verifyNoInteractions(entityOperations);
     }
 }

@@ -153,14 +153,24 @@ public class UserGroupService {
                             .filter(binding -> !groupName.equals(binding.getRoleRef().getName()))
                             .flatMap(client::delete)
                             .then();
-                    return deleteOthers.then(Mono.defer(() -> {
-                        var binding = UserGroupBinding.membership(username, groupName);
-                        var metadata = new cn.tolim.pudans.contract.extension.Metadata();
-                        metadata.setName(username + "-" + groupName + "-binding");
-                        binding.setMetadata(metadata);
-                        return client.create(binding);
-                    })).flatMap(binding -> rbacCacheService.evictUserRoles(username).thenReturn(binding))
-                            .doOnNext(binding -> publishGroupChanged(username, fromGroup, groupName));
+                    if (alreadyAssigned) {
+                        return deleteOthers
+                                .then(rbacCacheService.evictUserRoles(username))
+                                .thenReturn(existing.stream()
+                                        .filter(binding -> groupName.equals(binding.getRoleRef().getName()))
+                                        .findFirst()
+                                        .orElseThrow())
+                                .doOnNext(binding -> publishGroupChanged(username, fromGroup, groupName));
+                    }
+                    var binding = UserGroupBinding.membership(username, groupName);
+                    var metadata = new cn.tolim.pudans.contract.extension.Metadata();
+                    metadata.setName(username + "-" + groupName + "-binding");
+                    binding.setMetadata(metadata);
+                    return client.create(binding)
+                            .flatMap(created -> deleteOthers
+                                    .then(rbacCacheService.evictUserRoles(username))
+                                    .thenReturn(created))
+                            .doOnNext(created -> publishGroupChanged(username, fromGroup, groupName));
                 });
     }
 

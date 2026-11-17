@@ -1,14 +1,14 @@
 package cn.tolim.pudans.core.rbac;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -21,14 +21,15 @@ import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
 import cn.tolim.pudans.contract.extension.JsonExtension;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.contract.extension.ReservedLabels;
+import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import cn.tolim.pudans.contract.extension.Unstructured;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 
 @Component
 @RequiredArgsConstructor
 public class BuiltinEntityPolicy {
-
-    private static final String RESERVED_LABEL_PREFIX = "pudans.tolim.cn/";
 
     private final ReactiveExtensionClient client;
 
@@ -58,6 +59,9 @@ public class BuiltinEntityPolicy {
         if (User.KIND.equals(kind)) {
             return convert(extension, User.class).flatMap(this::checkUserCreate);
         }
+        if (PersonalAccessToken.KIND.equals(kind)) {
+            return convert(extension, PersonalAccessToken.class).flatMap(this::checkPatCreate);
+        }
         return Mono.empty();
     }
 
@@ -72,6 +76,9 @@ public class BuiltinEntityPolicy {
         }
         if (User.KIND.equals(kind)) {
             return convert(extension, User.class).flatMap(this::checkUserUpdate);
+        }
+        if (PersonalAccessToken.KIND.equals(kind)) {
+            return convert(extension, PersonalAccessToken.class).flatMap(this::checkPatUpdate);
         }
         return Mono.empty();
     }
@@ -235,7 +242,7 @@ public class BuiltinEntityPolicy {
         if (user.getMetadata() == null || !StringUtils.hasText(user.getMetadata().getName())) {
             return Mono.error(new ServerWebInputException("metadata.name 为必填项。"));
         }
-        var reserved = reservedLabels(user.getMetadata().getLabels());
+        var reserved = ReservedLabels.of(user.getMetadata().getLabels());
         if (!reserved.isEmpty()) {
             return Mono.error(denied("用户的保留标签为只读。"));
         }
@@ -259,8 +266,8 @@ public class BuiltinEntityPolicy {
                             && !requestedFinalizers.equals(nullSafe(existing.getMetadata().getFinalizers()))) {
                         return Mono.<Void>error(denied("metadata.finalizers 是受保护的字段。"));
                     }
-                    var requestedReserved = reservedLabels(user.getMetadata().getLabels());
-                    var existingReserved = reservedLabels(existing.getMetadata().getLabels());
+                    var requestedReserved = ReservedLabels.of(user.getMetadata().getLabels());
+                    var existingReserved = ReservedLabels.of(existing.getMetadata().getLabels());
                     if (!requestedReserved.isEmpty() && !requestedReserved.equals(existingReserved)) {
                         return Mono.<Void>error(denied("用户的保留标签为只读。"));
                     }
@@ -282,24 +289,51 @@ public class BuiltinEntityPolicy {
             return Mono.<Void>error(denied(
                     "用户的 spec.totpEncryptedSecret 只能通过专用认证接口修改。"));
         }
+        if (!Objects.equals(requestedSpec.getTotpLastStep(), existingSpec.getTotpLastStep())) {
+            return Mono.<Void>error(denied(
+                    "用户的 spec.totpLastStep 只能通过专用认证接口修改。"));
+        }
         return Mono.empty();
+    }
+
+    private Mono<Void> checkPatCreate(PersonalAccessToken pat) {
+        if (pat.getSpec() == null || !pat.getSpec().isSudo()) {
+            return Mono.empty();
+        }
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .map(authentication -> AuthorityUtils.authoritiesToRoles(authentication.getAuthorities())
+                        .stream()
+                        .anyMatch(role -> BuiltinEntities.SUPER_ROLE.equals(role)
+                                || BuiltinEntities.SYSTEM_ADMIN_ROLE.equals(role)))
+                .filter(Boolean::booleanValue)
+                .switchIfEmpty(Mono.error(denied("只有管理员可以创建带 sudo 能力的令牌。")))
+                .then();
+    }
+
+    private Mono<Void> checkPatUpdate(PersonalAccessToken requested) {
+        return client.get(PersonalAccessToken.class, nameOf(requested)).flatMap(existing -> {
+            var requestedSpec = requested.getSpec();
+            var existingSpec = existing.getSpec();
+            if (requestedSpec == null || existingSpec == null) {
+                return Mono.empty();
+            }
+            if (requestedSpec.isSudo() != existingSpec.isSudo()) {
+                return Mono.<Void>error(denied("PAT 的 sudo 能力只能由管理员在创建时设置。"));
+            }
+            if (!Objects.equals(requestedSpec.getUsername(), existingSpec.getUsername())) {
+                return Mono.<Void>error(denied("PAT 的所属用户不可修改。"));
+            }
+            if (!Objects.equals(requestedSpec.getRoles(), existingSpec.getRoles())
+                    || !Objects.equals(requestedSpec.getScopes(), existingSpec.getScopes())) {
+                return Mono.<Void>error(denied("PAT 的角色和 scope 不可修改。"));
+            }
+            return Mono.empty();
+        });
     }
 
     private static Set<String> nullSafe(Set<String> values) {
         return values == null ? Set.of() : new HashSet<>(values);
-    }
-
-    private static Map<String, String> reservedLabels(Map<String, String> labels) {
-        if (labels == null || labels.isEmpty()) {
-            return Map.of();
-        }
-        var reserved = new HashMap<String, String>();
-        labels.forEach((key, value) -> {
-            if (key != null && key.startsWith(RESERVED_LABEL_PREFIX)) {
-                reserved.put(key, value);
-            }
-        });
-        return reserved;
     }
 
     private static String nameOf(Extension extension) {

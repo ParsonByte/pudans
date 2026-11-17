@@ -2,7 +2,10 @@ package cn.tolim.pudans.security.authentication.oauth2;
 
 import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.contract.security.authentication.oauth2.PudansOAuth2AuthenticationToken;
+import cn.tolim.pudans.security.authentication.PudansUserDetailsContract;
+import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
@@ -28,12 +31,31 @@ public class OAuth2AuthenticationSession {
 
     public Mono<Authentication> establishAndGetAuthentication(
             ServerWebExchange exchange, String username, OAuth2AuthenticationToken original) {
+        return establishAndGetAuthentication(exchange, username, original, false);
+    }
+
+    public Mono<Authentication> establishAndGetAuthentication(
+            ServerWebExchange exchange,
+            String username,
+            OAuth2AuthenticationToken original,
+            boolean twoFactorSatisfied) {
         return userDetailsService
                 .findByUsername(username)
-                .map(userDetails -> PudansOAuth2AuthenticationToken.authenticated(userDetails, original))
+                .map(userDetails -> {
+                    if (userDetails instanceof PudansUserDetailsContract contract
+                            && contract.isTwoFactorAuthEnabled()
+                            && !twoFactorSatisfied) {
+                        var previous = UsernamePasswordAuthenticationToken.authenticated(
+                                userDetails, "", userDetails.getAuthorities());
+                        return (Authentication) new TwoFactorAuthentication(previous);
+                    }
+                    return PudansOAuth2AuthenticationToken.authenticated(userDetails, original);
+                })
                 .flatMap(authentication -> securityContextRepository
                         .save(exchange, new SecurityContextImpl(authentication))
-                        .then(loginFlowHandler.onLoginSuccess(exchange, authentication))
+                        .then(authentication instanceof TwoFactorAuthentication
+                                ? Mono.empty()
+                                : loginFlowHandler.onLoginSuccess(exchange, authentication))
                         .thenReturn(authentication));
     }
 }

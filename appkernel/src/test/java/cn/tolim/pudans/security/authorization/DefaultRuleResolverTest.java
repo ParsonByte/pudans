@@ -78,6 +78,26 @@ class DefaultRuleResolverTest {
     }
 
     @Test
+    void jwtAuthenticationDoesNotInheritTemporaryRoles() {
+        var role = BuiltinEntityDefinitions.normalRole();
+        when(roleService.listDependenciesFlux(Set.of(role.getMetadata().getName())))
+                .thenReturn(Flux.just(role));
+        var jwt = org.springframework.security.oauth2.jwt.Jwt.withTokenValue("token")
+                .header("alg", "none")
+                .claim("sub", "alice")
+                .build();
+        var authentication = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(
+                jwt, List.of(new SimpleGrantedAuthority("ROLE_" + role.getMetadata().getName())));
+
+        StepVerifier.create(new DefaultRuleResolver(roleService, tempRoleService, auditService)
+                        .visitRules(authentication, request("users", "-", "self", null, "get")))
+                .assertNext(visitor -> assertThat(visitor.isAllowed()).isTrue())
+                .verifyComplete();
+        org.mockito.Mockito.verify(tempRoleService, org.mockito.Mockito.never())
+                .activeRoleNameSet(org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
     void superRoleStillMatchesEveryResource() {
         var request = request("users", "bob", "", null, "delete");
 

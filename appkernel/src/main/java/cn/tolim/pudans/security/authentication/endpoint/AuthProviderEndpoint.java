@@ -32,7 +32,7 @@ public class AuthProviderEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        final var tag = "AuthV1alpha1Auth";
+        final var tag = "AuthProviderV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET(
                         "/auth-providers",

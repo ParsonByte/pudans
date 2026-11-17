@@ -117,7 +117,9 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
 
     private Mono<Set<String>> resolveRoleNames(Authentication authentication) {
         var baseRoles = AuthorityUtils.authoritiesToRoles(authentication.getAuthorities());
-        if (!authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+        if (!authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken
+                || authentication instanceof JwtAuthenticationToken) {
             return Mono.just(baseRoles);
         }
         return tempRoleService
@@ -247,6 +249,8 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         context.put("verb", requestInfo.getVerb());
         context.put("scopes", scopes);
         context.put("patName", patName(authentication));
+        context.put("patOwner", jwtClaim(authentication, "pat_owner"));
+        context.put("sudoUser", jwtClaim(authentication, "sudo_user"));
         auditRecord.setContext(context);
         auditRecord.setActionSnapshot(JsonUtils.objectToJson(context));
         auditService.record(auditRecord);
@@ -255,6 +259,13 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
     private static String patName(Authentication authentication) {
         if (authentication instanceof JwtAuthenticationToken jwt) {
             return jwt.getToken().getClaimAsString(PAT_NAME_CLAIM);
+        }
+        return null;
+    }
+
+    private static String jwtClaim(Authentication authentication, String claimName) {
+        if (authentication instanceof JwtAuthenticationToken jwt) {
+            return jwt.getToken().getClaimAsString(claimName);
         }
         return null;
     }

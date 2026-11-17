@@ -19,7 +19,7 @@ public class CaptchaEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "CaptchaV1alpha1Public";
+        var tag = "CaptchaV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET("/captcha/challenge", request -> captchaService
                         .newChallenge()

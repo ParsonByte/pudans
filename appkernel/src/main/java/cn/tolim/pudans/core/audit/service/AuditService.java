@@ -42,6 +42,8 @@ public class AuditService {
     public static final String STEP_INDEX_ATTRIBUTE = AuditService.class.getName() + ".STEP_INDEX";
     public static final String AUDIT_TRAIL_ATTRIBUTE = AuditService.class.getName() + ".AUDIT_TRAIL";
     public static final String USERNAME_ATTRIBUTE = AuditService.class.getName() + ".USERNAME";
+    public static final String PAT_OWNER_ATTRIBUTE = AuditService.class.getName() + ".PAT_OWNER";
+    public static final String SUDO_USER_ATTRIBUTE = AuditService.class.getName() + ".SUDO_USER";
     public static final String UID_ATTRIBUTE = AuditService.class.getName() + ".UID";
     public static final String OPERATION_ATTRIBUTE = AuditService.class.getName() + ".OPERATION";
     public static final String RESULT_ATTRIBUTE = AuditService.class.getName() + ".RESULT";

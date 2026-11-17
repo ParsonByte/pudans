@@ -35,7 +35,7 @@ public class AvatarResourceEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "AvatarV1alpha1Public";
+        var tag = "AvatarV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET("/avatars/{filename}", this::serve, builder -> builder
                         .operationId("GetAvatar")

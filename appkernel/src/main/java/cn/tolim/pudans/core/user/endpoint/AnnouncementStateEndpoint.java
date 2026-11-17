@@ -26,7 +26,7 @@ public class AnnouncementStateEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserV1alpha1Uc";
+        var tag = "UserV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET("/users/-/announcement-state", this::get, builder -> builder
                         .operationId("GetMyAnnouncementState")

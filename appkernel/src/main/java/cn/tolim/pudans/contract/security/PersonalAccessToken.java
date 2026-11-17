@@ -66,6 +66,10 @@ public class PersonalAccessToken extends AbstractExtension {
         private boolean revoked;
 
 
+        @Schema(description = "Whether this token may impersonate another user with sudo.")
+        private boolean sudo;
+
+
         private Instant revokesAt;
 
 

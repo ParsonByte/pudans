@@ -29,12 +29,12 @@ class ParameterSettingSessionTimeoutApplierTest {
     }
 
     @Test
-    void fallsBackToThirtyMinutesWhenTheValueIsMissing() {
+    void keepsSpringSessionTimeoutWhenTheValueIsMissing() {
         var applier = new ParameterSettingSessionTimeoutApplier(
                 parameterSettingGroupService, sessionRepository);
 
         applier.apply(null);
 
-        verify(sessionRepository).setDefaultMaxInactiveInterval(Duration.ofSeconds(1800));
+        org.mockito.Mockito.verifyNoInteractions(sessionRepository);
     }
 }

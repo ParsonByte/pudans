@@ -127,6 +127,20 @@ class ParameterSettingGroupServiceTest {
     }
 
     @Test
+    void legacyUpdateRoutesNewGroupsThroughModernValidation() {
+        var configMap = configMap();
+        configMap.getData().put("schemaVersion", "2");
+        configMap.getData().put("server", "{\"siteId\":\"site-1\"}");
+        when(fetcher.getConfigMap()).thenReturn(Mono.just(configMap));
+        when(fetcher.fetch("server", ObjectNode.class))
+                .thenReturn(Mono.just(objectNode("{\"siteId\":\"site-1\"}")));
+
+        StepVerifier.create(service.updateLegacyGroup("server", objectNode("{\"siteId\":\"site-2\"}")))
+                .expectError(RequestBodyValidationException.class)
+                .verify();
+    }
+
+    @Test
     void siteIdIsReadOnly() {
         var configMap = configMap();
         configMap.getData().put("server", "{\"siteId\":\"site-1\"}");

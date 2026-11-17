@@ -40,8 +40,8 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        final var tag = "ParameterSettingV1alpha1Console";
-        final var legacyTag = "SystemConfigV1alpha1Console";
+        final var tag = "ParameterSettingV1alpha1";
+        final var legacyTag = "SystemConfigV1alpha1";
         return SpringdocRouteBuilder.route()
                 .POST(
                         "/parameter-settings/mail/-/test",
