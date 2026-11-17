@@ -5,24 +5,18 @@ import {
   SidebarHeader,
   SidebarRail,
 } from "@/components/ui/sidebar";
+import { useLayout } from "@/context/layout-provider";
 
 import { NavGroup } from "./nav-group";
 import { NavUser } from "./nav-user";
 import type { SidebarData } from "./types";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
-type AppSidebarProps = Partial<SidebarData> & {
-  collapsible?: "offcanvas" | "icon" | "none";
-  variant?: "sidebar" | "floating" | "inset";
-};
+type AppSidebarProps = Partial<SidebarData>;
 
-export function AppSidebar({
-  collapsible = "icon",
-  variant = "inset",
-  user,
-  workspaces,
-  navGroups,
-}: AppSidebarProps) {
+export function AppSidebar({ user, workspaces, navGroups }: AppSidebarProps) {
+  const { collapsible, variant } = useLayout();
+
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
       {workspaces && workspaces.length > 0 ? (
