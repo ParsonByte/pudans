@@ -7041,7 +7041,7 @@
           }
         },
         "tags": [
-          "SystemV1alpha1"
+          "SystemSetupV1alpha1"
         ],
         "parameters": []
       },
@@ -7076,7 +7076,7 @@
           }
         },
         "tags": [
-          "SystemConfigV1alpha1"
+          "ParameterSettingV1alpha1"
         ],
         "deprecated": true
       },
@@ -7110,7 +7110,7 @@
           }
         },
         "tags": [
-          "SystemConfigV1alpha1"
+          "ParameterSettingV1alpha1"
         ],
         "deprecated": true
       },
@@ -9595,10 +9595,7 @@
       "name": "SettingV1alpha1"
     },
     {
-      "name": "SystemConfigV1alpha1"
-    },
-    {
-      "name": "SystemV1alpha1"
+      "name": "SystemSetupV1alpha1"
     },
     {
       "name": "TempRoleBindingV1alpha1"

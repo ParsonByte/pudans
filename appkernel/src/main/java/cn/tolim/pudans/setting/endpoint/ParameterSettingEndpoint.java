@@ -41,7 +41,6 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         final var tag = "ParameterSettingV1alpha1";
-        final var legacyTag = "SystemConfigV1alpha1";
         return SpringdocRouteBuilder.route()
                 .POST(
                         "/parameter-settings/mail/-/test",
@@ -81,7 +80,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                         builder -> builder.operationId("getSystemConfigByGroup")
                                 .description("Deprecated: use /parameter-settings/{group} instead.")
                                 .deprecated(true)
-                                .tag(legacyTag)
+                                .tag(tag)
                                 .response(responseBuilder()
                                         .content(contentBuilder().mediaType(MediaType.APPLICATION_JSON_VALUE))
                                         .implementation(Object.class))
@@ -92,7 +91,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                         builder -> builder.operationId("updateSystemConfigByGroup")
                                 .description("Deprecated: use /parameter-settings/{group} instead.")
                                 .deprecated(true)
-                                .tag(legacyTag)
+                                .tag(tag)
                                 .parameter(groupParameter("Group of the system config"))
                                 .requestBody(requestBodyBuilder().implementation(Object.class))
                                 .response(responseBuilder()
