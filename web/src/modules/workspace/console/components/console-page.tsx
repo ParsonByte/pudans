@@ -25,7 +25,7 @@ export function ConsolePage({ title, children }: ConsolePageProps) {
           <ConfigDrawer />
         </div>
       </Header>
-      <Main className="space-y-6">{children}</Main>
+      <Main className="flex flex-1 flex-col gap-6">{children}</Main>
     </>
   );
 }
