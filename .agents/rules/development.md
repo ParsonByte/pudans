@@ -7,6 +7,21 @@
 - Branch names are kebab-case with a type prefix, for example `feat/audit-list` or `fix/auth-redirect`.
 - Hotfixes may branch from `main` only for an urgent release fix; after merging to `main`, bring the fix into `dev` through a pull request from the hotfix branch, never by merging `main` into `dev`.
 
+## Branch base and task boundaries
+
+- Start every feature, fix and chore branch from `origin/dev`; `origin/dev` is the only review comparison base.
+- Before creating a branch, `git status --short` must be empty. If a previous task still has uncommitted work, commit it or stay on the existing branch; do not create a new branch while carrying uncommitted changes.
+- One branch carries one task. Finish and commit the current task before starting another branch; do not stack multiple tasks into one branch or one commit without explicit approval.
+- Use `git log --oneline origin/dev..HEAD` as the authoritative list of commits added by the branch. A commit already on `origin/dev` is the branch base, not a new branch commit.
+- Do not compare a feature branch with `main` to decide what the branch changed; `main` may be behind `dev`.
+- Delete only local branches with no unique commits. Never delete a branch that is ahead of `origin/dev` without explicit instruction.
+
+## Push and history
+
+- The user pushes feature branches. Do not run `git push`, `git push --delete`, `git reset --hard`, `git branch -D` or any history-rewriting command unless the user explicitly asks for that exact operation.
+- Never push, force-push or delete `main` or `dev`.
+- When asked to restore an unpushed state, state whether the local commit and the remote branch are affected, then wait for confirmation before deleting either.
+
 ## Merge strategy
 
 - Feature/fix/chore branches into `dev`: use **Rebase and merge**. Keep commits atomic and rebase the branch on `origin/dev` before opening the PR; apart from the release sync, `dev` stays linear.
