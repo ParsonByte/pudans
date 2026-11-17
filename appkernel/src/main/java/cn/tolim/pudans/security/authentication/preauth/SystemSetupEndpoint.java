@@ -144,7 +144,7 @@ public class SystemSetupEndpoint {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 100)
     RouterFunction<ServerResponse> setupRouter() {
-        final var tag = "SystemV1alpha1";
+        final var tag = "SystemSetupV1alpha1";
         return SpringdocRouteBuilder.route()
                 .POST(
                         ApiGroups.SETUP_PATH,
