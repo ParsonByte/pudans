@@ -14,16 +14,12 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
-import type {
-  ParameterField,
-  ParameterFormValues,
-  ParameterGroupKey,
-} from "../lib/parameter-fields";
+import type { ParameterField, ParameterFormValues } from "../lib/parameter-fields";
 import { LogoPreview } from "./logo-fields";
 
 type ParameterFieldControlProps = {
   form: UseFormReturn<ParameterFormValues>;
-  groupKey: ParameterGroupKey;
+  groupKey: string;
   field: ParameterField;
   userGroupOptions: readonly { value: string; label: string }[];
   userGroupsPending: boolean;
@@ -139,6 +135,8 @@ export function ParameterFieldControl({
           id={fieldId}
           rows={field.rows ?? 4}
           maxLength={field.maxLength}
+          autoComplete="off"
+          spellCheck={false}
           aria-invalid={Boolean(message)}
           {...form.register(field.name)}
         />
@@ -159,6 +157,8 @@ export function ParameterFieldControl({
                 id={fieldId}
                 type="url"
                 maxLength={field.maxLength}
+                autoComplete="off"
+                spellCheck={false}
                 aria-invalid={Boolean(message)}
                 value={String(controlledField.value ?? "")}
                 onChange={controlledField.onChange}
@@ -191,6 +191,8 @@ export function ParameterFieldControl({
           maxLength={isNumber ? undefined : field.maxLength}
           step={isNumber ? 1 : undefined}
           readOnly={field.kind === "readonly" || field.readOnly}
+          autoComplete="off"
+          spellCheck={false}
           aria-invalid={Boolean(message)}
           className={cn(
             field.kind === "readonly" || field.readOnly ? "bg-muted/40" : undefined,

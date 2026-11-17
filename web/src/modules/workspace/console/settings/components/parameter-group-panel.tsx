@@ -8,11 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 import { fetchParameterGroup, resolveParameterSettingError } from "../lib/parameter-api";
-import { type ParameterGroup, createParameterFormValues } from "../lib/parameter-fields";
+import { type ParameterFieldSet, createParameterFormValues } from "../lib/parameter-fields";
 import { ParameterGroupForm } from "./parameter-group-form";
 
+type ParameterPanelGroup = ParameterFieldSet & {
+  key: string;
+};
+
 type ParameterGroupPanelProps = {
-  group: ParameterGroup;
+  group: ParameterPanelGroup;
   sectionActions?: Partial<Record<string, ReactNode>>;
   render?: (data: Record<string, unknown>) => ReactNode;
 };
@@ -67,7 +71,7 @@ export function ParameterGroupPanel({ group, sectionActions, render }: Parameter
 }
 
 type ParameterGroupSkeletonProps = {
-  group: ParameterGroup;
+  group: ParameterPanelGroup;
 };
 
 function ParameterGroupSkeleton({ group }: ParameterGroupSkeletonProps) {
