@@ -17,6 +17,8 @@ public class ValidationUtils {
 
     public static final String URL_REGEX = "^(|https?://\\S+)$";
 
+    public static final Pattern EMAIL_PATTERN = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+
     public static final String RELATIVE_PATH_REGEX = "^(?!/)(?!.*\\.\\.)(?!.*//)[A-Za-z0-9._/-]+$";
 
     public static final int PASSWORD_MIN_LENGTH = 8;
