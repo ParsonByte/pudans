@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Link, Outlet, useLocation } from "@tanstack/react-router";
+import { Link, Outlet } from "@tanstack/react-router";
 import { Pause, Play } from "lucide-react";
 
 import { ThemeSwitch } from "@/components/theme-switch";
@@ -8,12 +8,18 @@ import { cn } from "@/lib/utils";
 
 const BRAND_NAME = "PUDANS";
 
-export function AuthLayout() {
+type AuthLayoutVariant = "auth" | "legal" | "setup";
+
+type AuthLayoutProps = {
+  variant?: AuthLayoutVariant;
+};
+
+export function AuthLayout({ variant = "auth" }: AuthLayoutProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
-  const isLegal = useLocation({
-    select: (location) => location.pathname.startsWith("/legal"),
-  });
+  const isLegal = variant === "legal";
+  const isSetup = variant === "setup";
+  const isCentered = isLegal || isSetup;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -66,7 +72,7 @@ export function AuthLayout() {
 
       <header className="fixed inset-x-0 top-0 z-20 flex items-center justify-between gap-5 bg-gradient-to-b from-black/35 to-transparent px-5 py-4 text-white sm:px-10 sm:py-5">
         <Link
-          to="/sign-in"
+          to={isSetup ? "/setup" : "/sign-in"}
           aria-label={BRAND_NAME}
           className="inline-flex min-w-0 items-center gap-2.5"
         >
@@ -85,7 +91,7 @@ export function AuthLayout() {
         </div>
       </header>
 
-      {!isLegal ? (
+      {variant === "auth" ? (
         <section className="pointer-events-none fixed bottom-[clamp(88px,12vh,132px)] left-[clamp(28px,6vw,104px)] z-10 hidden max-w-[min(620px,48vw)] text-white drop-shadow-[0_4px_30px_rgba(0,0,0,0.55)] md:block">
           <p className="mb-4 text-xs font-semibold tracking-[0.22em] text-white/55">
             PUDANS · 数字身份
@@ -100,13 +106,17 @@ export function AuthLayout() {
       <section
         className={cn(
           "relative z-10 flex min-h-svh items-start justify-center px-4 pt-24 pb-28 md:items-center md:px-[clamp(24px,7vw,112px)] md:pt-28 md:pb-24",
-          isLegal ? "md:justify-center" : "md:justify-end",
+          isCentered ? "md:justify-center" : "md:justify-end",
         )}
       >
         <div
           className={cn(
             "flex w-full flex-col rounded-xl border border-border/80 bg-card p-6 text-card-foreground shadow-2xl md:rounded-2xl md:p-8",
-            isLegal ? "max-w-[min(800px,calc(100vw-2rem))] md:min-h-[640px]" : "max-w-[460px]",
+            isLegal
+              ? "max-w-[min(800px,calc(100vw-2rem))] md:min-h-[640px]"
+              : isSetup
+                ? "max-w-[min(720px,calc(100vw-2rem))]"
+                : "max-w-[460px]",
           )}
         >
           <Outlet />
@@ -134,23 +144,31 @@ export function AuthLayout() {
         <span>
           © {new Date().getFullYear()} {BRAND_NAME}。保留所有权利。
         </span>
-        <Link to="/legal" search={{ tab: "terms" }} className="transition-colors hover:text-white">
-          用户协议
-        </Link>
-        <Link
-          to="/legal"
-          search={{ tab: "privacy" }}
-          className="transition-colors hover:text-white"
-        >
-          隐私政策
-        </Link>
-        <Link
-          to="/legal"
-          search={{ tab: "confidentiality" }}
-          className="transition-colors hover:text-white"
-        >
-          数据保密协议
-        </Link>
+        {!isSetup ? (
+          <>
+            <Link
+              to="/legal"
+              search={{ tab: "terms" }}
+              className="transition-colors hover:text-white"
+            >
+              用户协议
+            </Link>
+            <Link
+              to="/legal"
+              search={{ tab: "privacy" }}
+              className="transition-colors hover:text-white"
+            >
+              隐私政策
+            </Link>
+            <Link
+              to="/legal"
+              search={{ tab: "confidentiality" }}
+              className="transition-colors hover:text-white"
+            >
+              数据保密协议
+            </Link>
+          </>
+        ) : null}
       </footer>
     </main>
   );

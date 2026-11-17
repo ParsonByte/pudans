@@ -10,14 +10,20 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as authRouteRouteImport } from './routes/(auth)/route'
+import { Route as setupRouteRouteImport } from './routes/(setup)/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as authLegalRouteImport } from './routes/(auth)/legal'
 import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
+import { Route as setupSetupRouteImport } from './routes/(setup)/setup'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 
 const authRouteRoute = authRouteRouteImport.update({
   id: '/(auth)',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const setupRouteRoute = setupRouteRouteImport.update({
+  id: '/(setup)',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -39,6 +45,11 @@ const authSignInRoute = authSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => authRouteRoute,
 } as any)
+const setupSetupRoute = setupSetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => setupRouteRoute,
+} as any)
 const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -50,39 +61,46 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof authForgotPasswordRoute
   '/legal': typeof authLegalRoute
   '/sign-in': typeof authSignInRoute
+  '/setup': typeof setupSetupRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedIndexRoute
   '/forgot-password': typeof authForgotPasswordRoute
   '/legal': typeof authLegalRoute
   '/sign-in': typeof authSignInRoute
+  '/setup': typeof setupSetupRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(auth)': typeof authRouteRouteWithChildren
+  '/(setup)': typeof setupRouteRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/(auth)/forgot-password': typeof authForgotPasswordRoute
   '/(auth)/legal': typeof authLegalRoute
   '/(auth)/sign-in': typeof authSignInRoute
+  '/(setup)/setup': typeof setupSetupRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/forgot-password' | '/legal' | '/sign-in'
+  fullPaths: '/' | '/forgot-password' | '/legal' | '/sign-in' | '/setup'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/forgot-password' | '/legal' | '/sign-in'
+  to: '/' | '/forgot-password' | '/legal' | '/sign-in' | '/setup'
   id:
     | '__root__'
     | '/(auth)'
+    | '/(setup)'
     | '/_authenticated'
     | '/(auth)/forgot-password'
     | '/(auth)/legal'
     | '/(auth)/sign-in'
+    | '/(setup)/setup'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   authRouteRoute: typeof authRouteRouteWithChildren
+  setupRouteRoute: typeof setupRouteRouteWithChildren
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
 }
 
@@ -93,6 +111,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof authRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(setup)': {
+      id: '/(setup)'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof setupRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -123,6 +148,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authSignInRouteImport
       parentRoute: typeof authRouteRoute
     }
+    '/(setup)/setup': {
+      id: '/(setup)/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof setupSetupRouteImport
+      parentRoute: typeof setupRouteRoute
+    }
     '/_authenticated/': {
       id: '/_authenticated/'
       path: '/'
@@ -149,6 +181,18 @@ const authRouteRouteWithChildren = authRouteRoute._addFileChildren(
   authRouteRouteChildren,
 )
 
+interface setupRouteRouteChildren {
+  setupSetupRoute: typeof setupSetupRoute
+}
+
+const setupRouteRouteChildren: setupRouteRouteChildren = {
+  setupSetupRoute: setupSetupRoute,
+}
+
+const setupRouteRouteWithChildren = setupRouteRoute._addFileChildren(
+  setupRouteRouteChildren,
+)
+
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -162,6 +206,7 @@ const AuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   authRouteRoute: authRouteRouteWithChildren,
+  setupRouteRoute: setupRouteRouteWithChildren,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
 }
 export const routeTree = rootRouteImport
