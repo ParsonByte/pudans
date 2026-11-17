@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.setting.MailSettingsService;
 import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import cn.tolim.pudans.security.authentication.AuthenticationConnectionTester;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,12 +32,36 @@ class ParameterSettingEndpointTest {
     @Mock
     MailSettingsService mailSettingsService;
 
+    @Mock
+    AuthenticationConnectionTester connectionTester;
+
     private WebTestClient webTestClient;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new ParameterSettingEndpoint(groupService, mailSettingsService);
+        var endpoint = new ParameterSettingEndpoint(groupService, mailSettingsService, connectionTester);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
+    }
+
+    @Test
+    void authenticationConnectionTestReturnsTheResult() {
+        when(connectionTester.test(any()))
+                .thenReturn(Mono.just(
+                        new AuthenticationConnectionTester.ConnectionTestResult(true, "ok")));
+
+        webTestClient
+                .post()
+                .uri("/parameter-settings/authentication/-/test")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("type", "feishu"))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.success")
+                .isEqualTo(true)
+                .jsonPath("$.message")
+                .isEqualTo("ok");
     }
 
     @Test
