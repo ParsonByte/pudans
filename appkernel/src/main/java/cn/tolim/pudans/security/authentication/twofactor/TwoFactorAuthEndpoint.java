@@ -37,6 +37,7 @@ import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import org.springframework.validation.Validator;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -67,6 +68,8 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    private final SecurityParameterSettingService securitySettings;
+
     public TwoFactorAuthEndpoint(
             ReactiveExtensionClient client,
             UserService userService,
@@ -76,7 +79,8 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
             PasswordEncoder passwordEncoder,
             ExternalUrlSupplier externalUrl,
             AuditService auditService,
-            DomainEventPublisher domainEventPublisher) {
+            DomainEventPublisher domainEventPublisher,
+            SecurityParameterSettingService securitySettings) {
         this.client = client;
         this.userService = userService;
         this.totpAuthService = totpAuthService;
@@ -86,6 +90,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         this.externalUrl = externalUrl;
         this.auditService = auditService;
         this.domainEventPublisher = domainEventPublisher;
+        this.securitySettings = securitySettings;
     }
 
     private static Map<String, Object> totpSnapshot(User user) {
@@ -251,6 +256,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
             var authLink = UriComponentsBuilder.fromUriString("otpauth://totp")
                     .path(authKeyId)
                     .queryParam("secret", rawSecret)
+                    .queryParam("issuer", securitySettings.totpIssuer())
                     .queryParam("digits", 6)
                     .build()
                     .toUri();

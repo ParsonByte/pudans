@@ -10,6 +10,7 @@ import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.exception.UserNotFoundException;
 import cn.tolim.pudans.security.authentication.login.PudansUser;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorUtils;
+import java.util.function.BooleanSupplier;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -29,7 +30,7 @@ public class DefaultUserDetailService implements ReactiveUserDetailsService, Rea
 
 
     @Setter
-    private boolean twoFactorAuthDisabled;
+    private BooleanSupplier twoFactorAuthEnabled = () -> true;
 
     public DefaultUserDetailService(UserService userService, UserGroupService userGroupService) {
         this.userService = userService;
@@ -62,7 +63,8 @@ public class DefaultUserDetailService implements ReactiveUserDetailsService, Rea
                                 name, user.getSpec().getPassword(), authorities, disabled);
                         var twoFactorAuthSettings = TwoFactorUtils.getTwoFactorAuthSettings(user);
                         return new PudansUser.Builder(principal)
-                                .twoFactorAuthEnabled((!twoFactorAuthDisabled) && twoFactorAuthSettings.isAvailable())
+                                .twoFactorAuthEnabled(
+                                        twoFactorAuthEnabled.getAsBoolean() && twoFactorAuthSettings.isAvailable())
                                 .totpEncryptedSecret(user.getSpec().getTotpEncryptedSecret())
                                 .build();
                     }));

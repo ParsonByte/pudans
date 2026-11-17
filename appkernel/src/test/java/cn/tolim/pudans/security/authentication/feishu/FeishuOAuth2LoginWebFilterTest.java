@@ -12,7 +12,11 @@ import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
+import cn.tolim.pudans.infra.properties.OidcProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
+import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
+import cn.tolim.pudans.infra.setting.ParameterSettingSecretCipher;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import cn.tolim.pudans.security.authentication.ExternalLoginCompletionService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +47,12 @@ class FeishuOAuth2LoginWebFilterTest {
     @Mock
     DomainEventPublisher domainEventPublisher;
 
+    @Mock
+    ParameterSettingFetcher parameterSettingFetcher;
+
+    @Mock
+    ParameterSettingSecretCipher parameterSettingSecretCipher;
+
     private FeishuProperties properties;
 
     private FeishuOAuth2LoginWebFilter filter;
@@ -50,11 +60,16 @@ class FeishuOAuth2LoginWebFilterTest {
     @BeforeEach
     void setUp() {
         properties = new FeishuProperties();
+        var securitySettings = new SecurityParameterSettingService(
+                parameterSettingFetcher,
+                parameterSettingSecretCipher,
+                new OidcProperties(),
+                properties);
         var context = mock(ServerResponse.Context.class);
         lenient().when(context.messageWriters()).thenReturn(ServerCodecConfigurer.create().getWriters());
         lenient().when(context.viewResolvers()).thenReturn(List.of());
         filter = new FeishuOAuth2LoginWebFilter(
-                properties,
+                securitySettings,
                 feishuClient,
                 feishuUserService,
                 externalLoginCompletionService,

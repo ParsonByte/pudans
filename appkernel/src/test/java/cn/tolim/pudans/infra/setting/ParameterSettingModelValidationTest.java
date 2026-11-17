@@ -27,6 +27,24 @@ class ParameterSettingModelValidationTest {
         assertThat(validator.validate(none)).isEmpty();
         assertThat(validator.validate(validMail())).isEmpty();
         assertThat(validator.validate(validServer())).isEmpty();
+        assertThat(validator.validate(validAuthentication())).isEmpty();
+    }
+
+    @Test
+    void authenticationRejectsInvalidProvidersAndTokenLifetime() {
+        var authentication = validAuthentication();
+        var provider = new ParameterSetting.OAuth2Provider();
+        provider.setRegistrationId("Bad Id!");
+        provider.setAuthorizationUri("ftp://example.com");
+        authentication.getOauth2().setProviders(java.util.List.of(provider));
+        authentication.getPat().setMaxLifetimeDays(5000);
+
+        assertThat(validator.validate(authentication))
+                .extracting(violation -> violation.getPropertyPath().toString())
+                .contains(
+                        "oauth2.providers[0].registrationId",
+                        "oauth2.providers[0].authorizationUri",
+                        "pat.maxLifetimeDays");
     }
 
     @Test
@@ -123,5 +141,28 @@ class ParameterSettingModelValidationTest {
         server.setRefreshTokenTtlSeconds(2592000);
         server.setGcCron("0 0 3 * * *");
         return server;
+    }
+
+    private static ParameterSetting.Authentication validAuthentication() {
+        var authentication = new ParameterSetting.Authentication();
+        var totp = new ParameterSetting.Totp();
+        totp.setEnabled(true);
+        totp.setIssuer("pudans");
+        authentication.setTotp(totp);
+        var oauth2 = new ParameterSetting.OAuth2();
+        oauth2.setProviders(java.util.List.of());
+        authentication.setOauth2(oauth2);
+        var oidc = new ParameterSetting.Oidc();
+        oidc.setProviders(java.util.List.of());
+        authentication.setOidc(oidc);
+        var feishu = new ParameterSetting.Feishu();
+        feishu.setAuthorizationUri("https://open.feishu.cn/open-apis/authen/v1/authorize");
+        feishu.setSyncIntervalSeconds(21600L);
+        authentication.setFeishu(feishu);
+        var pat = new ParameterSetting.Pat();
+        pat.setEnabled(true);
+        pat.setMaxLifetimeDays(30);
+        authentication.setPat(pat);
+        return authentication;
     }
 }

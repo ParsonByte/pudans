@@ -1070,6 +1070,9 @@
           "postLoginUrl": {
             "type": "string"
           },
+          "rsaEncryptionEnabled": {
+            "type": "boolean"
+          },
           "setupRequired": {
             "type": "boolean"
           }
