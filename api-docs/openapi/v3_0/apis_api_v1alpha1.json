@@ -352,6 +352,10 @@
           "userAgent": {
             "type": "string",
             "readOnly": true
+          },
+          "fingerprint": {
+            "type": "string",
+            "readOnly": true
           }
         },
         "required": [
@@ -1262,6 +1266,10 @@
             "type": "string",
             "maxLength": 257,
             "minLength": 8
+          },
+          "oldPassword": {
+            "type": "string",
+            "maxLength": 257
           }
         }
       },
@@ -1313,6 +1321,10 @@
             "type": "integer",
             "format": "int32",
             "readOnly": true
+          },
+          "sudo": {
+            "type": "boolean",
+            "description": "Whether this token may impersonate another user with sudo."
           }
         },
         "required": [
@@ -1679,6 +1691,12 @@
             "maxLength": 257,
             "minLength": 8,
             "pattern": "^[A-Za-z0-9!@#$%^&*.?]+$"
+          },
+          "captchaChallengeId": {
+            "type": "string"
+          },
+          "captchaAnswer": {
+            "type": "string"
           }
         },
         "required": [
@@ -2062,6 +2080,12 @@
             "format": "email",
             "maxLength": 254,
             "minLength": 0
+          },
+          "captchaChallengeId": {
+            "type": "string"
+          },
+          "captchaAnswer": {
+            "type": "string"
           }
         },
         "required": [
@@ -2943,6 +2967,11 @@
           "uid": {
             "type": "string",
             "readOnly": true
+          },
+          "totpLastStep": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
           }
         },
         "required": [
@@ -3162,7 +3191,7 @@
         },
         "tags": [
           "AnnotationSettingV1alpha1",
-          "AnnotationSettingV1AlphaUc"
+          "AnnotationSettingV1alpha1"
         ]
       },
       "post": {
@@ -3563,7 +3592,7 @@
           }
         },
         "tags": [
-          "AuthV1alpha1Auth"
+          "AuthProviderV1alpha1"
         ],
         "parameters": []
       },
@@ -3597,7 +3626,7 @@
           }
         },
         "tags": [
-          "AuthV1alpha1Auth"
+          "AuthProviderV1alpha1"
         ]
       },
       "parameters": []
@@ -3630,7 +3659,7 @@
           }
         },
         "tags": [
-          "AuthV1alpha1Auth"
+          "AuthProviderV1alpha1"
         ]
       },
       "parameters": []
@@ -3686,7 +3715,7 @@
           }
         },
         "tags": [
-          "AuthV1alpha1Login"
+          "AuthTokenV1alpha1"
         ],
         "parameters": []
       }
@@ -3708,7 +3737,7 @@
           }
         },
         "tags": [
-          "TwoFactorAuthV1alpha1Uc"
+          "TwoFactorAuthV1alpha1"
         ],
         "parameters": []
       },
@@ -3740,7 +3769,7 @@
           }
         },
         "tags": [
-          "TwoFactorAuthV1alpha1Uc"
+          "TwoFactorAuthV1alpha1"
         ],
         "parameters": []
       },
@@ -3772,7 +3801,7 @@
           }
         },
         "tags": [
-          "TwoFactorAuthV1alpha1Uc"
+          "TwoFactorAuthV1alpha1"
         ],
         "parameters": []
       },
@@ -3804,7 +3833,7 @@
           }
         },
         "tags": [
-          "TwoFactorAuthV1alpha1Uc"
+          "TwoFactorAuthV1alpha1"
         ],
         "parameters": []
       },
@@ -3836,7 +3865,7 @@
           }
         },
         "tags": [
-          "TwoFactorAuthV1alpha1Uc"
+          "TwoFactorAuthV1alpha1"
         ],
         "parameters": []
       },
@@ -3859,7 +3888,7 @@
           }
         },
         "tags": [
-          "TwoFactorAuthV1alpha1Uc"
+          "TwoFactorAuthV1alpha1"
         ],
         "parameters": []
       },
@@ -4134,7 +4163,7 @@
           }
         },
         "tags": [
-          "AvatarV1alpha1Public"
+          "AvatarV1alpha1"
         ]
       }
     },
@@ -4155,7 +4184,7 @@
           }
         },
         "tags": [
-          "CaptchaV1alpha1Public"
+          "CaptchaV1alpha1"
         ],
         "parameters": []
       }
@@ -4510,7 +4539,7 @@
         },
         "tags": [
           "DeviceV1alpha1",
-          "DeviceV1alpha1Uc"
+          "DeviceV1alpha1"
         ]
       },
       "post": {
@@ -4566,7 +4595,7 @@
           }
         },
         "tags": [
-          "DeviceV1alpha1Uc"
+          "DeviceV1alpha1"
         ]
       },
       "parameters": []
@@ -4726,7 +4755,7 @@
           }
         },
         "tags": [
-          "AuthV1alpha1Login"
+          "LoginV1alpha1"
         ],
         "parameters": []
       },
@@ -4749,7 +4778,7 @@
           }
         },
         "tags": [
-          "Login"
+          "LoginV1alpha1"
         ],
         "parameters": []
       },
@@ -4772,7 +4801,7 @@
           }
         },
         "tags": [
-          "AuthV1alpha1Login"
+          "LoginV1alpha1"
         ],
         "parameters": []
       },
@@ -4795,7 +4824,7 @@
           }
         },
         "tags": [
-          "AuthV1alpha1Login"
+          "LoginV1alpha1"
         ],
         "parameters": []
       },
@@ -4805,7 +4834,7 @@
       "get": {
         "operationId": "FeishuOAuth2Authorize",
         "tags": [
-          "Authentication"
+          "AuthenticationV1alpha1"
         ],
         "summary": "Start the Feishu OAuth2 authorization code flow.",
         "responses": {
@@ -4822,7 +4851,7 @@
       "get": {
         "operationId": "FeishuOAuth2Callback",
         "tags": [
-          "Authentication"
+          "AuthenticationV1alpha1"
         ],
         "summary": "Feishu OAuth2 authorization code callback. Unbound identities are rejected; no user is auto-created.",
         "parameters": [
@@ -4888,7 +4917,7 @@
           }
         },
         "tags": [
-          "ParameterSettingV1alpha1Console"
+          "ParameterSettingV1alpha1"
         ],
         "parameters": []
       }
@@ -4922,7 +4951,7 @@
           }
         },
         "tags": [
-          "ParameterSettingV1alpha1Console"
+          "ParameterSettingV1alpha1"
         ]
       },
       "put": {
@@ -4955,7 +4984,7 @@
           }
         },
         "tags": [
-          "ParameterSettingV1alpha1Console"
+          "ParameterSettingV1alpha1"
         ]
       },
       "parameters": []
@@ -4980,7 +5009,7 @@
           }
         },
         "tags": [
-          "PasskeyV1alpha1Uc"
+          "PasskeyV1alpha1"
         ],
         "parameters": []
       },
@@ -5012,7 +5041,7 @@
           }
         },
         "tags": [
-          "PasskeyV1alpha1Public"
+          "PasskeyV1alpha1"
         ],
         "parameters": []
       },
@@ -5045,7 +5074,7 @@
           }
         },
         "tags": [
-          "PasskeyV1alpha1Public"
+          "PasskeyV1alpha1"
         ],
         "parameters": []
       },
@@ -5068,7 +5097,7 @@
           }
         },
         "tags": [
-          "PasskeyV1alpha1Uc"
+          "PasskeyV1alpha1"
         ],
         "parameters": []
       },
@@ -5101,7 +5130,7 @@
           }
         },
         "tags": [
-          "PasskeyV1alpha1Uc"
+          "PasskeyV1alpha1"
         ],
         "parameters": []
       },
@@ -5191,7 +5220,7 @@
         },
         "tags": [
           "PersonalAccessTokenV1alpha1",
-          "PersonalAccessTokenV1alpha1Uc"
+          "PersonalAccessTokenV1alpha1"
         ]
       },
       "post": {
@@ -5231,7 +5260,7 @@
         },
         "tags": [
           "PersonalAccessTokenV1alpha1",
-          "PersonalAccessTokenV1alpha1Uc"
+          "PersonalAccessTokenV1alpha1"
         ],
         "parameters": []
       },
@@ -5269,7 +5298,7 @@
         },
         "tags": [
           "PersonalAccessTokenV1alpha1",
-          "PersonalAccessTokenV1alpha1Uc"
+          "PersonalAccessTokenV1alpha1"
         ]
       },
       "get": {
@@ -5310,7 +5339,7 @@
         },
         "tags": [
           "PersonalAccessTokenV1alpha1",
-          "PersonalAccessTokenV1alpha1Uc"
+          "PersonalAccessTokenV1alpha1"
         ]
       },
       "patch": {
@@ -5422,7 +5451,7 @@
           }
         },
         "tags": [
-          "PersonalAccessTokenV1alpha1Uc"
+          "PersonalAccessTokenV1alpha1"
         ]
       },
       "parameters": []
@@ -5455,14 +5484,14 @@
           }
         },
         "tags": [
-          "PersonalAccessTokenV1alpha1Uc"
+          "PersonalAccessTokenV1alpha1"
         ]
       },
       "parameters": []
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/recovery/reset-password": {
       "post": {
-        "operationId": "resetPassword",
+        "operationId": "ResetPasswordWithRecoveryCode",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5474,20 +5503,21 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
-          "password-recovery-endpoint"
+          "PasswordRecoveryV1alpha1"
         ],
-        "parameters": []
+        "parameters": [],
+        "summary": "Reset a password with a recovery code."
       },
       "parameters": []
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/recovery/send-code": {
       "post": {
-        "operationId": "sendCode",
+        "operationId": "SendPasswordRecoveryCode",
         "requestBody": {
           "content": {
             "application/json": {
@@ -5499,14 +5529,15 @@
           "required": true
         },
         "responses": {
-          "200": {
-            "description": "OK"
+          "204": {
+            "description": "No Content"
           }
         },
         "tags": [
-          "password-recovery-endpoint"
+          "PasswordRecoveryV1alpha1"
         ],
-        "parameters": []
+        "parameters": [],
+        "summary": "Send a password recovery code."
       },
       "parameters": []
     },
@@ -7010,7 +7041,7 @@
           }
         },
         "tags": [
-          "SystemV1alpha1Public"
+          "SystemV1alpha1"
         ],
         "parameters": []
       },
@@ -7045,7 +7076,7 @@
           }
         },
         "tags": [
-          "SystemConfigV1alpha1Console"
+          "SystemConfigV1alpha1"
         ],
         "deprecated": true
       },
@@ -7079,7 +7110,7 @@
           }
         },
         "tags": [
-          "SystemConfigV1alpha1Console"
+          "SystemConfigV1alpha1"
         ],
         "deprecated": true
       },
@@ -7450,7 +7481,7 @@
           }
         },
         "tags": [
-          "UserPreferenceV1alpha1Uc"
+          "UserPreferenceV1alpha1"
         ]
       },
       "put": {
@@ -7483,7 +7514,7 @@
           }
         },
         "tags": [
-          "UserPreferenceV1alpha1Uc"
+          "UserPreferenceV1alpha1"
         ]
       },
       "parameters": []
@@ -7575,7 +7606,7 @@
         },
         "tags": [
           "UserConnectionV1alpha1",
-          "UserConnectionV1alpha1Uc"
+          "UserConnectionV1alpha1"
         ]
       },
       "post": {
@@ -7637,7 +7668,7 @@
           }
         },
         "tags": [
-          "UserConnectionV1alpha1Uc"
+          "UserConnectionV1alpha1"
         ],
         "parameters": []
       },
@@ -7663,7 +7694,7 @@
           }
         },
         "tags": [
-          "UserConnectionV1alpha1Uc"
+          "UserConnectionV1alpha1"
         ],
         "parameters": []
       },
@@ -7704,7 +7735,7 @@
           }
         },
         "tags": [
-          "UserConnectionV1alpha1Uc"
+          "UserConnectionV1alpha1"
         ]
       },
       "parameters": []
@@ -7741,7 +7772,7 @@
         },
         "tags": [
           "UserConnectionV1alpha1",
-          "UserConnectionV1alpha1Uc"
+          "UserConnectionV1alpha1"
         ]
       },
       "get": {
@@ -8550,7 +8581,7 @@
           }
         },
         "tags": [
-          "UserV1alpha1Uc"
+          "UserV1alpha1"
         ],
         "parameters": []
       }
@@ -8584,7 +8615,7 @@
           }
         },
         "tags": [
-          "UserV1alpha1Uc"
+          "UserV1alpha1"
         ],
         "parameters": []
       }
@@ -8628,7 +8659,7 @@
           }
         },
         "tags": [
-          "UserV1alpha1Uc"
+          "UserV1alpha1"
         ],
         "parameters": []
       },
@@ -8648,7 +8679,7 @@
           }
         },
         "tags": [
-          "UserV1alpha1Uc"
+          "UserV1alpha1"
         ],
         "parameters": []
       }
@@ -8762,7 +8793,7 @@
           }
         },
         "tags": [
-          "UserV1alpha1Uc"
+          "UserV1alpha1"
         ],
         "parameters": []
       },
@@ -8798,7 +8829,7 @@
           }
         },
         "tags": [
-          "UserV1alpha1Uc"
+          "UserV1alpha1"
         ],
         "parameters": []
       },
@@ -8821,7 +8852,7 @@
           }
         },
         "tags": [
-          "UserV1alpha1Uc"
+          "UserV1alpha1"
         ],
         "parameters": []
       },
@@ -9220,7 +9251,7 @@
           }
         },
         "tags": [
-          "UserV1alpha1Console"
+          "UserV1alpha1"
         ]
       },
       "parameters": []
@@ -9253,7 +9284,7 @@
           }
         },
         "tags": [
-          "UserV1alpha1Console"
+          "UserV1alpha1"
         ]
       },
       "parameters": []
@@ -9498,5 +9529,100 @@
       },
       "parameters": []
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "AnnotationSettingV1alpha1"
+    },
+    {
+      "name": "AuditLogV1alpha1"
+    },
+    {
+      "name": "AuthProviderV1alpha1"
+    },
+    {
+      "name": "AuthTokenV1alpha1"
+    },
+    {
+      "name": "AuthenticationV1alpha1"
+    },
+    {
+      "name": "AvatarV1alpha1"
+    },
+    {
+      "name": "CaptchaV1alpha1"
+    },
+    {
+      "name": "ConfigMapV1alpha1"
+    },
+    {
+      "name": "DashboardV1alpha1"
+    },
+    {
+      "name": "DeviceV1alpha1"
+    },
+    {
+      "name": "LoginV1alpha1"
+    },
+    {
+      "name": "ParameterSettingV1alpha1"
+    },
+    {
+      "name": "PasskeyV1alpha1"
+    },
+    {
+      "name": "PasswordRecoveryV1alpha1"
+    },
+    {
+      "name": "PersonalAccessTokenV1alpha1"
+    },
+    {
+      "name": "RememberMeTokenV1alpha1"
+    },
+    {
+      "name": "RiskRuleV1alpha1"
+    },
+    {
+      "name": "RoleBindingV1alpha1"
+    },
+    {
+      "name": "RoleV1alpha1"
+    },
+    {
+      "name": "SecretV1alpha1"
+    },
+    {
+      "name": "SettingV1alpha1"
+    },
+    {
+      "name": "SystemConfigV1alpha1"
+    },
+    {
+      "name": "SystemV1alpha1"
+    },
+    {
+      "name": "TempRoleBindingV1alpha1"
+    },
+    {
+      "name": "TwoFactorAuthV1alpha1"
+    },
+    {
+      "name": "UserConnectionV1alpha1"
+    },
+    {
+      "name": "UserGroupBindingV1alpha1"
+    },
+    {
+      "name": "UserGroupV1alpha1"
+    },
+    {
+      "name": "UserPreferenceV1alpha1"
+    },
+    {
+      "name": "UserV1alpha1"
+    },
+    {
+      "name": "WebhookV1alpha1"
+    }
+  ]
 }

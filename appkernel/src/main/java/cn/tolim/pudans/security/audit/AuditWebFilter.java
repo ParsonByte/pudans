@@ -149,6 +149,14 @@ public class AuditWebFilter implements WebFilter {
         if (username != null) {
             context.put("username", username);
         }
+        var patOwner = exchange.getAttributes().get(AuditService.PAT_OWNER_ATTRIBUTE);
+        if (patOwner != null) {
+            context.put("patOwner", patOwner);
+        }
+        var sudoUser = exchange.getAttributes().get(AuditService.SUDO_USER_ATTRIBUTE);
+        if (sudoUser != null) {
+            context.put("sudoUser", sudoUser);
+        }
         var extra = exchange.getAttributes().get(AuditService.CONTEXT_ATTRIBUTE);
         if (extra != null) {
             context.put("reason", extra);

@@ -34,7 +34,7 @@ class ConsoleUserEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserV1alpha1Console";
+        var tag = "UserV1alpha1";
         return RouterFunctions.nest(
                 RequestPredicates.path("/users"),
                 SpringdocRouteBuilder.route()

@@ -16,8 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.scheduling.support.CronExpression;
@@ -34,13 +34,16 @@ import tools.jackson.databind.node.ObjectNode;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class ParameterSettingGroupService {
 
     public static final Set<String> NEW_GROUPS =
             Set.of("site", "session", "captcha", "mail", "audit", "server");
 
     public static final Set<String> LEGACY_GROUPS = Set.of("basic", "user", "seo", "authProvider");
+
+    private static final String SCHEMA_VERSION_KEY = "schemaVersion";
+
+    private static final String CURRENT_SCHEMA_VERSION = "2";
 
     private static final Map<String, Class<?>> GROUP_TYPES = Map.of(
             "site", ParameterSetting.Site.class,
@@ -61,6 +64,19 @@ public class ParameterSettingGroupService {
     private final Validator validator;
 
     private final ParameterSettingSecretCipher secretCipher;
+
+    public ParameterSettingGroupService(
+            ParameterSettingFetcher fetcher,
+            ReactiveExtensionClient client,
+            ApplicationEventPublisher eventPublisher,
+            @Qualifier("webFluxValidator") Validator validator,
+            ParameterSettingSecretCipher secretCipher) {
+        this.fetcher = fetcher;
+        this.client = client;
+        this.eventPublisher = eventPublisher;
+        this.validator = validator;
+        this.secretCipher = secretCipher;
+    }
 
     public static boolean isKnownGroup(String group) {
         return NEW_GROUPS.contains(group) || LEGACY_GROUPS.contains(group);
@@ -101,6 +117,9 @@ public class ParameterSettingGroupService {
                         .switchIfEmpty(Mono.error(() -> new IllegalStateException(
                                 "缺少参数设置 ConfigMap。")))
                         .flatMap(configMap -> {
+                            if (NEW_GROUPS.contains(group) && schemaVersion(configMap.getData()) >= 2) {
+                                return updateGroup(group, incoming);
+                            }
                             if (configMap.getData() == null) {
                                 configMap.setData(new HashMap<>());
                             }
@@ -119,6 +138,21 @@ public class ParameterSettingGroupService {
                         }))
                 .retryWhen(Retry.backoff(5, RETRY_BACKOFF)
                         .filter(OptimisticLockingFailureException.class::isInstance));
+    }
+
+    private static int schemaVersion(Map<String, String> data) {
+        if (data == null) {
+            return 1;
+        }
+        var raw = data.get(SCHEMA_VERSION_KEY);
+        if (!StringUtils.hasText(raw)) {
+            return 1;
+        }
+        try {
+            return Integer.parseInt(raw);
+        } catch (NumberFormatException e) {
+            return 1;
+        }
     }
 
     public Mono<UpdateResult> updateGroup(String group, ObjectNode incoming) {
@@ -158,6 +192,7 @@ public class ParameterSettingGroupService {
                     ParameterSettingSensitiveFields.decryptForValidation(effective, group, secretCipher);
                     validate(group, effective);
                     configMap.getData().put(group, persisted.toString());
+                    configMap.getData().put(SCHEMA_VERSION_KEY, CURRENT_SCHEMA_VERSION);
                     return restartRequired;
                 })
                 .flatMap(restart -> client.update(configMap)

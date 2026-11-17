@@ -42,9 +42,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -70,7 +70,6 @@ import reactor.util.retry.Retry;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class SystemSetupEndpoint {
     static final PropertyPlaceholderHelper PROPERTY_PLACEHOLDER_HELPER = new PropertyPlaceholderHelper(
             PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX,
@@ -84,6 +83,21 @@ public class SystemSetupEndpoint {
     private final ReactiveExtensionClient client;
     private final Validator validator;
     private final ApplicationEventPublisher eventPublisher;
+
+    public SystemSetupEndpoint(
+            InitializationStateGetter initializationStateGetter,
+            ParameterSettingFetcher systemConfigFetcher,
+            SuperAdminInitializer superAdminInitializer,
+            ReactiveExtensionClient client,
+            @Qualifier("webFluxValidator") Validator validator,
+            ApplicationEventPublisher eventPublisher) {
+        this.initializationStateGetter = initializationStateGetter;
+        this.systemConfigFetcher = systemConfigFetcher;
+        this.superAdminInitializer = superAdminInitializer;
+        this.client = client;
+        this.validator = validator;
+        this.eventPublisher = eventPublisher;
+    }
 
     private static Mono<ServerResponse> handleSetupSuccessfully() {
         return ServerResponse.noContent().build();
@@ -130,7 +144,7 @@ public class SystemSetupEndpoint {
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 100)
     RouterFunction<ServerResponse> setupRouter() {
-        final var tag = "SystemV1alpha1Public";
+        final var tag = "SystemV1alpha1";
         return SpringdocRouteBuilder.route()
                 .POST(
                         ApiGroups.SETUP_PATH,

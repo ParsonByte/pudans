@@ -10,7 +10,6 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.server.resource.web.server.BearerTokenServerAuthenticationEntryPoint;
-import org.springframework.security.oauth2.server.resource.web.server.authentication.ServerBearerTokenAuthenticationConverter;
 import org.springframework.security.web.server.authentication.AuthenticationWebFilter;
 import org.springframework.security.web.server.authentication.ServerAuthenticationEntryPointFailureHandler;
 import org.springframework.stereotype.Component;
@@ -42,7 +41,7 @@ class TokenSecurityConfigurer implements SecurityConfigurer {
         var failureHandler = new ServerAuthenticationEntryPointFailureHandler(entryPoint);
 
         var filter = new AuthenticationWebFilter(tokenAuthenticationManager);
-        filter.setServerAuthenticationConverter(new ServerBearerTokenAuthenticationConverter());
+        filter.setServerAuthenticationConverter(new SudoBearerTokenAuthenticationConverter());
         filter.setAuthenticationFailureHandler(failureHandler);
         http.addFilterAt(filter, SecurityWebFiltersOrder.AUTHENTICATION);
     }

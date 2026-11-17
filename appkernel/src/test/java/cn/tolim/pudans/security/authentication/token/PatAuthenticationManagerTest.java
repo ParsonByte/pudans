@@ -1,0 +1,104 @@
+package cn.tolim.pudans.security.authentication.token;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
+import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.infra.setting.MasterKeyService;
+import java.util.Base64;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+@ExtendWith(MockitoExtension.class)
+class PatAuthenticationManagerTest {
+
+    @Mock
+    ReactiveExtensionClient client;
+
+    @Mock
+    ReactiveAuthenticationManager delegate;
+
+    @Mock
+    RoleService roleService;
+
+    @Mock
+    MasterKeyService masterKeyService;
+
+    private PatAuthenticationManager manager;
+
+    @BeforeEach
+    void setUp() {
+        manager = new PatAuthenticationManager(client, delegate, roleService, masterKeyService);
+    }
+
+    private static User user(String username) {
+        var user = new User();
+        var metadata = new Metadata();
+        metadata.setName(username);
+        user.setMetadata(metadata);
+        user.setSpec(new User.UserSpec());
+        return user;
+    }
+
+    @Test
+    void sudoUsesTheIntersectionOfTokenAndTargetRoles() {
+        var pat = new PersonalAccessToken();
+        var metadata = new Metadata();
+        metadata.setName("pat-1");
+        pat.setMetadata(metadata);
+        var spec = new PersonalAccessToken.Spec();
+        spec.setUsername("alice");
+        spec.setRoles(List.of("normal-role"));
+        spec.setSudo(true);
+        spec.setTokenId("token-id");
+        pat.setSpec(spec);
+
+        when(masterKeyService.matches(eq("token-id"), eq("secret"), any())).thenReturn(true);
+        when(client.fetch(PersonalAccessToken.class, "pat-1")).thenReturn(Mono.just(pat));
+        when(client.fetch(User.class, "alice")).thenReturn(Mono.just(user("alice")));
+        when(client.fetch(User.class, "bob")).thenReturn(Mono.just(user("bob")));
+        when(roleService.getRolesByUsername("alice")).thenReturn(Flux.just("normal-role"));
+        when(roleService.getRolesByUsername("bob"))
+                .thenReturn(Flux.just("normal-role", "system-admin-role"));
+        when(roleService.contains(anyCollection(), anyList())).thenReturn(Mono.just(true));
+        when(client.update(pat)).thenReturn(Mono.just(pat));
+
+        var token = PersonalAccessToken.PAT_TOKEN_PREFIX + Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString("pat-1:secret".getBytes(UTF_8));
+
+        StepVerifier.create(manager.authenticate(new SudoBearerTokenAuthenticationToken(token, "bob")))
+                .assertNext(authentication -> {
+                    assertThat(authentication.getName()).isEqualTo("bob");
+                    var jwt = (JwtAuthenticationToken) authentication;
+                    assertThat(jwt.getToken().getClaimAsString("pat_owner")).isEqualTo("alice");
+                    assertThat(jwt.getToken().getClaimAsString("sudo_user")).isEqualTo("bob");
+                    assertThat(jwt.getAuthorities().stream()
+                                    .map(GrantedAuthority::getAuthority)
+                                    .toList())
+                            .contains("ROLE_normal-role")
+                            .doesNotContain("ROLE_system-admin-role");
+                })
+                .verifyComplete();
+    }
+}

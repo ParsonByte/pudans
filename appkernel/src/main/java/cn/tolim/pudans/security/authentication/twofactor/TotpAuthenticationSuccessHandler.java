@@ -2,9 +2,12 @@ package cn.tolim.pudans.security.authentication.twofactor;
 
 import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.security.authentication.oauth2.OAuth2LoginAttributes;
+import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.RedirectServerAuthenticationSuccessHandler;
@@ -43,6 +46,22 @@ public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuc
         return snapshot;
     }
 
+    private Mono<Boolean> resumeOAuth2(WebFilterExchange webFilterExchange) {
+        var exchange = webFilterExchange.getExchange();
+        return exchange.getSession()
+                .flatMap(session -> {
+                    var resumeUri = (String) session.getAttributes().remove(OAuth2LoginAttributes.RESUME_URI);
+                    if (resumeUri == null) {
+                        return Mono.just(false);
+                    }
+                    var response = exchange.getResponse();
+                    response.setStatusCode(HttpStatus.FOUND);
+                    response.getHeaders().setLocation(URI.create(resumeUri));
+                    return response.setComplete().thenReturn(true);
+                })
+                .defaultIfEmpty(false);
+    }
+
     @Override
     public Mono<Void> onAuthenticationSuccess(WebFilterExchange webFilterExchange, Authentication authentication) {
         var exchange = webFilterExchange.getExchange();
@@ -57,6 +76,9 @@ public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuc
                         "SUCCESS",
                         snapshot(authentication),
                         null)))
-                .then(successHandler.onAuthenticationSuccess(webFilterExchange, authentication));
+                .then(Mono.defer(() -> resumeOAuth2(webFilterExchange)
+                        .flatMap(resumed -> Boolean.TRUE.equals(resumed)
+                                ? Mono.empty()
+                                : successHandler.onAuthenticationSuccess(webFilterExchange, authentication))));
     }
 }

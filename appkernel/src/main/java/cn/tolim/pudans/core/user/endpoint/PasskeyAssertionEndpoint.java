@@ -41,7 +41,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "PasskeyV1alpha1Public";
+        var tag = "PasskeyV1alpha1";
         return SpringdocRouteBuilder.route()
                 .POST("/passkeys/assertion/options", this::assertionOptions, builder -> builder
                         .operationId("PasskeyAssertionOptions")

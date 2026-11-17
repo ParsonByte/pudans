@@ -2,7 +2,7 @@ package cn.tolim.pudans.security.authentication.twofactor.totp;
 
 public interface TotpAuthService {
 
-    boolean validateTotp(String rawSecret, int code);
+    Long matchStep(String rawSecret, int code, long nowMillis);
 
     String generateTotpSecret();
 

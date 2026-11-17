@@ -40,7 +40,7 @@ class UcUserEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserV1alpha1Uc";
+        var tag = "UserV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET("/users/-/self", this::me, builder -> builder.operationId("GetMySelfUserDetail")
                         .tag(tag)

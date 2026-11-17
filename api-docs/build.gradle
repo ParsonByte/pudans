@@ -45,6 +45,13 @@ tasks.register('validateOpenApiDocs') {
                 !(parts[3] ==~ /^v[0-9]+(?:(?:alpha|beta)[0-9]+)?$/)
             }
             assert invalidVersions.isEmpty(): "API paths without a valid version in ${name}: ${invalidVersions}"
+            def operationTags = doc.paths.values().collectMany { operations ->
+                operations.values()
+                        .findAll { operation -> operation instanceof Map }
+                        .collectMany { operation -> operation.tags ?: [] }
+            } as Set
+            def invalidTags = operationTags.findAll { tag -> !(tag ==~ /^[A-Za-z0-9]+V1alpha1$/) }
+            assert invalidTags.isEmpty(): "API tags must use the <Kind>V1alpha1 form in ${name}: ${invalidTags}"
         }
 
         def paths = parsed['apis_api_v1alpha1.json'].paths.keySet()

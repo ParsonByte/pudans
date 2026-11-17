@@ -45,7 +45,7 @@ public class DeviceEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        final var tag = "DeviceV1alpha1Uc";
+        final var tag = "DeviceV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET(
                         "/devices",

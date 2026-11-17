@@ -57,8 +57,16 @@ public class AuditStore {
     }
 
     public Mono<Void> append(AuditRecord record) {
-        return entityOperations
-                .insert(AuditRecordEntity.from(record))
+        var fingerprint = record.getFingerprint() == null ? AuditFingerprint.of(record) : record.getFingerprint();
+        record.setFingerprint(fingerprint);
+        return activeRepository
+                .existsByFingerprint(fingerprint)
+                .flatMap(exists -> Boolean.TRUE.equals(exists)
+                        ? Mono.just(true)
+                        : archiveRepository.existsByFingerprint(fingerprint))
+                .flatMap(exists -> Boolean.TRUE.equals(exists)
+                        ? Mono.empty()
+                        : entityOperations.insert(AuditRecordEntity.from(record)).then())
                 .doOnError(e -> log.error("追加审计记录 {} 失败", record.getMetadata().getName(), e))
                 .then();
     }

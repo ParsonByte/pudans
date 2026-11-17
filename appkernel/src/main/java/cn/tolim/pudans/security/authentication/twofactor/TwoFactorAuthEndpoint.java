@@ -19,7 +19,9 @@ import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.infra.exception.RequestBodyValidationException;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.security.authentication.exception.TwoFactorAuthException;
 import cn.tolim.pudans.security.authentication.twofactor.totp.TotpAuthService;
+import cn.tolim.pudans.security.authentication.twofactor.totp.TotpConsumptionService;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,6 +30,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -52,6 +55,8 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     private final TotpAuthService totpAuthService;
 
+    private final TotpConsumptionService totpConsumptionService;
+
     private final Validator validator;
 
     private final PasswordEncoder passwordEncoder;
@@ -66,7 +71,8 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
             ReactiveExtensionClient client,
             UserService userService,
             TotpAuthService totpAuthService,
-            Validator validator,
+            TotpConsumptionService totpConsumptionService,
+            @Qualifier("webFluxValidator") Validator validator,
             PasswordEncoder passwordEncoder,
             ExternalUrlSupplier externalUrl,
             AuditService auditService,
@@ -74,6 +80,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         this.client = client;
         this.userService = userService;
         this.totpAuthService = totpAuthService;
+        this.totpConsumptionService = totpConsumptionService;
         this.validator = validator;
         this.passwordEncoder = passwordEncoder;
         this.externalUrl = externalUrl;
@@ -108,7 +115,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "TwoFactorAuthV1alpha1Uc";
+        var tag = "TwoFactorAuthV1alpha1";
         return route().nest(
                         path("/authentications/two-factor"),
                         () -> route().GET(
@@ -184,7 +191,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                 })
                 .switchIfEmpty(Mono.error(
                         () -> new UnsatisfiedAttributeValueException("密码不匹配。")))
-                .delayUntil(user -> validateTotpCode(user, passwordRequest.getTotpCode()))
+                .flatMap(user -> consumeTotpIfConfigured(user, passwordRequest.getTotpCode()))
                 .doOnNext(user -> {
                     var spec = user.getSpec();
                     spec.setTotpEncryptedSecret(null);
@@ -227,7 +234,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                         })
                         .switchIfEmpty(Mono.error(
                                 () -> new UnsatisfiedAttributeValueException("密码不匹配。")))
-                        .delayUntil(user -> validateTotpCode(user, passwordRequest.getTotpCode()))
+                        .flatMap(user -> consumeTotpIfConfigured(user, passwordRequest.getTotpCode()))
                         .doOnNext(user -> user.getSpec().setTwoFactorAuthEnabled(enabled))
                         .flatMap(client::update)
                         .map(TwoFactorUtils::getTwoFactorAuthSettings))
@@ -271,13 +278,19 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                     })
                     .switchIfEmpty(Mono.error(
                             () -> new UnsatisfiedAttributeValueException("密码不匹配。")))
-                    .delayUntil(user -> validateTotpCode(user, totpRequest.getCurrentTotpCode()))
-                    .delayUntil(user -> {
-                        var rawSecret = totpRequest.getSecret();
-                        var encryptedSecret = totpAuthService.encryptSecret(rawSecret);
-                        return validateTotpCode(encryptedSecret, totpRequest.getCode())
-                                .then(Mono.fromRunnable(() -> user.getSpec().setTotpEncryptedSecret(encryptedSecret)));
-                    })
+                    .flatMap(user -> consumeTotpIfConfigured(user, totpRequest.getCurrentTotpCode()))
+                    .flatMap(user -> parseTotpCode(totpRequest.getCode())
+                            .map(code -> {
+                                var encryptedSecret = totpAuthService.encryptSecret(totpRequest.getSecret());
+                                var step = totpConsumptionService.matchEnrollmentStep(
+                                        totpRequest.getSecret(), code);
+                                user.getSpec().setTotpEncryptedSecret(encryptedSecret);
+                                user.getSpec().setTotpLastStep(step);
+                                return user;
+                            })
+                            .onErrorMap(
+                                    TwoFactorAuthException.class,
+                                    error -> new UnsatisfiedAttributeValueException(error.getMessage())))
                     .flatMap(client::update)
                     .flatMap(user -> auditService
                             .recordChild(
@@ -307,30 +320,26 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         return Mono.empty();
     }
 
-    private Mono<Void> validateTotpCode(User user, String totpCode) {
-        var totpEncryptedSecret = user.getSpec().getTotpEncryptedSecret();
-        if (StringUtils.isBlank(totpEncryptedSecret)) {
-
-            return Mono.empty();
+    private Mono<User> consumeTotpIfConfigured(User user, String totpCode) {
+        if (StringUtils.isBlank(user.getSpec().getTotpEncryptedSecret())) {
+            return Mono.just(user);
         }
-        return validateTotpCode(totpEncryptedSecret, totpCode);
+        return parseTotpCode(totpCode)
+                .flatMap(code -> totpConsumptionService.consume(user, code))
+                .onErrorMap(
+                        TwoFactorAuthException.class,
+                        error -> new UnsatisfiedAttributeValueException(error.getMessage()));
     }
 
-    private Mono<Void> validateTotpCode(String totpEncryptedSecret, String totpCode) {
+    private Mono<Integer> parseTotpCode(String totpCode) {
         if (StringUtils.isBlank(totpCode)) {
             return Mono.error(new UnsatisfiedAttributeValueException("请输入双重验证码。"));
         }
-        int code;
         try {
-            code = Integer.parseInt(totpCode);
+            return Mono.just(Integer.parseInt(totpCode));
         } catch (NumberFormatException e) {
             return Mono.error(new UnsatisfiedAttributeValueException("双重验证码无效，请重试。"));
         }
-        var rawSecret = totpAuthService.decryptSecret(totpEncryptedSecret);
-        if (!totpAuthService.validateTotp(rawSecret, code)) {
-            return Mono.error(new UnsatisfiedAttributeValueException("双重验证码无效，请重试。"));
-        }
-        return Mono.empty();
     }
 
     private Mono<ServerResponse> getTwoFactorSettings(ServerRequest request) {

@@ -12,8 +12,6 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ParameterSettingSessionTimeoutApplier {
 
-    private static final long DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 1800;
-
     private final ParameterSettingGroupService parameterSettingGroupService;
 
     private final ReactiveRedisIndexedSessionRepository sessionRepository;
@@ -39,9 +37,10 @@ public class ParameterSettingSessionTimeoutApplier {
     }
 
     void apply(Integer accessTokenTtlSeconds) {
-        var seconds = accessTokenTtlSeconds == null
-                ? DEFAULT_ACCESS_TOKEN_TTL_SECONDS
-                : Math.max(60, accessTokenTtlSeconds);
+        if (accessTokenTtlSeconds == null) {
+            return;
+        }
+        var seconds = Math.max(60, accessTokenTtlSeconds);
         sessionRepository.setDefaultMaxInactiveInterval(Duration.ofSeconds(seconds));
         log.info("已将访问令牌 TTL 设置为 {} 秒，应用于新会话", seconds);
     }

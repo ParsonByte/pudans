@@ -84,7 +84,10 @@ public class AuditRecord extends AbstractExtension {
     @Schema(readOnly = true)
     private String result;
 
-    
+    @Schema(readOnly = true)
+    private String fingerprint;
+
+
     @Schema(readOnly = true)
     private Long durationMs;
 

@@ -37,6 +37,7 @@ import cn.tolim.pudans.contract.extension.ListResult;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.PageRequest;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
+import cn.tolim.pudans.contract.extension.ReservedLabels;
 import cn.tolim.pudans.contract.extension.Unstructured;
 import cn.tolim.pudans.contract.extension.JsonExtension;
 import cn.tolim.pudans.contract.extension.Watcher;
@@ -349,14 +350,12 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         });
     }
 
-    private static final String RESERVED_LABEL_PREFIX = "pudans.tolim.cn/";
-
     private static void protectCreateMetadata(Extension extension) {
         if (!isUserKind(extension)) {
             return;
         }
         var metadata = extension.getMetadata();
-        var reserved = reservedLabels(metadata == null ? null : metadata.getLabels());
+        var reserved = ReservedLabels.of(metadata == null ? null : metadata.getLabels());
         if (!reserved.isEmpty()) {
             throw new AccessDeniedException(
                     "用户的保留标签为只读，不能通过 API 请求设置。");
@@ -396,8 +395,8 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         if (!isUserKind(oldExtension)) {
             return;
         }
-        var oldReservedLabels = reservedLabels(oldMetadata.getLabels());
-        var requestedReservedLabels = reservedLabels(newMetadata.getLabels());
+        var oldReservedLabels = ReservedLabels.of(oldMetadata.getLabels());
+        var requestedReservedLabels = ReservedLabels.of(newMetadata.getLabels());
         if (!requestedReservedLabels.isEmpty() && !requestedReservedLabels.equals(oldReservedLabels)) {
             throw new AccessDeniedException("用户的保留标签为只读。");
         }
@@ -407,19 +406,6 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
             merged.putAll(oldReservedLabels);
             newMetadata.setLabels(merged);
         }
-    }
-
-    private static Map<String, String> reservedLabels(Map<String, String> labels) {
-        if (labels == null || labels.isEmpty()) {
-            return Map.of();
-        }
-        var reserved = new HashMap<String, String>();
-        labels.forEach((key, value) -> {
-            if (key != null && key.startsWith(RESERVED_LABEL_PREFIX)) {
-                reserved.put(key, value);
-            }
-        });
-        return reserved;
     }
 
     private static boolean isUserKind(Extension extension) {

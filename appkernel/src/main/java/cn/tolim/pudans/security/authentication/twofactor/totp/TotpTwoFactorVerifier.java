@@ -13,7 +13,7 @@ public class TotpTwoFactorVerifier {
 
     public static final String TYPE = "totp";
 
-    private final TotpAuthService totpAuthService;
+    private final TotpConsumptionService totpConsumptionService;
 
     public String getType() {
         return TYPE;
@@ -25,10 +25,10 @@ public class TotpTwoFactorVerifier {
         if (StringUtils.isBlank(secret)) {
             return Mono.error(new TwoFactorAuthException("未配置 TOTP 密钥。"));
         }
-        return Mono.fromCallable(() -> {
-                    var parsed = Integer.parseInt(code == null ? "" : code.trim());
-                    return totpAuthService.validateTotp(totpAuthService.decryptSecret(secret), parsed);
-                })
+        return Mono.fromCallable(() -> Integer.parseInt(code == null ? "" : code.trim()))
+                .flatMap(parsed -> totpConsumptionService.consume(user, parsed))
+                .thenReturn(true)
+                .onErrorResume(TwoFactorAuthException.class, error -> Mono.just(false))
                 .onErrorMap(
                         NumberFormatException.class,
                         error -> new TwoFactorAuthException("TOTP 验证码无效。", error));

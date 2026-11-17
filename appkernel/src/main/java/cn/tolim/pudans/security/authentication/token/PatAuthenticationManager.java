@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.apache.commons.lang3.Strings;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.authentication.DisabledException;
@@ -32,6 +33,7 @@ import org.springframework.security.oauth2.server.resource.InvalidBearerTokenExc
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
@@ -98,6 +100,9 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
+        var sudoUsername = authentication instanceof SudoBearerTokenAuthenticationToken sudo
+                ? sudo.getSudoUsername()
+                : null;
         return Mono.justOrEmpty(authentication)
                 .cast(BearerTokenAuthenticationToken.class)
                 .map(t -> Strings.CS.removeStart(t.getToken(), PAT_TOKEN_PREFIX))
@@ -107,20 +112,23 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                             return Mono.error(new InvalidBearerTokenException(
                                     "主密钥轮换后，旧版个人访问令牌已失效。"));
                         }
-                        return legacyAuthenticate(token);
+                        return legacyAuthenticate(token, sudoUsername);
                     }
-                    return authenticateOpaque(token);
+                    return authenticateOpaque(token, sudoUsername);
                 });
     }
 
-    private Mono<Authentication> legacyAuthenticate(String token) {
+    private Mono<Authentication> legacyAuthenticate(String token, @Nullable String sudoUsername) {
+        if (StringUtils.hasText(sudoUsername)) {
+            return Mono.error(new InvalidBearerTokenException("旧版个人访问令牌不支持 sudo。"));
+        }
         return delegate.authenticate(new BearerTokenAuthenticationToken(token))
                 .cast(JwtAuthenticationToken.class)
                 .flatMap(this::checkAndRebuild)
                 .map(auth -> auth);
     }
 
-    private Mono<Authentication> authenticateOpaque(String token) {
+    private Mono<Authentication> authenticateOpaque(String token, @Nullable String sudoUsername) {
         return Mono.defer(() -> {
             var parts = parseToken(token);
             var patName = parts[0];
@@ -130,9 +138,10 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                     .flatMap(pat -> opaquePatChecks(pat, secret)
                             .then(checkUser(
                                     pat.getSpec().getUsername(), pat.getSpec().getRoles()))
+                            .then(checkSudo(pat, sudoUsername))
                             .then(updateLastUsed(patName))
                             .thenReturn(pat))
-                    .map(pat -> buildAuthentication(pat, token));
+                    .flatMap(pat -> buildAuthentication(pat, token, sudoUsername));
         });
     }
 
@@ -155,27 +164,61 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
         return Mono.empty();
     }
 
-    private Authentication buildAuthentication(PersonalAccessToken pat, String tokenValue) {
-        var authorities = new ArrayList<GrantedAuthority>();
-        authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + ANONYMOUS_ROLE_NAME));
-        authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + AUTHENTICATED_ROLE_NAME));
-        var roles = pat.getSpec().getRoles();
-        if (roles != null) {
+    private Mono<Authentication> buildAuthentication(
+            PersonalAccessToken pat, String tokenValue, @Nullable String sudoUsername) {
+        return effectiveRoles(pat, sudoUsername).map(roles -> {
+            var authorities = new ArrayList<GrantedAuthority>();
+            authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + ANONYMOUS_ROLE_NAME));
+            authorities.add(new SimpleGrantedAuthority(ROLE_PREFIX + AUTHENTICATED_ROLE_NAME));
             roles.stream()
                     .map(role -> AuthorityUtils.ROLE_PREFIX + role)
                     .map(SimpleGrantedAuthority::new)
                     .forEach(authorities::add);
-        }
-        addScopeAuthorities(pat, authorities);
-        var username = pat.getSpec().getUsername();
+            addScopeAuthorities(pat, authorities);
+            var owner = pat.getSpec().getUsername();
+            var effectiveUser = StringUtils.hasText(sudoUsername) ? sudoUsername : owner;
 
-        var jwt = Jwt.withTokenValue(tokenValue)
-                .header("alg", "none")
-                .claim("sub", username)
-                .claim("pat_name", pat.getMetadata().getName())
-                .issuedAt(clock.instant())
-                .build();
-        return new JwtAuthenticationToken(jwt, authorities, username);
+            var jwtBuilder = Jwt.withTokenValue(tokenValue)
+                    .header("alg", "none")
+                    .claim("sub", effectiveUser)
+                    .claim("pat_name", pat.getMetadata().getName())
+                    .claim("pat_owner", owner)
+                    .issuedAt(clock.instant());
+            if (StringUtils.hasText(sudoUsername)) {
+                jwtBuilder.claim("sudo_user", sudoUsername);
+            }
+            return new JwtAuthenticationToken(jwtBuilder.build(), authorities, effectiveUser);
+        });
+    }
+
+    private Mono<List<String>> effectiveRoles(PersonalAccessToken pat, @Nullable String sudoUsername) {
+        var patRoles = pat.getSpec().getRoles();
+        if (!StringUtils.hasText(sudoUsername)) {
+            return Mono.just(patRoles == null ? List.of() : patRoles);
+        }
+        return roleService
+                .getRolesByUsername(sudoUsername)
+                .collectList()
+                .map(targetRoles -> {
+                    if (CollectionUtils.isEmpty(patRoles)) {
+                        return targetRoles;
+                    }
+                    return targetRoles.stream().filter(patRoles::contains).toList();
+                });
+    }
+
+    private Mono<Void> checkSudo(PersonalAccessToken pat, @Nullable String sudoUsername) {
+        if (!StringUtils.hasText(sudoUsername)) {
+            return Mono.empty();
+        }
+        if (!pat.getSpec().isSudo()) {
+            return Mono.error(new InvalidBearerTokenException("个人访问令牌不支持 sudo。"));
+        }
+        return client.fetch(User.class, sudoUsername)
+                .switchIfEmpty(Mono.error(() -> new InvalidBearerTokenException("sudo 目标用户不存在。")))
+                .flatMap(user -> Boolean.TRUE.equals(user.getSpec().getDisabled())
+                        ? Mono.error(new InvalidBearerTokenException("sudo 目标用户已被禁用。"))
+                        : Mono.empty());
     }
 
     private Mono<JwtAuthenticationToken> checkAndRebuild(JwtAuthenticationToken jat) {

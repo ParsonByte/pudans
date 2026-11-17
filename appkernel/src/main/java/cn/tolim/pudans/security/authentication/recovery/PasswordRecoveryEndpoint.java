@@ -4,6 +4,9 @@ import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.security.captcha.CaptchaService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -21,6 +24,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @RequestMapping(ApiGroups.API_PREFIX + "/recovery")
 @RequiredArgsConstructor
+@Tag(name = "PasswordRecoveryV1alpha1", description = "Password recovery endpoints.")
 public class PasswordRecoveryEndpoint {
 
     private final PasswordRecoveryService passwordRecoveryService;
@@ -28,6 +32,8 @@ public class PasswordRecoveryEndpoint {
     private final CaptchaService captchaService;
 
     @PostMapping("/send-code")
+    @Operation(operationId = "SendPasswordRecoveryCode", summary = "Send a password recovery code.")
+    @ApiResponse(responseCode = "204", description = "No Content")
     public Mono<ResponseEntity<Void>> sendCode(@Valid @RequestBody SendCodeRequest request) {
         return requireRecoveryCaptcha(request.captchaChallengeId(), request.captchaAnswer())
                 .then(Mono.defer(() -> passwordRecoveryService.sendCode(request.email())))
@@ -35,6 +41,8 @@ public class PasswordRecoveryEndpoint {
     }
 
     @PostMapping("/reset-password")
+    @Operation(operationId = "ResetPasswordWithRecoveryCode", summary = "Reset a password with a recovery code.")
+    @ApiResponse(responseCode = "204", description = "No Content")
     public Mono<ResponseEntity<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         return requireRecoveryCaptcha(request.captchaChallengeId(), request.captchaAnswer())
                 .then(Mono.defer(() -> passwordRecoveryService.resetPassword(

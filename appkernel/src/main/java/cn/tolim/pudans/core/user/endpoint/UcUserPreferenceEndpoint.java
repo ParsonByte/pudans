@@ -46,7 +46,7 @@ class UcUserPreferenceEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserPreferenceV1alpha1Uc";
+        var tag = "UserPreferenceV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET(
                         "/user-preferences/{group}",
