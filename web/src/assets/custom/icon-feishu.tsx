@@ -1,11 +1,11 @@
 import type { SVGProps } from "react";
 
-type FeishuIconProps = {
+type IconFeishuProps = {
   size?: number;
   className?: string;
 } & SVGProps<SVGSVGElement>;
 
-export function FeishuIcon({ size = 20, className, ...rest }: FeishuIconProps) {
+export function IconFeishu({ size = 20, className, ...rest }: IconFeishuProps) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
