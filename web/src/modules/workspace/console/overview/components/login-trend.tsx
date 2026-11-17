@@ -10,13 +10,12 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatTrendDay } from "@/lib/date";
 import {
   ConsoleEmpty,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
-
-import { formatTrendDay } from "../lib/format";
 
 const SERIES = [
   { key: "logins", label: "登录", color: "var(--primary)" },
