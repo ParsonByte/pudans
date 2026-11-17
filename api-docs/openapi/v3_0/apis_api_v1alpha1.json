@@ -1043,6 +1043,15 @@
           "registeredAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "userGroup": {
+            "type": "string"
+          },
+          "userGroupDisplayName": {
+            "type": "string"
           }
         }
       },
@@ -2861,6 +2870,42 @@
           }
         }
       },
+      "UserActivityPoint": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          }
+        }
+      },
+      "UserConnectionView": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "registrationId": {
+            "type": "string"
+          },
+          "providerUserId": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "UserPermission": {
         "properties": {
           "permissions": {
@@ -3054,6 +3099,157 @@
           "size",
           "total",
           "totalPages"
+        ]
+      },
+      "AuthenticationConnectionTestRequest": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "feishu",
+              "oauth2",
+              "oidc"
+            ]
+          },
+          "registrationId": {
+            "type": "string"
+          },
+          "issuerUri": {
+            "type": "string"
+          },
+          "authorizationUri": {
+            "type": "string"
+          },
+          "tokenUri": {
+            "type": "string"
+          },
+          "userInfoUri": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string"
+          },
+          "appId": {
+            "type": "string"
+          },
+          "appSecret": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "AuthenticationConnectionTestResult": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "success",
+          "message"
+        ]
+      },
+      "LocalCreateUserRequest": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Optional. Defaults to the username and is overwritten by Feishu sync."
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Optional. Synced from Feishu."
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          },
+          "avatar": {
+            "type": "string",
+            "description": "Optional. Synced from Feishu."
+          },
+          "userGroup": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ]
+      },
+      "LocalBatchCreateRequest": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "$ref": "#/components/schemas/LocalCreateUserRequest"
+            }
+          }
+        },
+        "required": [
+          "users"
+        ]
+      },
+      "LocalBatchCreateFailure": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "username": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "message"
+        ]
+      },
+      "LocalBatchCreateResponse": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LocalBatchCreateFailure"
+            }
+          }
+        },
+        "required": [
+          "created",
+          "failed",
+          "failures"
         ]
       }
     },
@@ -4853,6 +5049,44 @@
         "security": []
       },
       "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/parameter-settings/authentication/-/test": {
+      "post": {
+        "description": "Test an authentication provider configuration without saving it.",
+        "operationId": "TestAuthenticationConnection",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthenticationConnectionTestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthenticationConnectionTestResult"
+                }
+              }
+            },
+            "description": "The connection test result."
+          },
+          "400": {
+            "description": "The request body is invalid."
+          },
+          "403": {
+            "description": "The caller may not edit authentication settings."
+          }
+        },
+        "tags": [
+          "ParameterSettingV1alpha1"
+        ],
+        "parameters": []
+      }
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/parameter-settings/mail/-/test": {
       "post": {
@@ -8324,6 +8558,22 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "Filter by account status: active or disabled.",
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by user group name. Disables database paging and filters in memory.",
+            "in": "query",
+            "name": "userGroup",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -8611,6 +8861,79 @@
         "parameters": []
       },
       "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/users/-/local": {
+      "post": {
+        "description": "Create a local user with a username and password; display name, email, phone and avatar sync from Feishu after binding.",
+        "operationId": "CreateLocalUser",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalCreateUserRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserView"
+                }
+              }
+            },
+            "description": "The created local user."
+          },
+          "400": {
+            "description": "The request body is invalid."
+          },
+          "409": {
+            "description": "The username already exists."
+          }
+        },
+        "tags": [
+          "UserV1alpha1"
+        ],
+        "parameters": []
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/users/-/local/batch": {
+      "post": {
+        "description": "Batch create local users with usernames and passwords. Failures are reported per item.",
+        "operationId": "BatchCreateLocalUsers",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalBatchCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalBatchCreateResponse"
+                }
+              }
+            },
+            "description": "The batch creation result."
+          },
+          "400": {
+            "description": "The request body is invalid."
+          }
+        },
+        "tags": [
+          "UserV1alpha1"
+        ],
+        "parameters": []
+      }
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/users/-/password": {
       "put": {
@@ -8940,6 +9263,83 @@
         ]
       },
       "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/users/{name}/activity": {
+      "get": {
+        "description": "Daily audit activity counts for a user.",
+        "operationId": "GetUserActivity",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Number of UTC days to return (1-90, default 14).",
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserActivityPoint"
+                  }
+                }
+              }
+            },
+            "description": "Daily activity counts for the user."
+          }
+        },
+        "tags": [
+          "UserV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/users/{name}/connections": {
+      "get": {
+        "description": "List a user's external identity connections.",
+        "operationId": "ListUserConnections",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserConnectionView"
+                  }
+                }
+              }
+            },
+            "description": "The user's identity connections."
+          }
+        },
+        "tags": [
+          "UserV1alpha1"
+        ]
+      }
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/users/{name}/password": {
       "put": {
