@@ -62,6 +62,7 @@ dependencies {
         libs.ua.parser,
         libs.therapi.runtime.javadoc,
         libs.java.semver,
+        libs.bouncycastle.bcprov,
     ]
     sharedDeps.each { d ->
         add('implementation', d)

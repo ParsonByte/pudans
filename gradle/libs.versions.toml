@@ -13,6 +13,7 @@ ua-parser = '1.6.1'
 jsonassert = '2.0-rc1'
 larksuite-oapi = '2.8.7'
 java-semver = '0.10.2'
+bouncycastle = '1.83'
 node = '7.1.0'
 
 [libraries]
@@ -40,6 +41,7 @@ ua-parser = { module = 'com.github.ua-parser:uap-java', version.ref = 'ua-parser
 jsonassert = { module = 'org.skyscreamer:jsonassert', version.ref = 'jsonassert' }
 larksuite-oapi = { module = 'com.larksuite.oapi:oapi-sdk', version.ref = 'larksuite-oapi' }
 java-semver = { module = 'com.github.zafarkhaja:java-semver', version.ref = 'java-semver' }
+bouncycastle-bcprov = { module = 'org.bouncycastle:bcprov-jdk18on', version.ref = 'bouncycastle' }
 
 [bundles]
 resilience4j = ['resilience4j-springboot3', 'resilience4j-reactor']
