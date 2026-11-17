@@ -31,17 +31,21 @@ public class FeishuSdkClient {
     }
 
     private Client client(SecurityParameterSettingService.FeishuSettings settings) {
+        return client(settings.appId(), settings.appSecret());
+    }
+
+    private Client client(String appId, String appSecret) {
         var current = cachedClient.get();
         if (current != null
-                && Objects.equals(current.appId(), settings.appId())
-                && Objects.equals(current.appSecret(), settings.appSecret())) {
+                && Objects.equals(current.appId(), appId)
+                && Objects.equals(current.appSecret(), appSecret)) {
             return current.client();
         }
-        var client = Client.newBuilder(settings.appId(), settings.appSecret())
+        var client = Client.newBuilder(appId, appSecret)
                 .requestTimeout(5, TimeUnit.SECONDS)
                 .logReqAtDebug(false)
                 .build();
-        cachedClient.set(new CachedClient(settings.appId(), settings.appSecret(), client));
+        cachedClient.set(new CachedClient(appId, appSecret, client));
         return client;
     }
 
@@ -89,12 +93,19 @@ public class FeishuSdkClient {
 
     public Mono<String> tenantAccessToken() {
         var settings = securitySettings.feishu();
-        var client = client(settings);
+        return tenantAccessToken(client(settings), settings.appId(), settings.appSecret());
+    }
+
+    public Mono<String> tenantAccessToken(String appId, String appSecret) {
+        return tenantAccessToken(client(appId, appSecret), appId, appSecret);
+    }
+
+    private Mono<String> tenantAccessToken(Client client, String appId, String appSecret) {
         return call(() -> {
             var request = InternalTenantAccessTokenReq.newBuilder()
                     .internalTenantAccessTokenReqBody(InternalTenantAccessTokenReqBody.newBuilder()
-                            .appId(settings.appId())
-                            .appSecret(settings.appSecret())
+                            .appId(appId)
+                            .appSecret(appSecret)
                             .build())
                     .build();
             var response = client.auth().v3().tenantAccessToken().internal(request);
