@@ -83,6 +83,8 @@ tasks.register('validateOpenApiDocs') {
         assert paths.any { it.endsWith('/personalaccesstokens') }: 'API must expose personal access tokens'
         assert paths.any { it.contains('/authentications/two-factor/settings') }: 'API must expose two-factor settings'
         assert paths.any { it.contains('feishu') }: 'API must expose Feishu OAuth2 endpoints'
+        assert !paths.any { it.contains('/systemconfigs/') }:
+                'Deprecated /systemconfigs routes must not be published'
     }
 }
 
