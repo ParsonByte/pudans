@@ -7,7 +7,6 @@ import { ThemeSwitch } from "@/components/theme-switch";
 import { cn } from "@/lib/utils";
 
 const BRAND_NAME = "PUDANS";
-const BRAND_SUBTITLE = "身份与权限";
 
 export function AuthLayout() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -71,14 +70,13 @@ export function AuthLayout() {
           aria-label={BRAND_NAME}
           className="inline-flex min-w-0 items-center gap-2.5"
         >
-          <span className="inline-flex size-9 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-base font-bold tracking-[-0.04em] backdrop-blur-md">
-            P
-          </span>
-          <span className="flex min-w-0 flex-col gap-0.5 leading-none">
-            <strong className="truncate text-sm font-bold tracking-[0.16em]">{BRAND_NAME}</strong>
-            <small className="hidden text-[11px] font-medium tracking-[0.14em] text-white/55 sm:block">
-              {BRAND_SUBTITLE}
-            </small>
+          <img
+            src={`${import.meta.env.BASE_URL}brand/icon-small.svg`}
+            alt=""
+            className="size-8 shrink-0"
+          />
+          <span className="truncate text-sm leading-none font-bold tracking-[0.16em]">
+            {BRAND_NAME}
           </span>
         </Link>
 
