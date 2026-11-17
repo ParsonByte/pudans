@@ -1,9 +1,24 @@
-import { Boxes, LayoutDashboard, Settings2, ShieldCheck, Users, UsersRound } from "lucide-react";
+import {
+  Boxes,
+  Fingerprint,
+  History,
+  LayoutDashboard,
+  ScrollText,
+  Settings2,
+  ShieldAlert,
+  ShieldCheck,
+  Users,
+  UsersRound,
+  Waypoints,
+} from "lucide-react";
 
 import type { NavGroup, NavLink, Workspace } from "@/components/layout/types";
 
 import {
+  UI_PERMISSION_AUDIT_VIEW,
+  UI_PERMISSION_AUTH_PROVIDERS_MANAGE,
   UI_PERMISSION_DASHBOARD_VIEW,
+  UI_PERMISSION_RISK_MANAGE,
   UI_PERMISSION_ROLES_MANAGE,
   UI_PERMISSION_SETTINGS_MANAGE,
   UI_PERMISSION_USERS_MANAGE,
@@ -29,12 +44,20 @@ const CONSOLE_SETTINGS_URL = "/console/settings";
 const CONSOLE_USERS_URL = "/console/users";
 const CONSOLE_ROLES_URL = "/console/roles";
 const CONSOLE_USER_GROUPS_URL = "/console/user-groups";
+const CONSOLE_IDENTITY_PROVIDER_URL = "/console/identity-provider";
+const CONSOLE_RISK_URL = "/console/risk";
+const CONSOLE_AUDIT_URL = "/console/audit";
+const CONSOLE_TRACES_URL = "/console/traces";
+const CONSOLE_REPLAY_URL = "/console/replay";
 
 const canViewConsole = (permissions?: readonly string[]) =>
   hasUiPermission(permissions, UI_PERMISSION_DASHBOARD_VIEW) ||
   hasUiPermission(permissions, UI_PERMISSION_SETTINGS_MANAGE) ||
   hasUiPermission(permissions, UI_PERMISSION_USERS_MANAGE) ||
-  hasUiPermission(permissions, UI_PERMISSION_ROLES_MANAGE);
+  hasUiPermission(permissions, UI_PERMISSION_ROLES_MANAGE) ||
+  hasUiPermission(permissions, UI_PERMISSION_AUTH_PROVIDERS_MANAGE) ||
+  hasUiPermission(permissions, UI_PERMISSION_RISK_MANAGE) ||
+  hasUiPermission(permissions, UI_PERMISSION_AUDIT_VIEW);
 
 const INDEX_NAV_GROUPS: NavGroup[] = [
   {
@@ -74,6 +97,15 @@ const WORKSPACE_DEFINITIONS: readonly WorkspaceDefinition[] = [
       if (hasUiPermission(permissions, UI_PERMISSION_ROLES_MANAGE)) {
         return CONSOLE_ROLES_URL;
       }
+      if (hasUiPermission(permissions, UI_PERMISSION_AUTH_PROVIDERS_MANAGE)) {
+        return CONSOLE_IDENTITY_PROVIDER_URL;
+      }
+      if (hasUiPermission(permissions, UI_PERMISSION_RISK_MANAGE)) {
+        return CONSOLE_RISK_URL;
+      }
+      if (hasUiPermission(permissions, UI_PERMISSION_AUDIT_VIEW)) {
+        return CONSOLE_AUDIT_URL;
+      }
       return CONSOLE_HOME_URL;
     },
     buildNavGroups: (permissions) => {
@@ -85,6 +117,13 @@ const WORKSPACE_DEFINITIONS: readonly WorkspaceDefinition[] = [
       }
       if (hasUiPermission(permissions, UI_PERMISSION_SETTINGS_MANAGE)) {
         generalItems.push({ title: "参数配置", url: CONSOLE_SETTINGS_URL, icon: Settings2 });
+      }
+      if (hasUiPermission(permissions, UI_PERMISSION_AUTH_PROVIDERS_MANAGE)) {
+        generalItems.push({
+          title: "身份提供商",
+          url: CONSOLE_IDENTITY_PROVIDER_URL,
+          icon: Fingerprint,
+        });
       }
       if (generalItems.length > 0) {
         groups.push({ title: "通用", items: generalItems });
@@ -102,6 +141,14 @@ const WORKSPACE_DEFINITIONS: readonly WorkspaceDefinition[] = [
           url: CONSOLE_USER_GROUPS_URL,
           icon: UsersRound,
         });
+      }
+      if (hasUiPermission(permissions, UI_PERMISSION_RISK_MANAGE)) {
+        controlItems.push({ title: "风险", url: CONSOLE_RISK_URL, icon: ShieldAlert });
+      }
+      if (hasUiPermission(permissions, UI_PERMISSION_AUDIT_VIEW)) {
+        controlItems.push({ title: "审计", url: CONSOLE_AUDIT_URL, icon: ScrollText });
+        controlItems.push({ title: "链路追踪", url: CONSOLE_TRACES_URL, icon: Waypoints });
+        controlItems.push({ title: "回溯", url: CONSOLE_REPLAY_URL, icon: History });
       }
       if (controlItems.length > 0) {
         groups.push({ title: "控制", items: controlItems });

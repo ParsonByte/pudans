@@ -14,6 +14,7 @@ import { IconThemeLight } from "@/assets/custom/icon-theme-light";
 import { IconThemeSystem } from "@/assets/custom/icon-theme-system";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sheet,
   SheetContent,
@@ -125,12 +126,14 @@ export function ConfigDrawer() {
           <SheetTitle>主题设置</SheetTitle>
           <SheetDescription>调整主题、侧边栏、布局和文字方向。</SheetDescription>
         </SheetHeader>
-        <div className="space-y-6 overflow-y-auto px-4">
-          <ThemeConfig />
-          <SidebarConfig />
-          <LayoutConfig />
-          <DirConfig />
-        </div>
+        <ScrollArea className="min-h-0 flex-1 px-4">
+          <div className="space-y-6">
+            <ThemeConfig />
+            <SidebarConfig />
+            <LayoutConfig />
+            <DirConfig />
+          </div>
+        </ScrollArea>
         <SheetFooter className="gap-2">
           <Button
             type="button"
