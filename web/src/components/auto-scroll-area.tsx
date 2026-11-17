@@ -12,6 +12,7 @@ type AutoScrollAreaProps = {
 export function AutoScrollArea({ children, maxHeightRatio = 0.5, className }: AutoScrollAreaProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number>();
+  const [overflowing, setOverflowing] = useState(false);
 
   useLayoutEffect(() => {
     const element = contentRef.current;
@@ -20,7 +21,8 @@ export function AutoScrollArea({ children, maxHeightRatio = 0.5, className }: Au
     }
     const update = () => {
       const maxHeight = window.innerHeight * maxHeightRatio;
-      setHeight(Math.min(element.scrollHeight, maxHeight));
+      setOverflowing(element.scrollHeight > maxHeight);
+      setHeight(maxHeight);
     };
 
     update();
@@ -35,7 +37,11 @@ export function AutoScrollArea({ children, maxHeightRatio = 0.5, className }: Au
   }, [maxHeightRatio]);
 
   return (
-    <ScrollArea type="auto" style={{ height }} className={cn("pe-5", className)}>
+    <ScrollArea
+      type="auto"
+      style={overflowing && height ? { height } : undefined}
+      className={cn("pe-5", className)}
+    >
       <div ref={contentRef}>{children}</div>
     </ScrollArea>
   );
