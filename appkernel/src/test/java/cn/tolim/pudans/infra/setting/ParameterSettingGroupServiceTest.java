@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import tools.jackson.databind.JsonNode;
@@ -221,6 +222,20 @@ class ParameterSettingGroupServiceTest {
 
         var site = read(configMap.getData().get("site"));
         assertThat(site.get("siteName").asString()).isEqualTo("Legacy");
+    }
+
+    @Test
+    void legacyReadRejectsUnknownGroup() {
+        StepVerifier.create(service.getLegacyGroup("unknown"))
+                .expectError(ServerWebInputException.class)
+                .verify();
+    }
+
+    @Test
+    void legacyUpdateRejectsUnknownGroup() {
+        StepVerifier.create(service.updateLegacyGroup("unknown", objectNode("{\"key\":\"value\"}")))
+                .expectError(ServerWebInputException.class)
+                .verify();
     }
 
     @Test

@@ -16,14 +16,20 @@ type AppSidebarProps = Partial<SidebarData> & {
   onSignOut?: () => void;
 };
 
-export function AppSidebar({ user, workspaces, navGroups, onSignOut }: AppSidebarProps) {
+export function AppSidebar({
+  user,
+  workspaces,
+  activeWorkspaceId,
+  navGroups,
+  onSignOut,
+}: AppSidebarProps) {
   const { collapsible, variant } = useLayout();
 
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
       {workspaces && workspaces.length > 0 ? (
         <SidebarHeader>
-          <WorkspaceSwitcher workspaces={workspaces} />
+          <WorkspaceSwitcher workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} />
         </SidebarHeader>
       ) : null}
       {navGroups && navGroups.length > 0 ? (

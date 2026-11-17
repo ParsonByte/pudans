@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useEffect } from "react";
 
-import { ChevronsUpDown, Plus } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { ChevronsUpDown } from "lucide-react";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -22,11 +22,35 @@ import type { Workspace } from "./types";
 
 type WorkspaceSwitcherProps = {
   workspaces: Workspace[];
+  activeWorkspaceId?: string;
 };
 
-export function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
+export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSwitcherProps) {
+  const navigate = useNavigate();
   const { isMobile } = useSidebar();
-  const [activeWorkspace, setActiveWorkspace] = useState(workspaces[0]);
+  const activeWorkspace =
+    workspaces.find((workspace) => workspace.id === activeWorkspaceId) ?? workspaces[0];
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((!event.metaKey && !event.ctrlKey) || event.altKey || event.shiftKey) {
+        return;
+      }
+
+      const workspace = workspaces[Number(event.key) - 1];
+
+      if (!workspace) {
+        return;
+      }
+
+      event.preventDefault();
+      void navigate({ to: workspace.homeUrl });
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [navigate, workspaces]);
 
   if (!activeWorkspace) {
     return null;
@@ -60,24 +84,17 @@ export function WorkspaceSwitcher({ workspaces }: WorkspaceSwitcherProps) {
             <DropdownMenuLabel className="text-xs text-muted-foreground">工作区</DropdownMenuLabel>
             {workspaces.map((workspace, index) => (
               <DropdownMenuItem
-                key={workspace.name}
-                onClick={() => setActiveWorkspace(workspace)}
+                key={workspace.id}
+                onSelect={() => void navigate({ to: workspace.homeUrl })}
                 className="gap-2 p-2"
               >
                 <div className="flex size-6 items-center justify-center rounded-sm border">
                   <workspace.logo className="size-4 shrink-0" />
                 </div>
-                {workspace.name}
+                <span className="truncate font-medium">{workspace.name}</span>
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
               </DropdownMenuItem>
             ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2">
-              <div className="flex size-6 items-center justify-center rounded-md border bg-background">
-                <Plus className="size-4" />
-              </div>
-              <div className="font-medium text-muted-foreground">添加工作区</div>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>

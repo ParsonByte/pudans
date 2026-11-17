@@ -9,9 +9,12 @@ type User = {
 };
 
 type Workspace = {
+  id: string;
   name: string;
   logo: ElementType;
   plan: string;
+  homeUrl: string;
+  paths: string[];
 };
 
 type BaseNavItem = {
@@ -42,6 +45,7 @@ type NavGroup = {
 type SidebarData = {
   user: User;
   workspaces: Workspace[];
+  activeWorkspaceId?: string;
   navGroups: NavGroup[];
 };
 

@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.R2dbcEntityOperations;
@@ -67,6 +68,8 @@ public class AuditStore {
                 .flatMap(exists -> Boolean.TRUE.equals(exists)
                         ? Mono.empty()
                         : entityOperations.insert(AuditRecordEntity.from(record)).then())
+                // 并发下由唯一索引兜底，重复指纹视为已记录。
+                .onErrorResume(DuplicateKeyException.class, ignored -> Mono.empty())
                 .doOnError(e -> log.error("追加审计记录 {} 失败", record.getMetadata().getName(), e))
                 .then();
     }
