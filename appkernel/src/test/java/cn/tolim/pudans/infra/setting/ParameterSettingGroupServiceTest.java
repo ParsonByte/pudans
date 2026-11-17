@@ -266,6 +266,69 @@ class ParameterSettingGroupServiceTest {
         }
     }
 
+    @Test
+    void authenticationUpdateRestoresMaskedNestedSecretsAndEncryptsNewOnes() {
+        var configMap = configMap();
+        configMap.getData()
+                .put(
+                        "authentication",
+                        "{\"feishu\":{\"appSecret\":\"enc:old\"},"
+                                + "\"oauth2\":{\"providers\":[{\"registrationId\":\"github\","
+                                + "\"clientSecret\":\"enc:old-client\"}]}}");
+        when(fetcher.getConfigMap()).thenReturn(Mono.just(configMap));
+        when(fetcher.fetch("authentication", ObjectNode.class))
+                .thenReturn(Mono.just(objectNode(
+                        "{\"totp\":{\"enabled\":true},\"oauth2\":{\"providers\":[]},"
+                                + "\"oidc\":{\"providers\":[]},\"feishu\":{},\"pat\":{\"enabled\":true}}")));
+        when(client.update(any(ConfigMap.class))).thenReturn(Mono.just(configMap));
+
+        var body = objectNode(
+                "{\"feishu\":{\"appSecret\":\"********\"},"
+                        + "\"oauth2\":{\"providers\":[{\"registrationId\":\"github\","
+                        + "\"clientSecret\":\"********\"},{\"registrationId\":\"gitlab\","
+                        + "\"clientSecret\":\"new-secret\"}]}}");
+
+        StepVerifier.create(service.updateGroup("authentication", body))
+                .assertNext(result -> assertThat(result.restartRequired()).isFalse())
+                .verifyComplete();
+
+        var stored = read(configMap.getData().get("authentication"));
+        assertThat(stored.get("feishu").get("appSecret").asString()).isEqualTo("enc:old");
+        var providers = stored.get("oauth2").get("providers");
+        assertThat(providers.get(0).get("clientSecret").asString()).isEqualTo("enc:old-client");
+        assertThat(providers.get(1).get("clientSecret").asString()).isEqualTo("enc:new-secret");
+    }
+
+    @Test
+    void getAuthenticationGroupMasksNestedSecrets() {
+        when(fetcher.fetch("authentication", ObjectNode.class))
+                .thenReturn(Mono.just(objectNode(
+                        "{\"feishu\":{\"appSecret\":\"enc:secret\"},"
+                                + "\"oauth2\":{\"providers\":[{\"registrationId\":\"github\","
+                                + "\"clientSecret\":\"enc:client\"}]},"
+                                + "\"oidc\":{\"providers\":[{\"registrationId\":\"example\","
+                                + "\"clientSecret\":\"enc:oidc\"}]}}")));
+
+        StepVerifier.create(service.getGroup("authentication"))
+                .assertNext(node -> {
+                    assertThat(node.get("feishu").get("appSecret").asString())
+                            .isEqualTo(ParameterSettingSensitiveFields.MASK);
+                    assertThat(node.get("oauth2")
+                                    .get("providers")
+                                    .get(0)
+                                    .get("clientSecret")
+                                    .asString())
+                            .isEqualTo(ParameterSettingSensitiveFields.MASK);
+                    assertThat(node.get("oidc")
+                                    .get("providers")
+                                    .get(0)
+                                    .get("clientSecret")
+                                    .asString())
+                            .isEqualTo(ParameterSettingSensitiveFields.MASK);
+                })
+                .verifyComplete();
+    }
+
     private static Map<String, ObjectNode> defaultGroups() throws Exception {
         try (InputStream input = new ClassPathResource("extensions/config-template-configmap.yaml").getInputStream()) {
             var document = (Map<String, Object>) new Yaml().load(input);

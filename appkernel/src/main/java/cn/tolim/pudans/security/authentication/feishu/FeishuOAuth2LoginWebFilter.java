@@ -9,8 +9,9 @@ import cn.tolim.pudans.core.user.service.FeishuUserService;
 import cn.tolim.pudans.infra.exception.Exceptions;
 import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
-import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService.FeishuSettings;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthRequiredException;
 import java.net.URI;
@@ -36,7 +37,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     static final String AUTHORIZATION_PATH = AUTH_API_PREFIX + "/oauth2/authorization/feishu";
     static final String CALLBACK_PATH = AUTH_API_PREFIX + "/oauth2/callback/feishu";
     private static final String STATE_ATTRIBUTE = FeishuOAuth2LoginWebFilter.class.getName() + ".STATE";
-    private final FeishuProperties properties;
+    private final SecurityParameterSettingService securitySettings;
 
     private final FeishuClient feishuClient;
 
@@ -69,16 +70,17 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> authorize(ServerWebExchange exchange) {
+        var properties = securitySettings.feishu();
         if (!properties.isConfigured()) {
-            return loginFailure(exchange, unavailableReason());
+            return loginFailure(exchange, unavailableReason(properties));
         }
         var state = UUID.randomUUID().toString();
-        var redirectUri = resolveRedirectUri(exchange);
-        var location = UriComponentsBuilder.fromUriString(properties.getAuthorizationUri())
-                .queryParam("app_id", properties.getAppId())
+        var redirectUri = resolveRedirectUri(exchange, properties.redirectUri());
+        var location = UriComponentsBuilder.fromUriString(properties.authorizationUri())
+                .queryParam("app_id", properties.appId())
                 .queryParam("redirect_uri", redirectUri)
                 .queryParam("state", state)
-                .queryParam("scope", properties.getScope())
+                .queryParam("scope", properties.scope())
                 .build()
                 .encode()
                 .toUriString();
@@ -90,8 +92,9 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> callback(ServerWebExchange exchange) {
+        var properties = securitySettings.feishu();
         if (!properties.isConfigured()) {
-            return loginFailure(exchange, unavailableReason());
+            return loginFailure(exchange, unavailableReason(properties));
         }
         var code = exchange.getRequest().getQueryParams().getFirst("code");
         var state = exchange.getRequest().getQueryParams().getFirst("state");
@@ -152,8 +155,8 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 exchange, context, HttpStatus.FORBIDDEN, reason, "飞书登录被拒绝。");
     }
 
-    private String unavailableReason() {
-        return properties.isEnabled() ? "feishu_not_configured" : "feishu_disabled";
+    private String unavailableReason(FeishuSettings settings) {
+        return settings.enabled() ? "feishu_not_configured" : "feishu_disabled";
     }
 
     private Mono<Void> loginFailure(ServerWebExchange exchange, String reason) {
@@ -178,8 +181,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
-    private String resolveRedirectUri(ServerWebExchange exchange) {
-        var configured = properties.getRedirectUri();
+    private String resolveRedirectUri(ServerWebExchange exchange, String configured) {
         var requestUri = exchange.getRequest().getURI();
         var baseUrl = UriComponentsBuilder.fromUri(requestUri)
                 .replacePath("")

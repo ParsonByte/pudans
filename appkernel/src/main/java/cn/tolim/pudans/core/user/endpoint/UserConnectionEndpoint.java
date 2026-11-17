@@ -15,7 +15,7 @@ import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.index.query.Queries;
-import cn.tolim.pudans.infra.properties.OidcProperties;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import cn.tolim.pudans.security.authentication.oidc.OidcClient;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.nio.charset.StandardCharsets;
@@ -52,7 +52,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     private final OidcClient oidcClient;
 
-    private final OidcProperties oidcProperties;
+    private final SecurityParameterSettingService securitySettings;
 
     private final AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
 
@@ -116,7 +116,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> listOidcProviders(ServerRequest request) {
         return currentUsername()
-                .map(username -> oidcProperties.getProviders().stream()
+                .map(username -> securitySettings.oidcProviders().stream()
                         .map(provider -> new OidcProviderVo(
                                 provider.getRegistrationId(),
                                 provider.getDisplayName(),

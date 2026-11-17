@@ -7,6 +7,7 @@ import cn.tolim.pudans.contract.infra.AnonymousUserConst;
 import cn.tolim.pudans.contract.security.authentication.CryptoService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import cn.tolim.pudans.security.audit.AuthenticatedUserWebFilter;
 import cn.tolim.pudans.security.authentication.DefaultUserDetailService;
 import cn.tolim.pudans.security.authentication.PudansServerRequestCache;
@@ -14,7 +15,6 @@ import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import cn.tolim.pudans.security.authentication.impl.RsaKeyService;
 import cn.tolim.pudans.security.authentication.login.PublicKeyRouteBuilder;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
-import java.util.HashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
@@ -23,10 +23,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.DelegatingPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
 import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository;
@@ -100,24 +96,15 @@ public class WebServerSecurityConfig {
 
     @Bean
     DefaultUserDetailService userDetailsService(
-            UserService userService, UserGroupService userGroupService, PudansProperties pudansProperties) {
+            UserService userService,
+            UserGroupService userGroupService,
+            PudansProperties pudansProperties,
+            SecurityParameterSettingService securitySettings) {
         var userDetailService = new DefaultUserDetailService(userService, userGroupService);
-        var twoFactorAuthDisabled =
-                pudansProperties.getSecurity().getTwoFactorAuth().isDisabled();
-        userDetailService.setTwoFactorAuthDisabled(twoFactorAuthDisabled);
+        userDetailService.setTwoFactorAuthEnabled(() ->
+                !pudansProperties.getSecurity().getTwoFactorAuth().isDisabled()
+                        && securitySettings.isTotpEnabled());
         return userDetailService;
-    }
-
-    @Bean
-    @SuppressWarnings("deprecation")
-    PasswordEncoder passwordEncoder() {
-
-
-        var encodingId = "argon2@SpringSecurity_v5_8";
-        var encoders = new HashMap<String, PasswordEncoder>();
-        encoders.put(encodingId, Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8());
-        encoders.put("bcrypt", new BCryptPasswordEncoder());
-        return new DelegatingPasswordEncoder(encodingId, encoders);
     }
 
     @Bean

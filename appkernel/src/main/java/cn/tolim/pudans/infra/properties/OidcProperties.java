@@ -17,6 +17,8 @@ public class OidcProperties {
     @Data
     public static class Provider {
 
+        private boolean enabled = true;
+
         private String registrationId;
 
 

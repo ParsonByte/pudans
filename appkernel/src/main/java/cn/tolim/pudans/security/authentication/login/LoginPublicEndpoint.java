@@ -6,12 +6,13 @@ import cn.tolim.pudans.core.rbac.service.UiPermissionService;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import cn.tolim.pudans.security.authentication.AuthProviderService;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
@@ -44,7 +45,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
 
     private final AuthProviderService authProviderService;
 
-    private final FeishuProperties feishuProperties;
+    private final SecurityParameterSettingService securitySettings;
 
     private final InitializationStateGetter initializationStateGetter;
 
@@ -134,12 +135,50 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                         provider.getSpec().getHelpPage()))
                 .collectList()
                 .map(this::includeFeishu)
+                .map(this::includeConfiguredProviders)
                 .flatMap(views -> ServerResponse.ok().bodyValue(views));
+    }
+
+    private List<LoginProviderView> includeConfiguredProviders(List<LoginProviderView> views) {
+        var providers = new ArrayList<>(views);
+        var names = new HashSet<>(providers.stream().map(LoginProviderView::name).toList());
+        securitySettings.oauth2Providers().forEach(provider -> {
+            var name = provider.getRegistrationId();
+            if (FEISHU_PROVIDER.equals(name) || !names.add(name)) {
+                return;
+            }
+            providers.add(new LoginProviderView(
+                    name,
+                    displayName(provider.getDisplayName(), name),
+                    provider.getLogo(),
+                    "/oauth2/authorization/" + name,
+                    null));
+        });
+        securitySettings.oidcProviders().forEach(provider -> {
+            var name = provider.getRegistrationId();
+            if (FEISHU_PROVIDER.equals(name) || !names.add(name)) {
+                return;
+            }
+            providers.add(new LoginProviderView(
+                    name,
+                    displayName(provider.getDisplayName(), name),
+                    null,
+                    "/oauth2/authorization/" + name,
+                    null));
+        });
+        return providers.stream()
+                .sorted(Comparator.comparing(LoginProviderView::displayName, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(LoginProviderView::name))
+                .toList();
+    }
+
+    private static String displayName(String displayName, String fallback) {
+        return StringUtils.hasText(displayName) ? displayName : fallback;
     }
 
     private List<LoginProviderView> includeFeishu(List<LoginProviderView> views) {
         var providers = new ArrayList<>(views);
-        var feishuConfigured = feishuProperties.isConfigured();
+        var feishuConfigured = securitySettings.feishu().isConfigured();
         var feishuIndex = -1;
 
         for (var index = 0; index < providers.size(); index++) {
@@ -172,7 +211,10 @@ public class LoginPublicEndpoint implements CustomEndpoint {
         return initializationStateGetter
                 .setupRequired()
                 .defaultIfEmpty(false)
-                .map(setupRequired -> new LoginStatusView(setupRequired, securityProperties.getPostLoginUrl()))
+                .map(setupRequired -> new LoginStatusView(
+                        setupRequired,
+                        securityProperties.getPostLoginUrl(),
+                        securitySettings.isRsaLoginEncryptionEnabled()))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
@@ -207,5 +249,6 @@ public class LoginPublicEndpoint implements CustomEndpoint {
     public record LoginProviderView(
             String name, String displayName, String logo, String authenticationUrl, String helpPage) {}
 
-    public record LoginStatusView(boolean setupRequired, String postLoginUrl) {}
+    public record LoginStatusView(
+            boolean setupRequired, String postLoginUrl, boolean rsaEncryptionEnabled) {}
 }

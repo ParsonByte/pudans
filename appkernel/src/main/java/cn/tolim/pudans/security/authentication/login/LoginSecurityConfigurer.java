@@ -29,6 +29,7 @@ import cn.tolim.pudans.security.authentication.LoginParameterRequestCache;
 import cn.tolim.pudans.security.authentication.SecurityConstant;
 import cn.tolim.pudans.contract.security.authentication.CryptoService;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import cn.tolim.pudans.security.authentication.LoginFailureHandler;
 import cn.tolim.pudans.security.authentication.LoginSuccessHandler;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
@@ -71,6 +72,8 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
 
     private final RefreshTokenService refreshTokenService;
 
+    private final SecurityParameterSettingService securitySettings;
+
     public LoginSecurityConfigurer(
             ObservationRegistry observationRegistry,
             ReactiveUserDetailsService userDetailsService,
@@ -87,7 +90,8 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
             ServerRequestCache serverRequestCache,
             SecurityProperties securityProperties,
             CaptchaService captchaService,
-            RefreshTokenService refreshTokenService) {
+            RefreshTokenService refreshTokenService,
+            SecurityParameterSettingService securitySettings) {
         this.observationRegistry = observationRegistry;
         this.userDetailsService = userDetailsService;
         this.passwordService = passwordService;
@@ -104,6 +108,7 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
         this.securityProperties = securityProperties;
         this.captchaService = captchaService;
         this.refreshTokenService = refreshTokenService;
+        this.securitySettings = securitySettings;
     }
 
     @Override
@@ -120,7 +125,8 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
             }
         };
         var requiresMatcher = ServerWebExchangeMatchers.pathMatchers(HttpMethod.POST, "/login");
-        var authConverter = new LoginAuthenticationConverter(cryptoService, riskControlService, captchaService);
+        var authConverter = new LoginAuthenticationConverter(
+                cryptoService, riskControlService, captchaService, securitySettings);
         authConverter.setUsernameParameter(SecurityConstant.USERNAME_PARAMETER_NAME);
         authConverter.setPasswordParameter(SecurityConstant.PASSWORD_PARAMETER_NAME);
         filter.setRequiresAuthenticationMatcher(requiresMatcher);

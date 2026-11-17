@@ -2,10 +2,11 @@ package cn.tolim.pudans.security.authentication.feishu;
 
 import cn.tolim.pudans.core.user.service.FeishuUserService;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
-import cn.tolim.pudans.infra.properties.FeishuProperties;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,7 +20,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class FeishuProfileSyncTask {
 
-    private final FeishuProperties properties;
+    private static final Duration CHECK_INTERVAL = Duration.ofSeconds(60);
+
+    private final SecurityParameterSettingService securitySettings;
 
     private final FeishuClient feishuClient;
 
@@ -27,17 +30,28 @@ public class FeishuProfileSyncTask {
 
     private Disposable subscription;
 
+    private volatile Instant lastSyncAt = Instant.now();
+
     @PostConstruct
     public void start() {
-        if (!properties.isEnabled() || properties.getSyncIntervalSeconds() <= 0) {
-            return;
-        }
-        var interval = Duration.ofSeconds(properties.getSyncIntervalSeconds());
-        subscription = Flux.interval(interval, interval)
+        subscription = Flux.interval(CHECK_INTERVAL, CHECK_INTERVAL)
                 .onBackpressureDrop()
-                .concatMap(ignored -> syncAll())
+                .concatMap(ignored -> syncIfDue())
                 .onErrorContinue((error, ignored) -> log.error("飞书资料同步失败", error))
                 .subscribe();
+    }
+
+    Mono<Void> syncIfDue() {
+        var settings = securitySettings.feishu();
+        if (!settings.isConfigured() || settings.syncIntervalSeconds() <= 0) {
+            return Mono.empty();
+        }
+        var now = Instant.now();
+        if (now.isBefore(lastSyncAt.plusSeconds(settings.syncIntervalSeconds()))) {
+            return Mono.empty();
+        }
+        lastSyncAt = now;
+        return syncAll();
     }
 
     Mono<Void> syncAll() {
