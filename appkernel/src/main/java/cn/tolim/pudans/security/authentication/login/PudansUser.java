@@ -110,8 +110,6 @@ public class PudansUser implements PudansUserDetailsContract, CredentialsContain
 
         private String totpEncryptedSecret;
 
-    private String refreshToken;
-
         public Builder(UserDetails user) {
             this.user = user;
         }

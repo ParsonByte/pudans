@@ -6,7 +6,6 @@ import cn.tolim.pudans.contract.security.authentication.CryptoService;
 import cn.tolim.pudans.infra.setting.MasterKeyService;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
@@ -19,7 +18,6 @@ import reactor.core.publisher.Flux;
 
 import static org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder.withJwkSource;
 
-@Slf4j
 @Component
 @Order(0)
 @RequiredArgsConstructor

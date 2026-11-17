@@ -11,13 +11,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.Strings;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.R2dbcEntityOperations;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
-import org.springframework.data.support.ReactivePageableExecutionUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -36,11 +33,6 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
 
     private int fetchSize = DEFAULT_FETCH_SIZE;
 
-    void setFetchSize(int fetchSize) {
-        Assert.isTrue(fetchSize >= 0, "fetchSize 必须大于或等于 0");
-        this.fetchSize = fetchSize;
-    }
-
     @Override
     public Flux<ExtensionStore> listByNamePrefix(String prefix) {
         Assert.hasText(prefix, "前缀不能为空");
@@ -52,20 +44,6 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
                 .matching(Query.query(Criteria.where("name").like(prefix + "%"))
                         .sort(Sort.by(Sort.Direction.ASC, "name")))
                 .all();
-    }
-
-    @Override
-    public Mono<Page<ExtensionStore>> listByNamePrefix(String prefix, Pageable pageable) {
-        Assert.hasText(prefix, "前缀不能为空");
-
-        var q = Query.query(Criteria.where("name").like(prefix + "%")).sort(Sort.by(Sort.Direction.ASC, "name"));
-        var getItems = entityOperations
-                .select(ExtensionStore.class)
-                .matching(q.with(pageable))
-                .all()
-                .collectList();
-        var getCount = entityOperations.select(ExtensionStore.class).matching(q).count();
-        return getItems.flatMap(items -> ReactivePageableExecutionUtils.getPage(items, pageable, getCount));
     }
 
     @Override
@@ -84,14 +62,6 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
                 .select(ExtensionStore.class)
                 .matching(q.limit(limit))
                 .all();
-    }
-
-    @Override
-    public Mono<Long> countByNamePrefix(String prefix) {
-        Assert.hasText(prefix, "前缀不能为空");
-
-        var q = Query.query(Criteria.where("name").like(prefix + "%")).sort(Sort.by(Sort.Direction.ASC, "name"));
-        return entityOperations.select(ExtensionStore.class).matching(q).count();
     }
 
     @Override

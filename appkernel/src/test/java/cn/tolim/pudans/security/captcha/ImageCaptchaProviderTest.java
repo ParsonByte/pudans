@@ -63,10 +63,13 @@ class ImageCaptchaProviderTest {
     @Test
     void verifyRejectsAWrongAnswer() {
         when(challengeStore.get("challenge-1")).thenReturn(Mono.just("ABC12"));
+        when(challengeStore.delete("challenge-1")).thenReturn(Mono.just(false));
 
         StepVerifier.create(provider.verify("challenge-1", "wrong"))
                 .expectNext(false)
                 .verifyComplete();
+
+        verify(challengeStore).delete("challenge-1");
     }
 
     @Test

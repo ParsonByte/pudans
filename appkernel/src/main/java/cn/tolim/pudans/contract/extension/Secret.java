@@ -11,10 +11,6 @@ import lombok.EqualsAndHashCode;
 public class Secret extends AbstractExtension {
     public static final String KIND = "Secret";
 
-    public static final String SECRET_TYPE_OPAQUE = "Opaque";
-
-    public static final int MAX_SECRET_SIZE = 1024 * 1024;
-
 
     private String type;
 

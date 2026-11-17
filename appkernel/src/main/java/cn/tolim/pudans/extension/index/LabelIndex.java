@@ -26,20 +26,15 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
 
     private final ConcurrentMap<String, Set<LabelEntry>> invertedIndex;
 
-
-    private final Set<String> emptyLabelsSet;
-
     public LabelIndex() {
         this.index = new ConcurrentSkipListMap<>();
         this.invertedIndex = new ConcurrentHashMap<>();
-        this.emptyLabelsSet = ConcurrentHashMap.newKeySet();
     }
 
     @Override
     public void close() throws IOException {
         this.index.clear();
         this.invertedIndex.clear();
-        this.emptyLabelsSet.clear();
     }
 
     @Override
@@ -139,7 +134,6 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
 
     private void removeLabels(String primaryKey, Map<String, String> labels) {
         if (CollectionUtils.isEmpty(labels)) {
-            emptyLabelsSet.remove(primaryKey);
             return;
         }
         invertedIndex.remove(primaryKey);
@@ -157,10 +151,8 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
 
     private void addLabels(String primaryKey, Map<String, String> labels) {
         if (CollectionUtils.isEmpty(labels)) {
-            emptyLabelsSet.add(primaryKey);
             return;
         }
-        emptyLabelsSet.remove(primaryKey);
         labels.forEach((labelKey, labelValue) -> {
             var labelEntry = new LabelEntry(labelKey, labelValue);
             index.compute(labelEntry, (key, primaryKeys) -> {

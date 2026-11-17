@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -118,10 +117,11 @@ public class RiskControlWebFilter implements WebFilter {
     }
 
     private Mono<Void> escalate(String scene, String ip, RiskDecision decision, ServerWebExchange exchange) {
-        var ban = decision.blockFor().isZero()
-                ? Mono.empty()
-                : riskControlService.ban(scene, ip, decision.blockFor());
-        return ban.then(audit(exchange, ip, scene, decision, "DENIED", "RISK_BLOCKED"))
+        var banned = !decision.blockFor().isZero();
+        var ban = banned ? riskControlService.ban(scene, ip, decision.blockFor()) : Mono.empty();
+        return ban.then(banned
+                        ? audit(exchange, ip, scene, decision, "DENIED", "RISK_BLOCKED")
+                        : Mono.empty())
                 .then(riskControlService
                         .markAlerted(scene, ip, decision.retryAfter().isZero() ? Duration.ofMinutes(5) : decision.retryAfter())
                         .flatMap(first -> {

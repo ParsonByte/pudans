@@ -28,7 +28,6 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
@@ -36,20 +35,16 @@ import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ListResult;
-import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.PageRequestImpl;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.router.SortableRequest;
-import cn.tolim.pudans.contract.extension.router.selector.SelectorUtil;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.core.rbac.service.UiPermissionService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
-import cn.tolim.pudans.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
 import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
 
 @Component
@@ -421,16 +416,23 @@ public class UserEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> changeOwnPassword(ServerRequest request) {
-        return resolveName(request)
-                .flatMap(username -> request.bodyToMono(PasswordRequest.class)
-                        .flatMap(password -> userService.updateWithRawPassword(username, password.password())))
-                .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
+        return changePassword(request, true);
     }
 
     private Mono<ServerResponse> changePasswordForUser(ServerRequest request) {
+        return changePassword(request, false);
+    }
+
+    private Mono<ServerResponse> changePassword(ServerRequest request, boolean verifyOldPassword) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(PasswordRequest.class)
-                        .flatMap(password -> userService.updateWithRawPassword(username, password.password())))
+                        .flatMap(password -> verifyOldPassword
+                                ? userService
+                                        .confirmPassword(username, password.oldPassword())
+                                        .flatMap(confirmed -> Boolean.TRUE.equals(confirmed)
+                                                ? userService.updateWithRawPassword(username, password.password())
+                                                : Mono.error(new UnsatisfiedAttributeValueException("旧密码不匹配。")))
+                                : userService.updateWithRawPassword(username, password.password())))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
@@ -499,7 +501,8 @@ public class UserEndpoint implements CustomEndpoint {
     public record UpdateProfileRequest(String displayName, String email, String avatar, String phone, String bio) {}
 
     
-    public record PasswordRequest(@Size(min = 8, max = 257) String password) {}
+    public record PasswordRequest(
+            @Size(min = 8, max = 257) String password, @Size(max = 257) String oldPassword) {}
 
     
     public record AssignGroupRequest(String userGroup) {}

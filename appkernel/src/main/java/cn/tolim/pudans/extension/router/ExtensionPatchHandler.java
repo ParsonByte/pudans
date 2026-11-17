@@ -66,7 +66,8 @@ public class ExtensionPatchHandler implements PatchHandler {
                                         .checkUpdate(scheme.groupVersionKind(), name, patchedExtension)
                                         .then(Mono.defer(() -> client.update(patchedExtension)));
                             } catch (JsonPatchException e) {
-                                return Mono.error(e);
+                                return Mono.error(new ServerWebInputException(
+                                        "无法应用 JSON Patch。", null, e));
                             }
                         }))
                 .flatMap(updated -> ServerResponse.ok().bodyValue(updated));

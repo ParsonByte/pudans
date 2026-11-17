@@ -84,6 +84,20 @@ class OutboundRequestValidatorTest {
     }
 
     @Test
+    void specialUseIpv4RangesAreBlocked() throws Exception {
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("100.64.0.1")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("100.100.100.200")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("198.18.0.1")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("240.0.0.1")))
+                .isTrue();
+        assertThat(OutboundRequestValidator.isBlocked(java.net.InetAddress.getByName("100.128.0.1")))
+                .isFalse();
+    }
+
+    @Test
     void nonHttpSchemeIsRejected() {
         assertThatThrownBy(() -> validator.validate("ftp://example.com/hook"))
                 .isInstanceOf(IllegalArgumentException.class)

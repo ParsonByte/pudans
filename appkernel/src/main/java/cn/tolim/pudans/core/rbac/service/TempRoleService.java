@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
@@ -25,6 +26,15 @@ import reactor.core.publisher.Mono;
 public class TempRoleService {
 
     private static final String KEY_PREFIX = "pudans:rbac:temp-roles:";
+
+    private static final RedisScript<Long> EXTEND_TTL_SCRIPT = RedisScript.of("""
+            local ttl = redis.call('PTTL', KEYS[1])
+            local requested = tonumber(ARGV[1])
+            if ttl < 0 or ttl < requested then
+                redis.call('PEXPIREAT', KEYS[1], ARGV[2])
+            end
+            return 1
+            """, Long.class);
 
     private static final char MEMBER_SEPARATOR = '|';
 
@@ -83,7 +93,14 @@ public class TempRoleService {
         return redisTemplate
                 .opsForZSet()
                 .addAll(key, members)
-                .then(redisTemplate.expireAt(key, expiresAt))
+                .then(Mono.defer(() -> redisTemplate
+                        .execute(
+                                EXTEND_TTL_SCRIPT,
+                                List.of(key),
+                                List.of(
+                                        String.valueOf(Duration.between(clock.instant(), expiresAt).toMillis()),
+                                        String.valueOf(expiresAt.toEpochMilli())))
+                        .next()))
                 .then(rbacCacheService.evictUserRoles(spec.getUsername()))
                 .doOnSuccess(ignored -> grantCache.invalidate(spec.getUsername()));
     }

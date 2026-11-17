@@ -97,28 +97,28 @@ public class ParameterSettingGroupService {
         if (incoming == null) {
             return Mono.error(new ServerWebInputException("请求体不能为空。"));
         }
-        return fetcher.getConfigMap()
-                .switchIfEmpty(Mono.error(() -> new IllegalStateException(
-                        "缺少参数设置 ConfigMap。")))
-                .flatMap(configMap -> {
-                    if (configMap.getData() == null) {
-                        configMap.setData(new HashMap<>());
-                    }
-                    var previousData = new LinkedHashMap<>(configMap.getData());
-                    var existing = readObject(configMap.getData().get(group));
-                    var restartRequired = restartRequired(group, incoming, existing);
-                    var persisted = merge(existing, incoming);
-                    ParameterSettingSensitiveFields.restoreMasked(persisted, existing, group);
-                    ParameterSettingSensitiveFields.encrypt(persisted, group, secretCipher);
-                    mirrorLegacyToNew(group, persisted, configMap.getData());
-                    configMap.getData().put(group, persisted.toString());
-                    return client.update(configMap)
-                            .retryWhen(Retry.backoff(5, RETRY_BACKOFF)
-                                    .filter(OptimisticLockingFailureException.class::isInstance))
-                            .doOnNext(updated -> eventPublisher.publishEvent(
-                                    new ParameterSettingChangedEvent(this, previousData, updated.getData())))
-                            .thenReturn(new UpdateResult(restartRequired));
-                });
+        return Mono.defer(() -> fetcher.getConfigMap()
+                        .switchIfEmpty(Mono.error(() -> new IllegalStateException(
+                                "缺少参数设置 ConfigMap。")))
+                        .flatMap(configMap -> {
+                            if (configMap.getData() == null) {
+                                configMap.setData(new HashMap<>());
+                            }
+                            var previousData = new LinkedHashMap<>(configMap.getData());
+                            var existing = readObject(configMap.getData().get(group));
+                            var restartRequired = restartRequired(group, incoming, existing);
+                            var persisted = merge(existing, incoming);
+                            ParameterSettingSensitiveFields.restoreMasked(persisted, existing, group);
+                            ParameterSettingSensitiveFields.encrypt(persisted, group, secretCipher);
+                            mirrorLegacyToNew(group, persisted, configMap.getData());
+                            configMap.getData().put(group, persisted.toString());
+                            return client.update(configMap)
+                                    .doOnNext(updated -> eventPublisher.publishEvent(
+                                            new ParameterSettingChangedEvent(this, previousData, updated.getData())))
+                                    .thenReturn(new UpdateResult(restartRequired));
+                        }))
+                .retryWhen(Retry.backoff(5, RETRY_BACKOFF)
+                        .filter(OptimisticLockingFailureException.class::isInstance));
     }
 
     public Mono<UpdateResult> updateGroup(String group, ObjectNode incoming) {
@@ -128,10 +128,12 @@ public class ParameterSettingGroupService {
         if (incoming == null) {
             return Mono.error(new ServerWebInputException("请求体不能为空。"));
         }
-        return fetcher.getConfigMap()
-                .switchIfEmpty(Mono.error(() -> new IllegalStateException(
-                        "缺少参数设置 ConfigMap。")))
-                .flatMap(configMap -> updateConfigMap(group, incoming, configMap));
+        return Mono.defer(() -> fetcher.getConfigMap()
+                        .switchIfEmpty(Mono.error(() -> new IllegalStateException(
+                                "缺少参数设置 ConfigMap。")))
+                        .flatMap(configMap -> updateConfigMap(group, incoming, configMap)))
+                .retryWhen(Retry.backoff(5, RETRY_BACKOFF)
+                        .filter(OptimisticLockingFailureException.class::isInstance));
     }
 
     private Mono<UpdateResult> updateConfigMap(String group, ObjectNode incoming, ConfigMap configMap) {
@@ -159,8 +161,6 @@ public class ParameterSettingGroupService {
                     return restartRequired;
                 })
                 .flatMap(restart -> client.update(configMap)
-                        .retryWhen(Retry.backoff(5, RETRY_BACKOFF)
-                                .filter(OptimisticLockingFailureException.class::isInstance))
                         .doOnNext(updated -> eventPublisher.publishEvent(
                                 new ParameterSettingChangedEvent(this, previousData, updated.getData())))
                         .thenReturn(new UpdateResult(restart)));

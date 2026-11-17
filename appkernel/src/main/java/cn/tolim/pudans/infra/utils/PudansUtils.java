@@ -73,7 +73,10 @@ public class PudansUtils {
 
     public static UnaryOperator<ServerRequest> noCache() {
         return request -> {
-            request.exchange().getAttributes().put("cn.tolim.pudans.no-cache", true);
+            var headers = request.exchange().getResponse().getHeaders();
+            headers.setCacheControl("no-store, no-cache, must-revalidate");
+            headers.setPragma("no-cache");
+            headers.setExpires(0);
             return request;
         };
     }

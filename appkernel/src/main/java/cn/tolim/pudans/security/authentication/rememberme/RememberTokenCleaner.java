@@ -37,7 +37,7 @@ public class RememberTokenCleaner {
         var listOptions = new ListOptions();
         listOptions.setFieldSelector(FieldSelector.of(and(
                 isNull("metadata.deletionTimestamp"),
-                lessThan("metadata.creationTimestamp", getExpirationThreshold().toString()))));
+                lessThan("spec.lastUsed", getExpirationThreshold().toString()))));
         return listOptions;
     }
 

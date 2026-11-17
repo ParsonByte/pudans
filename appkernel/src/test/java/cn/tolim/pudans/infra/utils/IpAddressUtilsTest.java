@@ -65,6 +65,13 @@ class IpAddressUtilsTest {
     }
 
     @Test
+    void hexLikeForwardedEntryIsNotTreatedAsAnAddress() {
+        var request = request("127.0.0.1", "deadbeef");
+
+        assertThat(IpAddressUtils.getClientIp(request)).isEqualTo("127.0.0.1");
+    }
+
+    @Test
     void ipv6LoopbackCanBeATrustedProxy() {
         var request = request("::1", "1.2.3.4");
 

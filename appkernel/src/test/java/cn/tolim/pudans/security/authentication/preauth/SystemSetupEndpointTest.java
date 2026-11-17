@@ -40,9 +40,6 @@ class SystemSetupEndpointTest {
     Validator validator;
 
     @Mock
-    cn.tolim.pudans.contract.infra.ExternalUrlSupplier externalUrlSupplier;
-
-    @Mock
     ApplicationEventPublisher eventPublisher;
 
     @Test
@@ -77,7 +74,6 @@ class SystemSetupEndpointTest {
                 superAdminInitializer,
                 client,
                 validator,
-                externalUrlSupplier,
                 eventPublisher);
         var request = new SystemSetupEndpoint.SetupRequest();
         request.setUsername("admin");

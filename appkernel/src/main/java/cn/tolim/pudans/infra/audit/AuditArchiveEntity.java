@@ -83,7 +83,9 @@ public class AuditArchiveEntity {
         record.setTimestamp(occurredAt == null ? null : occurredAt.toInstant());
         record.setResult(result);
         record.setDurationMs(durationMs);
-        record.setContext(AuditRecordEntity.parseContext(contextJson));
+        var context = AuditRecordEntity.parseContext(contextJson);
+        record.setSyntheticFlow(Boolean.TRUE.equals(context.remove("syntheticFlow")));
+        record.setContext(context);
         record.setActionSnapshot(actionSnapshot);
         record.setArchived(true);
         return record;

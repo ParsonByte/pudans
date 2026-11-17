@@ -94,7 +94,10 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         return JsonUtils.objectToJson(payload);
     }
 
-    private static String sign(String secret, String timestamp, String body) {
+    static String sign(String secret, String timestamp, String body) {
+        if (!org.springframework.util.StringUtils.hasText(secret)) {
+            return null;
+        }
         try {
             var mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(secret.getBytes(UTF_8), "HmacSHA256"));
@@ -225,7 +228,9 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                             .uri(spec.getUrl())
                             .contentType(MediaType.APPLICATION_JSON)
                             .headers(headers -> {
-                                headers.set("X-Pudans-Signature", signature);
+                                if (signature != null) {
+                                    headers.set("X-Pudans-Signature", signature);
+                                }
                                 headers.set("X-Pudans-Timestamp", timestamp);
                                 headers.set("X-Pudans-Event", event.type());
                                 headers.set("X-Pudans-Delivery", event.id());

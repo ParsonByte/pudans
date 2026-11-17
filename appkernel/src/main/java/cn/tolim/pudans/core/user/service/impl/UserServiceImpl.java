@@ -7,8 +7,6 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;

@@ -14,7 +14,6 @@ import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.Unstructured;
-import cn.tolim.pudans.contract.infra.ExternalUrlSupplier;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
@@ -51,7 +50,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -59,7 +57,6 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.util.InMemoryResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.PropertyPlaceholderHelper;
-import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Validator;
@@ -86,7 +83,6 @@ public class SystemSetupEndpoint {
     private final SuperAdminInitializer superAdminInitializer;
     private final ReactiveExtensionClient client;
     private final Validator validator;
-    private final ExternalUrlSupplier externalUrl;
     private final ApplicationEventPublisher eventPublisher;
 
     private static Mono<ServerResponse> handleSetupSuccessfully() {
@@ -312,9 +308,7 @@ public class SystemSetupEndpoint {
     Flux<Unstructured> loadPresetExtensions(String username) {
         return Mono.fromCallable(() -> {
 
-                    var classPathResource = new ClassPathResource("initial-data.yaml");
-                    String rawContent =
-                            StreamUtils.copyToString(classPathResource.getInputStream(), StandardCharsets.UTF_8);
+                    String rawContent = PudansUtils.readClassPathResourceAsString("initial-data.yaml");
 
                     var properties = new Properties();
                     properties.setProperty("username", username);

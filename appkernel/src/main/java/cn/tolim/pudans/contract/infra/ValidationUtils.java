@@ -9,7 +9,6 @@ import org.springframework.validation.Validator;
 @UtilityClass
 public class ValidationUtils {
     public static final String NAME_REGEX = "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$";
-    public static final Pattern NAME_PATTERN = Pattern.compile(NAME_REGEX);
 
 
     public static final String PASSWORD_REGEX = "^[A-Za-z0-9!@#$%^&*.?]+$";

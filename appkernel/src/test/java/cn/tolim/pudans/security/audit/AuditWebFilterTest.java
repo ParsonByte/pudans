@@ -51,6 +51,13 @@ class AuditWebFilterTest {
     }
 
     @Test
+    void runsBeforeTheSecurityFilterChain() {
+        var order = AuditWebFilter.class.getAnnotation(org.springframework.core.annotation.Order.class);
+
+        assertThat(order.value()).isLessThan(-100);
+    }
+
+    @Test
     void upstreamFlowIdIsNotOverwritten() {
         var exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get("/api/v1/users").build());

@@ -96,10 +96,6 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 .forEach(authorities::add);
     }
 
-    void setClock(Clock clock) {
-        this.clock = clock;
-    }
-
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         return Mono.justOrEmpty(authentication)

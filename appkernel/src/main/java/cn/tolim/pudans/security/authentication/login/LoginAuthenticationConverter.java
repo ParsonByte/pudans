@@ -71,6 +71,9 @@ public class LoginAuthenticationConverter extends ServerFormLoginAuthenticationC
                                     token.getPrincipal(), new String(decryptedCredentials, UTF_8)));
                 })
                 .flatMap(token -> {
+                    if (token.getPrincipal() == null) {
+                        return Mono.error(new BadCredentialsException("用户名或密码错误。"));
+                    }
                     exchange.getAttributes().put(ATTEMPTED_USERNAME_ATTRIBUTE, token.getPrincipal());
                     return riskControlService
                             .evaluate(RiskScene.LOGIN_ATTEMPT, clientIp)

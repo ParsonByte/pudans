@@ -5,6 +5,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static cn.tolim.pudans.infra.exception.Exceptions.createErrorResponse;
 
 import java.util.LinkedHashMap;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.ServerAuthenticationFailureHandler;
@@ -15,6 +16,7 @@ import reactor.core.publisher.Mono;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
+import cn.tolim.pudans.security.authentication.exception.TooManyRequestsException;
 import cn.tolim.pudans.security.authentication.login.LoginAuthenticationConverter;
 
 public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
@@ -68,7 +70,8 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
     }
 
     private Mono<Void> handleAuthenticationException(Throwable exception, ServerWebExchange exchange) {
-        var errorResponse = createErrorResponse(exception, UNAUTHORIZED, exchange);
+        var status = exception instanceof TooManyRequestsException ? HttpStatus.TOO_MANY_REQUESTS : UNAUTHORIZED;
+        var errorResponse = createErrorResponse(exception, status, exchange);
         return writeErrorResponse(errorResponse, exchange);
     }
 

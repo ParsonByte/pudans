@@ -34,10 +34,6 @@ public class AuditWal {
                 : properties.getWorkDir().resolve(DIRECTORY);
     }
 
-    public Path getDirectory() {
-        return directory;
-    }
-
     public void append(AuditRecord record) {
         var serialized = serialize(record);
         synchronized (writeLock) {

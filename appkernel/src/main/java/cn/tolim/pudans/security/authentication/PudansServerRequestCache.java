@@ -45,11 +45,6 @@ public class PudansServerRequestCache extends WebSessionServerRequestCache {
     }
 
     @Override
-    public Mono<URI> getRedirectUri(ServerWebExchange exchange) {
-        return super.getRedirectUri(exchange);
-    }
-
-    @Override
     public Mono<ServerHttpRequest> removeMatchingRequest(ServerWebExchange exchange) {
         return getRedirectUri(exchange).flatMap(redirectUri -> {
             if (redirectUri.getFragment() != null) {

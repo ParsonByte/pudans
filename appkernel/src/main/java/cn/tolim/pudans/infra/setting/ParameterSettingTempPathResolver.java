@@ -30,7 +30,9 @@ public class ParameterSettingTempPathResolver {
         var relative = StringUtils.hasText(tempPath) ? tempPath : DEFAULT_TEMP_PATH;
         var workDir = pudansProperties.getWorkDir().toAbsolutePath().normalize();
         var resolved = workDir.resolve(relative).normalize();
-        if (!resolved.startsWith(workDir)) {
+        if (!resolved.startsWith(workDir)
+                || resolved.equals(workDir)
+                || resolved.startsWith(workDir.resolve("keys"))) {
             log.warn("忽略数据目录之外的参数临时路径：{}", tempPath);
             return workDir.resolve(DEFAULT_TEMP_PATH);
         }

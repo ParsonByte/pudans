@@ -8,9 +8,4 @@ public interface PasswordResetAvailabilityProviders {
 
 
     Flux<PasswordResetMethod> getAvailableMethods();
-
-
-    default Flux<PasswordResetMethod> getOtherAvailableMethods(String methodName) {
-        return getAvailableMethods().filter(method -> !method.getName().equals(methodName));
-    }
 }

@@ -2,7 +2,6 @@ package cn.tolim.pudans.extension.index;
 
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.index.MultiValueIndexSpec;
-import cn.tolim.pudans.contract.extension.index.UnknownKey;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,14 +15,11 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 
-@Slf4j
 class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements ValueIndexQuery<K>, Index<E, K> {
 
     private final ConcurrentNavigableMap<K, Set<String>> index;
@@ -190,12 +186,6 @@ class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements V
                 .collect(Collectors.toCollection(HashSet::new));
     }
 
-    private void ensureStringKeyType() {
-        Assert.isTrue(
-                getKeyType() == String.class || getKeyType() == UnknownKey.class,
-                "此操作的键类型必须为 String");
-    }
-
     class UpsertTransactionalOperation implements TransactionalOperation {
 
         private final String primaryKey;
@@ -228,7 +218,11 @@ class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements V
             if (Objects.equals(previousKeys, newKeys)) {
                 return;
             }
-            invertedIndex.put(primaryKey, newKeys);
+            if (newKeys == null) {
+                invertedIndex.remove(primaryKey);
+            } else {
+                invertedIndex.put(primaryKey, newKeys);
+            }
 
             if (!CollectionUtils.isEmpty(previousKeys)) {
                 previousKeys.forEach(key -> index.computeIfPresent(key, (k, v) -> {

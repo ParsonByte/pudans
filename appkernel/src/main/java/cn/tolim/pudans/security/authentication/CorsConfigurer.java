@@ -50,7 +50,8 @@ public class CorsConfigurer implements SecurityConfigurer {
                 HttpHeaders.ACCEPT,
                 "X-XSRF-TOKEN",
                 HttpHeaders.COOKIE));
-        configuration.setAllowCredentials(true);
+        // 默认跨域不携带凭据，Cookie 跨域场景请通过显式配置开启。
+        configuration.setAllowCredentials(false);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH"));
         source.registerCorsConfiguration(ApiGroups.API_ROOT + "/**", configuration);
         return source;
