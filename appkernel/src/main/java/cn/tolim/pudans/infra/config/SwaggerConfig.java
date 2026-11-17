@@ -69,6 +69,7 @@ public class SwaggerConfig {
                 .group("apis_api_v1alpha1")
                 .displayName("Pudans API V1alpha1")
                 .pathsToMatch(ApiGroups.API_ROOT + "/**", "/login/**")
+                .pathsToExclude(ApiGroups.API_ROOT + "/systemconfigs/**")
                 .build();
     }
 
