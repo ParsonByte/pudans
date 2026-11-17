@@ -6,9 +6,11 @@ import cn.tolim.pudans.core.rbac.service.UiPermissionService;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
+import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
 import cn.tolim.pudans.security.authentication.AuthProviderService;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -31,11 +33,18 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class LoginPublicEndpoint implements CustomEndpoint {
 
+    private static final String FEISHU_PROVIDER = "feishu";
+
+    private static final String FEISHU_AUTHORIZATION_PATH =
+            ApiGroups.API_PREFIX + "/oauth2/authorization/feishu";
+
     private final SecurityProperties securityProperties;
 
     private final UserService userService;
 
     private final AuthProviderService authProviderService;
+
+    private final FeishuProperties feishuProperties;
 
     private final InitializationStateGetter initializationStateGetter;
 
@@ -123,9 +132,42 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                         provider.getSpec().getLogo(),
                         provider.getSpec().getAuthenticationUrl(),
                         provider.getSpec().getHelpPage()))
-                .sort(Comparator.comparing(LoginProviderView::displayName, String.CASE_INSENSITIVE_ORDER))
                 .collectList()
+                .map(this::includeFeishu)
                 .flatMap(views -> ServerResponse.ok().bodyValue(views));
+    }
+
+    private List<LoginProviderView> includeFeishu(List<LoginProviderView> views) {
+        var providers = new ArrayList<>(views);
+        var feishuConfigured = feishuProperties.isEnabled()
+                && StringUtils.hasText(feishuProperties.getAppId())
+                && StringUtils.hasText(feishuProperties.getAppSecret());
+        var feishuIndex = -1;
+
+        for (var index = 0; index < providers.size(); index++) {
+            if (FEISHU_PROVIDER.equals(providers.get(index).name())) {
+                feishuIndex = index;
+                break;
+            }
+        }
+
+        var existing = feishuIndex >= 0 ? providers.get(feishuIndex) : null;
+        var feishu = new LoginProviderView(
+                FEISHU_PROVIDER,
+                "飞书",
+                existing == null ? null : existing.logo(),
+                feishuConfigured ? FEISHU_AUTHORIZATION_PATH : null,
+                existing == null ? null : existing.helpPage());
+
+        if (feishuIndex >= 0) {
+            providers.set(feishuIndex, feishu);
+        } else {
+            providers.add(feishu);
+        }
+
+        return providers.stream()
+                .sorted(Comparator.comparing(LoginProviderView::displayName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
     }
 
     private Mono<ServerResponse> status(ServerRequest request) {
