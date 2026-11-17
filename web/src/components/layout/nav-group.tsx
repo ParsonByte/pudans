@@ -78,7 +78,11 @@ function SidebarMenuCollapsible({ item, href }: { item: NavCollapsible; href: st
   const { setOpenMobile } = useSidebar();
 
   return (
-    <Collapsible asChild defaultOpen={checkIsActive(href, item)} className="group/collapsible">
+    <Collapsible
+      asChild
+      defaultOpen={checkIsActive(href, item, true)}
+      className="group/collapsible"
+    >
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton tooltip={item.title}>
@@ -140,10 +144,11 @@ function SidebarMenuCollapsedDropdown({ item, href }: { item: NavCollapsible; hr
   );
 }
 
-function checkIsActive(href: string, item: NavItem): boolean {
+function checkIsActive(href: string, item: NavItem, mainNav = false): boolean {
   return (
     href === item.url ||
     href.split("?")[0] === item.url ||
-    Boolean(item.items?.some((subItem) => subItem.url === href))
+    Boolean(item.items?.some((subItem) => subItem.url === href)) ||
+    (mainNav && href.split("/")[1] !== "" && href.split("/")[1] === item?.url?.split("/")[1])
   );
 }
