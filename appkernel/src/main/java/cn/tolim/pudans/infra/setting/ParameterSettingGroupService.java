@@ -78,9 +78,13 @@ public class ParameterSettingGroupService {
         return NEW_GROUPS.contains(group) || LEGACY_GROUPS.contains(group);
     }
 
+    private static <T> Mono<T> unknownGroupError(String group) {
+        return Mono.error(new ServerWebInputException("未知的参数设置组：" + group));
+    }
+
     public Mono<ObjectNode> getGroup(String group) {
         if (!isKnownGroup(group)) {
-            return Mono.error(new ServerWebInputException("未知的参数设置组：" + group));
+            return unknownGroupError(group);
         }
         return fetcher.fetch(group, ObjectNode.class)
                 .switchIfEmpty(Mono.fromSupplier(JsonMapper.shared()::createObjectNode))
@@ -94,6 +98,9 @@ public class ParameterSettingGroupService {
     }
 
     public Mono<ObjectNode> getLegacyGroup(String group) {
+        if (!isKnownGroup(group)) {
+            return unknownGroupError(group);
+        }
         return fetcher.fetch(group, ObjectNode.class)
                 .switchIfEmpty(Mono.fromSupplier(JsonMapper.shared()::createObjectNode))
                 .map(node -> {
@@ -106,6 +113,9 @@ public class ParameterSettingGroupService {
     }
 
     public Mono<UpdateResult> updateLegacyGroup(String group, ObjectNode incoming) {
+        if (!isKnownGroup(group)) {
+            return unknownGroupError(group);
+        }
         if (incoming == null) {
             return Mono.error(new ServerWebInputException("请求体不能为空。"));
         }
@@ -140,7 +150,7 @@ public class ParameterSettingGroupService {
 
     public Mono<UpdateResult> updateGroup(String group, ObjectNode incoming) {
         if (!isKnownGroup(group)) {
-            return Mono.error(new ServerWebInputException("未知的参数设置组：" + group));
+            return unknownGroupError(group);
         }
         if (incoming == null) {
             return Mono.error(new ServerWebInputException("请求体不能为空。"));
