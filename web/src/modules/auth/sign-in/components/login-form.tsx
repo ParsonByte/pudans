@@ -7,7 +7,7 @@ import { isAxiosError } from "axios";
 import { CheckCircle2, Fingerprint, Loader2, LogIn, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
-import { FeishuIcon } from "@/components/icons/feishu-icon";
+import { FeishuIcon } from "@/assets/custom/icon-feishu";
 import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
