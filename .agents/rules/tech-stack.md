@@ -36,6 +36,8 @@
 - Tables use TanStack Table, charts use Recharts, dates use date-fns, icons use `lucide-react` (plus `@iconify/react` for icon sets Lucide does not cover), toasts use `sonner`, command menus use `cmdk`. Transitions use `react-transition-group` and `react-animate-height`; viewport detection uses `react-intersection-observer`; keyboard shortcuts use `react-hotkeys-hook`; virtual lists use `react-virtuoso`; fuzzy search uses `fuse.js` with `react-highlight-words`; drag and drop uses `react-dnd` with `react-dnd-html5-backend` and `react-draggable`; color picking uses `@uiw/react-color-sketch` with `@uiw/color-convert`; QR codes use `qrcode.react`; loading progress uses `react-top-loading-bar`; OTP input uses `input-otp`; date picking uses `react-day-picker`.
 - Styling uses Tailwind CSS v4 through `@tailwindcss/vite`, `tw-animate-css` for animation utilities, and the shadcn/ui theme tokens in `web/src/styles/_global.css`. Component variants use `class-variance-authority`; class names merge through `cn` (the `cn` package, re-exported by `@/lib/utils`), and `clsx` and `tailwind-merge` are also part of the approved toolchain. Use the `@/` alias for `web/src`; do not add another class-name or styling utility.
 - Lint with ESLint (`@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `@tanstack/eslint-plugin-query`), format with Prettier (`@trivago/prettier-plugin-sort-imports`, `prettier-plugin-tailwindcss`), and detect unused files, exports and dependencies with Knip; do not bypass or weaken these checks.
+- Transient user feedback uses the global Sonner toaster: mount the shadcn `Toaster` from `web/src/components/ui/sonner.tsx` once in the root route and call `toast` from `sonner` for errors, successes, warnings and notices. Do not render inline alert banners, status strips or disabled button labels for transient messages.
+- Login method buttons use concise provider labels (`通行密钥`, `飞书`); do not append action wording such as 「使用…登录」.
 - Use `@faker-js/faker` only for development fixtures; never ship generated fake data in a production path.
 
 ### shadcn/ui
@@ -51,6 +53,7 @@
 
 - Do not introduce another component library such as MUI, Ant Design, Chakra UI or Bootstrap, and do not hand-create or hand-copy any file under `web/src/components/ui`; missing components are added with the shadcn CLI.
 - Do not add a second router, data-fetching, form, validation, global-state or styling library.
+- Do not add a second notification library, and do not render inline alert banners for transient user feedback.
 - Do not add pnpm, yarn or bun lockfiles under `web/`.
 - Do not edit `web/src/routeTree.gen.ts`, `web/dist/` or other generated output by hand.
 
