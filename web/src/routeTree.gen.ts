@@ -21,7 +21,13 @@ import { Route as errors404RouteImport } from './routes/(errors)/404'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as setupSetupRouteImport } from './routes/(setup)/setup'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedWorkspaceRouteRouteImport } from './routes/_authenticated/_workspace/route'
+import { Route as AuthenticatedWorkspaceindexIndexRouteImport } from './routes/_authenticated/_workspace/(index)/index'
+import { Route as AuthenticatedWorkspaceconsoleConsoleIndexRouteImport } from './routes/_authenticated/_workspace/(console)/console/index'
+import { Route as AuthenticatedWorkspaceconsoleConsoleRolesRouteImport } from './routes/_authenticated/_workspace/(console)/console/roles'
+import { Route as AuthenticatedWorkspaceconsoleConsoleSettingsRouteImport } from './routes/_authenticated/_workspace/(console)/console/settings'
+import { Route as AuthenticatedWorkspaceconsoleConsoleUserGroupsRouteImport } from './routes/_authenticated/_workspace/(console)/console/user-groups'
+import { Route as AuthenticatedWorkspaceconsoleConsoleUsersRouteImport } from './routes/_authenticated/_workspace/(console)/console/users'
 
 const authRouteRoute = authRouteRouteImport.update({
   id: '/(auth)',
@@ -80,14 +86,50 @@ const setupSetupRoute = setupSetupRouteImport.update({
   path: '/setup',
   getParentRoute: () => setupRouteRoute,
 } as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
+const AuthenticatedWorkspaceRouteRoute =
+  AuthenticatedWorkspaceRouteRouteImport.update({
+    id: '/_workspace',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceindexIndexRoute =
+  AuthenticatedWorkspaceindexIndexRouteImport.update({
+    id: '/(index)/',
+    path: '/',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceconsoleConsoleIndexRoute =
+  AuthenticatedWorkspaceconsoleConsoleIndexRouteImport.update({
+    id: '/(console)/console/',
+    path: '/console/',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceconsoleConsoleRolesRoute =
+  AuthenticatedWorkspaceconsoleConsoleRolesRouteImport.update({
+    id: '/(console)/console/roles',
+    path: '/console/roles',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceconsoleConsoleSettingsRoute =
+  AuthenticatedWorkspaceconsoleConsoleSettingsRouteImport.update({
+    id: '/(console)/console/settings',
+    path: '/console/settings',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceconsoleConsoleUserGroupsRoute =
+  AuthenticatedWorkspaceconsoleConsoleUserGroupsRouteImport.update({
+    id: '/(console)/console/user-groups',
+    path: '/console/user-groups',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceconsoleConsoleUsersRoute =
+  AuthenticatedWorkspaceconsoleConsoleUsersRouteImport.update({
+    id: '/(console)/console/users',
+    path: '/console/users',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
+  '/': typeof AuthenticatedWorkspaceindexIndexRoute
   '/forgot-password': typeof authForgotPasswordRoute
   '/legal': typeof authLegalRoute
   '/sign-in': typeof authSignInRoute
@@ -97,9 +139,14 @@ export interface FileRoutesByFullPath {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/setup': typeof setupSetupRoute
+  '/console/roles': typeof AuthenticatedWorkspaceconsoleConsoleRolesRoute
+  '/console/settings': typeof AuthenticatedWorkspaceconsoleConsoleSettingsRoute
+  '/console/user-groups': typeof AuthenticatedWorkspaceconsoleConsoleUserGroupsRoute
+  '/console/users': typeof AuthenticatedWorkspaceconsoleConsoleUsersRoute
+  '/console/': typeof AuthenticatedWorkspaceconsoleConsoleIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof AuthenticatedIndexRoute
+  '/': typeof AuthenticatedWorkspaceindexIndexRoute
   '/forgot-password': typeof authForgotPasswordRoute
   '/legal': typeof authLegalRoute
   '/sign-in': typeof authSignInRoute
@@ -109,12 +156,18 @@ export interface FileRoutesByTo {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/setup': typeof setupSetupRoute
+  '/console/roles': typeof AuthenticatedWorkspaceconsoleConsoleRolesRoute
+  '/console/settings': typeof AuthenticatedWorkspaceconsoleConsoleSettingsRoute
+  '/console/user-groups': typeof AuthenticatedWorkspaceconsoleConsoleUserGroupsRoute
+  '/console/users': typeof AuthenticatedWorkspaceconsoleConsoleUsersRoute
+  '/console': typeof AuthenticatedWorkspaceconsoleConsoleIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(auth)': typeof authRouteRouteWithChildren
   '/(setup)': typeof setupRouteRouteWithChildren
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_authenticated/_workspace': typeof AuthenticatedWorkspaceRouteRouteWithChildren
   '/(auth)/forgot-password': typeof authForgotPasswordRoute
   '/(auth)/legal': typeof authLegalRoute
   '/(auth)/sign-in': typeof authSignInRoute
@@ -124,7 +177,12 @@ export interface FileRoutesById {
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/(setup)/setup': typeof setupSetupRoute
-  '/_authenticated/': typeof AuthenticatedIndexRoute
+  '/_authenticated/_workspace/(index)/': typeof AuthenticatedWorkspaceindexIndexRoute
+  '/_authenticated/_workspace/(console)/console/roles': typeof AuthenticatedWorkspaceconsoleConsoleRolesRoute
+  '/_authenticated/_workspace/(console)/console/settings': typeof AuthenticatedWorkspaceconsoleConsoleSettingsRoute
+  '/_authenticated/_workspace/(console)/console/user-groups': typeof AuthenticatedWorkspaceconsoleConsoleUserGroupsRoute
+  '/_authenticated/_workspace/(console)/console/users': typeof AuthenticatedWorkspaceconsoleConsoleUsersRoute
+  '/_authenticated/_workspace/(console)/console/': typeof AuthenticatedWorkspaceconsoleConsoleIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -139,6 +197,11 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/setup'
+    | '/console/roles'
+    | '/console/settings'
+    | '/console/user-groups'
+    | '/console/users'
+    | '/console/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -151,11 +214,17 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/setup'
+    | '/console/roles'
+    | '/console/settings'
+    | '/console/user-groups'
+    | '/console/users'
+    | '/console'
   id:
     | '__root__'
     | '/(auth)'
     | '/(setup)'
     | '/_authenticated'
+    | '/_authenticated/_workspace'
     | '/(auth)/forgot-password'
     | '/(auth)/legal'
     | '/(auth)/sign-in'
@@ -165,7 +234,12 @@ export interface FileRouteTypes {
     | '/(errors)/500'
     | '/(errors)/503'
     | '/(setup)/setup'
-    | '/_authenticated/'
+    | '/_authenticated/_workspace/(index)/'
+    | '/_authenticated/_workspace/(console)/console/roles'
+    | '/_authenticated/_workspace/(console)/console/settings'
+    | '/_authenticated/_workspace/(console)/console/user-groups'
+    | '/_authenticated/_workspace/(console)/console/users'
+    | '/_authenticated/_workspace/(console)/console/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -265,12 +339,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof setupSetupRouteImport
       parentRoute: typeof setupRouteRoute
     }
-    '/_authenticated/': {
-      id: '/_authenticated/'
+    '/_authenticated/_workspace': {
+      id: '/_authenticated/_workspace'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedWorkspaceRouteRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/_workspace/(index)/': {
+      id: '/_authenticated/_workspace/(index)/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      preLoaderRoute: typeof AuthenticatedWorkspaceindexIndexRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(console)/console/': {
+      id: '/_authenticated/_workspace/(console)/console/'
+      path: '/console'
+      fullPath: '/console/'
+      preLoaderRoute: typeof AuthenticatedWorkspaceconsoleConsoleIndexRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(console)/console/roles': {
+      id: '/_authenticated/_workspace/(console)/console/roles'
+      path: '/console/roles'
+      fullPath: '/console/roles'
+      preLoaderRoute: typeof AuthenticatedWorkspaceconsoleConsoleRolesRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(console)/console/settings': {
+      id: '/_authenticated/_workspace/(console)/console/settings'
+      path: '/console/settings'
+      fullPath: '/console/settings'
+      preLoaderRoute: typeof AuthenticatedWorkspaceconsoleConsoleSettingsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(console)/console/user-groups': {
+      id: '/_authenticated/_workspace/(console)/console/user-groups'
+      path: '/console/user-groups'
+      fullPath: '/console/user-groups'
+      preLoaderRoute: typeof AuthenticatedWorkspaceconsoleConsoleUserGroupsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(console)/console/users': {
+      id: '/_authenticated/_workspace/(console)/console/users'
+      path: '/console/users'
+      fullPath: '/console/users'
+      preLoaderRoute: typeof AuthenticatedWorkspaceconsoleConsoleUsersRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
     }
   }
 }
@@ -303,12 +419,43 @@ const setupRouteRouteWithChildren = setupRouteRoute._addFileChildren(
   setupRouteRouteChildren,
 )
 
+interface AuthenticatedWorkspaceRouteRouteChildren {
+  AuthenticatedWorkspaceindexIndexRoute: typeof AuthenticatedWorkspaceindexIndexRoute
+  AuthenticatedWorkspaceconsoleConsoleRolesRoute: typeof AuthenticatedWorkspaceconsoleConsoleRolesRoute
+  AuthenticatedWorkspaceconsoleConsoleSettingsRoute: typeof AuthenticatedWorkspaceconsoleConsoleSettingsRoute
+  AuthenticatedWorkspaceconsoleConsoleUserGroupsRoute: typeof AuthenticatedWorkspaceconsoleConsoleUserGroupsRoute
+  AuthenticatedWorkspaceconsoleConsoleUsersRoute: typeof AuthenticatedWorkspaceconsoleConsoleUsersRoute
+  AuthenticatedWorkspaceconsoleConsoleIndexRoute: typeof AuthenticatedWorkspaceconsoleConsoleIndexRoute
+}
+
+const AuthenticatedWorkspaceRouteRouteChildren: AuthenticatedWorkspaceRouteRouteChildren =
+  {
+    AuthenticatedWorkspaceindexIndexRoute:
+      AuthenticatedWorkspaceindexIndexRoute,
+    AuthenticatedWorkspaceconsoleConsoleRolesRoute:
+      AuthenticatedWorkspaceconsoleConsoleRolesRoute,
+    AuthenticatedWorkspaceconsoleConsoleSettingsRoute:
+      AuthenticatedWorkspaceconsoleConsoleSettingsRoute,
+    AuthenticatedWorkspaceconsoleConsoleUserGroupsRoute:
+      AuthenticatedWorkspaceconsoleConsoleUserGroupsRoute,
+    AuthenticatedWorkspaceconsoleConsoleUsersRoute:
+      AuthenticatedWorkspaceconsoleConsoleUsersRoute,
+    AuthenticatedWorkspaceconsoleConsoleIndexRoute:
+      AuthenticatedWorkspaceconsoleConsoleIndexRoute,
+  }
+
+const AuthenticatedWorkspaceRouteRouteWithChildren =
+  AuthenticatedWorkspaceRouteRoute._addFileChildren(
+    AuthenticatedWorkspaceRouteRouteChildren,
+  )
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedWorkspaceRouteRoute: typeof AuthenticatedWorkspaceRouteRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+  AuthenticatedWorkspaceRouteRoute:
+    AuthenticatedWorkspaceRouteRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
