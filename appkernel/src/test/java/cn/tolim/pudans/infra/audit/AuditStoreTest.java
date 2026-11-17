@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.relational.core.query.Query;
 import org.springframework.data.r2dbc.core.R2dbcEntityOperations;
 import org.springframework.transaction.ReactiveTransactionManager;
@@ -113,6 +114,25 @@ class AuditStoreTest {
 
     @Test
     void appendSkipsAnAuditRecordWhoseFingerprintAlreadyExists() {
+        when(activeRepository.existsByFingerprint(anyString())).thenReturn(Mono.just(true));
+
+        StepVerifier.create(store.append(record())).verifyComplete();
+
+        verify(activeRepository).existsByFingerprint(anyString());
+        verifyNoInteractions(entityOperations);
+    }
+
+    @Test
+    void appendTreatsAConcurrentDuplicateAsAlreadyRecorded() {
+        when(activeRepository.existsByFingerprint(anyString())).thenReturn(Mono.just(false));
+        when(archiveRepository.existsByFingerprint(anyString())).thenReturn(Mono.just(false));
+        when(entityOperations.insert(any(AuditRecordEntity.class)))
+                .thenReturn(Mono.error(new DuplicateKeyException("duplicate fingerprint")));
+
+        StepVerifier.create(store.append(record())).verifyComplete();
+    }
+
+    private static AuditRecord record() {
         var record = new AuditRecord();
         var metadata = new Metadata();
         metadata.setName("audit-1");
@@ -123,11 +143,6 @@ class AuditStoreTest {
         record.setRequestMethod("GET");
         record.setRequestPath("/apis/users/alice");
         record.setResult("SUCCESS");
-        when(activeRepository.existsByFingerprint(anyString())).thenReturn(Mono.just(true));
-
-        StepVerifier.create(store.append(record)).verifyComplete();
-
-        verify(activeRepository).existsByFingerprint(anyString());
-        verifyNoInteractions(entityOperations);
+        return record;
     }
 }

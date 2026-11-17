@@ -183,7 +183,11 @@ ALTER TABLE audit_record ADD COLUMN IF NOT EXISTS fingerprint VARCHAR(128);
 @
 ALTER TABLE audit_record_archive ADD COLUMN IF NOT EXISTS fingerprint VARCHAR(128);
 @
-CREATE INDEX IF NOT EXISTS idx_audit_record_fingerprint ON audit_record (fingerprint);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_audit_record_fingerprint ON audit_record (fingerprint);
 @
-CREATE INDEX IF NOT EXISTS idx_audit_archive_fingerprint ON audit_record_archive (fingerprint);
+DROP INDEX IF EXISTS idx_audit_record_fingerprint;
+@
+CREATE UNIQUE INDEX IF NOT EXISTS uq_audit_archive_fingerprint ON audit_record_archive (fingerprint);
+@
+DROP INDEX IF EXISTS idx_audit_archive_fingerprint;
 @
