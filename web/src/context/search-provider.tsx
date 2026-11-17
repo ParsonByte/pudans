@@ -28,10 +28,21 @@ export function SearchProvider({ children, navGroups }: SearchProviderProps) {
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
-      if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault();
-        setOpen((currentOpen) => !currentOpen);
+      const target = event.target;
+
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      ) {
+        return;
       }
+
+      if (event.key !== "/" || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      event.preventDefault();
+      setOpen(true);
     };
 
     document.addEventListener("keydown", down);
