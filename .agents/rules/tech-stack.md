@@ -18,7 +18,6 @@
 
 ## Prohibited
 
-- Do not introduce frontend technology: Node, pnpm, npm, Vite, React, TypeScript, frontend build tools or package manager files.
 - Do not introduce PF4J, plugin runtimes, plugin SPI, the extension API group, `ExtensionDefinition`, `ExtensionPointDefinition`, `Plugin` or `ReverseProxy`.
 - Do not introduce JDBC, `JdbcTemplate`, JPA, Hibernate, MyBatis, jOOQ or blocking database access.
 - Do not introduce Flyway or Liquibase.
