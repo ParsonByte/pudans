@@ -8,6 +8,12 @@ export const UI_PERMISSION_USERS_MANAGE = "users:manage";
 
 export const UI_PERMISSION_ROLES_MANAGE = "roles:manage";
 
+export const UI_PERMISSION_AUTH_PROVIDERS_MANAGE = "auth-providers:manage";
+
+export const UI_PERMISSION_RISK_MANAGE = "risk:manage";
+
+export const UI_PERMISSION_AUDIT_VIEW = "audit:view";
+
 export function hasUiPermission(
   permissions: readonly string[] | undefined,
   required: string,
