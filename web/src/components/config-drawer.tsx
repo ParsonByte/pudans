@@ -68,7 +68,8 @@ function ConfigOption({ item, isTheme = false }: { item: ConfigOptionData; isThe
       value={item.value}
       aria-label={`选择${item.label}`}
       className={cn(
-        "group relative block aspect-auto size-auto w-full shrink-0 cursor-pointer rounded-md border-0 bg-transparent p-0 text-left shadow-none",
+        "group relative block aspect-auto size-auto w-full shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-1 pb-2 text-left shadow-none transition-colors",
+        "data-[state=checked]:bg-muted/60! data-[state=checked]:text-foreground",
         "after:hidden focus-visible:ring-0",
         "data-checked:border-transparent data-checked:bg-transparent data-checked:text-inherit",
       )}
@@ -86,7 +87,9 @@ function ConfigOption({ item, isTheme = false }: { item: ConfigOptionData; isThe
         />
         <CircleCheck className="absolute top-0 right-0 size-6 translate-x-1/2 -translate-y-1/2 fill-foreground stroke-background group-data-[state=unchecked]:hidden" />
       </span>
-      <span className="mt-2 block text-center text-sm font-medium">{item.label}</span>
+      <span className="mt-2 block text-center text-sm font-medium text-foreground">
+        {item.label}
+      </span>
     </RadioGroupItem>
   );
 }
@@ -134,7 +137,7 @@ export function ConfigDrawer() {
             variant="destructive"
             onClick={handleReset}
             aria-label="恢复所有设置为默认值"
-            className="w-full bg-destructive text-white hover:bg-destructive/90"
+            className="w-full"
           >
             恢复默认
           </Button>

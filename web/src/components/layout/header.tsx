@@ -1,6 +1,5 @@
 import { type ComponentProps, type Ref, useEffect, useState } from "react";
 
-import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +10,7 @@ type HeaderProps = ComponentProps<"header"> & {
 
 export function Header({ className, fixed, children, ...props }: HeaderProps) {
   const [offset, setOffset] = useState(0);
+  const scrolled = Boolean(fixed && offset > 10);
 
   useEffect(() => {
     const onScroll = () => {
@@ -24,24 +24,18 @@ export function Header({ className, fixed, children, ...props }: HeaderProps) {
 
   return (
     <header
-      className={cn(
-        "z-50 h-16",
-        fixed && "peer/header sticky top-0 w-[inherit]",
-        offset > 10 && fixed ? "shadow" : "shadow-none",
-        className,
-      )}
+      className={cn("z-50 h-16", fixed && "peer/header sticky top-0 w-[inherit]", className)}
       {...props}
     >
       <div
         className={cn(
-          "relative flex h-full items-center gap-3 p-4 sm:gap-4",
-          offset > 10 &&
-            fixed &&
-            "after:absolute after:inset-0 after:-z-10 after:bg-background/20 after:backdrop-blur-lg",
+          "relative flex h-full items-center gap-3 transition-all duration-200 sm:gap-4",
+          scrolled
+            ? "mx-3 my-2 h-12 rounded-full border bg-background/70 px-4 shadow-lg backdrop-blur-xl"
+            : "p-4",
         )}
       >
         <SidebarTrigger variant="outline" className="max-md:scale-125" />
-        <Separator orientation="vertical" className="h-6" />
         {children}
       </div>
     </header>
