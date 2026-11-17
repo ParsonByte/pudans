@@ -50,8 +50,7 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
         var registrationId = oauth2.getAuthorizedClientRegistrationId();
         var oauth2User = oauth2.getPrincipal();
         var preAuthentication = exchange.getAttribute(OAuth2LoginAttributes.PRE_AUTHENTICATION);
-        var twoFactorSatisfied = !(preAuthentication instanceof Authentication preAuth)
-                || !OAuth2TwoFactorSupport.requiresTwoFactor(preAuth);
+        var twoFactorSatisfied = OAuth2TwoFactorSupport.twoFactorSatisfied(preAuthentication);
         return connectionService
                 .updateUserConnectionIfPresent(registrationId, oauth2User)
                 .switchIfEmpty(Mono.defer(() -> preAuthentication instanceof Authentication preAuth

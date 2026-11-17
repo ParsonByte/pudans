@@ -45,4 +45,36 @@ class OAuth2TwoFactorSupportTest {
 
         assertThat(OAuth2TwoFactorSupport.requiresTwoFactor(pending)).isTrue();
     }
+
+    @Test
+    void absentPreviousAuthenticationIsNeverSatisfied() {
+        assertThat(OAuth2TwoFactorSupport.twoFactorSatisfied(null)).isFalse();
+        assertThat(OAuth2TwoFactorSupport.twoFactorSatisfied("no-authentication")).isFalse();
+    }
+
+    @Test
+    void previousAuthenticationWithTheFactorIsSatisfied() {
+        var user = twoFactorUser();
+        var withFactor = UsernamePasswordAuthenticationToken.authenticated(
+                user,
+                "",
+                List.of(
+                        new SimpleGrantedAuthority("ROLE_normal-role"),
+                        new SimpleGrantedAuthority(
+                                ROLE_PREFIX + TWO_FACTOR_AUTHENTICATED_ROLE_NAME)));
+
+        assertThat(OAuth2TwoFactorSupport.twoFactorSatisfied(withFactor)).isTrue();
+    }
+
+    @Test
+    void previousAuthenticationWithoutTheFactorIsNotSatisfied() {
+        var user = twoFactorUser();
+        var withoutFactor = UsernamePasswordAuthenticationToken.authenticated(
+                user, "", user.getAuthorities());
+
+        assertThat(OAuth2TwoFactorSupport.twoFactorSatisfied(withoutFactor)).isFalse();
+        assertThat(OAuth2TwoFactorSupport.twoFactorSatisfied(
+                        new TwoFactorAuthentication(withoutFactor)))
+                .isFalse();
+    }
 }
