@@ -99,6 +99,16 @@ class SuperAdminResolverTest {
     }
 
     @Test
+    void lookupErrorIsPropagatedInsteadOfFailingOpen() {
+        when(reactiveClient.fetch(UserGroupBinding.class, "alice-super-admins-binding"))
+                .thenReturn(Mono.error(new IllegalStateException("db down")));
+
+        StepVerifier.create(resolver.hasSuperAdminBinding("alice"))
+                .expectError(IllegalStateException.class)
+                .verify();
+    }
+
+    @Test
     void canonicalBindingRequiresExactlyTheOwnerAsSubject() {
         var binding = canonicalBinding("alice");
         binding.setSubjects(new java.util.LinkedList<>(java.util.List.of(

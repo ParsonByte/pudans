@@ -31,6 +31,7 @@ import reactor.core.publisher.Mono;
 class SudoService {
 
     static final String SESSION_ATTRIBUTE = "pudans.sudo.expiresAt";
+    static final String SESSION_USERNAME_ATTRIBUTE = "pudans.sudo.username";
     static final Duration SUDO_TTL = Duration.ofMinutes(30);
     private final List<SudoVerificationProvider> providers;
     private final UserService userService;
@@ -66,10 +67,15 @@ class SudoService {
     Mono<SudoStatus> status(ServerWebExchange exchange) {
         return requireSessionAuthentication()
                 .flatMap(auth -> Mono.zip(
-                        availableMethods(auth.getName()),
-                        expiresAt(exchange).defaultIfEmpty(Instant.EPOCH),
-                        (methods, expiresAt) -> {
-                            var active = expiresAt.isAfter(clock.instant());
+                                availableMethods(auth.getName()),
+                                expiresAt(exchange).defaultIfEmpty(Instant.EPOCH),
+                                sudoUsername(exchange).defaultIfEmpty(""))
+                        .map(tuple -> {
+                            var methods = tuple.getT1();
+                            var expiresAt = tuple.getT2();
+                            var sudoUsername = tuple.getT3();
+                            var active = sudoUsername.equals(auth.getName())
+                                    && expiresAt.isAfter(clock.instant());
                             return new SudoStatus(active, active ? expiresAt : null, methods);
                         }));
     }
@@ -90,7 +96,7 @@ class SudoService {
                         RiskScene.SUDO_CONFIRM,
                         method,
                         (user, provider) -> provider.verify(user, code))
-                        .then(Mono.defer(() -> activate(exchange)))
+                        .then(Mono.defer(() -> activate(exchange, auth.getName())))
                         .doOnSuccess(
                                 unused -> log.info("用户 '{}' 已通过 '{}' 完成安全确认", auth.getName(), method))
                         .doOnError(error ->
@@ -113,7 +119,7 @@ class SudoService {
     }
 
     Mono<Void> requireSudo(ServerWebExchange exchange, String username) {
-        return isActive(exchange).flatMap(active -> {
+        return isActive(exchange, username).flatMap(active -> {
             if (active) {
                 return Mono.empty();
             }
@@ -129,10 +135,17 @@ class SudoService {
         });
     }
 
-    Mono<Boolean> isActive(ServerWebExchange exchange) {
+    Mono<Boolean> isActive(ServerWebExchange exchange, String username) {
         return expiresAt(exchange)
-                .map(expiresAt -> expiresAt.isAfter(clock.instant()))
+                .flatMap(expiresAt -> sudoUsername(exchange)
+                        .map(sudoUsername -> sudoUsername.equals(username)
+                                && expiresAt.isAfter(clock.instant())))
                 .defaultIfEmpty(false);
+    }
+
+    private Mono<String> sudoUsername(ServerWebExchange exchange) {
+        return exchange.getSession()
+                .mapNotNull(session -> session.getAttribute(SESSION_USERNAME_ATTRIBUTE));
     }
 
     Mono<List<SudoMethod>> availableMethods(String username) {
@@ -163,12 +176,15 @@ class SudoService {
                 .switchIfEmpty(Mono.error(() -> new ServerWebInputException("Sudo 验证方式不可用")));
     }
 
-    private Mono<Void> activate(ServerWebExchange exchange) {
+    private Mono<Void> activate(ServerWebExchange exchange, String username) {
 
 
         var expiresAt = clock.instant().plus(SUDO_TTL);
         return exchange.getSession()
-                .doOnNext(session -> session.getAttributes().put(SESSION_ATTRIBUTE, expiresAt.toEpochMilli()))
+                .doOnNext(session -> {
+                    session.getAttributes().put(SESSION_ATTRIBUTE, expiresAt.toEpochMilli());
+                    session.getAttributes().put(SESSION_USERNAME_ATTRIBUTE, username);
+                })
                 .then();
     }
 

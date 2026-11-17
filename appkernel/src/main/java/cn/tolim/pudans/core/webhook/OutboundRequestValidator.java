@@ -34,6 +34,16 @@ public class OutboundRequestValidator {
             return true;
         }
         var bytes = address.getAddress();
+        if (bytes.length == 4) {
+            var first = Byte.toUnsignedInt(bytes[0]);
+            var second = Byte.toUnsignedInt(bytes[1]);
+            if (first == 0
+                    || (first == 100 && second >= 64 && second <= 127)
+                    || (first == 198 && (second == 18 || second == 19))
+                    || first >= 240) {
+                return true;
+            }
+        }
         if (bytes.length == 16) {
             var first = bytes[0] & 0xFE;
             if (first == 0xFC) {

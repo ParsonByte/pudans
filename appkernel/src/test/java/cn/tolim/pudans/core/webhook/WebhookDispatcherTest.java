@@ -94,6 +94,13 @@ class WebhookDispatcherTest {
     }
 
     @Test
+    void signatureIsSkippedWhenNoSecretIsConfigured() {
+        assertThat(WebhookDispatcher.sign(null, "1", "{}")).isNull();
+        assertThat(WebhookDispatcher.sign("", "1", "{}")).isNull();
+        assertThat(WebhookDispatcher.sign("secret", "1", "{}")).startsWith("sha256=");
+    }
+
+    @Test
     void ssrfTargetIsRejectedAndAnAuditedFailureIsRecorded() {
         start("http://127.0.0.1:9999/hook");
 

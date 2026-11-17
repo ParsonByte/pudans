@@ -70,6 +70,10 @@ public class DefaultUserDetailService implements ReactiveUserDetailsService, Rea
     }
 
     private UserDetails withNewPassword(UserDetails userDetails, String newPassword) {
-        return User.withUserDetails(userDetails).password(newPassword).build();
+        var updated = User.withUserDetails(userDetails).password(newPassword).build();
+        if (userDetails instanceof PudansUserDetailsContract contract) {
+            return new PudansUser(updated, contract.isTwoFactorAuthEnabled(), contract.getTotpEncryptedSecret());
+        }
+        return updated;
     }
 }

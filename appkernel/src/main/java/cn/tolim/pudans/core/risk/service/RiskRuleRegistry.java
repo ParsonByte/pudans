@@ -7,7 +7,6 @@ import cn.tolim.pudans.contract.core.extension.RiskRule;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,10 +48,6 @@ public class RiskRuleRegistry {
         spec.setBlockSeconds(blockSeconds);
         spec.setAction(blockSeconds > 0 ? RiskRule.ACTION_BLOCK : RiskRule.ACTION_ALERT);
         return spec;
-    }
-
-    static List<String> scenes() {
-        return List.copyOf(defaults().keySet());
     }
 
     public RiskRule.Spec rule(String scene) {

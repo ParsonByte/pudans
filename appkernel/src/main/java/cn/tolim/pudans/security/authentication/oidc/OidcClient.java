@@ -43,6 +43,7 @@ public class OidcClient {
                 .queryParam("scope", String.join(" ", provider.getScopes()))
                 .queryParam("state", state)
                 .build()
+                .encode()
                 .toUriString();
     }
 

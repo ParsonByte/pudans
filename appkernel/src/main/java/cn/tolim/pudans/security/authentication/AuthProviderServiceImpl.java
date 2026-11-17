@@ -74,7 +74,7 @@ public class AuthProviderServiceImpl implements AuthProviderService {
     public Mono<AuthProvider> disable(String name) {
         return client.get(AuthProvider.class, name)
 
-                .filter(authProvider -> !privileged(authProvider))
+                .filter(authProvider -> !AuthProviderUtils.isPrivileged(authProvider))
                 .flatMap(authProvider -> updateAuthProviderEnabled(name, false).thenReturn(authProvider));
     }
 
@@ -170,13 +170,8 @@ public class AuthProviderServiceImpl implements AuthProviderService {
                 .authType(authProvider.getSpec().getAuthType())
                 .isBound(false)
                 .enabled(false)
-                .privileged(privileged(authProvider))
+                .privileged(AuthProviderUtils.isPrivileged(authProvider))
                 .build();
-    }
-
-    private boolean privileged(AuthProvider authProvider) {
-        return BooleanUtils.TRUE.equals(
-                MetadataUtil.nullSafeLabels(authProvider).get(AuthProvider.PRIVILEGED_LABEL));
     }
 
     private Mono<ConfigMap> updateAuthProviderEnabled(String name, boolean enabled) {

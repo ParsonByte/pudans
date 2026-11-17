@@ -123,8 +123,12 @@ public class AvatarStorageService {
         if (declaredLength > maxSize) {
             return Mono.error(tooLarge(maxSize));
         }
-        return DataBufferUtils.join(file.content())
+        return DataBufferUtils.join(
+                        file.content(), (int) Math.min(maxSize, Integer.MAX_VALUE))
                 .map(buffer -> toBytes(buffer, maxSize))
+                .onErrorMap(
+                        org.springframework.core.io.buffer.DataBufferLimitException.class,
+                        error -> tooLarge(maxSize))
                 .switchIfEmpty(Mono.error(new ApiException(
                         HttpStatus.BAD_REQUEST, "avatar-empty", "头像文件为空。")));
     }

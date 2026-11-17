@@ -141,11 +141,16 @@ public class AuditStore {
             criteria = criteria.and("result").is(result);
         }
         var pageable = PageRequest.of(0, MAX_GRAPH_SIZE, Sort.by(Sort.Direction.ASC, "id"));
+        var query = Query.query(criteria);
         var active = entityOperations
-                .select(Query.query(criteria), AuditRecordEntity.class)
+                .select(AuditRecordEntity.class)
+                .matching(query.with(pageable))
+                .all()
                 .map(entity -> entity.toRecord(false));
         var archived = entityOperations
-                .select(Query.query(criteria), AuditArchiveEntity.class)
+                .select(AuditArchiveEntity.class)
+                .matching(query.with(pageable))
+                .all()
                 .map(AuditArchiveEntity::toRecord);
         return Flux.merge(active, archived)
                 .map(record -> record.getTimestamp() == null

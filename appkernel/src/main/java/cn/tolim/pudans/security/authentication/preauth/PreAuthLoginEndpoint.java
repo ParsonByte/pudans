@@ -15,6 +15,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -52,10 +53,21 @@ class PreAuthLoginEndpoint {
                         "认证提供方 " + authProviderName + " 不存在或未启用。")))
                 .flatMap(ap -> {
                     var authenticationUrl = ap.getSpec().getAuthenticationUrl();
+                    if (!StringUtils.hasText(authenticationUrl)) {
+                        return Mono.error(new ServerWebInputException(
+                                "认证提供方 " + authProviderName + " 未配置认证地址。"));
+                    }
+                    URI location;
+                    try {
+                        location = URI.create(authenticationUrl);
+                    } catch (IllegalArgumentException e) {
+                        return Mono.error(new ServerWebInputException(
+                                "认证提供方 " + authProviderName + " 的认证地址无效。"));
+                    }
                     return parameterRequestCache
                             .saveParameter(request.exchange(), REMEMBER_ME_PARAMETER_NAME)
                             .then(Mono.defer(() -> ServerResponse.status(HttpStatus.FOUND)
-                                    .location(URI.create(authenticationUrl))
+                                    .location(location)
                                     .build()));
                 });
     }

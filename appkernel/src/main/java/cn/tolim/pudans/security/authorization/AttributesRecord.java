@@ -14,12 +14,6 @@ public class AttributesRecord implements Attributes {
     }
 
     @Override
-    public boolean isReadOnly() {
-        String verb = requestInfo.getVerb();
-        return "get".equals(verb) || "list".equals(verb) || "watch".equals(verb);
-    }
-
-    @Override
     public String getResource() {
         return requestInfo.getResource();
     }
@@ -57,10 +51,5 @@ public class AttributesRecord implements Attributes {
     @Override
     public String getSubName() {
         return requestInfo.getSubName();
-    }
-
-    @Override
-    public String getUserSpace() {
-        return requestInfo.getUserspace();
     }
 }

@@ -23,6 +23,7 @@ public class PudansConfiguration {
                     v -> v.withValueInclusion(NON_NULL).withContentInclusion(NON_NULL));
             builder.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
             builder.addModule(new JacksonAdapterModule(objectMapperProvider::getIfAvailable));
+            SensitiveExtensionMixins.apply(builder);
         };
     }
 

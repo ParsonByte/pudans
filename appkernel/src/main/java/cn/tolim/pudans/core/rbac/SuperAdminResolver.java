@@ -87,8 +87,7 @@ public class SuperAdminResolver {
         return reactiveClient
                 .fetch(UserGroupBinding.class, bindingName(username))
                 .map(binding -> !isDeleted(binding))
-                .defaultIfEmpty(false)
-                .onErrorResume(error -> Mono.just(false));
+                .defaultIfEmpty(false);
     }
 
     public boolean hasSuperAdminBindingBlocking(String username) {

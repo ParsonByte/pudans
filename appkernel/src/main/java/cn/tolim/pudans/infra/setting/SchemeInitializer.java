@@ -128,9 +128,14 @@ class SchemeInitializer implements SmartLifecycle {
                 IndexSpecs.<Device, String>single("spec.principalName", String.class)
                         .indexFunc(device -> device.getSpec().getPrincipalName())));
 
-        schemeManager.register(RememberMeToken.class, is -> is.add(
-                IndexSpecs.<RememberMeToken, String>single("spec.username", String.class)
-                        .indexFunc(token -> token.getSpec().getUsername())));
+        schemeManager.register(RememberMeToken.class, is -> {
+            is.add(IndexSpecs.<RememberMeToken, String>single("spec.username", String.class)
+                    .indexFunc(token -> token.getSpec().getUsername()));
+            is.add(IndexSpecs.<RememberMeToken, String>single("spec.series", String.class)
+                    .indexFunc(token -> token.getSpec().getSeries()));
+            is.add(IndexSpecs.<RememberMeToken, Instant>single("spec.lastUsed", Instant.class)
+                    .indexFunc(token -> token.getSpec().getLastUsed()));
+        });
 
         schemeManager.register(PersonalAccessToken.class, is -> is.add(
                 IndexSpecs.<PersonalAccessToken, String>single("spec.username", String.class)

@@ -66,6 +66,7 @@ class SudoModeWebFilter implements WebFilter {
                 pathMatchers(
                         HttpMethod.PUT,
                         ApiGroups.API_PREFIX + "/users/-/password",
+                        ApiGroups.API_PREFIX + "/users/*/password",
                         ApiGroups.API_PREFIX + "/users/-/self/password"),
                 pathMatchers(
                         HttpMethod.POST,

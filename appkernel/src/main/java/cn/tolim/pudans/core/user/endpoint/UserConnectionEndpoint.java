@@ -149,7 +149,9 @@ class UserConnectionEndpoint implements CustomEndpoint {
                                     var expectedState =
                                             (String) session.getAttributes().get(stateKey(body.registrationId()));
                                     session.getAttributes().remove(stateKey(body.registrationId()));
-                                    if (body.state() != null && expectedState != null && !expectedState.equals(body.state())) {
+                                    if (body.state() == null
+                                            || expectedState == null
+                                            || !expectedState.equals(body.state())) {
                                         return Mono.error(new ServerWebInputException("OIDC 状态无效。"));
                                     }
                                     return oidcClient

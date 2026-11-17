@@ -1,7 +1,6 @@
 package cn.tolim.pudans.infra.utils;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -119,14 +118,10 @@ public class IpAddressUtils {
     }
 
     private static InetAddress parseLiteral(String candidate) {
-        if (!StringUtils.hasText(candidate) || !candidate.matches("[0-9A-Fa-f:.%]+")) {
+        if (!StringUtils.hasText(candidate) || !com.google.common.net.InetAddresses.isInetAddress(candidate)) {
             return null;
         }
-        try {
-            return InetAddress.getByName(candidate);
-        } catch (UnknownHostException e) {
-            return null;
-        }
+        return com.google.common.net.InetAddresses.forString(candidate);
     }
 
     private record Cidr(byte[] network, int prefixLength) {

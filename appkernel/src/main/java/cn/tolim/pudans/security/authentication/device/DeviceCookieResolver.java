@@ -12,8 +12,6 @@ public interface DeviceCookieResolver {
 
     void setCookie(ServerWebExchange exchange, String value);
 
-    void expireCookie(ServerWebExchange exchange);
-
     String getCookieName();
 
     Duration getCookieMaxAge();

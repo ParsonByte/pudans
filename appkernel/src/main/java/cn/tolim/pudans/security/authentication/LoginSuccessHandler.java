@@ -4,6 +4,7 @@ import static cn.tolim.pudans.security.authentication.SecurityConstant.REMEMBER_
 
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.user.service.RefreshTokenService;
+import cn.tolim.pudans.infra.utils.PudansUtils;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
 import cn.tolim.pudans.security.authentication.login.PudansUser;
 import lombok.extern.slf4j.Slf4j;
@@ -61,15 +62,10 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
             container.eraseCredentials();
         }
 
-        ServerWebExchangeMatcher xhrMatcher = exchange -> {
-            if (exchange.getRequest()
-                    .getHeaders()
-                    .getOrEmpty("X-Requested-With")
-                    .contains("XMLHttpRequest")) {
-                return ServerWebExchangeMatcher.MatchResult.match();
-            }
-            return ServerWebExchangeMatcher.MatchResult.notMatch();
-        };
+        ServerWebExchangeMatcher xhrMatcher = exchange -> PudansUtils.isXhr(
+                        exchange.getRequest().getHeaders())
+                ? ServerWebExchangeMatcher.MatchResult.match()
+                : ServerWebExchangeMatcher.MatchResult.notMatch();
 
         var exchange = webFilterExchange.getExchange();
         exchange.getAttributes().put(AuditService.USERNAME_ATTRIBUTE, authentication.getName());

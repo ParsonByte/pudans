@@ -30,7 +30,6 @@ import reactor.core.publisher.Mono;
 class PasskeyAssertionEndpoint implements CustomEndpoint {
 
     private static final String CHALLENGE_ATTRIBUTE = PasskeyAssertionEndpoint.class.getName() + ".CHALLENGE";
-    private static final String USERNAME_ATTRIBUTE = PasskeyAssertionEndpoint.class.getName() + ".USERNAME";
 
     private final PasskeyService passkeyService;
 
@@ -91,10 +90,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                             : Mono.just(List.of());
                     return allowCredentials.flatMap(credentials -> request.exchange()
                             .getSession()
-                            .doOnNext(session -> {
-                                session.getAttributes().put(CHALLENGE_ATTRIBUTE, challenge);
-                                session.getAttributes().put(USERNAME_ATTRIBUTE, body.username());
-                            })
+                            .doOnNext(session -> session.getAttributes().put(CHALLENGE_ATTRIBUTE, challenge))
                             .then(ServerResponse.ok()
                                     .bodyValue(new PasskeyAssertionOptionsVo(Map.of(
                                             "challenge", challenge,

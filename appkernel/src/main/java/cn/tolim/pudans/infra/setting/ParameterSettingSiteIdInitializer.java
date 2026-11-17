@@ -1,6 +1,5 @@
 package cn.tolim.pudans.infra.setting;
 
-import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import java.time.Duration;

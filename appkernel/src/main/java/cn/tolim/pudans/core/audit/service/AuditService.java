@@ -124,10 +124,6 @@ public class AuditService {
         }
     }
 
-    public String nextTraceId() {
-        return AuditIdGenerator.next();
-    }
-
     public AuditRecord newRecord(String traceId, String uid, String operation) {
         var record = new AuditRecord();
         var metadata = new Metadata();
@@ -272,10 +268,6 @@ public class AuditService {
                 return Mono.empty();
             });
         });
-    }
-
-    public static Mono<AuditTrail> currentTrail() {
-        return Mono.deferContextual(contextView -> Mono.justOrEmpty(contextView.getOrEmpty(AuditTrail.class)));
     }
 
     public Flux<AuditRecord> findByTraceFlowId(String traceFlowId) {

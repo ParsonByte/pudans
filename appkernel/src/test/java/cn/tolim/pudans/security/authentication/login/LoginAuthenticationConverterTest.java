@@ -59,4 +59,20 @@ class LoginAuthenticationConverterTest {
 
         StepVerifier.create(converter.convert(exchange)).verifyComplete();
     }
+
+    @Test
+    void missingUsernameIsRejectedWithoutANullPointer() {
+        when(captchaService.loginEnabled()).thenReturn(Mono.just(false));
+        when(cryptoService.decrypt(any())).thenReturn(Mono.just("secret".getBytes()));
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/login")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body("password=c2VjcmV0"));
+        var converter = new LoginAuthenticationConverter(cryptoService, riskControlService, captchaService);
+
+        StepVerifier.create(converter.convert(exchange))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOf(BadCredentialsException.class)
+                        .hasMessageContaining("用户名或密码错误"))
+                .verify();
+    }
 }

@@ -31,7 +31,6 @@ import cn.tolim.pudans.contract.extension.index.IndexedQueryEngine;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.infra.r2dbc.store.ReactiveExtensionStoreClient;
 import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.SchemeManager;
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.ListResult;
@@ -296,7 +295,8 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                         .subscribeOn(this.scheduler))
                 .retryWhen(Retry.backoff(3, Duration.ofMillis(100))
                         
-                        .filter(t -> t instanceof DataIntegrityViolationException
+                        .filter(t -> (t instanceof DataIntegrityViolationException
+                                        || t instanceof cn.tolim.pudans.infra.exception.DuplicateNameException)
                                 && hasText(extension.getMetadata().getGenerateName())));
     }
 
@@ -319,6 +319,9 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
             var newMetadata = newJsonExt.getMetadata();
             newMetadata.setCreationTimestamp(oldMetadata.getCreationTimestamp());
             newMetadata.setGenerateName(oldMetadata.getGenerateName());
+            if (newMetadata.getVersion() == null) {
+                newMetadata.setVersion(oldMetadata.getVersion());
+            }
 
             
             

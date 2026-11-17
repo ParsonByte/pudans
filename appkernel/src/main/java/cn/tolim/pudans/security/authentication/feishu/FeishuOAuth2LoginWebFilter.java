@@ -32,7 +32,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class FeishuOAuth2LoginWebFilter implements WebFilter {
 
-    public static final String REGISTRATION_ID = FeishuUserService.PROVIDER;
     private static final String AUTH_API_PREFIX = ApiGroups.API_PREFIX;
     static final String AUTHORIZATION_PATH = AUTH_API_PREFIX + "/oauth2/authorization/feishu";
     static final String CALLBACK_PATH = AUTH_API_PREFIX + "/oauth2/callback/feishu";
@@ -81,6 +80,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 .queryParam("state", state)
                 .queryParam("scope", properties.getScope())
                 .build()
+                .encode()
                 .toUriString();
         return exchange.getSession()
                 .doOnNext(session -> session.getAttributes().put(STATE_ATTRIBUTE, state))

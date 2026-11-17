@@ -8,7 +8,6 @@ import cn.tolim.pudans.contract.infra.SystemVersionSupplier;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
-import java.util.Locale;
 import java.util.TimeZone;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.BooleanUtils;

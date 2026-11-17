@@ -1,6 +1,5 @@
 package cn.tolim.pudans.security.audit;
 
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +20,7 @@ import cn.tolim.pudans.core.audit.service.AuditService;
 
 @Slf4j
 @Component
-@Order(Ordered.LOWEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 @RequiredArgsConstructor
 public class AuditWebFilter implements WebFilter {
 
