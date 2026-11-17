@@ -1,10 +1,40 @@
-import { apiClient } from "@pudans-dev/api-client";
+import { apiClient, axiosInstance } from "@pudans-dev/api-client";
 import { isAxiosError } from "axios";
 
 type ProblemDetail = {
   detail?: string;
   errors?: string[];
 };
+
+export type AuthenticationConnectionTestRequest = {
+  type: "feishu" | "oauth2" | "oidc";
+  registrationId?: string;
+  issuerUri?: string;
+  authorizationUri?: string;
+  tokenUri?: string;
+  userInfoUri?: string;
+  clientId?: string;
+  clientSecret?: string;
+  appId?: string;
+  appSecret?: string;
+  scopes?: string;
+};
+
+export type AuthenticationConnectionTestResult = {
+  success: boolean;
+  message: string;
+};
+
+export async function testAuthenticationConnection(
+  body: AuthenticationConnectionTestRequest,
+): Promise<AuthenticationConnectionTestResult> {
+  const response = await axiosInstance.post<AuthenticationConnectionTestResult>(
+    "/apis/api.pudans.tolim.cn/v1alpha1/parameter-settings/authentication/-/test",
+    body,
+  );
+
+  return response.data;
+}
 
 export async function fetchParameterGroup(group: string): Promise<Record<string, unknown>> {
   const response = await apiClient.parameterSetting.getParameterSettingByGroup({ group });
