@@ -2,7 +2,7 @@
 resilience4j = '2.4.0'
 therapi = '0.15.0'
 commons-lang3 = '3.21.0'
-tika = '4.1.0'
+commons-io = '2.22.0'
 webauthn4j = '0.29.1.RELEASE'
 guava = '33.7.2-jre'
 json-patch = '1.13'
@@ -29,7 +29,7 @@ spring-session-data-redis = { module = 'org.springframework.session:spring-sessi
 commons-pool2 = { module = 'org.apache.commons:commons-pool2' }
 
 apache-commons-lang3 = { module = 'org.apache.commons:commons-lang3', version.ref = 'commons-lang3' }
-apache-tika-core = { module = 'org.apache.tika:tika-core', version.ref = 'tika' }
+apache-commons-io = { module = 'commons-io:commons-io', version.ref = 'commons-io' }
 
 webauthn4j = { module = 'com.webauthn4j:webauthn4j-core', version.ref = 'webauthn4j' }
 guava = { module = 'com.google.guava:guava', version.ref = 'guava' }
@@ -45,7 +45,7 @@ bouncycastle-bcprov = { module = 'org.bouncycastle:bcprov-jdk18on', version.ref 
 
 [bundles]
 resilience4j = ['resilience4j-springboot3', 'resilience4j-reactor']
-apache = ['apache-commons-lang3', 'apache-tika-core']
+apache = ['apache-commons-lang3', 'apache-commons-io']
 therapi = ['therapi-runtime-javadoc', 'therapi-runtime-javadoc-scribe']
 
 [plugins]
