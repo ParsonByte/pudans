@@ -127,9 +127,8 @@ class ParameterSettingGroupServiceTest {
     }
 
     @Test
-    void legacyUpdateRoutesNewGroupsThroughModernValidation() {
+    void legacyServerUpdateUsesModernValidation() {
         var configMap = configMap();
-        configMap.getData().put("schemaVersion", "2");
         configMap.getData().put("server", "{\"siteId\":\"site-1\"}");
         when(fetcher.getConfigMap()).thenReturn(Mono.just(configMap));
         when(fetcher.fetch("server", ObjectNode.class))
