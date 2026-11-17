@@ -3,7 +3,7 @@ import { type FieldErrors, type Resolver, useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiClient } from "@pudans-dev/api-client";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,17 +13,17 @@ import { cn } from "@/lib/utils";
 
 import { resolveParameterSettingError, updateParameterGroup } from "../lib/parameter-api";
 import {
-  type ParameterField,
+  type ParameterFieldSet,
   type ParameterFormValues,
-  type ParameterGroup,
   createParameterRequestBody,
   createParameterSchema,
+  groupParameterFieldsBySection,
 } from "../lib/parameter-fields";
 import { LogoPair } from "./logo-fields";
 import { ParameterFieldControl } from "./parameter-field";
 
 type ParameterGroupFormProps = {
-  group: ParameterGroup;
+  group: ParameterFieldSet & { key: string };
   initialValues: ParameterFormValues;
   sectionActions?: Partial<Record<string, ReactNode>>;
 };
@@ -34,6 +34,7 @@ export function ParameterGroupForm({
   sectionActions,
 }: ParameterGroupFormProps) {
   const schema = useMemo(() => createParameterSchema(group), [group]);
+  const queryClient = useQueryClient();
   const form = useForm<ParameterFormValues>({
     resolver: zodResolver(schema) as Resolver<ParameterFormValues>,
     defaultValues: initialValues,
@@ -55,8 +56,9 @@ export function ParameterGroupForm({
   const mutation = useMutation({
     mutationFn: (values: ParameterFormValues) =>
       updateParameterGroup(group.key, createParameterRequestBody(group, values)),
-    onSuccess: ({ restartRequired }, values) => {
+    onSuccess: async ({ restartRequired }, values) => {
       form.reset(values);
+      await queryClient.invalidateQueries({ queryKey: ["parameter-setting", group.key] });
       toast.success("参数已保存。");
 
       if (restartRequired) {
@@ -90,7 +92,7 @@ export function ParameterGroupForm({
       noValidate
     >
       <div className="space-y-10">
-        {groupFieldsBySection(group.fields).map((section, index) => {
+        {groupParameterFieldsBySection(group.fields).map((section, index) => {
           const logoFields = section.fields.filter(
             (field) => field.name === "logoLight" || field.name === "logoDark",
           );
@@ -141,23 +143,4 @@ export function ParameterGroupForm({
       </FloatingActionBar>
     </form>
   );
-}
-
-type ParameterSection = {
-  title?: string;
-  fields: ParameterField[];
-};
-
-function groupFieldsBySection(fields: readonly ParameterField[]): ParameterSection[] {
-  return fields.reduce<ParameterSection[]>((sections, field) => {
-    const current = sections[sections.length - 1];
-
-    if (current && current.title === field.section) {
-      current.fields.push(field);
-    } else {
-      sections.push({ title: field.section, fields: [field] });
-    }
-
-    return sections;
-  }, []);
 }

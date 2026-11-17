@@ -1,23 +1,19 @@
 import { apiClient } from "@pudans-dev/api-client";
 import { isAxiosError } from "axios";
 
-import type { ParameterGroupKey } from "./parameter-fields";
-
 type ProblemDetail = {
   detail?: string;
   errors?: string[];
 };
 
-export async function fetchParameterGroup(
-  group: ParameterGroupKey,
-): Promise<Record<string, unknown>> {
+export async function fetchParameterGroup(group: string): Promise<Record<string, unknown>> {
   const response = await apiClient.parameterSetting.getParameterSettingByGroup({ group });
 
   return parseParameterGroup(response.data);
 }
 
 export async function updateParameterGroup(
-  group: ParameterGroupKey,
+  group: string,
   body: Record<string, unknown>,
 ): Promise<{ restartRequired: boolean }> {
   const response = await apiClient.parameterSetting.updateParameterSettingByGroup({
