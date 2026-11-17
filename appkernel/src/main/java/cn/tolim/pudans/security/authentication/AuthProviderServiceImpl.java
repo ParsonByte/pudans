@@ -10,6 +10,7 @@ import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.index.query.Queries;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.core.user.service.UserConnectionService;
 import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ import reactor.util.retry.Retry;
 public class AuthProviderServiceImpl implements AuthProviderService {
     private final ReactiveExtensionClient client;
     private final ObjectProvider<ParameterSettingFetcher> environmentFetcherProvider;
+    private final UserConnectionService connectionService;
 
     private static boolean supportsBinding(AuthProvider authProvider) {
         return BooleanUtils.TRUE.equals(
@@ -146,13 +148,7 @@ public class AuthProviderServiceImpl implements AuthProviderService {
     Flux<UserConnection> listMyConnections() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> securityContext.getAuthentication().getName())
-                .flatMapMany(username -> {
-                    var listOptions = ListOptions.builder()
-                            .andQuery(Queries.equal("spec.username", username))
-                            .andQuery(ExtensionUtil.notDeleting())
-                            .build();
-                    return client.listAll(UserConnection.class, listOptions, ExtensionUtil.defaultSort());
-                });
+                .flatMapMany(connectionService::listConnections);
     }
 
     private ListedAuthProvider convertTo(AuthProvider authProvider) {

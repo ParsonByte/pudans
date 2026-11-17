@@ -141,6 +141,15 @@ public class UserConnectionServiceImpl implements UserConnectionService {
     }
 
     @Override
+    public Flux<UserConnection> listConnections(String username) {
+        var listOptions = ListOptions.builder()
+                .andQuery(equal("spec.username", username))
+                .andQuery(notDeleting())
+                .build();
+        return client.listAll(UserConnection.class, listOptions, defaultSort());
+    }
+
+    @Override
     public Mono<Void> removeByProviderUserId(String registrationId, String providerUserId) {
         return getByProviderUserId(registrationId, providerUserId)
                 .flatMap(client::delete)
@@ -148,12 +157,8 @@ public class UserConnectionServiceImpl implements UserConnectionService {
     }
 
     private Flux<UserConnection> listByUsername(String registrationId, String username) {
-        var listOptions = ListOptions.builder()
-                .andQuery(equal("spec.registrationId", registrationId))
-                .andQuery(equal("spec.username", username))
-                .andQuery(notDeleting())
-                .build();
-        return client.listAll(UserConnection.class, listOptions, defaultSort());
+        return listConnections(username)
+                .filter(connection -> registrationId.equals(connection.getSpec().getRegistrationId()));
     }
 
     private void updateUserInfo(MetadataOperator metadata, OAuth2User oauth2User) {

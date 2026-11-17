@@ -127,16 +127,7 @@ public class FeishuUserService {
                                 .thenReturn(user)
                         : assignDefaultUserGroup(user.getMetadata().getName()).thenReturn(user))
                 .as(TransactionalOperator.create(transactionManager)::transactional)
-                .doOnNext(user -> domainEventPublisher.publish("user.created", userPayload(user), null));
-    }
-
-    private static java.util.Map<String, Object> userPayload(User user) {
-        var payload = new java.util.LinkedHashMap<String, Object>();
-        payload.put("username", user.getMetadata().getName());
-        payload.put("uid", user.getSpec().getUid());
-        payload.put("displayName", user.getSpec().getDisplayName());
-        payload.put("email", user.getSpec().getEmail());
-        return payload;
+                .doOnNext(user -> domainEventPublisher.publish("user.created", UserEventPayloads.created(user), null));
     }
 
     public Mono<User> createFromFeishu(FeishuUserData data) {

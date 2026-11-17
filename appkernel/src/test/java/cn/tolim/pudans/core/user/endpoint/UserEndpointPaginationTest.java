@@ -10,6 +10,7 @@ import cn.tolim.pudans.contract.extension.router.SortableRequest;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -34,11 +35,12 @@ class UserEndpointPaginationTest {
     }
 
     private static UserEndpoint.UserList paged(List<User> users, int page, int size) throws Exception {
-        var endpoint = new UserEndpoint(null, null, null, null, null, null, null, null, null, null);
+        var endpoint = new UserEndpoint(null, null, null, null, null, null, null, null, null, null, null, null);
         Method method = UserEndpoint.class.getDeclaredMethod(
-                "pagedUserList", List.class, SortableRequest.class, boolean.class);
+                "pagedUserList", List.class, Map.class, SortableRequest.class, boolean.class);
         method.setAccessible(true);
-        return (UserEndpoint.UserList) method.invoke(endpoint, users, request(page, size), true);
+        return (UserEndpoint.UserList)
+                method.invoke(endpoint, users, Map.of(), request(page, size), true);
     }
 
     private static SortableRequest request(int page, int size) {
