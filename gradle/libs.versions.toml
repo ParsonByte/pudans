@@ -13,6 +13,7 @@ ua-parser = '1.6.1'
 jsonassert = '2.0-rc1'
 larksuite-oapi = '2.8.7'
 java-semver = '0.10.2'
+node = '7.1.0'
 
 [libraries]
 
@@ -49,3 +50,4 @@ therapi = ['therapi-runtime-javadoc', 'therapi-runtime-javadoc-scribe']
 spring-boot = 'org.springframework.boot:4.2.0-RC2'
 spring-dependency-management = 'io.spring.dependency-management:1.1.7'
 lombok = 'io.freefair.lombok:9.8.0'
+node = 'com.github.node-gradle.node:7.1.0'

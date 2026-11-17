@@ -9,6 +9,7 @@ import tseslint from "typescript-eslint";
 export default defineConfig([
   globalIgnores([
     "dist",
+    "build",
     "src/routeTree.gen.ts",
     "packages/api-client/src",
     "packages/api-client/dist",
