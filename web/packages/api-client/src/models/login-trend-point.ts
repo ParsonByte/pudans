@@ -15,7 +15,7 @@
 
 
 /**
- * Successful login count of one UTC day.
+ * Daily audit count for one UTC day.
  */
 export interface LoginTrendPoint {
     'count'?: number;

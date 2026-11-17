@@ -18,6 +18,7 @@ import cn.tolim.pudans.contract.infra.ParameterInfoGetter;
 import cn.tolim.pudans.contract.infra.SystemInfo;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
+import cn.tolim.pudans.infra.audit.AuditStore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
@@ -52,7 +53,11 @@ public class DashboardEndpoint implements CustomEndpoint {
 
     private static final int RECENT_AUDIT_LOG_LIMIT = 5;
 
-    private static final int LOGIN_TREND_DAYS = 7;
+    private static final int TREND_DAYS = 7;
+
+    private static final int ACTIVE_USER_LIMIT = 5;
+
+    private static final int ACTIVE_USER_SCAN_LIMIT = 10_000;
 
     private final ReactiveExtensionClient client;
 
@@ -109,11 +114,73 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .flatMap(this::toRecentOperations)
                 .onErrorReturn(List.of());
         var loginTrend = auditService
-                .countPerDay(dayStart.minus(Duration.ofDays(LOGIN_TREND_DAYS - 1L)), "LOGIN", "SUCCESS")
-                .map(days -> toLoginTrend(days, now))
+                .countPerDay(dayStart.minus(Duration.ofDays(TREND_DAYS - 1L)), "LOGIN", "SUCCESS")
+                .map(days -> toDailyTrend(days, now))
                 .defaultIfEmpty(List.of())
                 .onErrorReturn(List.of());
-        return Mono.zip(globalInfo, users, realRoles, counts, todayOperations, recentOperations, loginTrend)
+        var operationTrend = auditService
+                .countPerDay(dayStart.minus(Duration.ofDays(TREND_DAYS - 1L)), null, null)
+                .map(days -> toDailyTrend(days, now))
+                .defaultIfEmpty(List.of())
+                .onErrorReturn(List.of());
+        var riskRuleTrend = client
+                .listAll(
+                        RiskRule.class,
+                        ListOptions.builder().andQuery(notDeleting()).build(),
+                        defaultSort())
+                .collectList()
+                .map(items -> toCreationTrend(
+                        items.stream()
+                                .map(item -> item.getMetadata() == null
+                                        ? null
+                                        : item.getMetadata().getCreationTimestamp())
+                                .toList(),
+                        now))
+                .defaultIfEmpty(List.of())
+                .onErrorReturn(List.of());
+        var webhookTrend = client
+                .listAll(
+                        Webhook.class,
+                        ListOptions.builder().andQuery(notDeleting()).build(),
+                        defaultSort())
+                .collectList()
+                .map(items -> toCreationTrend(
+                        items.stream()
+                                .map(item -> item.getMetadata() == null
+                                        ? null
+                                        : item.getMetadata().getCreationTimestamp())
+                                .toList(),
+                        now))
+                .defaultIfEmpty(List.of())
+                .onErrorReturn(List.of());
+        var trends = Mono.zip(loginTrend, operationTrend, riskRuleTrend, webhookTrend)
+                .map(tuple -> new TrendData(
+                        tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4()))
+                .defaultIfEmpty(new TrendData(List.of(), List.of(), List.of(), List.of()));
+        var activeUserRecords = auditService
+                .query(new AuditStore.AuditQuery(
+                        null,
+                        dayStart.minus(Duration.ofDays(TREND_DAYS - 1L)),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        ACTIVE_USER_SCAN_LIMIT,
+                        false))
+                .collectList()
+                .defaultIfEmpty(List.of())
+                .onErrorReturn(List.of());
+        return Mono.zip(
+                        globalInfo,
+                        users,
+                        realRoles,
+                        counts,
+                        todayOperations,
+                        recentOperations,
+                        trends,
+                        activeUserRecords)
                 .flatMap(tuple -> toRoleDistribution(tuple.getT2(), tuple.getT3())
                         .map(roleDistribution -> new DashboardOverview(
                                 tuple.getT1(),
@@ -124,7 +191,11 @@ public class DashboardEndpoint implements CustomEndpoint {
                                 tuple.getT4().getT3(),
                                 tuple.getT5(),
                                 tuple.getT6(),
-                                tuple.getT7(),
+                                tuple.getT7().loginTrend(),
+                                tuple.getT7().operationTrend(),
+                                tuple.getT7().riskRuleTrend(),
+                                tuple.getT7().webhookTrend(),
+                                toActiveUsers(tuple.getT2(), tuple.getT8()),
                                 roleDistribution)));
     }
 
@@ -145,14 +216,51 @@ public class DashboardEndpoint implements CustomEndpoint {
                 && !"true".equals(labels.get(Role.HIDDEN_LABEL_NAME));
     }
 
-    private static List<LoginTrendPoint> toLoginTrend(Map<LocalDate, Long> daysByCount, Instant now) {
+    private static List<LoginTrendPoint> toDailyTrend(Map<LocalDate, Long> daysByCount, Instant now) {
         var today = LocalDate.ofInstant(now, ZoneOffset.UTC);
-        var points = new ArrayList<LoginTrendPoint>(LOGIN_TREND_DAYS);
-        for (var offset = LOGIN_TREND_DAYS - 1; offset >= 0; offset--) {
+        var points = new ArrayList<LoginTrendPoint>(TREND_DAYS);
+        for (var offset = TREND_DAYS - 1; offset >= 0; offset--) {
             var day = today.minusDays(offset);
             points.add(new LoginTrendPoint(day.toString(), daysByCount.getOrDefault(day, 0L)));
         }
         return points;
+    }
+
+    private static List<LoginTrendPoint> toCreationTrend(List<Instant> creationTimestamps, Instant now) {
+        var counts = creationTimestamps.stream()
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.groupingBy(
+                        timestamp -> LocalDate.ofInstant(timestamp, ZoneOffset.UTC),
+                        Collectors.counting()));
+        return toDailyTrend(counts, now);
+    }
+
+    private record TrendData(
+            List<LoginTrendPoint> loginTrend,
+            List<LoginTrendPoint> operationTrend,
+            List<LoginTrendPoint> riskRuleTrend,
+            List<LoginTrendPoint> webhookTrend) {}
+
+    private static List<ActiveUser> toActiveUsers(List<User> users, List<AuditRecord> records) {
+        var names = users.stream()
+                .collect(Collectors.toMap(
+                        DashboardEndpoint::nullSafeUid,
+                        DashboardEndpoint::displayNameOf,
+                        (left, right) -> left));
+        return records.stream()
+                .map(AuditRecord::getUid)
+                .filter(java.util.Objects::nonNull)
+                .map(uid -> uid.isBlank() ? "anonymous" : uid)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+                .entrySet()
+                .stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue()
+                        .reversed()
+                        .thenComparing(Map.Entry.comparingByKey()))
+                .limit(ACTIVE_USER_LIMIT)
+                .map(entry -> new ActiveUser(
+                        names.getOrDefault(entry.getKey(), entry.getKey()), entry.getValue()))
+                .toList();
     }
 
     private Mono<List<RoleUserCount>> toRoleDistribution(List<User> users, List<Role> realRoles) {
@@ -288,7 +396,14 @@ public class DashboardEndpoint implements CustomEndpoint {
             long todayOperations,
             List<RecentOperation> recentAuditLogs,
             List<LoginTrendPoint> loginTrend,
+            List<LoginTrendPoint> operationTrend,
+            List<LoginTrendPoint> riskRuleTrend,
+            List<LoginTrendPoint> webhookTrend,
+            List<ActiveUser> activeUsers,
             List<RoleUserCount> roleDistribution) {}
+
+    @Schema(description = "One user ranked by recent audit activity.")
+    public record ActiveUser(String name, long operations) {}
 
     @Schema(description = "Basic site information aggregated from the system info service.")
     public record GlobalInfoSummary(
@@ -314,7 +429,7 @@ public class DashboardEndpoint implements CustomEndpoint {
             String result,
             Instant timestamp) {}
 
-    @Schema(description = "Successful login count of one UTC day.")
+    @Schema(description = "Daily audit count for one UTC day.")
     public record LoginTrendPoint(String date, long count) {}
 
     @Schema(description = "Number of accounts holding one role.")

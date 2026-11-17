@@ -12,6 +12,18 @@
   ],
   "components": {
     "schemas": {
+      "ActiveUser": {
+        "description": "One user ranked by recent audit activity.",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
       "AddOperation": {
         "type": "object",
         "properties": {
@@ -768,6 +780,30 @@
               "$ref": "#/components/schemas/LoginTrendPoint"
             }
           },
+          "operationTrend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoginTrendPoint"
+            }
+          },
+          "riskRuleTrend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoginTrendPoint"
+            }
+          },
+          "webhookTrend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LoginTrendPoint"
+            }
+          },
+          "activeUsers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActiveUser"
+            }
+          },
           "recentAuditLogs": {
             "type": "array",
             "items": {
@@ -1096,7 +1132,7 @@
         }
       },
       "LoginTrendPoint": {
-        "description": "Successful login count of one UTC day.",
+        "description": "Daily audit count for one UTC day.",
         "properties": {
           "count": {
             "type": "integer",

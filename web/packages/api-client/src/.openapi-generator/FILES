@@ -37,6 +37,7 @@ common.ts
 configuration.ts
 git_push.sh
 index.ts
+models/active-user.ts
 models/add-operation.ts
 models/annotation-setting-list.ts
 models/annotation-setting-spec.ts
