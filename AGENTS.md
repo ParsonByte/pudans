@@ -20,6 +20,11 @@ The existing `.agents/rules/development.md` and `.agents/skills/development/SKIL
 - Change only files required by the task; do not refactor, rename or reformat unrelated code.
 - Record the reuse search evidence in the pull request or task summary.
 
+## No mock data (hard)
+
+- Do not add mock, fake, demo, seeded or stubbed data anywhere in the repository, including UI fixtures, preview data and API responses. Build against real APIs and real configuration.
+- Backend tests may use Mockito mocks for collaborators, but they must not introduce fake product data.
+
 ## Agent rules
 
 Read the matching rule under `.agents/rules` before starting a task, and follow it for the whole task:

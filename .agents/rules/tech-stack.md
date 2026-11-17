@@ -38,7 +38,7 @@
 - Lint with ESLint (`@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`, `@tanstack/eslint-plugin-query`), format with Prettier (`@trivago/prettier-plugin-sort-imports`, `prettier-plugin-tailwindcss`), and detect unused files, exports and dependencies with Knip; do not bypass or weaken these checks.
 - Transient user feedback uses the global Sonner toaster: mount the shadcn `Toaster` from `web/src/components/ui/sonner.tsx` once in the root route and call `toast` from `sonner` for errors, successes, warnings and notices. Do not render inline alert banners, status strips or disabled button labels for transient messages.
 - Login method buttons use concise provider labels (`通行密钥`, `飞书`); do not append action wording such as 「使用…登录」.
-- Use `@faker-js/faker` only for development fixtures; never ship generated fake data in a production path.
+- Do not add mock, fake, demo, seeded or stubbed data anywhere in the repository, including development fixtures and preview data. Do not use `@faker-js/faker`.
 
 ### shadcn/ui
 
