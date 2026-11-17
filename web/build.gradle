@@ -1,0 +1,49 @@
+import com.github.gradle.node.npm.task.NpmTask
+
+plugins {
+    id 'base'
+    alias(libs.plugins.node)
+}
+
+description = 'Pudans web frontend and bundled static assets.'
+
+node {
+    download = false
+}
+
+tasks.named('npmInstall') {
+    inputs.file(layout.projectDirectory.file('package.json'))
+    inputs.file(layout.projectDirectory.file('package-lock.json'))
+    outputs.dir(layout.projectDirectory.dir('node_modules'))
+}
+
+tasks.register('buildWeb', NpmTask) {
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'build']
+    inputs.files(fileTree(layout.projectDirectory) {
+        include 'index.html', 'package.json', 'package-lock.json',
+            'tsconfig*.json', 'vite.config.ts', 'eslint.config.js',
+            '.prettierrc.json', '.prettierignore', 'knip.json', 'components.json',
+            'src/**', 'public/**', 'packages/**'
+        exclude '**/node_modules/**', '**/dist/**', '**/build/**'
+    })
+    outputs.dir(layout.buildDirectory.dir('web'))
+}
+
+tasks.register('lint', NpmTask) {
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'lint']
+}
+
+tasks.register('typecheck', NpmTask) {
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'typecheck']
+}
+
+tasks.named('assemble') {
+    dependsOn tasks.named('buildWeb')
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('lint'), tasks.named('typecheck')
+}
