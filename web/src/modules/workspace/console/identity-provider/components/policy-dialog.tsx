@@ -22,6 +22,7 @@ import {
 import { AUTHENTICATION_GROUP } from "../lib/authentication-fields";
 import type { IdentityKind } from "./identity-icon";
 import { IdentityIcon } from "./identity-icon";
+import { TestConnectionButton } from "./test-connection-button";
 
 type PolicyDialogProps = {
   kind: IdentityKind;
@@ -81,6 +82,20 @@ export function PolicyDialog({
       maxHeightRatio={scrollHeightRatio}
       contentClassName={dialogWidthClass}
       formClassName="space-y-5"
+      headerActions={
+        kind === "feishu" ? (
+          <TestConnectionButton
+            buildRequest={() => {
+              const values = form.getValues();
+              return {
+                type: "feishu",
+                appId: String(values.appId ?? ""),
+                appSecret: String(values.appSecret ?? ""),
+              };
+            }}
+          />
+        ) : undefined
+      }
     >
       {groupParameterFieldsBySection(fields.fields).map((section, index) => (
         <FormDialogSection key={`${section.title ?? "default"}-${index}`} title={section.title}>

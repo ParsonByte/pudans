@@ -26,6 +26,7 @@ import {
   emptyProvider,
 } from "../lib/authentication-fields";
 import { IdentityIcon } from "./identity-icon";
+import { TestConnectionButton } from "./test-connection-button";
 
 type ProviderDialogProps = {
   kind: ProviderKind;
@@ -101,6 +102,24 @@ export function ProviderDialog({ kind, index, providers, onClose }: ProviderDial
       maxHeightRatio={0.5}
       contentClassName="sm:max-w-2xl"
       formClassName="space-y-6"
+      headerActions={
+        <TestConnectionButton
+          buildRequest={() => {
+            const values = form.getValues();
+            return {
+              type: kind,
+              registrationId: stringValue(values.registrationId),
+              issuerUri: kind === "oidc" ? stringValue(values.issuerUri) : undefined,
+              authorizationUri: stringValue(values.authorizationUri),
+              tokenUri: stringValue(values.tokenUri),
+              userInfoUri: stringValue(values.userInfoUri),
+              clientId: stringValue(values.clientId),
+              clientSecret: stringValue(values.clientSecret),
+              scopes: stringValue(values.scopes),
+            };
+          }}
+        />
+      }
     >
       {groupParameterFieldsBySection(fields.fields).map((section, sectionIndex) => (
         <FormDialogSection

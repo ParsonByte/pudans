@@ -28,6 +28,7 @@ type FormDialogProps<T extends FieldValues> = {
   maxHeightRatio?: number;
   contentClassName?: string;
   formClassName?: string;
+  headerActions?: ReactNode;
   submitLabel?: string;
   resetLabel?: string;
   children: ReactNode;
@@ -45,6 +46,7 @@ export function FormDialog<T extends FieldValues>({
   maxHeightRatio = 0.5,
   contentClassName,
   formClassName,
+  headerActions,
   submitLabel = "保存更改",
   resetLabel = "撤销更改",
   children,
@@ -62,7 +64,7 @@ export function FormDialog<T extends FieldValues>({
     >
       <DialogContent className={cn("flex max-h-[75vh] flex-col overflow-hidden", contentClassName)}>
         <DialogHeader>
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-3 pe-8">
             {icon ? (
               <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
                 {icon}
@@ -73,6 +75,7 @@ export function FormDialog<T extends FieldValues>({
               {description ? <DialogDescription>{description}</DialogDescription> : null}
             </div>
           </div>
+          {headerActions ? <div>{headerActions}</div> : null}
         </DialogHeader>
 
         <AutoScrollArea maxHeightRatio={maxHeightRatio}>
