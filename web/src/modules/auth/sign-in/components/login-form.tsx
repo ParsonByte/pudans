@@ -7,7 +7,7 @@ import { isAxiosError } from "axios";
 import { CheckCircle2, Fingerprint, Loader2, LogIn, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 
-import { FeishuIcon } from "@/assets/custom/icon-feishu";
+import { IconFeishu } from "@/assets/custom/icon-feishu";
 import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,7 +184,7 @@ export function LoginForm() {
           title="飞书"
           onClick={handleFeishuLogin}
         >
-          <FeishuIcon size={20} className="size-5 shrink-0" />
+          <IconFeishu size={20} className="size-5 shrink-0" />
         </Button>
 
         {otherProviders.map((provider, index) => (
