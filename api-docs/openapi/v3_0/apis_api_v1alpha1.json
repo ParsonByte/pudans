@@ -585,41 +585,6 @@
           }
         }
       },
-      "Condition": {
-        "properties": {
-          "lastTransitionTime": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "message": {
-            "type": "string",
-            "maxLength": 32768
-          },
-          "reason": {
-            "type": "string",
-            "maxLength": 1024,
-            "pattern": "^[A-Za-z]([A-Za-z0-9_,:]*[A-Za-z0-9_])?$"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "TRUE",
-              "FALSE",
-              "UNKNOWN"
-            ]
-          },
-          "type": {
-            "type": "string",
-            "maxLength": 316,
-            "pattern": "^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$"
-          }
-        },
-        "required": [
-          "lastTransitionTime",
-          "status",
-          "type"
-        ]
-      },
       "ConfigMap": {
         "properties": {
           "apiVersion": {
@@ -975,17 +940,6 @@
           }
         }
       },
-      "InstallFromUriRequest": {
-        "properties": {
-          "uri": {
-            "type": "string",
-            "format": "uri"
-          }
-        },
-        "required": [
-          "uri"
-        ]
-      },
       "JsonPatch": {
         "type": "array",
         "description": "JSON schema for JSONPatch operations",
@@ -1013,16 +967,6 @@
         },
         "minItems": 1,
         "uniqueItems": true
-      },
-      "License": {
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "url": {
-            "type": "string"
-          }
-        }
       },
       "ListedAuthProvider": {
         "properties": {
@@ -2604,17 +2548,6 @@
           }
         }
       },
-      "UpgradeFromUriRequest": {
-        "properties": {
-          "uri": {
-            "type": "string",
-            "format": "uri"
-          }
-        },
-        "required": [
-          "uri"
-        ]
-      },
       "User": {
         "properties": {
           "apiVersion": {
@@ -3226,7 +3159,6 @@
           }
         },
         "tags": [
-          "AnnotationSettingV1alpha1",
           "AnnotationSettingV1alpha1"
         ]
       },
@@ -4574,7 +4506,6 @@
           }
         },
         "tags": [
-          "DeviceV1alpha1",
           "DeviceV1alpha1"
         ]
       },
@@ -5255,7 +5186,6 @@
           }
         },
         "tags": [
-          "PersonalAccessTokenV1alpha1",
           "PersonalAccessTokenV1alpha1"
         ]
       },
@@ -5295,7 +5225,6 @@
           }
         },
         "tags": [
-          "PersonalAccessTokenV1alpha1",
           "PersonalAccessTokenV1alpha1"
         ],
         "parameters": []
@@ -5333,7 +5262,6 @@
           }
         },
         "tags": [
-          "PersonalAccessTokenV1alpha1",
           "PersonalAccessTokenV1alpha1"
         ]
       },
@@ -5374,7 +5302,6 @@
           }
         },
         "tags": [
-          "PersonalAccessTokenV1alpha1",
           "PersonalAccessTokenV1alpha1"
         ]
       },
@@ -7572,7 +7499,6 @@
           }
         },
         "tags": [
-          "UserConnectionV1alpha1",
           "UserConnectionV1alpha1"
         ]
       },
@@ -7738,7 +7664,6 @@
           }
         },
         "tags": [
-          "UserConnectionV1alpha1",
           "UserConnectionV1alpha1"
         ]
       },
