@@ -74,15 +74,18 @@ export function SetupForm() {
 
   const onSubmit = async (values: SetupFormValues) => {
     try {
-      await apiClient.systemSetup.setupSystem({
-        setupRequest: {
-          username: values.username,
-          password: values.password,
-          email: values.email || undefined,
-          siteTitle: values.siteTitle,
-          externalUrl: values.externalUrl,
+      await apiClient.systemSetup.setupSystem(
+        {
+          setupRequest: {
+            username: values.username,
+            password: values.password,
+            email: values.email || undefined,
+            siteTitle: values.siteTitle,
+            externalUrl: values.externalUrl,
+          },
         },
-      });
+        { timeout: 60_000 },
+      );
       toast.success("系统初始化完成，请登录。");
       await navigate({ to: "/sign-in", replace: true });
     } catch (error) {

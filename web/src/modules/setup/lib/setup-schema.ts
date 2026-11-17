@@ -85,6 +85,10 @@ export function resolveSetupError(error: unknown): SetupErrorResult {
       };
     }
 
+    if (error.code === "ECONNABORTED") {
+      return { message: "初始化超时，请稍后重试。", setupCompleted: false };
+    }
+
     if (!error.response) {
       return { message: "无法连接服务器，请稍后重试。", setupCompleted: false };
     }

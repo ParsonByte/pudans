@@ -1,6 +1,9 @@
-import { Link } from "@tanstack/react-router";
-import { BadgeCheck, Bell, ChevronsUpDown } from "lucide-react";
+import { useState } from "react";
 
+import { Link } from "@tanstack/react-router";
+import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from "lucide-react";
+
+import { SignOutDialog } from "@/components/sign-out-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -25,6 +28,7 @@ const NOTIFICATIONS_URL: NavUrl = "/settings/notifications";
 
 type NavUserProps = {
   user: User;
+  onSignOut?: () => void;
 };
 
 function getInitials(name: string): string {
@@ -37,8 +41,9 @@ function getInitials(name: string): string {
     .toUpperCase();
 }
 
-export function NavUser({ user }: NavUserProps) {
+export function NavUser({ user, onSignOut }: NavUserProps) {
   const { isMobile } = useSidebar();
+  const [signOutOpen, setSignOutOpen] = useState(false);
   const initials = getInitials(user.name);
 
   return (
@@ -94,8 +99,20 @@ export function NavUser({ user }: NavUserProps) {
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            {onSignOut ? (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => setSignOutOpen(true)}>
+                  <LogOut />
+                  退出登录
+                </DropdownMenuItem>
+              </>
+            ) : null}
           </DropdownMenuContent>
         </DropdownMenu>
+        {onSignOut ? (
+          <SignOutDialog open={signOutOpen} onOpenChange={setSignOutOpen} onSignOut={onSignOut} />
+        ) : null}
       </SidebarMenuItem>
     </SidebarMenu>
   );

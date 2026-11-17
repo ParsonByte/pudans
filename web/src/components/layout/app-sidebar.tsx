@@ -12,9 +12,11 @@ import { NavUser } from "./nav-user";
 import type { SidebarData } from "./types";
 import { WorkspaceSwitcher } from "./workspace-switcher";
 
-type AppSidebarProps = Partial<SidebarData>;
+type AppSidebarProps = Partial<SidebarData> & {
+  onSignOut?: () => void;
+};
 
-export function AppSidebar({ user, workspaces, navGroups }: AppSidebarProps) {
+export function AppSidebar({ user, workspaces, navGroups, onSignOut }: AppSidebarProps) {
   const { collapsible, variant } = useLayout();
 
   return (
@@ -32,8 +34,8 @@ export function AppSidebar({ user, workspaces, navGroups }: AppSidebarProps) {
         </SidebarContent>
       ) : null}
       {user ? (
-        <SidebarFooter>
-          <NavUser user={user} />
+        <SidebarFooter className="mt-auto">
+          <NavUser user={user} onSignOut={onSignOut} />
         </SidebarFooter>
       ) : null}
       <SidebarRail />

@@ -1,5 +1,9 @@
 import { LoginForm } from "./components/login-form";
 
-export function SignInView() {
-  return <LoginForm />;
+type SignInViewProps = {
+  redirectTo?: string;
+};
+
+export function SignInView({ redirectTo }: SignInViewProps) {
+  return <LoginForm redirectTo={redirectTo} />;
 }
