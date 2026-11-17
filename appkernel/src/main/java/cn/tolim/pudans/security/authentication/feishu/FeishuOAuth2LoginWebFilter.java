@@ -69,7 +69,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> authorize(ServerWebExchange exchange) {
-        if (!configured()) {
+        if (!properties.isConfigured()) {
             return loginFailure(exchange, unavailableReason());
         }
         var state = UUID.randomUUID().toString();
@@ -90,7 +90,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> callback(ServerWebExchange exchange) {
-        if (!configured()) {
+        if (!properties.isConfigured()) {
             return loginFailure(exchange, unavailableReason());
         }
         var code = exchange.getRequest().getQueryParams().getFirst("code");
@@ -150,12 +150,6 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
         return ProblemDetailResponses.write(
                 exchange, context, HttpStatus.FORBIDDEN, reason, "飞书登录被拒绝。");
-    }
-
-    private boolean configured() {
-        return properties.isEnabled()
-                && StringUtils.hasText(properties.getAppId())
-                && StringUtils.hasText(properties.getAppSecret());
     }
 
     private String unavailableReason() {
