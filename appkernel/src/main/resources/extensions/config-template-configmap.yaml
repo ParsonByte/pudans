@@ -23,7 +23,27 @@ data:
       "defaultUserGroup": "normal-users",
       "avatarStoragePath": "avatars",
       "avatarMaxSize": 2097152,
-      "avatarDimension": 256
+      "avatarDimension": 256,
+      "rsaLoginEncryptionEnabled": true,
+      "argon2PasswordStorageEnabled": true
+    }
+  authentication: |
+    {
+      "totp": {
+        "enabled": true,
+        "issuer": "pudans"
+      },
+      "oauth2": {
+        "providers": []
+      },
+      "oidc": {
+        "providers": []
+      },
+      "feishu": {},
+      "pat": {
+        "enabled": true,
+        "maxLifetimeDays": 0
+      }
     }
   captcha: |
     {

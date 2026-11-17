@@ -11,6 +11,9 @@ import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.user.service.PatService;
 import cn.tolim.pudans.core.user.service.UserScopedPatHandler;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -37,12 +40,19 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
 
     private final AuditService auditService;
 
+    private final SecurityParameterSettingService securitySettings;
+
     private final AuthenticationTrustResolver authTrustResolver = new AuthenticationTrustResolverImpl();
 
-    public UserScopedPatHandlerImpl(ReactiveExtensionClient client, PatService patService, AuditService auditService) {
+    public UserScopedPatHandlerImpl(
+            ReactiveExtensionClient client,
+            PatService patService,
+            AuditService auditService,
+            SecurityParameterSettingService securitySettings) {
         this.client = client;
         this.patService = patService;
         this.auditService = auditService;
+        this.securitySettings = securitySettings;
     }
 
     private static Map<String, Object> snapshot(PersonalAccessToken pat) {
@@ -73,6 +83,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
                 .transform(this::mustBeAuthenticated)
                 .flatMap(auth -> request.bodyToMono(PersonalAccessToken.class))
                 .switchIfEmpty(Mono.error(() -> new ServerWebInputException("缺少请求体。")))
+                .flatMap(this::validatePolicy)
                 .flatMap(patService::create)
                 .flatMap(pat -> patService
                         .generateToken(pat)
@@ -97,9 +108,24 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
                 .flatMap(pat -> ServerResponse.ok().bodyValue(pat));
     }
 
+    Mono<PersonalAccessToken> validatePolicy(PersonalAccessToken pat) {
+        if (!securitySettings.isPatEnabled()) {
+            return Mono.error(new ServerWebInputException("个人访问令牌已禁用。"));
+        }
+        var maxLifetimeDays = securitySettings.patMaxLifetimeDays();
+        if (maxLifetimeDays > 0) {
+            var expiresAt = pat.getSpec() == null ? null : pat.getSpec().getExpiresAt();
+            if (expiresAt == null
+                    || expiresAt.isAfter(Instant.now().plus(Duration.ofDays(maxLifetimeDays)))) {
+                return Mono.error(new ServerWebInputException(
+                        "个人访问令牌有效期不能超过 " + maxLifetimeDays + " 天。"));
+            }
+        }
+        return Mono.just(pat);
+    }
+
     @Override
-    public Mono<ServerResponse> list(ServerRequest request) {
-        return ReactiveSecurityContextHolder.getContext()
+    public Mono<ServerResponse> list(ServerRequest request) {        return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .flatMap(auth -> {
                     var listOptions = ListOptions.builder()

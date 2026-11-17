@@ -34,7 +34,9 @@ class ParameterSettingDefaultsTest {
                     "defaultUserGroup",
                     "avatarStoragePath",
                     "avatarMaxSize",
-                    "avatarDimension"),
+                    "avatarDimension",
+                    "rsaLoginEncryptionEnabled",
+                    "argon2PasswordStorageEnabled"),
             "captcha",
             Set.of(
                     "loginCaptchaEnabled",
@@ -60,6 +62,7 @@ class ParameterSettingDefaultsTest {
                     "smtpConnectionTtlSeconds",
                     "mailTemplates"),
             "audit", Set.of("auditRecordRules"),
+            "authentication", Set.of("totp", "oauth2", "oidc", "feishu", "pat"),
             "server",
             Set.of("tempPath", "siteId", "accessTokenTtlSeconds", "refreshTokenTtlSeconds", "gcCron"));
 
@@ -86,10 +89,12 @@ class ParameterSettingDefaultsTest {
 
             var mail = JsonMapper.shared().readTree(data.get("mail"));
             var server = JsonMapper.shared().readTree(data.get("server"));
+            var authentication = JsonMapper.shared().readTree(data.get("authentication"));
             assertThat(mail.has("smtpUsername")).isFalse();
             assertThat(mail.has("smtpPassword")).isFalse();
             assertThat(server.has("masterKey")).isFalse();
             assertThat(server.has("hashIdSalt")).isFalse();
+            assertThat(authentication.get("feishu").has("appSecret")).isFalse();
         }
     }
 
@@ -97,6 +102,6 @@ class ParameterSettingDefaultsTest {
     void defaultGroupsMatchTheDocumentedGroupNames() {
         assertThat(EXPECTED_FIELDS.keySet())
                 .containsExactlyInAnyOrderElementsOf(
-                        List.of("site", "session", "captcha", "mail", "audit", "server"));
+                        List.of("site", "session", "captcha", "mail", "audit", "authentication", "server"));
     }
 }

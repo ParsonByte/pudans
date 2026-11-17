@@ -1,6 +1,7 @@
 package cn.tolim.pudans.security.authentication.oidc;
 
 import cn.tolim.pudans.infra.properties.OidcProperties;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class OidcClient {
 
-    private final OidcProperties properties;
+    private final SecurityParameterSettingService securitySettings;
 
     private final WebClient webClient = WebClient.builder().build();
 
@@ -28,7 +29,7 @@ public class OidcClient {
     }
 
     public OidcProperties.Provider provider(String registrationId) {
-        return properties.getProviders().stream()
+        return securitySettings.oidcProviders().stream()
                 .filter(provider -> registrationId.equals(provider.getRegistrationId()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("未知的 OIDC 提供方：" + registrationId));
