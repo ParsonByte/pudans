@@ -20,5 +20,8 @@ public interface UserConnectionService {
     Mono<UserConnection> getByProviderUserId(String registrationId, String providerUserId);
 
 
+    Flux<UserConnection> listConnections(String username);
+
+
     Mono<Void> removeByProviderUserId(String registrationId, String providerUserId);
 }
