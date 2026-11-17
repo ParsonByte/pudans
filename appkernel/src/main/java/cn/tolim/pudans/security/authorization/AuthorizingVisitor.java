@@ -11,7 +11,6 @@ public class AuthorizingVisitor implements RuleAccumulator {
     private final Attributes requestAttributes;
     private final List<Throwable> errors = new ArrayList<>(4);
     private boolean allowed;
-    private String reason;
 
     public AuthorizingVisitor(Attributes requestAttributes) {
         this.requestAttributes = requestAttributes;
@@ -21,7 +20,6 @@ public class AuthorizingVisitor implements RuleAccumulator {
     public boolean visit(String source, Role.PolicyRule rule, Throwable error) {
         if (rule != null && requestEvaluation.ruleAllows(requestAttributes, rule)) {
             this.allowed = true;
-            this.reason = String.format("RBAC: allowed by %s", source);
             return false;
         }
         if (error != null) {
@@ -32,10 +30,6 @@ public class AuthorizingVisitor implements RuleAccumulator {
 
     public boolean isAllowed() {
         return allowed;
-    }
-
-    public String getReason() {
-        return reason;
     }
 
     public List<Throwable> getErrors() {

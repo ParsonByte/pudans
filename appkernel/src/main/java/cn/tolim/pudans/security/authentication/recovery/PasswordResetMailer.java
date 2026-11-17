@@ -3,9 +3,12 @@ package cn.tolim.pudans.security.authentication.recovery;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
+import cn.tolim.pudans.infra.setting.MailSettingsService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
@@ -24,18 +27,42 @@ public class PasswordResetMailer {
 
     private final PudansProperties pudansProperties;
 
+    private final Environment environment;
+
+    private final MailSettingsService mailSettingsService;
+
+    @PostConstruct
+    void warnIfLogCodesEnabledOutsideDev() {
+        var options = pudansProperties.getSecurity().getPasswordReset();
+        if (options.isLogCodes() && !environment.matchesProfiles("dev", "test")) {
+            log.warn(
+                    "密码重置的 logCodes 在非开发/测试环境已启用；未配置邮件投递时，验证码可能会写入应用日志。");
+        }
+    }
+
     public Mono<Void> sendCode(String email, String code) {
         var options = pudansProperties.getSecurity().getPasswordReset();
+        return mailSettingsService.isConfigured().flatMap(configured -> {
+            if (Boolean.TRUE.equals(configured)) {
+                return mailSettingsService.sendPasswordResetCode(
+                        email, code, options.getCodeTtl().toMinutes());
+            }
+            return sendWithFallbackSender(email, code, options);
+        });
+    }
+
+    private Mono<Void> sendWithFallbackSender(
+            String email, String code, SecurityProperties.PasswordResetOptions options) {
         var mailSender = mailSenderProvider.getIfAvailable();
         if (mailSender == null) {
             if (!options.isLogCodes()) {
                 return Mono.error(new ApiException(
                         HttpStatus.SERVICE_UNAVAILABLE,
                         "recovery-mail-unavailable",
-                        "Email delivery is not configured. Set spring.mail.* before using password recovery."));
+                        "未配置邮件投递。使用密码找回功能前，请先配置 spring.mail.*。"));
             }
             log.warn(
-                    "No JavaMailSender is configured. Password reset code for {} is {} (development log delivery).",
+                    "未配置 JavaMailSender。{} 的密码重置验证码为 {}（开发日志投递）。",
                     email,
                     code);
             return Mono.empty();
@@ -63,7 +90,7 @@ public class PasswordResetMailer {
                         error -> new ApiException(
                                 HttpStatus.SERVICE_UNAVAILABLE,
                                 "recovery-mail-unavailable",
-                                "Could not send the verification email.",
+                                "无法发送验证邮件。",
                                 error))
                 .then();
     }

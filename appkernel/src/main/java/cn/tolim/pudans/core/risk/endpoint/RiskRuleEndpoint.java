@@ -55,10 +55,10 @@ public class RiskRuleEndpoint implements CustomEndpoint {
         var scene = request.queryParam("scene").filter(StringUtils::hasText).orElse(null);
         var subject = request.queryParam("subject").filter(StringUtils::hasText).orElse(null);
         if (scene == null) {
-            return Mono.error(new ServerWebInputException("Query param 'scene' is required."));
+            return Mono.error(new ServerWebInputException("查询参数 'scene' 为必填项。"));
         }
         if (subject == null) {
-            return Mono.error(new ServerWebInputException("Query param 'subject' is required."));
+            return Mono.error(new ServerWebInputException("查询参数 'subject' 为必填项。"));
         }
         return riskControlService
                 .unban(scene, subject)
@@ -83,6 +83,6 @@ public class RiskRuleEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.CONSOLE + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 }

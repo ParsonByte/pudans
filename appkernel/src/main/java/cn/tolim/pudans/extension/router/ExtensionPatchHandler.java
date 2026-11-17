@@ -51,14 +51,14 @@ public class ExtensionPatchHandler implements PatchHandler {
         }
 
         return request.bodyToMono(JsonPatch.class)
-                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("Request body required.")))
+                .switchIfEmpty(Mono.error(() -> new ServerWebInputException("请求体不能为空。")))
                 .flatMap(jsonPatch -> client.getJsonExtension(scheme.groupVersionKind(), name)
                         .flatMap(jsonExtension -> {
                             try {
                                 
                                 var appliedJsonNode = jsonPatch.apply(jsonExtension.getInternal());
                                 if (!(appliedJsonNode instanceof ObjectNode objectNode)) {
-                                    throw new ServerWebInputException("Patched extension must be an object.");
+                                    throw new ServerWebInputException("打补丁后的扩展必须是一个对象。");
                                 }
                                 var patchedExtension = new JsonExtension(jsonExtension.getObjectMapper(), objectNode);
                                 ExtensionIdentity.requireUnchanged(scheme, name, patchedExtension);
@@ -66,7 +66,8 @@ public class ExtensionPatchHandler implements PatchHandler {
                                         .checkUpdate(scheme.groupVersionKind(), name, patchedExtension)
                                         .then(Mono.defer(() -> client.update(patchedExtension)));
                             } catch (JsonPatchException e) {
-                                return Mono.error(e);
+                                return Mono.error(new ServerWebInputException(
+                                        "无法应用 JSON Patch。", null, e));
                             }
                         }))
                 .flatMap(updated -> ServerResponse.ok().bodyValue(updated));

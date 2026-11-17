@@ -35,34 +35,33 @@ class RbacCacheServiceTest {
     ReactiveValueOperations<String, String> valueOperations;
 
     @Mock
-    RbacEnricherSignature enricherSignature;
-
-    @Mock
     ReactiveExtensionClient reactiveExtensionClient;
 
     private RbacCacheService service;
 
     @BeforeEach
     void setUp() {
-        service = new RbacCacheService(
-                cacheStore, redisTemplate, enricherSignature, reactiveExtensionClient);
+        service = new RbacCacheService(cacheStore, redisTemplate, reactiveExtensionClient);
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.get(anyString())).thenReturn(Mono.empty());
-        when(enricherSignature.signature()).thenReturn("signature");
         when(cacheStore.get(anyString())).thenReturn(Mono.empty());
         when(cacheStore.put(anyString(), anyString(), any())).thenReturn(Mono.empty());
     }
 
     @Test
     void policyRuleWithMissingArraysIsSerializedWithoutNpe() {
-        var rule = new Role.PolicyRule(
-                new String[] {"*"}, new String[] {"users"}, null, null, new String[] {"get"});
+        var role = new Role();
+        var metadata = new cn.tolim.pudans.contract.extension.Metadata();
+        metadata.setName("role-a");
+        role.setMetadata(metadata);
+        role.setRules(List.of(new Role.PolicyRule(
+                new String[] {"*"}, new String[] {"users"}, null, null, new String[] {"get"})));
 
-        StepVerifier.create(service.cachedEnrichedRules("alice", Set.of("role-a"), Mono.just(List.of(rule))))
-                .assertNext(rules -> {
-                    assertThat(rules).hasSize(1);
-                    assertThat(rules.get(0).getResourceNames()).isEmpty();
-                    assertThat(rules.get(0).getNonResourceURLs()).isEmpty();
+        StepVerifier.create(service.cachedRoleDependencies(Set.of("role-a"), Mono.just(List.of(role))))
+                .assertNext(roles -> {
+                    assertThat(roles).hasSize(1);
+                    assertThat(roles.get(0).getRules().get(0).getResourceNames()).isEmpty();
+                    assertThat(roles.get(0).getRules().get(0).getNonResourceURLs()).isEmpty();
                 })
                 .verifyComplete();
 
@@ -97,15 +96,19 @@ class RbacCacheServiceTest {
     @Test
     void cacheKeyIncludesTheRbacGeneration() {
         when(valueOperations.get("pudans:rbac:generation")).thenReturn(Mono.just("7"));
+        var role = new Role();
+        var metadata = new cn.tolim.pudans.contract.extension.Metadata();
+        metadata.setName("role-a");
+        role.setMetadata(metadata);
+        role.setRules(List.of(new Role.PolicyRule(
+                new String[] {"*"}, new String[] {"users"}, null, null, new String[] {"get"})));
 
-        StepVerifier.create(service.cachedEnrichedRules(
-                        "alice", Set.of("role-a"), Mono.just(List.of(new Role.PolicyRule(
-                                new String[] {"*"}, new String[] {"users"}, null, null, new String[] {"get"})))))
+        StepVerifier.create(service.cachedRoleDependencies(Set.of("role-a"), Mono.just(List.of(role))))
                 .expectNextCount(1)
                 .verifyComplete();
 
         var keyCaptor = ArgumentCaptor.forClass(String.class);
         verify(cacheStore).put(keyCaptor.capture(), anyString(), any());
-        assertThat(keyCaptor.getValue()).startsWith("pudans:rbac:enriched-rules:7:");
+        assertThat(keyCaptor.getValue()).startsWith("pudans:rbac:role-rules:7:");
     }
 }

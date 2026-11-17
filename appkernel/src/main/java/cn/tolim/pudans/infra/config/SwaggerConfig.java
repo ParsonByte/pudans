@@ -64,62 +64,12 @@ public class SwaggerConfig {
     }
 
     @Bean
-    GroupedOpenApi aggregatedV1alpha1Api() {
+    GroupedOpenApi apiV1alpha1Api() {
         return GroupedOpenApi.builder()
-                .group("apis_aggregated.api_v1alpha1")
-                .displayName("Aggregated API V1alpha1")
-                .pathsToMatch(
-                        "/apis/" + ApiGroups.CONSOLE + "/**",
-                        "/apis/" + ApiGroups.UC + "/**",
-                        "/apis/" + ApiGroups.PUBLIC + "/**",
-                        "/apis/" + ApiGroups.EXTENSION + "/**",
-                        "/apis/" + ApiGroups.AUTH + "/**",
-                        "/login/**")
-                .build();
-    }
-
-    @Bean
-    GroupedOpenApi publicV1alpha1Api() {
-        return GroupedOpenApi.builder()
-                .group("apis_public.api_v1alpha1")
-                .displayName("Public API V1alpha1")
-                .pathsToMatch("/apis/" + ApiGroups.PUBLIC + "/**")
-                .build();
-    }
-
-    @Bean
-    GroupedOpenApi consoleV1alpha1Api() {
-        return GroupedOpenApi.builder()
-                .group("apis_console.api_v1alpha1")
-                .displayName("Console API V1alpha1")
-                .pathsToMatch("/apis/" + ApiGroups.CONSOLE + "/**")
-                .build();
-    }
-
-    @Bean
-    GroupedOpenApi ucV1alpha1Api() {
-        return GroupedOpenApi.builder()
-                .group("apis_uc.api_v1alpha1")
-                .displayName("User-center API V1alpha1")
-                .pathsToMatch("/apis/" + ApiGroups.UC + "/**")
-                .build();
-    }
-
-    @Bean
-    GroupedOpenApi authV1alpha1Api() {
-        return GroupedOpenApi.builder()
-                .group("apis_auth.api_v1alpha1")
-                .displayName("Auth API V1alpha1")
-                .pathsToMatch("/apis/" + ApiGroups.AUTH + "/**")
-                .build();
-    }
-
-    @Bean
-    GroupedOpenApi extensionV1alpha1Api() {
-        return GroupedOpenApi.builder()
-                .group("apis_extension.api_v1alpha1")
-                .displayName("Extension API V1alpha1")
-                .pathsToMatch("/apis/" + ApiGroups.EXTENSION + "/**")
+                .group("apis_api_v1alpha1")
+                .displayName("Pudans API V1alpha1")
+                .pathsToMatch(ApiGroups.API_ROOT + "/**", "/login/**")
+                .pathsToExclude(ApiGroups.API_ROOT + "/systemconfigs/**")
                 .build();
     }
 

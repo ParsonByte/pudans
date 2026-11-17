@@ -34,10 +34,6 @@ public class AuditWal {
                 : properties.getWorkDir().resolve(DIRECTORY);
     }
 
-    public Path getDirectory() {
-        return directory;
-    }
-
     public void append(AuditRecord record) {
         var serialized = serialize(record);
         synchronized (writeLock) {
@@ -51,7 +47,7 @@ public class AuditWal {
                         StandardOpenOption.CREATE,
                         StandardOpenOption.APPEND);
             } catch (IOException | RuntimeException e) {
-                log.error("Unable to persist the audit record to the local WAL, record content: {}", serialized, e);
+                log.error("无法将审计记录持久化到本地 WAL，记录内容：{}", serialized, e);
             }
         }
     }
@@ -65,7 +61,7 @@ public class AuditWal {
                     .sorted()
                     .forEach(file -> replayFile(file, consumer));
         } catch (IOException e) {
-            log.error("Unable to list the audit WAL directory [{}]", directory, e);
+            log.error("无法列出审计 WAL 目录 [{}]", directory, e);
         }
     }
 
@@ -76,11 +72,11 @@ public class AuditWal {
                 try {
                     records.add(JsonUtils.jsonToObject(line, AuditRecord.class));
                 } catch (RuntimeException e) {
-                    log.error("Dropping an unreadable audit WAL entry", e);
+                    log.error("丢弃不可读的审计 WAL 条目", e);
                 }
             });
         } catch (IOException e) {
-            log.error("Unable to read the audit WAL file [{}]", file, e);
+            log.error("无法读取审计 WAL 文件 [{}]", file, e);
             return;
         }
         records.forEach(consumer);
@@ -90,10 +86,10 @@ public class AuditWal {
                     file.resolveSibling(file.getFileName() + ".replayed"),
                     StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            log.error("Unable to archive the replayed audit WAL file [{}]", file, e);
+            log.error("无法归档已重放的审计 WAL 文件 [{}]", file, e);
         }
         if (!records.isEmpty()) {
-            log.warn("Replayed {} audit records from the local WAL file [{}]", records.size(), file);
+            log.warn("已重放 {} 条审计记录，来源本地 WAL 文件 [{}]", records.size(), file);
         }
     }
 

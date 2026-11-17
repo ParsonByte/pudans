@@ -6,6 +6,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -31,15 +33,28 @@ class AuditWebFilterTest {
     @Mock
     ReactiveExtensionClient client;
 
+    @Mock
+    AuditRecordRuleEvaluator ruleEvaluator;
+
     private AuditWebFilter filter;
 
     @BeforeEach
     void setUp() {
-        filter = new AuditWebFilter(auditService, client);
+        lenient()
+                .when(ruleEvaluator.shouldRecord(anyString(), anyString()))
+                .thenReturn(Mono.just(true));
+        filter = new AuditWebFilter(auditService, client, ruleEvaluator);
     }
 
     private static WebFilterChain chain() {
         return exchange -> Mono.empty();
+    }
+
+    @Test
+    void runsBeforeTheSecurityFilterChain() {
+        var order = AuditWebFilter.class.getAnnotation(org.springframework.core.annotation.Order.class);
+
+        assertThat(order.value()).isLessThan(-100);
     }
 
     @Test
@@ -81,9 +96,20 @@ class AuditWebFilterTest {
     }
 
     @Test
+    void rulesCanSuppressTheAuditRecord() {
+        when(ruleEvaluator.shouldRecord(anyString(), anyString())).thenReturn(Mono.just(false));
+        var exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/api/v1/users").build());
+
+        StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
+
+        verifyNoInteractions(auditService);
+    }
+
+    @Test
     void staticResourcesAreNotAudited() {
         var exchange = MockServerWebExchange.from(
-                MockServerHttpRequest.get("/assets/app.js").build());
+                MockServerHttpRequest.get("/webjars/app.js").build());
 
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 

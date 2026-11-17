@@ -7,7 +7,6 @@ import cn.tolim.pudans.contract.core.extension.RiskRule;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -51,10 +50,6 @@ public class RiskRuleRegistry {
         return spec;
     }
 
-    static List<String> scenes() {
-        return List.copyOf(defaults().keySet());
-    }
-
     public RiskRule.Spec rule(String scene) {
         return rules.get(scene);
     }
@@ -81,7 +76,7 @@ public class RiskRuleRegistry {
             }
             rules = Map.copyOf(merged);
         } catch (RuntimeException e) {
-            log.warn("Unable to refresh risk rules, keeping previous rules", e);
+            log.warn("无法刷新风险规则，保留之前的规则", e);
         }
     }
 }

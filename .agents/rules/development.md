@@ -2,8 +2,17 @@
 
 ## Branches
 
-- Branch off the main branch; never commit or push directly to main.
-- Branch names are kebab-case with a type prefix, for example `feat/console-audit-list` or `fix/auth-redirect`.
+- `main` is the stable/release branch; `dev` is the integration branch.
+- Branch feature, fix and chore work from `dev`; never commit or push directly to `main` or `dev`.
+- Branch names are kebab-case with a type prefix, for example `feat/audit-list` or `fix/auth-redirect`.
+- Hotfixes may branch from `main` only for an urgent release fix; after merging to `main`, merge the fix back into `dev`.
+
+## Merge strategy
+
+- Feature/fix/chore branches into `dev`: use **Rebase and merge**. Keep commits atomic and rebase the branch on `origin/dev` before opening the PR; `dev` stays linear.
+- `dev` into `main`: use **Create a merge commit**. This preserves the original `dev` commit hashes and avoids creating a second, content-identical commit history on `main`.
+- Do not use **Squash** unless a branch's commits are intentionally collapsed into one.
+- Do not rebase a long-lived `dev` branch onto `main`; after a merge-commit release, fast-forward `dev` to `main` instead.
 
 ## Before committing
 

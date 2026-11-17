@@ -26,10 +26,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 
-/**
- * Public contract consumed by the auth application: the current session, the
- * enabled OAuth2 providers and the first-run state of the instance.
- */
+// 公开登录契约：当前会话、已启用的 OAuth2 提供方以及首次运行状态。
 @Component
 @RequiredArgsConstructor
 public class LoginPublicEndpoint implements CustomEndpoint {
@@ -48,12 +45,12 @@ public class LoginPublicEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.AUTH + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        final var tag = "AuthV1alpha1Login";
+        final var tag = "LoginV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET("/login/session", this::session, builder -> builder.operationId("getLoginSession")
                         .description("Returns the current browser session for the auth application.")

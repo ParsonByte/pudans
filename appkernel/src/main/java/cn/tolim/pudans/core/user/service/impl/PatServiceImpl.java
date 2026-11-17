@@ -6,11 +6,12 @@ import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.user.service.PatService;
 import cn.tolim.pudans.infra.exception.NotFoundException;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.infra.setting.MasterKeyService;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
-import com.google.common.hash.Hashing;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.ArrayList;
@@ -47,21 +48,23 @@ class PatServiceImpl implements PatService {
 
     private final ReactiveUserDetailsService userDetailsService;
 
+    private final MasterKeyService masterKeyService;
+
     private final SecureRandom secureRandom = new SecureRandom();
 
     private Clock clock;
 
     public PatServiceImpl(
-            RoleService roleService, ReactiveExtensionClient client, ReactiveUserDetailsService userDetailsService) {
+            RoleService roleService,
+            ReactiveExtensionClient client,
+            ReactiveUserDetailsService userDetailsService,
+            MasterKeyService masterKeyService) {
         this.roleService = roleService;
         this.client = client;
         this.userDetailsService = userDetailsService;
+        this.masterKeyService = masterKeyService;
         this.clock = Clock.systemUTC();
         idGenerator = new AlternativeJdkIdGenerator();
-    }
-
-    static String hashSecret(String secret) {
-        return Hashing.sha256().hashString(secret, UTF_8).toString();
     }
 
     static String buildToken(String patName, String secret) {
@@ -80,7 +83,7 @@ class PatServiceImpl implements PatService {
 
                 .filter(authTrustResolver::isAuthenticated)
                 .switchIfEmpty(Mono.error(
-                        () -> new UnsatisfiedAttributeValueException("problemDetail.authentication.required")))
+                        () -> new UnsatisfiedAttributeValueException("请先登录。")))
                 .flatMap(auth -> create(patRequest, auth.getName(), auth.getAuthorities()));
     }
 
@@ -97,13 +100,17 @@ class PatServiceImpl implements PatService {
 
         var expiresAt = patSpec.getExpiresAt();
         if (expiresAt != null && expiresAt.isBefore(clock.instant())) {
-            return Mono.error(new UnsatisfiedAttributeValueException("problemDetail.pat.invalidExpiry"));
+            return Mono.error(new UnsatisfiedAttributeValueException("令牌过期时间无效，请选择未来的时间。"));
         }
         var roles = patSpec.getRoles();
+        if (patSpec.isSudo() && !isAdmin(authorities)) {
+            return Mono.error(new UnsatisfiedAttributeValueException(
+                    "只有管理员可以创建带 sudo 能力的令牌。"));
+        }
         return hasSufficientRoles(authorities, roles)
                 .filter(has -> has)
                 .switchIfEmpty(
-                        Mono.error(() -> new UnsatisfiedAttributeValueException("problemDetail.pat.insufficientRoles")))
+                        Mono.error(() -> new UnsatisfiedAttributeValueException("你没有授予所选角色的权限。")))
                 .map(has -> {
                     var pat = new PersonalAccessToken();
                     pat.setMetadata(new Metadata());
@@ -146,6 +153,7 @@ class PatServiceImpl implements PatService {
                         pat.getSpec().setScopeMode(patSpec.getScopeMode());
                     }
                     pat.getSpec().setExpiresAt(patSpec.getExpiresAt());
+                    pat.getSpec().setSudo(patSpec.isSudo());
                     pat.getSpec().setTokenId(idGenerator.generateId().toString());
                     return pat;
                 })
@@ -157,7 +165,7 @@ class PatServiceImpl implements PatService {
         return get(patName, username)
                 .filter(pat -> !pat.getSpec().isRevoked())
                 .switchIfEmpty(
-                        Mono.error(() -> new UnsatisfiedAttributeValueException("problemDetail.pat.alreadyRevoked")))
+                        Mono.error(() -> new UnsatisfiedAttributeValueException("令牌已撤销。")))
                 .doOnNext(pat -> {
                     pat.getSpec().setRevoked(true);
                     pat.getSpec().setRevokesAt(clock.instant());
@@ -169,7 +177,7 @@ class PatServiceImpl implements PatService {
     public Mono<PersonalAccessToken> restore(String patName, String username) {
         return get(patName, username)
                 .filter(pat -> pat.getSpec().isRevoked())
-                .switchIfEmpty(Mono.error(() -> new UnsatisfiedAttributeValueException("problemDetail.pat.notRevoked")))
+                .switchIfEmpty(Mono.error(() -> new UnsatisfiedAttributeValueException("令牌尚未撤销。")))
                 .doOnNext(pat -> {
                     pat.getSpec().setRevoked(false);
                     pat.getSpec().setRevokesAt(null);
@@ -186,8 +194,7 @@ class PatServiceImpl implements PatService {
     public Mono<PersonalAccessToken> get(String patName, String username) {
         return client.fetch(PersonalAccessToken.class, patName)
                 .filter(pat -> Objects.equals(pat.getSpec().getUsername(), username))
-                .switchIfEmpty(Mono.error(() -> new NotFoundException(
-                        "problemDetail.pat.notFound", null, "The personal access token was not found or deleted.")));
+                .switchIfEmpty(Mono.error(() -> new NotFoundException("个人访问令牌不存在或已删除。")));
     }
 
     @Override
@@ -198,7 +205,8 @@ class PatServiceImpl implements PatService {
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(secret -> {
 
-                    pat.getSpec().setTokenId(hashSecret(secret));
+                    pat.getSpec().setTokenId(masterKeyService.hash(secret));
+                    pat.getSpec().setKeyVersion(masterKeyService.currentVersion());
                     return client.update(pat)
                             .thenReturn(buildToken(pat.getMetadata().getName(), secret));
                 });
@@ -217,5 +225,11 @@ class PatServiceImpl implements PatService {
         }
         var grantedRoles = AuthorityUtils.authoritiesToRoles(grantedAuthorities);
         return roleService.contains(grantedRoles, requestRoles);
+    }
+
+    private static boolean isAdmin(Collection<? extends GrantedAuthority> authorities) {
+        var roles = AuthorityUtils.authoritiesToRoles(authorities);
+        return roles.contains(BuiltinEntities.SUPER_ROLE)
+                || roles.contains(BuiltinEntities.SYSTEM_ADMIN_ROLE);
     }
 }

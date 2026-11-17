@@ -1,30 +1,26 @@
 package cn.tolim.pudans.security.authentication.feishu;
 
-import static cn.tolim.pudans.security.authorization.AuthorityUtils.ANONYMOUS_ROLE_NAME;
-import static cn.tolim.pudans.security.authorization.AuthorityUtils.AUTHENTICATED_ROLE_NAME;
-import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
-
 import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.security.LoginHandlerEnhancer;
+import cn.tolim.pudans.security.authentication.ExternalLoginCompletionService;
+import cn.tolim.pudans.security.authentication.LoginRejectedException;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
+import cn.tolim.pudans.infra.exception.Exceptions;
+import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
+import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthRequiredException;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextImpl;
-import org.springframework.security.web.server.context.ServerSecurityContextRepository;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -36,8 +32,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class FeishuOAuth2LoginWebFilter implements WebFilter {
 
-    public static final String REGISTRATION_ID = FeishuUserService.PROVIDER;
-    private static final String AUTH_API_PREFIX = "/apis/" + ApiGroups.AUTH + "/v1alpha1";
+    private static final String AUTH_API_PREFIX = ApiGroups.API_PREFIX;
     static final String AUTHORIZATION_PATH = AUTH_API_PREFIX + "/oauth2/authorization/feishu";
     static final String CALLBACK_PATH = AUTH_API_PREFIX + "/oauth2/callback/feishu";
     private static final String STATE_ATTRIBUTE = FeishuOAuth2LoginWebFilter.class.getName() + ".STATE";
@@ -47,15 +42,13 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
 
     private final FeishuUserService feishuUserService;
 
-    private final UserGroupService userGroupService;
-
-    private final ServerSecurityContextRepository securityContextRepository;
-
-    private final LoginHandlerEnhancer loginHandlerEnhancer;
+    private final ExternalLoginCompletionService externalLoginCompletionService;
 
     private final DomainEventPublisher domainEventPublisher;
 
     private final SecurityProperties securityProperties;
+
+    private final ServerResponse.Context context;
 
     private static Mono<Void> redirect(ServerWebExchange exchange, String location) {
         exchange.getResponse().setStatusCode(HttpStatus.FOUND);
@@ -87,6 +80,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 .queryParam("state", state)
                 .queryParam("scope", properties.getScope())
                 .build()
+                .encode()
                 .toUriString();
         return exchange.getSession()
                 .doOnNext(session -> session.getAttributes().put(STATE_ATTRIBUTE, state))
@@ -125,34 +119,37 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                                             .thenReturn(connection.getSpec().getUsername())))
                             .flatMap(username -> establish(exchange, username))
                             .switchIfEmpty(Mono.defer(() -> loginFailure(exchange, "feishu_not_bound")))
+                            .onErrorResume(
+                                    LoginRejectedException.class,
+                                    error -> loginRejected(exchange, error.getReason()))
                             .onErrorResume(error -> {
-                                log.warn("Feishu login failed", error);
+                                log.warn("飞书登录失败", error);
                                 return loginFailure(exchange, "feishu_login_failed");
                             });
                 });
     }
 
     private Mono<Void> establish(ServerWebExchange exchange, String username) {
-        return userGroupService
-                .getRoleNamesByUsername(username)
-                .map(role -> new SimpleGrantedAuthority(ROLE_PREFIX + role))
-                .concatWithValues(
-                        new SimpleGrantedAuthority(ROLE_PREFIX + AUTHENTICATED_ROLE_NAME),
-                        new SimpleGrantedAuthority(ROLE_PREFIX + ANONYMOUS_ROLE_NAME))
-                .distinct()
-                .collectList()
-                .flatMap(authorities -> {
-                    var authentication = new UsernamePasswordAuthenticationToken(username, null, authorities);
-                    return securityContextRepository
-                            .save(exchange, new SecurityContextImpl(authentication))
-                            .then(Mono.fromRunnable(() -> {
-                                exchange.getAttributes().put(AuditService.USERNAME_ATTRIBUTE, username);
-                                exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
-                                exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "SUCCESS");
-                            }))
-                            .then(loginHandlerEnhancer.onLoginSuccess(exchange, authentication))
-                            .then(redirect(exchange, securityProperties.getPostLoginUrl()));
-                });
+        return externalLoginCompletionService
+                .complete(exchange, username, "feishu")
+                .flatMap(result -> result.twoFactorRequired()
+                        ? twoFactorRequired(exchange)
+                        : redirect(exchange, securityProperties.getPostLoginUrl()));
+    }
+
+    private Mono<Void> twoFactorRequired(ServerWebExchange exchange) {
+        var errorResponse = Exceptions.createErrorResponse(new TwoFactorAuthRequiredException(), null, exchange);
+        return ServerResponse.status(errorResponse.getStatusCode())
+                .bodyValue(errorResponse.getBody())
+                .flatMap(response -> response.writeTo(exchange, context));
+    }
+
+    private Mono<Void> loginRejected(ServerWebExchange exchange, String reason) {
+        exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
+        exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
+        exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
+        return ProblemDetailResponses.write(
+                exchange, context, HttpStatus.FORBIDDEN, reason, "飞书登录被拒绝。");
     }
 
     private Mono<Void> loginFailure(ServerWebExchange exchange, String reason) {
@@ -160,8 +157,8 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
         exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
         publishLoginFailure(exchange, reason);
-        var location = "/auth/?error=" + reason + ("feishu_not_bound".equals(reason) ? "&need_binding=true" : "");
-        return redirect(exchange, location);
+        return ProblemDetailResponses.write(
+                exchange, context, HttpStatus.UNAUTHORIZED, reason, "飞书登录失败。");
     }
 
     private void publishLoginFailure(ServerWebExchange exchange, String reason) {

@@ -5,7 +5,6 @@ import jakarta.annotation.PreDestroy;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -43,6 +42,8 @@ public class AuditService {
     public static final String STEP_INDEX_ATTRIBUTE = AuditService.class.getName() + ".STEP_INDEX";
     public static final String AUDIT_TRAIL_ATTRIBUTE = AuditService.class.getName() + ".AUDIT_TRAIL";
     public static final String USERNAME_ATTRIBUTE = AuditService.class.getName() + ".USERNAME";
+    public static final String PAT_OWNER_ATTRIBUTE = AuditService.class.getName() + ".PAT_OWNER";
+    public static final String SUDO_USER_ATTRIBUTE = AuditService.class.getName() + ".SUDO_USER";
     public static final String UID_ATTRIBUTE = AuditService.class.getName() + ".UID";
     public static final String OPERATION_ATTRIBUTE = AuditService.class.getName() + ".OPERATION";
     public static final String RESULT_ATTRIBUTE = AuditService.class.getName() + ".RESULT";
@@ -51,8 +52,6 @@ public class AuditService {
     private final AuditStore auditStore;
 
     private final ReactiveExtensionClient client;
-
-    private final AuditSinkDispatcher auditSinkDispatcher;
 
     private final AuditWal auditWal;
 
@@ -96,10 +95,9 @@ public class AuditService {
         writer = sink.asFlux()
                 .flatMap(record -> auditStore
                         .append(record)
-                        .doOnSuccess(ignored -> auditSinkDispatcher.dispatch(record))
                         .onErrorResume(e -> {
                             log.error(
-                                    "Unable to persist audit record {}, writing it to the local WAL",
+                                    "无法持久化审计记录 {}，正在写入本地 WAL",
                                     metadataName(record),
                                     e);
                             auditWal.append(record);
@@ -117,7 +115,7 @@ public class AuditService {
         if (latch != null) {
             try {
                 if (!latch.await(5, TimeUnit.SECONDS)) {
-                    log.warn("Timed out while draining the audit write queue");
+                    log.warn("排空审计写入队列时超时");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -126,10 +124,6 @@ public class AuditService {
         if (writer != null) {
             writer.dispose();
         }
-    }
-
-    public String nextTraceId() {
-        return AuditIdGenerator.next();
     }
 
     public AuditRecord newRecord(String traceId, String uid, String operation) {
@@ -157,7 +151,7 @@ public class AuditService {
         }
         if (result.isFailure()) {
             log.error(
-                    "The audit writer rejected record {} ({}), it will be written to the local WAL instead",
+                    "审计写入器拒绝了记录 {}（{}），将改为写入本地 WAL",
                     metadataName(record),
                     result);
             writeToWal(record);
@@ -276,10 +270,6 @@ public class AuditService {
                 return Mono.empty();
             });
         });
-    }
-
-    public static Mono<AuditTrail> currentTrail() {
-        return Mono.deferContextual(contextView -> Mono.justOrEmpty(contextView.getOrEmpty(AuditTrail.class)));
     }
 
     public Flux<AuditRecord> findByTraceFlowId(String traceFlowId) {

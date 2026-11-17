@@ -37,7 +37,7 @@ public class PudansUtils {
             return StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
         } catch (IOException e) {
             throw new IllegalArgumentException(
-                    String.format("Failed to read class path file as string from location [%s]", location), e);
+                    String.format("无法从位置 [%s] 读取类路径文件内容", location), e);
         }
     }
 
@@ -54,26 +54,29 @@ public class PudansUtils {
     }
 
     public static String getDayText(Instant instant) {
-        Assert.notNull(instant, "Instant must not be null");
+        Assert.notNull(instant, "Instant 不能为空");
         int dayValue = instant.atZone(ZoneId.systemDefault()).getDayOfMonth();
         return StringUtils.leftPad(String.valueOf(dayValue), 2, '0');
     }
 
     public static String getMonthText(Instant instant) {
-        Assert.notNull(instant, "Instant must not be null");
+        Assert.notNull(instant, "Instant 不能为空");
         int monthValue = instant.atZone(ZoneId.systemDefault()).getMonthValue();
         return StringUtils.leftPad(String.valueOf(monthValue), 2, '0');
     }
 
     public static String getYearText(Instant instant) {
-        Assert.notNull(instant, "Instant must not be null");
+        Assert.notNull(instant, "Instant 不能为空");
         return String.valueOf(instant.atZone(ZoneId.systemDefault()).getYear());
     }
 
 
     public static UnaryOperator<ServerRequest> noCache() {
         return request -> {
-            request.exchange().getAttributes().put("cn.tolim.pudans.no-cache", true);
+            var headers = request.exchange().getResponse().getHeaders();
+            headers.setCacheControl("no-store, no-cache, must-revalidate");
+            headers.setPragma("no-cache");
+            headers.setExpires(0);
             return request;
         };
     }

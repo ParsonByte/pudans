@@ -27,11 +27,11 @@ import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.risk.service.RiskAlertDispatcher;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
 import cn.tolim.pudans.core.risk.service.RiskDecision;
 import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
 import cn.tolim.pudans.core.risk.service.RiskScene;
+import cn.tolim.pudans.infra.feishu.FeishuAlertNotifier;
 
 @ExtendWith(MockitoExtension.class)
 @org.mockito.junit.jupiter.MockitoSettings(strictness = org.mockito.quality.Strictness.LENIENT)
@@ -47,7 +47,7 @@ class RiskControlWebFilterTest {
     AuditService auditService;
 
     @Mock
-    RiskAlertDispatcher alertDispatcher;
+    FeishuAlertNotifier alertNotifier;
 
     @Mock
     DomainEventPublisher domainEventPublisher;
@@ -57,7 +57,8 @@ class RiskControlWebFilterTest {
     @BeforeEach
     void setUp() {
         filter = new RiskControlWebFilter(
-                riskControlService, riskRuleRegistry, auditService, alertDispatcher, domainEventPublisher);
+                riskControlService, riskRuleRegistry, auditService, alertNotifier, domainEventPublisher);
+        when(alertNotifier.send(any())).thenReturn(Mono.empty());
         when(riskRuleRegistry.enabledScenes()).thenReturn(java.util.Set.of(RiskScene.AUTH_FAILURE));
         when(auditService.newRecord(anyString(), anyString(), anyString())).thenAnswer(invocation -> {
             var record = new AuditRecord();
@@ -121,7 +122,7 @@ class RiskControlWebFilterTest {
 
     @Test
     void staticAssetsAreNotRateLimited() {
-        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/assets/index.js").build());
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/webjars/index.js").build());
 
         StepVerifier.create(filter.filter(exchange, ignored -> Mono.empty())).verifyComplete();
 

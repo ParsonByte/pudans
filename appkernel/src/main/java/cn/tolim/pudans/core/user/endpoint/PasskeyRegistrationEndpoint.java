@@ -45,7 +45,7 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "PasskeyV1alpha1Uc";
+        var tag = "PasskeyV1alpha1";
         return SpringdocRouteBuilder.route()
                 .POST("/passkeys/registration/options", this::registrationOptions, builder -> builder
                         .operationId("PasskeyRegistrationOptions")
@@ -114,12 +114,12 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
                         .map(session -> {
                             var challenge = (String) session.getAttributes().remove(CHALLENGE_ATTRIBUTE);
                             if (challenge == null) {
-                                throw new ServerWebInputException("Registration challenge is missing or expired.");
+                                throw new ServerWebInputException("注册挑战缺失或已过期。");
                             }
                             return challenge;
                         })
                         .flatMap(challenge -> request.bodyToMono(String.class)
-                                .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                                 .flatMap(json -> passkeyService.verifyRegistration(username, json, challenge))))
                 .flatMap(connection -> ServerResponse.ok().bodyValue(connection));
     }
@@ -137,12 +137,12 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
                 .filter(trustResolver::isAuthenticated)
                 .map(Authentication::getName)
                 .switchIfEmpty(Mono.error(
-                        new ResponseStatusException(HttpStatus.FORBIDDEN, "Authentication is required.")));
+                        new ResponseStatusException(HttpStatus.FORBIDDEN, "需要身份认证。")));
     }
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.AUTH + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
 

@@ -6,7 +6,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class DuplicateNameException extends ResponseStatusException {
 
     public DuplicateNameException() {
-        this("Duplicate name detected");
+        this("检测到重复名称。");
     }
 
     public DuplicateNameException(String reason) {

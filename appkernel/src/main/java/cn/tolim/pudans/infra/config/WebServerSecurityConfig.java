@@ -50,14 +50,7 @@ public class WebServerSecurityConfig {
             ServerRequestCache serverRequestCache) {
 
         var pathMatcher = pathMatchers("/**");
-        var staticResourcesMatcher = pathMatchers(
-                HttpMethod.GET,
-                "/plugins/{pluginName}/assets/**",
-                "/webjars/**",
-                "/js/**",
-                "/styles/**",
-                "/pudans-tracker.js",
-                "/images/**");
+        var staticResourcesMatcher = pathMatchers(HttpMethod.GET, "/webjars/**");
 
         var securityMatcher = new AndServerWebExchangeMatcher(
                 pathMatcher, new NegatedServerWebExchangeMatcher(staticResourcesMatcher));

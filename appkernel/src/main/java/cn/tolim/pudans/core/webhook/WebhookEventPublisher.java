@@ -12,10 +12,6 @@ public class WebhookEventPublisher {
 
     private final WebhookEventBus eventBus;
 
-    public void publish(String type, Map<String, Object> data) {
-        publish(type, data, null);
-    }
-
     public void publish(String type, Map<String, Object> data, String traceFlowId) {
         publish(AuditIdGenerator.next(), type, Instant.now(), traceFlowId, data);
     }

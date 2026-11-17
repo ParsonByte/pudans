@@ -56,7 +56,7 @@ class SudoModeWebFilter implements WebFilter {
     private static String requiredFormValue(MultiValueMap<String, String> form, String name) {
         var value = form.getFirst(name);
         if (!StringUtils.hasText(value)) {
-            throw new ServerWebInputException(name + " is required");
+            throw new ServerWebInputException(name + " 为必填项");
         }
         return value;
     }
@@ -65,18 +65,19 @@ class SudoModeWebFilter implements WebFilter {
         return new OrServerWebExchangeMatcher(
                 pathMatchers(
                         HttpMethod.PUT,
-                        "/apis/" + ApiGroups.UC + "/v1alpha1/users/-/password",
-                        "/apis/" + ApiGroups.CONSOLE + "/v1alpha1/users/-/password"),
+                        ApiGroups.API_PREFIX + "/users/-/password",
+                        ApiGroups.API_PREFIX + "/users/*/password",
+                        ApiGroups.API_PREFIX + "/users/-/self/password"),
                 pathMatchers(
                         HttpMethod.POST,
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/personalaccesstokens"),
+                        ApiGroups.API_PREFIX + "/personalaccesstokens"),
                 pathMatchers(
                         HttpMethod.DELETE,
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/personalaccesstokens/*"),
+                        ApiGroups.API_PREFIX + "/personalaccesstokens/*"),
                 pathMatchers(
                         HttpMethod.PUT,
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/personalaccesstokens/*/actions/revocation",
-                        "/apis/" + ApiGroups.AUTH + "/v1alpha1/personalaccesstokens/*/actions/restoration"));
+                        ApiGroups.API_PREFIX + "/personalaccesstokens/*/actions/revocation",
+                        ApiGroups.API_PREFIX + "/personalaccesstokens/*/actions/restoration"));
     }
 
     @Override

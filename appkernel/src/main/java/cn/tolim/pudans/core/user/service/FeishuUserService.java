@@ -5,8 +5,6 @@ import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
 
 import java.time.Clock;
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -17,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.util.StringUtils;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -28,14 +25,11 @@ import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.plugin.extensionpoint.ExtensionGetter;
-import cn.tolim.pudans.contract.user.UserProvisioningHook;
-import cn.tolim.pudans.core.audit.service.PluginInvocationAuditor;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
-import cn.tolim.pudans.infra.exception.UserProvisioningException;
+import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
 
 @Slf4j
 @Service
@@ -52,11 +46,9 @@ public class FeishuUserService {
 
     private final DomainEventPublisher domainEventPublisher;
 
-    private final ExtensionGetter extensionGetter;
-
-    private final PluginInvocationAuditor pluginInvocationAuditor;
-
     private final ReactiveTransactionManager transactionManager;
+
+    private final ParameterSettingGroupService parameterSettingGroupService;
 
     private Clock clock = Clock.systemUTC();
 
@@ -98,18 +90,18 @@ public class FeishuUserService {
     public Mono<User> createFromFeishu(FeishuUserData data, String userGroupName) {
         if (data == null || (!StringUtils.hasText(data.unionId()) && !StringUtils.hasText(data.openId()))) {
             return Mono.error(new ServerWebInputException(
-                    "A Feishu union_id or open_id is required to provision a local user."));
+                    "创建本地用户需要飞书的 union_id 或 open_id。"));
         }
         if (!StringUtils.hasText(data.displayName()) || !StringUtils.hasText(data.email())) {
             return Mono.error(new ServerWebInputException(
-                    "displayName and email must come from Feishu and are required."));
+                    "displayName 和 email 为必填项，且必须来自飞书。"));
         }
         var providerUserId =
                 StringUtils.hasText(data.unionId()) ? data.unionId() : data.openId();
         return findConnection(providerUserId)
                 .flatMap(existing -> Mono.<User>error(new ServerWebInputException(
-                        "Feishu identity [" + providerUserId + "] is already bound to user ["
-                                + existing.getSpec().getUsername() + "].")))
+                        "飞书身份 [" + providerUserId + "] 已绑定到用户 ["
+                                + existing.getSpec().getUsername() + "]。")))
                 .then(Mono.defer(() -> {
                     var username = StringUtils.hasText(data.username())
                             ? data.username()
@@ -127,8 +119,7 @@ public class FeishuUserService {
                     spec.setRegisteredAt(clock.instant());
                     spec.setPassword(null);
                     user.setSpec(spec);
-                    return verifyProvisioning(user)
-                            .then(Mono.defer(() -> userService.createUser(user)));
+                    return userService.createUser(user);
                 }))
                 .flatMap(user -> createConnection(user, data, providerUserId).thenReturn(user))
                 .flatMap(user -> StringUtils.hasText(userGroupName)
@@ -148,31 +139,21 @@ public class FeishuUserService {
         return payload;
     }
 
-    private Mono<Void> verifyProvisioning(User user) {
-        return extensionGetter
-                .getEnabledExtensions(UserProvisioningHook.class)
-                .concatMap(hook -> pluginInvocationAuditor.audit(
-                        "user-provisioning-hook",
-                        hook,
-                        user.getMetadata().getName(),
-                        Mono.defer(() -> hook.beforeCreate(user)).timeout(Duration.ofSeconds(3))))
-                .then()
-                .onErrorMap(this::mapProvisioningError);
-    }
-
-    private Throwable mapProvisioningError(Throwable error) {
-        if (error instanceof ResponseStatusException responseStatusException) {
-            return responseStatusException;
-        }
-        return new UserProvisioningException("User provisioning was rejected by a hook", error);
-    }
-
     public Mono<User> createFromFeishu(FeishuUserData data) {
         return createFromFeishu(data, null);
     }
 
     Mono<Void> assignDefaultUserGroup(String username) {
-        return client.fetch(UserGroup.class, BuiltinEntities.NORMAL_USERS_GROUP)
+        return parameterSettingGroupService
+                .getSession()
+                .map(session -> StringUtils.hasText(session.getDefaultUserGroup())
+                        ? session.getDefaultUserGroup()
+                        : BuiltinEntities.NORMAL_USERS_GROUP)
+                .defaultIfEmpty(BuiltinEntities.NORMAL_USERS_GROUP)
+                .onErrorResume(error -> Mono.just(BuiltinEntities.NORMAL_USERS_GROUP))
+                .flatMap(groupName -> client.fetch(UserGroup.class, groupName)
+                        .switchIfEmpty(Mono.defer(
+                                () -> client.fetch(UserGroup.class, BuiltinEntities.NORMAL_USERS_GROUP))))
                 .flatMap(group -> userGroupService.assignUserGroup(username, group.getMetadata().getName()))
                 .then();
     }

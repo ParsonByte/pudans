@@ -6,6 +6,7 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -27,7 +28,6 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
@@ -35,20 +35,17 @@ import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ListResult;
-import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.PageRequestImpl;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.router.SortableRequest;
-import cn.tolim.pudans.contract.extension.router.selector.SelectorUtil;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.core.rbac.service.UiPermissionService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.core.user.service.FeishuUserService;
-import cn.tolim.pudans.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
 
 @Component
 @RequiredArgsConstructor
@@ -73,6 +70,8 @@ public class UserEndpoint implements CustomEndpoint {
     private final DomainEventPublisher domainEventPublisher;
 
     private final UiPermissionService uiPermissionService;
+
+    private final ParameterSettingGroupService parameterSettingGroupService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -175,7 +174,7 @@ public class UserEndpoint implements CustomEndpoint {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 .map(org.springframework.security.core.Authentication::getName)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Not authenticated")));
+                .switchIfEmpty(Mono.error(new ServerWebInputException("未认证")));
     }
 
     private Mono<String> resolveName(ServerRequest request) {
@@ -186,13 +185,29 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> me(ServerRequest request) {
         return currentUsername()
                 .flatMap(userService::getUser)
-                .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
+                .flatMap(user -> ServerResponse.ok()
+                        .bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user, true)));
     }
 
     private Mono<ServerResponse> getUserByName(ServerRequest request) {
         return resolveName(request)
-                .flatMap(userService::getUser)
-                .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
+                .flatMap(name -> emailVisibilityFor(name)
+                        .flatMap(expose -> userService
+                                .getUser(name)
+                                .map(user -> cn.tolim.pudans.core.user.endpoint.UserView.from(user, expose))))
+                .flatMap(view -> ServerResponse.ok().bodyValue(view));
+    }
+
+    private Mono<Boolean> emailVisibility() {
+        return parameterSettingGroupService
+                .getSession()
+                .map(session -> Boolean.TRUE.equals(session.getExposeEmailToSignedInUsers()))
+                .defaultIfEmpty(false);
+    }
+
+    private Mono<Boolean> emailVisibilityFor(String name) {
+        return Mono.zip(emailVisibility(), currentUsername().defaultIfEmpty(""))
+                .map(tuple -> tuple.getT1() || tuple.getT2().equals(name));
     }
 
     private Mono<ServerResponse> listUsers(ServerRequest request) {
@@ -200,22 +215,26 @@ public class UserEndpoint implements CustomEndpoint {
         var listOptions = sortable.toListOptions();
         var keyword = request.queryParam("keyword").filter(StringUtils::hasText).map(String::trim).orElse(null);
         var pageRequest = sortable.toPageRequest();
-        if (keyword == null) {
-            return client.listBy(User.class, listOptions, pageRequest)
-                    .map(result -> new UserList(
-                            result.getPage(),
-                            result.getSize(),
-                            result.getTotal(),
-                            result.getItems().stream().map(ListedUser::from).toList(),
-                            sortable.getSort().toString()))
+        return emailVisibility().flatMap(expose -> {
+            if (keyword == null) {
+                return client.listBy(User.class, listOptions, pageRequest)
+                        .map(result -> new UserList(
+                                result.getPage(),
+                                result.getSize(),
+                                result.getTotal(),
+                                result.getItems().stream()
+                                        .map(user -> ListedUser.from(user, expose))
+                                        .toList(),
+                                sortable.getSort().toString()))
+                        .flatMap(list -> ServerResponse.ok().bodyValue(list));
+            }
+            return client
+                    .listAll(User.class, listOptions, sortable.getSort())
+                    .filter(user -> matchesKeyword(user, keyword))
+                    .collectList()
+                    .map(users -> pagedUserList(users, sortable, expose))
                     .flatMap(list -> ServerResponse.ok().bodyValue(list));
-        }
-        return client
-                .listAll(User.class, listOptions, sortable.getSort())
-                .filter(user -> matchesKeyword(user, keyword))
-                .collectList()
-                .map(users -> pagedUserList(users, sortable))
-                .flatMap(list -> ServerResponse.ok().bodyValue(list));
+        });
     }
 
     private static boolean matchesKeyword(User user, String keyword) {
@@ -230,30 +249,32 @@ public class UserEndpoint implements CustomEndpoint {
         return value != null && value.toLowerCase(java.util.Locale.ROOT).contains(needle);
     }
 
-    private UserList pagedUserList(List<User> users, SortableRequest sortable) {
-        // Page numbers are 1-based, matching PageRequestImpl.
+    private UserList pagedUserList(List<User> users, SortableRequest sortable, boolean exposeEmail) {
+        // 页码从 1 开始，与 PageRequestImpl 保持一致。
         var page = Math.max(1, sortable.getPage());
         var size = sortable.getSize();
         var total = users.size();
         var from = size > 0 ? Math.min((long) (page - 1) * size, total) : 0L;
         var to = size > 0 ? Math.min(from + size, total) : (long) total;
-        var items = users.subList((int) from, (int) to).stream().map(ListedUser::from).toList();
+        var items = users.subList((int) from, (int) to).stream()
+                .map(user -> ListedUser.from(user, exposeEmail))
+                .toList();
         return new UserList(page, size, total, items, sortable.getSort().toString());
     }
 
     private Mono<ServerResponse> createUser(ServerRequest request) {
         return request.bodyToMono(CreateUserRequest.class)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                 .flatMap(body -> feishuUserService.createFromFeishu(body.toFeishuData(), body.userGroup()))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
     private Mono<ServerResponse> batchCreateUsers(ServerRequest request) {
         return request.bodyToMono(BatchCreateRequest.class)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                 .flatMap(body -> {
                     if (CollectionUtils.isEmpty(body.users())) {
-                        return Mono.error(new ServerWebInputException("users must not be empty."));
+                        return Mono.error(new ServerWebInputException("users 不能为空。"));
                     }
                     return Flux.fromIterable(body.users())
                             .concatMap(item -> feishuUserService
@@ -295,7 +316,7 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> updateSelf(ServerRequest request) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(UpdateProfileRequest.class)
-                        .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                         .flatMap(update -> applyProfileUpdate(request.exchange(), username, update)))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
@@ -303,7 +324,7 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> updateUser(ServerRequest request) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(UpdateProfileRequest.class)
-                        .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                         .flatMap(update -> applyProfileUpdate(request.exchange(), username, update)))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
@@ -314,11 +335,11 @@ public class UserEndpoint implements CustomEndpoint {
             var spec = user.getSpec();
             if (update.displayName() != null && !Objects.equals(update.displayName(), spec.getDisplayName())) {
                 return Mono.error(new ServerWebInputException(
-                        "displayName is read-only: user data must come from Feishu."));
+                        "displayName 为只读字段：用户数据必须来自飞书。"));
             }
             if (update.email() != null && !Objects.equals(update.email(), spec.getEmail())) {
                 return Mono.error(
-                        new ServerWebInputException("email is read-only: user data must come from Feishu."));
+                        new ServerWebInputException("email 为只读字段：用户数据必须来自飞书。"));
             }
             var changedFields = new ArrayList<String>();
             if (update.avatar() != null) {
@@ -395,16 +416,23 @@ public class UserEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> changeOwnPassword(ServerRequest request) {
-        return resolveName(request)
-                .flatMap(username -> request.bodyToMono(PasswordRequest.class)
-                        .flatMap(password -> userService.updateWithRawPassword(username, password.password())))
-                .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
+        return changePassword(request, true);
     }
 
     private Mono<ServerResponse> changePasswordForUser(ServerRequest request) {
+        return changePassword(request, false);
+    }
+
+    private Mono<ServerResponse> changePassword(ServerRequest request, boolean verifyOldPassword) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(PasswordRequest.class)
-                        .flatMap(password -> userService.updateWithRawPassword(username, password.password())))
+                        .flatMap(password -> verifyOldPassword
+                                ? userService
+                                        .confirmPassword(username, password.oldPassword())
+                                        .flatMap(confirmed -> Boolean.TRUE.equals(confirmed)
+                                                ? userService.updateWithRawPassword(username, password.password())
+                                                : Mono.error(new UnsatisfiedAttributeValueException("旧密码不匹配。")))
+                                : userService.updateWithRawPassword(username, password.password())))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
@@ -412,7 +440,7 @@ public class UserEndpoint implements CustomEndpoint {
         return resolveName(request)
                 .flatMap(userGroupService::getUserGroupByUsername)
                 .flatMap(group -> ServerResponse.ok().bodyValue(group))
-                .switchIfEmpty(Mono.error(new ServerWebInputException("The user has no user group.")));
+                .switchIfEmpty(Mono.error(new ServerWebInputException("用户未加入任何用户组。")));
     }
 
     private Mono<ServerResponse> assignUserGroup(ServerRequest request) {
@@ -432,7 +460,7 @@ public class UserEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.CONSOLE + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
     
@@ -473,7 +501,8 @@ public class UserEndpoint implements CustomEndpoint {
     public record UpdateProfileRequest(String displayName, String email, String avatar, String phone, String bio) {}
 
     
-    public record PasswordRequest(String password) {}
+    public record PasswordRequest(
+            @Size(min = 8, max = 257) String password, @Size(max = 257) String oldPassword) {}
 
     
     public record AssignGroupRequest(String userGroup) {}
@@ -484,10 +513,14 @@ public class UserEndpoint implements CustomEndpoint {
     
     public record ListedUser(String name, String displayName, String email, Instant registeredAt, boolean disabled) {
         static ListedUser from(User user) {
+            return from(user, true);
+        }
+
+        static ListedUser from(User user, boolean exposeEmail) {
             return new ListedUser(
                     user.getMetadata().getName(),
                     user.getSpec().getDisplayName(),
-                    user.getSpec().getEmail(),
+                    exposeEmail ? user.getSpec().getEmail() : null,
                     user.getSpec().getRegisteredAt(),
                     Boolean.TRUE.equals(user.getSpec().getDisabled()));
         }

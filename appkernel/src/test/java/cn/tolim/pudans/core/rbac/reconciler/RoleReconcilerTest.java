@@ -76,7 +76,6 @@ class RoleReconcilerTest {
         var annotations = captor.getValue().getMetadata().getAnnotations();
         assertThat(annotations)
                 .containsEntry(Role.ROLE_DEPENDENCY_RULES, "[]")
-                .containsEntry(Role.UI_PERMISSIONS_AGGREGATED_ANNO, "[]")
                 .doesNotContainKey(Role.UI_PERMISSIONS_ANNO);
     }
 

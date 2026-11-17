@@ -65,27 +65,28 @@ public final class BuiltinEntityDefinitions {
                 Role.UI_PERMISSIONS_ANNO,
                 "[\"dashboard:view\", \"users:manage\", \"roles:manage\", \"audit:view\", "
                         + "\"risk:manage\", \"webhooks:manage\", \"settings:manage\", "
-                        + "\"auth-providers:manage\", \"plugins:manage\", \"ops:view\"]");
+                        + "\"auth-providers:manage\", \"ops:view\"]");
         role.setRules(List.of(
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources(
                                 "users",
                                 "users/batch",
                                 "users/password",
                                 "users/permissions",
                                 "users/usergroup",
-                                "users/ui-permissions")
+                                "users/ui-permissions",
+                                "users/self")
                         .verbs("get", "list", "create", "update", "patch", "delete")
                         .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources("dashboard")
                         .verbs("get")
                         .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources("usergroups", "usergroupbindings")
                         .verbs("get", "list", "create", "update", "patch", "delete")
                         .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources(
                                 "roles",
                                 "rolebindings",
@@ -94,53 +95,39 @@ public final class BuiltinEntityDefinitions {
                                 "temprolebindings/revoke")
                         .verbs("get", "list", "create", "update", "patch", "delete")
                         .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources("auditlogs", "auditlogs/graph", "auditlogs/trace", "auditlogs/replay")
                         .verbs("get", "list")
                         .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources("riskrules", "webhooks")
                         .verbs("get", "list", "create", "update", "patch", "delete")
                         .build(),
-                rule().apiGroups(ApiGroups.AUTH)
+                rule().apiGroups(ApiGroups.API)
                         .resources("authproviders")
                         .verbs("get", "list", "create", "update", "patch", "delete")
                         .build(),
-                rule().apiGroups(ApiGroups.AUTH)
+                rule().apiGroups(ApiGroups.API)
                         .resources("auth-providers", "auth-providers/enable", "auth-providers/disable")
                         .verbs("get", "list", "update")
                         .build(),
-                rule().apiGroups(ApiGroups.UC)
+                rule().apiGroups(ApiGroups.API)
                         .resources("settings")
                         .verbs("get", "list", "create", "update", "patch", "delete")
                         .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
-                        .resources("configmaps")
+                rule().apiGroups(ApiGroups.API)
+                        .resources("configmaps", "secrets", "remembermetokens")
                         .verbs("get", "list", "create", "update", "patch", "delete")
                         .build(),
-                rule().apiGroups(ApiGroups.EXTENSION)
-                        .resources("plugins")
-                        .verbs("get", "list")
-                        .build(),
-                rule().apiGroups(ApiGroups.EXTENSION)
-                        .resources(
-                                "plugins",
-                                "plugins/install",
-                                "plugins/install-from-uri",
-                                "plugins/upgrade",
-                                "plugins/upgrade-from-uri",
-                                "plugins/json-config",
-                                "plugins/plugin-state",
-                                "plugins/reload",
-                                "plugins/reset-config",
-                                "plugins/setting")
-                        .verbs("*")
-                        .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources("users/disable", "users/enable")
                         .verbs("create")
                         .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
+                        .resources("parameter-settings", "parameter-settings/-")
+                        .verbs("get", "list", "create", "update", "patch")
+                        .build(),
+                rule().apiGroups(ApiGroups.API)
                         .resources("systemconfigs")
                         .verbs("get", "list", "update", "patch")
                         .build(),
@@ -157,64 +144,69 @@ public final class BuiltinEntityDefinitions {
                 Role.UI_PERMISSIONS_ANNO,
                 "[\"profile:manage\", \"authentications:manage\"]");
         role.setRules(List.of(
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources("users", "users/permissions", "users/ui-permissions")
                         .resourceNames("-")
                         .verbs("get", "list")
                         .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources("users")
                         .resourceNames("-")
                         .verbs("update")
                         .build(),
-                rule().apiGroups(ApiGroups.CONSOLE)
+                rule().apiGroups(ApiGroups.API)
                         .resources("users/password")
                         .resourceNames("-")
                         .verbs("update")
                         .build(),
-                rule().apiGroups(ApiGroups.UC)
-                        .resources("users", "users/permissions")
+                rule().apiGroups(ApiGroups.API)
+                        .resources("users/self")
                         .resourceNames("-")
                         .verbs("get")
                         .build(),
-                rule().apiGroups(ApiGroups.UC)
-                        .resources("users/password")
+                rule().apiGroups(ApiGroups.API)
+                        .resources("users/self")
                         .resourceNames("-")
                         .verbs("update")
                         .build(),
-                rule().apiGroups(ApiGroups.AUTH)
+                rule().apiGroups(ApiGroups.API)
+                        .resources("users/avatar", "users/announcement-state")
+                        .resourceNames("-")
+                        .verbs("get", "create", "delete")
+                        .build(),
+                rule().apiGroups(ApiGroups.API)
+                        .resources("avatars")
+                        .verbs("get")
+                        .build(),
+                rule().apiGroups(ApiGroups.API)
                         .resources("authentications", "authentications/totp", "authentications/settings")
                         .verbs("*")
                         .build(),
-                rule().apiGroups(ApiGroups.AUTH)
+                rule().apiGroups(ApiGroups.API)
                         .resources("personalaccesstokens")
                         .verbs("*")
                         .build(),
-                rule().apiGroups(ApiGroups.AUTH)
+                rule().apiGroups(ApiGroups.API)
                         .resources("devices")
                         .verbs("get", "list", "delete")
                         .build(),
-                rule().apiGroups(ApiGroups.UC)
+                rule().apiGroups(ApiGroups.API)
                         .resources("user-preferences", "annotationsettings")
                         .verbs("get", "list", "create", "update", "patch")
                         .build(),
-                rule().apiGroups(ApiGroups.AUTH)
+                rule().apiGroups(ApiGroups.API)
                         .resources(
                                 "userconnections",
                                 "userconnections/oidc/providers",
                                 "userconnections/oidc/bind")
                         .verbs("create", "get", "list", "delete")
                         .build(),
-                rule().apiGroups(ApiGroups.AUTH)
+                rule().apiGroups(ApiGroups.API)
                         .resources("passkeys", "passkeys/registration/options", "passkeys/registration/verify")
                         .verbs("create", "get", "list")
                         .build(),
-                rule().apiGroups(ApiGroups.AUTH)
+                rule().apiGroups(ApiGroups.API)
                         .resources("authproviders")
-                        .verbs("get", "list")
-                        .build(),
-                rule().apiGroups(ApiGroups.EXTENSION)
-                        .resources("plugins")
                         .verbs("get", "list")
                         .build()));
         return role;

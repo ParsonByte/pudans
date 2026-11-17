@@ -62,7 +62,7 @@ public class UserGroupReconciler implements Reconciler<Request> {
                 return;
             }
             log.warn(
-                    "Built-in user group [{}] has been modified or deleted, restoring the built-in definition",
+                    "内置用户组 [{}] 已被修改或删除，正在恢复内置定义",
                     group.getMetadata().getName());
             client.update(group);
         });

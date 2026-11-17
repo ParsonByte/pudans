@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -190,7 +189,7 @@ public class DefaultRoleService implements RoleService {
                         return Flux.empty();
                     }
                     if (log.isTraceEnabled()) {
-                        log.trace("Expand role: {}", role.getMetadata().getName());
+                        log.trace("展开角色：{}", role.getMetadata().getName());
                     }
                     visited.add(name);
                     var annotations = MetadataUtil.nullSafeAnnotations(role);
@@ -215,16 +214,6 @@ public class DefaultRoleService implements RoleService {
                 .andQuery(Queries.in("labels.aggregateToRoles", roleNames))
                 .build();
         return client.listAll(Role.class, listOptions, ExtensionUtil.defaultSort());
-    }
-
-    Predicate<RoleBinding> getRoleBindingPredicate(Subject targetSubject) {
-        return roleBinding -> {
-            List<Subject> subjects = roleBinding.getSubjects();
-            for (Subject subject : subjects) {
-                return matchSubject(targetSubject, subject);
-            }
-            return false;
-        };
     }
 
     @Override

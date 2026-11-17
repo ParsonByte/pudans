@@ -76,7 +76,7 @@ public class DefaultSchemeManager implements SchemeManager {
         public <K extends Comparable<K>> void add(ValueIndexSpec<E, K> indexSpec) {
             Assert.isTrue(
                     !specMap.containsKey(indexSpec.getName()),
-                    "Index spec with name " + indexSpec.getName() + " already exists.");
+                    "名为 " + indexSpec.getName() + " 的索引规格已存在。");
             this.specMap.put(indexSpec.getName(), indexSpec);
         }
 

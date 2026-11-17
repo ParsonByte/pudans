@@ -6,7 +6,7 @@ import org.springframework.util.Assert;
 record GcRequest(GroupVersionKind gvk, String name) {
 
     public GcRequest {
-        Assert.notNull(gvk, "Group, version and kind must not be null");
-        Assert.hasText(name, "Extension name must not be blank");
+        Assert.notNull(gvk, "Group、version 和 kind 不能为 null");
+        Assert.hasText(name, "扩展名称不能为空");
     }
 }

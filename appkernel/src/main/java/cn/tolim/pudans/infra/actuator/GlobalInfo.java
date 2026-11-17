@@ -1,7 +1,6 @@
 package cn.tolim.pudans.infra.actuator;
 
 import java.net.URL;
-import java.util.Locale;
 import java.util.TimeZone;
 import lombok.Data;
 
@@ -13,8 +12,6 @@ public class GlobalInfo {
 
     private TimeZone timeZone;
 
-    private Locale locale;
-
 
     private boolean allowRegistration;
 
@@ -24,4 +21,12 @@ public class GlobalInfo {
     private Boolean mustVerifyEmailOnRegistration;
 
     private String siteTitle;
+
+    private String siteDescription;
+
+    private String logoDark;
+
+    private String logoLight;
+
+    private String siteId;
 }

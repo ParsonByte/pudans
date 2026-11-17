@@ -82,6 +82,10 @@ public class User extends AbstractExtension {
         private String totpEncryptedSecret;
 
 
+        @Schema(readOnly = true)
+        private Long totpLastStep;
+
+
         private Boolean disabled;
 
 
@@ -94,5 +98,9 @@ public class User extends AbstractExtension {
 
 
         private String permalink;
+
+
+        @Schema(readOnly = true)
+        private String hashId;
     }
 }

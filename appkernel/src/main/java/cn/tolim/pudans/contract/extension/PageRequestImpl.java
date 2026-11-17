@@ -16,16 +16,16 @@ public class PageRequestImpl implements PageRequest {
     private final Sort sort;
 
     public PageRequestImpl(int pageNumber, int pageSize, Sort sort) {
-        Assert.notNull(sort, "Sort must not be null");
+        Assert.notNull(sort, "排序条件不能为 null");
         if (pageNumber < 1) {
             pageNumber = 1;
         }
         if (pageSize <= 0) {
-            log.warn("Page size must be greater than 0, reset to default {}", MAX_SIZE);
+            log.warn("分页大小必须大于 0，已重置为默认值 {}", MAX_SIZE);
             pageSize = MAX_SIZE;
         }
         if (pageSize > 1000) {
-            log.warn("Page size must not be greater than {}, reset to {}", MAX_SIZE, MAX_SIZE);
+            log.warn("分页大小不能大于 {}，已重置为 {}", MAX_SIZE, MAX_SIZE);
             pageSize = MAX_SIZE;
         }
         this.pageNumber = pageNumber;

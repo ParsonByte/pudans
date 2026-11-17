@@ -1,6 +1,5 @@
 package cn.tolim.pudans.security.audit;
 
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -11,32 +10,31 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
+import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.audit.TraceContext;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.security.AdditionalWebFilter;
 import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.infra.PudansAttributes;
 
 @Slf4j
 @Component
-@Order(Ordered.LOWEST_PRECEDENCE)
+@Order(Ordered.HIGHEST_PRECEDENCE + 10)
 @RequiredArgsConstructor
-public class AuditWebFilter implements AdditionalWebFilter {
+public class AuditWebFilter implements WebFilter {
 
     private static final String AUDITED_ATTRIBUTE = AuditWebFilter.class.getName() + ".AUDITED";
 
     private static final int MAX_ID_LENGTH = 64;
 
-    private static final String[] STATIC_PREFIXES = {
-        "/assets/", "/images/", "/js/", "/styles/", "/webjars/", "/favicon.ico"
-    };
+    private static final String[] STATIC_PREFIXES = {"/webjars/"};
 
     private final AuditService auditService;
 
     private final ReactiveExtensionClient client;
+
+    private final AuditRecordRuleEvaluator ruleEvaluator;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -86,28 +84,34 @@ public class AuditWebFilter implements AdditionalWebFilter {
                 : client.fetch(User.class, username)
                         .map(user -> user.getSpec().getUid())
                         .defaultIfEmpty("unknown");
+        var operation = resolvedOperation(exchange);
+        var type = resourceType(exchange);
         return uidMono.onErrorResume(e -> {
-                    log.warn("Unable to resolve the uid of the audit record", e);
+                    log.warn("无法解析审计记录的用户 ID", e);
                     return Mono.just("unknown");
                 })
-                .doOnNext(uid -> {
+                .flatMap(uid -> ruleEvaluator.shouldRecord(operation, type).flatMap(record -> {
+                    if (!Boolean.TRUE.equals(record)) {
+                        return Mono.empty();
+                    }
                     exchange.getAttributes().put(AuditService.UID_ATTRIBUTE, uid);
                     try {
                         auditService.record(
                                 exchange,
-                                resolvedOperation(exchange),
-                                resourceType(exchange),
+                                operation,
+                                type,
                                 resourceName(exchange),
                                 result(exchange, error),
                                 System.currentTimeMillis() - start,
                                 context(exchange, username, error));
                     } catch (RuntimeException e) {
-                        log.error("Unable to build the audit record for request {}", exchange
+                        log.error("无法为请求 {} 构建审计记录", exchange
                                 .getRequest()
                                 .getPath()
                                 .value(), e);
                     }
-                })
+                    return Mono.<Void>empty();
+                }))
                 .then();
     }
 
@@ -144,6 +148,14 @@ public class AuditWebFilter implements AdditionalWebFilter {
         }
         if (username != null) {
             context.put("username", username);
+        }
+        var patOwner = exchange.getAttributes().get(AuditService.PAT_OWNER_ATTRIBUTE);
+        if (patOwner != null) {
+            context.put("patOwner", patOwner);
+        }
+        var sudoUser = exchange.getAttributes().get(AuditService.SUDO_USER_ATTRIBUTE);
+        if (sudoUser != null) {
+            context.put("sudoUser", sudoUser);
         }
         var extra = exchange.getAttributes().get(AuditService.CONTEXT_ATTRIBUTE);
         if (extra != null) {
@@ -206,10 +218,6 @@ public class AuditWebFilter implements AdditionalWebFilter {
     }
 
     static String resourceType(ServerWebExchange exchange) {
-        var pluginId = (String) exchange.getAttributes().get(PudansAttributes.PLUGIN_ID_ATTRIBUTE);
-        if (pluginId != null && !pluginId.isBlank()) {
-            return "plugin:" + pluginId;
-        }
         var parts = apiParts(exchange);
         if (parts.size() >= 4) {
             var resource = parts.get(3);
@@ -227,6 +235,7 @@ public class AuditWebFilter implements AdditionalWebFilter {
                 case "userconnections" -> "UserConnection";
                 case "passkeys" -> "Passkey";
                 case "settings", "configmaps" -> "Setting";
+                case "parameter-settings", "systemconfigs" -> "ParameterSetting";
                 default -> resource;
             };
         }
@@ -243,10 +252,5 @@ public class AuditWebFilter implements AdditionalWebFilter {
         return java.util.Arrays.stream(path.split("/"))
                 .filter(segment -> !segment.isBlank())
                 .toList();
-    }
-
-    @Override
-    public int getOrder() {
-        return Ordered.LOWEST_PRECEDENCE;
     }
 }

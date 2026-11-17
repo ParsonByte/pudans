@@ -1,8 +1,8 @@
 package cn.tolim.pudans.security.authentication.twofactor.totp;
 
 import static com.j256.twofactorauth.TimeBasedOneTimePasswordUtil.generateBase32Secret;
-import static com.j256.twofactorauth.TimeBasedOneTimePasswordUtil.validateCurrentNumber;
 
+import com.j256.twofactorauth.TimeBasedOneTimePasswordUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -40,6 +40,11 @@ public class DefaultTotpAuthService implements TotpAuthService {
 
     private static final int KEY_SIZE_BITS = 256;
 
+    private static final long TOTP_WINDOW_MILLIS = 10 * 1000L;
+
+    private static final int TOTP_TIME_STEP_SECONDS =
+            TimeBasedOneTimePasswordUtil.DEFAULT_TIME_STEP_SECONDS;
+
     private final BytesEncryptor encryptor;
 
     public DefaultTotpAuthService(PudansProperties properties) {
@@ -58,10 +63,10 @@ public class DefaultTotpAuthService implements TotpAuthService {
             key = Base64.getDecoder().decode(encodedKey.trim());
         } catch (IllegalArgumentException e) {
             throw new IllegalStateException(
-                    "pudans.security.totp.key must be a base64 encoded 16, 24 or 32 byte AES key.", e);
+                    "pudans.security.totp.key 必须是 Base64 编码的 16、24 或 32 字节 AES 密钥。", e);
         }
         if (key.length != 16 && key.length != 24 && key.length != 32) {
-            throw new IllegalStateException("pudans.security.totp.key must decode to 16, 24 or 32 bytes.");
+            throw new IllegalStateException("pudans.security.totp.key 解码后必须为 16、24 或 32 字节。");
         }
         return encryptorOf(new SecretKeySpec(key, "AES"));
     }
@@ -98,10 +103,9 @@ public class DefaultTotpAuthService implements TotpAuthService {
                 | NoSuchAlgorithmException
                 | UnrecoverableEntryException e) {
             throw new IllegalStateException(
-                    "Unable to open the TOTP keystore at " + keysRoot + ". Configure pudans.security.totp.key"
-                            + " (base64 AES key, recommended for multi replica deployments) or"
-                            + " pudans.security.totp.keystore-password with the password that protects the"
-                            + " existing keystore.",
+                    "无法打开位于 " + keysRoot + " 的 TOTP 密钥库。请配置 pudans.security.totp.key"
+                            + "（Base64 编码的 AES 密钥，推荐用于多副本部署），或配置"
+                            + " pudans.security.totp.keystore-password，将其设为保护现有密钥库的密码。",
                     e);
         }
     }
@@ -152,7 +156,7 @@ public class DefaultTotpAuthService implements TotpAuthService {
         try {
             Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"));
         } catch (UnsupportedOperationException | IOException e) {
-            log.debug("Unable to restrict the permissions of {}", path);
+            log.debug("无法限制 {} 的权限", path);
         }
     }
 
@@ -162,12 +166,21 @@ public class DefaultTotpAuthService implements TotpAuthService {
     }
 
     @Override
-    public boolean validateTotp(String rawSecret, int code) {
+    public Long matchStep(String rawSecret, int code, long nowMillis) {
         try {
-            return validateCurrentNumber(rawSecret, code, 10 * 1000);
+            var start = (nowMillis - TOTP_WINDOW_MILLIS) / 1000 / TOTP_TIME_STEP_SECONDS;
+            var end = (nowMillis + TOTP_WINDOW_MILLIS) / 1000 / TOTP_TIME_STEP_SECONDS;
+            for (var step = end; step >= start; step--) {
+                var generated = TimeBasedOneTimePasswordUtil.generateNumber(
+                        rawSecret, step * 1000L * TOTP_TIME_STEP_SECONDS, TOTP_TIME_STEP_SECONDS);
+                if (generated == code) {
+                    return step;
+                }
+            }
+            return null;
         } catch (GeneralSecurityException e) {
-            log.warn("Error occurred when validate TOTP code", e);
-            return false;
+            log.warn("校验 TOTP 验证码时发生错误", e);
+            return null;
         }
     }
 

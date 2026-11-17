@@ -8,7 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,13 +21,13 @@ import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.contract.risk.RiskAlert;
-import cn.tolim.pudans.core.risk.service.RiskAlertDispatcher;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
 import cn.tolim.pudans.core.risk.service.RiskDecision;
 import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
 import cn.tolim.pudans.core.risk.service.RiskScene;
 
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.infra.feishu.FeishuAlertNotifier;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 
 @Slf4j
@@ -37,14 +36,7 @@ import cn.tolim.pudans.infra.utils.IpAddressUtils;
 @RequiredArgsConstructor
 public class RiskControlWebFilter implements WebFilter {
 
-    private static final String[] IGNORED_PREFIXES = {
-        "/assets/",
-        "/images/",
-        "/js/",
-        "/styles/",
-        "/webjars/",
-        "/favicon.ico"
-    };
+    private static final String[] IGNORED_PREFIXES = {"/webjars/"};
 
     private static final String LOGIN_PATH = "/login";
 
@@ -56,7 +48,7 @@ public class RiskControlWebFilter implements WebFilter {
 
     private final AuditService auditService;
 
-    private final RiskAlertDispatcher alertDispatcher;
+    private final FeishuAlertNotifier alertNotifier;
 
     private final DomainEventPublisher domainEventPublisher;
 
@@ -119,16 +111,17 @@ public class RiskControlWebFilter implements WebFilter {
                 .evaluate(scene, ip)
                 .flatMap(decision -> decision.allowed() ? Mono.empty() : escalate(scene, ip, decision, exchange))
                 .onErrorResume(error -> {
-                    log.warn("Unable to evaluate risk scene [{}]", scene, error);
+                    log.warn("无法评估风险场景 [{}]", scene, error);
                     return Mono.empty();
                 });
     }
 
     private Mono<Void> escalate(String scene, String ip, RiskDecision decision, ServerWebExchange exchange) {
-        var ban = decision.blockFor().isZero()
-                ? Mono.empty()
-                : riskControlService.ban(scene, ip, decision.blockFor());
-        return ban.then(audit(exchange, ip, scene, decision, "DENIED", "RISK_BLOCKED"))
+        var banned = !decision.blockFor().isZero();
+        var ban = banned ? riskControlService.ban(scene, ip, decision.blockFor()) : Mono.empty();
+        return ban.then(banned
+                        ? audit(exchange, ip, scene, decision, "DENIED", "RISK_BLOCKED")
+                        : Mono.empty())
                 .then(riskControlService
                         .markAlerted(scene, ip, decision.retryAfter().isZero() ? Duration.ofMinutes(5) : decision.retryAfter())
                         .flatMap(first -> {
@@ -219,7 +212,7 @@ public class RiskControlWebFilter implements WebFilter {
                 "risk.alert",
                 payload,
                 (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
-        alertDispatcher.dispatch(alert);
+        alertNotifier.send(alert).subscribe();
     }
 
     private void publishBlocked(
@@ -244,8 +237,8 @@ public class RiskControlWebFilter implements WebFilter {
             response.getHeaders().set("Retry-After", String.valueOf(decision.retryAfter().toSeconds()));
         }
         var body = "{\"type\":\"https://pudans.tolim.cn/probs/risk-blocked\","
-                + "\"title\":\"Too Many Requests\",\"status\":429,"
-                + "\"detail\":\"Request blocked by risk control.\"}";
+                + "\"title\":\"请求过于频繁\",\"status\":429,"
+                + "\"detail\":\"请求已被风险控制拦截。\"}";
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8))));
     }
 

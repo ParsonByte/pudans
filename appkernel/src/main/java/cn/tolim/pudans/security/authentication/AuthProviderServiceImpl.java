@@ -8,9 +8,9 @@ import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.MetadataUtil;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.index.query.Queries;
-import cn.tolim.pudans.contract.infra.SystemSetting;
+import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.infra.setting.SystemConfigFetcher;
+import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,25 +37,25 @@ import reactor.util.retry.Retry;
 @RequiredArgsConstructor
 public class AuthProviderServiceImpl implements AuthProviderService {
     private final ReactiveExtensionClient client;
-    private final ObjectProvider<SystemConfigFetcher> environmentFetcherProvider;
+    private final ObjectProvider<ParameterSettingFetcher> environmentFetcherProvider;
 
     private static boolean supportsBinding(AuthProvider authProvider) {
         return BooleanUtils.TRUE.equals(
                 MetadataUtil.nullSafeLabels(authProvider).get(AuthProvider.AUTH_BINDING_LABEL));
     }
 
-    private static SystemSetting.AuthProvider getAuthProviderConfig(ConfigMap configMap) {
+    private static ParameterSetting.AuthProvider getAuthProviderConfig(ConfigMap configMap) {
         if (configMap.getData() == null) {
             configMap.setData(new HashMap<>());
         }
         final Map<String, String> data = configMap.getData();
-        String providerGroup = data.get(SystemSetting.AuthProvider.GROUP);
+        String providerGroup = data.get(ParameterSetting.AuthProvider.GROUP);
 
-        SystemSetting.AuthProvider authProvider;
+        ParameterSetting.AuthProvider authProvider;
         if (StringUtils.isBlank(providerGroup)) {
-            authProvider = new SystemSetting.AuthProvider();
+            authProvider = new ParameterSetting.AuthProvider();
         } else {
-            authProvider = JsonUtils.jsonToObject(providerGroup, SystemSetting.AuthProvider.class);
+            authProvider = JsonUtils.jsonToObject(providerGroup, ParameterSetting.AuthProvider.class);
         }
         if (authProvider.getStates() == null) {
             authProvider.setStates(new ArrayList<>());
@@ -74,7 +74,7 @@ public class AuthProviderServiceImpl implements AuthProviderService {
     public Mono<AuthProvider> disable(String name) {
         return client.get(AuthProvider.class, name)
 
-                .filter(authProvider -> !privileged(authProvider))
+                .filter(authProvider -> !AuthProviderUtils.isPrivileged(authProvider))
                 .flatMap(authProvider -> updateAuthProviderEnabled(name, false).thenReturn(authProvider));
     }
 
@@ -95,7 +95,7 @@ public class AuthProviderServiceImpl implements AuthProviderService {
                     var allProviders = tuple3.getT1();
                     var boundProviderNames = tuple3.getT2();
                     var stateMap = tuple3.getT3().stream()
-                            .collect(Collectors.toMap(SystemSetting.AuthProviderState::getName, Function.identity()));
+                            .collect(Collectors.toMap(ParameterSetting.AuthProviderState::getName, Function.identity()));
                     return allProviders.stream()
                             .peek(authProvider -> {
                                 authProvider.setIsBound(boundProviderNames.contains(authProvider.getName()));
@@ -118,9 +118,9 @@ public class AuthProviderServiceImpl implements AuthProviderService {
         return fetchProviderStates().flatMapMany(states -> {
             var namePriorityMap = states.stream()
 
-                    .filter(SystemSetting.AuthProviderState::isEnabled)
+                    .filter(ParameterSetting.AuthProviderState::isEnabled)
                     .collect(Collectors.toMap(
-                            SystemSetting.AuthProviderState::getName, SystemSetting.AuthProviderState::getPriority));
+                            ParameterSetting.AuthProviderState::getName, ParameterSetting.AuthProviderState::getPriority));
 
             var listOptions = ListOptions.builder()
                     .andQuery(Queries.in("metadata.name", namePriorityMap.keySet()))
@@ -136,10 +136,10 @@ public class AuthProviderServiceImpl implements AuthProviderService {
         });
     }
 
-    private Mono<List<SystemSetting.AuthProviderState>> fetchProviderStates() {
-        return getSystemConfigMap()
+    private Mono<List<ParameterSetting.AuthProviderState>> fetchProviderStates() {
+        return getParameterSettingsConfigMap()
                 .map(AuthProviderServiceImpl::getAuthProviderConfig)
-                .map(SystemSetting.AuthProvider::getStates)
+                .map(ParameterSetting.AuthProvider::getStates)
                 .defaultIfEmpty(List.of());
     }
 
@@ -170,23 +170,18 @@ public class AuthProviderServiceImpl implements AuthProviderService {
                 .authType(authProvider.getSpec().getAuthType())
                 .isBound(false)
                 .enabled(false)
-                .privileged(privileged(authProvider))
+                .privileged(AuthProviderUtils.isPrivileged(authProvider))
                 .build();
     }
 
-    private boolean privileged(AuthProvider authProvider) {
-        return BooleanUtils.TRUE.equals(
-                MetadataUtil.nullSafeLabels(authProvider).get(AuthProvider.PRIVILEGED_LABEL));
-    }
-
     private Mono<ConfigMap> updateAuthProviderEnabled(String name, boolean enabled) {
-        return Mono.defer(() -> getSystemConfigMap().flatMap(configMap -> {
+        return Mono.defer(() -> getParameterSettingsConfigMap().flatMap(configMap -> {
                     var providerConfig = getAuthProviderConfig(configMap);
                     var stateToFoundOpt = providerConfig.getStates().stream()
                             .filter(state -> state.getName().equals(name))
                             .findFirst();
                     if (stateToFoundOpt.isEmpty()) {
-                        var state = new SystemSetting.AuthProviderState()
+                        var state = new ParameterSetting.AuthProviderState()
                                 .setName(name)
                                 .setEnabled(enabled);
                         providerConfig.getStates().add(state);
@@ -194,7 +189,7 @@ public class AuthProviderServiceImpl implements AuthProviderService {
                         stateToFoundOpt.get().setEnabled(enabled);
                     }
 
-                    configMap.getData().put(SystemSetting.AuthProvider.GROUP, JsonUtils.objectToJson(providerConfig));
+                    configMap.getData().put(ParameterSetting.AuthProvider.GROUP, JsonUtils.objectToJson(providerConfig));
 
                     return client.update(configMap);
                 }))
@@ -202,10 +197,10 @@ public class AuthProviderServiceImpl implements AuthProviderService {
                         .filter(OptimisticLockingFailureException.class::isInstance));
     }
 
-    private Mono<ConfigMap> getSystemConfigMap() {
+    private Mono<ConfigMap> getParameterSettingsConfigMap() {
         var systemFetcher = environmentFetcherProvider.getIfUnique();
         if (systemFetcher == null) {
-            return Mono.error(new IllegalStateException("No SystemConfigurableEnvironmentFetcher found"));
+            return Mono.error(new IllegalStateException("未找到 ParameterSettingFetcher"));
         }
         return systemFetcher.getConfigMap();
     }

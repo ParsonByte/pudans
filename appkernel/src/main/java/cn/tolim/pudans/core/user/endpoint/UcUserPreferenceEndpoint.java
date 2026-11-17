@@ -46,7 +46,7 @@ class UcUserPreferenceEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserPreferenceV1alpha1Uc";
+        var tag = "UserPreferenceV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET(
                         "/user-preferences/{group}",
@@ -95,7 +95,7 @@ class UcUserPreferenceEndpoint implements CustomEndpoint {
                         })))
                 .flatMap(cm -> serverRequest
                         .bodyToMono(JsonNode.class)
-                        .switchIfEmpty(Mono.error(() -> new ServerWebInputException("Request body is required.")))
+                        .switchIfEmpty(Mono.error(() -> new ServerWebInputException("请求体为必填项。")))
                         .flatMap(jsonNode -> Mono.fromCallable(() -> {
                             if (cm.getData() == null) {
                                 cm.setData(new HashMap<>());
@@ -134,11 +134,11 @@ class UcUserPreferenceEndpoint implements CustomEndpoint {
                 .mapNotNull(SecurityContext::getAuthentication)
                 .filter(trustResolver::isAuthenticated)
                 .switchIfEmpty(Mono.error(() -> new ResponseStatusException(
-                        HttpStatus.FORBIDDEN, "Anonymous user is not allowed to access user preference.")));
+                        HttpStatus.FORBIDDEN, "匿名用户不能访问用户偏好设置。")));
     }
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.UC + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 }

@@ -34,7 +34,7 @@ class ConsoleUserEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserV1alpha1Console";
+        var tag = "UserV1alpha1";
         return RouterFunctions.nest(
                 RequestPredicates.path("/users"),
                 SpringdocRouteBuilder.route()
@@ -73,7 +73,7 @@ class ConsoleUserEndpoint implements CustomEndpoint {
         return userService
                 .enable(request.pathVariable("username"))
                 .switchIfEmpty(Mono.error(
-                        () -> new UnsatisfiedAttributeValueException("problemDetail.user.notFoundOrEnabled")))
+                        () -> new UnsatisfiedAttributeValueException("用户不存在或已启用。")))
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user)));
     }
 
@@ -83,18 +83,18 @@ class ConsoleUserEndpoint implements CustomEndpoint {
                 .map(SecurityContext::getAuthentication)
                 .map(Authentication::getName)
                 .switchIfEmpty(Mono.error(
-                        () -> new UnsatisfiedAttributeValueException("problemDetail.authentication.required")))
+                        () -> new UnsatisfiedAttributeValueException("请先登录。")))
                 .filter(currentUsername -> !Objects.equals(currentUsername, username))
                 .switchIfEmpty(Mono.error(
-                        () -> new UnsatisfiedAttributeValueException("problemDetail.user.cannotDisableSelf")))
+                        () -> new UnsatisfiedAttributeValueException("不能禁用当前登录的用户。")))
                 .then(Mono.defer(() -> userService.disable(username)))
                 .switchIfEmpty(Mono.error(
-                        () -> new UnsatisfiedAttributeValueException("problemDetail.user.notFoundOrDisabled")))
+                        () -> new UnsatisfiedAttributeValueException("用户不存在或已禁用。")))
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user)));
     }
 
     @Override
     public GroupVersion groupVersion() {
-        return new GroupVersion(ApiGroups.CONSOLE, "v1alpha1");
+        return new GroupVersion(ApiGroups.API, ApiGroups.VERSION);
     }
 }

@@ -21,7 +21,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -39,7 +38,6 @@ import reactor.util.retry.Retry;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class WebhookDispatcher implements InitializingBean, DisposableBean {
 
     private static final int CONCURRENCY = 4;
@@ -62,11 +60,26 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
 
     private final OutboundRequestValidator outboundRequestValidator;
 
-    private final WebClient webClient = WebClient.builder()
-            .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
-                    .followRedirect(false)
-                    .responseTimeout(Duration.ofSeconds(30))))
-            .build();
+    private final WebClient webClient;
+
+    public WebhookDispatcher(
+            WebhookEventBus eventBus,
+            ReactiveExtensionClient client,
+            WebhookSecretCipher secretCipher,
+            AuditService auditService,
+            OutboundRequestValidator outboundRequestValidator) {
+        this.eventBus = eventBus;
+        this.client = client;
+        this.secretCipher = secretCipher;
+        this.auditService = auditService;
+        this.outboundRequestValidator = outboundRequestValidator;
+        this.webClient = WebClient.builder()
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+                        .resolver(new ValidatingAddressResolverGroup(outboundRequestValidator))
+                        .followRedirect(false)
+                        .responseTimeout(Duration.ofSeconds(30))))
+                .build();
+    }
 
     private volatile CountDownLatch drained;
 
@@ -81,7 +94,10 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         return JsonUtils.objectToJson(payload);
     }
 
-    private static String sign(String secret, String timestamp, String body) {
+    static String sign(String secret, String timestamp, String body) {
+        if (!org.springframework.util.StringUtils.hasText(secret)) {
+            return null;
+        }
         try {
             var mac = Mac.getInstance("HmacSHA256");
             mac.init(new SecretKeySpec(secret.getBytes(UTF_8), "HmacSHA256"));
@@ -93,7 +109,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
             }
             return "sha256=" + hex;
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to sign webhook payload", e);
+            throw new IllegalStateException("无法对 Webhook 载荷进行签名", e);
         }
     }
 
@@ -126,11 +142,11 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         subscription = eventBus
                 .events()
                 .flatMap(this::dispatch, CONCURRENCY)
-                .doOnError(error -> log.warn("Webhook dispatcher encountered an error", error))
+                .doOnError(error -> log.warn("Webhook 分发器发生错误", error))
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1))
                         .maxBackoff(Duration.ofMinutes(1))
                         .doBeforeRetry(signal -> log.warn(
-                                "Re-subscribing the webhook dispatcher after an error", signal.failure())))
+                                "发生错误后重新订阅 Webhook 分发器", signal.failure())))
                 .doFinally(signal -> latch.countDown())
                 .subscribe();
     }
@@ -142,7 +158,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         if (latch != null) {
             try {
                 if (!latch.await(SHUTDOWN_TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
-                    log.warn("Timed out while draining the webhook event bus");
+                    log.warn("排空 Webhook 事件总线时超时");
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -162,7 +178,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                 .concatMap(webhook -> deliver(webhook, event))
                 .then()
                 .onErrorResume(error -> {
-                    log.warn("Unable to dispatch webhook event [{}]", event.type(), error);
+                    log.warn("无法分发 Webhook 事件 [{}]", event.type(), error);
                     return Mono.empty();
                 });
     }
@@ -212,7 +228,9 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                             .uri(spec.getUrl())
                             .contentType(MediaType.APPLICATION_JSON)
                             .headers(headers -> {
-                                headers.set("X-Pudans-Signature", signature);
+                                if (signature != null) {
+                                    headers.set("X-Pudans-Signature", signature);
+                                }
                                 headers.set("X-Pudans-Timestamp", timestamp);
                                 headers.set("X-Pudans-Event", event.type());
                                 headers.set("X-Pudans-Delivery", event.id());
@@ -294,7 +312,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                         .retryWhen(Retry.backoff(3, RETRY_INTERVAL)
                                 .filter(OptimisticLockingFailureException.class::isInstance)))
                 .onErrorResume(error -> {
-                    log.warn("Unable to persist the delivery status of webhook [{}]", webhookName, error);
+                    log.warn("无法持久化 Webhook [{}] 的投递状态", webhookName, error);
                     return Mono.empty();
                 })
                 .subscribe();

@@ -35,7 +35,7 @@ public class FallbackJsonRedisSerializer implements RedisSerializer<Object> {
                 return new Decoded(legacy.deserialize(bytes), true);
             } catch (RuntimeException legacyFailure) {
                 legacyFailure.addSuppressed(primaryFailure);
-                throw new SerializationException("Unable to deserialize cached value with Jackson 3 or Jackson 2",
+                throw new SerializationException("无法使用 Jackson 3 或 Jackson 2 反序列化缓存值",
                         legacyFailure);
             }
         }

@@ -2,7 +2,6 @@ package cn.tolim.pudans.extension.index;
 
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.index.MultiValueIndexSpec;
-import cn.tolim.pudans.contract.extension.index.UnknownKey;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,14 +15,11 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 
-@Slf4j
 class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements ValueIndexQuery<K>, Index<E, K> {
 
     private final ConcurrentNavigableMap<K, Set<String>> index;
@@ -89,12 +85,12 @@ class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements V
 
     @Override
     public Set<String> between(K fromKey, boolean fromInclusive, K toKey, boolean toInclusive) {
-        throw new UnsupportedOperationException("Multi-value index does not support between operation");
+        throw new UnsupportedOperationException("多值索引不支持 between 操作");
     }
 
     @Override
     public Set<String> notBetween(K fromKey, boolean fromInclusive, K toKey, boolean toInclusive) {
-        throw new UnsupportedOperationException("Multi-value index does not support notBetween operation");
+        throw new UnsupportedOperationException("多值索引不支持 notBetween 操作");
     }
 
     @Override
@@ -124,12 +120,12 @@ class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements V
 
     @Override
     public Set<String> lessThan(K key, boolean inclusive) {
-        throw new UnsupportedOperationException("Multi-value index does not support lessThan operation");
+        throw new UnsupportedOperationException("多值索引不支持 lessThan 操作");
     }
 
     @Override
     public Set<String> greaterThan(K key, boolean inclusive) {
-        throw new UnsupportedOperationException("Multi-value index does not support greaterThan operation");
+        throw new UnsupportedOperationException("多值索引不支持 greaterThan 操作");
     }
 
     @Override
@@ -144,32 +140,32 @@ class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements V
 
     @Override
     public Set<String> stringContains(String keyword) {
-        throw new UnsupportedOperationException("Multi-value index does not support stringContains operation");
+        throw new UnsupportedOperationException("多值索引不支持 stringContains 操作");
     }
 
     @Override
     public Set<String> stringNotContains(String keyword) {
-        throw new UnsupportedOperationException("Multi-value index does not support stringNotContains operation");
+        throw new UnsupportedOperationException("多值索引不支持 stringNotContains 操作");
     }
 
     @Override
     public Set<String> stringStartsWith(String prefix) {
-        throw new UnsupportedOperationException("Multi-value index does not support stringStartsWith operation");
+        throw new UnsupportedOperationException("多值索引不支持 stringStartsWith 操作");
     }
 
     @Override
     public Set<String> stringNotStartsWith(String prefix) {
-        throw new UnsupportedOperationException("Multi-value index does not support stringNotStartsWith operation");
+        throw new UnsupportedOperationException("多值索引不支持 stringNotStartsWith 操作");
     }
 
     @Override
     public Set<String> stringEndsWith(String suffix) {
-        throw new UnsupportedOperationException("Multi-value index does not support stringEndsWith operation");
+        throw new UnsupportedOperationException("多值索引不支持 stringEndsWith 操作");
     }
 
     @Override
     public Set<String> stringNotEndsWith(String suffix) {
-        throw new UnsupportedOperationException("Multi-value index does not support stringNotEndsWith operation");
+        throw new UnsupportedOperationException("多值索引不支持 stringNotEndsWith 操作");
     }
 
     @Override
@@ -188,12 +184,6 @@ class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements V
         return Stream.concat(index.values().stream(), Stream.of(nullKeyValues))
                 .flatMap(Set::stream)
                 .collect(Collectors.toCollection(HashSet::new));
-    }
-
-    private void ensureStringKeyType() {
-        Assert.isTrue(
-                getKeyType() == String.class || getKeyType() == UnknownKey.class,
-                "Key type must be String for this operation");
     }
 
     class UpsertTransactionalOperation implements TransactionalOperation {
@@ -228,7 +218,11 @@ class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements V
             if (Objects.equals(previousKeys, newKeys)) {
                 return;
             }
-            invertedIndex.put(primaryKey, newKeys);
+            if (newKeys == null) {
+                invertedIndex.remove(primaryKey);
+            } else {
+                invertedIndex.put(primaryKey, newKeys);
+            }
 
             if (!CollectionUtils.isEmpty(previousKeys)) {
                 previousKeys.forEach(key -> index.computeIfPresent(key, (k, v) -> {
@@ -245,7 +239,7 @@ class MultiValueIndex<E extends Extension, K extends Comparable<K>> implements V
                         }
                         if (spec.isUnique() && !v.isEmpty()) {
                             throw new DuplicateKeyException(
-                                    String.format("Duplicate key '%s' for extension '%s'", k, primaryKey));
+                                    String.format("键 '%s' 在扩展 '%s' 中重复", k, primaryKey));
                         }
                         v.add(primaryKey);
                         return v;

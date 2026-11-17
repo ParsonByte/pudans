@@ -45,7 +45,7 @@ public class DeviceEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        final var tag = "DeviceV1alpha1Uc";
+        final var tag = "DeviceV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET(
                         "/devices",
@@ -128,7 +128,7 @@ public class DeviceEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.AUTH + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
     @Builder

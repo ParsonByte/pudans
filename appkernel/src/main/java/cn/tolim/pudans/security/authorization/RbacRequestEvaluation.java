@@ -1,6 +1,5 @@
 package cn.tolim.pudans.security.authorization;
 
-import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -12,15 +11,6 @@ public class RbacRequestEvaluation {
         String ResourceAll = "*";
         String VerbAll = "*";
         String NonResourceAll = "*";
-    }
-
-    public boolean rulesAllow(Attributes requestAttributes, List<Role.PolicyRule> rules) {
-        for (Role.PolicyRule rule : rules) {
-            if (ruleAllows(requestAttributes, rule)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     protected boolean ruleAllows(Attributes requestAttributes, Role.PolicyRule rule) {

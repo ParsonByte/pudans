@@ -71,7 +71,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.CONSOLE + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
     @Override
@@ -121,14 +121,14 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> get(ServerRequest request) {
         return client.fetch(TempRoleBinding.class, request.pathVariable("name"))
                 .switchIfEmpty(
-                        Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Temp role binding not found.")))
+                        Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "临时角色绑定不存在。")))
                 .flatMap(binding -> ServerResponse.ok().bodyValue(binding));
     }
 
     private Mono<ServerResponse> apply(ServerRequest request) {
         return currentAuthentication()
                 .flatMap(authentication -> request.bodyToMono(ApplyRequest.class)
-                        .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                         .flatMap(body -> validateApply(body, authentication))
                         .flatMap(binding -> client
                                 .create(binding)
@@ -151,7 +151,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return client.fetch(TempRoleBinding.class, name)
                 .switchIfEmpty(
-                        Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "Temp role binding not found.")))
+                        Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "临时角色绑定不存在。")))
                 .flatMap(binding -> {
                     var spec = binding.getSpec();
                     if (TempRoleBinding.STATUS_ACTIVE.equals(spec.getStatus())) {
@@ -159,10 +159,10 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                     }
                     if (!TempRoleBinding.STATUS_PENDING.equals(spec.getStatus())) {
                         return Mono.error(
-                                new ServerWebInputException("Only pending temp role bindings can be approved."));
+                                new ServerWebInputException("只能批准待审批的临时角色绑定。"));
                     }
                     if (spec.getExpiresAt() == null || !Instant.now().isBefore(spec.getExpiresAt())) {
-                        return Mono.error(new ServerWebInputException("The temp role binding has expired."));
+                        return Mono.error(new ServerWebInputException("临时角色绑定已过期。"));
                     }
                     return currentAuthentication().flatMap(authentication -> {
                         var approverRoles =
@@ -172,7 +172,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                                 .flatMap(allowed -> allowed
                                         ? grantAndAudit(request, binding, authentication)
                                         : Mono.error(new ResponseStatusException(
-                                                HttpStatus.FORBIDDEN, "You cannot grant roles you do not own.")));
+                                                HttpStatus.FORBIDDEN, "不能授予你不拥有的角色。")));
                     });
                 })
                 .flatMap(binding -> ServerResponse.ok().bodyValue(binding));
@@ -216,7 +216,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
         return currentAuthentication()
                 .flatMap(authentication -> client.fetch(TempRoleBinding.class, request.pathVariable("name"))
                         .switchIfEmpty(Mono.error(
-                                new ResponseStatusException(HttpStatus.NOT_FOUND, "Temp role binding not found.")))
+                                new ResponseStatusException(HttpStatus.NOT_FOUND, "临时角色绑定不存在。")))
                         .flatMap(binding -> {
                             var spec = binding.getSpec();
                             if (TempRoleBinding.STATUS_REVOKED.equals(spec.getStatus())
@@ -229,7 +229,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                                     || authentication.getName().equals(spec.getRequestedBy());
                             if (!privileged) {
                                 return Mono.error(new ResponseStatusException(
-                                        HttpStatus.FORBIDDEN, "You cannot revoke this temp role binding."));
+                                        HttpStatus.FORBIDDEN, "你不能撤销此临时角色绑定。"));
                             }
                             spec.setStatus(TempRoleBinding.STATUS_REVOKED);
                             return client.update(binding)
@@ -252,21 +252,21 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
 
     private Mono<TempRoleBinding> validateApply(ApplyRequest body, Authentication authentication) {
         if (CollectionUtils.isEmpty(body.roleNames())) {
-            return Mono.error(new ServerWebInputException("roleNames must not be empty."));
+            return Mono.error(new ServerWebInputException("roleNames 不能为空。"));
         }
         if (body.roleNames().contains(TempRoleBinding.SUPER_ROLE_NAME)) {
-            return Mono.error(new ServerWebInputException("super-role cannot be granted temporarily."));
+            return Mono.error(new ServerWebInputException("super-role 不能被临时授予。"));
         }
         if (body.roleNames().stream().anyMatch(role -> !StringUtils.hasText(role))) {
-            return Mono.error(new ServerWebInputException("roleNames must not contain blank values."));
+            return Mono.error(new ServerWebInputException("roleNames 不能包含空值。"));
         }
         var now = Instant.now();
         if (body.expiresAt() == null || !body.expiresAt().isAfter(now)) {
-            return Mono.error(new ServerWebInputException("expiresAt must be in the future."));
+            return Mono.error(new ServerWebInputException("expiresAt 必须晚于当前时间。"));
         }
         if (Duration.between(now, body.expiresAt()).getSeconds() > TempRoleBinding.HARD_MAX_DURATION_SECONDS) {
-            return Mono.error(new ServerWebInputException("expiresAt must not exceed "
-                    + TempRoleBinding.HARD_MAX_DURATION_SECONDS + " seconds from now."));
+            return Mono.error(new ServerWebInputException("expiresAt 与当前时间的间隔不能超过 "
+                    + TempRoleBinding.HARD_MAX_DURATION_SECONDS + " 秒。"));
         }
         var username = StringUtils.hasText(body.username()) ? body.username() : authentication.getName();
         var privileged = username.equals(authentication.getName())
@@ -274,7 +274,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                 AuthorityUtils.authoritiesToRoles(authentication.getAuthorities()));
         if (!privileged) {
             return Mono.error(new ResponseStatusException(
-                    HttpStatus.FORBIDDEN, "You cannot apply for another user."));
+                    HttpStatus.FORBIDDEN, "你不能为其他用户申请。"));
         }
         var binding = TempRoleBinding.apply(
                 username,
@@ -295,7 +295,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                 .filter(authentication -> authentication != null && authentication.isAuthenticated())
                 .filter(authentication -> !(authentication instanceof AnonymousAuthenticationToken))
                 .switchIfEmpty(Mono.error(new ResponseStatusException(
-                        HttpStatus.FORBIDDEN, "Authentication is required.")));
+                        HttpStatus.FORBIDDEN, "需要身份认证。")));
     }
 
     record ApplyRequest(String username, List<String> roleNames, Instant expiresAt, String reason, String ticketId) {}

@@ -39,7 +39,7 @@ public class DefaultQueue<R> implements RequestQueue<R> {
 
     @Override
     public boolean addImmediately(R request) {
-        log.debug("Adding request {} immediately", request);
+        log.debug("立即加入请求 {}", request);
         var delayedEntry = new DelayedEntry<>(request, minDelay, nowSupplier);
         return add(delayedEntry);
     }
@@ -51,10 +51,10 @@ public class DefaultQueue<R> implements RequestQueue<R> {
             if (isDisposed()) {
                 return false;
             }
-            log.debug("Adding request {} after {}", entry.getEntry(), entry.getRetryAfter());
+            log.debug("加入请求 {}，延迟至 {}", entry.getEntry(), entry.getRetryAfter());
             if (entry.getRetryAfter().compareTo(minDelay) < 0) {
                 log.warn(
-                        "Request {} will be retried after {} ms, but minimum delay is {} ms",
+                        "请求 {} 将在 {} 毫秒后重试，但最小延迟为 {} 毫秒",
                         entry.getEntry(),
                         entry.getRetryAfter().toMillis(),
                         minDelay.toMillis());
@@ -77,7 +77,7 @@ public class DefaultQueue<R> implements RequestQueue<R> {
             }
 
             boolean added = queue.add(entry);
-            log.debug("Added request {} after {}", entry.getEntry(), entry.getRetryAfter());
+            log.debug("已加入请求 {}，延迟至 {}", entry.getEntry(), entry.getRetryAfter());
             return added;
         } finally {
             lock.unlock();
@@ -87,11 +87,11 @@ public class DefaultQueue<R> implements RequestQueue<R> {
     @Override
     public DelayedEntry<R> take() throws InterruptedException {
         var entry = queue.take();
-        log.debug("Take request {} at {}", entry.getEntry(), Instant.now());
+        log.debug("取出请求 {}，时间 {}", entry.getEntry(), Instant.now());
         lock.lockInterruptibly();
         try {
             if (isDisposed()) {
-                throw new InterruptedException("Queue has been disposed. Cannot take any elements now");
+                throw new InterruptedException("队列已销毁，当前无法取出任何元素");
             }
             processing.add(entry.getEntry());
             dirty.remove(entry.getEntry());

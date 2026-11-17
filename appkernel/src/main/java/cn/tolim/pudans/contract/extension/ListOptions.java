@@ -38,7 +38,7 @@ public class ListOptions {
         if (fieldSelector != null && fieldSelector.query() != null) {
             var query = fieldSelector.query();
             if (!(query instanceof Condition fieldCondition)) {
-                throw new IllegalArgumentException("Only support condition query");
+                throw new IllegalArgumentException("仅支持条件查询");
             }
             condition = fieldCondition;
         }
@@ -93,13 +93,13 @@ public class ListOptions {
 
         public ListOptionsBuilder andQuery(Query query) {
             if (!(query instanceof Condition condition)) {
-                throw new IllegalArgumentException("Given query must be an instance of Condition");
+                throw new IllegalArgumentException("给定的查询必须是 Condition 的实例");
             }
             if (this.query == null) {
                 this.query = condition;
             } else {
                 if (!(this.query instanceof Condition currentCondition)) {
-                    throw new IllegalArgumentException("Current query must be an instance of Condition");
+                    throw new IllegalArgumentException("当前查询必须是 Condition 的实例");
                 }
                 this.query = currentCondition.and(condition);
             }
@@ -109,13 +109,13 @@ public class ListOptions {
 
         public ListOptionsBuilder orQuery(Query query) {
             if (!(query instanceof Condition condition)) {
-                throw new IllegalArgumentException("Given query must be an instance of Condition");
+                throw new IllegalArgumentException("给定的查询必须是 Condition 的实例");
             }
             if (this.query == null) {
                 this.query = condition;
             } else {
                 if (!(this.query instanceof Condition currentCondition)) {
-                    throw new IllegalArgumentException("Current query must be an instance of Condition");
+                    throw new IllegalArgumentException("当前查询必须是 Condition 的实例");
                 }
                 this.query = currentCondition.or(condition);
             }

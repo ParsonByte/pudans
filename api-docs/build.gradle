@@ -5,20 +5,14 @@ plugins {
 description = 'OpenAPI documentation aggregation and validation only. No business code, no runtime dependency.'
 
 def docsDir = layout.projectDirectory.dir('openapi/v3_0')
-def requiredFiles = [
-    'aggregated.json',
-    'apis_console.api_v1alpha1.json',
-    'apis_extension.api_v1alpha1.json',
-    'apis_public.api_v1alpha1.json',
-    'apis_uc.api_v1alpha1.json',
-    'apis_auth.api_v1alpha1.json'
-]
+def requiredFiles = ['apis_api_v1alpha1.json']
 def forbiddenSchemas = ~/(?i)^(Post|SinglePage|Category|Tag|Comment|Attachment|AttachmentGroup|AttachmentPolicy|Storage|StoragePolicy|Policy|PolicyTemplate|Menu|MenuItem|Theme|Snapshot|Counter|Backup)/
 def forbiddenPathSegments = ['/posts', '/singlepages', '/categories', '/tags', '/comments', '/attachments', '/storage', '/menus', '/themes', '/snapshots']
+def apiPrefix = '/apis/api.pudans.tolim.cn/v1alpha1/'
 
 tasks.register('validateOpenApiDocs') {
     group = 'verification'
-    description = 'Validate the aggregated OpenAPI JSON documents.'
+    description = 'Validate the merged OpenAPI JSON document.'
     inputs.dir docsDir
     doLast {
         def slurper = new groovy.json.JsonSlurper()
@@ -37,77 +31,60 @@ tasks.register('validateOpenApiDocs') {
             def schemas = doc.components?.schemas ?: [:]
             def badSchemas = schemas.keySet().findAll { it ==~ forbiddenSchemas }
             assert badSchemas.isEmpty(): "Forbidden schemas in ${name}: ${badSchemas}"
-            def badPaths = doc.paths.keySet().findAll { path ->
+            def paths = doc.paths.keySet()
+            def badPaths = paths.findAll { path ->
                 forbiddenPathSegments.any { segment -> path.toLowerCase().contains(segment) }
             }
             assert badPaths.isEmpty(): "Forbidden paths in ${name}: ${badPaths}"
-
-            def paths = doc.paths.keySet()
-            def legacyApiPaths = paths.findAll { it.startsWith('/api/') }
-            assert legacyApiPaths.isEmpty():
-                    "Legacy /api paths in ${name}; every resource must use /apis/{group}/{version}: ${legacyApiPaths}"
+            assert paths.every { it.startsWith(apiPrefix) }:
+                    "Paths outside ${apiPrefix} in ${name}: ${paths.findAll { !it.startsWith(apiPrefix) }}"
             assert !paths.any { it.contains('/apis/{group}/{version}/') }:
                     "Placeholder API group/version paths in ${name}: ${paths.findAll { it.contains('/apis/{group}/{version}/') }}"
-            def apiPaths = paths.findAll { it.startsWith('/apis/') }
-            def invalidGroups = apiPaths.findAll { path ->
+            def invalidVersions = paths.findAll { path ->
                 def parts = path.split('/')
-                parts.length < 5 || !parts[2].contains('.')
+                !(parts[3] ==~ /^v[0-9]+(?:(?:alpha|beta)[0-9]+)?$/)
             }
-            assert invalidGroups.isEmpty():
-                    "API paths without a dotted apiGroup in ${name}: ${invalidGroups}"
-            def canonicalGroups = [
-                    'console.api.pudans.tolim.cn',
-                    'uc.api.pudans.tolim.cn',
-                    'public.api.pudans.tolim.cn',
-                    'extension.api.pudans.tolim.cn',
-                    'auth.api.pudans.tolim.cn'
-            ]
-            def nonCanonicalGroups = apiPaths.findAll { path ->
-                !canonicalGroups.contains(path.split('/')[2])
-            }
-            assert nonCanonicalGroups.isEmpty():
-                    "Non-canonical API groups in ${name}: ${nonCanonicalGroups}"
-            def invalidVersions = apiPaths.findAll { path ->
-                def parts = path.split('/')
-                parts.length >= 5 && !(parts[3] ==~ /^v[0-9]+(?:(?:alpha|beta)[0-9]+)?$/)
-            }
-            assert invalidVersions.isEmpty():
-                    "API paths without a valid version in ${name}: ${invalidVersions}"
+            assert invalidVersions.isEmpty(): "API paths without a valid version in ${name}: ${invalidVersions}"
+            def operationTags = doc.paths.values().collectMany { operations ->
+                operations.values()
+                        .findAll { operation -> operation instanceof Map }
+                        .collectMany { operation -> operation.tags ?: [] }
+            } as Set
+            def invalidTags = operationTags.findAll { tag -> !(tag ==~ /^[A-Za-z0-9]+V1alpha1$/) }
+            assert invalidTags.isEmpty(): "API tags must use the <Kind>V1alpha1 form in ${name}: ${invalidTags}"
         }
 
-        def userSpec = parsed['aggregated.json'].components.schemas.UserSpec
+        def paths = parsed['apis_api_v1alpha1.json'].paths.keySet()
+        def userSpec = parsed['apis_api_v1alpha1.json'].components.schemas.UserSpec
         assert userSpec != null: 'UserSpec schema is required'
         assert userSpec.properties.displayName.readOnly == true: 'UserSpec.displayName must be readOnly'
         assert userSpec.properties.email.readOnly == true: 'UserSpec.email must be readOnly'
 
-        def consolePaths = parsed['apis_console.api_v1alpha1.json'].paths.keySet()
-        assert consolePaths.any { it.endsWith('/users/-/batch') }: 'Console API must expose batch user creation'
-        assert consolePaths.any { it.endsWith('/auditlogs') }: 'Console API must expose audit log query'
-        assert consolePaths.any { it.endsWith('/auditlogs/graph') }: 'Console API must expose the daily audit graph'
-        assert consolePaths.any { it.endsWith('/trace') }: 'Console API must expose audit trace lookup'
-        assert consolePaths.any { it.contains('/auditlogs/replay/') }: 'Console API must expose read-only audit replay'
-        assert consolePaths.any { it.endsWith('/usergroups') }: 'Console API must expose user groups'
-        assert consolePaths.any { it.endsWith('/usergroupbindings') }: 'Console API must expose user group bindings'
-        assert consolePaths.any { it.endsWith('/temprolebindings') }: 'Console API must expose JIT temp role bindings'
-        assert consolePaths.any { it.endsWith('/webhooks') }: 'Console API must expose webhooks'
-        assert consolePaths.any { it.endsWith('/riskrules') }: 'Console API must expose risk rules'
-
-        def ucPaths = parsed['apis_uc.api_v1alpha1.json'].paths.keySet()
-        assert ucPaths.any { it.endsWith('/users/-') }: 'UC API must expose current user'
-        assert ucPaths.any { it.contains('/user-preferences/') }: 'UC API must expose user preferences'
-        assert ucPaths.any { it.endsWith('/annotationsettings') }: 'UC API must expose annotation settings'
-
-        def publicPaths = parsed['apis_public.api_v1alpha1.json'].paths.keySet()
-        assert publicPaths.any { it.contains('/system/setup') }: 'Public API must expose system setup'
-
-        def authPaths = parsed['apis_auth.api_v1alpha1.json'].paths.keySet()
-        assert authPaths.any { it.contains('/auth-providers') }: 'Auth API must expose auth providers'
-        assert authPaths.any { it.contains('/passkeys/assertion/options') }: 'Auth API must expose passkey assertion'
-        assert authPaths.any { it.contains('/passkeys/registration/options') }: 'Auth API must expose passkey registration'
-        assert authPaths.any { it.contains('/userconnections/oidc/bind') }: 'Auth API must expose OIDC binding'
-        assert authPaths.any { it.endsWith('/personalaccesstokens') }: 'Auth API must expose personal access tokens'
-        assert authPaths.any { it.contains('/authentications/two-factor/settings') }: 'Auth API must expose two-factor settings'
-        assert authPaths.any { it.contains('feishu') }: 'Auth API must expose Feishu OAuth2 endpoints'
+        assert paths.any { it.endsWith('/users/-/batch') }: 'API must expose batch user creation'
+        assert paths.any { it.endsWith('/users/-/self') }: 'API must expose the current user self endpoint'
+        assert paths.any { it.endsWith('/users/-/self/permissions') }: 'API must expose self permissions'
+        assert paths.any { it.endsWith('/users/-/self/password') }: 'API must expose self password change'
+        assert paths.any { it.endsWith('/auditlogs') }: 'API must expose audit log query'
+        assert paths.any { it.endsWith('/auditlogs/graph') }: 'API must expose the daily audit graph'
+        assert paths.any { it.endsWith('/trace') }: 'API must expose audit trace lookup'
+        assert paths.any { it.contains('/auditlogs/replay/') }: 'API must expose read-only audit replay'
+        assert paths.any { it.endsWith('/usergroups') }: 'API must expose user groups'
+        assert paths.any { it.endsWith('/usergroupbindings') }: 'API must expose user group bindings'
+        assert paths.any { it.endsWith('/temprolebindings') }: 'API must expose JIT temp role bindings'
+        assert paths.any { it.endsWith('/webhooks') }: 'API must expose webhooks'
+        assert paths.any { it.endsWith('/riskrules') }: 'API must expose risk rules'
+        assert paths.any { it.contains('/user-preferences/') }: 'API must expose user preferences'
+        assert paths.any { it.endsWith('/annotationsettings') }: 'API must expose annotation settings'
+        assert paths.any { it.contains('/system/setup') }: 'API must expose system setup'
+        assert paths.any { it.contains('/auth-providers') }: 'API must expose auth providers'
+        assert paths.any { it.contains('/passkeys/assertion/options') }: 'API must expose passkey assertion'
+        assert paths.any { it.contains('/passkeys/registration/options') }: 'API must expose passkey registration'
+        assert paths.any { it.contains('/userconnections/oidc/bind') }: 'API must expose OIDC binding'
+        assert paths.any { it.endsWith('/personalaccesstokens') }: 'API must expose personal access tokens'
+        assert paths.any { it.contains('/authentications/two-factor/settings') }: 'API must expose two-factor settings'
+        assert paths.any { it.contains('feishu') }: 'API must expose Feishu OAuth2 endpoints'
+        assert !paths.any { it.contains('/systemconfigs/') }:
+                'Deprecated /systemconfigs routes must not be published'
     }
 }
 

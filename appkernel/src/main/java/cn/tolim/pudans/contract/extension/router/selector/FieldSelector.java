@@ -22,8 +22,8 @@ public record FieldSelector(@Nullable Query query) {
     }
 
     public FieldSelector andQuery(Query other) {
-        Assert.isInstanceOf(Condition.class, other, "Only Condition query is supported");
-        Assert.isInstanceOf(Condition.class, query, "Only Condition query is supported");
+        Assert.isInstanceOf(Condition.class, other, "仅支持 Condition 查询");
+        Assert.isInstanceOf(Condition.class, query, "仅支持 Condition 查询");
         return of(((Condition) query).and((Condition) other));
     }
 }

@@ -27,7 +27,7 @@ class PatEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = PersonalAccessToken.KIND + "V1alpha1Uc";
+        var tag = PersonalAccessToken.KIND + "V1alpha1";
         return route().nest(
                         path("/personalaccesstokens"),
                         () -> route().POST(
@@ -100,6 +100,6 @@ class PatEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.AUTH + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 }

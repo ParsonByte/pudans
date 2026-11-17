@@ -9,8 +9,6 @@ import org.springframework.security.oauth2.client.authentication.OAuth2Authentic
 
 public final class OAuth2IdentityFingerprint {
 
-    public static final String PARAMETER_NAME = "oauth2Identity";
-
     private OAuth2IdentityFingerprint() {}
 
     public static String from(OAuth2AuthenticationToken token) {
@@ -21,7 +19,7 @@ public final class OAuth2IdentityFingerprint {
             digest.update(token.getPrincipal().getName().getBytes(UTF_8));
             return HexFormat.of().formatHex(digest.digest());
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is unavailable", e);
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 }

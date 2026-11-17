@@ -66,13 +66,13 @@ class UserConnectionEndpoint implements CustomEndpoint {
                     .digest((registrationId + '\0' + subject).getBytes(StandardCharsets.UTF_8));
             return "oidc-" + HexFormat.of().formatHex(digest, 0, 28);
         } catch (java.security.NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserConnectionV1alpha1Uc";
+        var tag = "UserConnectionV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET("/userconnections", this::list, builder -> builder.operationId("ListMyConnections")
                         .description("List the current user's identity bindings (Feishu, OIDC and Passkeys).")
@@ -128,7 +128,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> authorizeUrl(ServerRequest request) {
         var registrationId = request.pathVariable("registrationId");
         var redirectUri = request.queryParam("redirectUri").orElseThrow(
-                () -> new ServerWebInputException("Query param 'redirectUri' is required"));
+                () -> new ServerWebInputException("查询参数 'redirectUri' 为必填项"));
         var state = UUID.randomUUID().toString();
         return currentUsername()
                 .flatMap(username -> request.exchange()
@@ -142,15 +142,17 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> bindOidc(ServerRequest request) {
         return currentUsername().flatMap(username -> request.bodyToMono(OidcBindRequest.class)
-                        .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is required.")))
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                         .flatMap(body -> request.exchange()
                                 .getSession()
                                 .flatMap(session -> {
                                     var expectedState =
                                             (String) session.getAttributes().get(stateKey(body.registrationId()));
                                     session.getAttributes().remove(stateKey(body.registrationId()));
-                                    if (body.state() != null && expectedState != null && !expectedState.equals(body.state())) {
-                                        return Mono.error(new ServerWebInputException("Invalid OIDC state."));
+                                    if (body.state() == null
+                                            || expectedState == null
+                                            || !expectedState.equals(body.state())) {
+                                        return Mono.error(new ServerWebInputException("OIDC 状态无效。"));
                                     }
                                     return oidcClient
                                             .exchange(body.registrationId(), body.code(), body.redirectUri());
@@ -169,7 +171,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
         return client.listAll(UserConnection.class, options, defaultSort())
                 .next()
                 .flatMap(existing -> Mono.<UserConnection>error(new ServerWebInputException(
-                        "This OIDC identity is already bound.")))
+                        "此 OIDC 身份已绑定。")))
                 .switchIfEmpty(Mono.defer(() -> {
                     var connection = new UserConnection();
                     var metadata = new Metadata();
@@ -192,12 +194,12 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .flatMap(username -> client.fetch(UserConnection.class, name).flatMap(connection -> {
                     if (!username.equals(connection.getSpec().getUsername())) {
                         return Mono.error(new ResponseStatusException(
-                                HttpStatus.FORBIDDEN, "Cannot remove another user's connection."));
+                                HttpStatus.FORBIDDEN, "不能删除其他用户的连接。"));
                     }
                     return canRemove(username, connection).flatMap(canRemove -> canRemove
                             ? client.delete(connection)
                             : Mono.error(new ServerWebInputException(
-                                    "Cannot remove the only sign-in method without a passkey.")));
+                                    "没有 Passkey 时不能移除唯一的登录方式。")));
                 }))
                 .flatMap(deleted -> ServerResponse.ok().bodyValue(deleted));
     }
@@ -219,7 +221,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .filter(authenticationTrustResolver::isAuthenticated)
                 .map(Authentication::getName)
                 .switchIfEmpty(Mono.error(
-                        new ResponseStatusException(HttpStatus.FORBIDDEN, "Authentication is required.")));
+                        new ResponseStatusException(HttpStatus.FORBIDDEN, "需要身份认证。")));
     }
 
     private reactor.core.publisher.Flux<UserConnection> listConnections(String username) {
@@ -232,7 +234,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.AUTH + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
 

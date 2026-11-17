@@ -79,7 +79,7 @@ public class Unstructured implements Extension {
                 return new LinkedHashSet<>(collection);
             }
             throw new IllegalArgumentException(
-                    "Incorrect value type: " + value.getClass() + ", expected: " + Set.class);
+                    "值类型不正确：" + value.getClass() + "，期望：" + Set.class);
         });
     }
 

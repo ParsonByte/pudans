@@ -1,12 +1,10 @@
 package cn.tolim.pudans.contract.event.user;
 
 import cn.tolim.pudans.contract.core.extension.user.UserConnection;
-import cn.tolim.pudans.contract.plugin.SharedEvent;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
 
-@SharedEvent
 public class UserConnectionDisconnectedEvent extends ApplicationEvent {
 
     @Getter

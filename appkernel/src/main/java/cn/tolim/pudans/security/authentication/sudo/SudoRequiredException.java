@@ -10,7 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class SudoRequiredException extends ResponseStatusException {
 
     public SudoRequiredException(List<String> methods) {
-        super(HttpStatus.FORBIDDEN, "Sudo confirmation required", null, "problemDetail.sudo.required", null);
+        super(HttpStatus.FORBIDDEN, "需要安全确认。");
         setType(URI.create(Exceptions.SUDO_REQUIRED_TYPE));
         getBody().setProperty("methods", methods);
     }

@@ -8,5 +8,9 @@ metadata:
     rbac.authorization.pudans.tolim.cn/module: "Actuator"
     rbac.authorization.pudans.tolim.cn/display-name: "Actuator Manage"
 rules:
-  - nonResourceURLs: [ "/actuator/*" ]
-    verbs: [ "get", "post", "delete" ]
+  - nonResourceURLs:
+      - "/actuator/*"
+    verbs:
+      - "get"
+      - "post"
+      - "delete"

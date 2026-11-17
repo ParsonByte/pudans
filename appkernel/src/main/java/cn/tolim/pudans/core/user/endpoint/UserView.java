@@ -8,6 +8,10 @@ import java.time.Instant;
 public record UserView(String apiVersion, String kind, MetadataOperator metadata, Spec spec, Status status) {
 
     public static UserView from(User user) {
+        return from(user, true);
+    }
+
+    public static UserView from(User user, boolean exposeEmail) {
         if (user == null) {
             return null;
         }
@@ -15,7 +19,7 @@ public record UserView(String apiVersion, String kind, MetadataOperator metadata
         var spec = new Spec(
                 userSpec.getUid(),
                 userSpec.getDisplayName(),
-                userSpec.getEmail(),
+                exposeEmail ? userSpec.getEmail() : null,
                 userSpec.getAvatar(),
                 userSpec.getPhone(),
                 userSpec.getBio(),
@@ -23,7 +27,9 @@ public record UserView(String apiVersion, String kind, MetadataOperator metadata
                 userSpec.getRegisteredAt(),
                 userSpec.getDisabled(),
                 userSpec.getTwoFactorAuthEnabled());
-        var status = new Status(user.getStatus() == null ? null : user.getStatus().getPermalink());
+        var status = new Status(
+                user.getStatus() == null ? null : user.getStatus().getPermalink(),
+                user.getStatus() == null ? null : user.getStatus().getHashId());
         return new UserView("pudans.tolim.cn/v1alpha1", User.KIND, user.getMetadata(), spec, status);
     }
 
@@ -41,5 +47,5 @@ public record UserView(String apiVersion, String kind, MetadataOperator metadata
             Boolean twoFactorAuthEnabled) {}
 
 
-    public record Status(String permalink) {}
+    public record Status(String permalink, String hashId) {}
 }

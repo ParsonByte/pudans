@@ -20,9 +20,7 @@ public enum AuthorityUtils {
 
     public static final String ANONYMOUS_ROLE_NAME = "anonymous";
 
-    public static final String COMMENT_MANAGEMENT_ROLE_NAME = "role-template-manage-comments";
-
-    public static final String POST_CONTRIBUTOR_ROLE_NAME = "role-template-post-contributor";
+    public static final String TWO_FACTOR_AUTHENTICATED_ROLE_NAME = "two-factor-authenticated";
 
 
     public static Set<String> authoritiesToRoles(Collection<? extends GrantedAuthority> authorities) {

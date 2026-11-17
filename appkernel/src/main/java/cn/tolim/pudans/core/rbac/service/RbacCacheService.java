@@ -12,10 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
-import cn.tolim.pudans.contract.core.extension.rbac.Role.PolicyRule;
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
@@ -38,8 +36,6 @@ public class RbacCacheService {
 
     private static final String ROLE_RULES_KEY_PREFIX = "pudans:rbac:role-rules:";
 
-    private static final String ENRICHED_RULES_KEY_PREFIX = "pudans:rbac:enriched-rules:";
-
     private static final Set<String> INVALIDATING_KINDS = Set.of(
             Role.KIND,
             cn.tolim.pudans.contract.core.extension.rbac.RoleBinding.KIND,
@@ -49,8 +45,6 @@ public class RbacCacheService {
     private final ReactiveRedisCacheStore cacheStore;
 
     private final ReactiveStringRedisTemplate redisTemplate;
-
-    private final RbacEnricherSignature enricherSignature;
 
     private final ReactiveExtensionClient reactiveExtensionClient;
 
@@ -97,7 +91,7 @@ public class RbacCacheService {
         } catch (RuntimeException e) {
             return;
         }
-        invalidateAll().subscribe(ignored -> {}, error -> log.warn("Unable to invalidate the rbac cache", error));
+        invalidateAll().subscribe(ignored -> {}, error -> log.warn("无法失效 RBAC 缓存", error));
     }
 
     public Mono<Void> invalidateAll() {
@@ -159,8 +153,7 @@ public class RbacCacheService {
         }
         return currentGeneration()
                 .flatMap(generationValue -> {
-                    var key = ROLE_RULES_KEY_PREFIX + generationValue + ':' + hash(roleNames) + ':'
-                            + enricherSignature.signature();
+                    var key = ROLE_RULES_KEY_PREFIX + generationValue + ':' + hash(roleNames);
                     return cacheStore
                             .get(key)
                             .map(json -> deserializeRoles(json))
@@ -168,33 +161,6 @@ public class RbacCacheService {
                                     .put(key, JsonUtils.objectToJson(serializeRoles(roles)), TTL)
                                     .thenReturn(roles))));
                 });
-    }
-
-    public Mono<List<PolicyRule>> cachedEnrichedRules(
-            String username, Set<String> roleNames, Mono<List<PolicyRule>> loader) {
-        return currentGeneration()
-                .flatMap(generationValue -> {
-                    var key = ENRICHED_RULES_KEY_PREFIX + generationValue + ':' + hash(roleNames) + ':'
-                            + hashString(username) + ':' + enricherSignature.signature();
-                    return cacheStore
-                            .get(key)
-                            .map(this::deserializePolicyRules)
-                            .switchIfEmpty(Mono.defer(() -> loader.flatMap(rules -> {
-                                var normalized = rules.stream().sorted().distinct().toList();
-                                return cacheStore
-                                        .put(key, JsonUtils.objectToJson(serializePolicyRules(normalized)), TTL)
-                                        .thenReturn(normalized);
-                            })));
-                });
-    }
-
-    private static String hashString(String value) {
-        try {
-            var digest = MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest).substring(0, 32);
-        } catch (Exception e) {
-            return Integer.toHexString(value.hashCode());
-        }
     }
 
     private static String hash(Set<String> roleNames) {
@@ -209,30 +175,6 @@ public class RbacCacheService {
 
     private static String[] nullSafe(String[] values) {
         return values == null ? new String[0] : values;
-    }
-
-    private static List<CachedRule> serializePolicyRules(List<PolicyRule> rules) {
-        return rules.stream()
-                .map(rule -> new CachedRule(
-                        Arrays.asList(nullSafe(rule.getApiGroups())),
-                        Arrays.asList(nullSafe(rule.getResources())),
-                        Arrays.asList(nullSafe(rule.getResourceNames())),
-                        Arrays.asList(nullSafe(rule.getNonResourceURLs())),
-                        Arrays.asList(nullSafe(rule.getVerbs()))))
-                .toList();
-    }
-
-    private List<PolicyRule> deserializePolicyRules(String json) {
-        List<CachedRule> cachedRules = JsonUtils.jsonToObject(
-                json, new com.fasterxml.jackson.core.type.TypeReference<List<CachedRule>>() {});
-        return cachedRules.stream()
-                .map(rule -> new PolicyRule(
-                        nullSafe(rule.apiGroups().toArray(String[]::new)),
-                        nullSafe(rule.resources().toArray(String[]::new)),
-                        nullSafe(rule.resourceNames().toArray(String[]::new)),
-                        nullSafe(rule.nonResourceURLs().toArray(String[]::new)),
-                        nullSafe(rule.verbs().toArray(String[]::new))))
-                .toList();
     }
 
     private static List<CachedRole> serializeRoles(List<Role> roles) {

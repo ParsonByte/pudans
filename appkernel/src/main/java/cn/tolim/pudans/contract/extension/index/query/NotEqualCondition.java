@@ -5,7 +5,7 @@ import org.springframework.util.Assert;
 public record NotEqualCondition(String indexName, Object key) implements IndexCondition {
 
     public NotEqualCondition {
-        Assert.notNull(key, "Key of " + indexName + " must not be null");
+        Assert.notNull(key, "索引 " + indexName + " 的键不能为 null");
     }
 
     @Override

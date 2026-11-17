@@ -31,7 +31,7 @@ public class OidcClient {
         return properties.getProviders().stream()
                 .filter(provider -> registrationId.equals(provider.getRegistrationId()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Unknown OIDC provider: " + registrationId));
+                .orElseThrow(() -> new IllegalArgumentException("未知的 OIDC 提供方：" + registrationId));
     }
 
     public String authorizationUrl(String registrationId, String redirectUri, String state) {
@@ -43,6 +43,7 @@ public class OidcClient {
                 .queryParam("scope", String.join(" ", provider.getScopes()))
                 .queryParam("state", state)
                 .build()
+                .encode()
                 .toUriString();
     }
 
@@ -67,11 +68,11 @@ public class OidcClient {
                     var accessToken = tokenResponse.get("access_token");
                     if (accessToken == null) {
                         return Mono.error(
-                                new OidcException("OIDC token response has no access_token: " + tokenResponse));
+                                new OidcException("OIDC 令牌响应中没有 access_token：" + tokenResponse));
                     }
                     var userInfoUri = provider.getUserInfoUri();
                     if (!StringUtils.hasText(userInfoUri)) {
-                        return Mono.error(new OidcException("OIDC provider has no userinfo endpoint"));
+                        return Mono.error(new OidcException("OIDC 提供方没有 userinfo 端点"));
                     }
                     return webClient
                             .get()
@@ -84,7 +85,7 @@ public class OidcClient {
                     var subject = userInfo.get(provider.getUserNameAttribute());
                     if (subject == null) {
                         throw new OidcException(
-                                "OIDC userinfo has no claim [" + provider.getUserNameAttribute() + "]: " + userInfo);
+                                "OIDC userinfo 响应中缺少声明 [" + provider.getUserNameAttribute() + "]：" + userInfo);
                     }
                     return new OidcUserInfo(
                             String.valueOf(subject),

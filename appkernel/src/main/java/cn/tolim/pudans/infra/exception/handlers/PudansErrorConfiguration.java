@@ -5,7 +5,6 @@ import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.webflux.error.ErrorAttributes;
 import org.springframework.boot.webflux.error.ErrorWebExceptionHandler;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -35,7 +34,7 @@ public class PudansErrorConfiguration {
 
 
     @Bean
-    ErrorAttributes errorAttributes(MessageSource messageSource) {
-        return new ProblemDetailErrorAttributes(messageSource);
+    ErrorAttributes errorAttributes() {
+        return new ProblemDetailErrorAttributes();
     }
 }

@@ -2,7 +2,6 @@ package cn.tolim.pudans.contract.infra;
 
 import com.github.zafarkhaja.semver.Version;
 import java.net.URL;
-import java.util.Locale;
 import java.util.TimeZone;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -18,13 +17,13 @@ public class SystemInfo {
 
     private String favicon;
 
+    private String siteId;
+
     private URL url;
 
     private Version version;
 
     private SeoProp seo;
-
-    private Locale locale;
 
     private TimeZone timeZone;
 

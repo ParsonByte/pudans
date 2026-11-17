@@ -1,5 +1,6 @@
 package cn.tolim.pudans.infra.properties;
 
+import cn.tolim.pudans.contract.extension.ApiGroups;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -19,7 +20,7 @@ public class FeishuProperties {
 
 
     private String redirectUri =
-            "{baseUrl}/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu";
+            "{baseUrl}" + ApiGroups.API_PREFIX + "/oauth2/callback/feishu";
 
 
     private String authorizationUri = "https://open.feishu.cn/open-apis/authen/v1/authorize";

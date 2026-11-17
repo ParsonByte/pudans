@@ -6,12 +6,12 @@ import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.Scheme;
 import cn.tolim.pudans.contract.extension.Unstructured;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
-import cn.tolim.pudans.extension.exception.ExtensionConvertException;
 import cn.tolim.pudans.extension.router.ExtensionRouterFunctionFactory.CreateHandler;
 import java.net.URI;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
 class ExtensionCreateHandler implements CreateHandler {
@@ -32,7 +32,7 @@ class ExtensionCreateHandler implements CreateHandler {
     public Mono<ServerResponse> handle(ServerRequest request) {
         return request.bodyToMono(Unstructured.class)
                 .switchIfEmpty(Mono.error(
-                        () -> new ExtensionConvertException("Cannot read body to " + scheme.groupVersionKind())))
+                        () -> new ServerWebInputException("无法将请求体读取为 " + scheme.groupVersionKind())))
                 .flatMap(unstructured -> {
                     ExtensionIdentity.requireGroupVersionKind(scheme, unstructured);
                     return builtinEntityPolicy

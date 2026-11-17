@@ -2,6 +2,7 @@ package cn.tolim.pudans.infra.config;
 
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
+import cn.tolim.pudans.contract.extension.SchemeManager;
 import cn.tolim.pudans.core.rbac.BuiltinEntityDefinitions;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -31,9 +32,10 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Order(0)
 public class EndpointApiGroupSelfCheck implements ApplicationRunner {
 
-    private static final Set<String> PUBLIC_API_GROUPS = Set.of(ApiGroups.PUBLIC);
-
     private static final Set<String> ALLOWED_API_GROUPS = ApiGroups.ALL;
+
+    private static final Set<String> EXPLICITLY_ALLOWED_RESOURCES =
+            Set.of("system", "login", "recovery", "oauth2", "passkeys", "captcha", "auth", "avatars");
 
     private static final String API_GROUP_ALL = "*";
 
@@ -44,7 +46,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
             Pattern.compile("^v[0-9]+(?:(?:alpha|beta)[0-9]+)?$");
 
     private static final Pattern ROUTE_PATH_PATTERN =
-            Pattern.compile("(?<![A-Za-z0-9_-])(/[A-Za-z0-9_{}.*-]+)");
+            Pattern.compile("(?<![A-Za-z0-9_-])(/[A-Za-z0-9_{}.*-]+(?:/[A-Za-z0-9_{}.*-]+)*)");
 
     private final ApplicationContext applicationContext;
 
@@ -56,24 +58,25 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         var endpoints = applicationContext.getBeansOfType(CustomEndpoint.class).values();
         var routeErrors = new ArrayList<String>();
+        var allRoutes = new TreeSet<String>();
 
         for (var endpoint : endpoints) {
             var groupVersion = endpoint.groupVersion();
             if (groupVersion == null) {
-                routeErrors.add(endpoint.getClass().getName() + " returned a null groupVersion.");
+                routeErrors.add(endpoint.getClass().getName() + " 返回了空的 groupVersion。");
                 continue;
             }
             if (!API_GROUP_PATTERN.matcher(groupVersion.group()).matches()) {
-                routeErrors.add(endpoint.getClass().getName() + " has invalid API group '"
-                        + groupVersion.group() + "'. Expected a DNS-like group containing a dot.");
+                routeErrors.add(endpoint.getClass().getName() + " 的 API 组 '"
+                        + groupVersion.group() + "' 无效。应为包含点号的 DNS 风格组名。");
             }
             if (!ALLOWED_API_GROUPS.contains(groupVersion.group())) {
-                routeErrors.add(endpoint.getClass().getName() + " uses non-canonical API group '"
-                        + groupVersion.group() + "'. Allowed groups: " + ALLOWED_API_GROUPS);
+                routeErrors.add(endpoint.getClass().getName() + " 使用了非规范 API 组 '"
+                        + groupVersion.group() + "'。允许的组：" + ALLOWED_API_GROUPS);
             }
             if (!API_VERSION_PATTERN.matcher(groupVersion.version()).matches()) {
-                routeErrors.add(endpoint.getClass().getName() + " has invalid API version '"
-                        + groupVersion.version() + "'.");
+                routeErrors.add(endpoint.getClass().getName() + " 的 API 版本 '"
+                        + groupVersion.version() + "' 无效。");
             }
 
             var routePathErrors = new ArrayList<String>();
@@ -81,39 +84,48 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                     endpoint.endpoint(), endpoint.getClass().getName(), routePathErrors);
             routeErrors.addAll(routePathErrors);
             if (routes.isEmpty() && routePathErrors.isEmpty()) {
-                routeErrors.add(endpoint.getClass().getName() + " exposes no route path.");
+                routeErrors.add(endpoint.getClass().getName() + " 未暴露任何路由路径。");
                 continue;
             }
             for (var route : routes) {
+                allRoutes.add(route);
                 if (!route.startsWith("/")) {
-                    routeErrors.add(endpoint.getClass().getName() + " route '" + route
-                            + "' must start with '/'.");
+                    routeErrors.add(endpoint.getClass().getName() + " 的路由 '" + route
+                            + "' 必须以 '/' 开头。");
                 } else if (route.startsWith("/api/") || route.startsWith("/apis/")) {
-                    routeErrors.add(endpoint.getClass().getName() + " route '" + route
-                            + "' must be relative; the /apis/{group}/{version} prefix is added by the endpoint builder.");
+                    routeErrors.add(endpoint.getClass().getName() + " 的路由 '" + route
+                            + "' 必须是相对路径；/apis/{group}/{version} 前缀由端点构建器添加。");
                 }
             }
         }
 
         if (!routeErrors.isEmpty()) {
-            throw new IllegalStateException("Invalid custom endpoint route registration:\n - "
+            throw new IllegalStateException("自定义端点路由注册无效：\n - "
                     + String.join("\n - ", routeErrors));
         }
 
-        var coveredGroups = coveredApiGroups();
-        var uncoveredGroups = endpoints.stream()
-                .map(endpoint -> endpoint.groupVersion().group())
-                .filter(StringUtils::hasText)
-                .filter(group -> !PUBLIC_API_GROUPS.contains(group))
-                .filter(group -> !coveredGroups.contains(group))
+        var coveredResources = coveredResources();
+        var schemeManager = applicationContext.getBeanProvider(SchemeManager.class).getIfAvailable();
+        if (schemeManager != null) {
+            schemeManager.schemes().stream()
+                    .map(scheme -> "/" + scheme.plural())
+                    .forEach(allRoutes::add);
+        }
+        var uncoveredPaths = allRoutes.stream()
+                .filter(route -> !route.startsWith("/api/") && !route.startsWith("/apis/"))
+                .filter(route -> {
+                    var resource = topLevelResource(route);
+                    return !coveredResources.contains(resource) && !EXPLICITLY_ALLOWED_RESOURCES.contains(resource);
+                })
                 .collect(Collectors.toCollection(TreeSet::new));
-        if (!uncoveredGroups.isEmpty()) {
+        if (!uncoveredPaths.isEmpty()) {
             throw new IllegalStateException(
-                    "The following custom endpoint API groups are not covered by any built-in role rule: "
-                            + uncoveredGroups
-                            + ". Add a matching apiGroups entry to BuiltinEntityDefinitions and to the"
-                            + " role-template-*.yaml files. Covered groups: "
-                            + coveredGroups);
+                    "以下自定义端点路径未被内置角色规则或显式"
+                            + "放行规则覆盖："
+                            + uncoveredPaths
+                            + "。请将匹配的资源添加到 BuiltinEntityDefinitions 和 role-template-*.yaml"
+                            + " 文件，或将路径添加到显式放行列表。已覆盖的资源："
+                            + coveredResources);
         }
     }
 
@@ -143,7 +155,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                 var paths = pathsOf(predicate);
                 if (paths.isEmpty()) {
                     if (nestedPrefixes.isEmpty() || nestedPrefixes.stream().allMatch(String::isEmpty)) {
-                        pathErrors.add(endpointName + " route predicate has no absolute path: " + text);
+                        pathErrors.add(endpointName + " 的路由谓词没有绝对路径：" + text);
                         return;
                     }
                     routes.add(String.join("", nestedPrefixes));
@@ -157,17 +169,17 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
             public void resources(
                     java.util.function.Function<org.springframework.web.reactive.function.server.ServerRequest,
                             reactor.core.publisher.Mono<org.springframework.core.io.Resource>> lookupFunction) {
-                // No-op.
+                // 空实现。
             }
 
             @Override
             public void attributes(Map<String, Object> attributes) {
-                // No-op.
+                // 空实现。
             }
 
             @Override
             public void unknown(RouterFunction<?> router) {
-                // No-op.
+                // 空实现。
             }
         });
         return routes;
@@ -182,13 +194,24 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
         return paths;
     }
 
-    private static Set<String> coveredApiGroups() {
+    private static Set<String> coveredResources() {
         return Stream.of(
                         BuiltinEntityDefinitions.systemAdminRole(), BuiltinEntityDefinitions.normalRole())
                 .flatMap(role -> role.getRules().stream())
-                .flatMap(rule -> Arrays.stream(rule.getApiGroups()))
+                .filter(rule -> Arrays.asList(rule.getApiGroups()).contains(ApiGroups.API))
+                .flatMap(rule -> Arrays.stream(rule.getResources()))
                 .filter(StringUtils::hasText)
-                .filter(group -> !API_GROUP_ALL.equals(group))
+                .filter(resource -> !API_GROUP_ALL.equals(resource))
+                .map(resource -> {
+                    var separator = resource.indexOf('/');
+                    return separator < 0 ? resource : resource.substring(0, separator);
+                })
                 .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    private static String topLevelResource(String route) {
+        var path = route.startsWith("/") ? route.substring(1) : route;
+        var separator = path.indexOf('/');
+        return separator < 0 ? path : path.substring(0, separator);
     }
 }

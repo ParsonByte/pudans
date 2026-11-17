@@ -9,6 +9,7 @@ import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.HttpStatus;
@@ -39,23 +40,26 @@ class UcUserEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        var tag = "UserV1alpha1Uc";
+        var tag = "UserV1alpha1";
         return SpringdocRouteBuilder.route()
-                .GET("/users/-", this::me, builder -> builder.operationId("GetMyUserDetail")
+                .GET("/users/-/self", this::me, builder -> builder.operationId("GetMySelfUserDetail")
                         .tag(tag)
                         .description("Get the current user's profile and roles.")
                         .response(responseBuilder().implementation(UserView.class)))
-                .GET("/users/-/permissions", this::permissions, builder -> builder.operationId("GetMyPermissions")
+                .GET("/users/-/self/permissions", this::permissions, builder -> builder.operationId("GetMySelfPermissions")
                         .tag(tag)
                         .description("Get permissions of the current user.")
                         .response(responseBuilder().implementation(UserPermissionVo.class)))
-                .PUT("/users/-/password", this::changeMyPassword, builder -> builder.operationId("ChangeMyPassword")
-                        .tag(tag)
-                        .description("Change the password of the current user.")
-                        .requestBody(requestBodyBuilder()
-                                .required(true)
-                                .implementation(ChangeMyPasswordRequest.class))
-                        .response(responseBuilder().implementation(UserView.class)))
+                .PUT(
+                        "/users/-/self/password",
+                        this::changeMyPassword,
+                        builder -> builder.operationId("ChangeMySelfPassword")
+                                .tag(tag)
+                                .description("Change the password of the current user.")
+                                .requestBody(requestBodyBuilder()
+                                        .required(true)
+                                        .implementation(ChangeMyPasswordRequest.class))
+                                .response(responseBuilder().implementation(UserView.class)))
                 .build();
     }
 
@@ -80,7 +84,7 @@ class UcUserEndpoint implements CustomEndpoint {
         return authenticated()
                 .map(Authentication::getName)
                 .flatMap(username -> request.bodyToMono(ChangeMyPasswordRequest.class)
-                        .switchIfEmpty(Mono.error(new ServerWebInputException("Request body is empty")))
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为空")))
                         .flatMap(changeRequest -> userService.getUser(username).flatMap(user -> {
                             var passwordSet = StringUtils.hasText(user.getSpec().getPassword());
                             var verifyPassword = passwordSet
@@ -97,13 +101,13 @@ class UcUserEndpoint implements CustomEndpoint {
     private Mono<Boolean> verifyOldPassword(String username, String oldPassword) {
         if (!StringUtils.hasText(oldPassword)) {
             return Mono.error(new UnsatisfiedAttributeValueException(
-                    "Old password is required.", "problemDetail.user.oldPassword.required", null));
+                    "旧密码为必填项。"));
         }
         return userService
                 .confirmPassword(username, oldPassword)
                 .filter(Boolean::booleanValue)
                 .switchIfEmpty(Mono.error(new UnsatisfiedAttributeValueException(
-                        "Old password is incorrect.", "problemDetail.user.oldPassword.notMatch", null)));
+                        "旧密码不匹配。")));
     }
 
     private Mono<Authentication> authenticated() {
@@ -111,16 +115,16 @@ class UcUserEndpoint implements CustomEndpoint {
                 .mapNotNull(SecurityContext::getAuthentication)
                 .filter(trustResolver::isAuthenticated)
                 .switchIfEmpty(Mono.error(() -> new ResponseStatusException(
-                        HttpStatus.FORBIDDEN, "Anonymous user is not allowed to access user profile.")));
+                        HttpStatus.FORBIDDEN, "匿名用户不能访问用户资料。")));
     }
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.UC + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
 
-    record ChangeMyPasswordRequest(String oldPassword, String password) {}
+    record ChangeMyPasswordRequest(String oldPassword, @Size(min = 8, max = 257) String password) {}
 
 
     record UserPermissionVo(String username, java.util.List<String> roles) {}

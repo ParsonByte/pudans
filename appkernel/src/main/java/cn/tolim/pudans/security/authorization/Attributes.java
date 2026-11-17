@@ -7,9 +7,6 @@ public interface Attributes {
     String getVerb();
 
 
-    boolean isReadOnly();
-
-
     String getResource();
 
 
@@ -31,6 +28,4 @@ public interface Attributes {
     String getPath();
 
     String getSubName();
-
-    String getUserSpace();
 }

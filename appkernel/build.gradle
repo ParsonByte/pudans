@@ -19,33 +19,14 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs += ['-parameters']
 }
 
-sourceSets {
-    contract {
-        java.srcDirs = ['src/main/java']
-        java.include 'cn/tolim/pudans/contract/**'
-        resources.srcDirs = []
-    }
-    main {
-        java.srcDirs = ['src/main/java']
-        java.exclude 'cn/tolim/pudans/contract/**'
-        compileClasspath += sourceSets.contract.output
-        runtimeClasspath += sourceSets.contract.output
-    }
-}
-
 configurations {
     compileOnly {
         extendsFrom annotationProcessor
-    }
-    contractCompileOnly {
-        extendsFrom contractAnnotationProcessor
     }
 }
 
 dependencies {
 
-    add('contractImplementation', platform(project(':platform:appkernel')))
-    add('contractAnnotationProcessor', platform(project(':platform:appkernel')))
     add('implementation', platform(project(':platform:appkernel')))
     add('annotationProcessor', platform(project(':platform:appkernel')))
 
@@ -60,7 +41,6 @@ dependencies {
         libs.spring.session.data.redis,
         libs.commons.pool2,
         'org.springframework.boot:spring-boot-jackson2',
-        'org.springframework.boot:spring-boot-integration',
         'org.springframework.boot:spring-boot-session',
         'org.springframework.boot:spring-boot-starter-security',
         'org.springframework.security:spring-security-oauth2-jose',
@@ -71,75 +51,35 @@ dependencies {
         libs.springdoc.openapi,
         libs.openapi.schema.validator,
         'net.bytebuddy:byte-buddy',
-        libs.bouncycastle.bcpkix,
         libs.apache.commons.lang3,
-        libs.encoding.base62,
-        libs.pf4j,
         libs.webauthn4j,
         libs.guava,
         libs.json.patch,
-        'org.springframework.integration:spring-integration-core',
         libs.apache.tika.core,
         libs.resilience4j.springboot3,
         libs.resilience4j.reactor,
         libs.twofactor.auth,
         libs.ua.parser,
         libs.therapi.runtime.javadoc,
+        libs.java.semver,
     ]
     sharedDeps.each { d ->
-        add('contractImplementation', d)
         add('implementation', d)
     }
-    ['contractAnnotationProcessor', 'annotationProcessor'].each { c ->
-        add(c, libs.therapi.runtime.javadoc.scribe)
-    }
-    add('contractCompileOnly', 'org.projectlombok:lombok')
-    add('contractAnnotationProcessor', 'org.projectlombok:lombok')
+    add('annotationProcessor', libs.therapi.runtime.javadoc.scribe)
     add('compileOnly', 'org.projectlombok:lombok')
     add('annotationProcessor', 'org.projectlombok:lombok')
     add('annotationProcessor', 'org.springframework.boot:spring-boot-configuration-processor')
     add('annotationProcessor', 'org.springframework:spring-context-indexer')
 
-    add('implementation', sourceSets.contract.output)
     implementation(libs.larksuite.oapi)
     add('testImplementation', platform(project(':platform:appkernel')))
     add('testImplementation', 'org.springframework.boot:spring-boot-starter-test')
     add('testImplementation', libs.jsonassert)
     add('testImplementation', 'io.projectreactor:reactor-test')
     add('testRuntimeOnly', 'org.junit.platform:junit-platform-launcher')
-    add('runtimeOnly', 'org.postgresql:postgresql')
     add('runtimeOnly', 'org.postgresql:r2dbc-postgresql')
     add('runtimeOnly', 'io.r2dbc:r2dbc-pool')
-}
-
-sourceSets.main.output.dir(layout.buildDirectory.dir('classes/java/contract'), builtBy: 'compileContractJava')
-
-tasks.register('contractJar', Jar) {
-    group = 'build'
-    description = 'Builds the plugin facing contract jar.'
-    archiveBaseName = 'pudans-appkernel-contract'
-    archiveClassifier = ''
-    archiveVersion = ''
-    from sourceSets.contract.output
-    manifest {
-        attributes(
-            'Implementation-Title': 'pudans-appkernel-contract',
-            'Implementation-Version': project.version,
-            'Implementation-Vendor': 'pudans'
-        )
-    }
-}
-
-configurations {
-    contract
-}
-
-artifacts {
-    contract tasks.named('contractJar')
-}
-
-tasks.named('assemble') {
-    dependsOn tasks.named('contractJar')
 }
 
 springBoot {

@@ -6,11 +6,38 @@ metadata:
     pudans.tolim.cn/role-template: "true"
     pudans.tolim.cn/hidden: "true"
 rules:
-  - apiGroups: ["console.api.pudans.tolim.cn"]
-    resources: ["users"]
-    resourceNames: ["-"]
-    verbs: ["get", "list", "update"]
-  - apiGroups: ["uc.api.pudans.tolim.cn"]
-    resources: ["users"]
-    resourceNames: ["-"]
-    verbs: ["get"]
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
+      - "list"
+      - "update"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/self"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/avatar"
+      - "users/announcement-state"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
+      - "create"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "avatars"
+    verbs:
+      - "get"

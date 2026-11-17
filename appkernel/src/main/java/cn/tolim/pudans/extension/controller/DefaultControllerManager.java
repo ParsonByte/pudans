@@ -33,11 +33,11 @@ public class DefaultControllerManager implements ApplicationContextAware, SmartL
             return;
         }
         try {
-            log.info("Shutting down controller {}...", controller.getName());
+            log.info("正在关闭控制器 {}...", controller.getName());
             controller.dispose();
-            log.info("Shutdown controller {} successfully", controller.getName());
+            log.info("控制器 {} 已成功关闭", controller.getName());
         } catch (Throwable t) {
-            log.error("Failed to dispose controller {}", controller.getName(), t);
+            log.error("销毁控制器 {} 失败", controller.getName(), t);
         }
     }
 
@@ -67,9 +67,9 @@ public class DefaultControllerManager implements ApplicationContextAware, SmartL
             return;
         }
         this.running = false;
-        log.info("Shutting down {} controllers...", controllers.size());
+        log.info("正在关闭 {} 个控制器...", controllers.size());
         controllers.forEach((name, controller) -> disposeSilently(controller));
-        log.info("Shutdown {} controllers.", controllers.size());
+        log.info("已关闭 {} 个控制器。", controllers.size());
     }
 
     @Override

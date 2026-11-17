@@ -57,9 +57,17 @@ public class AuditStore {
     }
 
     public Mono<Void> append(AuditRecord record) {
-        return entityOperations
-                .insert(AuditRecordEntity.from(record))
-                .doOnError(e -> log.error("Failed to append audit record {}", record.getMetadata().getName(), e))
+        var fingerprint = record.getFingerprint() == null ? AuditFingerprint.of(record) : record.getFingerprint();
+        record.setFingerprint(fingerprint);
+        return activeRepository
+                .existsByFingerprint(fingerprint)
+                .flatMap(exists -> Boolean.TRUE.equals(exists)
+                        ? Mono.just(true)
+                        : archiveRepository.existsByFingerprint(fingerprint))
+                .flatMap(exists -> Boolean.TRUE.equals(exists)
+                        ? Mono.empty()
+                        : entityOperations.insert(AuditRecordEntity.from(record)).then())
+                .doOnError(e -> log.error("追加审计记录 {} 失败", record.getMetadata().getName(), e))
                 .then();
     }
 
@@ -141,11 +149,16 @@ public class AuditStore {
             criteria = criteria.and("result").is(result);
         }
         var pageable = PageRequest.of(0, MAX_GRAPH_SIZE, Sort.by(Sort.Direction.ASC, "id"));
+        var query = Query.query(criteria);
         var active = entityOperations
-                .select(Query.query(criteria), AuditRecordEntity.class)
+                .select(AuditRecordEntity.class)
+                .matching(query.with(pageable))
+                .all()
                 .map(entity -> entity.toRecord(false));
         var archived = entityOperations
-                .select(Query.query(criteria), AuditArchiveEntity.class)
+                .select(AuditArchiveEntity.class)
+                .matching(query.with(pageable))
+                .all()
                 .map(AuditArchiveEntity::toRecord);
         return Flux.merge(active, archived)
                 .map(record -> record.getTimestamp() == null

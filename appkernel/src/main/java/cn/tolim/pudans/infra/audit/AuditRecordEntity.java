@@ -32,6 +32,7 @@ public class AuditRecordEntity {
     private String userAgent;
     private OffsetDateTime occurredAt;
     private String result;
+    private String fingerprint;
     private Long durationMs;
     private String contextJson;
     private String actionSnapshot;
@@ -55,6 +56,7 @@ public class AuditRecordEntity {
                 ? OffsetDateTime.now(java.time.ZoneOffset.UTC)
                 : OffsetDateTime.ofInstant(record.getTimestamp(), java.time.ZoneOffset.UTC));
         entity.setResult(record.getResult());
+        entity.setFingerprint(record.getFingerprint());
         entity.setDurationMs(record.getDurationMs());
         var context = record.getContext() == null
                 ? new java.util.LinkedHashMap<String, Object>()
@@ -86,6 +88,7 @@ public class AuditRecordEntity {
         record.setUserAgent(userAgent);
         record.setTimestamp(occurredAt == null ? null : occurredAt.toInstant());
         record.setResult(result);
+        record.setFingerprint(fingerprint);
         record.setDurationMs(durationMs);
         var context = parseContext(contextJson);
         record.setSyntheticFlow(Boolean.TRUE.equals(context.remove("syntheticFlow")));

@@ -1,24 +1,18 @@
 package cn.tolim.pudans.security.authentication.rememberme;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.context.MessageSource;
-import org.springframework.context.MessageSourceAware;
-import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.authentication.RememberMeAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.SpringSecurityMessageSource;
-import org.springframework.util.Assert;
 import reactor.core.publisher.Mono;
 
 @RequiredArgsConstructor
-public class RememberMeAuthenticationManager
-        implements ReactiveAuthenticationManager, InitializingBean, MessageSourceAware {
+public class RememberMeAuthenticationManager implements ReactiveAuthenticationManager {
+
+    private static final String BAD_CREDENTIAL_MESSAGE = "提供的 RememberMe 令牌不包含预期的密钥";
 
     private final CookieSignatureKeyResolver cookieSignatureKeyResolver;
-    protected MessageSourceAccessor messages = SpringSecurityMessageSource.getAccessor();
 
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
@@ -28,27 +22,11 @@ public class RememberMeAuthenticationManager
                 .flatMap(this::doAuthenticate);
     }
 
-    @Override
-    public void afterPropertiesSet() {
-        Assert.notNull(this.messages, "A message source must be set");
-    }
-
-    @Override
-    public void setMessageSource(MessageSource messageSource) {
-        this.messages = new MessageSourceAccessor(messageSource);
-    }
-
     private Mono<Authentication> doAuthenticate(RememberMeAuthenticationToken token) {
         return cookieSignatureKeyResolver
                 .resolveSigningKey()
                 .filter(key -> key.hashCode() == token.getKeyHash())
-                .switchIfEmpty(Mono.error(() -> new BadCredentialsException(badCredentialMessage())))
+                .switchIfEmpty(Mono.error(() -> new BadCredentialsException(BAD_CREDENTIAL_MESSAGE)))
                 .thenReturn(token);
-    }
-
-    private String badCredentialMessage() {
-        return this.messages.getMessage(
-                "RememberMeAuthenticationProvider.incorrectKey",
-                "The presented RememberMeAuthenticationToken does not contain the expected key");
     }
 }

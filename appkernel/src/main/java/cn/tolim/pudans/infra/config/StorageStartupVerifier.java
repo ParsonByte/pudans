@@ -36,13 +36,13 @@ public class StorageStartupVerifier implements SmartLifecycle {
         try {
             connection = reactor.core.publisher.Mono.from(connectionFactory.create()).block(TIMEOUT);
             if (connection == null) {
-                throw new IllegalStateException("PostgreSQL is unreachable: no R2DBC connection was created.");
+                throw new IllegalStateException("PostgreSQL 不可达：未能创建 R2DBC 连接。");
             }
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
             throw new IllegalStateException(
-                    "PostgreSQL is required but the R2DBC connection failed. Check spring.r2dbc.url and credentials.",
+                    "必须使用 PostgreSQL，但 R2DBC 连接失败。请检查 spring.r2dbc.url 和凭据。",
                     e);
         } finally {
             if (connection != null) {
@@ -55,15 +55,13 @@ public class StorageStartupVerifier implements SmartLifecycle {
         try {
             var exists = redisTemplate.hasKey("pudans:startup:probe").block(TIMEOUT);
             if (exists == null) {
-                throw new IllegalStateException("Redis is unreachable: no response to a key lookup.");
+                throw new IllegalStateException("Redis 不可达：键查询没有响应。");
             }
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
             throw new IllegalStateException(
-                    "Redis is required for sessions and permissions but the connection failed. Check spring.data"
-                            + ".redis.",
-                    e);
+                    "会话和权限需要 Redis，但连接失败。请检查 spring.data.redis。", e);
         }
     }
 

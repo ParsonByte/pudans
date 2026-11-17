@@ -2,7 +2,6 @@ package cn.tolim.pudans.security.authorization;
 
 import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.RbacRuleEnricherService;
 import cn.tolim.pudans.core.rbac.service.TempRoleService;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -19,12 +18,8 @@ public class RequestInfoAuthorizationManager implements ReactiveAuthorizationMan
     private final AuthorizationRuleResolver ruleResolver;
 
     public RequestInfoAuthorizationManager(
-            RoleService roleService,
-            TempRoleService tempRoleService,
-            AuditService auditService,
-            RbacRuleEnricherService rbacRuleEnricherService) {
-        this.ruleResolver = new DefaultRuleResolver(
-                roleService, tempRoleService, auditService, rbacRuleEnricherService);
+            RoleService roleService, TempRoleService tempRoleService, AuditService auditService) {
+        this.ruleResolver = new DefaultRuleResolver(roleService, tempRoleService, auditService);
     }
 
     @Override
@@ -44,7 +39,7 @@ public class RequestInfoAuthorizationManager implements ReactiveAuthorizationMan
 
     private void showErrorMessage(List<Throwable> errors) {
         if (errors != null) {
-            errors.forEach(error -> log.error("Access decision error", error));
+            errors.forEach(error -> log.error("访问决策错误", error));
         }
     }
 }

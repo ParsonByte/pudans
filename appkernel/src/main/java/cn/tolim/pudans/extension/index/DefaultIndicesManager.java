@@ -53,7 +53,7 @@ class DefaultIndicesManager implements IndicesManager {
     public <E extends Extension> Indices<E> get(Class<E> type) {
         var indices = (Indices<E>) indicesMap.get(type);
         if (indices == null) {
-            throw new IllegalArgumentException("No indices found for type: " + type.getName());
+            throw new IllegalArgumentException("未找到以下类型的索引：" + type.getName());
         }
         return indices;
     }

@@ -2,7 +2,6 @@ package cn.tolim.pudans.security.authentication.recovery;
 
 import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.exception.PasswordPolicyViolationException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -46,7 +45,7 @@ public class PasswordRecoveryService {
                         return Mono.error(new ApiException(
                                 HttpStatus.TOO_MANY_REQUESTS,
                                 "recovery-code-cooldown",
-                                "Please wait before requesting another verification code."));
+                                "请稍后再请求新的验证码。"));
                     }
 
                     var code = generateCode();
@@ -88,14 +87,7 @@ public class PasswordRecoveryService {
                             .next()
                             .switchIfEmpty(Mono.error(invalidCode()))
                             .flatMap(user -> userService
-                                    .updateWithRawPassword(user.getMetadata().getName(), newPassword)
-                                    .onErrorMap(
-                                            PasswordPolicyViolationException.class,
-                                            error -> new ApiException(
-                                                    HttpStatus.BAD_REQUEST,
-                                                    "recovery-password-invalid",
-                                                    "The new password does not satisfy the password policy.",
-                                                    error)))
+                                    .updateWithRawPassword(user.getMetadata().getName(), newPassword))
                             .then(Mono.defer(() -> redisTemplate
                                     .delete(codeKey)
                                     .then(redisTemplate.delete(attemptsKey))))
@@ -143,7 +135,7 @@ public class PasswordRecoveryService {
             var digest = MessageDigest.getInstance("SHA-256");
             return HEX.formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 
@@ -154,6 +146,6 @@ public class PasswordRecoveryService {
 
     private static ApiException invalidCode() {
         return new ApiException(
-                HttpStatus.BAD_REQUEST, "recovery-code-invalid", "Invalid or expired verification code.");
+                HttpStatus.BAD_REQUEST, "recovery-code-invalid", "验证码无效或已过期。");
     }
 }

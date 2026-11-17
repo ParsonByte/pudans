@@ -2,15 +2,14 @@ package cn.tolim.pudans.security.authentication.reconciler;
 
 import cn.tolim.pudans.contract.core.extension.AuthProvider;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
-import cn.tolim.pudans.contract.extension.MetadataUtil;
 import cn.tolim.pudans.contract.extension.controller.Controller;
 import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
 import cn.tolim.pudans.contract.extension.controller.Reconciler;
 import cn.tolim.pudans.infra.utils.ReactiveUtils;
 import cn.tolim.pudans.security.authentication.AuthProviderService;
+import cn.tolim.pudans.security.authentication.AuthProviderUtils;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.stereotype.Component;
 
 
@@ -33,13 +32,8 @@ public class AuthProviderReconciler implements Reconciler<Reconciler.Request> {
     }
 
     private void handlePrivileged(AuthProvider authProvider) {
-        if (privileged(authProvider)) {
+        if (AuthProviderUtils.isPrivileged(authProvider)) {
             authProviderService.enable(authProvider.getMetadata().getName()).block(BLOCKING_TIMEOUT);
         }
-    }
-
-    private boolean privileged(AuthProvider authProvider) {
-        return BooleanUtils.TRUE.equals(
-                MetadataUtil.nullSafeLabels(authProvider).get(AuthProvider.PRIVILEGED_LABEL));
     }
 }

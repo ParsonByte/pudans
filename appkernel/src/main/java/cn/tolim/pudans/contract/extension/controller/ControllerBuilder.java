@@ -29,8 +29,8 @@ public class ControllerBuilder {
     private int workerCount = 1;
 
     public ControllerBuilder(Reconciler<Request> reconciler, ExtensionClient client) {
-        Assert.notNull(reconciler, "Reconciler must not be null");
-        Assert.notNull(client, "Extension client must not be null");
+        Assert.notNull(reconciler, "协调器不能为 null");
+        Assert.notNull(client, "扩展客户端不能为 null");
         this.name = reconciler.getClass().getName();
         this.reconciler = reconciler;
         this.client = client;
@@ -96,9 +96,9 @@ public class ControllerBuilder {
         if (maxDelay == null || maxDelay.isNegative() || maxDelay.isZero()) {
             maxDelay = Duration.ofSeconds(1000);
         }
-        Assert.isTrue(minDelay.compareTo(maxDelay) <= 0, "Min delay must be less than or equal to max delay");
-        Assert.notNull(extension, "Extension must not be null");
-        Assert.notNull(reconciler, "Reconciler must not be null");
+        Assert.isTrue(minDelay.compareTo(maxDelay) <= 0, "最小延迟必须小于或等于最大延迟");
+        Assert.notNull(extension, "扩展不能为 null");
+        Assert.notNull(reconciler, "协调器不能为 null");
 
         var queue = new DefaultQueue<Request>(nowSupplier, minDelay);
         var extensionMatchers = WatcherExtensionMatchers.builder(client, extension.groupVersionKind())

@@ -26,6 +26,9 @@ public class PudansProperties implements Validator {
     @Valid
     @NestedConfigurationProperty
     private final SecurityProperties security = new SecurityProperties();
+    @Valid
+    @NestedConfigurationProperty
+    private final WebhookProperties webhook = new WebhookProperties();
     @NotNull
     private Path workDir;
     private URL externalUrl;
@@ -46,12 +49,12 @@ public class PudansProperties implements Validator {
             errors.rejectValue(
                     "externalUrl",
                     "external-url.required.when-using-absolute-permalink",
-                    "External URL is required when property `use-absolute-permalink` is set to true.");
+                    "当属性 `use-absolute-permalink` 设置为 true 时必须提供外部 URL。");
         }
 
         if (externalUrl != null && !isValidExternalUrl(externalUrl)) {
             errors.rejectValue(
-                    "externalUrl", "external-url.invalid-format", "External URL must be a http or https URL.");
+                    "externalUrl", "external-url.invalid-format", "外部 URL 必须是 http 或 https URL。");
         }
     }
 

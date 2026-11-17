@@ -28,6 +28,9 @@ import cn.tolim.pudans.contract.extension.controller.Reconciler.Request;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
 import cn.tolim.pudans.contract.security.device.DeviceService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
+import cn.tolim.pudans.core.user.service.AnnouncementStateService;
+import cn.tolim.pudans.core.user.service.AvatarStorageService;
+import cn.tolim.pudans.core.user.service.HashIdService;
 
 @Slf4j
 @Component
@@ -42,6 +45,12 @@ public class UserReconciler implements ReactiveReconciler<Request> {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    private final AvatarStorageService avatarStorageService;
+
+    private final HashIdService hashIdService;
+
+    private final AnnouncementStateService announcementStateService;
+
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new User()).build();
@@ -52,7 +61,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
         return client.fetch(User.class, request.name())
                 .flatMap(user -> {
                     if (isDeleted(user)) {
-                        return cleanup(request.name()).then(Mono.defer(() -> {
+                        return cleanup(user).then(Mono.defer(() -> {
                             if (!removeFinalizers(user.getMetadata(), Set.of(FINALIZER_NAME))) {
                                 return Mono.just(Result.doNotRetry());
                             }
@@ -64,18 +73,43 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                     if (!addFinalizers(user.getMetadata(), Set.of(FINALIZER_NAME))) {
                         return Mono.just(Result.doNotRetry());
                     }
+                    if (user.getStatus() == null) {
+                        user.setStatus(new User.UserStatus());
+                    }
+                    user.getStatus().setHashId(hashIdService.encode(user.getMetadata().getName()));
                     return client.updateInternal(user).thenReturn(Result.doNotRetry());
                 })
                 .switchIfEmpty(Mono.just(Result.doNotRetry()));
     }
 
-    private Mono<Void> cleanup(String username) {
+    private Mono<Void> cleanup(User user) {
+        var username = user.getMetadata().getName();
         return Mono.when(
+                deleteUserAvatar(user),
+                deleteUserAnnouncementState(username),
                 deleteUserConnections(username),
                 deleteUserDevices(username),
                 deleteUserRememberMeTokens(username),
                 deleteUserPersonalAccessTokens(username),
                 deleteUserGroupMemberships(username));
+    }
+
+    private Mono<Void> deleteUserAnnouncementState(String username) {
+        return announcementStateService
+                .deleteForUser(username)
+                .onErrorResume(error -> {
+                    log.warn("无法删除用户 [{}] 的公告状态", username, error);
+                    return Mono.empty();
+                });
+    }
+
+    private Mono<Void> deleteUserAvatar(User user) {
+        return avatarStorageService
+                .deleteForUser(user)
+                .onErrorResume(error -> {
+                    log.warn("无法删除用户 [{}] 的头像", user.getMetadata().getName(), error);
+                    return Mono.empty();
+                });
     }
 
     private void publishDeleted(User user) {

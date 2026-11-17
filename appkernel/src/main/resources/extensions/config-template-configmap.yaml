@@ -1,8 +1,73 @@
 apiVersion: v1alpha1
 kind: ConfigMap
 metadata:
-  name: system-default
+  name: parameter-settings-default
 data:
+  schemaVersion: "2"
+  site: |
+    {
+      "siteName": "pudans",
+      "siteDescription": "Enterprise identity and permission management",
+      "siteUrl": "",
+      "footerCode": "",
+      "siteAnnouncement": "",
+      "logoDark": "",
+      "logoLight": "",
+      "favicon": "",
+      "iconMedium": "",
+      "iconLarge": ""
+    }
+  session: |
+    {
+      "passkeyLoginEnabled": true,
+      "exposeEmailToSignedInUsers": false,
+      "defaultUserGroup": "normal-users",
+      "avatarStoragePath": "avatars",
+      "avatarMaxSize": 2097152,
+      "avatarDimension": 256
+    }
+  captcha: |
+    {
+      "loginCaptchaEnabled": false,
+      "recoveryCaptchaEnabled": false,
+      "captchaProvider": "image",
+      "captchaMode": "TEXT",
+      "captchaLength": 5,
+      "captchaInterferenceText": false,
+      "captchaInterferenceDots": false,
+      "captchaUseHollowLine": false,
+      "captchaUseNoise": false,
+      "captchaUseInterferenceText": false,
+      "captchaUseWaveLine": false,
+      "captchaUseSineLine": false
+    }
+  mail: |
+    {
+      "mailFromName": "pudans",
+      "mailFromAddress": "no-reply@pudans.local",
+      "smtpHost": "",
+      "smtpPort": 587,
+      "mailReplyTo": "",
+      "smtpForceSsl": false,
+      "smtpConnectionTtlSeconds": 300,
+      "mailTemplates": {}
+    }
+  audit: |
+    {
+      "auditRecordRules": {
+        "mode": "BLACKLIST",
+        "operations": [],
+        "resourceTypes": []
+      }
+    }
+  server: |
+    {
+      "tempPath": "tmp",
+      "siteId": "",
+      "accessTokenTtlSeconds": 1800,
+      "refreshTokenTtlSeconds": 2592000,
+      "gcCron": "0 0 3 * * *"
+    }
   basic: |
     {
       "title": "pudans",
@@ -12,8 +77,6 @@ data:
     }
   user: |
     {
-      "allowRegistration": false,
-      "mustVerifyEmailOnRegistration": false,
       "defaultRole": "normal-role",
       "protectedUsernames": "admin"
     }

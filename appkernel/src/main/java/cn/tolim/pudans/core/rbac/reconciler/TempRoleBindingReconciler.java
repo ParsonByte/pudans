@@ -120,7 +120,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
                 .map(user -> user.getSpec().getUid())
                 .defaultIfEmpty("unknown")
                 .onErrorResume(error -> {
-                    log.warn("Unable to resolve uid for [{}]", username, error);
+                    log.warn("无法解析 [{}] 的用户 ID", username, error);
                     return Mono.just("unknown");
                 });
     }

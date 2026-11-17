@@ -8,4 +8,4 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [ "role-template-public-apis" ]
-rules: [ ]
+rules: []

@@ -1,35 +1,31 @@
 package cn.tolim.pudans.security.authentication.preauth;
 
 import static cn.tolim.pudans.contract.infra.ValidationUtils.validate;
-import static io.r2dbc.spi.ConnectionFactoryOptions.DRIVER;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
-import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
 import static org.springframework.web.reactive.function.server.RequestPredicates.contentType;
-import static org.springframework.web.reactive.function.server.RequestPredicates.path;
 
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.Unstructured;
-import cn.tolim.pudans.contract.infra.ExternalUrlSupplier;
-import cn.tolim.pudans.contract.infra.SystemSetting;
+import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.infra.exception.ProblemDetailFactory;
 import cn.tolim.pudans.infra.exception.RequestBodyValidationException;
 import cn.tolim.pudans.infra.setting.ExternalUrlChangedEvent;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
-import cn.tolim.pudans.infra.setting.SystemConfigFetcher;
+import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import cn.tolim.pudans.infra.setting.SystemState;
 import cn.tolim.pudans.infra.utils.PudansUtils;
 import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
-import cn.tolim.pudans.plugin.PluginService;
 import cn.tolim.pudans.security.authentication.SuperAdminInitializer;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
@@ -43,22 +39,17 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springdoc.core.fn.builders.content.Builder;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
-import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.config.PlaceholderConfigurerSupport;
-import org.springframework.boot.r2dbc.autoconfigure.R2dbcConnectionDetails;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -66,9 +57,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.util.InMemoryResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.PropertyPlaceholderHelper;
-import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.Validator;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -81,39 +70,37 @@ import reactor.util.retry.Retry;
 
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class SystemSetupEndpoint {
-    static final String SETUP_TEMPLATE = "setup";
     static final PropertyPlaceholderHelper PROPERTY_PLACEHOLDER_HELPER = new PropertyPlaceholderHelper(
             PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_PREFIX,
             PlaceholderConfigurerSupport.DEFAULT_PLACEHOLDER_SUFFIX);
 
+    private static final String SETUP_COMPLETED = "setup-completed";
+
     private final InitializationStateGetter initializationStateGetter;
-    private final SystemConfigFetcher systemConfigFetcher;
+    private final ParameterSettingFetcher systemConfigFetcher;
     private final SuperAdminInitializer superAdminInitializer;
     private final ReactiveExtensionClient client;
-    private final PluginService pluginService;
     private final Validator validator;
-    private final ObjectProvider<R2dbcConnectionDetails> connectionDetails;
-    private final ExternalUrlSupplier externalUrl;
     private final ApplicationEventPublisher eventPublisher;
 
-    private static Mono<ServerResponse> handleSetupSuccessfully(ServerRequest request) {
-        if (isHtmlRequest(request)) {
-            return redirectToConsole();
-        }
+    public SystemSetupEndpoint(
+            InitializationStateGetter initializationStateGetter,
+            ParameterSettingFetcher systemConfigFetcher,
+            SuperAdminInitializer superAdminInitializer,
+            ReactiveExtensionClient client,
+            @Qualifier("webFluxValidator") Validator validator,
+            ApplicationEventPublisher eventPublisher) {
+        this.initializationStateGetter = initializationStateGetter;
+        this.systemConfigFetcher = systemConfigFetcher;
+        this.superAdminInitializer = superAdminInitializer;
+        this.client = client;
+        this.validator = validator;
+        this.eventPublisher = eventPublisher;
+    }
+
+    private static Mono<ServerResponse> handleSetupSuccessfully() {
         return ServerResponse.noContent().build();
-    }
-
-    private static boolean isHtmlRequest(ServerRequest request) {
-        return request.headers().accept().contains(MediaType.TEXT_HTML)
-                && !PudansUtils.isXhr(request.headers().asHttpHeaders());
-    }
-
-    private static Mono<ServerResponse> redirectToConsole() {
-        return ServerResponse.status(HttpStatus.FOUND)
-                .location(URI.create("/auth/"))
-                .build();
     }
 
     private static String mergeToBasicConfig(SetupRequest body, ConfigMap configMap) {
@@ -122,39 +109,45 @@ public class SystemSetupEndpoint {
             data = new LinkedHashMap<>();
             configMap.setData(data);
         }
-        String basic = data.getOrDefault(SystemSetting.Basic.GROUP, "{}");
-        var basicSetting = JsonUtils.jsonToObject(basic, SystemSetting.Basic.class);
+        String basic = data.getOrDefault(ParameterSetting.Basic.GROUP, "{}");
+        var basicSetting = JsonUtils.jsonToObject(basic, ParameterSetting.Basic.class);
 
 
         if (!StringUtils.hasText(basicSetting.getTitle())) {
             basicSetting.setTitle(body.getSiteTitle());
         }
-        if (!StringUtils.hasText(basicSetting.getLanguage())) {
-            basicSetting.setLanguage(body.getLanguage());
-        }
         if (!StringUtils.hasText(basicSetting.getExternalUrl())) {
             basicSetting.setExternalUrl(body.getExternalUrl());
         }
-        data.put(SystemSetting.Basic.GROUP, JsonUtils.objectToJson(basicSetting));
+        data.put(ParameterSetting.Basic.GROUP, JsonUtils.objectToJson(basicSetting));
         return basicSetting.getExternalUrl();
+    }
+
+    private static String mergeToSiteConfig(SetupRequest body, ConfigMap configMap) {
+        Map<String, String> data = configMap.getData();
+        if (data == null) {
+            data = new LinkedHashMap<>();
+            configMap.setData(data);
+        }
+        String siteJson = data.getOrDefault(ParameterSetting.Site.GROUP, "{}");
+        var site = JsonUtils.jsonToObject(siteJson, ParameterSetting.Site.class);
+        if (!StringUtils.hasText(site.getSiteName())) {
+            site.setSiteName(body.getSiteTitle());
+        }
+        if (!StringUtils.hasText(site.getSiteUrl())) {
+            site.setSiteUrl(body.getExternalUrl());
+        }
+        data.put(ParameterSetting.Site.GROUP, JsonUtils.objectToJson(site));
+        return StringUtils.hasText(site.getSiteUrl()) ? site.getSiteUrl() : body.getExternalUrl();
     }
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 100)
-    RouterFunction<ServerResponse> setupPageRouter() {
-        final var tag = "SystemV1alpha1Public";
+    RouterFunction<ServerResponse> setupRouter() {
+        final var tag = "SystemSetupV1alpha1";
         return SpringdocRouteBuilder.route()
-                .GET(
-                        path(ApiGroups.PUBLIC_SETUP_PATH).and(accept(MediaType.TEXT_HTML)),
-                        this::setupPage,
-                        builder -> builder.operationId("JumpToSetupPage")
-                                .description("Jump to setup page")
-                                .tag(tag)
-                                .response(responseBuilder()
-                                        .content(Builder.contentBuilder().mediaType(MediaType.TEXT_HTML_VALUE))
-                                        .implementation(String.class)))
                 .POST(
-                        ApiGroups.PUBLIC_SETUP_PATH,
+                        ApiGroups.SETUP_PATH,
                         contentType(
                                 MediaType.APPLICATION_FORM_URLENCODED,
                                 MediaType.APPLICATION_JSON),
@@ -180,30 +173,34 @@ public class SystemSetupEndpoint {
                 .filter(Boolean::booleanValue)
                 .flatMap(ignored -> readSetupRequest(request).flatMap(setupRequest -> {
 
-                    var bindingResult = validate(setupRequest, validator, request.exchange());
+                    var bindingResult = validate(setupRequest, validator);
                     if (bindingResult.hasErrors()) {
-                        return handleValidationErrors(bindingResult, request);
+                        return handleValidationErrors(bindingResult);
                     }
                     return doInitialization(setupRequest, setupRequest.getUsername())
-                            .then(handleSetupSuccessfully(request))
+                            .then(handleSetupSuccessfully())
                             .onErrorResume(DuplicateNameException.class, error -> {
                                 bindingResult.rejectValue(
                                         "username",
-                                        "problemDetail.user.duplicateName",
+                                        "duplicateName",
                                         new Object[] {setupRequest.getUsername()},
-                                        "The username already exists.");
-                                return handleValidationErrors(bindingResult, request);
+                                        "用户名 " + setupRequest.getUsername() + " 已存在，请更换用户名后重试。");
+                                return handleValidationErrors(bindingResult);
                             })
                             .onErrorResume(BadCredentialsException.class, error -> {
                                 bindingResult.rejectValue(
                                         "password",
-                                        "problemDetail.org.springframework.security.authentication"
-                                                + ".BadCredentialsException",
-                                        "The username or password is incorrect.");
-                                return handleValidationErrors(bindingResult, request);
+                                        "badCredentials",
+                                        "用户名或密码错误。");
+                                return handleValidationErrors(bindingResult);
                             });
                 }))
-                .switchIfEmpty(redirectToConsole());
+                .switchIfEmpty(ServerResponse.status(HttpStatus.CONFLICT)
+                        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+                        .bodyValue(ProblemDetailFactory.create(
+                                HttpStatus.CONFLICT,
+                                SETUP_COMPLETED,
+                                "系统初始化已完成。")));
     }
 
     private static Mono<SetupRequest> readSetupRequest(ServerRequest request) {
@@ -215,18 +212,7 @@ public class SystemSetupEndpoint {
         return json ? request.bodyToMono(SetupRequest.class) : request.bind(SetupRequest.class);
     }
 
-    private Mono<ServerResponse> handleValidationErrors(BindingResult bindingResult, ServerRequest request) {
-        if (isHtmlRequest(request)) {
-            return findSetupUsernameInProgress()
-                    .map(username -> true)
-                    .defaultIfEmpty(false)
-                    .flatMap(resumingSetup -> {
-                        var model = bindingResult.getModel();
-                        model.put("resumingSetup", resumingSetup);
-                        model.put("usingH2database", usingH2database());
-                        return ServerResponse.status(HttpStatus.BAD_REQUEST).render(SETUP_TEMPLATE, model);
-                    });
-        }
+    private Mono<ServerResponse> handleValidationErrors(BindingResult bindingResult) {
         return Mono.error(new RequestBodyValidationException(bindingResult));
     }
 
@@ -251,7 +237,7 @@ public class SystemSetupEndpoint {
                 .then(markSetupStarted)
                 .then(Mono.defer(() -> {
                     if (setupCompleted.get()) {
-                        log.info("System setup has already been completed, skip the initialization.");
+                        log.info("系统初始化已完成，跳过初始化。");
                         return Mono.empty();
                     }
                     return resolveSetupUsername(submittedUsername).flatMap(username -> doInitialize(body, username));
@@ -264,7 +250,7 @@ public class SystemSetupEndpoint {
                 .defaultIfEmpty(new SystemState())
                 .filter(state -> !isTrue(state.getIsSetup()) && !StringUtils.hasText(state.getSetupUsername()))
                 .flatMap(state -> client.fetch(User.class, submittedUsername))
-                .flatMap(user -> Mono.error(new DuplicateNameException("The username already exists.")))
+                .flatMap(user -> Mono.error(new DuplicateNameException("用户名已存在。")))
                 .then();
     }
 
@@ -282,10 +268,11 @@ public class SystemSetupEndpoint {
                         .switchIfEmpty(
                                 Mono.error(
                                         () -> new IllegalStateException(
-                                                "The system config ConfigMap is missing, so the basic settings cannot"
-                                                        + " be initialized.")))
+                                                "系统配置 ConfigMap 缺失，无法"
+                                                        + "初始化基础设置。")))
                         .flatMap(configMap -> {
-                            var effectiveExternalUrl = mergeToBasicConfig(body, configMap);
+                            mergeToBasicConfig(body, configMap);
+                            var effectiveExternalUrl = mergeToSiteConfig(body, configMap);
                             return client.update(configMap).thenReturn(effectiveExternalUrl);
                         }))
                 .retryWhen(Retry.backoff(5, Duration.ofMillis(100))
@@ -304,8 +291,6 @@ public class SystemSetupEndpoint {
         return superUserMono
                 .then(basicConfigMono)
                 .then(Mono.defer(() -> initializeNecessaryData(username)))
-                .then(Mono.defer(pluginService::installPresetPlugins))
-
                 .then(Mono.defer(() -> SystemState.upsetSystemState(client, state -> state.setIsSetup(true))));
     }
 
@@ -314,7 +299,7 @@ public class SystemSetupEndpoint {
                 .concatMap(extension -> client.create(extension).onErrorResume(DuplicateNameException.class, e -> {
 
                     log.debug(
-                            "Skip creating existing extension {}/{}",
+                            "跳过创建已存在的扩展 {}/{}",
                             extension.groupVersionKind(),
                             extension.getMetadata().getName());
                     return Mono.empty();
@@ -334,34 +319,10 @@ public class SystemSetupEndpoint {
                 .filter(StringUtils::hasText);
     }
 
-    private Mono<ServerResponse> setupPage(ServerRequest request) {
-        return initializationStateGetter.setupRequired().flatMap(setupRequired -> {
-            if (!setupRequired) {
-                return redirectToConsole();
-            }
-            return ServerResponse.temporaryRedirect(URI.create("/auth/")).build();
-        });
-    }
-
-    private boolean usingH2database() {
-        var rcd = connectionDetails.getIfUnique();
-        if (rcd == null) {
-
-            return true;
-        }
-        var options = rcd.getConnectionFactoryOptions();
-        return Optional.ofNullable(options.getValue(DRIVER))
-                .map(Object::toString)
-                .map("h2"::equalsIgnoreCase)
-                .orElse(false);
-    }
-
     Flux<Unstructured> loadPresetExtensions(String username) {
         return Mono.fromCallable(() -> {
 
-                    var classPathResource = new ClassPathResource("initial-data.yaml");
-                    String rawContent =
-                            StreamUtils.copyToString(classPathResource.getInputStream(), StandardCharsets.UTF_8);
+                    String rawContent = PudansUtils.readClassPathResourceAsString("initial-data.yaml");
 
                     var properties = new Properties();
                     properties.setProperty("username", username);
@@ -383,13 +344,17 @@ public class SystemSetupEndpoint {
         @Schema(requiredMode = REQUIRED, minLength = 4, maxLength = 63)
         @NotBlank
         @Size(min = 4, max = 63)
-        @Pattern(regexp = ValidationUtils.NAME_REGEX, message = "{validation.error.username.pattern}")
+        @Pattern(
+                regexp = ValidationUtils.NAME_REGEX,
+                message = "用户名只能小写且只能包含字母、数字、中划线和点，以字符开头和结尾")
         private String username;
 
-        @Schema(requiredMode = REQUIRED, minLength = 5, maxLength = 257)
+        @Schema(requiredMode = REQUIRED, minLength = 8, maxLength = 257)
         @NotBlank
-        @Pattern(regexp = ValidationUtils.PASSWORD_REGEX, message = "{validation.error.password.pattern}")
-        @Size(min = 5, max = 257)
+        @Pattern(
+                regexp = ValidationUtils.PASSWORD_REGEX,
+                message = "密码只能使用大小写字母 (A-Z, a-z)、数字 (0-9)，以及以下特殊字符: !@#$%^&*.?")
+        @Size(min = 8, max = 257)
         private String password;
 
         @Email
@@ -398,9 +363,6 @@ public class SystemSetupEndpoint {
         @NotBlank
         @Size(max = 80)
         private String siteTitle;
-
-        @Pattern(regexp = "^(zh-CN|zh-TW|en|es)$")
-        private String language;
 
         @NotNull
         @jakarta.validation.constraints.Pattern(regexp = "^(http|https).*")

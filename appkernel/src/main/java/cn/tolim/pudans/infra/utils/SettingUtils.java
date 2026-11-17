@@ -61,9 +61,9 @@ public enum SettingUtils {
 
 
     public static void createOrUpdateConfigMap(ExtensionClient client, String settingName, String configMapName) {
-        Assert.notNull(client, "Extension client must not be null");
-        Assert.hasText(settingName, "Setting name must not be blank");
-        Assert.hasText(configMapName, "Config map name must not be blank");
+        Assert.notNull(client, "扩展客户端不能为空");
+        Assert.hasText(settingName, "设置名称不能为空");
+        Assert.hasText(configMapName, "ConfigMap 名称不能为空");
 
         client.fetch(Setting.class, settingName)
                 .ifPresentOrElse(
@@ -94,7 +94,7 @@ public enum SettingUtils {
                         () -> {
 
                             throw new RequeueException(
-                                    Result.requeue(null), "Setting %s was not found".formatted(settingName));
+                                    Result.requeue(null), "未找到设置 %s".formatted(settingName));
                         });
     }
 

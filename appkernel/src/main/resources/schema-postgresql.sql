@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS audit_record (
     user_agent VARCHAR(1024),
     occurred_at TIMESTAMPTZ NOT NULL,
     result VARCHAR(32) NOT NULL,
+    fingerprint VARCHAR(128),
     duration_ms BIGINT NOT NULL,
     context_json TEXT,
     action_snapshot TEXT
@@ -61,6 +62,7 @@ CREATE TABLE IF NOT EXISTS audit_record_archive (
     user_agent VARCHAR(1024),
     occurred_at TIMESTAMPTZ NOT NULL,
     result VARCHAR(32) NOT NULL,
+    fingerprint VARCHAR(128),
     duration_ms BIGINT NOT NULL,
     context_json TEXT,
     action_snapshot TEXT,
@@ -176,3 +178,12 @@ DROP TRIGGER IF EXISTS audit_archive_no_delete ON audit_record_archive;
 @
 CREATE TRIGGER audit_archive_no_delete BEFORE DELETE
 ON audit_record_archive FOR EACH ROW EXECUTE FUNCTION pudans_audit_immutable();
+@
+ALTER TABLE audit_record ADD COLUMN IF NOT EXISTS fingerprint VARCHAR(128);
+@
+ALTER TABLE audit_record_archive ADD COLUMN IF NOT EXISTS fingerprint VARCHAR(128);
+@
+CREATE INDEX IF NOT EXISTS idx_audit_record_fingerprint ON audit_record (fingerprint);
+@
+CREATE INDEX IF NOT EXISTS idx_audit_archive_fingerprint ON audit_record_archive (fingerprint);
+@

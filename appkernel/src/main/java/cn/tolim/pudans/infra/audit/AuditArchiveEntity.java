@@ -32,6 +32,7 @@ public class AuditArchiveEntity {
     private String userAgent;
     private OffsetDateTime occurredAt;
     private String result;
+    private String fingerprint;
     private Long durationMs;
     private String contextJson;
     private String actionSnapshot;
@@ -56,6 +57,7 @@ public class AuditArchiveEntity {
         archive.setUserAgent(active.getUserAgent());
         archive.setOccurredAt(active.getOccurredAt());
         archive.setResult(active.getResult());
+        archive.setFingerprint(active.getFingerprint());
         archive.setDurationMs(active.getDurationMs());
         archive.setContextJson(active.getContextJson());
         archive.setActionSnapshot(active.getActionSnapshot());
@@ -82,8 +84,11 @@ public class AuditArchiveEntity {
         record.setUserAgent(userAgent);
         record.setTimestamp(occurredAt == null ? null : occurredAt.toInstant());
         record.setResult(result);
+        record.setFingerprint(fingerprint);
         record.setDurationMs(durationMs);
-        record.setContext(AuditRecordEntity.parseContext(contextJson));
+        var context = AuditRecordEntity.parseContext(contextJson);
+        record.setSyntheticFlow(Boolean.TRUE.equals(context.remove("syntheticFlow")));
+        record.setContext(context);
         record.setActionSnapshot(actionSnapshot);
         record.setArchived(true);
         return record;

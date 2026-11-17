@@ -88,7 +88,7 @@ public class PasskeyService {
                             .getAuthenticatorData()
                             .getAttestedCredentialData();
                     if (attestedCredentialData == null) {
-                        throw new PasskeyException("Registration response does not contain attested credential data.");
+                        throw new PasskeyException("注册响应不包含认证器凭据数据。");
                     }
                     var credentialId = base64Url(attestedCredentialData.getCredentialId());
                     var coseKey = objectConverter
@@ -109,7 +109,7 @@ public class PasskeyService {
                 .flatMap(connection -> client
                         .fetch(UserConnection.class, connection.getMetadata().getName())
                         .flatMap(existing -> Mono.<UserConnection>error(
-                                new PasskeyException("This passkey is already registered.")))
+                                new PasskeyException("此通行密钥已注册。")))
                         .switchIfEmpty(Mono.defer(() -> client.create(connection))));
     }
 
@@ -119,7 +119,7 @@ public class PasskeyService {
                     var credentialId = base64Url(parsed.getCredentialId());
                     return findByCredentialId(credentialId)
                             .switchIfEmpty(Mono.error(
-                                    new PasskeyException("Unknown passkey credential.")))
+                                    new PasskeyException("未知的通行密钥凭据。")))
                             .flatMap(connection -> Mono.fromCallable(() -> {
                                         var authenticator = authenticator(connection);
                                         var authenticationData = webAuthnManager.verify(
@@ -190,7 +190,7 @@ public class PasskeyService {
                     : connection.getSpec().getSignCount();
             return new com.webauthn4j.authenticator.AuthenticatorImpl(attested, null, signCount);
         } catch (Exception e) {
-            throw new PasskeyException("Stored passkey credential is invalid: " + e.getMessage());
+            throw new PasskeyException("存储的通行密钥凭据无效：" + e.getMessage());
         }
     }
 

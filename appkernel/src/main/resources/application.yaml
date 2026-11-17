@@ -45,8 +45,6 @@ spring:
   http:
     codecs:
       max-in-memory-size: 10MB
-  messages:
-    basename: config.i18n.messages
   web:
     error:
       whitelabel:
@@ -58,6 +56,8 @@ spring:
 
 pudans:
   work-dir: ${PUDANS_WORK_DIR:${user.home}/.pudans}
+  webhook:
+    keystore-password: ${PUDANS_WEBHOOK_KEYSTORE_PASSWORD:}
   security:
     post-login-url: ${PUDANS_POST_LOGIN_URL:/}
     basic-auth:
@@ -72,7 +72,7 @@ pudans:
     enabled: ${FEISHU_ENABLED:false}
     app-id: ${FEISHU_APP_ID:}
     app-secret: ${FEISHU_APP_SECRET:}
-    redirect-uri: ${FEISHU_REDIRECT_URI:{baseUrl}/apis/auth.api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu}
+    redirect-uri: ${FEISHU_REDIRECT_URI:{baseUrl}/apis/api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu}
     sync-interval-seconds: ${FEISHU_SYNC_INTERVAL:21600}
     alert-chat-id: ${FEISHU_ALERT_CHAT_ID:}
   audit:
@@ -83,7 +83,7 @@ pudans:
     rp-name: pudans
     origins: ${WEBAUTHN_ORIGINS:http://localhost:8090}
   oidc:
-    providers: [ ]
+    providers: []
 
 springdoc:
   api-docs:

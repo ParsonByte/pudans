@@ -49,7 +49,7 @@ class WebSessionLoginParameterRequestCache implements LoginParameterRequestCache
                 .delayUntil(parameter -> exchange.getSession()
                         .map(WebSession::getAttributes)
                         .doOnNext(attributes -> {
-                            log.debug("Save {}: {} into session", parameterName, parameter);
+                            log.debug("保存 {}：{} 到会话", parameterName, parameter);
                             attributes.put(SESSION_ATTRIBUTE_NAME_PREFIX + parameterName, parameter);
                         }))
                 .then();
@@ -64,7 +64,7 @@ class WebSessionLoginParameterRequestCache implements LoginParameterRequestCache
                 .map(WebSession::getAttributes)
                 .doOnNext(attributes -> {
                     var removed = attributes.remove(SESSION_ATTRIBUTE_NAME_PREFIX + parameterName);
-                    log.debug("Remove {}: {} from session", parameterName, removed);
+                    log.debug("从会话移除 {}：{}", parameterName, removed);
                 })
                 .then();
     }
@@ -75,7 +75,7 @@ class WebSessionLoginParameterRequestCache implements LoginParameterRequestCache
                 .map(WebSession::getAttributes)
                 .mapNotNull(attributes -> {
                     var parameter = attributes.get(SESSION_ATTRIBUTE_NAME_PREFIX + parameterName);
-                    log.debug("Get {}: {} from session", parameterName, parameter);
+                    log.debug("从会话读取 {}：{}", parameterName, parameter);
                     return parameter;
                 })
                 .filter(String.class::isInstance)

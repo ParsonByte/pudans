@@ -1,10 +1,10 @@
 package cn.tolim.pudans.security.authentication.device;
 
+import cn.tolim.pudans.security.authentication.CookieSupport;
 import java.time.Duration;
 import lombok.Getter;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpCookie;
-import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.web.server.ServerWebExchange;
@@ -27,26 +27,12 @@ class DeviceCookieResolverImpl implements DeviceCookieResolver {
 
     @Override
     public void setCookie(ServerWebExchange exchange, String value) {
-        Assert.notNull(value, "'value' is required");
+        Assert.notNull(value, "'value' 不能为空");
         exchange.getResponse()
                 .beforeCommit(() -> Mono.fromRunnable(() -> {
-                    var deviceCookie = initCookie(exchange, value).build();
+                    var deviceCookie = CookieSupport.initCookie(exchange, getCookieName(), getCookieMaxAge(), value)
+                            .build();
                     exchange.getResponse().addCookie(deviceCookie);
                 }));
-    }
-
-    @Override
-    public void expireCookie(ServerWebExchange exchange) {
-        ResponseCookie cookie = initCookie(exchange, "").maxAge(0).build();
-        exchange.getResponse().getCookies().set(this.cookieName, cookie);
-    }
-
-    private ResponseCookie.ResponseCookieBuilder initCookie(ServerWebExchange exchange, String value) {
-        return ResponseCookie.from(this.cookieName, value)
-                .path(exchange.getRequest().getPath().contextPath().value() + "/")
-                .maxAge(getCookieMaxAge())
-                .httpOnly(true)
-                .secure("https".equalsIgnoreCase(exchange.getRequest().getURI().getScheme()))
-                .sameSite("Lax");
     }
 }

@@ -94,6 +94,13 @@ class WebhookDispatcherTest {
     }
 
     @Test
+    void signatureIsSkippedWhenNoSecretIsConfigured() {
+        assertThat(WebhookDispatcher.sign(null, "1", "{}")).isNull();
+        assertThat(WebhookDispatcher.sign("", "1", "{}")).isNull();
+        assertThat(WebhookDispatcher.sign("secret", "1", "{}")).startsWith("sha256=");
+    }
+
+    @Test
     void ssrfTargetIsRejectedAndAnAuditedFailureIsRecorded() {
         start("http://127.0.0.1:9999/hook");
 
@@ -123,7 +130,7 @@ class WebhookDispatcherTest {
         verify(auditService, timeout(5_000)).record(captor.capture());
         assertThat(captor.getValue().getResult()).isEqualTo("FAILURE");
         assertThat((String) captor.getValue().getContext().get("message"))
-                .contains("non routable");
+                .contains("不可路由");
     }
 
     @Test

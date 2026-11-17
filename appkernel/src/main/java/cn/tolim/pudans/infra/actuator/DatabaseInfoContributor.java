@@ -38,10 +38,10 @@ class DatabaseInfoContributor implements InfoContributor, InitializingBean {
                         connection -> Mono.just(connection.getMetadata()),
                         Connection::close)
                 .blockOptional(BLOCKING_TIMEOUT)
-                .orElseThrow(() -> new IllegalStateException("Unable to get database metadata"));
+                .orElseThrow(() -> new IllegalStateException("无法获取数据库元数据"));
         if (log.isDebugEnabled()) {
             log.debug(
-                    "Database Metadata initialized: name={}, version={}",
+                    "数据库元数据已初始化：name={}，version={}",
                     connectionMetadata.getDatabaseProductName(),
                     connectionMetadata.getDatabaseVersion());
         }

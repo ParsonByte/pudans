@@ -1,22 +1,16 @@
 package cn.tolim.pudans.security.authentication;
 
 import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.anyExchange;
-import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
 
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthenticationEntryPoint;
 import java.util.ArrayList;
-import org.springframework.context.MessageSource;
 import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.oauth2.server.resource.web.access.server.BearerTokenServerAccessDeniedHandler;
 import org.springframework.security.oauth2.server.resource.web.server.authentication.ServerBearerTokenAuthenticationConverter;
 import org.springframework.security.web.server.DelegatingServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.authentication.AuthenticationConverterServerWebExchangeMatcher;
-import org.springframework.security.web.server.authorization.HttpStatusServerAccessDeniedHandler;
 import org.springframework.security.web.server.authorization.ServerWebExchangeDelegatingServerAccessDeniedHandler;
-import org.springframework.security.web.server.savedrequest.ServerRequestCache;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
@@ -24,38 +18,29 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Order(0)
 public class ExceptionSecurityConfigurer implements SecurityConfigurer {
 
-    private final MessageSource messageSource;
-
     private final ServerResponse.Context context;
 
-    private final ServerRequestCache serverRequestCache;
-
-    public ExceptionSecurityConfigurer(
-            MessageSource messageSource, ServerResponse.Context context, ServerRequestCache serverRequestCache) {
-        this.messageSource = messageSource;
+    public ExceptionSecurityConfigurer(ServerResponse.Context context) {
         this.context = context;
-        this.serverRequestCache = serverRequestCache;
     }
 
     @Override
     public void configure(ServerHttpSecurity http) {
         http.exceptionHandling(exception -> {
             var accessDeniedHandlers =
-                    new ArrayList<ServerWebExchangeDelegatingServerAccessDeniedHandler.DelegateEntry>(3);
+                    new ArrayList<ServerWebExchangeDelegatingServerAccessDeniedHandler.DelegateEntry>(2);
             accessDeniedHandlers.add(new ServerWebExchangeDelegatingServerAccessDeniedHandler.DelegateEntry(
                     new AuthenticationConverterServerWebExchangeMatcher(new ServerBearerTokenAuthenticationConverter()),
                     new BearerTokenServerAccessDeniedHandler()));
             accessDeniedHandlers.add(new ServerWebExchangeDelegatingServerAccessDeniedHandler.DelegateEntry(
-                    pathMatchers(HttpMethod.GET, "/login"), new RedirectAccessDeniedHandler("/auth/")));
-            accessDeniedHandlers.add(new ServerWebExchangeDelegatingServerAccessDeniedHandler.DelegateEntry(
-                    anyExchange(), new HttpStatusServerAccessDeniedHandler(HttpStatus.FORBIDDEN)));
+                    anyExchange(), new ProblemDetailAccessDeniedHandler(context)));
 
             var entryPoints = new ArrayList<DelegatingServerAuthenticationEntryPoint.DelegateEntry>(2);
             entryPoints.add(new DelegatingServerAuthenticationEntryPoint.DelegateEntry(
                     TwoFactorAuthenticationEntryPoint.MATCHER,
-                    new TwoFactorAuthenticationEntryPoint(messageSource, context)));
+                    new TwoFactorAuthenticationEntryPoint(context)));
             entryPoints.add(new DelegatingServerAuthenticationEntryPoint.DelegateEntry(
-                    anyExchange(), new DefaultServerAuthenticationEntryPoint(serverRequestCache)));
+                    anyExchange(), new DefaultServerAuthenticationEntryPoint(context)));
 
             exception
                     .authenticationEntryPoint(new DelegatingServerAuthenticationEntryPoint(entryPoints))

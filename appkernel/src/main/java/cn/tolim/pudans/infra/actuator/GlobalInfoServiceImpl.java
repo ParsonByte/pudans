@@ -1,17 +1,16 @@
 package cn.tolim.pudans.infra.actuator;
 
 import cn.tolim.pudans.contract.infra.ExternalUrlSupplier;
-import cn.tolim.pudans.contract.infra.SystemSetting;
-import cn.tolim.pudans.infra.setting.SystemConfigFetcher;
+import cn.tolim.pudans.contract.infra.ParameterSetting;
+import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
 import lombok.RequiredArgsConstructor;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 
@@ -19,15 +18,18 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class GlobalInfoServiceImpl implements GlobalInfoService {
 
-    private final ObjectProvider<SystemConfigFetcher> systemConfigFetcher;
+    private final ObjectProvider<ParameterSettingFetcher> parameterSettingFetcher;
 
     private final ExternalUrlSupplier externalUrl;
+
+    private static String firstText(String first, String second) {
+        return StringUtils.hasText(first) ? first : second;
+    }
 
     @Override
     public Mono<GlobalInfo> getGlobalInfo() {
         final var info = new GlobalInfo();
         info.setExternalUrl(externalUrl.getRaw());
-        info.setLocale(Locale.getDefault());
         info.setTimeZone(TimeZone.getDefault());
         info.setAllowRegistration(false);
         info.setMustVerifyEmailOnRegistration(false);
@@ -38,19 +40,27 @@ public class GlobalInfoServiceImpl implements GlobalInfoService {
     }
 
     private Mono<Void> handleSettings(GlobalInfo info) {
-        return Optional.ofNullable(systemConfigFetcher.getIfUnique())
-                .map(fetcher -> fetcher.getConfig()
-                        .doOnNext(config -> handleBasicSetting(info, config))
+        return Optional.ofNullable(parameterSettingFetcher.getIfUnique())
+                .map(fetcher -> Mono.zip(
+                                fetcher.fetch(ParameterSetting.Site.GROUP, ParameterSetting.Site.class)
+                                        .defaultIfEmpty(new ParameterSetting.Site()),
+                                fetcher.fetch(ParameterSetting.Basic.GROUP, ParameterSetting.Basic.class)
+                                        .defaultIfEmpty(new ParameterSetting.Basic()),
+                                fetcher.fetch(ParameterSetting.Server.GROUP, ParameterSetting.Server.class)
+                                        .defaultIfEmpty(new ParameterSetting.Server()))
+                        .doOnNext(tuple -> {
+                            applySite(info, tuple.getT1(), tuple.getT2());
+                            info.setSiteId(tuple.getT3().getSiteId());
+                        })
                         .then())
                 .orElseGet(Mono::empty);
     }
 
-    private void handleBasicSetting(GlobalInfo info, Map<String, String> config) {
-        var basic = SystemSetting.get(config, SystemSetting.Basic.GROUP, SystemSetting.Basic.class);
-        if (basic != null) {
-            info.setFavicon(basic.getFavicon());
-            info.setSiteTitle(basic.getTitle());
-            basic.useSystemLocale().ifPresent(info::setLocale);
-        }
+    private void applySite(GlobalInfo info, ParameterSetting.Site site, ParameterSetting.Basic basic) {
+        info.setFavicon(firstText(site.getFavicon(), basic.getFavicon()));
+        info.setSiteTitle(firstText(site.getSiteName(), basic.getTitle()));
+        info.setSiteDescription(firstText(site.getSiteDescription(), basic.getSubtitle()));
+        info.setLogoDark(firstText(site.getLogoDark(), basic.getLogo()));
+        info.setLogoLight(firstText(site.getLogoLight(), basic.getLogo()));
     }
 }

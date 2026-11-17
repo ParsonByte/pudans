@@ -54,7 +54,7 @@ public class UserConnectionServiceImpl implements UserConnectionService {
                     .digest((registrationId + '\0' + providerUserId).getBytes(StandardCharsets.UTF_8));
             return "oauth2-" + HexFormat.of().formatHex(digest, 0, 28);
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is not available", e);
+            throw new IllegalStateException("SHA-256 不可用", e);
         }
     }
 

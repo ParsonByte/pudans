@@ -17,13 +17,13 @@ public enum UserAgentUtils {
         try {
             PARSER = new Parser(regexesResource.getInputStream());
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load regexes.yaml during UserAgent Parser initialization", e);
+            throw new RuntimeException("初始化 UserAgent Parser 时加载 regexes.yaml 失败", e);
         }
     }
 
 
     public static Client parse(String agentString) {
-        Assert.hasText(agentString, "User-Agent header must not be blank");
+        Assert.hasText(agentString, "User-Agent 请求头不能为空");
         return PARSER.parse(agentString);
     }
 }

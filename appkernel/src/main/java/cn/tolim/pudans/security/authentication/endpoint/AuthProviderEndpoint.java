@@ -27,12 +27,12 @@ public class AuthProviderEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion(ApiGroups.AUTH + "/v1alpha1");
+        return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        final var tag = "AuthV1alpha1Auth";
+        final var tag = "AuthProviderV1alpha1";
         return SpringdocRouteBuilder.route()
                 .GET(
                         "/auth-providers",

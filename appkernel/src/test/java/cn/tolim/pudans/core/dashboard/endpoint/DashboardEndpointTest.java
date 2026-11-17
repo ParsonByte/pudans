@@ -15,7 +15,7 @@ import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.SystemInfo;
-import cn.tolim.pudans.contract.infra.SystemInfoGetter;
+import cn.tolim.pudans.contract.infra.ParameterInfoGetter;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import com.github.zafarkhaja.semver.Version;
@@ -42,7 +42,7 @@ class DashboardEndpointTest {
     AuditService auditService;
 
     @Mock
-    SystemInfoGetter systemInfoGetter;
+    ParameterInfoGetter systemInfoGetter;
 
     @Mock
     UserGroupService userGroupService;

@@ -3,7 +3,6 @@ package cn.tolim.pudans.security.authorization;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Data;
@@ -18,7 +17,6 @@ import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.RbacRuleEnricherService;
 import cn.tolim.pudans.core.rbac.service.TempRoleService;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
@@ -34,25 +32,19 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
 
     private static final String PAT_NAME_CLAIM = "pat_name";
 
-    private static final String ENRICHER_SOURCE = "RBAC rule enricher";
-
     private RoleService roleService;
 
     private TempRoleService tempRoleService;
 
     private AuditService auditService;
 
-    private RbacRuleEnricherService rbacRuleEnricherService;
-
     public DefaultRuleResolver(
             RoleService roleService,
             TempRoleService tempRoleService,
-            AuditService auditService,
-            RbacRuleEnricherService rbacRuleEnricherService) {
+            AuditService auditService) {
         this.roleService = roleService;
         this.tempRoleService = tempRoleService;
         this.auditService = auditService;
-        this.rbacRuleEnricherService = rbacRuleEnricherService;
     }
 
     @Override
@@ -88,10 +80,10 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
 
         var stopVisiting = new AtomicBoolean(false);
         return resolveRoleNames(authentication)
-                .flatMap(roleNames -> visitRoleRules(authentication, roleNames, visitor, stopVisiting)
-                        .then(Mono.defer(() -> enrichRules(authentication, roleNames, visitor, stopVisiting))))
+                .flatMap(roleNames -> visitRoleRules(authentication, roleNames, visitor, stopVisiting))
+                .thenReturn(visitor)
                 .onErrorResume(t -> {
-                    log.error("Error occurred when visiting rules", t);
+                    log.error("访问规则时发生错误", t);
                     visitor.visit(null, null, t);
                     return Mono.just(visitor);
                 });
@@ -123,33 +115,11 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
                 .then();
     }
 
-    private Mono<AuthorizingVisitor> enrichRules(
-            Authentication authentication,
-            Set<String> roleNames,
-            AuthorizingVisitor visitor,
-            AtomicBoolean stopVisiting) {
-        if (visitor.isAllowed()
-                || stopVisiting.get()
-                || authentication instanceof AnonymousAuthenticationToken) {
-            return Mono.just(visitor);
-        }
-        return rbacRuleEnricherService
-                .enrich(authentication.getName(), roleNames)
-                .doOnNext(rules -> rules.forEach(rule -> visitor.visit(ENRICHER_SOURCE, rule, null)))
-                .thenReturn(visitor)
-                .onErrorResume(error -> {
-                    log.warn(
-                            "RBAC rule enrichment failed for [{}], denying the request",
-                            authentication.getName(),
-                            error);
-                    visitor.visit(null, null, error);
-                    return Mono.just(visitor);
-                });
-    }
-
     private Mono<Set<String>> resolveRoleNames(Authentication authentication) {
         var baseRoles = AuthorityUtils.authoritiesToRoles(authentication.getAuthorities());
-        if (!authentication.isAuthenticated() || authentication instanceof AnonymousAuthenticationToken) {
+        if (!authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken
+                || authentication instanceof JwtAuthenticationToken) {
             return Mono.just(baseRoles);
         }
         return tempRoleService
@@ -160,7 +130,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
                     return merged;
                 })
                 .onErrorResume(error -> {
-                    log.warn("Unable to resolve temporary roles for [{}]", authentication.getName(), error);
+                    log.warn("无法解析 [{}] 的临时角色", authentication.getName(), error);
                     return Mono.just(baseRoles);
                 })
                 .switchIfEmpty(Mono.just(baseRoles));
@@ -279,6 +249,8 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         context.put("verb", requestInfo.getVerb());
         context.put("scopes", scopes);
         context.put("patName", patName(authentication));
+        context.put("patOwner", jwtClaim(authentication, "pat_owner"));
+        context.put("sudoUser", jwtClaim(authentication, "sudo_user"));
         auditRecord.setContext(context);
         auditRecord.setActionSnapshot(JsonUtils.objectToJson(context));
         auditService.record(auditRecord);
@@ -287,6 +259,13 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
     private static String patName(Authentication authentication) {
         if (authentication instanceof JwtAuthenticationToken jwt) {
             return jwt.getToken().getClaimAsString(PAT_NAME_CLAIM);
+        }
+        return null;
+    }
+
+    private static String jwtClaim(Authentication authentication, String claimName) {
+        if (authentication instanceof JwtAuthenticationToken jwt) {
+            return jwt.getToken().getClaimAsString(claimName);
         }
         return null;
     }

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.authentication.sudo;
 
 import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.security.authentication.twofactor.totp.TotpAuthService;
+import cn.tolim.pudans.security.authentication.twofactor.totp.TotpConsumptionService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -15,10 +15,10 @@ class TotpSudoVerificationProvider implements SudoVerificationProvider {
 
     static final String METHOD = "totp";
 
-    private final TotpAuthService totpAuthService;
+    private final TotpConsumptionService totpConsumptionService;
 
-    TotpSudoVerificationProvider(TotpAuthService totpAuthService) {
-        this.totpAuthService = totpAuthService;
+    TotpSudoVerificationProvider(TotpConsumptionService totpConsumptionService) {
+        this.totpConsumptionService = totpConsumptionService;
     }
 
     @Override
@@ -38,7 +38,7 @@ class TotpSudoVerificationProvider implements SudoVerificationProvider {
 
     @Override
     public Mono<Void> sendCode(User user) {
-        return Mono.error(new ServerWebInputException("TOTP does not send a verification code"));
+        return Mono.error(new ServerWebInputException("TOTP 无需发送验证码"));
     }
 
     @Override
@@ -53,10 +53,11 @@ class TotpSudoVerificationProvider implements SudoVerificationProvider {
         } catch (NumberFormatException e) {
             return Mono.error(SudoVerificationFailedException::new);
         }
-        var rawSecret = totpAuthService.decryptSecret(encryptedSecret);
-        if (!totpAuthService.validateTotp(rawSecret, totpCode)) {
-            return Mono.error(SudoVerificationFailedException::new);
-        }
-        return Mono.empty();
+        return totpConsumptionService
+                .consume(user, totpCode)
+                .then()
+                .onErrorMap(
+                        cn.tolim.pudans.security.authentication.exception.TwoFactorAuthException.class,
+                        error -> new SudoVerificationFailedException());
     }
 }

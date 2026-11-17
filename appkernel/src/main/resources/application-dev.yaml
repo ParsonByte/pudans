@@ -10,8 +10,8 @@ pudans:
   security:
     basic-auth:
       disabled: false
-  plugin:
-    runtime-mode: development
+    password-reset:
+      log-codes: true
   work-dir: ${user.home}/pudans2-dev
 
 logging:

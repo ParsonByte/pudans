@@ -24,9 +24,9 @@ public class SingleValueBuilder<E extends Extension, K extends Comparable<K>>
 
     @Override
     public ValueIndexSpec<E, K> build() {
-        Assert.hasText(name, "Index name must not be blank");
-        Assert.notNull(keyType, "Key type must not be null");
-        Assert.notNull(indexFunc, "Index function must not be null");
+        Assert.hasText(name, "索引名称不能为空");
+        Assert.notNull(keyType, "键类型不能为 null");
+        Assert.notNull(indexFunc, "索引函数不能为 null");
 
         return new SingleValueIndexSpec<>() {
             @Override

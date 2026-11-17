@@ -17,8 +17,8 @@ public abstract class AbstractValueIndexSpecBuilder<
     protected boolean nullable = true;
 
     protected AbstractValueIndexSpecBuilder(String name, Class<K> keyType) {
-        Assert.hasText(name, "Index name must not be blank");
-        Assert.notNull(keyType, "Key type must not be null");
+        Assert.hasText(name, "索引名称不能为空");
+        Assert.notNull(keyType, "键类型不能为 null");
         this.name = name;
         this.keyType = keyType;
     }

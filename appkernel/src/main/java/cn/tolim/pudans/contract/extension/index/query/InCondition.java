@@ -7,7 +7,7 @@ import org.springframework.util.Assert;
 public record InCondition(String indexName, Collection<Object> keys) implements IndexCondition {
 
     public InCondition {
-        Assert.notNull(keys, "Keys of " + indexName + " must not be empty");
+        Assert.notNull(keys, "索引 " + indexName + " 的键不能为空");
     }
 
     @Override

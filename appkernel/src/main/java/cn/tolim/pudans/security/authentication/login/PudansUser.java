@@ -19,8 +19,10 @@ public class PudansUser implements PudansUserDetailsContract, CredentialsContain
 
     private String totpEncryptedSecret;
 
+    private String refreshToken;
+
     public PudansUser(UserDetails delegate, boolean twoFactorAuthEnabled, String totpEncryptedSecret) {
-        Assert.notNull(delegate, "Delegate user must not be null");
+        Assert.notNull(delegate, "被委托的用户不能为空");
         this.delegate = delegate;
         this.twoFactorAuthEnabled = twoFactorAuthEnabled;
         this.totpEncryptedSecret = totpEncryptedSecret;
@@ -90,6 +92,14 @@ public class PudansUser implements PudansUserDetailsContract, CredentialsContain
     @Override
     public String getTotpEncryptedSecret() {
         return this.totpEncryptedSecret;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 
     public static class Builder {

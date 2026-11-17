@@ -17,19 +17,6 @@ public class WebSessionOAuth2BindIntent implements OAuth2BindIntent {
     private Clock clock = Clock.systemUTC();
 
     @Override
-    public Mono<Void> save(ServerWebExchange exchange, String oauth2Identity) {
-        return exchange.getSession()
-                .doOnNext(session -> {
-                    session.getAttributes().put(IDENTITY_ATTRIBUTE_KEY, oauth2Identity);
-
-
-                    session.getAttributes()
-                            .put(CREATED_AT_ATTRIBUTE_KEY, clock.instant().toEpochMilli());
-                })
-                .then();
-    }
-
-    @Override
     public Mono<String> consume(ServerWebExchange exchange) {
         return exchange.getSession().flatMap(session -> {
             var identity = session.getAttributes().remove(IDENTITY_ATTRIBUTE_KEY);
@@ -53,9 +40,5 @@ public class WebSessionOAuth2BindIntent implements OAuth2BindIntent {
                     session.getAttributes().remove(CREATED_AT_ATTRIBUTE_KEY);
                 })
                 .then();
-    }
-
-    void setClock(Clock clock) {
-        this.clock = clock;
     }
 }

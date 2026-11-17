@@ -7,11 +7,7 @@ import org.springframework.web.server.ServerWebInputException;
 public class OAuth2UserAlreadyBoundException extends ServerWebInputException {
 
     public OAuth2UserAlreadyBoundException(UserConnection connection) {
-        super("The user has been bound to another account", null, null, null, new Object[] {
-                connection.getSpec().getUsername(),
-                connection.getSpec().getProviderUserId(),
-                connection.getSpec().getRegistrationId(),
-                connection.getSpec().getUpdatedAt()
-        });
+        super("用户 " + connection.getSpec().getUsername()
+                + " 已经绑定到另一个 OAuth2 用户，无法自动绑定当前 OAuth2 用户。");
     }
 }
