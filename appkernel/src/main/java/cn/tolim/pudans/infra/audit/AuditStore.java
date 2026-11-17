@@ -144,7 +144,15 @@ public class AuditStore {
     }
 
     public Mono<Map<LocalDate, Long>> countPerDay(Instant since, String operation, String result) {
+        return countPerDay(since, null, operation, result);
+    }
+
+    public Mono<Map<LocalDate, Long>> countPerDay(
+            Instant since, String uid, String operation, String result) {
         var criteria = Criteria.where("occurredAt").greaterThanOrEquals(toOffsetDateTime(since));
+        if (StringUtils.hasText(uid)) {
+            criteria = criteria.and("uid").is(uid);
+        }
         if (StringUtils.hasText(operation)) {
             criteria = criteria.and("operation").is(operation);
         }

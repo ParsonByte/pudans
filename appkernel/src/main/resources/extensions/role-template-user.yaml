@@ -15,6 +15,7 @@ rules:
     resources:
       - "users"
       - "users/batch"
+      - "users/local"
       - "users/usergroup"
     verbs:
       - "create"
@@ -29,8 +30,17 @@ rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
+      - "users/disable"
+      - "users/enable"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "users/usergroup"
       - "users/permissions"
+      - "users/connections"
+      - "users/activity"
     verbs:
       - "get"
 ---

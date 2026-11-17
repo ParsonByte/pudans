@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.user.endpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.Metadata;
 import org.junit.jupiter.api.Test;
@@ -28,6 +29,20 @@ class UserViewEmailVisibilityTest {
     void theDefaultViewKeepsTheEmailForCompatibility() {
         assertThat(UserView.from(user()).spec().email()).isEqualTo("alice@example.com");
         assertThat(UserEndpoint.ListedUser.from(user()).email()).isEqualTo("alice@example.com");
+    }
+
+    @Test
+    void listedUsersExposeTheUserGroupNameAndDisplayName() {
+        var group = new UserGroup();
+        var metadata = new Metadata();
+        metadata.setName("admins");
+        group.setMetadata(metadata);
+        group.setDisplayName("管理员");
+
+        var listed = UserEndpoint.ListedUser.from(user(), true, group);
+
+        assertThat(listed.userGroup()).isEqualTo("admins");
+        assertThat(listed.userGroupDisplayName()).isEqualTo("管理员");
     }
 
     private static User user() {

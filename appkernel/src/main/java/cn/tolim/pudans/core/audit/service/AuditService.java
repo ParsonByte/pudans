@@ -299,7 +299,12 @@ public class AuditService {
 
     public Mono<Map<java.time.LocalDate, Long>> countPerDay(
             Instant since, String operation, String result) {
-        return auditStore.countPerDay(since, operation, result);
+        return countPerDay(since, null, operation, result);
+    }
+
+    public Mono<Map<java.time.LocalDate, Long>> countPerDay(
+            Instant since, String uid, String operation, String result) {
+        return auditStore.countPerDay(since, uid, operation, result);
     }
 
     public Flux<AuditRecord> findRecent(int limit) {
