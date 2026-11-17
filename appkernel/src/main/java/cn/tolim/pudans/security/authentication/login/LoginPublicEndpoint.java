@@ -139,9 +139,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
 
     private List<LoginProviderView> includeFeishu(List<LoginProviderView> views) {
         var providers = new ArrayList<>(views);
-        var feishuConfigured = feishuProperties.isEnabled()
-                && StringUtils.hasText(feishuProperties.getAppId())
-                && StringUtils.hasText(feishuProperties.getAppSecret());
+        var feishuConfigured = feishuProperties.isConfigured();
         var feishuIndex = -1;
 
         for (var index = 0; index < providers.size(); index++) {

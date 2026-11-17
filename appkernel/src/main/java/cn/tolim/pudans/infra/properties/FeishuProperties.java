@@ -3,6 +3,7 @@ package cn.tolim.pudans.infra.properties;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
 
 
 @Data
@@ -32,4 +33,8 @@ public class FeishuProperties {
     private long syncIntervalSeconds = 21600;
 
     private String alertChatId = "";
+
+    public boolean isConfigured() {
+        return enabled && StringUtils.hasText(appId) && StringUtils.hasText(appSecret);
+    }
 }
