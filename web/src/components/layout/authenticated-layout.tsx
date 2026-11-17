@@ -18,10 +18,11 @@ type AuthenticatedLayoutProps = Partial<SidebarData> & {
 export function AuthenticatedLayout({
   user,
   workspaces,
+  activeWorkspaceId,
   navGroups,
   onSignOut,
 }: AuthenticatedLayoutProps) {
-  const defaultOpen = getCookie("sidebar_state") === "true";
+  const defaultOpen = getCookie("sidebar_state") !== "false";
 
   return (
     <SearchProvider navGroups={navGroups}>
@@ -32,6 +33,7 @@ export function AuthenticatedLayout({
             <AppSidebar
               user={user}
               workspaces={workspaces}
+              activeWorkspaceId={activeWorkspaceId}
               navGroups={navGroups}
               onSignOut={onSignOut}
             />

@@ -1,10 +1,15 @@
 import { axiosInstance } from "@pudans-dev/api-client";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, useLocation } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import type { User } from "@/components/layout/types";
 import { getLoginSession } from "@/modules/auth/lib/session";
+import {
+  buildWorkspaceNavGroups,
+  buildWorkspaces,
+  resolveActiveWorkspace,
+} from "@/modules/workspace/lib/workspaces";
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
@@ -34,6 +39,12 @@ export const Route = createFileRoute("/_authenticated")({
 
 function AuthenticatedRoute() {
   const { session } = Route.useRouteContext();
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const workspaces = buildWorkspaces(session.uiPermissions);
+  const activeWorkspace = resolveActiveWorkspace(workspaces, pathname);
+  const navGroups = activeWorkspace
+    ? buildWorkspaceNavGroups(activeWorkspace.id, session.uiPermissions)
+    : [];
   const user: User = {
     name: session.displayName || session.username || "用户",
     email: session.username ?? "",
@@ -49,5 +60,13 @@ function AuthenticatedRoute() {
     }
   };
 
-  return <AuthenticatedLayout user={user} onSignOut={handleSignOut} />;
+  return (
+    <AuthenticatedLayout
+      user={user}
+      workspaces={workspaces}
+      activeWorkspaceId={activeWorkspace?.id}
+      navGroups={navGroups}
+      onSignOut={handleSignOut}
+    />
+  );
 }
