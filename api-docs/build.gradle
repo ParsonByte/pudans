@@ -52,6 +52,22 @@ tasks.register('validateOpenApiDocs') {
             } as Set
             def invalidTags = operationTags.findAll { tag -> !(tag ==~ /^[A-Za-z0-9]+V1alpha1$/) }
             assert invalidTags.isEmpty(): "API tags must use the <Kind>V1alpha1 form in ${name}: ${invalidTags}"
+            def repeatedTags = doc.paths.collectMany { path, operations ->
+                operations.values()
+                        .findAll { operation -> operation instanceof Map }
+                        .findAll { operation ->
+                            def tags = operation.tags ?: []
+                            tags.size() != tags.toSet().size()
+                        }
+                        .collect { operation -> "${path} ${operation.operationId}" }
+            }
+            assert repeatedTags.isEmpty(): "Operations must not repeat a tag in ${name}: ${repeatedTags}"
+            def documentText = docsDir.file(name).asFile.getText('UTF-8')
+            def unreferencedSchemas = (doc.components?.schemas ?: [:]).keySet().findAll { schemaName ->
+                !documentText.contains("\"#/components/schemas/${schemaName}\"")
+            }
+            assert unreferencedSchemas.isEmpty():
+                    "Unreferenced schemas in ${name}: ${unreferencedSchemas}"
         }
 
         def paths = parsed['apis_api_v1alpha1.json'].paths.keySet()
