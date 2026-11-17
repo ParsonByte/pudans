@@ -41,10 +41,6 @@ public class ParameterSettingGroupService {
 
     public static final Set<String> LEGACY_GROUPS = Set.of("basic", "user", "seo", "authProvider");
 
-    private static final String SCHEMA_VERSION_KEY = "schemaVersion";
-
-    private static final String CURRENT_SCHEMA_VERSION = "2";
-
     private static final Map<String, Class<?>> GROUP_TYPES = Map.of(
             "site", ParameterSetting.Site.class,
             "session", ParameterSetting.Session.class,
@@ -117,7 +113,9 @@ public class ParameterSettingGroupService {
                         .switchIfEmpty(Mono.error(() -> new IllegalStateException(
                                 "缺少参数设置 ConfigMap。")))
                         .flatMap(configMap -> {
-                            if (NEW_GROUPS.contains(group) && schemaVersion(configMap.getData()) >= 2) {
+                            if (NEW_GROUPS.contains(group)
+                                    && !ParameterSetting.Captcha.GROUP.equals(group)
+                                    && !ParameterSetting.Mail.GROUP.equals(group)) {
                                 return updateGroup(group, incoming);
                             }
                             if (configMap.getData() == null) {
@@ -138,21 +136,6 @@ public class ParameterSettingGroupService {
                         }))
                 .retryWhen(Retry.backoff(5, RETRY_BACKOFF)
                         .filter(OptimisticLockingFailureException.class::isInstance));
-    }
-
-    private static int schemaVersion(Map<String, String> data) {
-        if (data == null) {
-            return 1;
-        }
-        var raw = data.get(SCHEMA_VERSION_KEY);
-        if (!StringUtils.hasText(raw)) {
-            return 1;
-        }
-        try {
-            return Integer.parseInt(raw);
-        } catch (NumberFormatException e) {
-            return 1;
-        }
     }
 
     public Mono<UpdateResult> updateGroup(String group, ObjectNode incoming) {
@@ -192,7 +175,6 @@ public class ParameterSettingGroupService {
                     ParameterSettingSensitiveFields.decryptForValidation(effective, group, secretCipher);
                     validate(group, effective);
                     configMap.getData().put(group, persisted.toString());
-                    configMap.getData().put(SCHEMA_VERSION_KEY, CURRENT_SCHEMA_VERSION);
                     return restartRequired;
                 })
                 .flatMap(restart -> client.update(configMap)

@@ -3,7 +3,6 @@ kind: ConfigMap
 metadata:
   name: parameter-settings-default
 data:
-  schemaVersion: "2"
   site: |
     {
       "siteName": "pudans",
