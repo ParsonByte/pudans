@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Pudans is an enterprise identity and permission management platform. Backend: Java 25 / Spring Boot on a Gradle multi-module build.
+Pudans is an enterprise identity and permission management platform. Backend: Java 25 / Spring Boot on a Gradle multi-module build. Frontend: React 19 / TypeScript / Vite in `web/`, with shadcn/ui as the only UI component library; components are added only through the shadcn CLI.
 
 ## Mandatory reading order
 
@@ -30,7 +30,7 @@ Read the matching rule under `.agents/rules` before starting a task, and follow 
 | Comments | `.agents/rules/comments.md` | Code files only, `//` single-line Chinese comments only |
 | Code style | `.agents/rules/code-style.md` | Formatting, naming, single responsibility, types, errors |
 | SQL | `.agents/rules/sql.md` | R2DBC only; no new SQL files; no JDBC or migrations |
-| Tech stack | `.agents/rules/tech-stack.md` | Required versions, prohibited stacks, dependency and configuration rules |
+| Tech stack | `.agents/rules/tech-stack.md` | Required versions, prohibited stacks, dependency and configuration rules; frontend stack and the CLI-only shadcn/ui component policy |
 | Development | `.agents/rules/development.md` | Branching, pre-commit checks, PRs, dependencies, secrets, review |
 | Development (repo) | `.agents/rules/development-repo.md` | Mandatory read order, reuse first, no redundancy, minimal diff |
 | Reuse and cleanup | `.agents/rules/reuse-and-cleanup.md` | Search dimensions, decision tree, cleanup checklist |
@@ -66,7 +66,7 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `.agents/rules/code-style.md` | Formatting, naming, design, types, errors and cleanup | While implementing, refactoring or reviewing | Yes |
 | `.agents/rules/development.md` | Branches, pull requests, dependencies, secrets and review | Branch, PR or merge work | Yes for that workflow |
 | `.agents/rules/sql.md` | R2DBC-only data access and SQL boundaries | Any data-access change | Yes |
-| `.agents/rules/tech-stack.md` | Required versions, prohibited stacks and dependency rules | Dependency, build or configuration change | Yes |
+| `.agents/rules/tech-stack.md` | Required versions, prohibited stacks, dependency rules, frontend stack and the CLI-only shadcn/ui component policy | Dependency, build, configuration or frontend UI change | Yes |
 | `.agents/rules/skills.md` | Skill directory layout and SKILL.md requirements | Creating or editing a skill | Yes |
 | `.agents/skills/development-repo/SKILL.md` | Executable development flow | Before any code, test or configuration change | Yes |
 | `.agents/skills/reuse-check/SKILL.md` | Executable reuse search and decision procedure | Before creating any implementation | Yes |
@@ -84,16 +84,21 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `appkernel/` | Backend core: identity, permissions and the extension mechanism |
 | `api-docs/` | OpenAPI aggregation and validation, no business code |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
-| `gradle/libs.versions.toml` | Version catalog; dependency changes go here |
+| `gradle/libs.versions.toml` | Version catalog; backend dependency changes go here |
+| `web/` | Frontend: React 19, TypeScript, Vite, TanStack Router/Query, Tailwind CSS v4 and shadcn/ui |
 
 ## Commands
 
 ```bash
-./gradlew test                # backend tests
-./gradlew build               # backend build
+./gradlew test                 # backend tests
+./gradlew build                # backend build
+cd web && npm run dev          # frontend dev server
+cd web && npm run lint         # frontend lint
+cd web && npm run format:check # frontend formatting check
+cd web && npm run build        # frontend typecheck and production build
 ```
 
-Tests must pass before committing (see `.agents/rules/development.md`).
+Backend tests and frontend checks must pass before committing (see `.agents/rules/development.md` and `.agents/rules/tech-stack.md`).
 
 ## Formatting sources
 
