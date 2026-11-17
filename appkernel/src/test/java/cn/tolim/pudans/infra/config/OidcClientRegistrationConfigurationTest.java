@@ -9,6 +9,8 @@ import reactor.test.StepVerifier;
 
 class OidcClientRegistrationConfigurationTest {
 
+    private final OidcClientRegistrationConfiguration configuration = new OidcClientRegistrationConfiguration();
+
     @Test
     void mapsConfiguredProvidersToClientRegistrations() {
         var provider = new OidcProperties.Provider();
@@ -23,8 +25,7 @@ class OidcClientRegistrationConfigurationTest {
         var properties = new OidcProperties();
         properties.setProviders(List.of(provider));
 
-        var repository = new OidcClientRegistrationConfiguration()
-                .clientRegistrationRepository(properties);
+        var repository = configuration.clientRegistrationRepository(properties);
 
         StepVerifier.create(repository.findByRegistrationId("example"))
                 .assertNext(registration -> {
@@ -35,5 +36,15 @@ class OidcClientRegistrationConfigurationTest {
                             .isEqualTo("{baseUrl}/login/oauth2/code/{registrationId}");
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void returnsAnEmptyRepositoryWhenNoProvidersAreConfigured() {
+        var properties = new OidcProperties();
+        properties.setProviders(List.of());
+
+        var repository = configuration.clientRegistrationRepository(properties);
+
+        StepVerifier.create(repository.findByRegistrationId("missing")).verifyComplete();
     }
 }
