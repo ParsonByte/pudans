@@ -1,13 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { WorkspaceIndexView } from "@/modules/workspace/index/view";
+import { ChatNewView } from "@/modules/workspace/index";
 
 export const Route = createFileRoute("/_authenticated/_workspace/(index)/")({
-  component: WorkspaceIndexRoute,
+  component: ChatNewView,
 });
-
-function WorkspaceIndexRoute() {
-  const { navigation } = Route.useRouteContext();
-
-  return <WorkspaceIndexView navigation={navigation} />;
-}
