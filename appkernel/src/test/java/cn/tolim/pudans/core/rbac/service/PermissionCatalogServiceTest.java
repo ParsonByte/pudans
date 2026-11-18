@@ -15,8 +15,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
+import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
@@ -56,6 +58,9 @@ class PermissionCatalogServiceTest {
     private void stubTemplates(Role... roles) {
         when(client.listAll(eq(Role.class), any(ListOptions.class), any(Sort.class)))
                 .thenReturn(Flux.just(roles));
+        var labels = new ConfigMap();
+        labels.setData(Map.of("users", "用户"));
+        when(client.fetch(ConfigMap.class, "ui-resource-labels")).thenReturn(Mono.just(labels));
     }
 
     private static List<Role> catalogRoles() {
@@ -142,6 +147,7 @@ class PermissionCatalogServiceTest {
                     assertThat(users.operations()).hasSize(1);
                     assertThat(users.operations().get(0).key()).isEqualTo("create");
                     assertThat(users.operations().get(0).permission()).isEqualTo("users:create");
+                    assertThat(catalog.resourceLabels()).containsEntry("users", "用户");
                 })
                 .verifyComplete();
     }

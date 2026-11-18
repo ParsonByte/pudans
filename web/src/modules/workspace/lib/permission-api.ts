@@ -56,6 +56,7 @@ export type CatalogWorkspace = {
 
 export type PermissionCatalog = {
   workspaces?: CatalogWorkspace[];
+  resourceLabels?: Record<string, string>;
 };
 
 type NavigationOperation = {

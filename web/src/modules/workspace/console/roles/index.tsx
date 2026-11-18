@@ -203,8 +203,8 @@ export function RolesView() {
                       {isBuiltinRole(selectedRole) ? "系统内置" : "自定义"}
                     </Badge>
                   </div>
-                  <p className="font-mono text-xs text-muted-foreground">
-                    {selectedRole.metadata.name}
+                  <p className="text-xs text-muted-foreground">
+                    角色标识：<span className="font-mono">{selectedRole.metadata.name}</span>
                   </p>
                   <p className="text-sm text-muted-foreground">{roleDescription(selectedRole)}</p>
                 </div>
