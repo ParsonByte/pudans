@@ -37,7 +37,7 @@ import tools.jackson.databind.node.ObjectNode;
 public class ParameterSettingGroupService {
 
     public static final Set<String> NEW_GROUPS =
-            Set.of("site", "session", "captcha", "mail", "audit", "server", "authentication");
+            Set.of("site", "session", "captcha", "mail", "audit", "server", "authentication", "storage");
 
     public static final Set<String> LEGACY_GROUPS = Set.of("basic", "user", "seo", "authProvider");
 
@@ -48,7 +48,8 @@ public class ParameterSettingGroupService {
             "mail", ParameterSetting.Mail.class,
             "audit", ParameterSetting.Audit.class,
             "server", ParameterSetting.Server.class,
-            "authentication", ParameterSetting.Authentication.class);
+            "authentication", ParameterSetting.Authentication.class,
+            "storage", ParameterSetting.Storage.class);
 
     private static final Duration RETRY_BACKOFF = Duration.ofMillis(100);
 
@@ -419,6 +420,11 @@ public class ParameterSettingGroupService {
     public Mono<ParameterSetting.Session> getSession() {
         return fetcher.fetch(ParameterSetting.Session.GROUP, ParameterSetting.Session.class)
                 .defaultIfEmpty(new ParameterSetting.Session());
+    }
+
+    public Mono<ParameterSetting.Storage> getStorage() {
+        return fetcher.fetch(ParameterSetting.Storage.GROUP, ParameterSetting.Storage.class)
+                .defaultIfEmpty(new ParameterSetting.Storage());
     }
 
     public Mono<ParameterSetting.Captcha> getCaptcha() {

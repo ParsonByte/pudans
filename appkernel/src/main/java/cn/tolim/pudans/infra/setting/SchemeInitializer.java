@@ -15,6 +15,10 @@ import cn.tolim.pudans.contract.core.extension.rbac.RoleBinding;
 import cn.tolim.pudans.contract.core.extension.rbac.TempRoleBinding;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
+import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
+import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.core.extension.user.UserConnection;
 import cn.tolim.pudans.contract.extension.ConfigMap;
@@ -151,6 +155,30 @@ class SchemeInitializer implements SmartLifecycle {
                                 .orElse(null))));
         schemeManager.register(ConfigMap.class);
         schemeManager.register(Secret.class);
+
+        schemeManager.register(StoragePolicy.class, is -> {
+            is.add(IndexSpecs.<StoragePolicy, StoragePolicyType>single("spec.type", StoragePolicyType.class)
+                    .indexFunc(policy -> policy.getSpec().getType()));
+            is.add(IndexSpecs.<StoragePolicy, Boolean>single("spec.defaultPolicy", Boolean.class)
+                    .indexFunc(policy -> policy.getSpec().isDefaultPolicy()));
+        });
+
+        schemeManager.register(StorageFile.class, is -> {
+            is.add(IndexSpecs.<StorageFile, String>single("spec.policy", String.class)
+                    .indexFunc(file -> file.getSpec().getPolicy()));
+            is.add(IndexSpecs.<StorageFile, String>single("spec.owner", String.class)
+                    .indexFunc(file -> file.getSpec().getOwner()));
+            is.add(IndexSpecs.<StorageFile, String>single("spec.module", String.class)
+                    .indexFunc(file -> file.getSpec().getModule()));
+            is.add(IndexSpecs.<StorageFile, StorageFileState>single("spec.state", StorageFileState.class)
+                    .indexFunc(file -> file.getSpec().getState()));
+            is.add(IndexSpecs.<StorageFile, String>single("spec.extension", String.class)
+                    .indexFunc(file -> file.getSpec().getExtension()));
+            is.add(IndexSpecs.<StorageFile, Instant>single("spec.trashExpiresAt", Instant.class)
+                    .indexFunc(file -> file.getSpec().getTrashExpiresAt()));
+            is.add(IndexSpecs.<StorageFile, Instant>single("spec.uploadExpiresAt", Instant.class)
+                    .indexFunc(file -> file.getSpec().getUploadExpiresAt()));
+        });
     }
 
     @Override

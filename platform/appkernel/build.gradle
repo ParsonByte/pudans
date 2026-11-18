@@ -26,5 +26,12 @@ dependencies {
         api libs.bundles.resilience4j
         api libs.twofactor.auth
         api libs.ua.parser
+        api libs.aws.sdk.s3
+        api libs.aws.sdk.netty.nio.client
+        api libs.aliyun.oss
+        api libs.tencent.cos
+        api libs.qiniu.java.sdk
+        api libs.upyun.java.sdk
+        api libs.huawei.obs
     }
 }

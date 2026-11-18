@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.tolim.pudans.contract.core.extension.RememberMeToken;
 import cn.tolim.pudans.contract.core.extension.Webhook;
+import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
@@ -59,5 +60,26 @@ class SensitiveExtensionMixinsTest {
         assertThat(json).doesNotContain("secret");
         var written = mapper.readValue("{\"spec\":{\"secret\":\"secret\"}}", Webhook.class);
         assertThat(written.getSpec().getSecret()).isEqualTo("secret");
+    }
+
+    @Test
+    void storagePolicyCredentialsAreHiddenFromResponsesButAcceptedOnInput() {
+        var policy = new StoragePolicy();
+        var credentials = new StoragePolicy.Credentials();
+        credentials.setAccessKey("access");
+        credentials.setSecretKey("secret");
+        credentials.setToken("token");
+        credentials.setClientSecret("client-secret");
+        policy.getSpec().setCredentials(credentials);
+
+        var json = mapper.writeValueAsString(policy);
+
+        assertThat(json)
+                .doesNotContain("accessKey")
+                .doesNotContain("secretKey")
+                .doesNotContain("clientSecret");
+        var written = mapper.readValue(
+                "{\"spec\":{\"credentials\":{\"accessKey\":\"access\"}}}", StoragePolicy.class);
+        assertThat(written.getSpec().getCredentials().getAccessKey()).isEqualTo("access");
     }
 }

@@ -1,0 +1,14 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: StoragePolicy
+metadata:
+  name: storage-policy-default
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    pudans.tolim.cn/do-not-overwrite: "true"
+spec:
+  displayName: 本地存储
+  description: 系统默认本地存储，供未指定策略的内核模块使用。
+  type: local
+  defaultPolicy: true
+  dirNameRule: "uploads/{path}"
+  fileNameRule: "{randomkey8}_{originname}"

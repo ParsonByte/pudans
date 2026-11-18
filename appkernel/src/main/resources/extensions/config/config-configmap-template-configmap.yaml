@@ -79,6 +79,12 @@ data:
         "resourceTypes": []
       }
     }
+  storage: |
+    {
+      "trashRetentionDays": 30,
+      "uploadSessionTtlHours": 24,
+      "downloadTokenTtlSeconds": 300
+    }
   server: |
     {
       "tempPath": "tmp",

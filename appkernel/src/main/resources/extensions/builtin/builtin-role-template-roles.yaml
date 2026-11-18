@@ -47,6 +47,8 @@ metadata:
         "role-template-manage-actuator",
         "role-template-manage-cache",
         "role-template-manage-configmaps",
+        "role-template-manage-storage-policies",
+        "role-template-manage-storage-files",
         "role-template-apply-temproles",
         "role-template-approve-temproles",
         "role-template-view-temproles",
