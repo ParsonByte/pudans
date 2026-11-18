@@ -1,0 +1,44 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-storage-files
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Storage"
+    rbac.authorization.pudans.tolim.cn/display-name: "Storage File View"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagefiles"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-storage-files
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-storage-files" ]
+    rbac.authorization.pudans.tolim.cn/module: "Storage"
+    rbac.authorization.pudans.tolim.cn/display-name: "Storage File Manage"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagefiles/trash"
+      - "storagefiles/restore"
+      - "storagefiles/download-url"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagefiles/purge"
+    verbs:
+      - "delete"

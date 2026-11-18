@@ -62,6 +62,7 @@ class ParameterSettingDefaultsTest {
                     "smtpConnectionTtlSeconds",
                     "mailTemplates"),
             "audit", Set.of("auditRecordRules"),
+            "storage", Set.of("trashRetentionDays", "uploadSessionTtlHours", "downloadTokenTtlSeconds"),
             "authentication", Set.of("totp", "oauth2", "oidc", "feishu", "pat"),
             "server",
             Set.of("tempPath", "siteId", "accessTokenTtlSeconds", "refreshTokenTtlSeconds", "gcCron"));
@@ -102,6 +103,6 @@ class ParameterSettingDefaultsTest {
     void defaultGroupsMatchTheDocumentedGroupNames() {
         assertThat(EXPECTED_FIELDS.keySet())
                 .containsExactlyInAnyOrderElementsOf(
-                        List.of("site", "session", "captcha", "mail", "audit", "authentication", "server"));
+                        List.of("site", "session", "captcha", "mail", "audit", "storage", "authentication", "server"));
     }
 }

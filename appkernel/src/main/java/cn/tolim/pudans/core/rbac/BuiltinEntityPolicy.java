@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.Extension;
@@ -58,6 +59,9 @@ public class BuiltinEntityPolicy {
 
     public Mono<Void> checkCreate(GroupVersionKind gvk, Extension extension) {
         var kind = gvk.kind();
+        if (StorageFile.KIND.equals(kind)) {
+            return Mono.error(denied("存储文件由存储服务管理，请使用文件接口。"));
+        }
         if (Role.KIND.equals(kind)) {
             return checkMutation(kind, nameOf(extension))
                     .then(convert(extension, Role.class)
@@ -83,6 +87,9 @@ public class BuiltinEntityPolicy {
 
     public Mono<Void> checkUpdate(GroupVersionKind gvk, String name, Extension extension) {
         var kind = gvk.kind();
+        if (StorageFile.KIND.equals(kind)) {
+            return Mono.error(denied("存储文件由存储服务管理，请使用文件接口。"));
+        }
         if (Role.KIND.equals(kind)) {
             return checkMutation(kind, name)
                     .then(convert(extension, Role.class)
@@ -107,6 +114,9 @@ public class BuiltinEntityPolicy {
     }
 
     public Mono<Void> checkDelete(Extension extension) {
+        if (extension instanceof StorageFile) {
+            return Mono.error(denied("存储文件由存储服务管理，请使用文件接口。"));
+        }
         if (extension instanceof Role role) {
             return checkRoleMutation(role.getMetadata().getName());
         }

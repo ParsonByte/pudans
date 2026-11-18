@@ -14,6 +14,12 @@ jsonassert = '2.0-rc1'
 larksuite-oapi = '2.8.7'
 java-semver = '0.10.2'
 bouncycastle = '1.83'
+aws-sdk = '2.59.3'
+aliyun-oss = '3.18.5'
+tencent-cos = '5.6.283'
+qiniu = '7.19.0'
+upyun = '4.2.3'
+huawei-obs = '3.26.9'
 node = '7.1.0'
 
 [libraries]
@@ -42,6 +48,13 @@ jsonassert = { module = 'org.skyscreamer:jsonassert', version.ref = 'jsonassert'
 larksuite-oapi = { module = 'com.larksuite.oapi:oapi-sdk', version.ref = 'larksuite-oapi' }
 java-semver = { module = 'com.github.zafarkhaja:java-semver', version.ref = 'java-semver' }
 bouncycastle-bcprov = { module = 'org.bouncycastle:bcprov-jdk18on', version.ref = 'bouncycastle' }
+aws-sdk-s3 = { module = 'software.amazon.awssdk:s3', version.ref = 'aws-sdk' }
+aws-sdk-netty-nio-client = { module = 'software.amazon.awssdk:netty-nio-client', version.ref = 'aws-sdk' }
+aliyun-oss = { module = 'com.aliyun.oss:aliyun-sdk-oss', version.ref = 'aliyun-oss' }
+tencent-cos = { module = 'com.qcloud:cos_api', version.ref = 'tencent-cos' }
+qiniu-java-sdk = { module = 'com.qiniu:qiniu-java-sdk', version.ref = 'qiniu' }
+upyun-java-sdk = { module = 'com.upyun:java-sdk', version.ref = 'upyun' }
+huawei-obs = { module = 'com.huaweicloud:esdk-obs-java', version.ref = 'huawei-obs' }
 
 [bundles]
 resilience4j = ['resilience4j-springboot3', 'resilience4j-reactor']

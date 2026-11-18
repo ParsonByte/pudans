@@ -530,6 +530,28 @@ public class ParameterSetting {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @Schema(name = "ParameterSettingStorage")
+    public static class Storage {
+        public static final String GROUP = "storage";
+
+        @Schema(description = "回收站保留天数；0 表示不自动清理。")
+        @Min(0)
+        @Max(3650)
+        private Integer trashRetentionDays = 30;
+
+        @Schema(description = "上传会话有效期（小时）。")
+        @Min(1)
+        @Max(168)
+        private Integer uploadSessionTtlHours = 24;
+
+        @Schema(description = "下载令牌有效期（秒）。")
+        @Min(30)
+        @Max(86400)
+        private Integer downloadTokenTtlSeconds = 300;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @Schema(name = "ParameterSettingSeo")
     public static class Seo {
         public static final String GROUP = "seo";
