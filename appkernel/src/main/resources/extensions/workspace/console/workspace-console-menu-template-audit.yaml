@@ -12,7 +12,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.audit"
     rbac.authorization.pudans.tolim.cn/ui-component: "audit"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
-    rbac.authorization.pudans.tolim.cn/ui-path: "/console/audit"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/audit"
     rbac.authorization.pudans.tolim.cn/ui-label: "审计"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看审计日志和操作记录。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:scroll-text"

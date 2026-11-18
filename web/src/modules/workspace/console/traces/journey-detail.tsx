@@ -68,7 +68,7 @@ export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
         <div className="flex flex-wrap items-center gap-2">
           {tracesPath ? (
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/$" params={{ _splat: tracesPath }}>
+              <Link to={tracesPath}>
                 <ArrowLeft />
                 返回链路
               </Link>
@@ -87,7 +87,7 @@ export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
       <div className="flex flex-wrap items-center gap-2">
         {tracesPath ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/$" params={{ _splat: tracesPath }}>
+            <Link to={tracesPath}>
               <ArrowLeft />
               返回链路
             </Link>

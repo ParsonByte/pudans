@@ -17,6 +17,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { cn } from "@/lib/utils";
 
 import type { Workspace } from "./types";
 
@@ -65,8 +66,15 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                <activeWorkspace.logo className="size-4" />
+              <div
+                className={cn(
+                  "flex aspect-square size-8 items-center justify-center rounded-lg",
+                  activeWorkspace.logoImage
+                    ? "bg-zinc-100 dark:bg-zinc-900"
+                    : "bg-sidebar-primary text-sidebar-primary-foreground",
+                )}
+              >
+                <activeWorkspace.logo className={activeWorkspace.logoImage ? "size-6" : "size-4"} />
               </div>
               <div className="grid flex-1 text-start text-sm leading-tight">
                 <span className="truncate font-semibold">{activeWorkspace.name}</span>
@@ -88,8 +96,13 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
                 onSelect={() => void navigate({ to: workspace.homeUrl })}
                 className="gap-2 p-2"
               >
-                <div className="flex size-6 items-center justify-center rounded-sm border">
-                  <workspace.logo className="size-4 shrink-0" />
+                <div
+                  className={cn(
+                    "flex size-6 items-center justify-center rounded-sm",
+                    workspace.logoImage ? "bg-zinc-100 dark:bg-zinc-900" : "border",
+                  )}
+                >
+                  <workspace.logo className={workspace.logoImage ? "size-5" : "size-4 shrink-0"} />
                 </div>
                 <span className="truncate font-medium">{workspace.name}</span>
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>

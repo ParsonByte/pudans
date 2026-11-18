@@ -7,8 +7,8 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/ui-type: "workspace"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "default"
-    rbac.authorization.pudans.tolim.cn/ui-label: "默认"
+    rbac.authorization.pudans.tolim.cn/ui-label: "PUDANS"
     rbac.authorization.pudans.tolim.cn/ui-description: "工作区"
-    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:boxes"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "brand/icon-small.svg"
     rbac.authorization.pudans.tolim.cn/ui-order: "10"
 rules: []

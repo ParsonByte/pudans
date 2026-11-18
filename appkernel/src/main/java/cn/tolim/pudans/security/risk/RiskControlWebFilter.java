@@ -1,6 +1,5 @@
 package cn.tolim.pudans.security.risk;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -10,12 +9,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
@@ -34,6 +33,7 @@ import cn.tolim.pudans.core.risk.service.RiskScene;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.infra.feishu.FeishuAlertNotifier;
 import cn.tolim.pudans.security.web.StaticRequestPaths;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
@@ -62,9 +62,13 @@ public class RiskControlWebFilter implements WebFilter {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    private final ServerResponse.Context context;
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        if (StaticRequestPaths.isStatic(exchange)) {
+        if (StaticRequestPaths.isStatic(exchange)
+                || ProblemDetailResponses.TOO_MANY_REQUESTS_PATH.equals(
+                        exchange.getRequest().getPath().value())) {
             return chain.filter(exchange);
         }
         return actor(exchange).flatMap(actor -> {
@@ -308,16 +312,16 @@ public class RiskControlWebFilter implements WebFilter {
     }
 
     private Mono<Void> reject(ServerWebExchange exchange, RiskDecision decision) {
-        var response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
-        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
         if (!decision.retryAfter().isZero()) {
-            response.getHeaders().set("Retry-After", String.valueOf(decision.retryAfter().toSeconds()));
+            exchange.getResponse().getHeaders().set("Retry-After", String.valueOf(decision.retryAfter().toSeconds()));
         }
-        var body = "{\"type\":\"https://pudans.tolim.cn/probs/risk-blocked\","
-                + "\"title\":\"请求过于频繁\",\"status\":429,"
-                + "\"detail\":\"请求已被风险控制拦截。\"}";
-        return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8))));
+        return ProblemDetailResponses.writeOrRedirect(
+                exchange,
+                context,
+                HttpStatus.TOO_MANY_REQUESTS,
+                "risk-blocked",
+                "请求已被风险控制拦截。",
+                ProblemDetailResponses.TOO_MANY_REQUESTS_PATH);
     }
 
     record PreCheck(boolean allowed, String scene, RiskDecision decision) {

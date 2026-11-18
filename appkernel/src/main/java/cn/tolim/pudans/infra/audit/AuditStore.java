@@ -37,6 +37,8 @@ public class AuditStore {
 
     private static final int MAX_TRACE_GROUP_RECORDS = 20_000;
 
+    public static final int MAX_PAGE_RECORDS = 10_000;
+
     private final AuditRecordRepository activeRepository;
 
     private final AuditArchiveRepository archiveRepository;
@@ -95,7 +97,8 @@ public class AuditStore {
 
     public Mono<AuditPageResult> page(AuditQuery query, int page, int size) {
         var direction = query.ascending() ? Sort.Direction.ASC : Sort.Direction.DESC;
-        var fetchLimit = (int) Math.min(Integer.MAX_VALUE, (long) page * size);
+        // 限制单次拉取深度，避免过大的页码导致全表加载。
+        var fetchLimit = (int) Math.min(MAX_PAGE_RECORDS, (long) page * size);
         var pageable = PageRequest.of(0, Math.max(1, fetchLimit), Sort.by(direction, "id"));
         var items = selectBoth(criteria(query), pageable)
                 .sort(recordOrder(query.ascending()))

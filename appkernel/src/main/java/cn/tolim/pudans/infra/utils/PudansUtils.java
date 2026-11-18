@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.util.StreamUtils;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -28,6 +29,13 @@ public class PudansUtils {
 
     public static boolean isXhr(HttpHeaders headers) {
         return headers.getOrEmpty("X-Requested-With").contains("XMLHttpRequest");
+    }
+
+
+    public static boolean prefersHtml(HttpHeaders headers) {
+        return headers.getAccept().stream()
+                .anyMatch(mediaType -> mediaType.equalsTypeAndSubtype(MediaType.TEXT_HTML)
+                        || mediaType.equalsTypeAndSubtype(MediaType.APPLICATION_XHTML_XML));
     }
 
 

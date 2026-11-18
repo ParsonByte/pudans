@@ -27,7 +27,8 @@ public class FeishuProperties {
     private String authorizationUri = "https://open.feishu.cn/open-apis/authen/v1/authorize";
 
 
-    private String scope = "contact:user.base:readonly contact:user.email:readonly";
+    private String scope =
+            "contact:user.base:readonly contact:user.email:readonly contact:user.phone:readonly";
 
 
     private long syncIntervalSeconds = 21600;

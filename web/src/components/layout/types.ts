@@ -12,6 +12,7 @@ type Workspace = {
   id: string;
   name: string;
   logo: ElementType;
+  logoImage?: boolean;
   plan: string;
   homeUrl: string;
   paths: string[];

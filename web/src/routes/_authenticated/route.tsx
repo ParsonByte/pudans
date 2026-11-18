@@ -1,79 +1,15 @@
-import { axiosInstance } from "@pudans-dev/api-client";
-import { createFileRoute, redirect, useLocation } from "@tanstack/react-router";
-import { toast } from "sonner";
+import { createFileRoute } from "@tanstack/react-router";
 
-import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
-import type { User } from "@/components/layout/types";
-import { getLoginSession } from "@/modules/auth/lib/session";
-import { fetchNavigation } from "@/modules/workspace/lib/permission-api";
-import {
-  buildWorkspaceNavGroups,
-  buildWorkspaces,
-  resolveActiveWorkspace,
-} from "@/modules/workspace/lib/workspaces";
+import { requireAuthenticatedContext } from "@/modules/auth/lib/authenticated-context";
+import { AuthenticatedShell } from "@/modules/auth/lib/authenticated-shell";
 
 export const Route = createFileRoute("/_authenticated")({
-  beforeLoad: async ({ location }) => {
-    const [session, navigation] = await Promise.all([
-      getLoginSession().catch(() => null),
-      fetchNavigation().catch(() => null),
-    ]);
-
-    if (!session) {
-      toast.error("无法获取登录状态，请稍后重试。");
-      throw redirect({ to: "/sign-in", replace: true });
-    }
-
-    if (!session.authenticated) {
-      throw redirect({
-        to: "/sign-in",
-        search: { redirect: location.href },
-        replace: true,
-      });
-    }
-
-    if (session.consoleAccessDisallowed) {
-      throw redirect({ to: "/403", replace: true });
-    }
-
-    if (!navigation) {
-      toast.error("无法获取工作区导航，请稍后重试。");
-      throw redirect({ to: "/500", replace: true });
-    }
-
-    return { session, navigation };
-  },
+  beforeLoad: ({ location }) => requireAuthenticatedContext(location),
   component: AuthenticatedRoute,
 });
 
 function AuthenticatedRoute() {
   const { session, navigation } = Route.useRouteContext();
-  const pathname = useLocation({ select: (location) => location.pathname });
-  const workspaces = buildWorkspaces(navigation);
-  const activeWorkspace = resolveActiveWorkspace(workspaces, pathname);
-  const navGroups = activeWorkspace ? buildWorkspaceNavGroups(navigation, activeWorkspace.id) : [];
-  const user: User = {
-    name: session.displayName || session.username || "用户",
-    email: session.username ?? "",
-    avatar: session.avatar ?? "",
-  };
 
-  const handleSignOut = async () => {
-    try {
-      await axiosInstance.post("/logout");
-      window.location.assign("/sign-in");
-    } catch {
-      toast.error("退出登录失败，请稍后重试。");
-    }
-  };
-
-  return (
-    <AuthenticatedLayout
-      user={user}
-      workspaces={workspaces}
-      activeWorkspaceId={activeWorkspace?.id}
-      navGroups={navGroups}
-      onSignOut={handleSignOut}
-    />
-  );
+  return <AuthenticatedShell session={session} navigation={navigation} />;
 }

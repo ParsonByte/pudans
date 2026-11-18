@@ -6,7 +6,7 @@ public record NotBetweenCondition(String indexName, Object fromKey, boolean from
 
     @Override
     public Condition not() {
-        return new BetweenCondition(indexName, fromKey, !fromInclusive, toKey, !toInclusive);
+        return new BetweenCondition(indexName, fromKey, fromInclusive, toKey, toInclusive);
     }
 
     @Override

@@ -30,11 +30,11 @@ public class FeishuProfileSyncTask {
 
     private Disposable subscription;
 
-    private volatile Instant lastSyncAt = Instant.now();
+    private volatile Instant lastSyncAt = Instant.EPOCH;
 
     @PostConstruct
     public void start() {
-        subscription = Flux.interval(CHECK_INTERVAL, CHECK_INTERVAL)
+        subscription = Flux.concat(Mono.just(0L), Flux.interval(CHECK_INTERVAL, CHECK_INTERVAL))
                 .onBackpressureDrop()
                 .concatMap(ignored -> syncIfDue())
                 .onErrorContinue((error, ignored) -> log.error("飞书资料同步失败", error))
@@ -60,7 +60,11 @@ public class FeishuProfileSyncTask {
                 .concatMap(connection -> feishuClient
                         .fetchContactUser(connection.getSpec().getProviderUserId())
                         .flatMap(userInfo -> feishuUserService.syncProfile(
-                                connection.getSpec().getUsername(), userInfo.name(), userInfo.email()))
+                                connection.getSpec().getUsername(),
+                                userInfo.name(),
+                                userInfo.email(),
+                                userInfo.phone(),
+                                userInfo.avatar()))
                         .onErrorResume(error -> {
                             log.warn(
                                     "无法同步用户 {} 的飞书资料",

@@ -1,0 +1,22 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-account-security
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "default.settings.security"
+    rbac.authorization.pudans.tolim.cn/ui-component: "account-security"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "default"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/security"
+    rbac.authorization.pudans.tolim.cn/ui-label: "安全中心"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理密码、双重验证、通行密钥与登录设备。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-check"
+    rbac.authorization.pudans.tolim.cn/ui-group: "其他"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "设置"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:settings"
+    rbac.authorization.pudans.tolim.cn/ui-order: "110"
+    rbac.authorization.pudans.tolim.cn/ui-public: "true"
+rules: []

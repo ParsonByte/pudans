@@ -94,12 +94,13 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
 
                                                     return logoutHandler.logout(webFilterExchange, oauth2Token);
                                                 }))
-                                                .then(Mono.defer(() -> ProblemDetailResponses.write(
+                                                .then(Mono.defer(() -> ProblemDetailResponses.writeOrRedirect(
                                                         exchange,
                                                         context,
                                                         HttpStatus.UNAUTHORIZED,
                                                         "oauth2-connection-required",
-                                                        "请先绑定该第三方账号。")))
+                                                        "请先绑定该第三方账号。",
+                                                        ProblemDetailResponses.SIGN_IN_PATH)))
                                                 .then(Mono.empty());
                                     }))
 

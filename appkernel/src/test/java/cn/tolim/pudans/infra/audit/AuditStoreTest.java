@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -16,6 +17,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
@@ -115,6 +117,22 @@ class AuditStoreTest {
         assertThat(result.items())
                 .extracting(record -> record.getMetadata().getName())
                 .containsExactly("0003", "0002");
+    }
+
+    @Test
+    void pageCapsTheFetchedRowCountForVeryLargePageNumbers() {
+        givenStores(Flux.empty(), Flux.empty());
+        var query = new AuditStore.AuditQuery(null, null, null, null, null, null, null, null, 10, false);
+
+        var result = store.page(query, Integer.MAX_VALUE, 100).block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.items()).isEmpty();
+        var captor = ArgumentCaptor.forClass(Query.class);
+        verify(entityOperations, times(4)).select(captor.capture(), any(Class.class));
+        assertThat(captor.getAllValues())
+                .extracting(Query::getLimit)
+                .allMatch(limit -> limit <= AuditStore.MAX_PAGE_RECORDS);
     }
 
     @Test

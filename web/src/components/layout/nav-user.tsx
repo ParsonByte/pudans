@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { Link } from "@tanstack/react-router";
-import { BadgeCheck, Bell, ChevronsUpDown, LogOut } from "lucide-react";
+import { ChevronsUpDown, Link2, LogOut, ShieldCheck, UserRound } from "lucide-react";
 
 import { SignOutDialog } from "@/components/sign-out-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,8 +23,9 @@ import {
 
 import type { NavUrl, User } from "./types";
 
-const ACCOUNT_URL: NavUrl = "/settings";
-const NOTIFICATIONS_URL: NavUrl = "/settings/notifications";
+const PROFILE_URL: NavUrl = "/profile";
+const SECURITY_URL: NavUrl = "/security";
+const IDENTITIES_URL: NavUrl = "/identity-providers";
 
 type NavUserProps = {
   user: User;
@@ -87,15 +88,21 @@ export function NavUser({ user, onSignOut }: NavUserProps) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link to={ACCOUNT_URL}>
-                  <BadgeCheck />
-                  账户
+                <Link to={PROFILE_URL}>
+                  <UserRound />
+                  个人设置
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to={NOTIFICATIONS_URL}>
-                  <Bell />
-                  通知
+                <Link to={SECURITY_URL}>
+                  <ShieldCheck />
+                  安全中心
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link to={IDENTITIES_URL}>
+                  <Link2 />
+                  身份提供商
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>

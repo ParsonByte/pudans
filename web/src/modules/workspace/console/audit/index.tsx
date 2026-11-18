@@ -79,7 +79,7 @@ export function AuditView() {
             </Button>
             {auditPath ? (
               <Button asChild>
-                <Link to="/$" params={{ _splat: `${auditPath}/logs` }}>
+                <Link to={`${auditPath}/logs` as string}>
                   <Search />
                   查询日志
                 </Link>

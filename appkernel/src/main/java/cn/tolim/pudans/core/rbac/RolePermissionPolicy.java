@@ -15,6 +15,7 @@ import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -57,6 +58,23 @@ public class RolePermissionPolicy {
             return Mono.zip(
                             requestedPermissions(requested),
                             grantedPermissions(actor.roleNames(), name))
+                    .flatMap(permissions -> validate(permissions.getT1(), permissions.getT2()));
+        });
+    }
+
+    public Mono<Void> checkGrant(Collection<String> roleNames) {
+        var names = roleNames == null
+                ? Set.<String>of()
+                : roleNames.stream()
+                        .filter(StringUtils::isNotBlank)
+                        .collect(Collectors.toCollection(LinkedHashSet::new));
+        return actorContext().flatMap(actor -> {
+            if (actor.superRole()) {
+                return Mono.empty();
+            }
+            return Mono.zip(
+                            effectivePermissions(names),
+                            grantedPermissions(actor.roleNames(), null))
                     .flatMap(permissions -> validate(permissions.getT1(), permissions.getT2()));
         });
     }

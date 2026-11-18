@@ -70,7 +70,7 @@ export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
       toast.success("用户已创建。");
       onClose();
       if (createdName && usersPath) {
-        void navigate({ to: "/$", params: { _splat: `${usersPath}/${createdName}` } });
+        void navigate({ to: `${usersPath}/${createdName}` });
       }
     },
     onError: (error) => toast.error(resolveUserApiError(error)),
