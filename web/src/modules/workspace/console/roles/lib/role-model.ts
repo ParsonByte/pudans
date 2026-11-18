@@ -357,8 +357,43 @@ export function accessLevelLabel(level: DataAccessLevel): string {
   }
 }
 
+const VERB_LABELS: Record<string, string> = {
+  "*": "全部操作",
+  create: "创建",
+  delete: "删除",
+  deletecollection: "批量删除",
+  get: "查看",
+  list: "列表",
+  patch: "修改",
+  update: "编辑",
+  watch: "监听",
+};
+
+export function verbLabels(verbs: readonly string[]): string[] {
+  return verbs.map((verb) => VERB_LABELS[verb] ?? verb);
+}
+
+export function resourceNameLabels(resourceNames: readonly string[]): string {
+  if (resourceNames.length === 0) {
+    return "全部";
+  }
+  return resourceNames
+    .map((name) => (name === "-" ? "本人" : name === "*" ? "全部" : name))
+    .join("、");
+}
+
 function verbSortIndex(verb: string): number {
-  const order = ["get", "list", "watch", "create", "update", "patch", "delete", "*"];
+  const order = [
+    "get",
+    "list",
+    "watch",
+    "create",
+    "update",
+    "patch",
+    "delete",
+    "deletecollection",
+    "*",
+  ];
   const index = order.indexOf(verb);
   return index < 0 ? order.length : index;
 }

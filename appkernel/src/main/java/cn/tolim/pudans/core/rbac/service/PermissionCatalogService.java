@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.extension.rbac.Role.PolicyRule;
+import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.ExtensionUtil;
 import cn.tolim.pudans.contract.extension.ListOptions;
@@ -34,13 +35,16 @@ public class PermissionCatalogService {
 
     private static final Duration TTL = Duration.ofMinutes(5);
 
+    private static final String UI_RESOURCE_LABELS = "ui-resource-labels";
+
     private final ReactiveExtensionClient client;
 
     private volatile PermissionCatalog snapshot;
 
     private volatile long loadedAt;
 
-    public record PermissionCatalog(List<Workspace> workspaces) {}
+    public record PermissionCatalog(
+            List<Workspace> workspaces, Map<String, String> resourceLabels) {}
 
     public record Workspace(String id, String name, String plan, String icon, int order, List<Menu> menus) {}
 
@@ -231,7 +235,9 @@ public class PermissionCatalogService {
     }
 
     private void invalidate(Extension extension) {
-        if (extension != null && Role.KIND.equals(extension.getKind())) {
+        if (extension != null
+                && (Role.KIND.equals(extension.getKind())
+                        || ConfigMap.KIND.equals(extension.getKind()))) {
             snapshot = null;
             loadedAt = 0L;
         }
@@ -254,14 +260,18 @@ public class PermissionCatalogService {
                 .eq(Role.TEMPLATE_LABEL_NAME, Boolean.TRUE.toString())
                 .end()
                 .build();
-        return client.listAll(Role.class, options, ExtensionUtil.defaultSort())
+        var roles = client.listAll(Role.class, options, ExtensionUtil.defaultSort())
                 .filter(role -> role.getMetadata() != null
                         && role.getMetadata().getDeletionTimestamp() == null)
-                .collectList()
-                .map(this::buildCatalog);
+                .collectList();
+        var resourceLabels = client.fetch(ConfigMap.class, UI_RESOURCE_LABELS)
+                .map(ConfigMap::getData)
+                .map(data -> data == null ? Map.<String, String>of() : data)
+                .defaultIfEmpty(Map.of());
+        return Mono.zip(roles, resourceLabels).map(tuple -> buildCatalog(tuple.getT1(), tuple.getT2()));
     }
 
-    private PermissionCatalog buildCatalog(List<Role> roles) {
+    private PermissionCatalog buildCatalog(List<Role> roles, Map<String, String> resourceLabels) {
         var workspaces = new LinkedHashMap<String, WorkspaceBuilder>();
         var menus = new LinkedHashMap<String, MenuBuilder>();
         var operations = new ArrayList<OperationContext>();
@@ -358,7 +368,7 @@ public class PermissionCatalogService {
                                 .map(menu -> menu.build())
                                 .toList()))
                 .toList();
-        return new PermissionCatalog(catalogWorkspaces);
+        return new PermissionCatalog(catalogWorkspaces, resourceLabels);
     }
 
     private static void applyMenuMetadata(MenuBuilder menu, Map<String, String> annotations) {

@@ -41,10 +41,12 @@ import {
   dependencyClosure,
   effectiveRules,
   expandCatalogPermissions,
+  resourceNameLabels,
   roleDependencies,
   roleUiPermissions,
   sameStringSet,
   templatesFromPermissions,
+  verbLabels,
   withRolePermissions,
 } from "../lib/role-model";
 
@@ -305,7 +307,11 @@ export function RolePermissionEditor({
         </TabsContent>
 
         <TabsContent value="data" className="p-5">
-          <DataPermissionsPanel rows={dataRows} preview={dirty && !locked} />
+          <DataPermissionsPanel
+            rows={dataRows}
+            resourceLabels={catalog.resourceLabels}
+            preview={dirty && !locked}
+          />
         </TabsContent>
 
         <TabsContent value="workspaces" className="p-5">
@@ -531,10 +537,11 @@ function OperationCard({ operation, checked, disabled, onCheckedChange }: Operat
 
 type DataPermissionsPanelProps = {
   rows: readonly DataAccessRow[];
+  resourceLabels?: Record<string, string>;
   preview: boolean;
 };
 
-function DataPermissionsPanel({ rows, preview }: DataPermissionsPanelProps) {
+function DataPermissionsPanel({ rows, resourceLabels, preview }: DataPermissionsPanelProps) {
   const counts: Record<DataAccessLevel, number> = { manage: 0, edit: 0, read: 0 };
   rows.forEach((row) => {
     counts[row.level] += 1;
@@ -569,7 +576,9 @@ function DataPermissionsPanel({ rows, preview }: DataPermissionsPanelProps) {
             <TableBody>
               {rows.map((row) => (
                 <TableRow key={row.raw}>
-                  <TableCell className="font-mono text-sm">{row.raw}</TableCell>
+                  <TableCell className="text-sm font-medium">
+                    {resourceLabels?.[row.raw] ?? row.raw}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={
@@ -584,10 +593,10 @@ function DataPermissionsPanel({ rows, preview }: DataPermissionsPanelProps) {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {row.resourceNames.length === 0 ? "全部" : row.resourceNames.join("、")}
+                    {resourceNameLabels(row.resourceNames)}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {row.verbs.join("、")}
+                    {verbLabels(row.verbs).join("、")}
                   </TableCell>
                 </TableRow>
               ))}
