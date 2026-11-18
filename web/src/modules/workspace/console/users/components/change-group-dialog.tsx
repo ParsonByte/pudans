@@ -16,9 +16,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUserGroups } from "@/modules/workspace/lib/user-groups";
 
 import { resolveUserApiError } from "../lib/api";
-import { useUserGroups } from "../lib/use-user-groups";
 
 type ChangeGroupDialogProps = {
   name: string;

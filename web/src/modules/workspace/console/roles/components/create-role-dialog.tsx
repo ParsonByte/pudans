@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,8 +8,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { FormDialog } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 import { resolveRoleApiError } from "../lib/api";
@@ -103,7 +102,7 @@ export function CreateRoleDialog({ onClose, onCreated }: CreateRoleDialogProps) 
       submitLabel="创建角色"
       resetLabel="清空"
     >
-      <Field
+      <FormField
         label="角色名称"
         htmlFor="create-role-name"
         error={form.formState.errors.name?.message}
@@ -115,15 +114,15 @@ export function CreateRoleDialog({ onClose, onCreated }: CreateRoleDialogProps) 
           spellCheck={false}
           {...form.register("name")}
         />
-      </Field>
-      <Field
+      </FormField>
+      <FormField
         label="显示名称"
         htmlFor="create-role-display-name"
         error={form.formState.errors.displayName?.message}
       >
         <Input id="create-role-display-name" autoComplete="off" {...form.register("displayName")} />
-      </Field>
-      <Field
+      </FormField>
+      <FormField
         label="描述"
         htmlFor="create-role-description"
         error={form.formState.errors.description?.message}
@@ -134,26 +133,7 @@ export function CreateRoleDialog({ onClose, onCreated }: CreateRoleDialogProps) 
           placeholder="说明该角色的用途和适用范围。"
           {...form.register("description")}
         />
-      </Field>
+      </FormField>
     </FormDialog>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  htmlFor: string;
-  error?: string;
-  hint?: string;
-  children: ReactNode;
-};
-
-function Field({ label, htmlFor, error, hint, children }: FieldProps) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
-      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-    </div>
   );
 }

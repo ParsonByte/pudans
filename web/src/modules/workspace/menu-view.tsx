@@ -44,6 +44,18 @@ const RolesView = lazy(() =>
   })),
 );
 
+const UserGroupsView = lazy(() =>
+  import("@/modules/workspace/console/user-groups").then((module) => ({
+    default: module.UserGroupsView,
+  })),
+);
+
+const UserGroupDetailView = lazy(() =>
+  import("@/modules/workspace/console/user-groups/detail").then((module) => ({
+    default: module.UserGroupDetailView,
+  })),
+);
+
 const WorkspaceIndexView = lazy(() =>
   import("@/modules/workspace/index/view").then((module) => ({
     default: module.WorkspaceIndexView,
@@ -101,17 +113,29 @@ function renderMenuPage({
     case "auth-providers":
       return <IdentityProviderView />;
     case "users": {
-      const menuPath = menu.path.replace(/\/+$/, "");
-      const relative = pathname.startsWith(menuPath)
-        ? pathname.slice(menuPath.length).replace(/^\/+/, "")
-        : "";
+      const relative = relativeMenuPath(menu.path, pathname);
       return relative ? <UserDetailView name={decodeURIComponent(relative)} /> : <UsersView />;
     }
     case "roles":
       return <RolesView />;
+    case "user-groups": {
+      const relative = relativeMenuPath(menu.path, pathname);
+      return relative ? (
+        <UserGroupDetailView name={decodeURIComponent(relative)} />
+      ) : (
+        <UserGroupsView />
+      );
+    }
     default:
       return <ConsoleFeaturePlaceholder title={menu.label} />;
   }
+}
+
+function relativeMenuPath(menuPath: string, pathname: string): string {
+  const normalized = menuPath.replace(/\/+$/, "");
+  return pathname.startsWith(normalized)
+    ? pathname.slice(normalized.length).replace(/^\/+/, "")
+    : "";
 }
 
 function MenuPageFallback() {

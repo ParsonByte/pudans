@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Controller, type Resolver, useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,9 +8,9 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { FormDialog } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { PasswordInput } from "@/components/password-input";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -20,9 +19,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useMenuPath } from "@/modules/workspace/lib/permissions";
+import { useUserGroups } from "@/modules/workspace/lib/user-groups";
 
 import { createLocalUser, resolveUserApiError } from "../lib/api";
-import { useUserGroups } from "../lib/use-user-groups";
 import { passwordField, usernameField } from "../lib/validation";
 
 type CreateUserDialogProps = {
@@ -97,7 +96,7 @@ export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
       submitLabel="创建用户"
       resetLabel="清空"
     >
-      <Field
+      <FormField
         label="用户名"
         htmlFor="create-username"
         error={form.formState.errors.username?.message}
@@ -109,10 +108,10 @@ export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
           spellCheck={false}
           {...form.register("username")}
         />
-      </Field>
+      </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field
+        <FormField
           label="初始密码"
           htmlFor="create-password"
           error={form.formState.errors.password?.message}
@@ -123,8 +122,8 @@ export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
             autoComplete="new-password"
             {...form.register("password")}
           />
-        </Field>
-        <Field
+        </FormField>
+        <FormField
           label="确认密码"
           htmlFor="create-confirm-password"
           error={form.formState.errors.confirmPassword?.message}
@@ -134,11 +133,11 @@ export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
             autoComplete="new-password"
             {...form.register("confirmPassword")}
           />
-        </Field>
+        </FormField>
       </div>
 
       <div className="space-y-4">
-        <Field
+        <FormField
           label="用户组"
           htmlFor="create-user-group"
           hint="头像、手机号等信息在绑定飞书后由同步任务自动获取。"
@@ -166,27 +165,8 @@ export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
               </Select>
             )}
           />
-        </Field>
+        </FormField>
       </div>
     </FormDialog>
-  );
-}
-
-type FieldProps = {
-  label: string;
-  htmlFor: string;
-  error?: string;
-  hint?: string;
-  children: ReactNode;
-};
-
-function Field({ label, htmlFor, error, hint, children }: FieldProps) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
-      {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-    </div>
   );
 }
