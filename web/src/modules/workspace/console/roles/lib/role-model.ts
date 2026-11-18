@@ -77,6 +77,19 @@ export function roleDisplayName(role: Role): string {
   return annotationsOf(role)[ROLE_DISPLAY_NAME_ANNO] || role.metadata.name;
 }
 
+export function compareRoles(left: Role, right: Role): number {
+  return (
+    roleDisplayName(left).localeCompare(roleDisplayName(right), "zh-CN") ||
+    left.metadata.name.localeCompare(right.metadata.name)
+  );
+}
+
+export function visibleRoles(roles: readonly Role[]): Role[] {
+  return roles.filter(
+    (role) => !isRoleTemplate(role) && !isHiddenRole(role) && !role.metadata.deletionTimestamp,
+  );
+}
+
 export function roleDescription(role: Role): string {
   return (
     annotationsOf(role)[ROLE_DESCRIPTION_ANNO] ||

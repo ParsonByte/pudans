@@ -18,10 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useUserGroups } from "@/modules/workspace/lib/user-groups";
 
 import { createLocalUsers, resolveUserApiError } from "../lib/api";
 import { notifyBatchResult } from "../lib/notify-batch-result";
-import { useUserGroups } from "../lib/use-user-groups";
 import { passwordField, usernameField } from "../lib/validation";
 
 const MAX_MANUAL_ROWS = 50;

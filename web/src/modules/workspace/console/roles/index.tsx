@@ -23,20 +23,15 @@ import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 import { CreateRoleDialog } from "./components/create-role-dialog";
 import { RolePermissionEditor } from "./components/role-permission-editor";
 import { resolveRoleApiError } from "./lib/api";
+import { MY_UI_PERMISSIONS_QUERY_KEY, useMyUiPermissions } from "./lib/current-permissions";
 import {
+  compareRoles,
   isBuiltinRole,
-  isHiddenRole,
-  isRoleTemplate,
   roleDescription,
   roleDisplayName,
+  visibleRoles,
 } from "./lib/role-model";
-
-function compareRoles(left: Role, right: Role): number {
-  return (
-    roleDisplayName(left).localeCompare(roleDisplayName(right), "zh-CN") ||
-    left.metadata.name.localeCompare(right.metadata.name)
-  );
-}
+import { useRoles } from "./lib/use-roles";
 
 export function RolesView() {
   const queryClient = useQueryClient();
@@ -49,11 +44,8 @@ export function RolesView() {
   const canUpdate = allowedOperations.has("update");
   const canDelete = allowedOperations.has("delete");
 
-  const rolesQuery = useQuery({
-    queryKey: ["roles"],
-    queryFn: async () => (await apiClient.role.listRole({ page: 1, size: 500 })).data.items ?? [],
-    retry: false,
-  });
+  const rolesQuery = useRoles();
+  const myPermissionsQuery = useMyUiPermissions();
 
   const catalogQuery = useQuery({
     queryKey: ["permission-catalog"],
@@ -61,13 +53,7 @@ export function RolesView() {
     retry: false,
   });
 
-  const roles = useMemo(
-    () =>
-      (rolesQuery.data ?? []).filter(
-        (role) => !isRoleTemplate(role) && !isHiddenRole(role) && !role.metadata.deletionTimestamp,
-      ),
-    [rolesQuery.data],
-  );
+  const roles = useMemo(() => visibleRoles(rolesQuery.data ?? []), [rolesQuery.data]);
   const systemRoles = useMemo(() => roles.filter(isBuiltinRole).sort(compareRoles), [roles]);
   const customRoles = useMemo(
     () => roles.filter((role) => !isBuiltinRole(role)).sort(compareRoles),
@@ -97,7 +83,10 @@ export function RolesView() {
       await apiClient.role.deleteRole({ name: role.metadata.name });
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["roles"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["roles"] }),
+        queryClient.invalidateQueries({ queryKey: MY_UI_PERMISSIONS_QUERY_KEY }),
+      ]);
       setDeleteTarget(null);
       setSelectedName(null);
       toast.success("角色已删除。");
@@ -232,6 +221,7 @@ export function RolesView() {
                 catalog={catalog}
                 readOnly={!canUpdate || isBuiltinRole(selectedRole)}
                 builtin={isBuiltinRole(selectedRole)}
+                allowedPermissions={myPermissionsQuery.data ?? []}
               />
             </ConsoleSection>
           ) : (

@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.rbac;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -39,6 +40,10 @@ public class BuiltinEntityPolicy {
 
     private final SuperAdminResolver superAdminResolver;
 
+    private final BuiltinRoleDefinitions builtinRoleDefinitions;
+
+    private final RolePermissionPolicy rolePermissionPolicy;
+
     public boolean isBuiltinRole(String name) {
         return BuiltinEntities.SUPER_ROLE.equals(name)
                 || BuiltinEntities.SYSTEM_ADMIN_ROLE.equals(name)
@@ -55,10 +60,13 @@ public class BuiltinEntityPolicy {
         var kind = gvk.kind();
         if (Role.KIND.equals(kind)) {
             return checkMutation(kind, nameOf(extension))
-                    .then(convert(extension, Role.class).flatMap(this::checkRoleDependencies));
+                    .then(convert(extension, Role.class)
+                            .flatMap(role -> checkRoleDependencies(role)
+                                    .then(Mono.defer(() -> rolePermissionPolicy.checkCreate(role)))));
         }
         if (UserGroup.KIND.equals(kind)) {
-            return checkMutation(kind, nameOf(extension));
+            return checkMutation(kind, nameOf(extension))
+                    .then(convert(extension, UserGroup.class).flatMap(this::checkUserGroupRoleRefs));
         }
         if (UserGroupBinding.KIND.equals(kind)) {
             return convert(extension, UserGroupBinding.class)
@@ -77,10 +85,13 @@ public class BuiltinEntityPolicy {
         var kind = gvk.kind();
         if (Role.KIND.equals(kind)) {
             return checkMutation(kind, name)
-                    .then(convert(extension, Role.class).flatMap(this::checkRoleDependencies));
+                    .then(convert(extension, Role.class)
+                            .flatMap(role -> checkRoleDependencies(role)
+                                    .then(Mono.defer(() -> rolePermissionPolicy.checkUpdate(role)))));
         }
         if (UserGroup.KIND.equals(kind)) {
-            return checkMutation(kind, name);
+            return convert(extension, UserGroup.class)
+                    .flatMap(group -> checkUserGroupUpdate(name, group));
         }
         if (UserGroupBinding.KIND.equals(kind)) {
             return convert(extension, UserGroupBinding.class)
@@ -170,6 +181,113 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    private Mono<Void> checkUserGroupUpdate(String name, UserGroup group) {
+        if (BuiltinEntities.SUPER_ADMINS_GROUP.equals(name)) {
+            return Mono.error(denied("超级管理员用户组不可修改。"));
+        }
+        if (builtinRoleDefinitions.group(name).isEmpty() && isBuiltinGroup(name)) {
+            return Mono.error(denied("内置用户组 [" + name + "] 不可修改或删除。"));
+        }
+        return checkUserGroupRoleRefs(group);
+    }
+
+    private Mono<Void> checkUserGroupRoleRefs(UserGroup group) {
+        return Mono.fromRunnable(() -> {
+            var name = group.getMetadata() == null ? null : group.getMetadata().getName();
+            var canonical = Optional.ofNullable(name).flatMap(builtinRoleDefinitions::group);
+            var requested = roleRefNames(group);
+            if (canonical.isEmpty()) {
+                var builtinRole = requested.stream()
+                        .filter(this::isBuiltinRoleDefinition)
+                        .findFirst();
+                if (builtinRole.isPresent()) {
+                    throw denied("自定义用户组不能绑定内置角色 [" + builtinRole.get() + "]。");
+                }
+                return;
+            }
+            var canonicalNames = canonicalRoleNames(canonical.get());
+            var missing = canonicalNames.stream()
+                    .filter(roleName -> !requested.contains(roleName))
+                    .findFirst();
+            if (missing.isPresent()) {
+                throw denied("内置用户组不能移除内置角色 [" + missing.get() + "]。");
+            }
+            var disallowed = requested.stream()
+                    .filter(this::isBuiltinRoleDefinition)
+                    .filter(roleName -> !canonicalNames.contains(roleName))
+                    .findFirst();
+            if (disallowed.isPresent()) {
+                throw denied("内置用户组不能绑定内置角色 [" + disallowed.get() + "]。");
+            }
+        });
+    }
+
+    private boolean isBuiltinRoleDefinition(String name) {
+        return StringUtils.hasText(name) && builtinRoleDefinitions.role(name).isPresent();
+    }
+
+    private static List<String> roleRefNames(UserGroup group) {
+        var roleRefs = group.getRoleRefs();
+        if (CollectionUtils.isEmpty(roleRefs)) {
+            return List.of();
+        }
+        return roleRefs.stream()
+                .filter(roleRef -> roleRef != null
+                        && Role.KIND.equals(roleRef.getKind())
+                        && StringUtils.hasText(roleRef.getName()))
+                .map(UserGroup.RoleRef::getName)
+                .distinct()
+                .toList();
+    }
+
+    private static Set<String> canonicalRoleNames(UserGroup group) {
+        return Set.copyOf(roleRefNames(group));
+    }
+
+    private Mono<Void> checkGroupRoleGrant(UserGroupBinding binding) {
+        var roleRef = binding.getRoleRef();
+        if (roleRef == null
+                || !Role.KIND.equals(roleRef.getKind())
+                || !StringUtils.hasText(roleRef.getName())) {
+            return Mono.empty();
+        }
+        return Mono.fromRunnable(() -> {
+            if (BuiltinEntities.SUPER_ROLE.equals(roleRef.getName())) {
+                throw denied("不能绑定超级管理员角色。");
+            }
+            for (var groupName : subjectGroupNames(binding)) {
+                if (BuiltinEntities.SUPER_ADMINS_GROUP.equals(groupName)) {
+                    throw denied("超级管理员用户组不可修改。");
+                }
+                var canonical = builtinRoleDefinitions.group(groupName);
+                if (canonical.isEmpty()) {
+                    if (isBuiltinRoleDefinition(roleRef.getName())) {
+                        throw denied("自定义用户组不能绑定内置角色 [" + roleRef.getName() + "]。");
+                    }
+                    continue;
+                }
+                if (isBuiltinRoleDefinition(roleRef.getName())
+                        && !canonicalRoleNames(canonical.get()).contains(roleRef.getName())) {
+                    throw denied("内置用户组不能绑定内置角色 [" + roleRef.getName() + "]。");
+                }
+            }
+        });
+    }
+
+    private static List<String> subjectGroupNames(UserGroupBinding binding) {
+        var subjects = binding.getSubjects();
+        if (CollectionUtils.isEmpty(subjects)) {
+            return List.of();
+        }
+        return subjects.stream()
+                .filter(subject -> subject != null
+                        && UserGroup.KIND.equals(subject.getKind())
+                        && StringUtils.hasText(subject.getName()))
+                .map(UserGroupBinding.Subject::getName)
+                .distinct()
+                .toList();
+    }
+
     public Mono<Void> checkUserDeletion(User user) {
         return Mono.defer(() -> superAdminResolver
                 .hasSuperAdminBinding(user.getMetadata().getName())
@@ -191,7 +309,7 @@ public class BuiltinEntityPolicy {
         if (deleting) {
             return Mono.empty();
         }
-        return denySuperAdminMembership(binding);
+        return checkGroupRoleGrant(binding).then(denySuperAdminMembership(binding));
     }
 
     public Mono<Void> checkUserGroupAssignment(String username, String groupName) {

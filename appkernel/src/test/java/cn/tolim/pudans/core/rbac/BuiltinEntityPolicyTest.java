@@ -1,9 +1,10 @@
 package cn.tolim.pudans.core.rbac;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
+import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
+import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
 import cn.tolim.pudans.contract.extension.Metadata;
@@ -31,11 +34,17 @@ class BuiltinEntityPolicyTest {
     @Mock
     SuperAdminResolver superAdminResolver;
 
+    @Mock
+    RolePermissionPolicy rolePermissionPolicy;
+
+    private final BuiltinRoleDefinitions builtinRoleDefinitions = new BuiltinRoleDefinitions();
+
     private BuiltinEntityPolicy policy;
 
     @BeforeEach
     void setUp() {
-        policy = new BuiltinEntityPolicy(client, superAdminResolver);
+        policy = new BuiltinEntityPolicy(
+                client, superAdminResolver, builtinRoleDefinitions, rolePermissionPolicy);
     }
 
     private static GroupVersionKind userGvk() {
@@ -44,6 +53,39 @@ class BuiltinEntityPolicyTest {
 
     private static GroupVersionKind roleGvk() {
         return new GroupVersionKind(Role.GROUP, Role.VERSION, Role.KIND);
+    }
+
+    private static GroupVersionKind userGroupGvk() {
+        return new GroupVersionKind(UserGroup.GROUP, UserGroup.VERSION, UserGroup.KIND);
+    }
+
+    private static GroupVersionKind userGroupBindingGvk() {
+        return new GroupVersionKind(
+                UserGroupBinding.GROUP, UserGroupBinding.VERSION, UserGroupBinding.KIND);
+    }
+
+    private static UserGroup userGroup(String name, String... roleNames) {
+        var group = new UserGroup();
+        var metadata = new Metadata();
+        metadata.setName(name);
+        group.setMetadata(metadata);
+        group.setDisplayName(name);
+        group.setRoleRefs(Arrays.stream(roleNames)
+                .map(roleName -> {
+                    var roleRef = new UserGroup.RoleRef();
+                    roleRef.setName(roleName);
+                    return roleRef;
+                })
+                .toList());
+        return group;
+    }
+
+    private static UserGroupBinding groupRoleBinding(String groupName, String roleName) {
+        var binding = UserGroupBinding.grant(groupName, roleName);
+        var metadata = new Metadata();
+        metadata.setName(groupName + "-" + roleName + "-binding");
+        binding.setMetadata(metadata);
+        return binding;
     }
 
     private static Role role(String name, String dependencies) {
@@ -78,6 +120,8 @@ class BuiltinEntityPolicyTest {
 
     @Test
     void createRoleWithoutDependenciesPasses() {
+        when(rolePermissionPolicy.checkCreate(any())).thenReturn(Mono.empty());
+
         StepVerifier.create(policy.checkCreate(roleGvk(), role("custom-role", null)))
                 .verifyComplete();
     }
@@ -112,6 +156,7 @@ class BuiltinEntityPolicyTest {
     void createRoleAllowsTemplateDependencies() {
         when(client.fetch(Role.class, "role-template-view-users"))
                 .thenReturn(Mono.just(template("role-template-view-users")));
+        when(rolePermissionPolicy.checkCreate(any())).thenReturn(Mono.empty());
 
         StepVerifier.create(policy.checkCreate(
                         roleGvk(), role("custom-role", "[ \"role-template-view-users\" ]")))
@@ -195,5 +240,98 @@ class BuiltinEntityPolicyTest {
 
     private void verifyClientLookup() {
         org.mockito.Mockito.verify(client).get(User.class, NAME);
+    }
+
+    @Test
+    void createUserGroupRejectsBuiltinRoles() {
+        StepVerifier.create(policy.checkCreate(
+                        userGroupGvk(), userGroup("custom-group", "normal-role")))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("内置角色");
+                })
+                .verify();
+    }
+
+    @Test
+    void createUserGroupAllowsCustomRoles() {
+        StepVerifier.create(policy.checkCreate(
+                        userGroupGvk(), userGroup("custom-group", "custom-role")))
+                .verifyComplete();
+    }
+
+    @Test
+    void updateBuiltinGroupAllowsRetainingBuiltinRolesAndAddingCustomRoles() {
+        StepVerifier.create(policy.checkUpdate(
+                        userGroupGvk(),
+                        "system-admins",
+                        userGroup("system-admins", "system-admin-role", "custom-role")))
+                .verifyComplete();
+    }
+
+    @Test
+    void updateBuiltinGroupRejectsRemovingBuiltinRoles() {
+        StepVerifier.create(policy.checkUpdate(
+                        userGroupGvk(),
+                        "system-admins",
+                        userGroup("system-admins", "custom-role")))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("不能移除内置角色");
+                })
+                .verify();
+    }
+
+    @Test
+    void updateBuiltinGroupRejectsAddingOtherBuiltinRoles() {
+        StepVerifier.create(policy.checkUpdate(
+                        userGroupGvk(),
+                        "system-admins",
+                        userGroup("system-admins", "system-admin-role", "super-role")))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("不能绑定内置角色");
+                })
+                .verify();
+    }
+
+    @Test
+    void updateSuperAdminsGroupIsRejected() {
+        StepVerifier.create(policy.checkUpdate(
+                        userGroupGvk(), "super-admins", userGroup("super-admins", "super-role")))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("超级管理员用户组不可修改");
+                })
+                .verify();
+    }
+
+    @Test
+    void bindingSuperRoleToGroupIsRejected() {
+        StepVerifier.create(policy.checkCreate(
+                        userGroupBindingGvk(), groupRoleBinding("custom-group", "super-role")))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("超级管理员角色");
+                })
+                .verify();
+    }
+
+    @Test
+    void bindingBuiltinRoleToCustomGroupIsRejected() {
+        StepVerifier.create(policy.checkCreate(
+                        userGroupBindingGvk(), groupRoleBinding("custom-group", "normal-role")))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("内置角色");
+                })
+                .verify();
+    }
+
+    @Test
+    void bindingCustomRoleToBuiltinGroupIsAllowed() {
+        StepVerifier.create(policy.checkCreate(
+                        userGroupBindingGvk(), groupRoleBinding("system-admins", "custom-role")))
+                .verifyComplete();
     }
 }

@@ -30,6 +30,7 @@ import type {
 } from "@/modules/workspace/lib/permission-api";
 
 import { resolveRoleApiError } from "../lib/api";
+import { MY_UI_PERMISSIONS_QUERY_KEY } from "../lib/current-permissions";
 import {
   type DataAccessLevel,
   type DataAccessRow,
@@ -55,6 +56,7 @@ type RolePermissionEditorProps = {
   catalog: PermissionCatalog;
   readOnly: boolean;
   builtin: boolean;
+  allowedPermissions: readonly string[];
 };
 
 export function RolePermissionEditor({
@@ -62,6 +64,7 @@ export function RolePermissionEditor({
   catalog,
   readOnly,
   builtin,
+  allowedPermissions,
 }: RolePermissionEditorProps) {
   const queryClient = useQueryClient();
   const templateMap = useMemo(() => catalogTemplateMap(catalog), [catalog]);
@@ -88,6 +91,11 @@ export function RolePermissionEditor({
   const wildcard = roleUiPermissions(role).includes("*");
   const locked = readOnly || builtin || wildcard;
   const dirty = !sameStringSet(selection, baseline);
+  const allowedPermissionSet = useMemo(() => new Set(allowedPermissions), [allowedPermissions]);
+  const allPermissionsGranted = allowedPermissionSet.has("*");
+  const canGrant = (permission: string | undefined) =>
+    !permission || allPermissionsGranted || allowedPermissionSet.has(permission);
+  const limited = !allPermissionsGranted;
 
   const isInherited = (template: string) => closure.has(template) && !selectionSet.has(template);
 
@@ -181,7 +189,10 @@ export function RolePermissionEditor({
     },
     onSuccess: async (_data, templates) => {
       setBaseline(templates);
-      await queryClient.invalidateQueries({ queryKey: ["roles"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["roles"] }),
+        queryClient.invalidateQueries({ queryKey: MY_UI_PERMISSIONS_QUERY_KEY }),
+      ]);
       toast.success("角色权限已保存。");
     },
     onError: (error) => toast.error(resolveRoleApiError(error)),
@@ -212,6 +223,7 @@ export function RolePermissionEditor({
             {locked ? (
               <EditorLockNote readOnly={readOnly} builtin={builtin} wildcard={wildcard} />
             ) : null}
+            {limited && !locked ? <PermissionLimitNote /> : null}
             {workspaces.length === 0 ? (
               <ConsoleEmpty>权限目录暂无可配置的菜单。</ConsoleEmpty>
             ) : (
@@ -237,10 +249,19 @@ export function RolePermissionEditor({
                             accessible={viewGranted || manageGranted}
                             manageable={manageGranted}
                             viewDisabled={
-                              locked || manageGranted || (view ? isInherited(view.template) : false)
+                              locked ||
+                              manageGranted ||
+                              (view
+                                ? isInherited(view.template) ||
+                                  (!viewGranted && !canGrant(view.permission))
+                                : false)
                             }
                             manageDisabled={
-                              locked || (manage ? isInherited(manage.template) : false)
+                              locked ||
+                              (manage
+                                ? isInherited(manage.template) ||
+                                  (!manageGranted && !canGrant(manage.permission))
+                                : false)
                             }
                             onToggleView={(checked) => toggleView(menu, checked)}
                             onToggleManage={(checked) => toggleManage(menu, checked)}
@@ -260,6 +281,7 @@ export function RolePermissionEditor({
             {locked ? (
               <EditorLockNote readOnly={readOnly} builtin={builtin} wildcard={wildcard} />
             ) : null}
+            {limited && !locked ? <PermissionLimitNote /> : null}
             {operationMenus.length === 0 ? (
               <ConsoleEmpty>权限目录暂无可配置的操作。</ConsoleEmpty>
             ) : (
@@ -284,20 +306,24 @@ export function RolePermissionEditor({
                       </p>
                     ) : null}
                     <div className="grid gap-2 lg:grid-cols-2">
-                      {(menu.operations ?? []).map((operation) => (
-                        <OperationCard
-                          key={operation.template}
-                          operation={operation}
-                          checked={manageGranted || closure.has(operation.template)}
-                          disabled={
-                            locked ||
-                            manageGranted ||
-                            !accessible ||
-                            isInherited(operation.template)
-                          }
-                          onCheckedChange={(checked) => toggleOperation(operation, checked)}
-                        />
-                      ))}
+                      {(menu.operations ?? []).map((operation) => {
+                        const granted = manageGranted || closure.has(operation.template);
+                        return (
+                          <OperationCard
+                            key={operation.template}
+                            operation={operation}
+                            checked={granted}
+                            disabled={
+                              locked ||
+                              manageGranted ||
+                              !accessible ||
+                              isInherited(operation.template) ||
+                              (!granted && !canGrant(operation.permission))
+                            }
+                            onCheckedChange={(checked) => toggleOperation(operation, checked)}
+                          />
+                        );
+                      })}
                     </div>
                   </section>
                 );
@@ -316,6 +342,7 @@ export function RolePermissionEditor({
 
         <TabsContent value="workspaces" className="p-5">
           <div className="space-y-3">
+            {limited && !locked ? <PermissionLimitNote /> : null}
             {workspaces.length === 0 ? (
               <ConsoleEmpty>权限目录暂无工作区。</ConsoleEmpty>
             ) : (
@@ -331,6 +358,10 @@ export function RolePermissionEditor({
                 const directlySelected = (workspace.menus ?? []).some((menu) =>
                   menuTemplateNames(menu).some((template) => selectionSet.has(template)),
                 );
+                const canAddWorkspace = (workspace.menus ?? []).every((menu) => {
+                  const access = menu.view ?? menu.manage;
+                  return canGrant(access?.permission);
+                });
                 return (
                   <div
                     key={workspace.id}
@@ -355,7 +386,12 @@ export function RolePermissionEditor({
                       </span>
                       <Switch
                         checked={accessible}
-                        disabled={locked || alwaysAccessible || (accessible && !directlySelected)}
+                        disabled={
+                          locked ||
+                          alwaysAccessible ||
+                          (accessible && !directlySelected) ||
+                          (!accessible && !canAddWorkspace)
+                        }
                         onCheckedChange={(checked) => toggleWorkspace(workspace, checked)}
                         aria-label={`${workspace.name}访问权限`}
                       />
@@ -428,6 +464,15 @@ function EditorLockNote({ readOnly, builtin, wildcard }: EditorLockNoteProps) {
     <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
       <Lock className="mt-0.5 size-3.5 shrink-0" />
       {message}
+    </div>
+  );
+}
+
+function PermissionLimitNote() {
+  return (
+    <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+      <Info className="mt-0.5 size-3.5 shrink-0" />
+      只能授予当前账号已有的权限，超出范围的选项不可选。
     </div>
   );
 }
