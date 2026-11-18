@@ -1,0 +1,182 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-create-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-users" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "创建用户"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建单个本地账号并设置初始密码。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:create"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users"
+      - "users/local"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-batch-create-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-users" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "batch-create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "批量创建"
+    rbac.authorization.pudans.tolim.cn/ui-description: "一次创建多个本地账号。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:batch-create"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/batch"
+      - "users/local"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-import-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-batch-create-users" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "import"
+    rbac.authorization.pudans.tolim.cn/ui-label: "导入用户"
+    rbac.authorization.pudans.tolim.cn/ui-description: "从 CSV 文件批量导入账号。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:import"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-update-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-users" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "update"
+    rbac.authorization.pudans.tolim.cn/ui-label: "编辑用户"
+    rbac.authorization.pudans.tolim.cn/ui-description: "修改用户头像、手机号和个人简介。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "40"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:update"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users"
+    verbs:
+      - "update"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-delete-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-users" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "delete"
+    rbac.authorization.pudans.tolim.cn/ui-label: "删除用户"
+    rbac.authorization.pudans.tolim.cn/ui-description: "删除用户及其身份绑定。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "50"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:delete"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users"
+    verbs:
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-reset-user-password
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-users" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "reset-password"
+    rbac.authorization.pudans.tolim.cn/ui-label: "重置密码"
+    rbac.authorization.pudans.tolim.cn/ui-description: "为用户设置新的本地密码。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "60"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:password"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/password"
+    verbs:
+      - "update"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-assign-usergroup
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-users", "role-template-view-usergroups" ]
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "change-group"
+    rbac.authorization.pudans.tolim.cn/ui-label: "调整用户组"
+    rbac.authorization.pudans.tolim.cn/ui-description: "变更或移除用户所属的用户组。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "70"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:group"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/usergroup"
+    verbs:
+      - "create"
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-disable-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-users" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "toggle-status"
+    rbac.authorization.pudans.tolim.cn/ui-label: "启用与禁用"
+    rbac.authorization.pudans.tolim.cn/ui-description: "启用或禁用用户账号。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "80"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:status"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/disable"
+      - "users/enable"
+    verbs:
+      - "create"

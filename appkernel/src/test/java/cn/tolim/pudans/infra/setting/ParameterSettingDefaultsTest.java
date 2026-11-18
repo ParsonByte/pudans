@@ -68,7 +68,7 @@ class ParameterSettingDefaultsTest {
 
     @Test
     void defaultConfigMapContainsEveryNonSensitiveField() throws Exception {
-        try (InputStream input = new ClassPathResource("extensions/config-template-configmap.yaml").getInputStream()) {
+        try (InputStream input = new ClassPathResource("extensions/config/config-configmap-template-configmap.yaml").getInputStream()) {
             var document = (Map<String, Object>) new Yaml().load(input);
             var data = (Map<String, String>) document.get("data");
 
@@ -83,7 +83,7 @@ class ParameterSettingDefaultsTest {
 
     @Test
     void defaultConfigMapDoesNotStoreSensitiveValues() throws Exception {
-        try (InputStream input = new ClassPathResource("extensions/config-template-configmap.yaml").getInputStream()) {
+        try (InputStream input = new ClassPathResource("extensions/config/config-configmap-template-configmap.yaml").getInputStream()) {
             var document = (Map<String, Object>) new Yaml().load(input);
             var data = (Map<String, String>) document.get("data");
 

@@ -26,8 +26,11 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
 
     private volatile boolean running;
 
-    public static final Set<String> REQUIRED_EXTENSION_LOCATIONS =
-            Set.of("classpath:/extensions/*.yaml", "classpath:/extensions/*.yml");
+    public static final Set<String> REQUIRED_EXTENSION_LOCATIONS = Set.of(
+            "classpath:/extensions/*.yaml",
+            "classpath:/extensions/*.yml",
+            "classpath:/extensions/**/*.yaml",
+            "classpath:/extensions/**/*.yml");
     private final PudansProperties pudansProperties;
     private final InternalReactiveExtensionClient extensionClient;
 

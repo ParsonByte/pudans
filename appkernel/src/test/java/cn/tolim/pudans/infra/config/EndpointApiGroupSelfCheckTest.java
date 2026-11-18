@@ -8,6 +8,7 @@ import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.SchemeManager;
+import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,8 +31,11 @@ class EndpointApiGroupSelfCheckTest {
     @Mock
     ObjectProvider<SchemeManager> schemeManagerProvider;
 
+    private BuiltinRoleDefinitions builtinRoleDefinitions;
+
     @BeforeEach
     void setUp() {
+        builtinRoleDefinitions = new BuiltinRoleDefinitions();
         when(applicationContext.getBeanProvider(SchemeManager.class)).thenReturn(schemeManagerProvider);
     }
 
@@ -43,7 +47,7 @@ class EndpointApiGroupSelfCheckTest {
         when(applicationContext.getBeansOfType(CustomEndpoint.class))
                 .thenReturn(Map.of("endpoint", endpoint(router)));
 
-        assertThatCode(() -> new EndpointApiGroupSelfCheck(applicationContext)
+        assertThatCode(() -> new EndpointApiGroupSelfCheck(applicationContext, builtinRoleDefinitions)
                         .run(new DefaultApplicationArguments(new String[0])))
                 .doesNotThrowAnyException();
     }
@@ -56,7 +60,7 @@ class EndpointApiGroupSelfCheckTest {
         when(applicationContext.getBeansOfType(CustomEndpoint.class))
                 .thenReturn(Map.of("endpoint", endpoint(router)));
 
-        assertThatThrownBy(() -> new EndpointApiGroupSelfCheck(applicationContext)
+        assertThatThrownBy(() -> new EndpointApiGroupSelfCheck(applicationContext, builtinRoleDefinitions)
                         .run(new DefaultApplicationArguments(new String[0])))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("/unknownresource");

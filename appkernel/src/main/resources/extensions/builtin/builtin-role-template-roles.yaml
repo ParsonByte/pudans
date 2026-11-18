@@ -1,0 +1,102 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: super-role
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    rbac.authorization.pudans.tolim.cn/system-reserved: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "超级管理员"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["*"]'
+  finalizers:
+    - system-protection
+rules:
+  - apiGroups:
+      - "*"
+    resources:
+      - "*"
+    nonResourceURLs:
+      - "*"
+    verbs:
+      - "*"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: system-admin-role
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    rbac.authorization.pudans.tolim.cn/system-reserved: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "系统管理员"
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [
+        "role-template-view-dashboard",
+        "role-template-manage-settings",
+        "role-template-manage-auth-providers",
+        "role-template-manage-users",
+        "role-template-manage-roles",
+        "role-template-manage-usergroups",
+        "role-template-manage-riskrules",
+        "role-template-audit-logs",
+        "role-template-view-traces",
+        "role-template-view-replay",
+        "role-template-manage-webhooks",
+        "role-template-manage-actuator",
+        "role-template-manage-cache",
+        "role-template-manage-configmaps",
+        "role-template-apply-temproles",
+        "role-template-approve-temproles",
+        "role-template-view-temproles",
+        "role-template-view-riskrules",
+        "role-template-view-settings"
+      ]
+  finalizers:
+    - system-protection
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "secrets"
+      - "remembermetokens"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: normal-role
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    rbac.authorization.pudans.tolim.cn/system-reserved: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "普通用户"
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "authenticated" ]'
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["profile:manage","authentications:manage"]'
+  finalizers:
+    - system-protection
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "devices"
+    verbs:
+      - "get"
+      - "list"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "user-preferences"
+      - "annotationsettings"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"

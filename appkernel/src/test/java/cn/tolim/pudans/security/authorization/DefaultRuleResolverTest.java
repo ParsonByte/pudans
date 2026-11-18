@@ -6,10 +6,16 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.ApiGroups;
+import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.contract.extension.MetadataUtil;
+import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.BuiltinEntityDefinitions;
+import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import cn.tolim.pudans.core.rbac.service.TempRoleService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +31,8 @@ import reactor.test.StepVerifier;
 @ExtendWith(MockitoExtension.class)
 class DefaultRuleResolverTest {
 
+    private static final BuiltinRoleDefinitions BUILTIN_ROLES = new BuiltinRoleDefinitions();
+
     @Mock
     RoleService roleService;
 
@@ -37,12 +45,12 @@ class DefaultRuleResolverTest {
     @Test
     void normalRoleAllowsSelfEndpointsButDeniesManagement() {
         var selfRequest = request("users", "-", "self", null, "get");
-        StepVerifier.create(resolve(BuiltinEntityDefinitions.normalRole(), "alice", selfRequest))
+        StepVerifier.create(resolve(builtinRole("normal-role"), "alice", selfRequest))
                 .assertNext(visitor -> assertThat(visitor.isAllowed()).isTrue())
                 .verifyComplete();
 
         var managementRequest = request("users", "bob", "", null, "get");
-        StepVerifier.create(resolve(BuiltinEntityDefinitions.normalRole(), "alice", managementRequest))
+        StepVerifier.create(resolve(builtinRole("normal-role"), "alice", managementRequest))
                 .assertNext(visitor -> assertThat(visitor.isAllowed()).isFalse())
                 .verifyComplete();
     }
@@ -58,7 +66,10 @@ class DefaultRuleResolverTest {
 
     @Test
     void aRoleWithoutRulesCannotUseTheNewEndpoints() {
-        var role = BuiltinEntityDefinitions.normalRole();
+        var role = new Role();
+        var metadata = new Metadata();
+        metadata.setName("ruleless-role");
+        role.setMetadata(metadata);
         role.setRules(List.of());
         StepVerifier.create(resolve(role, "alice", request("users", "-", "avatar", null, "create")))
                 .assertNext(visitor -> assertThat(visitor.isAllowed()).isFalse())
@@ -72,16 +83,16 @@ class DefaultRuleResolverTest {
     void systemAdminRoleAllowsManagementEndpoints() {
         var managementRequest = request("users", "bob", "", null, "get");
 
-        StepVerifier.create(resolve(BuiltinEntityDefinitions.systemAdminRole(), "admin", managementRequest))
+        StepVerifier.create(resolve(builtinRole("system-admin-role"), "admin", managementRequest))
                 .assertNext(visitor -> assertThat(visitor.isAllowed()).isTrue())
                 .verifyComplete();
     }
 
     @Test
     void jwtAuthenticationDoesNotInheritTemporaryRoles() {
-        var role = BuiltinEntityDefinitions.normalRole();
+        var role = builtinRole("normal-role");
         when(roleService.listDependenciesFlux(Set.of(role.getMetadata().getName())))
-                .thenReturn(Flux.just(role));
+                .thenReturn(Flux.fromIterable(withDependencies(role)));
         var jwt = org.springframework.security.oauth2.jwt.Jwt.withTokenValue("token")
                 .header("alg", "none")
                 .claim("sub", "alice")
@@ -101,15 +112,41 @@ class DefaultRuleResolverTest {
     void superRoleStillMatchesEveryResource() {
         var request = request("users", "bob", "", null, "delete");
 
-        StepVerifier.create(resolve(BuiltinEntityDefinitions.superRole(), "root", request))
+        StepVerifier.create(resolve(builtinRole("super-role"), "root", request))
                 .assertNext(visitor -> assertThat(visitor.isAllowed()).isTrue())
                 .verifyComplete();
     }
 
     private void assertAllowed(RequestInfo requestInfo) {
-        StepVerifier.create(resolve(BuiltinEntityDefinitions.normalRole(), "alice", requestInfo))
+        StepVerifier.create(resolve(builtinRole("normal-role"), "alice", requestInfo))
                 .assertNext(visitor -> assertThat(visitor.isAllowed()).isTrue())
                 .verifyComplete();
+    }
+
+    private static Role builtinRole(String name) {
+        return BUILTIN_ROLES.role(name).orElseThrow();
+    }
+
+    private static List<Role> withDependencies(Role role) {
+        var roles = new LinkedHashMap<String, Role>();
+        collectDependencies(role, roles);
+        return List.copyOf(roles.values());
+    }
+
+    private static void collectDependencies(Role role, Map<String, Role> collected) {
+        if (collected.putIfAbsent(role.getMetadata().getName(), role) != null) {
+            return;
+        }
+        var raw = MetadataUtil.nullSafeAnnotations(role).get(Role.ROLE_DEPENDENCIES_ANNO);
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        for (var dependency : JsonUtils.jsonToObject(raw, new TypeReference<List<String>>() {})) {
+            BUILTIN_ROLES.allRoles().stream()
+                    .filter(candidate -> dependency.equals(candidate.getMetadata().getName()))
+                    .findFirst()
+                    .ifPresent(candidate -> collectDependencies(candidate, collected));
+        }
     }
 
     private static RequestInfo normalRoleRequest(
@@ -119,7 +156,7 @@ class DefaultRuleResolverTest {
 
     private Mono<AuthorizingVisitor> resolve(Role role, String username, RequestInfo requestInfo) {
         when(roleService.listDependenciesFlux(Set.of(role.getMetadata().getName())))
-                .thenReturn(Flux.just(role));
+                .thenReturn(Flux.fromIterable(withDependencies(role)));
         when(tempRoleService.activeRoleNameSet(username)).thenReturn(Mono.just(Set.of()));
         Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(
                 username,
