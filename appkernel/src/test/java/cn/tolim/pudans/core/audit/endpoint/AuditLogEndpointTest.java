@@ -206,6 +206,34 @@ class AuditLogEndpointTest {
     }
 
     @Test
+    void journeyStatusSeparatesPageFailuresFromActionAnomalies() {
+        var base = Instant.parse("2026-11-18T01:00:00Z");
+        var page = page("page-a", "u1", base.plusSeconds(1), "/console/roles");
+        var action = record(
+                "read-a",
+                "u1",
+                "READ",
+                "User",
+                "alice",
+                "/apis/api.pudans.tolim.cn/v1alpha1/users/alice",
+                base.plusSeconds(2),
+                0);
+
+        action.setResult("FAILURE");
+        assertThat(AuditLogEndpoint.toJourney("u1", List.of(page, action)).status())
+                .isEqualTo("FAILURE");
+
+        var failedPage = page("page-b", "u1", base.plusSeconds(3), "/console/users");
+        failedPage.setResult("FAILURE");
+        assertThat(AuditLogEndpoint.toJourney("u1", List.of(failedPage)).status())
+                .isEqualTo("FAILED");
+
+        action.setResult("DENIED");
+        assertThat(AuditLogEndpoint.toJourney("u1", List.of(page, action)).status())
+                .isEqualTo("DENIED");
+    }
+
+    @Test
     void summaryJourneyPageOmitsStepsButKeepsAggregateCounts() {
         var base = Instant.parse("2026-11-18T01:00:00Z");
         var records = List.of(

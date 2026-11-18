@@ -10,7 +10,14 @@ export function AuditResultBadge({ result }: AuditResultBadgeProps) {
   if (result === "SUCCESS") {
     return <Badge variant="secondary">成功</Badge>;
   }
-  if (result === "FAILURE" || result === "FAILED") {
+  if (result === "FAILURE") {
+    return (
+      <Badge variant="outline" className="border-amber-500/40 text-amber-600 dark:text-amber-400">
+        异常
+      </Badge>
+    );
+  }
+  if (result === "FAILED") {
     return <Badge variant="destructive">失败</Badge>;
   }
   if (result === "DENIED") {

@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { DataTablePagination, LongText } from "@/components/data-table";
+import { DateTimePicker } from "@/components/date-time-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -165,24 +166,18 @@ export function AuditLogsView() {
           <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="audit-from">开始时间</Label>
-              <Input
+              <DateTimePicker
                 id="audit-from"
-                type="datetime-local"
                 value={draftFilters.from}
-                onChange={(event) =>
-                  setDraftFilters((current) => ({ ...current, from: event.target.value }))
-                }
+                onChange={(value) => setDraftFilters((current) => ({ ...current, from: value }))}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="audit-to">结束时间</Label>
-              <Input
+              <DateTimePicker
                 id="audit-to"
-                type="datetime-local"
                 value={draftFilters.to}
-                onChange={(event) =>
-                  setDraftFilters((current) => ({ ...current, to: event.target.value }))
-                }
+                onChange={(value) => setDraftFilters((current) => ({ ...current, to: value }))}
               />
             </div>
             <div className="space-y-2">
