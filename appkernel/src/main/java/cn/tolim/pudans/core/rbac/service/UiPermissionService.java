@@ -2,20 +2,17 @@ package cn.tolim.pudans.core.rbac.service;
 
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.user.service.RoleService;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.core.rbac.RoleUiPermissions;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
-import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UiPermissionService {
@@ -75,31 +72,13 @@ public class UiPermissionService {
         return roleService
                 .listPermissions(roleNames)
                 .reduce(new LinkedHashSet<String>(), (set, role) -> {
-                    set.addAll(uiPermissionsOf(role));
+                    set.addAll(RoleUiPermissions.of(role));
                     return set;
                 })
                 .map(merged -> normalize(List.copyOf(merged)))
                 .flatMap(permissionCatalogService::expand)
                 .map(UiPermissionService::normalize)
                 .defaultIfEmpty(List.of());
-    }
-
-    private List<String> uiPermissionsOf(Role role) {
-        var annotations = role.getMetadata() == null ? null : role.getMetadata().getAnnotations();
-        if (annotations == null) {
-            return List.of();
-        }
-        var raw = annotations.get(Role.UI_PERMISSIONS_ANNO);
-        if (StringUtils.isBlank(raw)) {
-            return List.of();
-        }
-        try {
-            List<String> permissions = JsonUtils.jsonToObject(raw, new TypeReference<>() {});
-            return permissions == null ? List.of() : permissions.stream().filter(StringUtils::isNotBlank).toList();
-        } catch (Exception e) {
-            log.warn("无法解析角色 [{}] 的 UI 权限注解", role.getMetadata().getName(), e);
-            return List.of();
-        }
     }
 
     static List<String> normalize(List<String> permissions) {

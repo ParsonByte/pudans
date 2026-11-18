@@ -52,6 +52,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ConsolePage } from "@/modules/workspace/console/components/console-page";
 import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
+import { useUserGroups } from "@/modules/workspace/lib/user-groups";
 
 import { BatchCreateUsersDialog } from "./components/batch-create-users-dialog";
 import { CreateUserDialog } from "./components/create-user-dialog";
@@ -59,7 +60,6 @@ import { ImportUsersDialog } from "./components/import-users-dialog";
 import { UserAvatar } from "./components/user-avatar";
 import { type UserListItem, fetchAllUsers, fetchUsers, resolveUserApiError } from "./lib/api";
 import { downloadCsv } from "./lib/csv";
-import { useUserGroups } from "./lib/use-user-groups";
 import { usersToCsv } from "./lib/user-csv";
 
 const USER_TABLE_FEATURES = tableFeatures({});
