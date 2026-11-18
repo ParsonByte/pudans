@@ -94,6 +94,7 @@ export function auditResultLabel(value?: string): string {
     case "SUCCESS":
       return "成功";
     case "FAILURE":
+      return "异常";
     case "FAILED":
       return "失败";
     case "DENIED":
@@ -114,6 +115,6 @@ export const AUDIT_OPERATION_OPTIONS = [...OPERATION_LABEL_VALUES.entries()]
 
 export const AUDIT_RESULT_OPTIONS = [
   { value: "SUCCESS", label: "成功" },
-  { value: "FAILURE", label: "失败" },
+  { value: "FAILURE", label: "异常" },
   { value: "DENIED", label: "拒绝" },
 ] as const;

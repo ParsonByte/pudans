@@ -110,6 +110,7 @@ export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
         <ConsoleSectionHeader
           title={journey.username || journey.uid}
           description={`用户 ${journey.uid} · ${formatAuditExactTime(journey.start)} → ${formatAuditExactTime(journey.end)} · ${formatDuration(journey.durationMs)} · ${journey.pageCount ?? 0} 个页面 · ${journey.actionCount ?? 0} 个操作 · ${journey.sessionCount ?? 0} 段活动`}
+          border={false}
           action={
             <div className="flex items-center gap-2">
               <Badge variant={journey.complete ? "secondary" : "destructive"}>
@@ -118,13 +119,6 @@ export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
               <AuditResultBadge result={journey.status ?? "SUCCESS"} />
             </div>
           }
-        />
-      </ConsoleSection>
-
-      <ConsoleSection>
-        <ConsoleSectionHeader
-          title="活动链路"
-          description="页面步骤按时间倒序；展开页面步骤查看该页面的操作明细"
         />
         <JourneyChain journey={journey} onSelectRecord={setDetailTarget} />
       </ConsoleSection>

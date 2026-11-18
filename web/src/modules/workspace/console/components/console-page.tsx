@@ -43,11 +43,22 @@ type ConsoleSectionHeaderProps = {
   title: string;
   description?: string;
   action?: ReactNode;
+  border?: boolean;
 };
 
-export function ConsoleSectionHeader({ title, description, action }: ConsoleSectionHeaderProps) {
+export function ConsoleSectionHeader({
+  title,
+  description,
+  action,
+  border = true,
+}: ConsoleSectionHeaderProps) {
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
+    <div
+      className={cn(
+        "flex flex-wrap items-start justify-between gap-3 px-5 py-4",
+        border && "border-b",
+      )}
+    >
       <div className="space-y-1">
         <h2 className="text-sm font-semibold">{title}</h2>
         {description ? (
