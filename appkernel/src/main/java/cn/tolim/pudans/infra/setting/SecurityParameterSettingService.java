@@ -3,6 +3,7 @@ package cn.tolim.pudans.infra.setting;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.OidcProperties;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,11 @@ import reactor.core.publisher.Mono;
 public class SecurityParameterSettingService {
 
     private static final String DEFAULT_TOTP_ISSUER = "pudans";
+
+    private static final List<String> REQUIRED_FEISHU_SCOPES = List.of(
+            "contact:user.base:readonly",
+            "contact:user.email:readonly",
+            "contact:user.phone:readonly");
 
     private final ParameterSettingFetcher fetcher;
 
@@ -137,7 +143,8 @@ public class SecurityParameterSettingService {
                 firstNonBlank(
                         configured == null ? null : configured.getAuthorizationUri(),
                         feishuProperties.getAuthorizationUri()),
-                firstNonBlank(configured == null ? null : configured.getScope(), feishuProperties.getScope()),
+                withRequiredFeishuScopes(firstNonBlank(
+                        configured == null ? null : configured.getScope(), feishuProperties.getScope())),
                 configured != null && configured.getSyncIntervalSeconds() != null
                         ? configured.getSyncIntervalSeconds()
                         : feishuProperties.getSyncIntervalSeconds(),
@@ -184,6 +191,15 @@ public class SecurityParameterSettingService {
 
     private static String firstNonBlank(String preferred, String fallback) {
         return StringUtils.hasText(preferred) ? preferred : fallback;
+    }
+
+    private static String withRequiredFeishuScopes(String scope) {
+        var scopes = new LinkedHashSet<String>();
+        if (StringUtils.hasText(scope)) {
+            scopes.addAll(List.of(scope.trim().split("\\s+")));
+        }
+        scopes.addAll(REQUIRED_FEISHU_SCOPES);
+        return String.join(" ", scopes);
     }
 
     public record FeishuSettings(

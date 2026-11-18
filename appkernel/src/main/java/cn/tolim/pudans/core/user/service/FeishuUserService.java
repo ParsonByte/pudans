@@ -121,7 +121,7 @@ public class FeishuUserService {
                     user.setSpec(spec);
                     return userService.createUser(user);
                 }))
-                .flatMap(user -> createConnection(user, data, providerUserId).thenReturn(user))
+                .flatMap(user -> createConnection(user, providerUserId).thenReturn(user))
                 .flatMap(user -> StringUtils.hasText(userGroupName)
                         ? userGroupService.assignUserGroup(user.getMetadata().getName(), userGroupName)
                                 .thenReturn(user)
@@ -149,7 +149,7 @@ public class FeishuUserService {
                 .then();
     }
 
-    private Mono<UserConnection> createConnection(User user, FeishuUserData data, String providerUserId) {
+    private Mono<UserConnection> createConnection(User user, String providerUserId) {
         var connection = new UserConnection();
         var metadata = new Metadata();
         metadata.setName(user.getMetadata().getName() + "-feishu");
@@ -163,10 +163,38 @@ public class FeishuUserService {
         return client.create(connection);
     }
 
-    
+    public Mono<UserConnection> bindConnection(
+            String username,
+            String providerUserId,
+            String displayName,
+            String email,
+            String phone,
+            String avatar) {
+        if (!StringUtils.hasText(providerUserId)) {
+            return Mono.error(new ServerWebInputException("飞书身份缺少 union_id 或 open_id。"));
+        }
+        return userService
+                .getUser(username)
+                .switchIfEmpty(Mono.error(new ServerWebInputException("当前用户不存在。")))
+                .flatMap(user -> findConnection(providerUserId)
+                        .flatMap(existing -> Objects.equals(
+                                        existing.getSpec().getUsername(), username)
+                                ? Mono.just(existing)
+                                : Mono.error(new ServerWebInputException(
+                                        "该飞书身份已绑定到其他用户。")))
+                        .switchIfEmpty(Mono.defer(() -> createConnection(user, providerUserId))))
+                .flatMap(connection ->
+                        syncProfile(username, displayName, email, phone, avatar).then(Mono.just(connection)));
+    }
 
-    public Mono<User> syncProfile(String username, String displayName, String email) {
-        if (!StringUtils.hasText(displayName) && !StringUtils.hasText(email)) {
+
+
+    public Mono<User> syncProfile(
+            String username, String displayName, String email, String phone, String avatar) {
+        if (!StringUtils.hasText(displayName)
+                && !StringUtils.hasText(email)
+                && !StringUtils.hasText(phone)
+                && !StringUtils.hasText(avatar)) {
             return Mono.empty();
         }
         return userService.getUser(username).flatMap(user -> {
@@ -181,6 +209,14 @@ public class FeishuUserService {
                 user.getSpec().setEmail(email.toLowerCase());
                 user.getSpec().setEmailVerified(true);
                 changedFields.add("email");
+            }
+            if (StringUtils.hasText(phone) && !Objects.equals(phone, user.getSpec().getPhone())) {
+                user.getSpec().setPhone(phone);
+                changedFields.add("phone");
+            }
+            if (StringUtils.hasText(avatar) && !Objects.equals(avatar, user.getSpec().getAvatar())) {
+                user.getSpec().setAvatar(avatar);
+                changedFields.add("avatar");
             }
             if (changedFields.isEmpty()) {
                 return Mono.just(user);
