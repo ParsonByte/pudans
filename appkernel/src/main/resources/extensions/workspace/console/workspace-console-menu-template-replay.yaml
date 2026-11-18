@@ -13,7 +13,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
     rbac.authorization.pudans.tolim.cn/ui-path: "/console/replay"
     rbac.authorization.pudans.tolim.cn/ui-label: "回溯"
-    rbac.authorization.pudans.tolim.cn/ui-description: "只读回溯审计请求。"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查询历史链路、回放操作并管理审计归档。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:history"
     rbac.authorization.pudans.tolim.cn/ui-group: "控制"
     rbac.authorization.pudans.tolim.cn/ui-order: "70"

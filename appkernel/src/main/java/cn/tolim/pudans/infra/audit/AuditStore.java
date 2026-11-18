@@ -108,6 +108,30 @@ public class AuditStore {
                 .map(tuple -> new AuditPageResult(tuple.getT1(), tuple.getT2()));
     }
 
+    public Mono<AuditPageResult> archivePage(AuditQuery query, int page, int size) {
+        var direction = query.ascending() ? Sort.Direction.ASC : Sort.Direction.DESC;
+        var pageable = PageRequest.of(
+                Math.max(0, page - 1), Math.max(1, size), Sort.by(direction, "id"));
+        var criteria = criteria(query);
+        var items = entityOperations
+                .select(Query.query(criteria).with(pageable), AuditArchiveEntity.class)
+                .map(AuditArchiveEntity::toRecord)
+                .collectList();
+        var total = entityOperations
+                .select(Query.query(criteria), AuditArchiveEntity.class)
+                .count();
+        return Mono.zip(items, total)
+                .map(tuple -> new AuditPageResult(tuple.getT1(), tuple.getT2()));
+    }
+
+    public Mono<ArchiveStats> archiveStats() {
+        var query = Query.query(nonStaticRequests());
+        return Mono.zip(
+                        entityOperations.select(query, AuditRecordEntity.class).count(),
+                        entityOperations.select(query, AuditArchiveEntity.class).count())
+                .map(tuple -> new ArchiveStats(tuple.getT1(), tuple.getT2()));
+    }
+
     public Mono<TraceFlowPage> traceFlows(AuditQuery query, int page, int size) {
         var pageable = PageRequest.of(
                 0, MAX_TRACE_GROUP_RECORDS, Sort.by(Sort.Direction.DESC, "id"));
@@ -371,6 +395,8 @@ public class AuditStore {
     }
 
     public record AuditPageResult(List<AuditRecord> items, long total) {}
+
+    public record ArchiveStats(long activeCount, long archivedCount) {}
 
     public record TraceFlowPage(List<String> traceFlowIds, long total, boolean truncated) {}
 }

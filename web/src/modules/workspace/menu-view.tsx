@@ -62,6 +62,12 @@ const RiskView = lazy(() =>
   })),
 );
 
+const ReplayView = lazy(() =>
+  import("@/modules/workspace/console/replay").then((module) => ({
+    default: module.ReplayView,
+  })),
+);
+
 const AuditView = lazy(() =>
   import("@/modules/workspace/console/audit").then((module) => ({
     default: module.AuditView,
@@ -156,6 +162,8 @@ function renderMenuPage({
       return <RolesView />;
     case "risk":
       return <RiskView />;
+    case "replay":
+      return <ReplayView />;
     case "audit": {
       const relative = relativeMenuPath(menu.path, pathname);
       return relative.startsWith("logs") ? <AuditLogsView /> : <AuditView />;

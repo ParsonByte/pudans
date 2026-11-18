@@ -299,6 +299,19 @@ public class AuditService {
         return auditStore.page(query, page, size);
     }
 
+    public Mono<AuditStore.AuditPageResult> archivePage(
+            AuditStore.AuditQuery query, int page, int size) {
+        return auditStore.archivePage(query, page, size);
+    }
+
+    public Mono<AuditStore.ArchiveStats> archiveStats() {
+        return auditStore.archiveStats();
+    }
+
+    public Mono<Long> archiveBefore(Instant cutoff) {
+        return auditStore.archiveBefore(cutoff);
+    }
+
     public Mono<AuditStore.TraceFlowPage> traceFlows(AuditStore.AuditQuery query, int page, int size) {
         return auditStore.traceFlows(query, page, size);
     }
