@@ -223,6 +223,48 @@ class RolePermissionPolicyTest {
                 .verify();
     }
 
+    @Test
+    void grantRoleWithinActorPermissionsPasses() {
+        var actor = role(
+                "limited-manager",
+                List.of(rule(new String[] {"api.pudans.tolim.cn"}, new String[] {"users"}, new String[] {"get"})),
+                "users:view");
+        var granted = role(
+                "custom-user-reader",
+                List.of(rule(new String[] {"api.pudans.tolim.cn"}, new String[] {"users"}, new String[] {"get"})),
+                "users:view");
+        stubRoles(actor, granted);
+
+        StepVerifier.create(withActor(policy.checkGrant(List.of("custom-user-reader")), "limited-manager"))
+                .verifyComplete();
+    }
+
+    @Test
+    void grantRoleBeyondActorPermissionsIsRejected() {
+        var actor = role(
+                "limited-manager",
+                List.of(rule(new String[] {"api.pudans.tolim.cn"}, new String[] {"users"}, new String[] {"get"})),
+                "users:view");
+        var granted = role(
+                "custom-secret-reader",
+                List.of(rule(new String[] {"api.pudans.tolim.cn"}, new String[] {"secrets"}, new String[] {"get"})),
+                "secrets:view");
+        stubRoles(actor, granted);
+
+        StepVerifier.create(withActor(policy.checkGrant(List.of("custom-secret-reader")), "limited-manager"))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("超出当前账号权限范围");
+                })
+                .verify();
+    }
+
+    @Test
+    void superRoleActorCanGrantAnyRole() {
+        StepVerifier.create(withActor(policy.checkGrant(List.of("system-admin-role")), "super-role"))
+                .verifyComplete();
+    }
+
     private void stubRoles(Role... roles) {
         Map<String, Role> byName = Arrays.stream(roles)
                 .collect(Collectors.toMap(role -> role.getMetadata().getName(), role -> role));

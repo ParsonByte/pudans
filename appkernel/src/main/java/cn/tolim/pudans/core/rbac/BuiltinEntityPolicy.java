@@ -274,6 +274,28 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    private Mono<Void> checkBindingRoleGrant(UserGroupBinding binding) {
+        var roleRef = binding.getRoleRef();
+        if (roleRef == null) {
+            return Mono.empty();
+        }
+        if (Role.KIND.equals(roleRef.getKind()) && StringUtils.hasText(roleRef.getName())) {
+            return rolePermissionPolicy.checkGrant(Set.of(roleRef.getName()));
+        }
+        if (UserGroup.KIND.equals(roleRef.getKind())) {
+            return checkSystemAdminsGrant(roleRef.getName());
+        }
+        return Mono.empty();
+    }
+
+    private Mono<Void> checkSystemAdminsGrant(String groupName) {
+        if (!BuiltinEntities.SYSTEM_ADMINS_GROUP.equals(groupName)) {
+            return Mono.empty();
+        }
+        return Mono.justOrEmpty(builtinRoleDefinitions.group(groupName))
+                .flatMap(group -> rolePermissionPolicy.checkGrant(canonicalRoleNames(group)));
+    }
+
     private static List<String> subjectGroupNames(UserGroupBinding binding) {
         var subjects = binding.getSubjects();
         if (CollectionUtils.isEmpty(subjects)) {
@@ -309,7 +331,9 @@ public class BuiltinEntityPolicy {
         if (deleting) {
             return Mono.empty();
         }
-        return checkGroupRoleGrant(binding).then(denySuperAdminMembership(binding));
+        return checkGroupRoleGrant(binding)
+                .then(Mono.defer(() -> checkBindingRoleGrant(binding)))
+                .then(denySuperAdminMembership(binding));
     }
 
     public Mono<Void> checkUserGroupAssignment(String username, String groupName) {
@@ -322,7 +346,8 @@ public class BuiltinEntityPolicy {
                 return Mono.<Void>error(denied("只有超级管理员可以加入 super-admins 用户组。"));
             }
             return Mono.empty();
-        });
+        })
+                .then(Mono.defer(() -> checkSystemAdminsGrant(groupName)));
     }
 
     public Mono<Void> checkUserGroupRemoval(String username) {
