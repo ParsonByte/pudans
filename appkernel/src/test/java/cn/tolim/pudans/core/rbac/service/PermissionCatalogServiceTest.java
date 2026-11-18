@@ -70,7 +70,7 @@ class PermissionCatalogServiceTest {
                         annotations(
                                 Role.UI_TYPE_ANNO, Role.UI_TYPE_WORKSPACE,
                                 Role.UI_WORKSPACE_ANNO, "default",
-                                Role.UI_LABEL_ANNO, "默认",
+                                Role.UI_LABEL_ANNO, "PUDANS",
                                 Role.UI_DESCRIPTION_ANNO, "工作区",
                                 Role.UI_ORDER_ANNO, "10")),
                 template(
@@ -78,7 +78,7 @@ class PermissionCatalogServiceTest {
                         annotations(
                                 Role.UI_TYPE_ANNO, Role.UI_TYPE_WORKSPACE,
                                 Role.UI_WORKSPACE_ANNO, "console",
-                                Role.UI_LABEL_ANNO, "终端管控",
+                                Role.UI_LABEL_ANNO, "PUDANS Console",
                                 Role.UI_DESCRIPTION_ANNO, "统一终端访问管控",
                                 Role.UI_ORDER_ANNO, "20")),
                 template(
@@ -90,7 +90,7 @@ class PermissionCatalogServiceTest {
                                 Role.UI_WORKSPACE_ANNO, "default",
                                 Role.UI_PATH_ANNO, "/",
                                 Role.UI_LABEL_ANNO, "总览",
-                                Role.UI_GROUP_ANNO, "默认工作区",
+                                Role.UI_GROUP_ANNO, "PUDANS",
                                 Role.UI_ORDER_ANNO, "10",
                                 Role.UI_PUBLIC_ANNO, "true")),
                 template(

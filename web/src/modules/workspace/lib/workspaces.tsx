@@ -8,10 +8,24 @@ import type { Navigation, NavigationMenu } from "./permission-api";
 
 function navigationIcon(icon: string | undefined): ElementType {
   function NavigationIcon({ className }: { className?: string }) {
+    if (icon && isImageIcon(icon)) {
+      return <img src={iconSource(icon)} alt="" className={className} aria-hidden="true" />;
+    }
     return <Icon icon={icon || "lucide:circle"} className={className} aria-hidden="true" />;
   }
 
   return NavigationIcon;
+}
+
+function isImageIcon(icon: string): boolean {
+  return icon.includes("/") || icon.startsWith("data:");
+}
+
+function iconSource(icon: string): string {
+  if (/^[a-z]+:\/\//i.test(icon) || icon.startsWith("data:")) {
+    return icon;
+  }
+  return `${import.meta.env.BASE_URL}${icon.replace(/^\/+/, "")}`;
 }
 
 export function buildWorkspaces(navigation: Navigation): Workspace[] {
@@ -20,6 +34,7 @@ export function buildWorkspaces(navigation: Navigation): Workspace[] {
     name: workspace.name,
     plan: workspace.plan,
     logo: navigationIcon(workspace.icon),
+    logoImage: workspace.icon ? isImageIcon(workspace.icon) : false,
     homeUrl: workspace.homePath,
     paths: (workspace.menus ?? []).map((menu) => menu.path),
   }));
