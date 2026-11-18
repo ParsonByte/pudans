@@ -8,7 +8,7 @@ import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
 import cn.tolim.pudans.contract.extension.controller.Reconciler;
 import cn.tolim.pudans.contract.extension.controller.Reconciler.Request;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
-import cn.tolim.pudans.core.rbac.BuiltinEntityDefinitions;
+import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,8 +19,11 @@ public class UserGroupReconciler implements Reconciler<Request> {
 
     private final ExtensionClient client;
 
-    public UserGroupReconciler(ExtensionClient client) {
+    private final BuiltinRoleDefinitions builtinRoleDefinitions;
+
+    public UserGroupReconciler(ExtensionClient client, BuiltinRoleDefinitions builtinRoleDefinitions) {
         this.client = client;
+        this.builtinRoleDefinitions = builtinRoleDefinitions;
     }
 
     @Override
@@ -35,7 +38,7 @@ public class UserGroupReconciler implements Reconciler<Request> {
     }
 
     private void restore(UserGroup group) {
-        BuiltinEntityDefinitions.group(group.getMetadata().getName()).ifPresent(canonical -> {
+        builtinRoleDefinitions.group(group.getMetadata().getName()).ifPresent(canonical -> {
             var changed = false;
             if (group.getMetadata().getDeletionTimestamp() != null) {
                 group.getMetadata().setDeletionTimestamp(null);

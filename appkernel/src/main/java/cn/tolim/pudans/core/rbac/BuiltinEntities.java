@@ -19,4 +19,8 @@ public final class BuiltinEntities {
     public static final String BUILTIN_LABEL = "pudans.tolim.cn/builtin";
 
     private BuiltinEntities() {}
+
+    public static String membershipBindingName(String username, String groupName) {
+        return username + "-" + groupName + "-binding";
+    }
 }

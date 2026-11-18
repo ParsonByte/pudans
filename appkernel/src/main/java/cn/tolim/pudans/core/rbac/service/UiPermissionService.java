@@ -26,6 +26,8 @@ public class UiPermissionService {
 
     private final RoleService roleService;
 
+    private final PermissionCatalogService permissionCatalogService;
+
     public Mono<List<String>> uiPermissionsOf(String username) {
         return userGroupService
                 .getRoleNamesByUsername(username)
@@ -36,6 +38,11 @@ public class UiPermissionService {
                     }
                     return aggregate(Set.copyOf(roleNames));
                 });
+    }
+
+    public Mono<Boolean> hasCapability(String username, String capability) {
+        return uiPermissionsOf(username)
+                .flatMap(permissions -> permissionCatalogService.hasCapability(permissions, capability));
     }
 
     // 控制台访问规则：超级角色始终可访问，否则所有已分配角色都必须带有禁用注解。
@@ -72,6 +79,8 @@ public class UiPermissionService {
                     return set;
                 })
                 .map(merged -> normalize(List.copyOf(merged)))
+                .flatMap(permissionCatalogService::expand)
+                .map(UiPermissionService::normalize)
                 .defaultIfEmpty(List.of());
     }
 

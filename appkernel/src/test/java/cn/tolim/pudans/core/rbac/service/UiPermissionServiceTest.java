@@ -1,7 +1,9 @@
 package cn.tolim.pudans.core.rbac.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -13,6 +15,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.user.service.RoleService;
@@ -28,11 +31,17 @@ class UiPermissionServiceTest {
     @Mock
     RoleService roleService;
 
+    @Mock
+    PermissionCatalogService permissionCatalogService;
+
     private UiPermissionService service;
 
     @BeforeEach
     void setUp() {
-        service = new UiPermissionService(userGroupService, roleService);
+        service = new UiPermissionService(userGroupService, roleService, permissionCatalogService);
+        lenient()
+                .when(permissionCatalogService.expand(anyList()))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
     }
 
     private static Role role(String name, String uiPermissionsJson) {
@@ -114,6 +123,20 @@ class UiPermissionServiceTest {
 
         StepVerifier.create(service.isConsoleAccessDisallowed("limited"))
                 .expectNext(true)
+                .verifyComplete();
+    }
+
+    @Test
+    void expandedPermissionsAreAppliedToTheAggregatedTags() {
+        when(userGroupService.getRoleNamesByUsername("dave")).thenReturn(Flux.just("role-d"));
+        when(roleService.listPermissions(anySet()))
+                .thenReturn(Flux.just(role("role-d", "[\"users:manage\"]")));
+        when(permissionCatalogService.expand(List.of("users:manage")))
+                .thenReturn(Mono.just(List.of("users:manage", "users:view", "users:create")));
+
+        StepVerifier.create(service.uiPermissionsOf("dave"))
+                .assertNext(permissions -> assertThat(permissions)
+                        .containsExactly("users:manage", "users:view", "users:create"))
                 .verifyComplete();
     }
 

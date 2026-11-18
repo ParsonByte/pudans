@@ -330,7 +330,7 @@ class ParameterSettingGroupServiceTest {
     }
 
     private static Map<String, ObjectNode> defaultGroups() throws Exception {
-        try (InputStream input = new ClassPathResource("extensions/config-template-configmap.yaml").getInputStream()) {
+        try (InputStream input = new ClassPathResource("extensions/config/config-configmap-template-configmap.yaml").getInputStream()) {
             var document = (Map<String, Object>) new Yaml().load(input);
             var data = (Map<String, String>) document.get("data");
             var result = new HashMap<String, ObjectNode>();

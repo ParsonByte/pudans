@@ -5,6 +5,7 @@ import static java.util.Objects.deepEquals;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
@@ -16,7 +17,7 @@ import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
 import cn.tolim.pudans.contract.extension.controller.Reconciler;
 import cn.tolim.pudans.contract.extension.controller.Reconciler.Request;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
-import cn.tolim.pudans.core.rbac.BuiltinEntityDefinitions;
+import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 
 @Slf4j
 @Component
@@ -24,8 +25,11 @@ public class RoleReconciler implements Reconciler<Request> {
 
     private final ExtensionClient client;
 
-    public RoleReconciler(ExtensionClient client) {
+    private final BuiltinRoleDefinitions builtinRoleDefinitions;
+
+    public RoleReconciler(ExtensionClient client, BuiltinRoleDefinitions builtinRoleDefinitions) {
         this.client = client;
+        this.builtinRoleDefinitions = builtinRoleDefinitions;
     }
 
     @Override
@@ -47,7 +51,7 @@ public class RoleReconciler implements Reconciler<Request> {
     }
 
     private boolean restore(Role role) {
-        return BuiltinEntityDefinitions.role(role.getMetadata().getName())
+        return builtinRoleDefinitions.role(role.getMetadata().getName())
                 .map(canonical -> {
                     var changed = false;
                     if (role.getMetadata().getDeletionTimestamp() != null) {
@@ -66,9 +70,23 @@ public class RoleReconciler implements Reconciler<Request> {
                     var annotations = MetadataUtil.nullSafeAnnotations(role);
                     var canonicalUiPermissions =
                             MetadataUtil.nullSafeAnnotations(canonical).get(Role.UI_PERMISSIONS_ANNO);
-                    if (canonicalUiPermissions != null
-                            && !canonicalUiPermissions.equals(annotations.get(Role.UI_PERMISSIONS_ANNO))) {
-                        annotations.put(Role.UI_PERMISSIONS_ANNO, canonicalUiPermissions);
+                    if (!Objects.equals(
+                            canonicalUiPermissions, annotations.get(Role.UI_PERMISSIONS_ANNO))) {
+                        if (canonicalUiPermissions == null) {
+                            annotations.remove(Role.UI_PERMISSIONS_ANNO);
+                        } else {
+                            annotations.put(Role.UI_PERMISSIONS_ANNO, canonicalUiPermissions);
+                        }
+                        changed = true;
+                    }
+                    var canonicalDependencies =
+                            MetadataUtil.nullSafeAnnotations(canonical).get(Role.ROLE_DEPENDENCIES_ANNO);
+                    if (!Objects.equals(canonicalDependencies, annotations.get(Role.ROLE_DEPENDENCIES_ANNO))) {
+                        if (canonicalDependencies == null) {
+                            annotations.remove(Role.ROLE_DEPENDENCIES_ANNO);
+                        } else {
+                            annotations.put(Role.ROLE_DEPENDENCIES_ANNO, canonicalDependencies);
+                        }
                         changed = true;
                     }
                     if (!changed) {
