@@ -40,12 +40,13 @@ final class TwoFactorOAuth2GateFilter implements WebFilter {
                                 .put(
                                         OAuth2LoginAttributes.RESUME_URI,
                                         exchange.getRequest().getURI().toString()))
-                        .then(ProblemDetailResponses.write(
+                        .then(ProblemDetailResponses.writeOrRedirect(
                                 exchange,
                                 context,
                                 HttpStatus.UNAUTHORIZED,
                                 "two-factor-required",
-                                "请先完成双重验证。"))
+                                "该账号需要完成双重验证，请使用密码登录。",
+                                ProblemDetailResponses.SIGN_IN_PATH))
                         .thenReturn(Boolean.TRUE))
                 .switchIfEmpty(Mono.defer(() -> chain.filter(exchange).thenReturn(Boolean.FALSE)))
                 .then();

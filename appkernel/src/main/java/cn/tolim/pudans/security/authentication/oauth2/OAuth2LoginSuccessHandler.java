@@ -64,19 +64,23 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
                         oauth2,
                         twoFactorSatisfied))
                 .flatMap(result -> result instanceof TwoFactorAuthentication
-                        ? ProblemDetailResponses.write(
+                        ? ProblemDetailResponses.writeOrRedirect(
                                 exchange,
                                 context,
                                 HttpStatus.UNAUTHORIZED,
                                 "two-factor-required",
-                                "请完成双重验证。")
+                                "该账号需要完成双重验证，请使用密码登录。",
+                                ProblemDetailResponses.SIGN_IN_PATH)
                         : redirect(exchange, securityProperties.getPostLoginUrl()))
-                .onErrorResume(OAuth2ConnectionRequiredException.class, error -> ProblemDetailResponses.write(
-                        exchange,
-                        context,
-                        HttpStatus.UNAUTHORIZED,
-                        "oauth2-connection-required",
-                        "请先绑定该第三方账号。"));
+                .onErrorResume(
+                        OAuth2ConnectionRequiredException.class,
+                        error -> ProblemDetailResponses.writeOrRedirect(
+                                exchange,
+                                context,
+                                HttpStatus.UNAUTHORIZED,
+                                "oauth2-connection-required",
+                                "请先绑定该第三方账号。",
+                                ProblemDetailResponses.SIGN_IN_PATH));
     }
 
     private static final class OAuth2ConnectionRequiredException extends RuntimeException {}
