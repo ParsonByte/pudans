@@ -1,0 +1,22 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-account-profile
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "default.settings.profile"
+    rbac.authorization.pudans.tolim.cn/ui-component: "account-profile"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "default"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/profile"
+    rbac.authorization.pudans.tolim.cn/ui-label: "个人设置"
+    rbac.authorization.pudans.tolim.cn/ui-description: "维护个人资料、头像与联系方式。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:user-round"
+    rbac.authorization.pudans.tolim.cn/ui-group: "其他"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "设置"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:settings"
+    rbac.authorization.pudans.tolim.cn/ui-order: "100"
+    rbac.authorization.pudans.tolim.cn/ui-public: "true"
+rules: []
