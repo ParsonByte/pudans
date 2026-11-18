@@ -1674,6 +1674,19 @@
           },
           "traceFlowId": {
             "type": "string"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "requestMethod": {
+            "type": "string"
+          },
+          "requestPath": {
+            "type": "string"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -3322,6 +3335,9 @@
             "items": {
               "$ref": "#/components/schemas/AuditRecord"
             }
+          },
+          "archived": {
+            "type": "boolean"
           }
         }
       },
@@ -3491,6 +3507,42 @@
           },
           "traceFlowId": {
             "type": "string"
+          }
+        }
+      },
+      "AuditArchiveRequest": {
+        "properties": {
+          "before": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AuditArchiveResult": {
+        "properties": {
+          "archivedCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "before": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "AuditArchiveStats": {
+        "properties": {
+          "activeCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "archivedCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       }
@@ -10187,6 +10239,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "description": "Return trace flow summaries without records when true.",
+            "in": "query",
+            "name": "summary",
+            "schema": {
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -10308,6 +10368,158 @@
         },
         "tags": [
           "UserNavigationV1alpha1"
+        ]
+      },
+      "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/archive-stats": {
+      "get": {
+        "description": "Return active and archived audit record counts.",
+        "operationId": "GetAuditArchiveStats",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditArchiveStats"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuditLogV1alpha1"
+        ]
+      },
+      "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/archives": {
+      "get": {
+        "description": "Query archived audit records with page-based pagination.",
+        "operationId": "ListArchivedAuditLogs",
+        "parameters": [
+          {
+            "description": "Page number (default 1).",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Page size (1-100, default 10).",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Filter by user uid.",
+            "in": "query",
+            "name": "uid",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by operation.",
+            "in": "query",
+            "name": "operation",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by result.",
+            "in": "query",
+            "name": "result",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by trace id.",
+            "in": "query",
+            "name": "traceId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by trace flow id.",
+            "in": "query",
+            "name": "traceFlowId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive lower bound of the UTC timestamp (ISO-8601).",
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive upper bound of the UTC timestamp (ISO-8601).",
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditLogPage"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuditLogV1alpha1"
+        ]
+      },
+      "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/archive": {
+      "post": {
+        "description": "Move audit records older than the requested cutoff into the archive.",
+        "operationId": "ArchiveAuditLogs",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditArchiveRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditArchiveResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuditLogV1alpha1"
         ]
       },
       "parameters": []

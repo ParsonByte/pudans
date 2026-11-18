@@ -45,6 +45,9 @@ models/annotation-setting-spec.ts
 models/annotation-setting.ts
 models/apply-request.ts
 models/assign-group-request.ts
+models/audit-archive-request.ts
+models/audit-archive-result.ts
+models/audit-archive-stats.ts
 models/audit-edge.ts
 models/audit-graph.ts
 models/audit-journey-page.ts

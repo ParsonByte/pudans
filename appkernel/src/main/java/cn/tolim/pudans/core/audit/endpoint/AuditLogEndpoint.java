@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.audit.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
+import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
 import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
@@ -172,6 +173,11 @@ public class AuditLogEndpoint implements CustomEndpoint {
                                     .name("to")
                                     .description("Exclusive upper bound of the UTC timestamp (ISO-8601).")
                                     .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("summary")
+                                    .description("Return trace flow summaries without records when true.")
+                                    .implementation(Boolean.class))
                             .response(responseBuilder().implementation(AuditTracePage.class));
                 })
                 .GET("/auditlogs/journeys", this::journeys, builder -> {
@@ -212,6 +218,66 @@ public class AuditLogEndpoint implements CustomEndpoint {
                                     .implementation(Boolean.class))
                             .response(responseBuilder().implementation(AuditJourneyPage.class));
                 })
+                .GET("/auditlogs/archive-stats", this::archiveStats, builder -> builder.operationId("GetAuditArchiveStats")
+                        .description("Return active and archived audit record counts.")
+                        .tag(tag)
+                        .response(responseBuilder().implementation(AuditArchiveStats.class)))
+                .GET("/auditlogs/archives", this::archives, builder -> builder.operationId("ListArchivedAuditLogs")
+                        .description("Query archived audit records with page-based pagination.")
+                        .tag(tag)
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("page")
+                                .description("Page number (default 1).")
+                                .implementation(Integer.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("size")
+                                .description("Page size (1-100, default 10).")
+                                .implementation(Integer.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("uid")
+                                .description("Filter by user uid.")
+                                .implementation(String.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("operation")
+                                .description("Filter by operation.")
+                                .implementation(String.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("result")
+                                .description("Filter by result.")
+                                .implementation(String.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("traceId")
+                                .description("Filter by trace id.")
+                                .implementation(String.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("traceFlowId")
+                                .description("Filter by trace flow id.")
+                                .implementation(String.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("from")
+                                .description("Inclusive lower bound of the UTC timestamp (ISO-8601).")
+                                .implementation(String.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("to")
+                                .description("Exclusive upper bound of the UTC timestamp (ISO-8601).")
+                                .implementation(String.class))
+                        .response(responseBuilder().implementation(AuditLogPage.class)))
+                .POST("/auditlogs/archive", this::archive, builder -> builder.operationId("ArchiveAuditLogs")
+                        .description("Move audit records older than the requested cutoff into the archive.")
+                        .tag(tag)
+                        .requestBody(requestBodyBuilder()
+                                .required(true)
+                                .implementation(AuditArchiveRequest.class))
+                        .response(responseBuilder().implementation(AuditArchiveResult.class)))
                 .GET("/auditlogs/graph", this::graph, builder -> builder.operationId("GetDailyAuditGraph")
                         .description(
                                 "Daily user operation graph: nodes are audit steps and edges are parent/child "
@@ -296,13 +362,14 @@ public class AuditLogEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> traces(ServerRequest request) {
         var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
+        var summary = Boolean.parseBoolean(request.queryParam("summary").orElse("false"));
         var query = auditQuery(request, null, size, isAscending(request));
         return auditService
                 .traceFlows(query, page, size)
                 .flatMap(result -> Flux.fromIterable(result.traceFlowIds())
                         .concatMap(traceFlowId ->
                                 auditService.findByTraceFlowId(traceFlowId).collectList())
-                        .map(this::toTraceSummary)
+                        .map(records -> toTraceSummary(records, !summary))
                         .collectList()
                         .map(items -> new AuditTracePage(
                                 items, result.total(), page, size, result.truncated())))
@@ -580,6 +647,10 @@ public class AuditLogEndpoint implements CustomEndpoint {
     }
 
     private AuditTraceSummary toTraceSummary(List<AuditRecord> records) {
+        return toTraceSummary(records, true);
+    }
+
+    private AuditTraceSummary toTraceSummary(List<AuditRecord> records, boolean includeRecords) {
         var sorted = records.stream()
                 .sorted(Comparator.comparing(AuditLogEndpoint::traceStart)
                         .thenComparing(record -> record.getStepIndex() == null
@@ -623,6 +694,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .filter(StringUtils::hasText)
                 .findFirst()
                 .orElse(null);
+        var archived = sorted.stream().anyMatch(AuditRecord::isArchived);
         return new AuditTraceSummary(
                 traceFlowId,
                 traceIds,
@@ -630,10 +702,56 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 end,
                 Math.max(0, Duration.between(start, end).toMillis()),
                 status,
+                archived,
                 uid,
                 sorted.size(),
                 resourceTypes,
-                sorted);
+                includeRecords ? sorted : List.of());
+    }
+
+    private Mono<ServerResponse> archiveStats(ServerRequest request) {
+        return auditService
+                .archiveStats()
+                .map(stats -> new AuditArchiveStats(
+                        stats.activeCount(),
+                        stats.archivedCount(),
+                        stats.activeCount() + stats.archivedCount()))
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    private Mono<ServerResponse> archives(ServerRequest request) {
+        var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
+        var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
+        var query = auditQuery(request, null, size, false);
+        return auditService
+                .archivePage(query, page, size)
+                .map(result -> {
+                    var items = result.items();
+                    var hasMore = (long) page * size < result.total();
+                    var nextCursor = items.isEmpty()
+                            ? null
+                            : items.get(items.size() - 1).getMetadata().getName();
+                    return new AuditLogPage(
+                            items, nextCursor, hasMore, result.total(), page, size);
+                })
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    private Mono<ServerResponse> archive(ServerRequest request) {
+        return request.bodyToMono(AuditArchiveRequest.class)
+                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
+                .flatMap(body -> {
+                    if (body.before() == null) {
+                        return Mono.error(new ServerWebInputException("归档截止时间不能为空。"));
+                    }
+                    if (body.before().isAfter(Instant.now())) {
+                        return Mono.error(new ServerWebInputException("归档截止时间不能晚于当前时间。"));
+                    }
+                    return auditService
+                            .archiveBefore(body.before())
+                            .map(count -> new AuditArchiveResult(count, body.before()));
+                })
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> graph(ServerRequest request) {
@@ -684,11 +802,10 @@ public class AuditLogEndpoint implements CustomEndpoint {
                                 HttpStatus.NOT_FOUND, "追踪流 [" + traceFlowId + "] 不存在。"));
                     }
                     var steps = records.stream()
-                            .sorted(Comparator.comparing(
-                                            (AuditRecord record) -> record.getStepIndex() == null
-                                                    ? Integer.MAX_VALUE
-                                                    : record.getStepIndex())
-                                    .thenComparing(AuditRecord::getTimestamp)
+                            .sorted(Comparator.comparing(AuditLogEndpoint::traceStart)
+                                    .thenComparing(record -> record.getStepIndex() == null
+                                            ? Integer.MAX_VALUE
+                                            : record.getStepIndex())
                                     .thenComparing(record -> record.getMetadata().getName()))
                             .map(this::toReplayStep)
                             .toList();
@@ -779,12 +896,16 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 record.getMetadata().getName(),
                 record.getTraceFlowId(),
                 record.getParentAuditId(),
+                record.getUid(),
                 record.getStepIndex(),
                 record.getOperation(),
                 record.getResourceType(),
                 record.getResourceName(),
                 record.getResult(),
                 record.getTimestamp(),
+                record.getRequestMethod(),
+                record.getRequestPath(),
+                record.getDurationMs(),
                 record.getActionSnapshot(),
                 record.isArchived());
     }
@@ -811,6 +932,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
             Instant end,
             long durationMs,
             String status,
+            boolean archived,
             String uid,
             int spanCount,
             List<String> resourceTypes,
@@ -921,16 +1043,29 @@ public class AuditLogEndpoint implements CustomEndpoint {
             String auditId, String traceFlowId, List<TraceStep> steps, List<TraceStep> before, List<TraceStep> after) {}
 
 
+    public record AuditArchiveRequest(Instant before) {}
+
+
+    public record AuditArchiveResult(long archivedCount, Instant before) {}
+
+
+    public record AuditArchiveStats(long activeCount, long archivedCount, long totalCount) {}
+
+
     public record ReplayStep(
             String auditId,
             String traceFlowId,
             String parentAuditId,
+            String uid,
             Integer stepIndex,
             String operation,
             String resourceType,
             String resourceName,
             String result,
             Instant timestamp,
+            String requestMethod,
+            String requestPath,
+            Long durationMs,
             String actionSnapshot,
             boolean archived) {}
 
