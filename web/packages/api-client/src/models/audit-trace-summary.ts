@@ -28,4 +28,5 @@ export interface AuditTraceSummary {
     'spanCount'?: number;
     'resourceTypes'?: Array<string>;
     'records'?: Array<AuditRecord>;
+    'archived'?: boolean;
 }

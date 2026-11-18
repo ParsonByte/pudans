@@ -29,6 +29,8 @@ rules:
       - "auditlogs/graph"
       - "auditlogs/trace"
       - "auditlogs/replay"
+      - "auditlogs/archives"
+      - "auditlogs/archive-stats"
     verbs:
       - "get"
       - "list"

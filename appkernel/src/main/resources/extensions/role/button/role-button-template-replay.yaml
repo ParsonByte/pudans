@@ -1,0 +1,22 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-archive-audit-logs
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-replay" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.replay"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "archive"
+    rbac.authorization.pudans.tolim.cn/ui-label: "发起归档"
+    rbac.authorization.pudans.tolim.cn/ui-description: "将指定时间之前的审计记录移入归档。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["replay:archive"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "auditlogs/archive"
+    verbs:
+      - "create"

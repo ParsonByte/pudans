@@ -22,6 +22,12 @@ import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObj
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS, type RequestArgs, BaseAPI, RequiredError, operationServerMap } from '../base';
 // @ts-ignore
+import type { AuditArchiveRequest } from '../models';
+// @ts-ignore
+import type { AuditArchiveResult } from '../models';
+// @ts-ignore
+import type { AuditArchiveStats } from '../models';
+// @ts-ignore
 import type { AuditGraph } from '../models';
 // @ts-ignore
 import type { AuditJourneyPage } from '../models';
@@ -38,6 +44,85 @@ import type { AuditTracePage } from '../models';
  */
 export const AuditLogV1alpha1ApiAxiosParamCreator = function (configuration?: Configuration) {
     return {
+        /**
+         * Move audit records older than the requested cutoff into the archive.
+         * @param {AuditArchiveRequest} auditArchiveRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        archiveAuditLogs: async (auditArchiveRequest: AuditArchiveRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'auditArchiveRequest' is not null or undefined
+            assertParamExists('archiveAuditLogs', 'auditArchiveRequest', auditArchiveRequest)
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/archive`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(auditArchiveRequest, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Return active and archived audit record counts.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAuditArchiveStats: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/archive-stats`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
         /**
          * Return the complete trace flow containing the audit record: previous and following steps.
          * @param {string} auditId
@@ -117,6 +202,88 @@ export const AuditLogV1alpha1ApiAxiosParamCreator = function (configuration?: Co
 
             if (date !== undefined) {
                 localVarQueryParameter['date'] = date;
+            }
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Query archived audit records with page-based pagination.
+         * @param {number} [page] Page number (default 1).
+         * @param {number} [size] Page size (1-100, default 10).
+         * @param {string} [uid] Filter by user uid.
+         * @param {string} [operation] Filter by operation.
+         * @param {string} [result] Filter by result.
+         * @param {string} [traceId] Filter by trace id.
+         * @param {string} [traceFlowId] Filter by trace flow id.
+         * @param {string} [from] Inclusive lower bound of the UTC timestamp (ISO-8601).
+         * @param {string} [to] Exclusive upper bound of the UTC timestamp (ISO-8601).
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listArchivedAuditLogs: async (page?: number, size?: number, uid?: string, operation?: string, result?: string, traceId?: string, traceFlowId?: string, from?: string, to?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/archives`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (page !== undefined) {
+                localVarQueryParameter['page'] = page;
+            }
+
+            if (size !== undefined) {
+                localVarQueryParameter['size'] = size;
+            }
+
+            if (uid !== undefined) {
+                localVarQueryParameter['uid'] = uid;
+            }
+
+            if (operation !== undefined) {
+                localVarQueryParameter['operation'] = operation;
+            }
+
+            if (result !== undefined) {
+                localVarQueryParameter['result'] = result;
+            }
+
+            if (traceId !== undefined) {
+                localVarQueryParameter['traceId'] = traceId;
+            }
+
+            if (traceFlowId !== undefined) {
+                localVarQueryParameter['traceFlowId'] = traceFlowId;
+            }
+
+            if (from !== undefined) {
+                localVarQueryParameter['from'] = from;
+            }
+
+            if (to !== undefined) {
+                localVarQueryParameter['to'] = to;
             }
 
             localVarHeaderParameter['Accept'] = '*/*';
@@ -305,10 +472,11 @@ export const AuditLogV1alpha1ApiAxiosParamCreator = function (configuration?: Co
          * @param {string} [traceFlowId] Filter by business trace flow id.
          * @param {string} [from] Inclusive lower bound of the UTC timestamp (ISO-8601).
          * @param {string} [to] Exclusive upper bound of the UTC timestamp (ISO-8601).
+         * @param {boolean} [summary] Return trace flow summaries without records when true.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        listAuditTraceFlows: async (page?: number, size?: number, uid?: string, operation?: string, result?: string, traceId?: string, traceFlowId?: string, from?: string, to?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        listAuditTraceFlows: async (page?: number, size?: number, uid?: string, operation?: string, result?: string, traceId?: string, traceFlowId?: string, from?: string, to?: string, summary?: boolean, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/traces`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -363,6 +531,10 @@ export const AuditLogV1alpha1ApiAxiosParamCreator = function (configuration?: Co
 
             if (to !== undefined) {
                 localVarQueryParameter['to'] = to;
+            }
+
+            if (summary !== undefined) {
+                localVarQueryParameter['summary'] = summary;
             }
 
             localVarHeaderParameter['Accept'] = '*/*';
@@ -427,6 +599,29 @@ export const AuditLogV1alpha1ApiFp = function(configuration?: Configuration) {
     const localVarAxiosParamCreator = AuditLogV1alpha1ApiAxiosParamCreator(configuration)
     return {
         /**
+         * Move audit records older than the requested cutoff into the archive.
+         * @param {AuditArchiveRequest} auditArchiveRequest
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async archiveAuditLogs(auditArchiveRequest: AuditArchiveRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuditArchiveResult>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.archiveAuditLogs(auditArchiveRequest, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.archiveAuditLogs']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Return active and archived audit record counts.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getAuditArchiveStats(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuditArchiveStats>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAuditArchiveStats(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.getAuditArchiveStats']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * Return the complete trace flow containing the audit record: previous and following steps.
          * @param {string} auditId
          * @param {*} [options] Override http request option.
@@ -449,6 +644,26 @@ export const AuditLogV1alpha1ApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getDailyAuditGraph(uid, date, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.getDailyAuditGraph']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Query archived audit records with page-based pagination.
+         * @param {number} [page] Page number (default 1).
+         * @param {number} [size] Page size (1-100, default 10).
+         * @param {string} [uid] Filter by user uid.
+         * @param {string} [operation] Filter by operation.
+         * @param {string} [result] Filter by result.
+         * @param {string} [traceId] Filter by trace id.
+         * @param {string} [traceFlowId] Filter by trace flow id.
+         * @param {string} [from] Inclusive lower bound of the UTC timestamp (ISO-8601).
+         * @param {string} [to] Exclusive upper bound of the UTC timestamp (ISO-8601).
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async listArchivedAuditLogs(page?: number, size?: number, uid?: string, operation?: string, result?: string, traceId?: string, traceFlowId?: string, from?: string, to?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuditLogPage>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.listArchivedAuditLogs(page, size, uid, operation, result, traceId, traceFlowId, from, to, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.listArchivedAuditLogs']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -502,11 +717,12 @@ export const AuditLogV1alpha1ApiFp = function(configuration?: Configuration) {
          * @param {string} [traceFlowId] Filter by business trace flow id.
          * @param {string} [from] Inclusive lower bound of the UTC timestamp (ISO-8601).
          * @param {string} [to] Exclusive upper bound of the UTC timestamp (ISO-8601).
+         * @param {boolean} [summary] Return trace flow summaries without records when true.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async listAuditTraceFlows(page?: number, size?: number, uid?: string, operation?: string, result?: string, traceId?: string, traceFlowId?: string, from?: string, to?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuditTracePage>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.listAuditTraceFlows(page, size, uid, operation, result, traceId, traceFlowId, from, to, options);
+        async listAuditTraceFlows(page?: number, size?: number, uid?: string, operation?: string, result?: string, traceId?: string, traceFlowId?: string, from?: string, to?: string, summary?: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuditTracePage>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.listAuditTraceFlows(page, size, uid, operation, result, traceId, traceFlowId, from, to, summary, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.listAuditTraceFlows']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -533,6 +749,23 @@ export const AuditLogV1alpha1ApiFactory = function (configuration?: Configuratio
     const localVarFp = AuditLogV1alpha1ApiFp(configuration)
     return {
         /**
+         * Move audit records older than the requested cutoff into the archive.
+         * @param {AuditLogV1alpha1ApiArchiveAuditLogsRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        archiveAuditLogs(requestParameters: AuditLogV1alpha1ApiArchiveAuditLogsRequest, options?: RawAxiosRequestConfig): AxiosPromise<AuditArchiveResult> {
+            return localVarFp.archiveAuditLogs(requestParameters.auditArchiveRequest, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Return active and archived audit record counts.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAuditArchiveStats(options?: RawAxiosRequestConfig): AxiosPromise<AuditArchiveStats> {
+            return localVarFp.getAuditArchiveStats(options).then((request) => request(axios, basePath));
+        },
+        /**
          * Return the complete trace flow containing the audit record: previous and following steps.
          * @param {AuditLogV1alpha1ApiGetAuditTraceRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -549,6 +782,15 @@ export const AuditLogV1alpha1ApiFactory = function (configuration?: Configuratio
          */
         getDailyAuditGraph(requestParameters: AuditLogV1alpha1ApiGetDailyAuditGraphRequest, options?: RawAxiosRequestConfig): AxiosPromise<AuditGraph> {
             return localVarFp.getDailyAuditGraph(requestParameters.uid, requestParameters.date, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Query archived audit records with page-based pagination.
+         * @param {AuditLogV1alpha1ApiListArchivedAuditLogsRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listArchivedAuditLogs(requestParameters: AuditLogV1alpha1ApiListArchivedAuditLogsRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<AuditLogPage> {
+            return localVarFp.listArchivedAuditLogs(requestParameters.page, requestParameters.size, requestParameters.uid, requestParameters.operation, requestParameters.result, requestParameters.traceId, requestParameters.traceFlowId, requestParameters.from, requestParameters.to, options).then((request) => request(axios, basePath));
         },
         /**
          * Return one closed user journey per user. A journey links the pages a user visited with the operations performed on each page.
@@ -575,7 +817,7 @@ export const AuditLogV1alpha1ApiFactory = function (configuration?: Configuratio
          * @throws {RequiredError}
          */
         listAuditTraceFlows(requestParameters: AuditLogV1alpha1ApiListAuditTraceFlowsRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<AuditTracePage> {
-            return localVarFp.listAuditTraceFlows(requestParameters.page, requestParameters.size, requestParameters.uid, requestParameters.operation, requestParameters.result, requestParameters.traceId, requestParameters.traceFlowId, requestParameters.from, requestParameters.to, options).then((request) => request(axios, basePath));
+            return localVarFp.listAuditTraceFlows(requestParameters.page, requestParameters.size, requestParameters.uid, requestParameters.operation, requestParameters.result, requestParameters.traceId, requestParameters.traceFlowId, requestParameters.from, requestParameters.to, requestParameters.summary, options).then((request) => request(axios, basePath));
         },
         /**
          * Virtual read-only replay of stored actionSnapshot values for a trace flow.
@@ -588,6 +830,13 @@ export const AuditLogV1alpha1ApiFactory = function (configuration?: Configuratio
         },
     };
 };
+
+/**
+ * Request parameters for archiveAuditLogs operation in AuditLogV1alpha1Api.
+ */
+export interface AuditLogV1alpha1ApiArchiveAuditLogsRequest {
+    readonly auditArchiveRequest: AuditArchiveRequest
+}
 
 /**
  * Request parameters for getAuditTrace operation in AuditLogV1alpha1Api.
@@ -609,6 +858,56 @@ export interface AuditLogV1alpha1ApiGetDailyAuditGraphRequest {
      * UTC date in ISO-8601 format, e.g. 2026-11-14 (required).
      */
     readonly date: string
+}
+
+/**
+ * Request parameters for listArchivedAuditLogs operation in AuditLogV1alpha1Api.
+ */
+export interface AuditLogV1alpha1ApiListArchivedAuditLogsRequest {
+    /**
+     * Page number (default 1).
+     */
+    readonly page?: number
+
+    /**
+     * Page size (1-100, default 10).
+     */
+    readonly size?: number
+
+    /**
+     * Filter by user uid.
+     */
+    readonly uid?: string
+
+    /**
+     * Filter by operation.
+     */
+    readonly operation?: string
+
+    /**
+     * Filter by result.
+     */
+    readonly result?: string
+
+    /**
+     * Filter by trace id.
+     */
+    readonly traceId?: string
+
+    /**
+     * Filter by trace flow id.
+     */
+    readonly traceFlowId?: string
+
+    /**
+     * Inclusive lower bound of the UTC timestamp (ISO-8601).
+     */
+    readonly from?: string
+
+    /**
+     * Exclusive upper bound of the UTC timestamp (ISO-8601).
+     */
+    readonly to?: string
 }
 
 /**
@@ -759,6 +1058,11 @@ export interface AuditLogV1alpha1ApiListAuditTraceFlowsRequest {
      * Exclusive upper bound of the UTC timestamp (ISO-8601).
      */
     readonly to?: string
+
+    /**
+     * Return trace flow summaries without records when true.
+     */
+    readonly summary?: boolean
 }
 
 /**
@@ -772,6 +1076,25 @@ export interface AuditLogV1alpha1ApiReplayAuditFlowRequest {
  * AuditLogV1alpha1Api - object-oriented interface
  */
 export class AuditLogV1alpha1Api extends BaseAPI {
+    /**
+     * Move audit records older than the requested cutoff into the archive.
+     * @param {AuditLogV1alpha1ApiArchiveAuditLogsRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public archiveAuditLogs(requestParameters: AuditLogV1alpha1ApiArchiveAuditLogsRequest, options?: RawAxiosRequestConfig) {
+        return AuditLogV1alpha1ApiFp(this.configuration).archiveAuditLogs(requestParameters.auditArchiveRequest, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Return active and archived audit record counts.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getAuditArchiveStats(options?: RawAxiosRequestConfig) {
+        return AuditLogV1alpha1ApiFp(this.configuration).getAuditArchiveStats(options).then((request) => request(this.axios, this.basePath));
+    }
+
     /**
      * Return the complete trace flow containing the audit record: previous and following steps.
      * @param {AuditLogV1alpha1ApiGetAuditTraceRequest} requestParameters Request parameters.
@@ -790,6 +1113,16 @@ export class AuditLogV1alpha1Api extends BaseAPI {
      */
     public getDailyAuditGraph(requestParameters: AuditLogV1alpha1ApiGetDailyAuditGraphRequest, options?: RawAxiosRequestConfig) {
         return AuditLogV1alpha1ApiFp(this.configuration).getDailyAuditGraph(requestParameters.uid, requestParameters.date, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Query archived audit records with page-based pagination.
+     * @param {AuditLogV1alpha1ApiListArchivedAuditLogsRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public listArchivedAuditLogs(requestParameters: AuditLogV1alpha1ApiListArchivedAuditLogsRequest = {}, options?: RawAxiosRequestConfig) {
+        return AuditLogV1alpha1ApiFp(this.configuration).listArchivedAuditLogs(requestParameters.page, requestParameters.size, requestParameters.uid, requestParameters.operation, requestParameters.result, requestParameters.traceId, requestParameters.traceFlowId, requestParameters.from, requestParameters.to, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -819,7 +1152,7 @@ export class AuditLogV1alpha1Api extends BaseAPI {
      * @throws {RequiredError}
      */
     public listAuditTraceFlows(requestParameters: AuditLogV1alpha1ApiListAuditTraceFlowsRequest = {}, options?: RawAxiosRequestConfig) {
-        return AuditLogV1alpha1ApiFp(this.configuration).listAuditTraceFlows(requestParameters.page, requestParameters.size, requestParameters.uid, requestParameters.operation, requestParameters.result, requestParameters.traceId, requestParameters.traceFlowId, requestParameters.from, requestParameters.to, options).then((request) => request(this.axios, this.basePath));
+        return AuditLogV1alpha1ApiFp(this.configuration).listAuditTraceFlows(requestParameters.page, requestParameters.size, requestParameters.uid, requestParameters.operation, requestParameters.result, requestParameters.traceId, requestParameters.traceFlowId, requestParameters.from, requestParameters.to, requestParameters.summary, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

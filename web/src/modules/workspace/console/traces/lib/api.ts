@@ -28,6 +28,7 @@ export type TraceFlowFilters = {
   traceFlowId?: string;
   page: number;
   size: number;
+  summary?: boolean;
 };
 
 export async function fetchTraceFlowsPage(filters: TraceFlowFilters): Promise<AuditTracePage> {

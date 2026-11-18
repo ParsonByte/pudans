@@ -158,6 +158,41 @@ class AuditStoreTest {
         assertThat(count).isEqualTo(3L);
     }
 
+
+    @Test
+    void archiveStatsReturnsActiveAndArchivedCounts() {
+        givenStores(
+                Flux.just(entity("0001"), entity("0002"), entity("0003")),
+                Flux.just(
+                        archiveEntity("0004"),
+                        archiveEntity("0005"),
+                        archiveEntity("0006"),
+                        archiveEntity("0007"),
+                        archiveEntity("0008")));
+
+        var stats = store.archiveStats().block();
+
+        assertThat(stats).isNotNull();
+        assertThat(stats.activeCount()).isEqualTo(3L);
+        assertThat(stats.archivedCount()).isEqualTo(5L);
+    }
+
+    @Test
+    void archivePageReadsArchivedRecordsAndReturnsTotal() {
+        doReturn(Flux.just(archiveEntity("0002"), archiveEntity("0001")))
+                .when(entityOperations)
+                .select(any(Query.class), eq(AuditArchiveEntity.class));
+        var query = new AuditStore.AuditQuery(null, null, null, null, null, null, null, null, 10, false);
+
+        var result = store.archivePage(query, 1, 10).block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.total()).isEqualTo(2L);
+        assertThat(result.items())
+                .extracting(record -> record.getMetadata().getName())
+                .containsExactly("0002", "0001");
+    }
+
     @Test
     void appendSkipsAnAuditRecordWhoseFingerprintAlreadyExists() {
         when(activeRepository.existsByFingerprint(anyString())).thenReturn(Mono.just(true));
