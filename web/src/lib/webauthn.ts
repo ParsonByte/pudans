@@ -6,6 +6,17 @@ type AssertionOptions = {
   userVerification?: UserVerificationRequirement;
 };
 
+type RegistrationOptions = {
+  challenge: string;
+  rp: { id?: string; name: string };
+  user: { id: string; name: string; displayName: string };
+  pubKeyCredParams?: Array<{ type?: string; alg: number }>;
+  timeout?: number;
+  attestation?: AttestationConveyancePreference;
+  authenticatorSelection?: AuthenticatorSelectionCriteria;
+  excludeCredentials?: Array<{ type?: string; id: string }>;
+};
+
 function base64UrlToBuffer(value: string): ArrayBuffer {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
@@ -76,6 +87,62 @@ export function serializeAssertion(credential: PublicKeyCredential): string {
     rawId: bufferToBase64Url(credential.rawId),
     type: credential.type,
     response: responseJson,
+    clientExtensionResults: credential.getClientExtensionResults(),
+  });
+}
+
+export async function createPasskey(
+  options: Record<string, unknown>,
+): Promise<PublicKeyCredential> {
+  const publicKey = options as RegistrationOptions;
+
+  if (!publicKey.challenge) {
+    throw new Error("Missing passkey challenge.");
+  }
+
+  const credential = await navigator.credentials.create({
+    publicKey: {
+      challenge: base64UrlToBuffer(publicKey.challenge),
+      rp: publicKey.rp,
+      user: {
+        name: publicKey.user.name,
+        displayName: publicKey.user.displayName,
+        id: base64UrlToBuffer(publicKey.user.id),
+      },
+      pubKeyCredParams:
+        publicKey.pubKeyCredParams?.map((param) => ({
+          type: "public-key" as const,
+          alg: param.alg,
+        })) ?? [],
+      timeout: publicKey.timeout,
+      attestation: publicKey.attestation,
+      authenticatorSelection: publicKey.authenticatorSelection,
+      excludeCredentials: publicKey.excludeCredentials?.map((descriptor) => ({
+        type: "public-key" as const,
+        id: base64UrlToBuffer(descriptor.id),
+      })),
+    },
+  });
+
+  if (!(credential instanceof PublicKeyCredential)) {
+    throw new Error("No passkey credential returned.");
+  }
+
+  return credential;
+}
+
+export function serializeRegistration(credential: PublicKeyCredential): string {
+  const response = credential.response as AuthenticatorAttestationResponse;
+  return JSON.stringify({
+    id: credential.id,
+    rawId: bufferToBase64Url(credential.rawId),
+    type: credential.type,
+    response: {
+      clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+      attestationObject: bufferToBase64Url(response.attestationObject),
+      transports:
+        typeof response.getTransports === "function" ? response.getTransports() : undefined,
+    },
     clientExtensionResults: credential.getClientExtensionResults(),
   });
 }

@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useEffect, useState } from "react";
 
 import { apiClient, axiosInstance } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
@@ -19,14 +19,15 @@ import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { getPasskeyAssertion, serializeAssertion } from "@/lib/webauthn";
 import { resolvePostLoginRedirect } from "@/modules/auth/lib/post-login-redirect";
 import { getLoginSession } from "@/modules/auth/lib/session";
 
 import { encryptLoginPassword } from "../lib/login-crypto";
-import { getPasskeyAssertion, serializeAssertion } from "../lib/webauthn";
 
 type LoginFormProps = {
   redirectTo?: string;
+  errorMessage?: string;
 };
 
 function loginErrorMessage(error: unknown): string {
@@ -50,11 +51,17 @@ function loginErrorMessage(error: unknown): string {
   return "登录失败，请稍后重试。";
 }
 
-export function LoginForm({ redirectTo }: LoginFormProps) {
+export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
+
+  useEffect(() => {
+    if (errorMessage) {
+      toast.error(errorMessage, { id: "login-error" });
+    }
+  }, [errorMessage]);
 
   const providersQuery = useQuery({
     queryKey: ["login-providers"],
