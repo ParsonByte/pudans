@@ -36,12 +36,13 @@ public class RememberMeConfigurer implements SecurityConfigurer {
         filter.setAuthenticationFailureHandler((exchange, exception) ->
                 rememberMeServices
                         .loginFail(exchange.getExchange())
-                        .then(ProblemDetailResponses.write(
+                        .then(ProblemDetailResponses.writeOrRedirect(
                                 exchange.getExchange(),
                                 context,
                                 HttpStatus.UNAUTHORIZED,
                                 "remember-me-failed",
-                                "记住我登录失败。")));
+                                "记住我登录失败，请重新登录。",
+                                ProblemDetailResponses.SIGN_IN_PATH)));
         filter.setServerAuthenticationConverter(rememberMeServices::autoLogin);
         filter.setRequiresAuthenticationMatcher(exchange -> ReactiveSecurityContextHolder.getContext()
                 .flatMap(securityContext -> MatchResult.notMatch())

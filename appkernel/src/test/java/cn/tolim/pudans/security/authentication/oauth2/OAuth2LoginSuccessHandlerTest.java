@@ -23,6 +23,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -100,6 +103,25 @@ class OAuth2LoginSuccessHandlerTest {
         verify(authenticationSession)
                 .establishAndGetAuthentication(any(), eq(USERNAME), any(), captor.capture());
         return Boolean.TRUE.equals(captor.getValue());
+    }
+
+    @Test
+    void unboundConnectionRedirectsBrowserNavigationToSignIn() {
+        when(connectionService.updateUserConnectionIfPresent(eq(REGISTRATION_ID), any()))
+                .thenReturn(Mono.empty());
+        var pageExchange = MockServerWebExchange.from(MockServerHttpRequest.get("/login/oauth2/code/feishu")
+                .header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML_VALUE)
+                .build());
+
+        StepVerifier.create(handler.onAuthenticationSuccess(
+                        new WebFilterExchange(pageExchange, request -> Mono.empty()), oauth2Token()))
+                .verifyComplete();
+
+        assertThat(pageExchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.FOUND);
+        var location = pageExchange.getResponse().getHeaders().getLocation();
+        assertThat(location).isNotNull();
+        assertThat(location.getPath()).isEqualTo("/sign-in");
+        assertThat(location.getQuery()).contains("code=oauth2-connection-required");
     }
 
     @Test
