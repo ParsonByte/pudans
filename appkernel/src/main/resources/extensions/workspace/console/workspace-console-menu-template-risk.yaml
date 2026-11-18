@@ -12,7 +12,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.risk"
     rbac.authorization.pudans.tolim.cn/ui-component: "risk"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
-    rbac.authorization.pudans.tolim.cn/ui-path: "/console/risk"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/risk"
     rbac.authorization.pudans.tolim.cn/ui-label: "风险"
     rbac.authorization.pudans.tolim.cn/ui-description: "管理风险规则和风险策略。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-alert"

@@ -12,7 +12,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.settings"
     rbac.authorization.pudans.tolim.cn/ui-component: "settings"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
-    rbac.authorization.pudans.tolim.cn/ui-path: "/console/settings"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/settings"
     rbac.authorization.pudans.tolim.cn/ui-label: "参数配置"
     rbac.authorization.pudans.tolim.cn/ui-description: "管理会话、认证、邮件、站点和审计参数。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:settings-2"

@@ -10,7 +10,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.dashboard"
     rbac.authorization.pudans.tolim.cn/ui-component: "dashboard"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
-    rbac.authorization.pudans.tolim.cn/ui-path: "/console"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/dashboard"
     rbac.authorization.pudans.tolim.cn/ui-label: "面板首页"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看控制台概览、登录趋势和最近操作。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:layout-dashboard"

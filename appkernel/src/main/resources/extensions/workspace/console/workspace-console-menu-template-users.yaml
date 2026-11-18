@@ -12,7 +12,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
     rbac.authorization.pudans.tolim.cn/ui-component: "users"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
-    rbac.authorization.pudans.tolim.cn/ui-path: "/console/users"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/users"
     rbac.authorization.pudans.tolim.cn/ui-label: "用户"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看、创建、导入和管理用户。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:users"

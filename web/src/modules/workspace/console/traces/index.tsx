@@ -325,8 +325,7 @@ export function TracesView() {
                           return;
                         }
                         void navigate({
-                          to: "/$",
-                          params: { _splat: detailPath },
+                          to: detailPath,
                           search: journeySearch,
                         });
                       }}
@@ -388,8 +387,7 @@ export function TracesView() {
                         {detailPath ? (
                           <Button variant="ghost" size="sm" asChild>
                             <Link
-                              to="/$"
-                              params={{ _splat: detailPath }}
+                              to={detailPath}
                               search={journeySearch}
                               onClick={(event) => event.stopPropagation()}
                             >

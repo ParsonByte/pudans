@@ -12,7 +12,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.roles"
     rbac.authorization.pudans.tolim.cn/ui-component: "roles"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
-    rbac.authorization.pudans.tolim.cn/ui-path: "/console/roles"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/roles"
     rbac.authorization.pudans.tolim.cn/ui-label: "角色"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看、创建和维护角色及其权限。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-check"
