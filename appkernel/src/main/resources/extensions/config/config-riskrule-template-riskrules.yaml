@@ -1,0 +1,159 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: RiskRule
+metadata:
+  name: request-flood
+  labels:
+    pudans.tolim.cn/do-not-overwrite: "true"
+    pudans.tolim.cn/builtin: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "请求洪泛"
+    rbac.authorization.pudans.tolim.cn/description: "同一 IP 在时间窗口内请求次数超过阈值时触发。"
+spec:
+  scene: request-flood
+  description: "同一 IP 在时间窗口内请求次数超过阈值时触发。"
+  enabled: true
+  windowSeconds: 60
+  threshold: 300
+  blockSeconds: 60
+  metric: "IP"
+  action: "BLOCK"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: RiskRule
+metadata:
+  name: login-attempt
+  labels:
+    pudans.tolim.cn/do-not-overwrite: "true"
+    pudans.tolim.cn/builtin: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "登录尝试频率"
+    rbac.authorization.pudans.tolim.cn/description: "同一 IP 在时间窗口内登录尝试次数超过阈值时触发。"
+spec:
+  scene: login-attempt
+  description: "同一 IP 在时间窗口内登录尝试次数超过阈值时触发。"
+  enabled: true
+  windowSeconds: 60
+  threshold: 5
+  blockSeconds: 60
+  metric: "IP"
+  action: "BLOCK"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: RiskRule
+metadata:
+  name: login-failure
+  labels:
+    pudans.tolim.cn/do-not-overwrite: "true"
+    pudans.tolim.cn/builtin: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "连续登录失败"
+    rbac.authorization.pudans.tolim.cn/description: "同一 IP 在时间窗口内连续登录失败次数超过阈值时触发。"
+spec:
+  scene: login-failure
+  description: "同一 IP 在时间窗口内连续登录失败次数超过阈值时触发。"
+  enabled: true
+  windowSeconds: 60
+  threshold: 5
+  blockSeconds: 300
+  metric: "IP"
+  action: "BLOCK"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: RiskRule
+metadata:
+  name: totp-attempt
+  labels:
+    pudans.tolim.cn/do-not-overwrite: "true"
+    pudans.tolim.cn/builtin: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "TOTP 验证频率"
+    rbac.authorization.pudans.tolim.cn/description: "同一会话在时间窗口内 TOTP 验证次数超过阈值时触发。"
+spec:
+  scene: totp-attempt
+  description: "同一会话在时间窗口内 TOTP 验证次数超过阈值时触发。"
+  enabled: true
+  windowSeconds: 300
+  threshold: 5
+  blockSeconds: 300
+  metric: "IP"
+  action: "BLOCK"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: RiskRule
+metadata:
+  name: auth-failure
+  labels:
+    pudans.tolim.cn/do-not-overwrite: "true"
+    pudans.tolim.cn/builtin: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "认证失败"
+    rbac.authorization.pudans.tolim.cn/description: "同一 IP 在时间窗口内认证失败次数超过阈值时仅记录告警。"
+spec:
+  scene: auth-failure
+  description: "同一 IP 在时间窗口内认证失败次数超过阈值时仅记录告警。"
+  enabled: true
+  windowSeconds: 300
+  threshold: 20
+  blockSeconds: 0
+  metric: "IP"
+  action: "ALERT"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: RiskRule
+metadata:
+  name: server-error
+  labels:
+    pudans.tolim.cn/do-not-overwrite: "true"
+    pudans.tolim.cn/builtin: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "服务端错误"
+    rbac.authorization.pudans.tolim.cn/description: "同一 IP 在时间窗口内触发服务端错误次数超过阈值时仅记录告警。"
+spec:
+  scene: server-error
+  description: "同一 IP 在时间窗口内触发服务端错误次数超过阈值时仅记录告警。"
+  enabled: true
+  windowSeconds: 300
+  threshold: 10
+  blockSeconds: 0
+  metric: "IP"
+  action: "ALERT"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: RiskRule
+metadata:
+  name: sudo-send
+  labels:
+    pudans.tolim.cn/do-not-overwrite: "true"
+    pudans.tolim.cn/builtin: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "发送 sudo 验证码"
+    rbac.authorization.pudans.tolim.cn/description: "同一用户在时间窗口内发送 sudo 验证码次数超过阈值时触发。"
+spec:
+  scene: sudo-send
+  description: "同一用户在时间窗口内发送 sudo 验证码次数超过阈值时触发。"
+  enabled: true
+  windowSeconds: 300
+  threshold: 5
+  blockSeconds: 300
+  metric: "IP"
+  action: "BLOCK"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: RiskRule
+metadata:
+  name: sudo-confirm
+  labels:
+    pudans.tolim.cn/do-not-overwrite: "true"
+    pudans.tolim.cn/builtin: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "sudo 验证确认"
+    rbac.authorization.pudans.tolim.cn/description: "同一用户在时间窗口内确认 sudo 验证次数超过阈值时触发。"
+spec:
+  scene: sudo-confirm
+  description: "同一用户在时间窗口内确认 sudo 验证次数超过阈值时触发。"
+  enabled: true
+  windowSeconds: 300
+  threshold: 5
+  blockSeconds: 300
+  metric: "IP"
+  action: "BLOCK"

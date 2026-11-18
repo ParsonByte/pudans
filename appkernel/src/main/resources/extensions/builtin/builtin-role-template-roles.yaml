@@ -40,6 +40,8 @@ metadata:
         "role-template-manage-riskrules",
         "role-template-audit-logs",
         "role-template-view-traces",
+        "role-template-export-traces",
+        "role-template-archive-audit-logs",
         "role-template-view-replay",
         "role-template-manage-webhooks",
         "role-template-manage-actuator",

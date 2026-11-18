@@ -104,6 +104,8 @@ class PermissionCatalogServiceTest {
                                 Role.UI_LABEL_ANNO, "用户",
                                 Role.UI_COMPONENT_ANNO, "users",
                                 Role.UI_GROUP_ANNO, "控制",
+                                Role.UI_PARENT_ANNO, "身份控制",
+                                Role.UI_PARENT_ICON_ANNO, "lucide:user-cog",
                                 Role.UI_ORDER_ANNO, "20",
                                 Role.UI_PERMISSIONS_ANNO, "[\"users:view\"]")),
                 template(
@@ -142,6 +144,8 @@ class PermissionCatalogServiceTest {
                     assertThat(users.key()).isEqualTo("console.users");
                     assertThat(users.path()).isEqualTo("/console/users");
                     assertThat(users.component()).isEqualTo("users");
+                    assertThat(users.parent()).isEqualTo("身份控制");
+                    assertThat(users.parentIcon()).isEqualTo("lucide:user-cog");
                     assertThat(users.view().permission()).isEqualTo("users:view");
                     assertThat(users.manage().permission()).isEqualTo("users:manage");
                     assertThat(users.operations()).hasSize(1);
@@ -184,6 +188,9 @@ class PermissionCatalogServiceTest {
                     assertThat(consoleWorkspace.menus()).extracting(PermissionCatalogService.NavigationMenu::key)
                             .containsExactly("console.users");
                     assertThat(consoleWorkspace.menus().getFirst().component()).isEqualTo("users");
+                    assertThat(consoleWorkspace.menus().getFirst().parent()).isEqualTo("身份控制");
+                    assertThat(consoleWorkspace.menus().getFirst().parentIcon())
+                            .isEqualTo("lucide:user-cog");
                     assertThat(consoleWorkspace.menus().getFirst().operations())
                             .extracting(PermissionCatalogService.NavigationOperation::key)
                             .containsExactly("create");

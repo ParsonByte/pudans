@@ -39,6 +39,9 @@ public class Role extends AbstractExtension {
     public static final String UI_LABEL_ANNO = "rbac.authorization.pudans.tolim.cn/ui-label";
     public static final String UI_DESCRIPTION_ANNO = "rbac.authorization.pudans.tolim.cn/ui-description";
     public static final String UI_ICON_ANNO = "rbac.authorization.pudans.tolim.cn/ui-icon";
+    public static final String UI_PARENT_ANNO = "rbac.authorization.pudans.tolim.cn/ui-parent";
+    public static final String UI_PARENT_ICON_ANNO =
+            "rbac.authorization.pudans.tolim.cn/ui-parent-icon";
     public static final String UI_GROUP_ANNO = "rbac.authorization.pudans.tolim.cn/ui-group";
     public static final String UI_ORDER_ANNO = "rbac.authorization.pudans.tolim.cn/ui-order";
     public static final String UI_PUBLIC_ANNO = "rbac.authorization.pudans.tolim.cn/ui-public";

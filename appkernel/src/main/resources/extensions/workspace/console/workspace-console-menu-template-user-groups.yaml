@@ -16,6 +16,8 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-label: "用户组"
     rbac.authorization.pudans.tolim.cn/ui-description: "维护用户组及其绑定的角色。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:users-round"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
     rbac.authorization.pudans.tolim.cn/ui-group: "控制"
     rbac.authorization.pudans.tolim.cn/ui-order: "30"
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["user-groups:view"]'

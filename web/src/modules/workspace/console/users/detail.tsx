@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { useState } from "react";
 
 import { apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,10 +20,10 @@ import { toast } from "sonner";
 import { IconFeishu } from "@/assets/custom/icon-feishu";
 import { ActivityBarChart } from "@/components/activity-bar-chart";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { InfoRow } from "@/components/info-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import {
   ConsoleEmpty,
   ConsolePage,
@@ -488,19 +488,4 @@ function ConnectionIcon({ registrationId, logo }: { registrationId?: string; log
     return <Fingerprint className="size-5" />;
   }
   return <Link2 className="size-5" />;
-}
-
-type InfoRowProps = {
-  label: string;
-  value: ReactNode;
-  className?: string;
-};
-
-function InfoRow({ label, value, className }: InfoRowProps) {
-  return (
-    <div className={cn("space-y-1", className)}>
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <div className="text-sm">{value}</div>
-    </div>
-  );
 }

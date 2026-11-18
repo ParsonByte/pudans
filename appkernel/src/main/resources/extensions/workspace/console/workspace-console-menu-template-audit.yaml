@@ -24,9 +24,13 @@ rules:
       - "api.pudans.tolim.cn"
     resources:
       - "auditlogs"
+      - "auditlogs/traces"
+      - "auditlogs/journeys"
       - "auditlogs/graph"
       - "auditlogs/trace"
       - "auditlogs/replay"
+      - "auditlogs/archives"
+      - "auditlogs/archive-stats"
     verbs:
       - "get"
       - "list"

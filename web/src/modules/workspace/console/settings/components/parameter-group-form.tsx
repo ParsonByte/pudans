@@ -2,14 +2,14 @@ import { type ReactNode, useMemo } from "react";
 import { type FieldErrors, type Resolver, useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { apiClient } from "@pudans-dev/api-client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save, Undo2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { FloatingActionBar } from "@/components/floating-action-bar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useUserGroups } from "@/modules/workspace/lib/user-groups";
 
 import { resolveParameterSettingError, updateParameterGroup } from "../lib/parameter-api";
 import {
@@ -40,13 +40,8 @@ export function ParameterGroupForm({
     defaultValues: initialValues,
   });
 
-  const userGroupsQuery = useQuery({
-    queryKey: ["user-groups", "parameter-options"],
-    queryFn: async () =>
-      (await apiClient.userGroup.listUserGroup({ page: 1, size: 200 })).data.items,
+  const userGroupsQuery = useUserGroups({
     enabled: group.fields.some((field) => field.kind === "user-group"),
-    retry: false,
-    staleTime: 5 * 60 * 1000,
   });
   const userGroupOptions = (userGroupsQuery.data ?? []).map((userGroup) => ({
     value: userGroup.metadata.name,
