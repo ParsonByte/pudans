@@ -1,10 +1,7 @@
 import type { ComponentProps, ReactNode } from "react";
 
-import { ConfigDrawer } from "@/components/config-drawer";
-import { Header } from "@/components/layout/header";
 import { Main } from "@/components/layout/main";
-import { Search } from "@/components/search";
-import { ThemeSwitch } from "@/components/theme-switch";
+import { PageHeader } from "@/components/layout/page-header";
 import { cn } from "@/lib/utils";
 
 type ConsolePageProps = {
@@ -15,16 +12,7 @@ type ConsolePageProps = {
 export function ConsolePage({ title, children }: ConsolePageProps) {
   return (
     <>
-      <Header fixed>
-        <div className="min-w-0">
-          <h1 className="truncate text-lg font-semibold tracking-tight sm:text-xl">{title}</h1>
-        </div>
-        <div className="ms-auto flex items-center gap-2">
-          <Search />
-          <ThemeSwitch />
-          <ConfigDrawer />
-        </div>
-      </Header>
+      <PageHeader title={title} />
       <Main className="flex flex-1 flex-col gap-6">{children}</Main>
     </>
   );

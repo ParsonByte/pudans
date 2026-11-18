@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useLayout } from "@/context/layout-provider";
 
+import { ChatLayout } from "./chat/chat-layout";
 import { NavGroup } from "./nav-group";
 import { NavUser } from "./nav-user";
 import type { SidebarData } from "./types";
@@ -32,7 +33,11 @@ export function AppSidebar({
           <WorkspaceSwitcher workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} />
         </SidebarHeader>
       ) : null}
-      {navGroups && navGroups.length > 0 ? (
+      {activeWorkspaceId === "default" ? (
+        <SidebarContent>
+          <ChatLayout />
+        </SidebarContent>
+      ) : navGroups && navGroups.length > 0 ? (
         <SidebarContent>
           {navGroups.map((group) => (
             <NavGroup key={group.title} {...group} />
