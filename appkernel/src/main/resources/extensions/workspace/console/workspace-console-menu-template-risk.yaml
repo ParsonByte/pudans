@@ -27,6 +27,13 @@ rules:
     verbs:
       - "get"
       - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "auditlogs"
+    verbs:
+      - "get"
+      - "list"
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role
@@ -36,7 +43,7 @@ metadata:
     pudans.tolim.cn/role-template: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/dependencies: |
-      [ "role-template-view-riskrules" ]
+      [ "role-template-view-riskrules", "role-template-update-riskrules", "role-template-unban-risk" ]
     rbac.authorization.pudans.tolim.cn/module: "Risk Control"
     rbac.authorization.pudans.tolim.cn/display-name: "Risk Rule Manage"
     rbac.authorization.pudans.tolim.cn/ui-type: "menu"

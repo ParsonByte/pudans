@@ -10,6 +10,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -64,6 +66,13 @@ class AuditStoreTest {
         return entity;
     }
 
+    private static AuditRecordEntity entity(String id, String traceFlowId, Instant occurredAt) {
+        var entity = entity(id);
+        entity.setTraceFlowId(traceFlowId);
+        entity.setOccurredAt(OffsetDateTime.ofInstant(occurredAt, ZoneOffset.UTC));
+        return entity;
+    }
+
     private void givenStores(
             Flux<AuditRecordEntity> active, Flux<AuditArchiveEntity> archived) {
         doReturn(active).when(entityOperations).select(any(Query.class), eq(AuditRecordEntity.class));
@@ -90,6 +99,43 @@ class AuditStoreTest {
         var query = new AuditStore.AuditQuery(null, null, null, null, null, null, null, null, 10, true);
 
         assertThat(queryNames(query)).containsExactly("0001", "0002", "0003");
+    }
+
+    @Test
+    void pageReturnsTheRequestedSliceAndTheTotalAcrossStores() {
+        givenStores(
+                Flux.just(entity("0001"), entity("0003"), entity("0005")),
+                Flux.just(archiveEntity("0002"), archiveEntity("0004")));
+
+        var query = new AuditStore.AuditQuery(null, null, null, null, null, null, null, null, 10, false);
+        var result = store.page(query, 2, 2).block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.total()).isEqualTo(5);
+        assertThat(result.items())
+                .extracting(record -> record.getMetadata().getName())
+                .containsExactly("0003", "0002");
+    }
+
+    @Test
+    void traceFlowsGroupsRecordsByFlowAndPaginates() {
+        var start = Instant.parse("2026-11-18T10:00:00Z");
+        givenStores(
+                Flux.just(
+                        entity("0001", "flow-a", start.plusMillis(100)),
+                        entity("0002", "flow-a", start.plusMillis(200)),
+                        entity("0003", "flow-b", start.plusMillis(300))),
+                Flux.empty());
+
+        var query = new AuditStore.AuditQuery(null, null, null, null, null, null, null, null, 10, false);
+        var first = store.traceFlows(query, 1, 1).block();
+        var second = store.traceFlows(query, 2, 1).block();
+
+        assertThat(first).isNotNull();
+        assertThat(first.total()).isEqualTo(2);
+        assertThat(first.traceFlowIds()).containsExactly("flow-b");
+        assertThat(second).isNotNull();
+        assertThat(second.traceFlowIds()).containsExactly("flow-a");
     }
 
     @Test

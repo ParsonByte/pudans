@@ -37,6 +37,8 @@ export type CatalogMenu = {
   path: string;
   icon?: string;
   group?: string;
+  parent?: string;
+  parentIcon?: string;
   component?: string;
   order?: number;
   publicMenu?: boolean;
@@ -70,6 +72,8 @@ export type NavigationMenu = {
   path: string;
   icon?: string;
   group?: string;
+  parent?: string;
+  parentIcon?: string;
   component?: string;
   order?: number;
   operations?: NavigationOperation[];

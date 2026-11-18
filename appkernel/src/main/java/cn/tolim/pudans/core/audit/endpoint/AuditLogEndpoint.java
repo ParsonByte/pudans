@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.HttpStatus;
@@ -38,6 +39,11 @@ public class AuditLogEndpoint implements CustomEndpoint {
 
     private static final int DEFAULT_LIMIT = 50;
     private static final int MAX_LIMIT = 500;
+    private static final int DEFAULT_PAGE_SIZE = 10;
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final int MAX_JOURNEY_RECORDS = 20_000;
+    private static final long JOURNEY_SESSION_GAP_MS = Duration.ofMinutes(30).toMillis();
+    private static final long PAGE_DUPLICATE_WINDOW_MS = 10_000;
     private static final String DEFAULT_ORDER = "desc";
 
     private final AuditService auditService;
@@ -67,6 +73,16 @@ public class AuditLogEndpoint implements CustomEndpoint {
                                     .in(ParameterIn.QUERY)
                                     .name("limit")
                                     .description("Maximum number of records (1-500, default 50).")
+                                    .implementation(Integer.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("page")
+                                    .description("Page number when page-based pagination is used.")
+                                    .implementation(Integer.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("size")
+                                    .description("Page size when page-based pagination is used (1-100, default 10).")
                                     .implementation(Integer.class))
                             .parameter(parameterBuilder()
                                     .in(ParameterIn.QUERY)
@@ -104,6 +120,97 @@ public class AuditLogEndpoint implements CustomEndpoint {
                                     .description("Exclusive upper bound of the UTC timestamp (ISO-8601).")
                                     .implementation(String.class))
                             .response(responseBuilder().implementation(AuditLogPage.class));
+                })
+                .GET("/auditlogs/traces", this::traces, builder -> {
+                    builder.operationId("ListAuditTraceFlows")
+                            .description(
+                                    "Query audit trace flows grouped by traceFlowId and return each flow with all "
+                                            + "of its audit records.")
+                            .tag(tag)
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("page")
+                                    .description("Page number (default 1).")
+                                    .implementation(Integer.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("size")
+                                    .description("Page size (1-100, default 10).")
+                                    .implementation(Integer.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("uid")
+                                    .description("Filter by user uid.")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("operation")
+                                    .description("Filter by operation.")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("result")
+                                    .description("Filter by result (SUCCESS, FAILURE, DENIED).")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("traceId")
+                                    .description("Filter by request trace id.")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("traceFlowId")
+                                    .description("Filter by business trace flow id.")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("from")
+                                    .description("Inclusive lower bound of the UTC timestamp (ISO-8601).")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("to")
+                                    .description("Exclusive upper bound of the UTC timestamp (ISO-8601).")
+                                    .implementation(String.class))
+                            .response(responseBuilder().implementation(AuditTracePage.class));
+                })
+                .GET("/auditlogs/journeys", this::journeys, builder -> {
+                    builder.operationId("ListAuditJourneys")
+                            .description(
+                                    "Return one closed user journey per user. A journey links the pages a user "
+                                            + "visited with the operations performed on each page.")
+                            .tag(tag)
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("page")
+                                    .description("Page number (default 1).")
+                                    .implementation(Integer.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("size")
+                                    .description("Page size (1-100, default 10).")
+                                    .implementation(Integer.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("uid")
+                                    .description("Filter by user uid.")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("from")
+                                    .description("Inclusive lower bound of the UTC timestamp (ISO-8601).")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("to")
+                                    .description("Exclusive upper bound of the UTC timestamp (ISO-8601).")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("summary")
+                                    .description("Return journey summaries without steps when true.")
+                                    .implementation(Boolean.class))
+                            .response(responseBuilder().implementation(AuditJourneyPage.class));
                 })
                 .GET("/auditlogs/graph", this::graph, builder -> builder.operationId("GetDailyAuditGraph")
                         .description(
@@ -147,26 +254,12 @@ public class AuditLogEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> list(ServerRequest request) {
-        var limit = Math.max(
-                1,
-                Math.min(
-                        MAX_LIMIT,
-                        request.queryParam("limit")
-                                .filter(StringUtils::hasText)
-                                .map(Integer::parseInt)
-                                .orElse(DEFAULT_LIMIT)));
-        var ascending = "asc".equalsIgnoreCase(request.queryParam("order").filter(StringUtils::hasText).orElse(DEFAULT_ORDER));
-        var query = new AuditStore.AuditQuery(
-                request.queryParam("cursor").orElse(null),
-                request.queryParam("from").filter(StringUtils::hasText).map(Instant::parse).orElse(null),
-                request.queryParam("to").filter(StringUtils::hasText).map(Instant::parse).orElse(null),
-                request.queryParam("uid").orElse(null),
-                request.queryParam("operation").orElse(null),
-                request.queryParam("result").orElse(null),
-                request.queryParam("traceId").orElse(null),
-                request.queryParam("traceFlowId").orElse(null),
-                limit + 1,
-                ascending);
+        if (request.queryParam("page").filter(StringUtils::hasText).isPresent()) {
+            return page(request);
+        }
+        var limit = intParam(request, "limit", DEFAULT_LIMIT, 1, MAX_LIMIT);
+        var ascending = isAscending(request);
+        var query = auditQuery(request, request.queryParam("cursor").orElse(null), limit + 1, ascending);
         return auditService
                 .query(query)
                 .take(limit + 1L)
@@ -177,9 +270,352 @@ public class AuditLogEndpoint implements CustomEndpoint {
                     var nextCursor = items.isEmpty()
                             ? null
                             : items.get(items.size() - 1).getMetadata().getName();
-                    return new AuditLogPage(items, nextCursor, hasMore);
+                    return new AuditLogPage(items, nextCursor, hasMore, null, null, null);
                 })
                 .flatMap(page -> ServerResponse.ok().bodyValue(page));
+    }
+
+    private Mono<ServerResponse> page(ServerRequest request) {
+        var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
+        var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
+        var query = auditQuery(request, null, size, isAscending(request));
+        return auditService
+                .page(query, page, size)
+                .map(result -> {
+                    var items = result.items();
+                    var hasMore = (long) page * size < result.total();
+                    var nextCursor = items.isEmpty()
+                            ? null
+                            : items.get(items.size() - 1).getMetadata().getName();
+                    return new AuditLogPage(
+                            items, nextCursor, hasMore, result.total(), page, size);
+                })
+                .flatMap(pageResult -> ServerResponse.ok().bodyValue(pageResult));
+    }
+
+    private Mono<ServerResponse> traces(ServerRequest request) {
+        var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
+        var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
+        var query = auditQuery(request, null, size, isAscending(request));
+        return auditService
+                .traceFlows(query, page, size)
+                .flatMap(result -> Flux.fromIterable(result.traceFlowIds())
+                        .concatMap(traceFlowId ->
+                                auditService.findByTraceFlowId(traceFlowId).collectList())
+                        .map(this::toTraceSummary)
+                        .collectList()
+                        .map(items -> new AuditTracePage(
+                                items, result.total(), page, size, result.truncated())))
+                .flatMap(pageResult -> ServerResponse.ok().bodyValue(pageResult));
+    }
+
+    private Mono<ServerResponse> journeys(ServerRequest request) {
+        var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
+        var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
+        var summary = Boolean.parseBoolean(request.queryParam("summary").orElse("false"));
+        var query = auditQuery(request, null, MAX_JOURNEY_RECORDS, false);
+        return auditService
+                .query(query)
+                .filter(record -> StringUtils.hasText(record.getUid())
+                        && !"anonymous".equalsIgnoreCase(record.getUid())
+                        && !"unknown".equalsIgnoreCase(record.getUid()))
+                .collectList()
+                .map(records -> toJourneyPage(records, page, size, !summary))
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    static AuditJourneyPage toJourneyPage(List<AuditRecord> records, int page, int size) {
+        return toJourneyPage(records, page, size, true);
+    }
+
+    static AuditJourneyPage toJourneyPage(
+            List<AuditRecord> records, int page, int size, boolean includeSteps) {
+        var byUid = records.stream().collect(Collectors.groupingBy(AuditRecord::getUid));
+        var journeys = byUid.entrySet().stream()
+                .map(entry -> toJourney(entry.getKey(), entry.getValue()))
+                .map(journey -> includeSteps ? journey : journey.withoutSteps())
+                .sorted(Comparator.comparing(AuditJourney::end).reversed())
+                .toList();
+        var total = journeys.size();
+        var from = (int) Math.min(total, (long) (page - 1) * size);
+        var to = Math.min(total, from + size);
+        var pageViews = journeys.stream().mapToLong(AuditJourney::pageCount).sum();
+        var actionCount = journeys.stream().mapToLong(AuditJourney::actionCount).sum();
+        return new AuditJourneyPage(
+                journeys.subList(from, to),
+                total,
+                page,
+                size,
+                records.size() >= MAX_JOURNEY_RECORDS,
+                pageViews,
+                actionCount);
+    }
+
+    static AuditJourney toJourney(String uid, List<AuditRecord> records) {        var sorted = records.stream()
+                .sorted(Comparator.comparing(AuditLogEndpoint::traceStart)
+                        .thenComparing(record -> record.getStepIndex() == null
+                                ? Integer.MAX_VALUE
+                                : record.getStepIndex())
+                        .thenComparing(record -> record.getMetadata().getName()))
+                .toList();
+        var start = sorted.stream()
+                .map(AuditLogEndpoint::traceStart)
+                .min(Comparator.naturalOrder())
+                .orElse(Instant.EPOCH);
+        var end = sorted.stream()
+                .map(record -> record.getTimestamp() == null
+                        ? Instant.EPOCH
+                        : record.getTimestamp())
+                .max(Comparator.naturalOrder())
+                .orElse(start);
+        var pageIndexes = new ArrayList<Integer>();
+        for (var index = 0; index < sorted.size(); index++) {
+            if (!isPage(sorted.get(index))) {
+                continue;
+            }
+            var previousPageIndex = pageIndexes.isEmpty()
+                    ? null
+                    : pageIndexes.get(pageIndexes.size() - 1);
+            if (previousPageIndex != null
+                    && Objects.equals(pagePath(sorted.get(index)), pagePath(sorted.get(previousPageIndex)))
+                    && traceStart(sorted.get(index)).toEpochMilli()
+                                    - traceStart(sorted.get(previousPageIndex)).toEpochMilli()
+                            <= PAGE_DUPLICATE_WINDOW_MS) {
+                continue;
+            }
+            pageIndexes.add(index);
+        }
+        var steps = new ArrayList<AuditJourneyStep>();
+        if (pageIndexes.isEmpty()) {
+            steps.add(new AuditJourneyStep("SESSION", null, null, null, start, end, sorted));
+        } else {
+            var firstPageIndex = pageIndexes.get(0);
+            if (firstPageIndex > 0) {
+                steps.add(new AuditJourneyStep(
+                        "SESSION",
+                        null,
+                        null,
+                        pagePath(sorted.get(firstPageIndex)),
+                        start,
+                        traceStart(sorted.get(firstPageIndex)),
+                        sorted.subList(0, firstPageIndex)));
+            }
+            for (var index = 0; index < pageIndexes.size(); index++) {
+                var pageIndex = pageIndexes.get(index);
+                var nextPageIndex = index + 1 < pageIndexes.size()
+                        ? pageIndexes.get(index + 1)
+                        : sorted.size();
+                var page = sorted.get(pageIndex);
+                var fromPath = index > 0
+                        ? pagePath(sorted.get(pageIndexes.get(index - 1)))
+                        : null;
+                var toPath = index + 1 < pageIndexes.size()
+                        ? pagePath(sorted.get(pageIndexes.get(index + 1)))
+                        : null;
+                var stepEnd = index + 1 < pageIndexes.size()
+                        ? traceStart(sorted.get(pageIndexes.get(index + 1)))
+                        : end;
+                steps.add(new AuditJourneyStep(
+                        "PAGE",
+                        page,
+                        fromPath,
+                        toPath,
+                        traceStart(page),
+                        stepEnd,
+                        sorted.subList(pageIndex + 1, nextPageIndex).stream()
+                                .filter(record -> !isPage(record))
+                                .toList()));
+            }
+        }
+        var pages = pageIndexes.stream().map(sorted::get).toList();
+        var pageCount = pages.size();
+        var actionCount = steps.stream().mapToInt(step -> step.actions().size()).sum();
+        var resourceTypes = sorted.stream()
+                .map(AuditRecord::getResourceType)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        var operations = sorted.stream()
+                .map(AuditRecord::getOperation)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        return new AuditJourney(
+                uid,
+                usernameOf(sorted),
+                start,
+                end,
+                Math.max(0, Duration.between(start, end).toMillis()),
+                pages.isEmpty() ? null : pagePath(pages.get(0)),
+                pages.isEmpty() ? null : pagePath(pages.get(pages.size() - 1)),
+                pageCount,
+                actionCount,
+                countSessions(sorted),
+                pageCount > 0,
+                resultStatus(sorted),
+                resourceTypes,
+                operations,
+                steps);
+    }
+
+    private static String pagePath(AuditRecord record) {
+        if ("Page".equals(record.getResourceType()) && StringUtils.hasText(record.getResourceName())) {
+            return record.getResourceName();
+        }
+        return record.getRequestPath();
+    }
+
+    private static boolean isPage(AuditRecord record) {
+        if ("Page".equals(record.getResourceType())) {
+            return true;
+        }
+        return "NAVIGATION".equals(record.getOperation())
+                && StringUtils.hasText(record.getRequestPath())
+                && !record.getRequestPath().startsWith("/apis/");
+    }
+
+    private static String usernameOf(List<AuditRecord> records) {
+        return records.stream()
+                .map(record -> contextString(record, "username"))
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static String contextString(AuditRecord record, String key) {
+        var context = record.getContext();
+        if (context == null) {
+            return null;
+        }
+        var value = context.get(key);
+        return value instanceof String text && StringUtils.hasText(text) ? text : null;
+    }
+
+    private static int countSessions(List<AuditRecord> records) {
+        if (records.isEmpty()) {
+            return 0;
+        }
+        var sessions = 1;
+        for (var index = 1; index < records.size(); index++) {
+            var previousEnd = records.get(index - 1).getTimestamp();
+            if (previousEnd != null
+                    && traceStart(records.get(index)).toEpochMilli() - previousEnd.toEpochMilli()
+                            > JOURNEY_SESSION_GAP_MS) {
+                sessions++;
+            }
+        }
+        return sessions;
+    }
+
+    private static String resultStatus(List<AuditRecord> records) {
+        if (records.stream().anyMatch(record -> "DENIED".equals(record.getResult()))) {
+            return "DENIED";
+        }
+        if (records.stream().anyMatch(record -> "FAILURE".equals(record.getResult()))) {
+            return "FAILURE";
+        }
+        return "SUCCESS";
+    }
+
+    private static Instant traceStart(AuditRecord record) {
+        if (record.getTimestamp() == null) {
+            return Instant.EPOCH;
+        }
+        var durationMs = record.getDurationMs() == null ? 0L : Math.max(0L, record.getDurationMs());
+        return record.getTimestamp().minusMillis(durationMs);
+    }
+
+    private static AuditStore.AuditQuery auditQuery(
+            ServerRequest request, String cursor, int limit, boolean ascending) {
+        return new AuditStore.AuditQuery(
+                cursor,
+                request.queryParam("from").filter(StringUtils::hasText).map(Instant::parse).orElse(null),
+                request.queryParam("to").filter(StringUtils::hasText).map(Instant::parse).orElse(null),
+                request.queryParam("uid").filter(StringUtils::hasText).orElse(null),
+                request.queryParam("operation").filter(StringUtils::hasText).orElse(null),
+                request.queryParam("result").filter(StringUtils::hasText).orElse(null),
+                request.queryParam("traceId").filter(StringUtils::hasText).orElse(null),
+                request.queryParam("traceFlowId").filter(StringUtils::hasText).orElse(null),
+                limit,
+                ascending);
+    }
+
+    private static int intParam(
+            ServerRequest request, String name, int defaultValue, int min, int max) {
+        return request.queryParam(name)
+                .filter(StringUtils::hasText)
+                .map(value -> {
+                    try {
+                        return Integer.parseInt(value);
+                    } catch (NumberFormatException e) {
+                        throw new ServerWebInputException(
+                                "查询参数 '" + name + "' 必须是整数。");
+                    }
+                })
+                .map(value -> Math.max(min, Math.min(max, value)))
+                .orElse(defaultValue);
+    }
+
+    private static boolean isAscending(ServerRequest request) {
+        return "asc".equalsIgnoreCase(
+                request.queryParam("order").filter(StringUtils::hasText).orElse(DEFAULT_ORDER));
+    }
+
+    private AuditTraceSummary toTraceSummary(List<AuditRecord> records) {
+        var sorted = records.stream()
+                .sorted(Comparator.comparing(AuditLogEndpoint::traceStart)
+                        .thenComparing(record -> record.getStepIndex() == null
+                                ? Integer.MAX_VALUE
+                                : record.getStepIndex())
+                        .thenComparing(record -> record.getMetadata().getName()))
+                .toList();
+        var start = sorted.stream()
+                .map(AuditLogEndpoint::traceStart)
+                .min(Comparator.naturalOrder())
+                .orElse(Instant.EPOCH);
+        var end = sorted.stream()
+                .map(record -> record.getTimestamp() == null
+                        ? Instant.EPOCH
+                        : record.getTimestamp())
+                .max(Comparator.naturalOrder())
+                .orElse(start);
+        var status = resultStatus(sorted);
+        var traceIds = sorted.stream()
+                .map(AuditRecord::getTraceId)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        var resourceTypes = sorted.stream()
+                .map(AuditRecord::getResourceType)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        var uid = sorted.stream()
+                .filter(record -> !StringUtils.hasText(record.getParentAuditId()))
+                .map(AuditRecord::getUid)
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .or(() -> sorted.stream()
+                        .map(AuditRecord::getUid)
+                        .filter(StringUtils::hasText)
+                        .findFirst())
+                .orElse(null);
+        var traceFlowId = sorted.stream()
+                .map(AuditRecord::getTraceFlowId)
+                .filter(StringUtils::hasText)
+                .findFirst()
+                .orElse(null);
+        return new AuditTraceSummary(
+                traceFlowId,
+                traceIds,
+                start,
+                end,
+                Math.max(0, Duration.between(start, end).toMillis()),
+                status,
+                uid,
+                sorted.size(),
+                resourceTypes,
+                sorted);
     }
 
     private Mono<ServerResponse> graph(ServerRequest request) {
@@ -341,7 +777,92 @@ public class AuditLogEndpoint implements CustomEndpoint {
     }
 
 
-    public record AuditLogPage(List<AuditRecord> items, String nextCursor, boolean hasMore) {}
+    public record AuditLogPage(
+            List<AuditRecord> items,
+            String nextCursor,
+            boolean hasMore,
+            Long total,
+            Integer page,
+            Integer size) {}
+
+
+    public record AuditTraceSummary(
+            String traceFlowId,
+            List<String> traceIds,
+            Instant start,
+            Instant end,
+            long durationMs,
+            String status,
+            String uid,
+            int spanCount,
+            List<String> resourceTypes,
+            List<AuditRecord> records) {}
+
+
+    public record AuditTracePage(
+            List<AuditTraceSummary> items,
+            long total,
+            int page,
+            int size,
+            boolean truncated) {}
+
+
+    public record AuditJourney(
+            String uid,
+            String username,
+            Instant start,
+            Instant end,
+            long durationMs,
+            String entryPath,
+            String exitPath,
+            int pageCount,
+            int actionCount,
+            int sessionCount,
+            boolean complete,
+            String status,
+            List<String> resourceTypes,
+            List<String> operations,
+            List<AuditJourneyStep> steps) {
+
+        AuditJourney withoutSteps() {
+            return new AuditJourney(
+                    uid,
+                    username,
+                    start,
+                    end,
+                    durationMs,
+                    entryPath,
+                    exitPath,
+                    pageCount,
+                    actionCount,
+                    sessionCount,
+                    complete,
+                    status,
+                    resourceTypes,
+                    operations,
+                    List.of());
+        }
+    }
+
+
+    public record AuditJourneyStep(
+            String kind,
+            AuditRecord page,
+            String fromPath,
+            String toPath,
+            Instant start,
+            Instant end,
+            List<AuditRecord> actions) {}
+
+
+    public record AuditJourneyPage(
+            List<AuditJourney> items,
+            long total,
+            int page,
+            int size,
+            boolean truncated,
+            long pageViews,
+            long actionCount) {}
 
 
     public record AuditNode(

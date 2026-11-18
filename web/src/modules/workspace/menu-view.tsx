@@ -56,6 +56,42 @@ const UserGroupDetailView = lazy(() =>
   })),
 );
 
+const RiskView = lazy(() =>
+  import("@/modules/workspace/console/risk").then((module) => ({
+    default: module.RiskView,
+  })),
+);
+
+const AuditView = lazy(() =>
+  import("@/modules/workspace/console/audit").then((module) => ({
+    default: module.AuditView,
+  })),
+);
+
+const AuditLogsView = lazy(() =>
+  import("@/modules/workspace/console/audit/logs").then((module) => ({
+    default: module.AuditLogsView,
+  })),
+);
+
+const TracesView = lazy(() =>
+  import("@/modules/workspace/console/traces").then((module) => ({
+    default: module.TracesView,
+  })),
+);
+
+const TraceDetailView = lazy(() =>
+  import("@/modules/workspace/console/traces/detail").then((module) => ({
+    default: module.TraceDetailView,
+  })),
+);
+
+const JourneyDetailView = lazy(() =>
+  import("@/modules/workspace/console/traces/journey-detail").then((module) => ({
+    default: module.JourneyDetailView,
+  })),
+);
+
 const WorkspaceIndexView = lazy(() =>
   import("@/modules/workspace/index/view").then((module) => ({
     default: module.WorkspaceIndexView,
@@ -118,6 +154,23 @@ function renderMenuPage({
     }
     case "roles":
       return <RolesView />;
+    case "risk":
+      return <RiskView />;
+    case "audit": {
+      const relative = relativeMenuPath(menu.path, pathname);
+      return relative.startsWith("logs") ? <AuditLogsView /> : <AuditView />;
+    }
+    case "traces": {
+      const relative = relativeMenuPath(menu.path, pathname);
+      if (relative.startsWith("user/")) {
+        return <JourneyDetailView uid={decodeURIComponent(relative.slice("user/".length))} />;
+      }
+      return relative ? (
+        <TraceDetailView traceFlowId={decodeURIComponent(relative)} />
+      ) : (
+        <TracesView />
+      );
+    }
     case "user-groups": {
       const relative = relativeMenuPath(menu.path, pathname);
       return relative ? (

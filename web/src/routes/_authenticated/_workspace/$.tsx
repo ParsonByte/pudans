@@ -3,9 +3,20 @@ import { createFileRoute, useLocation } from "@tanstack/react-router";
 import { WorkspaceMenuView } from "@/modules/workspace/menu-view";
 
 export const Route = createFileRoute("/_authenticated/_workspace/$")({
-  validateSearch: (search: Record<string, unknown>): { tab?: string } => {
-    const tab = typeof search.tab === "string" ? search.tab : undefined;
-    return tab ? { tab } : {};
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { tab?: string; from?: string; to?: string } => {
+    const result: { tab?: string; from?: string; to?: string } = {};
+    if (typeof search.tab === "string") {
+      result.tab = search.tab;
+    }
+    if (typeof search.from === "string") {
+      result.from = search.from;
+    }
+    if (typeof search.to === "string") {
+      result.to = search.to;
+    }
+    return result;
   },
   component: WorkspaceMenuRoute,
 });

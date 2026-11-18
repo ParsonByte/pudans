@@ -7,9 +7,12 @@ import { RouterProvider, createRouter } from "@tanstack/react-router";
 
 import { DirectionProvider } from "@/context/direction-provider";
 import { ThemeProvider } from "@/context/theme-provider";
+import { installApiInterceptors } from "@/lib/api-interceptor";
 
 import { routeTree } from "./routeTree.gen";
 import "./styles/_global.css";
+
+installApiInterceptors();
 
 const queryClient = new QueryClient();
 

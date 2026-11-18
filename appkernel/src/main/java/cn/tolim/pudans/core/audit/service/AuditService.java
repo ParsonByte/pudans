@@ -47,6 +47,8 @@ public class AuditService {
     public static final String UID_ATTRIBUTE = AuditService.class.getName() + ".UID";
     public static final String OPERATION_ATTRIBUTE = AuditService.class.getName() + ".OPERATION";
     public static final String RESULT_ATTRIBUTE = AuditService.class.getName() + ".RESULT";
+    public static final String RESOURCE_TYPE_ATTRIBUTE = AuditService.class.getName() + ".RESOURCE_TYPE";
+    public static final String RESOURCE_NAME_ATTRIBUTE = AuditService.class.getName() + ".RESOURCE_NAME";
     public static final String CONTEXT_ATTRIBUTE = AuditService.class.getName() + ".CONTEXT";
 
     private final AuditStore auditStore;
@@ -291,6 +293,14 @@ public class AuditService {
 
     public Flux<AuditRecord> query(AuditStore.AuditQuery query) {
         return auditStore.query(query);
+    }
+
+    public Mono<AuditStore.AuditPageResult> page(AuditStore.AuditQuery query, int page, int size) {
+        return auditStore.page(query, page, size);
+    }
+
+    public Mono<AuditStore.TraceFlowPage> traceFlows(AuditStore.AuditQuery query, int page, int size) {
+        return auditStore.traceFlows(query, page, size);
     }
 
     public Mono<Long> countSince(Instant from) {

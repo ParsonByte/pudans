@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ReactiveValueOperations;
+import org.springframework.data.redis.core.ScanOptions;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -103,6 +106,33 @@ class RiskControlServiceTest {
 
         StepVerifier.create(service.unban(RiskScene.LOGIN_FAILURE, "5.6.7.8"))
                 .expectNext(0L)
+                .verifyComplete();
+    }
+
+    @Test
+    void listBansParsesActiveBanKeysAndSkipsExpiredOnes() {
+        var activeKey = "pudans:risk:ban:request-flood:1.2.3.4";
+        var expiredKey = "pudans:risk:ban:login-failure:5.6.7.8";
+        when(redisTemplate.scan(org.mockito.ArgumentMatchers.any(ScanOptions.class)))
+                .thenReturn(Flux.just(activeKey, expiredKey));
+        when(redisTemplate.getExpire(activeKey)).thenReturn(Mono.just(Duration.ofSeconds(30)));
+        when(redisTemplate.getExpire(expiredKey)).thenReturn(Mono.just(Duration.ZERO));
+
+        StepVerifier.create(service.listBans())
+                .expectNext(new RiskControlService.RiskBan(RiskScene.REQUEST_FLOOD, "1.2.3.4", 30))
+                .verifyComplete();
+    }
+
+    @Test
+    void listBansKeepsIpv6SubjectsIntact() {
+        var key = "pudans:risk:ban:request-flood:2001:db8::1";
+        when(redisTemplate.scan(org.mockito.ArgumentMatchers.any(ScanOptions.class)))
+                .thenReturn(Flux.just(key));
+        when(redisTemplate.getExpire(key)).thenReturn(Mono.just(Duration.ofSeconds(45)));
+
+        StepVerifier.create(service.listBans())
+                .expectNext(new RiskControlService.RiskBan(
+                        RiskScene.REQUEST_FLOOD, "2001:db8::1", 45))
                 .verifyComplete();
     }
 }

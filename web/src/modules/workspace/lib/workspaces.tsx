@@ -2,7 +2,7 @@ import type { ElementType } from "react";
 
 import { Icon } from "@iconify/react";
 
-import type { NavGroup, NavItem, Workspace } from "@/components/layout/types";
+import type { NavCollapsible, NavGroup, NavItem, Workspace } from "@/components/layout/types";
 
 import type { Navigation, NavigationMenu } from "./permission-api";
 
@@ -31,15 +31,35 @@ export function buildWorkspaceNavGroups(navigation: Navigation, workspaceId: str
     return [];
   }
   const groups = new Map<string, NavItem[]>();
+  const parents = new Map<string, NavCollapsible>();
   for (const menu of workspace.menus ?? []) {
     const group = menu.group || workspace.name;
     const items = groups.get(group) ?? [];
+    groups.set(group, items);
+    if (menu.parent) {
+      const parentKey = `${group}\n${menu.parent}`;
+      let parent = parents.get(parentKey);
+      if (!parent) {
+        parent = {
+          title: menu.parent,
+          icon: navigationIcon(menu.parentIcon),
+          items: [],
+        };
+        parents.set(parentKey, parent);
+        items.push(parent);
+      }
+      parent.items.push({
+        title: menu.label,
+        url: menu.path,
+        icon: navigationIcon(menu.icon),
+      });
+      continue;
+    }
     items.push({
       title: menu.label,
       url: menu.path,
       icon: navigationIcon(menu.icon),
     });
-    groups.set(group, items);
   }
   return [...groups.entries()].map(([title, items]) => ({ title, items }));
 }

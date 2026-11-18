@@ -17,6 +17,7 @@ import cn.tolim.pudans.contract.audit.TraceContext;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.security.web.StaticRequestPaths;
 
 @Slf4j
 @Component
@@ -28,8 +29,6 @@ public class AuditWebFilter implements WebFilter {
 
     private static final int MAX_ID_LENGTH = 64;
 
-    private static final String[] STATIC_PREFIXES = {"/webjars/"};
-
     private final AuditService auditService;
 
     private final ReactiveExtensionClient client;
@@ -38,7 +37,7 @@ public class AuditWebFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        if (isStatic(exchange)) {
+        if (StaticRequestPaths.isStatic(exchange)) {
             return chain.filter(exchange);
         }
         
@@ -171,16 +170,6 @@ public class AuditWebFilter implements WebFilter {
         return value.substring(0, maxLength);
     }
 
-    private static boolean isStatic(ServerWebExchange exchange) {
-        var path = exchange.getRequest().getPath().value();
-        for (var prefix : STATIC_PREFIXES) {
-            if (path.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     static String operation(ServerWebExchange exchange) {
         var path = exchange.getRequest().getPath().value();
         var method = exchange.getRequest().getMethod();
@@ -202,22 +191,34 @@ public class AuditWebFilter implements WebFilter {
         if (method == null) {
             return "UNKNOWN";
         }
-        return switch (method.name()) {
-            case "GET", "HEAD" -> exchange.getRequest()
-                            .getHeaders()
-                            .getAccept()
-                            .stream()
-                            .anyMatch(mediaType -> mediaType.includes(MediaType.TEXT_HTML))
-                    ? "NAVIGATION"
-                    : "READ";
+        var apiRequest = path.startsWith("/apis/") || path.startsWith("/api/");
+        if (!apiRequest
+                && ("GET".equals(method.name()) || "HEAD".equals(method.name()))
+                && exchange.getRequest()
+                        .getHeaders()
+                        .getAccept()
+                        .stream()
+                        .anyMatch(mediaType -> mediaType.includes(MediaType.TEXT_HTML))) {
+            return "NAVIGATION";
+        }
+        return methodOperation(method.name());
+    }
+
+    private static String methodOperation(String method) {
+        return switch (method) {
+            case "GET", "HEAD" -> "READ";
             case "POST" -> "CREATE";
             case "PUT", "PATCH" -> "UPDATE";
             case "DELETE" -> "DELETE";
-            default -> method.name();
+            default -> method;
         };
     }
 
     static String resourceType(ServerWebExchange exchange) {
+        var overridden = overriddenAttribute(exchange, AuditService.RESOURCE_TYPE_ATTRIBUTE);
+        if (overridden != null) {
+            return overridden;
+        }
         var parts = apiParts(exchange);
         if (parts.size() >= 4) {
             var resource = parts.get(3);
@@ -239,12 +240,27 @@ public class AuditWebFilter implements WebFilter {
                 default -> resource;
             };
         }
-        return "Request";
+        return "NAVIGATION".equals(operation(exchange)) ? "Page" : "Request";
     }
 
     static String resourceName(ServerWebExchange exchange) {
+        var overridden = overriddenAttribute(exchange, AuditService.RESOURCE_NAME_ATTRIBUTE);
+        if (overridden != null) {
+            return overridden;
+        }
         var parts = apiParts(exchange);
-        return parts.size() >= 5 ? parts.get(4) : null;
+        if (parts.size() >= 5) {
+            return parts.get(4);
+        }
+        if (parts.size() < 4 && "NAVIGATION".equals(operation(exchange))) {
+            return exchange.getRequest().getPath().pathWithinApplication().value();
+        }
+        return null;
+    }
+
+    private static String overriddenAttribute(ServerWebExchange exchange, String key) {
+        var value = (String) exchange.getAttributes().get(key);
+        return value == null || value.isBlank() ? null : value;
     }
 
     private static java.util.List<String> apiParts(ServerWebExchange exchange) {

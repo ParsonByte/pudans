@@ -6,8 +6,10 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -105,6 +107,37 @@ public class RiskControlService {
                     }
                     return Mono.empty();
                 });
+    }
+
+    public Flux<RiskBan> listBans() {
+        return redisTemplate
+                .scan(ScanOptions.scanOptions()
+                        .match(BAN_KEY_PREFIX + "*")
+                        .count(200)
+                        .build())
+                .flatMap(key -> redisTemplate
+                        .getExpire(key)
+                        .flatMap(ttl -> {
+                            var ban = RiskBan.fromKey(key, ttl);
+                            return ban == null ? Mono.empty() : Mono.just(ban);
+                        }))
+                .filter(ban -> ban.expiresInSeconds() > 0);
+    }
+
+    public record RiskBan(String scene, String subject, long expiresInSeconds) {
+
+        static RiskBan fromKey(String key, Duration ttl) {
+            if (ttl == null || ttl.isZero() || ttl.isNegative() || !key.startsWith(BAN_KEY_PREFIX)) {
+                return null;
+            }
+            var rest = key.substring(BAN_KEY_PREFIX.length());
+            var separator = rest.indexOf(':');
+            if (separator <= 0 || separator == rest.length() - 1) {
+                return null;
+            }
+            return new RiskBan(
+                    rest.substring(0, separator), rest.substring(separator + 1), ttl.toSeconds());
+        }
     }
 
     public Mono<Void> ban(String scene, String subject, Duration duration) {
