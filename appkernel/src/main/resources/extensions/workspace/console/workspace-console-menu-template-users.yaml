@@ -16,6 +16,8 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-label: "用户"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看、创建、导入和管理用户。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:users"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
     rbac.authorization.pudans.tolim.cn/ui-group: "控制"
     rbac.authorization.pudans.tolim.cn/ui-order: "10"
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:view"]'

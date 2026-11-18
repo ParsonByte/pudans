@@ -1,6 +1,11 @@
 import type { RecentOperation } from "@pudans-dev/api-client";
 
 import { Badge } from "@/components/ui/badge";
+import { AuditResultBadge } from "@/modules/workspace/console/audit/components/audit-result-badge";
+import {
+  auditOperationLabel,
+  auditResourceLabel,
+} from "@/modules/workspace/console/audit/lib/audit-labels";
 import {
   ConsoleEmpty,
   ConsoleSection,
@@ -32,10 +37,10 @@ export function RecentOperations({ operations }: RecentOperationsProps) {
             >
               <div className="min-w-0 space-y-1">
                 <p className="truncate text-sm font-medium">
-                  {operation.operation || "未知操作"}
+                  {auditOperationLabel(operation.operation)}
                   {operation.resourceType ? (
                     <span className="ms-2 text-xs font-normal text-muted-foreground">
-                      {operation.resourceType}
+                      {auditResourceLabel(operation.resourceType)}
                     </span>
                   ) : null}
                 </p>
@@ -45,7 +50,7 @@ export function RecentOperations({ operations }: RecentOperationsProps) {
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-3">
-                <OperationResultBadge result={operation.result} />
+                <AuditResultBadge result={operation.result} />
                 <time
                   dateTime={operation.timestamp}
                   className="text-xs text-muted-foreground tabular-nums"
@@ -59,20 +64,4 @@ export function RecentOperations({ operations }: RecentOperationsProps) {
       )}
     </ConsoleSection>
   );
-}
-
-function OperationResultBadge({ result }: { result?: string }) {
-  if (result === "SUCCESS") {
-    return <Badge variant="secondary">成功</Badge>;
-  }
-
-  if (result === "FAILURE" || result === "FAILED") {
-    return <Badge variant="destructive">失败</Badge>;
-  }
-
-  if (result) {
-    return <Badge variant="destructive">{result}</Badge>;
-  }
-
-  return <Badge variant="outline">未知</Badge>;
 }

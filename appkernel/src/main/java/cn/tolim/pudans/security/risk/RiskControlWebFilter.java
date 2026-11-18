@@ -11,12 +11,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.web.server.context.ServerSecurityContextRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
@@ -25,9 +31,11 @@ import cn.tolim.pudans.core.risk.service.RiskControlService;
 import cn.tolim.pudans.core.risk.service.RiskDecision;
 import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
 import cn.tolim.pudans.core.risk.service.RiskScene;
+import cn.tolim.pudans.security.authorization.AuthorityUtils;
 
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import cn.tolim.pudans.infra.feishu.FeishuAlertNotifier;
+import cn.tolim.pudans.security.web.StaticRequestPaths;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 
 @Slf4j
@@ -35,8 +43,6 @@ import cn.tolim.pudans.infra.utils.IpAddressUtils;
 @Order(-103)
 @RequiredArgsConstructor
 public class RiskControlWebFilter implements WebFilter {
-
-    private static final String[] IGNORED_PREFIXES = {"/webjars/"};
 
     private static final String LOGIN_PATH = "/login";
 
@@ -46,6 +52,10 @@ public class RiskControlWebFilter implements WebFilter {
 
     private final RiskRuleRegistry riskRuleRegistry;
 
+    private final ServerSecurityContextRepository securityContextRepository;
+
+    private final ReactiveExtensionClient client;
+
     private final AuditService auditService;
 
     private final FeishuAlertNotifier alertNotifier;
@@ -54,14 +64,38 @@ public class RiskControlWebFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        if (ignored(exchange)) {
+        if (StaticRequestPaths.isStatic(exchange)) {
             return chain.filter(exchange);
         }
-        var ip = IpAddressUtils.getClientIp(exchange.getRequest());
-        return preCheck(exchange, ip)
-                .flatMap(pre -> pre.allowed()
-                        ? observe(exchange, ip, chain)
-                        : blocked(exchange, ip, pre));
+        return actor(exchange).flatMap(actor -> {
+            if (actor.superAdmin()) {
+                return chain.filter(exchange);
+            }
+            var ip = IpAddressUtils.getClientIp(exchange.getRequest());
+            return preCheck(exchange, ip)
+                    .flatMap(pre -> pre.allowed()
+                            ? observe(exchange, ip, chain)
+                            : blocked(exchange, ip, pre));
+        });
+    }
+
+    private Mono<Actor> actor(ServerWebExchange exchange) {
+        return securityContextRepository
+                .load(exchange)
+                .map(SecurityContext::getAuthentication)
+                .filter(authentication -> authentication != null
+                        && authentication.isAuthenticated()
+                        && !(authentication instanceof AnonymousAuthenticationToken))
+                .map(authentication -> {
+                    exchange.getAttributes().put(AuditService.USERNAME_ATTRIBUTE, authentication.getName());
+                    var roles = AuthorityUtils.authoritiesToRoles(authentication.getAuthorities());
+                    return new Actor(AuthorityUtils.containsSuperRole(roles));
+                })
+                .defaultIfEmpty(Actor.anonymous())
+                .onErrorResume(error -> {
+                    log.debug("无法读取安全上下文，按未登录请求处理", error);
+                    return Mono.just(Actor.anonymous());
+                });
     }
 
     private Mono<PreCheck> preCheck(ServerWebExchange exchange, String ip) {
@@ -123,7 +157,12 @@ public class RiskControlWebFilter implements WebFilter {
                         ? audit(exchange, ip, scene, decision, "DENIED", "RISK_BLOCKED")
                         : Mono.empty())
                 .then(riskControlService
-                        .markAlerted(scene, ip, decision.retryAfter().isZero() ? Duration.ofMinutes(5) : decision.retryAfter())
+                        .markAlerted(
+                                scene,
+                                ip,
+                                decision.retryAfter().isZero()
+                                        ? Duration.ofMinutes(5)
+                                        : decision.retryAfter())
                         .flatMap(first -> {
                             if (!Boolean.TRUE.equals(first)) {
                                 return Mono.empty();
@@ -156,8 +195,13 @@ public class RiskControlWebFilter implements WebFilter {
     }
 
     private Mono<Void> audit(
-            ServerWebExchange exchange, String ip, String scene, RiskDecision decision, String result, String operation) {
-        return Mono.fromRunnable(() -> {
+            ServerWebExchange exchange,
+            String ip,
+            String scene,
+            RiskDecision decision,
+            String result,
+            String operation) {
+        return actorIdentity(exchange).flatMap(identity -> Mono.fromRunnable(() -> {
             var traceId = AuditService.traceId(exchange);
             exchange.getResponse().getHeaders().set(AuditService.TRACE_ID_HEADER, traceId);
             var traceFlowId = (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE);
@@ -167,8 +211,7 @@ public class RiskControlWebFilter implements WebFilter {
                 exchange.getAttributes().put(AuditService.TRACE_FLOW_ID_ATTRIBUTE, traceFlowId);
             }
             var parentAuditId = (String) exchange.getAttributes().get(AuditService.AUDIT_ID_ATTRIBUTE);
-            var uid = (String) exchange.getAttributes().get(AuditService.UID_ATTRIBUTE);
-            var record = auditService.newRecord(traceId, uid == null ? "anonymous" : uid, operation);
+            var record = auditService.newRecord(traceId, identity.uid(), operation);
             record.setTraceFlowId(traceFlowId);
             if (syntheticFlow) {
                 record.markSyntheticFlow();
@@ -184,10 +227,37 @@ public class RiskControlWebFilter implements WebFilter {
             record.setDurationMs(0L);
             record.setTimestamp(Instant.now());
             var context = context(scene, ip, decision);
+            if (StringUtils.hasText(identity.username())) {
+                context.put("username", identity.username());
+            }
             record.setContext(context);
             record.setActionSnapshot(JsonUtils.objectToJson(context));
             auditService.record(record);
-        });
+        }));
+    }
+
+    private Mono<ActorIdentity> actorIdentity(ServerWebExchange exchange) {
+        var uid = (String) exchange.getAttributes().get(AuditService.UID_ATTRIBUTE);
+        var username = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
+        if (StringUtils.hasText(uid)) {
+            return Mono.just(new ActorIdentity(uid, StringUtils.hasText(username) ? username : null));
+        }
+        if (!StringUtils.hasText(username)) {
+            return Mono.just(new ActorIdentity("anonymous", null));
+        }
+        return client.fetch(User.class, username)
+                .map(user -> {
+                    var userId = user.getSpec() == null ? null : user.getSpec().getUid();
+                    return new ActorIdentity(
+                            StringUtils.hasText(userId) ? userId : username, username);
+                })
+                .doOnNext(identity ->
+                        exchange.getAttributes().put(AuditService.UID_ATTRIBUTE, identity.uid()))
+                .defaultIfEmpty(new ActorIdentity(username, username))
+                .onErrorResume(error -> {
+                    log.warn("无法解析风险事件触发用户 [{}]", username, error);
+                    return Mono.just(new ActorIdentity(username, username));
+                });
     }
 
     private Map<String, Object> context(String scene, String ip, RiskDecision decision) {
@@ -208,6 +278,10 @@ public class RiskControlWebFilter implements WebFilter {
         payload.put("subject", ip);
         payload.put("count", decision.count());
         payload.put("path", exchange.getRequest().getPath().value());
+        var username = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
+        if (StringUtils.hasText(username)) {
+            payload.put("username", username);
+        }
         domainEventPublisher.publish(
                 "risk.alert",
                 payload,
@@ -223,6 +297,10 @@ public class RiskControlWebFilter implements WebFilter {
         payload.put("count", decision.count());
         payload.put("path", exchange.getRequest().getPath().value());
         payload.put("blockSeconds", decision.blockFor().toSeconds());
+        var username = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
+        if (StringUtils.hasText(username)) {
+            payload.put("username", username);
+        }
         domainEventPublisher.publish(
                 "risk.blocked",
                 payload,
@@ -242,20 +320,19 @@ public class RiskControlWebFilter implements WebFilter {
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8))));
     }
 
-    private static boolean ignored(ServerWebExchange exchange) {
-        var path = exchange.getRequest().getPath().value();
-        for (var prefix : IGNORED_PREFIXES) {
-            if (path.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     record PreCheck(boolean allowed, String scene, RiskDecision decision) {
 
         static PreCheck pass() {
             return new PreCheck(true, null, RiskDecision.permit());
         }
     }
+
+    record Actor(boolean superAdmin) {
+
+        static Actor anonymous() {
+            return new Actor(false);
+        }
+    }
+
+    record ActorIdentity(String uid, String username) {}
 }

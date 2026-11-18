@@ -35,6 +35,12 @@ rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
+      - "usernavigations"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "permission-catalog"
     verbs:
       - "get"

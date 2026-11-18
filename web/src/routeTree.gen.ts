@@ -18,6 +18,7 @@ import { Route as authSignInRouteImport } from './routes/(auth)/sign-in'
 import { Route as errors401RouteImport } from './routes/(errors)/401'
 import { Route as errors403RouteImport } from './routes/(errors)/403'
 import { Route as errors404RouteImport } from './routes/(errors)/404'
+import { Route as errors429RouteImport } from './routes/(errors)/429'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as setupSetupRouteImport } from './routes/(setup)/setup'
@@ -67,6 +68,11 @@ const errors404Route = errors404RouteImport.update({
   path: '/404',
   getParentRoute: () => rootRouteImport,
 } as any)
+const errors429Route = errors429RouteImport.update({
+  id: '/(errors)/429',
+  path: '/429',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const errors500Route = errors500RouteImport.update({
   id: '/(errors)/500',
   path: '/500',
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/401': typeof errors401Route
   '/403': typeof errors403Route
   '/404': typeof errors404Route
+  '/429': typeof errors429Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/setup': typeof setupSetupRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/401': typeof errors401Route
   '/403': typeof errors403Route
   '/404': typeof errors404Route
+  '/429': typeof errors429Route
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/setup': typeof setupSetupRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/(errors)/401': typeof errors401Route
   '/(errors)/403': typeof errors403Route
   '/(errors)/404': typeof errors404Route
+  '/(errors)/429': typeof errors429Route
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/(setup)/setup': typeof setupSetupRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/401'
     | '/403'
     | '/404'
+    | '/429'
     | '/500'
     | '/503'
     | '/setup'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/401'
     | '/403'
     | '/404'
+    | '/429'
     | '/500'
     | '/503'
     | '/setup'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/(errors)/401'
     | '/(errors)/403'
     | '/(errors)/404'
+    | '/(errors)/429'
     | '/(errors)/500'
     | '/(errors)/503'
     | '/(setup)/setup'
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   errors401Route: typeof errors401Route
   errors403Route: typeof errors403Route
   errors404Route: typeof errors404Route
+  errors429Route: typeof errors429Route
   errors500Route: typeof errors500Route
   errors503Route: typeof errors503Route
 }
@@ -264,6 +277,13 @@ declare module '@tanstack/react-router' {
       path: '/404'
       fullPath: '/404'
       preLoaderRoute: typeof errors404RouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(errors)/429': {
+      id: '/(errors)/429'
+      path: '/429'
+      fullPath: '/429'
+      preLoaderRoute: typeof errors429RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(errors)/500': {
@@ -375,6 +395,7 @@ const rootRouteChildren: RootRouteChildren = {
   errors401Route: errors401Route,
   errors403Route: errors403Route,
   errors404Route: errors404Route,
+  errors429Route: errors429Route,
   errors500Route: errors500Route,
   errors503Route: errors503Route,
 }

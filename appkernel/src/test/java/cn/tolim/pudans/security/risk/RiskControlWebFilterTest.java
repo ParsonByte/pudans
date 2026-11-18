@@ -11,20 +11,28 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextImpl;
+import org.springframework.security.web.server.context.ServerSecurityContextRepository;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
+import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
@@ -44,6 +52,12 @@ class RiskControlWebFilterTest {
     RiskRuleRegistry riskRuleRegistry;
 
     @Mock
+    ServerSecurityContextRepository securityContextRepository;
+
+    @Mock
+    ReactiveExtensionClient client;
+
+    @Mock
     AuditService auditService;
 
     @Mock
@@ -57,7 +71,14 @@ class RiskControlWebFilterTest {
     @BeforeEach
     void setUp() {
         filter = new RiskControlWebFilter(
-                riskControlService, riskRuleRegistry, auditService, alertNotifier, domainEventPublisher);
+                riskControlService,
+                riskRuleRegistry,
+                securityContextRepository,
+                client,
+                auditService,
+                alertNotifier,
+                domainEventPublisher);
+        when(securityContextRepository.load(any())).thenReturn(Mono.empty());
         when(alertNotifier.send(any())).thenReturn(Mono.empty());
         when(riskRuleRegistry.enabledScenes()).thenReturn(java.util.Set.of(RiskScene.AUTH_FAILURE));
         when(auditService.newRecord(anyString(), anyString(), anyString())).thenAnswer(invocation -> {
@@ -65,6 +86,7 @@ class RiskControlWebFilterTest {
             var metadata = new Metadata();
             metadata.setName("audit-" + System.nanoTime());
             record.setMetadata(metadata);
+            record.setUid(invocation.getArgument(1));
             return record;
         });
     }
@@ -122,10 +144,59 @@ class RiskControlWebFilterTest {
 
     @Test
     void staticAssetsAreNotRateLimited() {
-        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/webjars/index.js").build());
+        for (var path : List.of("/webjars/index.js", "/assets/roles-DYFfexQq.js", "/brand/logo-dark.svg")) {
+            var exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
+
+            StepVerifier.create(filter.filter(exchange, ignored -> Mono.empty())).verifyComplete();
+        }
+
+        verify(riskControlService, never()).firstBannedScene(any(Collection.class), anyString());
+    }
+
+    @Test
+    void superAdminRequestsBypassRiskControl() {
+        var authentication = new UsernamePasswordAuthenticationToken(
+                "admin", "n/a", List.of(new SimpleGrantedAuthority("ROLE_super-role")));
+        when(securityContextRepository.load(any()))
+                .thenReturn(Mono.just(new SecurityContextImpl(authentication)));
+        var exchange = exchange();
+        var chainInvoked = new AtomicBoolean(false);
+        WebFilterChain chain = current -> {
+            chainInvoked.set(true);
+            current.getResponse().setStatusCode(HttpStatus.OK);
+            return Mono.empty();
+        };
+
+        StepVerifier.create(filter.filter(exchange, chain)).verifyComplete();
+
+        assertThat(chainInvoked).isTrue();
+        assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.OK);
+        verify(riskControlService, never()).firstBannedScene(any(Collection.class), anyString());
+        verify(riskControlService, never()).evaluate(anyString(), anyString());
+    }
+
+    @Test
+    void blockedAuthenticatedRequestRecordsTheTriggeringUser() {
+        var authentication = new UsernamePasswordAuthenticationToken(
+                "alice", "n/a", List.of(new SimpleGrantedAuthority("ROLE_normal-role")));
+        when(securityContextRepository.load(any()))
+                .thenReturn(Mono.just(new SecurityContextImpl(authentication)));
+        var user = new User();
+        var spec = new User.UserSpec();
+        spec.setUid("uid-1");
+        user.setSpec(spec);
+        when(client.fetch(User.class, "alice")).thenReturn(Mono.just(user));
+        when(riskControlService.firstBannedScene(any(Collection.class), anyString()))
+                .thenReturn(Mono.just(RiskScene.REQUEST_FLOOD));
+        when(riskControlService.markAlerted(anyString(), anyString(), any(Duration.class)))
+                .thenReturn(Mono.just(false));
+        var exchange = exchange();
 
         StepVerifier.create(filter.filter(exchange, ignored -> Mono.empty())).verifyComplete();
 
-        verify(riskControlService, never()).firstBannedScene(any(Collection.class), anyString());
+        var captor = ArgumentCaptor.forClass(AuditRecord.class);
+        verify(auditService).record(captor.capture());
+        assertThat(captor.getValue().getUid()).isEqualTo("uid-1");
+        assertThat(captor.getValue().getContext()).containsEntry("username", "alice");
     }
 }

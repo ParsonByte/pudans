@@ -32,6 +32,11 @@ public class RiskRuleEndpoint implements CustomEndpoint {
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "RiskRuleV1alpha1";
         return SpringdocRouteBuilder.route()
+                .GET("/riskrules/bans", this::bans, builder -> builder.operationId("ListRiskBans")
+                        .description("List active risk control bans with their remaining duration.")
+                        .tag(tag)
+                        .response(responseBuilder()
+                                .implementationArray(RiskControlService.RiskBan.class)))
                 .DELETE("/riskrules/unban", this::unban, builder -> builder.operationId("UnbanRiskSubject")
                         .description("Lift the active ban of a scene subject, e.g. an IP address.")
                         .tag(tag)
@@ -51,6 +56,13 @@ public class RiskRuleEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    private Mono<ServerResponse> bans(ServerRequest request) {
+        return riskControlService
+                .listBans()
+                .collectList()
+                .flatMap(bans -> ServerResponse.ok().bodyValue(bans));
+    }
+
     private Mono<ServerResponse> unban(ServerRequest request) {
         var scene = request.queryParam("scene").filter(StringUtils::hasText).orElse(null);
         var subject = request.queryParam("subject").filter(StringUtils::hasText).orElse(null);
@@ -62,7 +74,8 @@ public class RiskRuleEndpoint implements CustomEndpoint {
         }
         return riskControlService
                 .unban(scene, subject)
-                .doOnNext(deletedCount -> recordUnban(request, scene, subject, deletedCount != null && deletedCount > 0))
+                .doOnNext(deletedCount -> recordUnban(
+                        request, scene, subject, deletedCount != null && deletedCount > 0))
                 .then(ServerResponse.noContent().build());
     }
 

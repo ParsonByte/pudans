@@ -55,6 +55,8 @@ public class PermissionCatalogService {
             String path,
             String icon,
             String group,
+            String parent,
+            String parentIcon,
             String component,
             int order,
             boolean publicMenu,
@@ -87,6 +89,8 @@ public class PermissionCatalogService {
             String path,
             String icon,
             String group,
+            String parent,
+            String parentIcon,
             String component,
             int order,
             List<NavigationOperation> operations) {}
@@ -194,6 +198,8 @@ public class PermissionCatalogService {
                                 menu.path(),
                                 menu.icon(),
                                 menu.group(),
+                                menu.parent(),
+                                menu.parentIcon(),
                                 menu.component(),
                                 menu.order(),
                                 menu.operations().stream()
@@ -392,6 +398,14 @@ public class PermissionCatalogService {
         if (StringUtils.isNotBlank(group)) {
             menu.group = group;
         }
+        var parent = annotations.get(Role.UI_PARENT_ANNO);
+        if (StringUtils.isNotBlank(parent)) {
+            menu.parent = parent;
+        }
+        var parentIcon = annotations.get(Role.UI_PARENT_ICON_ANNO);
+        if (StringUtils.isNotBlank(parentIcon)) {
+            menu.parentIcon = parentIcon;
+        }
         var component = annotations.get(Role.UI_COMPONENT_ANNO);
         if (StringUtils.isNotBlank(component)) {
             menu.component = component;
@@ -475,6 +489,10 @@ public class PermissionCatalogService {
 
         private String group;
 
+        private String parent;
+
+        private String parentIcon;
+
         private String component;
 
         private int order;
@@ -503,6 +521,8 @@ public class PermissionCatalogService {
                     path,
                     icon,
                     group,
+                    parent,
+                    parentIcon,
                     component,
                     order,
                     publicMenu,

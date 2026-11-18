@@ -36,45 +36,35 @@ export function DataTablePagination({
   return (
     <div
       className={cn(
-        "flex items-center justify-between overflow-clip px-2",
-        "@max-2xl/content:flex-col-reverse @max-2xl/content:gap-4",
+        "flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between",
         className,
       )}
-      style={{ overflowClipMargin: 1 }}
     >
-      <div className="flex w-full items-center justify-between">
-        <div className="flex w-24 items-center justify-center text-sm font-medium @2xl/content:hidden">
-          第 {currentPage} / {pageCount} 页
-        </div>
-        <div className="flex items-center gap-2 @max-2xl/content:flex-row-reverse">
-          <Select
-            value={String(pageSize)}
-            onValueChange={(value) => onPageSizeChange(Number(value))}
-          >
-            <SelectTrigger className="h-8 w-20" aria-label="每页显示数量">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent side="top">
-              {PAGE_SIZES.map((size) => (
-                <SelectItem key={size} value={String(size)}>
-                  {size}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <p className="hidden text-sm font-medium sm:block">每页条数</p>
-        </div>
+      <div className="flex items-center gap-2">
+        <Select value={String(pageSize)} onValueChange={(value) => onPageSizeChange(Number(value))}>
+          <SelectTrigger className="h-8 w-20" aria-label="每页显示数量">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent side="top">
+            {PAGE_SIZES.map((size) => (
+              <SelectItem key={size} value={String(size)}>
+                {size}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-sm font-medium whitespace-nowrap">每页条数</p>
       </div>
 
-      <div className="flex items-center sm:space-x-6 lg:space-x-8">
-        <div className="flex w-24 items-center justify-center text-sm font-medium @max-3xl/content:hidden">
+      <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+        <p className="text-sm font-medium whitespace-nowrap">
           第 {currentPage} / {pageCount} 页
-        </div>
-        <div className="flex items-center space-x-2">
+        </p>
+        <div className="flex items-center gap-1">
           <Button
             type="button"
             variant="outline"
-            className="size-8 p-0 @max-md/content:hidden"
+            className="size-8 p-0"
             onClick={() => onPageChange(1)}
             disabled={disabled || currentPage <= 1}
           >
@@ -124,7 +114,7 @@ export function DataTablePagination({
           <Button
             type="button"
             variant="outline"
-            className="size-8 p-0 @max-md/content:hidden"
+            className="size-8 p-0"
             onClick={() => onPageChange(pageCount)}
             disabled={disabled || currentPage >= pageCount}
           >

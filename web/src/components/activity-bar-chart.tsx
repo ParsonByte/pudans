@@ -11,12 +11,14 @@ type ActivityBarChartProps = {
   points: ActivityBarChartPoint[];
   seriesLabel?: string;
   height?: number;
+  formatLabel?: (value: string) => string;
 };
 
 export function ActivityBarChart({
   points,
   seriesLabel = "操作次数",
   height = 300,
+  formatLabel = formatTrendDay,
 }: ActivityBarChartProps) {
   const data = points
     .map((point) => ({ date: point.date ?? "", count: point.count ?? 0 }))
@@ -33,7 +35,7 @@ export function ActivityBarChart({
             fontSize={12}
             tickLine={false}
             axisLine={false}
-            tickFormatter={formatTrendDay}
+            tickFormatter={formatLabel}
             interval="preserveStartEnd"
           />
           <YAxis
@@ -46,7 +48,7 @@ export function ActivityBarChart({
           />
           <Tooltip
             cursor={{ fill: "var(--muted)" }}
-            labelFormatter={(label) => formatTrendDay(String(label))}
+            labelFormatter={(label) => formatLabel(String(label))}
             formatter={(value) => [Number(value).toLocaleString("zh-CN"), seriesLabel]}
             contentStyle={{
               background: "var(--popover)",

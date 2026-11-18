@@ -54,6 +54,10 @@ public class RiskRuleRegistry {
         return rules.get(scene);
     }
 
+    public int ruleCount() {
+        return rules.size();
+    }
+
     public java.util.Set<String> enabledScenes() {
         return rules.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && entry.getValue().isEnabled())

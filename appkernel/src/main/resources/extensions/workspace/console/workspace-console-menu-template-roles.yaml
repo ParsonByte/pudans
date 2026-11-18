@@ -16,6 +16,8 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-label: "角色"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看、创建和维护角色及其权限。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-check"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
     rbac.authorization.pudans.tolim.cn/ui-group: "控制"
     rbac.authorization.pudans.tolim.cn/ui-order: "20"
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["roles:view"]'

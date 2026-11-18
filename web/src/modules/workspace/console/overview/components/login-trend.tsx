@@ -20,36 +20,36 @@ import {
 const SERIES = [
   { key: "logins", label: "登录", color: "var(--primary)" },
   { key: "operations", label: "操作", color: "var(--muted-foreground)" },
-  { key: "riskRules", label: "风险规则", color: "var(--chart-3)" },
+  { key: "riskEvents", label: "风险事件", color: "var(--chart-3)" },
   { key: "webhooks", label: "Webhook", color: "var(--chart-4)" },
 ] as const;
 
 type LoginTrendProps = {
   points: LoginTrendPoint[];
   operationTrend: LoginTrendPoint[];
-  riskRuleTrend: LoginTrendPoint[];
+  riskEventTrend: LoginTrendPoint[];
   webhookTrend: LoginTrendPoint[];
 };
 
 export function LoginTrend({
   points,
   operationTrend,
-  riskRuleTrend,
+  riskEventTrend,
   webhookTrend,
 }: LoginTrendProps) {
   const loginsByDate = new Map(points.map((point) => [point.date ?? "", point.count ?? 0]));
   const operationsByDate = new Map(
     operationTrend.map((point) => [point.date ?? "", point.count ?? 0]),
   );
-  const riskRulesByDate = new Map(
-    riskRuleTrend.map((point) => [point.date ?? "", point.count ?? 0]),
+  const riskEventsByDate = new Map(
+    riskEventTrend.map((point) => [point.date ?? "", point.count ?? 0]),
   );
   const webhooksByDate = new Map(webhookTrend.map((point) => [point.date ?? "", point.count ?? 0]));
   const dates = Array.from(
     new Set([
       ...loginsByDate.keys(),
       ...operationsByDate.keys(),
-      ...riskRulesByDate.keys(),
+      ...riskEventsByDate.keys(),
       ...webhooksByDate.keys(),
     ]),
   )
@@ -59,7 +59,7 @@ export function LoginTrend({
     date,
     logins: loginsByDate.get(date) ?? 0,
     operations: operationsByDate.get(date) ?? 0,
-    riskRules: riskRulesByDate.get(date) ?? 0,
+    riskEvents: riskEventsByDate.get(date) ?? 0,
     webhooks: webhooksByDate.get(date) ?? 0,
   }));
 
@@ -67,7 +67,7 @@ export function LoginTrend({
     <ConsoleSection>
       <ConsoleSectionHeader
         title="审计趋势"
-        description="最近 7 天登录、操作、风险规则与 Webhook 新增次数"
+        description="最近 7 天登录、操作、风险事件与 Webhook 次数"
         action={
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
             {SERIES.map((series) => (
@@ -125,7 +125,7 @@ export function LoginTrend({
               />
               <Line
                 type="monotone"
-                dataKey="riskRules"
+                dataKey="riskEvents"
                 stroke="var(--chart-3)"
                 strokeWidth={2}
                 dot={false}
