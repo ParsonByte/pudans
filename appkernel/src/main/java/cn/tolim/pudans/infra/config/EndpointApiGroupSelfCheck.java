@@ -3,7 +3,7 @@ package cn.tolim.pudans.infra.config;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.SchemeManager;
-import cn.tolim.pudans.core.rbac.BuiltinEntityDefinitions;
+import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationContext;
@@ -50,8 +49,12 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
 
     private final ApplicationContext applicationContext;
 
-    public EndpointApiGroupSelfCheck(ApplicationContext applicationContext) {
+    private final BuiltinRoleDefinitions builtinRoleDefinitions;
+
+    public EndpointApiGroupSelfCheck(
+            ApplicationContext applicationContext, BuiltinRoleDefinitions builtinRoleDefinitions) {
         this.applicationContext = applicationContext;
+        this.builtinRoleDefinitions = builtinRoleDefinitions;
     }
 
     @Override
@@ -120,11 +123,11 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                 .collect(Collectors.toCollection(TreeSet::new));
         if (!uncoveredPaths.isEmpty()) {
             throw new IllegalStateException(
-                    "以下自定义端点路径未被内置角色规则或显式"
+                    "以下自定义端点路径未被角色定义规则或显式"
                             + "放行规则覆盖："
                             + uncoveredPaths
-                            + "。请将匹配的资源添加到 BuiltinEntityDefinitions 和 role-template-*.yaml"
-                            + " 文件，或将路径添加到显式放行列表。已覆盖的资源："
+                            + "。请将匹配的资源添加到 extensions/workspace 或 extensions/role 下的角色定义"
+                            + "文件，或将路径添加到显式放行列表。已覆盖的资源："
                             + coveredResources);
         }
     }
@@ -194,9 +197,8 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
         return paths;
     }
 
-    private static Set<String> coveredResources() {
-        return Stream.of(
-                        BuiltinEntityDefinitions.systemAdminRole(), BuiltinEntityDefinitions.normalRole())
+    private Set<String> coveredResources() {
+        return builtinRoleDefinitions.allRoles().stream()
                 .flatMap(role -> role.getRules().stream())
                 .filter(rule -> Arrays.asList(rule.getApiGroups()).contains(ApiGroups.API))
                 .flatMap(rule -> Arrays.stream(rule.getResources()))

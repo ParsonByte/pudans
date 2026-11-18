@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import type { User } from "@/components/layout/types";
 import { getLoginSession } from "@/modules/auth/lib/session";
+import { fetchNavigation } from "@/modules/workspace/lib/permission-api";
 import {
   buildWorkspaceNavGroups,
   buildWorkspaces,
@@ -13,7 +14,10 @@ import {
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async ({ location }) => {
-    const session = await getLoginSession().catch(() => null);
+    const [session, navigation] = await Promise.all([
+      getLoginSession().catch(() => null),
+      fetchNavigation().catch(() => null),
+    ]);
 
     if (!session) {
       toast.error("无法获取登录状态，请稍后重试。");
@@ -32,19 +36,22 @@ export const Route = createFileRoute("/_authenticated")({
       throw redirect({ to: "/403", replace: true });
     }
 
-    return { session };
+    if (!navigation) {
+      toast.error("无法获取工作区导航，请稍后重试。");
+      throw redirect({ to: "/500", replace: true });
+    }
+
+    return { session, navigation };
   },
   component: AuthenticatedRoute,
 });
 
 function AuthenticatedRoute() {
-  const { session } = Route.useRouteContext();
+  const { session, navigation } = Route.useRouteContext();
   const pathname = useLocation({ select: (location) => location.pathname });
-  const workspaces = buildWorkspaces(session.uiPermissions);
+  const workspaces = buildWorkspaces(navigation);
   const activeWorkspace = resolveActiveWorkspace(workspaces, pathname);
-  const navGroups = activeWorkspace
-    ? buildWorkspaceNavGroups(activeWorkspace.id, session.uiPermissions)
-    : [];
+  const navGroups = activeWorkspace ? buildWorkspaceNavGroups(navigation, activeWorkspace.id) : [];
   const user: User = {
     name: session.displayName || session.username || "用户",
     email: session.username ?? "",

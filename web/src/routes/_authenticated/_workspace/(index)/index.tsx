@@ -7,7 +7,7 @@ export const Route = createFileRoute("/_authenticated/_workspace/(index)/")({
 });
 
 function WorkspaceIndexRoute() {
-  const { session } = Route.useRouteContext();
+  const { navigation } = Route.useRouteContext();
 
-  return <WorkspaceIndexView uiPermissions={session.uiPermissions} />;
+  return <WorkspaceIndexView navigation={navigation} />;
 }

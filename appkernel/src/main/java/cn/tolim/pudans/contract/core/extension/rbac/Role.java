@@ -26,6 +26,28 @@ public class Role extends AbstractExtension {
     public static final String ROLE_AGGREGATE_LABEL_PREFIX = "rbac.authorization.pudans.tolim.cn/aggregate-to-";
     public static final String ROLE_DEPENDENCIES_ANNO = "rbac.authorization.pudans.tolim.cn/dependencies";
     public static final String UI_PERMISSIONS_ANNO = "rbac.authorization.pudans.tolim.cn/ui-permissions";
+    public static final String DISPLAY_NAME_ANNO = "rbac.authorization.pudans.tolim.cn/display-name";
+    public static final String DESCRIPTION_ANNO = "rbac.authorization.pudans.tolim.cn/description";
+    public static final String UI_TYPE_ANNO = "rbac.authorization.pudans.tolim.cn/ui-type";
+    public static final String UI_ACTION_ANNO = "rbac.authorization.pudans.tolim.cn/ui-action";
+    public static final String UI_MENU_ANNO = "rbac.authorization.pudans.tolim.cn/ui-menu";
+    public static final String UI_OPERATION_ANNO = "rbac.authorization.pudans.tolim.cn/ui-operation";
+    public static final String UI_COMPONENT_ANNO = "rbac.authorization.pudans.tolim.cn/ui-component";
+    public static final String UI_CAPABILITY_ANNO = "rbac.authorization.pudans.tolim.cn/ui-capability";
+    public static final String UI_WORKSPACE_ANNO = "rbac.authorization.pudans.tolim.cn/ui-workspace";
+    public static final String UI_PATH_ANNO = "rbac.authorization.pudans.tolim.cn/ui-path";
+    public static final String UI_LABEL_ANNO = "rbac.authorization.pudans.tolim.cn/ui-label";
+    public static final String UI_DESCRIPTION_ANNO = "rbac.authorization.pudans.tolim.cn/ui-description";
+    public static final String UI_ICON_ANNO = "rbac.authorization.pudans.tolim.cn/ui-icon";
+    public static final String UI_GROUP_ANNO = "rbac.authorization.pudans.tolim.cn/ui-group";
+    public static final String UI_ORDER_ANNO = "rbac.authorization.pudans.tolim.cn/ui-order";
+    public static final String UI_PUBLIC_ANNO = "rbac.authorization.pudans.tolim.cn/ui-public";
+    public static final String UI_TYPE_WORKSPACE = "workspace";
+    public static final String UI_TYPE_MENU = "menu";
+    public static final String UI_TYPE_BUTTON = "button";
+    public static final String UI_TYPE_TABLE = "table";
+    public static final String UI_ACTION_VIEW = "view";
+    public static final String UI_ACTION_MANAGE = "manage";
 
     // 禁止角色访问控制台的注解键。
     public static final String DISALLOW_ACCESS_CONSOLE_ANNO =

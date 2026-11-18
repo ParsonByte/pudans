@@ -296,7 +296,7 @@ public class DashboardEndpoint implements CustomEndpoint {
 
     private static String roleDisplayName(Role role) {
         var annotations = role.getMetadata() == null ? null : role.getMetadata().getAnnotations();
-        var displayName = annotations == null ? null : annotations.get(DISPLAY_NAME_ANNO);
+        var displayName = annotations == null ? null : annotations.get(Role.DISPLAY_NAME_ANNO);
         if (displayName == null || displayName.isBlank()) {
             return role.getMetadata().getName();
         }
@@ -308,8 +308,6 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .countBy(type, ListOptions.builder().andQuery(notDeleting()).build())
                 .onErrorReturn(0L);
     }
-
-    private static final String DISPLAY_NAME_ANNO = "rbac.authorization.pudans.tolim.cn/display-name";
 
     private Mono<List<RecentOperation>> toRecentOperations(List<AuditRecord> records) {
         if (records.isEmpty()) {

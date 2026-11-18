@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { createLocalUser, resolveUserApiError } from "../lib/api";
 import { useUserGroups } from "../lib/use-user-groups";
@@ -45,6 +46,7 @@ type CreateUserValues = z.infer<typeof createUserSchema>;
 export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const usersPath = useMenuPath("users");
   const form = useForm<CreateUserValues>({
     resolver: zodResolver(createUserSchema) as Resolver<CreateUserValues>,
     defaultValues: {
@@ -68,8 +70,8 @@ export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("用户已创建。");
       onClose();
-      if (createdName) {
-        void navigate({ to: "/console/users/$name", params: { name: createdName } });
+      if (createdName && usersPath) {
+        void navigate({ to: "/$", params: { _splat: `${usersPath}/${createdName}` } });
       }
     },
     onError: (error) => toast.error(resolveUserApiError(error)),

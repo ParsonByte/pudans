@@ -9,7 +9,7 @@ import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.MetadataUtil;
 import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.rbac.BuiltinEntityDefinitions;
+import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import cn.tolim.pudans.core.rbac.SuperAdminResolver;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
@@ -37,6 +37,8 @@ public class SystemInitializer implements SuperAdminInitializer {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    private final BuiltinRoleDefinitions builtinRoleDefinitions;
+
     @Override
     public Mono<Void> initialize(InitializationParam param) {
         return ensureRoles()
@@ -48,19 +50,13 @@ public class SystemInitializer implements SuperAdminInitializer {
     }
 
     Mono<Void> ensureRoles() {
-        return Flux.just(
-                        BuiltinEntityDefinitions.superRole(),
-                        BuiltinEntityDefinitions.systemAdminRole(),
-                        BuiltinEntityDefinitions.normalRole())
+        return Flux.fromIterable(builtinRoleDefinitions.builtinRoles())
                 .concatMap(this::ensureRole)
                 .then();
     }
 
     Mono<Void> ensureGroups() {
-        return Flux.just(
-                        BuiltinEntityDefinitions.superAdminsGroup(),
-                        BuiltinEntityDefinitions.systemAdminsGroup(),
-                        BuiltinEntityDefinitions.normalUsersGroup())
+        return Flux.fromIterable(builtinRoleDefinitions.builtinGroups())
                 .concatMap(this::ensureGroup)
                 .then();
     }
