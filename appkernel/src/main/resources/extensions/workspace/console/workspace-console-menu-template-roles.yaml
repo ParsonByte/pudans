@@ -1,0 +1,64 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-roles
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Roles Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "Role View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.roles"
+    rbac.authorization.pudans.tolim.cn/ui-component: "roles"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/console/roles"
+    rbac.authorization.pudans.tolim.cn/ui-label: "角色"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看、创建和维护角色及其权限。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-check"
+    rbac.authorization.pudans.tolim.cn/ui-group: "控制"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["roles:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "roles"
+      - "rolebindings"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "permission-catalog"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-roles
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-roles", "role-template-audit-logs" ]
+    rbac.authorization.pudans.tolim.cn/module: "Roles Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "Role Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.roles"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["roles:manage"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "roles"
+      - "rolebindings"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"

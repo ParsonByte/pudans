@@ -1,0 +1,33 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-export-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-users" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "table"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "export"
+    rbac.authorization.pudans.tolim.cn/ui-label: "导出表格"
+    rbac.authorization.pudans.tolim.cn/ui-description: "导出当前筛选结果或选中的用户。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "90"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:table-export"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-bulk-operate-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-disable-users" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "table"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "bulk"
+    rbac.authorization.pudans.tolim.cn/ui-label: "批量操作"
+    rbac.authorization.pudans.tolim.cn/ui-description: "在表格中多选用户并批量启用或禁用。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "100"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:table-bulk"]'
+rules: []

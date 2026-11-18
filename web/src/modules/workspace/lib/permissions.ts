@@ -1,22 +1,42 @@
+import { useMemo } from "react";
+
+import { useLocation, useRouteContext } from "@tanstack/react-router";
+
+import { findNavigationMenu } from "./workspaces";
+
 const UI_PERMISSION_ALL = "*";
-
-export const UI_PERMISSION_DASHBOARD_VIEW = "dashboard:view";
-
-export const UI_PERMISSION_SETTINGS_MANAGE = "settings:manage";
-
-export const UI_PERMISSION_USERS_MANAGE = "users:manage";
-
-export const UI_PERMISSION_ROLES_MANAGE = "roles:manage";
-
-export const UI_PERMISSION_AUTH_PROVIDERS_MANAGE = "auth-providers:manage";
-
-export const UI_PERMISSION_RISK_MANAGE = "risk:manage";
-
-export const UI_PERMISSION_AUDIT_VIEW = "audit:view";
 
 export function hasUiPermission(
   permissions: readonly string[] | undefined,
-  required: string,
+  required?: string,
 ): boolean {
+  if (!required) {
+    return false;
+  }
   return Boolean(permissions?.includes(UI_PERMISSION_ALL) || permissions?.includes(required));
+}
+
+export function useAllowedOperations(): ReadonlySet<string> {
+  const { navigation } = useRouteContext({ from: "/_authenticated" });
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const menu = findNavigationMenu(navigation, pathname);
+  const operations = menu?.operations;
+
+  return useMemo(
+    () =>
+      new Set(
+        (operations ?? [])
+          .filter((operation) => operation.allowed)
+          .map((operation) => operation.key),
+      ),
+    [operations],
+  );
+}
+
+export function useMenuPath(component: string): string | undefined {
+  const { navigation } = useRouteContext({ from: "/_authenticated" });
+
+  return (navigation.workspaces ?? [])
+    .flatMap((workspace) => workspace.menus ?? [])
+    .find((menu) => menu.component === component)?.path;
 }

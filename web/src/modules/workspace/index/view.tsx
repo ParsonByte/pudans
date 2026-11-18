@@ -7,15 +7,16 @@ import {
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import type { Navigation } from "@/modules/workspace/lib/permission-api";
 import { buildWorkspaces } from "@/modules/workspace/lib/workspaces";
 
 type WorkspaceIndexViewProps = {
-  uiPermissions?: readonly string[];
+  navigation: Navigation;
 };
 
-export function WorkspaceIndexView({ uiPermissions }: WorkspaceIndexViewProps) {
-  const workspaces = buildWorkspaces(uiPermissions);
-  const availableWorkspaces = workspaces.filter((workspace) => workspace.id !== "index");
+export function WorkspaceIndexView({ navigation }: WorkspaceIndexViewProps) {
+  const workspaces = buildWorkspaces(navigation);
+  const availableWorkspaces = workspaces.filter((workspace) => workspace.homeUrl !== "/");
 
   return (
     <ConsolePage title="默认工作区">

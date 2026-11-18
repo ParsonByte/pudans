@@ -62,6 +62,8 @@ public class UserEndpoint implements CustomEndpoint {
 
     private static final String SELF = "-";
 
+    private static final String MANAGE_USERS_CAPABILITY = "manage-users";
+
     private static final int MAX_LOCAL_BATCH_SIZE = 200;
 
     private final ReactiveExtensionClient client;
@@ -276,8 +278,7 @@ public class UserEndpoint implements CustomEndpoint {
 
     private Mono<Boolean> canManageUsers() {
         return currentUsername()
-                .flatMap(uiPermissionService::uiPermissionsOf)
-                .map(permissions -> permissions.contains("*") || permissions.contains("users:manage"))
+                .flatMap(username -> uiPermissionService.hasCapability(username, MANAGE_USERS_CAPABILITY))
                 .defaultIfEmpty(false);
     }
 

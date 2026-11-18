@@ -1,0 +1,20 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-overview
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "default.overview"
+    rbac.authorization.pudans.tolim.cn/ui-component: "overview"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "default"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/"
+    rbac.authorization.pudans.tolim.cn/ui-label: "总览"
+    rbac.authorization.pudans.tolim.cn/ui-description: "默认工作区的总览页，所有已登录用户都可以访问。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:boxes"
+    rbac.authorization.pudans.tolim.cn/ui-group: "默认工作区"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-public: "true"
+rules: []

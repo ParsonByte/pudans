@@ -30,6 +30,7 @@ import {
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { ChangeGroupDialog } from "./components/change-group-dialog";
 import { EditUserDialog } from "./components/edit-user-dialog";
@@ -50,6 +51,13 @@ type UserDetailViewProps = {
 export function UserDetailView({ name }: UserDetailViewProps) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const allowedOperations = useAllowedOperations();
+  const usersPath = useMenuPath("users");
+  const canUpdate = allowedOperations.has("update");
+  const canResetPassword = allowedOperations.has("reset-password");
+  const canChangeGroup = allowedOperations.has("change-group");
+  const canChangeStatus = allowedOperations.has("toggle-status");
+  const canDelete = allowedOperations.has("delete");
   const [editOpen, setEditOpen] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
   const [groupOpen, setGroupOpen] = useState(false);
@@ -129,7 +137,9 @@ export function UserDetailView({ name }: UserDetailViewProps) {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("用户已删除。");
-      void navigate({ to: "/console/users" });
+      if (usersPath) {
+        void navigate({ to: "/$", params: { _splat: usersPath } });
+      }
     },
     onError: (error) => toast.error(resolveUserApiError(error)),
   });
@@ -175,12 +185,14 @@ export function UserDetailView({ name }: UserDetailViewProps) {
             <p className="text-xs text-muted-foreground">{resolveUserApiError(userQuery.error)}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/console/users">
-                <ArrowLeft />
-                返回用户列表
-              </Link>
-            </Button>
+            {usersPath ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/$" params={{ _splat: usersPath }}>
+                  <ArrowLeft />
+                  返回用户列表
+                </Link>
+              </Button>
+            ) : null}
             <Button variant="outline" size="sm" onClick={() => void userQuery.refetch()}>
               <RefreshCw />
               重试
@@ -196,39 +208,49 @@ export function UserDetailView({ name }: UserDetailViewProps) {
   return (
     <ConsolePage title={displayName}>
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/console/users">
-            <ArrowLeft />
-            返回用户列表
-          </Link>
-        </Button>
+        {usersPath ? (
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/$" params={{ _splat: usersPath }}>
+              <ArrowLeft />
+              返回用户列表
+            </Link>
+          </Button>
+        ) : null}
         <div className="ms-auto flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-            <Pencil />
-            编辑简介
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => setPasswordOpen(true)}>
-            <KeyRound />
-            重置密码
-          </Button>
-          <Button
-            variant={disabled ? "default" : "outline"}
-            size="sm"
-            onClick={() => setStatusConfirmOpen(true)}
-            disabled={statusMutation.isPending}
-          >
-            {disabled ? <CheckCircle2 /> : <Ban />}
-            {disabled ? "启用用户" : "禁用用户"}
-          </Button>
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setDeleteConfirmOpen(true)}
-            disabled={deleteMutation.isPending}
-          >
-            <Trash2 />
-            删除用户
-          </Button>
+          {canUpdate ? (
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <Pencil />
+              编辑简介
+            </Button>
+          ) : null}
+          {canResetPassword ? (
+            <Button variant="outline" size="sm" onClick={() => setPasswordOpen(true)}>
+              <KeyRound />
+              重置密码
+            </Button>
+          ) : null}
+          {canChangeStatus ? (
+            <Button
+              variant={disabled ? "default" : "outline"}
+              size="sm"
+              onClick={() => setStatusConfirmOpen(true)}
+              disabled={statusMutation.isPending}
+            >
+              {disabled ? <CheckCircle2 /> : <Ban />}
+              {disabled ? "启用用户" : "禁用用户"}
+            </Button>
+          ) : null}
+          {canDelete ? (
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteConfirmOpen(true)}
+              disabled={deleteMutation.isPending}
+            >
+              <Trash2 />
+              删除用户
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -275,7 +297,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
               title="用户组"
               description="用户组决定用户继承的角色。"
               action={
-                group ? (
+                group && canChangeGroup ? (
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => setGroupOpen(true)}>
                       调整

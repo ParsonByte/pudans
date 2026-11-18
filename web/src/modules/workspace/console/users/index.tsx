@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { ConsolePage } from "@/modules/workspace/console/components/console-page";
+import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { BatchCreateUsersDialog } from "./components/batch-create-users-dialog";
 import { CreateUserDialog } from "./components/create-user-dialog";
@@ -90,6 +91,8 @@ const COLUMN_OPTIONS = [
 
 export function UsersView() {
   const queryClient = useQueryClient();
+  const allowedOperations = useAllowedOperations();
+  const usersPath = useMenuPath("users");
   const [searchInput, setSearchInput] = useState("");
   const [keyword, setKeyword] = useState("");
   const [statusFilters, setStatusFilters] = useState<string[]>([]);
@@ -110,6 +113,14 @@ export function UsersView() {
   const [batchCreateOpen, setBatchCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState<UserListItem | null>(null);
+
+  const canCreate = allowedOperations.has("create");
+  const canBatchCreate = allowedOperations.has("batch-create");
+  const canImport = allowedOperations.has("import");
+  const canExport = allowedOperations.has("export");
+  const canBulk = allowedOperations.has("bulk");
+  const canChangeStatus = allowedOperations.has("toggle-status");
+  const canSelect = canBulk || canExport;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -340,22 +351,31 @@ export function UsersView() {
         key: "displayName",
         column: userColumnHelper.accessor("displayName", {
           header: "姓名",
-          cell: ({ row }) => (
-            <Link
-              to="/console/users/$name"
-              params={{ name: row.original.name ?? "" }}
-              className="flex min-w-0 items-center gap-2"
-            >
-              <UserAvatar
-                name={row.original.name}
-                displayName={row.original.displayName}
-                className="size-8 shrink-0"
-              />
-              <LongText className="max-w-36 text-sm font-medium">
-                {row.original.displayName || "未命名用户"}
-              </LongText>
-            </Link>
-          ),
+          cell: ({ row }) => {
+            const content = (
+              <>
+                <UserAvatar
+                  name={row.original.name}
+                  displayName={row.original.displayName}
+                  className="size-8 shrink-0"
+                />
+                <LongText className="max-w-36 text-sm font-medium">
+                  {row.original.displayName || "未命名用户"}
+                </LongText>
+              </>
+            );
+            return usersPath ? (
+              <Link
+                to="/$"
+                params={{ _splat: `${usersPath}/${row.original.name ?? ""}` }}
+                className="flex min-w-0 items-center gap-2"
+              >
+                {content}
+              </Link>
+            ) : (
+              <div className="flex min-w-0 items-center gap-2">{content}</div>
+            );
+          },
         }),
       },
       {
@@ -434,12 +454,14 @@ export function UsersView() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-40">
-                  <DropdownMenuItem asChild>
-                    <Link to="/console/users/$name" params={{ name: user.name ?? "" }}>
-                      <Eye />
-                      查看详情
-                    </Link>
-                  </DropdownMenuItem>
+                  {usersPath ? (
+                    <DropdownMenuItem asChild>
+                      <Link to="/$" params={{ _splat: `${usersPath}/${user.name ?? ""}` }}>
+                        <Eye />
+                        查看详情
+                      </Link>
+                    </DropdownMenuItem>
+                  ) : null}
                   <DropdownMenuItem onSelect={() => setStatusTarget(user)}>
                     {user.disabled ? <CheckCircle2 /> : <Ban />}
                     {user.disabled ? "启用用户" : "禁用用户"}
@@ -453,12 +475,28 @@ export function UsersView() {
     ];
 
     return allColumns
-      .filter(
-        (item) =>
-          item.key === "select" || item.key === "actions" || visibleColumns[item.key] !== false,
-      )
+      .filter((item) => {
+        if (item.key === "select") {
+          return canSelect;
+        }
+        if (item.key === "actions") {
+          return canChangeStatus;
+        }
+        return visibleColumns[item.key] !== false;
+      })
       .map((item) => item.column) as unknown as UserColumn[];
-  }, [allSelected, someSelected, selected, sort, toggleAll, toggleOne, visibleColumns]);
+  }, [
+    allSelected,
+    canChangeStatus,
+    canSelect,
+    someSelected,
+    selected,
+    sort,
+    toggleAll,
+    toggleOne,
+    usersPath,
+    visibleColumns,
+  ]);
 
   const table = useTable({
     features: USER_TABLE_FEATURES,
@@ -481,28 +519,36 @@ export function UsersView() {
               {usersQuery.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
               刷新
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              title="导出当前筛选结果"
-              onClick={() => exportMutation.mutate()}
-              disabled={exportMutation.isPending}
-            >
-              {exportMutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
-              导出
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
-              <Upload />
-              导入
-            </Button>
-            <Button type="button" variant="outline" onClick={() => setBatchCreateOpen(true)}>
-              <ListPlus />
-              批量创建
-            </Button>
-            <Button type="button" onClick={() => setCreateOpen(true)}>
-              <Plus />
-              创建用户
-            </Button>
+            {canExport ? (
+              <Button
+                type="button"
+                variant="outline"
+                title="导出当前筛选结果"
+                onClick={() => exportMutation.mutate()}
+                disabled={exportMutation.isPending}
+              >
+                {exportMutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
+                导出
+              </Button>
+            ) : null}
+            {canImport ? (
+              <Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
+                <Upload />
+                导入
+              </Button>
+            ) : null}
+            {canBatchCreate ? (
+              <Button type="button" variant="outline" onClick={() => setBatchCreateOpen(true)}>
+                <ListPlus />
+                批量创建
+              </Button>
+            ) : null}
+            {canCreate ? (
+              <Button type="button" onClick={() => setCreateOpen(true)}>
+                <Plus />
+                创建用户
+              </Button>
+            ) : null}
           </div>
         </div>
 
@@ -643,42 +689,54 @@ export function UsersView() {
           className="mt-auto"
         />
 
-        <DataTableBulkActions
-          selectedCount={selected.size}
-          entityName="用户"
-          onClear={() => setSelected(new Set())}
-        >
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={exportSelectedMutation.isPending}
-            onClick={() => exportSelectedMutation.mutate([...selected])}
+        {canSelect ? (
+          <DataTableBulkActions
+            selectedCount={selected.size}
+            entityName="用户"
+            onClear={() => setSelected(new Set())}
           >
-            {exportSelectedMutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
-            导出
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={bulkMutation.isPending}
-            onClick={() => bulkMutation.mutate({ action: "enable", names: [...selected] })}
-          >
-            <CheckCircle2 />
-            启用
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={bulkMutation.isPending}
-            onClick={() => bulkMutation.mutate({ action: "disable", names: [...selected] })}
-          >
-            <Ban />
-            禁用
-          </Button>
-        </DataTableBulkActions>
+            {canExport ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={exportSelectedMutation.isPending}
+                onClick={() => exportSelectedMutation.mutate([...selected])}
+              >
+                {exportSelectedMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Download />
+                )}
+                导出
+              </Button>
+            ) : null}
+            {canBulk ? (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkMutation.isPending}
+                  onClick={() => bulkMutation.mutate({ action: "enable", names: [...selected] })}
+                >
+                  <CheckCircle2 />
+                  启用
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={bulkMutation.isPending}
+                  onClick={() => bulkMutation.mutate({ action: "disable", names: [...selected] })}
+                >
+                  <Ban />
+                  禁用
+                </Button>
+              </>
+            ) : null}
+          </DataTableBulkActions>
+        ) : null}
       </div>
 
       {createOpen ? <CreateUserDialog onClose={() => setCreateOpen(false)} /> : null}

@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.rbac;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +21,15 @@ import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
 import cn.tolim.pudans.contract.extension.JsonExtension;
+import cn.tolim.pudans.contract.extension.MetadataUtil;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.ReservedLabels;
+import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import cn.tolim.pudans.contract.extension.Unstructured;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
+import com.fasterxml.jackson.core.type.TypeReference;
 
 @Component
 @RequiredArgsConstructor
@@ -49,7 +53,11 @@ public class BuiltinEntityPolicy {
 
     public Mono<Void> checkCreate(GroupVersionKind gvk, Extension extension) {
         var kind = gvk.kind();
-        if (Role.KIND.equals(kind) || UserGroup.KIND.equals(kind)) {
+        if (Role.KIND.equals(kind)) {
+            return checkMutation(kind, nameOf(extension))
+                    .then(convert(extension, Role.class).flatMap(this::checkRoleDependencies));
+        }
+        if (UserGroup.KIND.equals(kind)) {
             return checkMutation(kind, nameOf(extension));
         }
         if (UserGroupBinding.KIND.equals(kind)) {
@@ -67,7 +75,11 @@ public class BuiltinEntityPolicy {
 
     public Mono<Void> checkUpdate(GroupVersionKind gvk, String name, Extension extension) {
         var kind = gvk.kind();
-        if (Role.KIND.equals(kind) || UserGroup.KIND.equals(kind)) {
+        if (Role.KIND.equals(kind)) {
+            return checkMutation(kind, name)
+                    .then(convert(extension, Role.class).flatMap(this::checkRoleDependencies));
+        }
+        if (UserGroup.KIND.equals(kind)) {
             return checkMutation(kind, name);
         }
         if (UserGroupBinding.KIND.equals(kind)) {
@@ -123,6 +135,31 @@ public class BuiltinEntityPolicy {
                 throw denied("内置角色 [" + name + "] 不可修改或删除。");
             }
         });
+    }
+
+    private Mono<Void> checkRoleDependencies(Role role) {
+        var raw = MetadataUtil.nullSafeAnnotations(role).get(Role.ROLE_DEPENDENCIES_ANNO);
+        if (!StringUtils.hasText(raw)) {
+            return Mono.empty();
+        }
+        List<String> dependencies;
+        try {
+            dependencies = JsonUtils.jsonToObject(raw, new TypeReference<>() {});
+        } catch (Exception e) {
+            return Mono.error(new ServerWebInputException("角色依赖必须是角色名称数组。"));
+        }
+        if (CollectionUtils.isEmpty(dependencies)) {
+            return Mono.empty();
+        }
+        return Flux.fromIterable(dependencies)
+                .filter(StringUtils::hasText)
+                .concatMap(dependency -> client.fetch(Role.class, dependency)
+                        .switchIfEmpty(Mono.error(denied("角色依赖 [" + dependency + "] 不存在。")))
+                        .flatMap(found -> Boolean.parseBoolean(
+                                        MetadataUtil.nullSafeLabels(found).get(Role.TEMPLATE_LABEL_NAME))
+                                ? Mono.empty()
+                                : Mono.error(denied("角色依赖 [" + dependency + "] 不是角色模板。"))))
+                .then();
     }
 
     public Mono<Void> checkGroupMutation(String name) {
@@ -206,7 +243,7 @@ public class BuiltinEntityPolicy {
             return Mono.error(denied("只有超级管理员可以加入 super-admins 用户组。"));
         }
         var expected =
-                BuiltinEntityDefinitions.membershipBindingName(subject.getName(), BuiltinEntities.SUPER_ADMINS_GROUP);
+                BuiltinEntities.membershipBindingName(subject.getName(), BuiltinEntities.SUPER_ADMINS_GROUP);
         var name = binding.getMetadata() == null ? null : binding.getMetadata().getName();
         if (!expected.equals(name)) {
             return Mono.error(denied("只允许使用超级管理员的内置成员绑定。"));

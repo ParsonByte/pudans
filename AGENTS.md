@@ -9,6 +9,7 @@ This order is a hard requirement. If the required file has not been read, do not
 1. Before changing code, tests or configuration: read `.agents/rules/development-repo.md`, `.agents/rules/reuse-and-cleanup.md`, `.agents/rules/testing.md`, `.agents/skills/development-repo/SKILL.md` and `.agents/skills/reuse-check/SKILL.md`.
 2. Before staging or committing: read `.agents/rules/commit.md` and `.agents/skills/commit-repo/SKILL.md`.
 3. Before writing or changing a comment: read `.agents/rules/comments.md` and `.agents/skills/comments/SKILL.md`.
+4. Before adding or changing a role, permission, workspace, menu or extension resource: read `.agents/rules/extensions.md`.
 
 The existing `.agents/rules/development.md` and `.agents/skills/development/SKILL.md` remain authoritative for branches, pull requests and merges.
 
@@ -39,6 +40,7 @@ Read the matching rule under `.agents/rules` before starting a task, and follow 
 | Development | `.agents/rules/development.md` | Branching, pre-commit checks, PRs, dependencies, secrets, review |
 | Development (repo) | `.agents/rules/development-repo.md` | Mandatory read order, reuse first, no redundancy, minimal diff |
 | Reuse and cleanup | `.agents/rules/reuse-and-cleanup.md` | Search dimensions, decision tree, cleanup checklist |
+| Extensions | `.agents/rules/extensions.md` | Extension directory layout, template naming, menu and permission placement |
 | Testing | `.agents/rules/testing.md` | Test-first behaviour changes, JUnit commands, no disabled tests |
 | Skill authoring | `.agents/rules/skills.md` | `.agents/skills/<name>/` layout and SKILL.md requirements |
 
@@ -65,6 +67,7 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | --- | --- | --- | --- |
 | `.agents/rules/development-repo.md` | Development flow and hard reuse/no-redundancy rules | Before any code, test or configuration change | Yes |
 | `.agents/rules/reuse-and-cleanup.md` | Search dimensions, decision tree and cleanup checklist | Before any new implementation and after implementation | Yes |
+| `.agents/rules/extensions.md` | Extension directory layout, template naming, menu and permission placement | Adding or changing a role, permission, workspace, menu or extension resource | Yes |
 | `.agents/rules/testing.md` | Test-first behaviour changes and test commands | Before changing behaviour and before commit | Yes |
 | `.agents/rules/commit.md` | Single-line commit format and pre-commit checklist | Before staging or committing | Yes |
 | `.agents/rules/comments.md` | Comment format, scope and content | Before writing or changing a comment | Yes |
@@ -87,6 +90,7 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | Path | Purpose |
 | --- | --- |
 | `appkernel/` | Backend core: identity, permissions and the extension mechanism |
+| `appkernel/src/main/resources/extensions/` | YAML source of truth for roles, permissions, workspaces and menus; see `.agents/rules/extensions.md` |
 | `api-docs/` | OpenAPI aggregation and validation, no business code |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
 | `gradle/libs.versions.toml` | Version catalog; backend dependency changes go here |
