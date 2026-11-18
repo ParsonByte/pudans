@@ -56,6 +56,8 @@ spring:
 
 pudans:
   work-dir: ${PUDANS_WORK_DIR:${user.home}/.pudans}
+  storage:
+    cleanup-interval-seconds: ${PUDANS_STORAGE_CLEANUP_INTERVAL:300}
   webhook:
     keystore-password: ${PUDANS_WEBHOOK_KEYSTORE_PASSWORD:}
   security:

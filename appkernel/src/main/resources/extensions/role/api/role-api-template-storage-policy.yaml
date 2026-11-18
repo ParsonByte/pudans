@@ -1,0 +1,56 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-storage-policies
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Storage"
+    rbac.authorization.pudans.tolim.cn/display-name: "Storage Policy View"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies"
+      - "storagepolicies/types"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-storage-policies
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-storage-policies" ]
+    rbac.authorization.pudans.tolim.cn/module: "Storage"
+    rbac.authorization.pudans.tolim.cn/display-name: "Storage Policy Manage"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies/validate"
+      - "storagepolicies/test"
+      - "storagepolicies/cors"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies/oauth"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
