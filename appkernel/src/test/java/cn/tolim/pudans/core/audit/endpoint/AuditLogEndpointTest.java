@@ -1,15 +1,38 @@
 package cn.tolim.pudans.core.audit.endpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
 import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.infra.audit.AuditStore;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Mono;
 
+@ExtendWith(MockitoExtension.class)
 class AuditLogEndpointTest {
+
+    @Mock
+    AuditService auditService;
+
+    private WebTestClient webTestClient;
+
+    @BeforeEach
+    void setUp() {
+        webTestClient = WebTestClient.bindToRouterFunction(new AuditLogEndpoint(auditService).endpoint())
+                .build();
+    }
 
     private static AuditRecord record(
             String id,
@@ -42,6 +65,29 @@ class AuditLogEndpointTest {
 
     private static AuditRecord page(String id, String uid, Instant timestamp, String path) {
         return record(id, uid, "NAVIGATION", "Page", path, path, timestamp, 5);
+    }
+
+    @Test
+    void pageRejectsAPaginationDepthBeyondTheStoreLimit() {
+        webTestClient
+                .get()
+                .uri("/auditlogs?page=1001&size=10")
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+    }
+
+    @Test
+    void pageAllowsTheDeepestSupportedPage() {
+        when(auditService.page(any(), eq(1000), eq(10)))
+                .thenReturn(Mono.just(new AuditStore.AuditPageResult(List.of(), 0L)));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs?page=1000&size=10")
+                .exchange()
+                .expectStatus()
+                .isOk();
     }
 
     @Test
