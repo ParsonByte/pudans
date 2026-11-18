@@ -232,6 +232,18 @@
           },
           "nextCursor": {
             "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
           }
         }
       },
@@ -1696,6 +1708,20 @@
           "email",
           "newPassword"
         ]
+      },
+      "RiskBan": {
+        "properties": {
+          "expiresInSeconds": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scene": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          }
+        }
       },
       "RiskRule": {
         "properties": {
@@ -3251,6 +3277,222 @@
           "failed",
           "failures"
         ]
+      },
+      "AuditTraceSummary": {
+        "properties": {
+          "traceFlowId": {
+            "type": "string"
+          },
+          "traceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "status": {
+            "type": "string"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "spanCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "resourceTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "records": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditRecord"
+            }
+          }
+        }
+      },
+      "AuditTracePage": {
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditTraceSummary"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AuditJourneyStep": {
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "page": {
+            "$ref": "#/components/schemas/AuditRecord"
+          },
+          "fromPath": {
+            "type": "string"
+          },
+          "toPath": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditRecord"
+            }
+          }
+        }
+      },
+      "AuditJourney": {
+        "properties": {
+          "uid": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "entryPath": {
+            "type": "string"
+          },
+          "exitPath": {
+            "type": "string"
+          },
+          "pageCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "actionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sessionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "complete": {
+            "type": "boolean"
+          },
+          "status": {
+            "type": "string"
+          },
+          "resourceTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditJourneyStep"
+            }
+          }
+        }
+      },
+      "AuditJourneyPage": {
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditJourney"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "truncated": {
+            "type": "boolean"
+          },
+          "pageViews": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "actionCount": {
+            "type": "integer",
+            "format": "int64"
+          }
+        }
+      },
+      "UserNavigationEvent": {
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        }
+      },
+      "UserNavigationResult": {
+        "properties": {
+          "auditId": {
+            "type": "string"
+          },
+          "traceFlowId": {
+            "type": "string"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -3553,6 +3795,24 @@
             "description": "Maximum number of records (1-500, default 50).",
             "in": "query",
             "name": "limit",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Page number when page-based pagination is used.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Page size when page-based pagination is used (1-100, default 10).",
+            "in": "query",
+            "name": "size",
             "schema": {
               "type": "integer",
               "format": "int32"
@@ -6113,6 +6373,31 @@
         "responses": {
           "default": {
             "content": {},
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "RiskRuleV1alpha1"
+        ]
+      },
+      "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/riskrules/bans": {
+      "get": {
+        "description": "List active risk control bans with their remaining duration.",
+        "operationId": "ListRiskBans",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RiskBan"
+                  }
+                }
+              }
+            },
             "description": "default response"
           }
         },
@@ -9820,6 +10105,209 @@
         },
         "tags": [
           "WebhookV1alpha1"
+        ]
+      },
+      "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/traces": {
+      "get": {
+        "description": "Query audit trace flows grouped by traceFlowId and return each flow with all of its audit records.",
+        "operationId": "ListAuditTraceFlows",
+        "parameters": [
+          {
+            "description": "Page number (default 1).",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Page size (1-100, default 10).",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Filter by user uid.",
+            "in": "query",
+            "name": "uid",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by operation.",
+            "in": "query",
+            "name": "operation",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by result (SUCCESS, FAILURE, DENIED).",
+            "in": "query",
+            "name": "result",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by request trace id.",
+            "in": "query",
+            "name": "traceId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by business trace flow id.",
+            "in": "query",
+            "name": "traceFlowId",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive lower bound of the UTC timestamp (ISO-8601).",
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive upper bound of the UTC timestamp (ISO-8601).",
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditTracePage"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuditLogV1alpha1"
+        ]
+      },
+      "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/journeys": {
+      "get": {
+        "description": "Return one closed user journey per user. A journey links the pages a user visited with the operations performed on each page.",
+        "operationId": "ListAuditJourneys",
+        "parameters": [
+          {
+            "description": "Page number (default 1).",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Page size (1-100, default 10).",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Filter by user uid.",
+            "in": "query",
+            "name": "uid",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive lower bound of the UTC timestamp (ISO-8601).",
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive upper bound of the UTC timestamp (ISO-8601).",
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Return journey summaries without steps when true.",
+            "in": "query",
+            "name": "summary",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditJourneyPage"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuditLogV1alpha1"
+        ]
+      },
+      "parameters": []
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/usernavigations": {
+      "post": {
+        "description": "Record a client-side page navigation. The request itself is audited as a Page navigation record and returns the audit id used to chain following requests.",
+        "operationId": "RecordUserNavigation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserNavigationEvent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserNavigationResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "UserNavigationV1alpha1"
         ]
       },
       "parameters": []

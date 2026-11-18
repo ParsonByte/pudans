@@ -19,6 +19,7 @@ import cn.tolim.pudans.contract.infra.SystemInfo;
 import cn.tolim.pudans.contract.infra.ParameterInfoGetter;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
+import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import com.github.zafarkhaja.semver.Version;
 import java.net.URL;
@@ -49,11 +50,15 @@ class DashboardEndpointTest {
     @Mock
     UserGroupService userGroupService;
 
+    @Mock
+    RiskRuleRegistry riskRuleRegistry;
+
     private DashboardEndpoint endpoint;
 
     @BeforeEach
     void setUp() {
-        endpoint = new DashboardEndpoint(client, auditService, systemInfoGetter, userGroupService);
+        endpoint = new DashboardEndpoint(
+                client, auditService, systemInfoGetter, userGroupService, riskRuleRegistry);
     }
 
     private static AuditRecord record(String id, String uid, String operation, String result) {
@@ -143,7 +148,7 @@ class DashboardEndpointTest {
                 .thenReturn(Flux.just(alice, bob));
         stubRealRoles();
         when(client.countBy(eq(UserGroup.class), any(ListOptions.class))).thenReturn(Mono.just(3L));
-        when(client.countBy(eq(RiskRule.class), any(ListOptions.class))).thenReturn(Mono.just(8L));
+        when(riskRuleRegistry.ruleCount()).thenReturn(8);
         when(client.countBy(eq(Webhook.class), any(ListOptions.class))).thenReturn(Mono.just(2L));
         when(client.listAll(eq(RiskRule.class), any(ListOptions.class), any()))
                 .thenReturn(Flux.just(riskRule("risk-rule-1", Instant.now())));

@@ -115,4 +115,57 @@ class AuditWebFilterTest {
 
         verifyNoInteractions(auditService);
     }
+
+    @Test
+    void frontendAssetsAreNotAudited() {
+        StepVerifier.create(filter.filter(
+                        MockServerWebExchange.from(
+                                MockServerHttpRequest.get("/assets/roles-DYFfexQq.js").build()),
+                        chain()))
+                .verifyComplete();
+        StepVerifier.create(filter.filter(
+                        MockServerWebExchange.from(
+                                MockServerHttpRequest.get("/brand/logo-dark.svg").build()),
+                        chain()))
+                .verifyComplete();
+        StepVerifier.create(filter.filter(
+                        MockServerWebExchange.from(
+                                MockServerHttpRequest.get("/favicon.ico").build()),
+                        chain()))
+                .verifyComplete();
+
+        verifyNoInteractions(auditService);
+    }
+
+    @Test
+    void pageNavigationsUseThePageResource() {
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/console/roles")
+                .header("Accept", "text/html")
+                .build());
+
+        assertThat(AuditWebFilter.resourceType(exchange)).isEqualTo("Page");
+        assertThat(AuditWebFilter.resourceName(exchange)).isEqualTo("/console/roles");
+    }
+
+    @Test
+    void navigationAttributesOverrideTheApiResource() {
+        var exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.post("/api/v1/usernavigations").build());
+        exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "NAVIGATION");
+        exchange.getAttributes().put(AuditService.RESOURCE_TYPE_ATTRIBUTE, "Page");
+        exchange.getAttributes().put(AuditService.RESOURCE_NAME_ATTRIBUTE, "/console/users");
+
+        assertThat(AuditWebFilter.resourceType(exchange)).isEqualTo("Page");
+        assertThat(AuditWebFilter.resourceName(exchange)).isEqualTo("/console/users");
+    }
+
+    @Test
+    void apiReadsAreNotClassifiedAsPageNavigations() {
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.get(
+                        "/apis/api.pudans.tolim.cn/v1alpha1/navigation")
+                .header("Accept", "*/*")
+                .build());
+
+        assertThat(AuditWebFilter.operation(exchange)).isEqualTo("READ");
+    }
 }

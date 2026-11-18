@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ConsolePage, ConsoleSection } from "@/modules/workspace/console/components/console-page";
+import { fetchRiskEventTrend } from "@/modules/workspace/console/risk/lib/api";
 
 import { ActiveUserRanking } from "./components/active-user-ranking";
 import { ActivityOverviewChart } from "./components/activity-overview-chart";
@@ -19,6 +20,12 @@ export function ConsoleOverviewView() {
     queryKey: ["console", "overview"],
     queryFn: async () => (await apiClient.dashboard.getDashboardOverview()).data,
     retry: 1,
+    staleTime: 30_000,
+  });
+  const riskEventTrendQuery = useQuery({
+    queryKey: ["risk-event-trend", 7],
+    queryFn: () => fetchRiskEventTrend(7),
+    retry: false,
     staleTime: 30_000,
   });
 
@@ -76,7 +83,7 @@ export function ConsoleOverviewView() {
           <LoginTrend
             points={overview.loginTrend ?? []}
             operationTrend={overview.operationTrend ?? []}
-            riskRuleTrend={overview.riskRuleTrend ?? []}
+            riskEventTrend={riskEventTrendQuery.data ?? []}
             webhookTrend={overview.webhookTrend ?? []}
           />
           <RecentOperations operations={overview.recentAuditLogs ?? []} />

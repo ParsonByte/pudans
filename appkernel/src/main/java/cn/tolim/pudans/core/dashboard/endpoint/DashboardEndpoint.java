@@ -18,6 +18,7 @@ import cn.tolim.pudans.contract.infra.ParameterInfoGetter;
 import cn.tolim.pudans.contract.infra.SystemInfo;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
+import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.lang.management.ManagementFactory;
@@ -67,6 +68,8 @@ public class DashboardEndpoint implements CustomEndpoint {
 
     private final UserGroupService userGroupService;
 
+    private final RiskRuleRegistry riskRuleRegistry;
+
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "DashboardV1alpha1";
@@ -105,7 +108,7 @@ public class DashboardEndpoint implements CustomEndpoint {
         var realRoles = listRealRoles();
         var counts = Mono.zip(
                 countNotDeleting(UserGroup.class),
-                countNotDeleting(RiskRule.class),
+                Mono.just((long) riskRuleRegistry.ruleCount()),
                 countNotDeleting(Webhook.class));
         var todayOperations = auditService.countSince(dayStart).onErrorReturn(0L);
         var recentOperations = auditService

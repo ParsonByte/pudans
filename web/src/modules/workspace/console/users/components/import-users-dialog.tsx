@@ -23,9 +23,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { downloadCsv } from "@/lib/csv";
 
 import { createLocalUsers, resolveUserApiError } from "../lib/api";
-import { downloadCsv } from "../lib/csv";
 import { notifyBatchResult } from "../lib/notify-batch-result";
 import { type ParsedUserImport, parseUserImport, userImportTemplate } from "../lib/user-csv";
 
