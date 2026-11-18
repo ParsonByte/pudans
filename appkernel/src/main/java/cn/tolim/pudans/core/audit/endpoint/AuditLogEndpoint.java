@@ -344,6 +344,10 @@ public class AuditLogEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> page(ServerRequest request) {
         var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
+        if ((long) page * size > AuditStore.MAX_PAGE_RECORDS) {
+            return Mono.error(new ServerWebInputException(
+                    "分页深度超出上限，page 与 size 的乘积不能超过 " + AuditStore.MAX_PAGE_RECORDS + "。"));
+        }
         var query = auditQuery(request, null, size, isAscending(request));
         return auditService
                 .page(query, page, size)
