@@ -452,7 +452,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 actionCount,
                 countSessions(sorted),
                 pageCount > 0,
-                resultStatus(sorted),
+                journeyStatus(sorted),
                 resourceTypes,
                 operations,
                 steps);
@@ -507,14 +507,32 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return sessions;
     }
 
+    private static String journeyStatus(List<AuditRecord> records) {
+        if (records.stream().anyMatch(record -> "DENIED".equals(record.getResult()))) {
+            return "DENIED";
+        }
+        if (records.stream()
+                .anyMatch(record -> isPage(record) && isFailure(record.getResult()))) {
+            return "FAILED";
+        }
+        if (records.stream().anyMatch(record -> isFailure(record.getResult()))) {
+            return "FAILURE";
+        }
+        return "SUCCESS";
+    }
+
     private static String resultStatus(List<AuditRecord> records) {
         if (records.stream().anyMatch(record -> "DENIED".equals(record.getResult()))) {
             return "DENIED";
         }
-        if (records.stream().anyMatch(record -> "FAILURE".equals(record.getResult()))) {
-            return "FAILURE";
+        if (records.stream().anyMatch(record -> isFailure(record.getResult()))) {
+            return "FAILED";
         }
         return "SUCCESS";
+    }
+
+    private static boolean isFailure(String result) {
+        return "FAILURE".equals(result) || "FAILED".equals(result);
     }
 
     private static Instant traceStart(AuditRecord record) {

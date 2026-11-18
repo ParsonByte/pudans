@@ -16,6 +16,7 @@ import {
 import { toast } from "sonner";
 
 import { DataTableBulkActions, DataTablePagination, LongText } from "@/components/data-table";
+import { DateTimePicker } from "@/components/date-time-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -47,7 +48,7 @@ import { ConsoleStat } from "@/modules/workspace/console/components/console-stat
 import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { type JourneyItem, fetchJourneysPage } from "./lib/api";
-import { journeysToCsv } from "./lib/journey-csv";
+import { journeyDetailsToCsv } from "./lib/journey-csv";
 
 type JourneyFilterForm = {
   from: string;
@@ -72,6 +73,7 @@ export function TracesView() {
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [exporting, setExporting] = useState(false);
 
   const query = useQuery({
     queryKey: ["user-journeys", appliedFilters, page, size],
@@ -154,15 +156,35 @@ export function TracesView() {
     });
   };
 
-  const exportSelected = () => {
-    const items = journeys.filter((journey) => selected.has(journey.uid));
-    if (items.length === 0) {
+  const exportSelected = async () => {
+    const uids = [...selected];
+    if (uids.length === 0) {
       toast.info("请先选择用户。");
       return;
     }
-    downloadCsv(`journeys-${format(new Date(), "yyyyMMdd-HHmm")}.csv`, journeysToCsv(items));
-    toast.success(`已导出 ${items.length} 位用户的链路。`);
-    setSelected(new Set());
+    setExporting(true);
+    try {
+      const responses = await Promise.all(
+        uids.map((uid) => fetchJourneysPage({ uid, from, to, page: 1, size: 1, summary: false })),
+      );
+      const details = responses
+        .flatMap((response) => response.items ?? [])
+        .filter((journey): journey is JourneyItem => Boolean(journey.uid));
+      if (details.length === 0) {
+        toast.info("没有可导出的链路详情。");
+        return;
+      }
+      downloadCsv(
+        `journeys-${format(new Date(), "yyyyMMdd-HHmm")}.csv`,
+        journeyDetailsToCsv(details),
+      );
+      toast.success(`已导出 ${details.length} 位用户的链路详情。`);
+      setSelected(new Set());
+    } catch {
+      toast.error("导出链路详情失败，请稍后重试。");
+    } finally {
+      setExporting(false);
+    }
   };
 
   const journeySearch = {
@@ -196,24 +218,18 @@ export function TracesView() {
           <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-2">
               <Label htmlFor="journey-from">开始时间</Label>
-              <Input
+              <DateTimePicker
                 id="journey-from"
-                type="datetime-local"
                 value={draftFilters.from}
-                onChange={(event) =>
-                  setDraftFilters((current) => ({ ...current, from: event.target.value }))
-                }
+                onChange={(value) => setDraftFilters((current) => ({ ...current, from: value }))}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="journey-to">结束时间</Label>
-              <Input
+              <DateTimePicker
                 id="journey-to"
-                type="datetime-local"
                 value={draftFilters.to}
-                onChange={(event) =>
-                  setDraftFilters((current) => ({ ...current, to: event.target.value }))
-                }
+                onChange={(value) => setDraftFilters((current) => ({ ...current, to: value }))}
               />
             </div>
             <div className="space-y-2">
@@ -415,9 +431,15 @@ export function TracesView() {
             entityName="用户"
             onClear={() => setSelected(new Set())}
           >
-            <Button type="button" variant="outline" size="sm" onClick={exportSelected}>
-              <Download />
-              导出选中
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void exportSelected()}
+              disabled={exporting}
+            >
+              {exporting ? <Loader2 className="animate-spin" /> : <Download />}
+              导出链路详情
             </Button>
           </DataTableBulkActions>
         ) : null}
