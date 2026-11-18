@@ -195,7 +195,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
       ]);
       toast.success("用户组已删除。");
       if (groupsPath) {
-        void navigate({ to: "/$", params: { _splat: groupsPath } });
+        void navigate({ to: groupsPath });
       }
     },
     onError: (error) => {
@@ -233,7 +233,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
           <div className="flex gap-2">
             {groupsPath ? (
               <Button variant="outline" size="sm" asChild>
-                <Link to="/$" params={{ _splat: groupsPath }}>
+                <Link to={groupsPath}>
                   <ArrowLeft />
                   返回用户组列表
                 </Link>
@@ -254,7 +254,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
       <div className="flex flex-wrap items-center gap-2">
         {groupsPath ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/$" params={{ _splat: groupsPath }}>
+            <Link to={groupsPath}>
               <ArrowLeft />
               返回用户组列表
             </Link>
@@ -450,8 +450,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
                         <TableCell className="px-5 py-3">
                           {usersPath ? (
                             <Link
-                              to="/$"
-                              params={{ _splat: `${usersPath}/${member.name}` }}
+                              to={`${usersPath}/${member.name}` as string}
                               className="flex min-w-0 items-center gap-2"
                             >
                               {memberContent}

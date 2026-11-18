@@ -76,7 +76,7 @@ export function TraceDetailView({ traceFlowId }: TraceDetailViewProps) {
           <div className="flex gap-2">
             {tracesPath ? (
               <Button variant="outline" size="sm" asChild>
-                <Link to="/$" params={{ _splat: tracesPath }}>
+                <Link to={tracesPath}>
                   <ArrowLeft />
                   返回链路列表
                 </Link>
@@ -101,7 +101,7 @@ export function TraceDetailView({ traceFlowId }: TraceDetailViewProps) {
       <div className="flex flex-wrap items-center gap-2">
         {tracesPath ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/$" params={{ _splat: tracesPath }}>
+            <Link to={tracesPath}>
               <ArrowLeft />
               返回链路列表
             </Link>
