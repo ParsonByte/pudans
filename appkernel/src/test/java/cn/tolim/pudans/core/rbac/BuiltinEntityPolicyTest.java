@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,6 +85,14 @@ class BuiltinEntityPolicyTest {
         var binding = UserGroupBinding.grant(groupName, roleName);
         var metadata = new Metadata();
         metadata.setName(groupName + "-" + roleName + "-binding");
+        binding.setMetadata(metadata);
+        return binding;
+    }
+
+    private static UserGroupBinding membershipBinding(String username, String groupName) {
+        var binding = UserGroupBinding.membership(username, groupName);
+        var metadata = new Metadata();
+        metadata.setName(BuiltinEntities.membershipBindingName(username, groupName));
         binding.setMetadata(metadata);
         return binding;
     }
@@ -330,8 +339,63 @@ class BuiltinEntityPolicyTest {
 
     @Test
     void bindingCustomRoleToBuiltinGroupIsAllowed() {
+        when(rolePermissionPolicy.checkGrant(any())).thenReturn(Mono.empty());
+
         StepVerifier.create(policy.checkCreate(
                         userGroupBindingGvk(), groupRoleBinding("system-admins", "custom-role")))
+                .verifyComplete();
+    }
+
+    @Test
+    void bindingARoleRequiresTheActorToCoverItsPermissions() {
+        when(rolePermissionPolicy.checkGrant(Set.of("custom-role")))
+                .thenReturn(Mono.error(new AccessDeniedException(
+                        "不能授予超出当前账号权限范围的角色权限。")));
+
+        StepVerifier.create(policy.checkCreate(
+                        userGroupBindingGvk(), groupRoleBinding("system-admins", "custom-role")))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void bindingAUserToSystemAdminsRequiresGrantCoverage() {
+        when(rolePermissionPolicy.checkGrant(Set.of("system-admin-role")))
+                .thenReturn(Mono.error(new AccessDeniedException(
+                        "不能授予超出当前账号权限范围的角色权限。")));
+
+        StepVerifier.create(policy.checkCreate(
+                        userGroupBindingGvk(), membershipBinding("bob", "system-admins")))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void assigningAUserToSystemAdminsRequiresGrantCoverage() {
+        when(superAdminResolver.hasSuperAdminBinding("bob")).thenReturn(Mono.just(false));
+        when(rolePermissionPolicy.checkGrant(Set.of("system-admin-role")))
+                .thenReturn(Mono.error(new AccessDeniedException(
+                        "不能授予超出当前账号权限范围的角色权限。")));
+
+        StepVerifier.create(policy.checkUserGroupAssignment("bob", "system-admins"))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void assigningAUserToSystemAdminsPassesWhenTheActorCoversTheRole() {
+        when(superAdminResolver.hasSuperAdminBinding("bob")).thenReturn(Mono.just(false));
+        when(rolePermissionPolicy.checkGrant(Set.of("system-admin-role"))).thenReturn(Mono.empty());
+
+        StepVerifier.create(policy.checkUserGroupAssignment("bob", "system-admins"))
+                .verifyComplete();
+    }
+
+    @Test
+    void assigningAUserToANormalGroupSkipsGrantCoverage() {
+        when(superAdminResolver.hasSuperAdminBinding("bob")).thenReturn(Mono.just(false));
+
+        StepVerifier.create(policy.checkUserGroupAssignment("bob", "normal-users"))
                 .verifyComplete();
     }
 }
