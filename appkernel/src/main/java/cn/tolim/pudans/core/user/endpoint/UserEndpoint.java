@@ -615,15 +615,15 @@ public class UserEndpoint implements CustomEndpoint {
                 return Mono.error(
                         new ServerWebInputException("email 为只读字段：用户数据必须来自飞书。"));
             }
+            if (update.avatar() != null && !Objects.equals(update.avatar(), spec.getAvatar())) {
+                return Mono.error(
+                        new ServerWebInputException("avatar 为只读字段：用户数据必须来自飞书。"));
+            }
+            if (update.phone() != null && !Objects.equals(update.phone(), spec.getPhone())) {
+                return Mono.error(
+                        new ServerWebInputException("phone 为只读字段：用户数据必须来自飞书。"));
+            }
             var changedFields = new ArrayList<String>();
-            if (update.avatar() != null) {
-                spec.setAvatar(update.avatar());
-                changedFields.add("avatar");
-            }
-            if (update.phone() != null) {
-                spec.setPhone(update.phone());
-                changedFields.add("phone");
-            }
             if (update.bio() != null) {
                 spec.setBio(update.bio());
                 changedFields.add("bio");

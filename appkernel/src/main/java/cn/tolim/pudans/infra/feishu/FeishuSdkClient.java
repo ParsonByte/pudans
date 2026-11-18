@@ -3,8 +3,11 @@ package cn.tolim.pudans.infra.feishu;
 import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import com.lark.oapi.Client;
 import com.lark.oapi.core.request.RequestOptions;
+import com.lark.oapi.core.response.TenantAccessTokenResp;
+import com.lark.oapi.core.utils.UnmarshalRespUtil;
 import com.lark.oapi.service.auth.v3.model.InternalTenantAccessTokenReq;
 import com.lark.oapi.service.auth.v3.model.InternalTenantAccessTokenReqBody;
+import com.lark.oapi.service.auth.v3.model.InternalTenantAccessTokenResp;
 import com.lark.oapi.service.authen.v1.model.CreateAccessTokenReq;
 import com.lark.oapi.service.authen.v1.model.CreateAccessTokenReqBody;
 import com.lark.oapi.service.contact.v3.model.GetUserReq;
@@ -86,7 +89,8 @@ public class FeishuSdkClient {
                     data.getOpenId(),
                     data.getUnionId(),
                     data.getName(),
-                    data.getEmail(),
+                    StringUtils.hasText(data.getEmail()) ? data.getEmail() : data.getEnterpriseEmail(),
+                    data.getMobile(),
                     data.getAvatarUrl());
         });
     }
@@ -109,13 +113,17 @@ public class FeishuSdkClient {
                             .build())
                     .build();
             var response = client.auth().v3().tenantAccessToken().internal(request);
-            if (!response.success()
-                    || response.getData() == null
-                    || !StringUtils.hasText(response.getData().getTenantAccessToken())) {
-                throw new FeishuSdkException(failure("飞书租户访问令牌请求失败", response.getCode(), response.getMsg()));
-            }
-            return response.getData().getTenantAccessToken();
+            return requireTenantAccessToken(response);
         });
+    }
+
+    static String requireTenantAccessToken(InternalTenantAccessTokenResp response) {
+        var raw = response.getRawResponse();
+        var body = raw == null ? null : UnmarshalRespUtil.unmarshalResp(raw, TenantAccessTokenResp.class);
+        if (body == null || !StringUtils.hasText(body.getTenantAccessToken())) {
+            throw new FeishuSdkException(failure("飞书租户访问令牌请求失败", response.getCode(), response.getMsg()));
+        }
+        return body.getTenantAccessToken();
     }
 
     public Mono<UserInfo> fetchContactUser(String userId) {
@@ -138,7 +146,8 @@ public class FeishuSdkClient {
                     user.getOpenId(),
                     user.getUnionId(),
                     user.getName(),
-                    user.getEmail(),
+                    StringUtils.hasText(user.getEmail()) ? user.getEmail() : user.getEnterpriseEmail(),
+                    user.getMobile(),
                     avatar);
         });
     }
@@ -174,7 +183,8 @@ public class FeishuSdkClient {
 
     public record Token(String accessToken, long expiresIn) {}
 
-    public record UserInfo(String openId, String unionId, String name, String email, String avatar) {}
+    public record UserInfo(
+            String openId, String unionId, String name, String email, String phone, String avatar) {}
 
     public static class FeishuSdkException extends RuntimeException {
         public FeishuSdkException(String message) {

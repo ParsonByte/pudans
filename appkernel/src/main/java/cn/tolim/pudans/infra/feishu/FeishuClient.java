@@ -47,7 +47,12 @@ public class FeishuClient {
 
     private FeishuUserInfo toUserInfo(FeishuSdkClient.UserInfo userInfo) {
         return new FeishuUserInfo(
-                userInfo.openId(), userInfo.unionId(), userInfo.name(), userInfo.email(), userInfo.avatar());
+                userInfo.openId(),
+                userInfo.unionId(),
+                userInfo.name(),
+                userInfo.email(),
+                userInfo.phone(),
+                userInfo.avatar());
     }
 
     private Throwable mapError(Throwable error) {
@@ -60,7 +65,8 @@ public class FeishuClient {
 
     public record FeishuToken(String accessToken, long expiresIn) {}
 
-    public record FeishuUserInfo(String openId, String unionId, String name, String email, String avatar) {}
+    public record FeishuUserInfo(
+            String openId, String unionId, String name, String email, String phone, String avatar) {}
 
     public static class FeishuException extends RuntimeException {
         public FeishuException(String message) {
