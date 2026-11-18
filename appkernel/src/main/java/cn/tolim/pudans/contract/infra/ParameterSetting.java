@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.Map;
 import lombok.Data;
@@ -151,6 +152,209 @@ public class ParameterSetting {
         @Min(16)
         @Max(2048)
         private Integer avatarDimension;
+
+        @Schema(description = "Encrypt the login password with the server RSA public key before submission.")
+        private Boolean rsaLoginEncryptionEnabled;
+
+        @Schema(description = "Encode new passwords with Argon2; when disabled new passwords use BCrypt.")
+        private Boolean argon2PasswordStorageEnabled;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Schema(name = "ParameterSettingAuthentication")
+    public static class Authentication {
+        public static final String GROUP = "authentication";
+
+        @Valid
+        private Totp totp;
+
+        @Valid
+        private OAuth2 oauth2;
+
+        @Valid
+        private Oidc oidc;
+
+        @Valid
+        private Feishu feishu;
+
+        @Valid
+        private Pat pat;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Schema(name = "ParameterSettingTotp")
+    public static class Totp {
+
+        @Schema(description = "Whether TOTP two-factor authentication is required at sign-in.")
+        private Boolean enabled;
+
+        @Schema(description = "Issuer shown by authenticator applications.")
+        @Size(max = 128)
+        private String issuer;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Schema(name = "ParameterSettingOAuth2")
+    public static class OAuth2 {
+
+        @Valid
+        @Size(max = 50)
+        private List<OAuth2Provider> providers;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Schema(name = "ParameterSettingOAuth2Provider")
+    public static class OAuth2Provider {
+
+        @Schema(description = "OAuth2 registration id used in the authorization URL.")
+        @Pattern(regexp = ValidationUtils.NAME_REGEX)
+        @Size(max = 63)
+        private String registrationId;
+
+        @Size(max = 128)
+        private String displayName;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String logo;
+
+        @Size(max = 512)
+        private String clientId;
+
+        @Schema(writeOnly = true)
+        @Size(max = 1024)
+        private String clientSecret;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String authorizationUri;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String tokenUri;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String userInfoUri;
+
+        @Size(max = 128)
+        private String userNameAttribute;
+
+        @Schema(description = "Space-separated OAuth2 scopes.")
+        @Size(max = 1024)
+        private String scopes;
+
+        private Boolean enabled;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Schema(name = "ParameterSettingOidc")
+    public static class Oidc {
+
+        @Valid
+        @Size(max = 50)
+        private List<OidcProvider> providers;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Schema(name = "ParameterSettingOidcProvider")
+    public static class OidcProvider {
+
+        @Schema(description = "OIDC registration id used in the authorization URL.")
+        @Pattern(regexp = ValidationUtils.NAME_REGEX)
+        @Size(max = 63)
+        private String registrationId;
+
+        @Size(max = 128)
+        private String displayName;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String logo;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String issuerUri;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String authorizationUri;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String tokenUri;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String userInfoUri;
+
+        @Size(max = 512)
+        private String clientId;
+
+        @Schema(writeOnly = true)
+        @Size(max = 1024)
+        private String clientSecret;
+
+        @Schema(description = "Space-separated OIDC scopes.")
+        @Size(max = 1024)
+        private String scopes;
+
+        @Size(max = 128)
+        private String userNameAttribute;
+
+        private Boolean enabled;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Schema(name = "ParameterSettingFeishu")
+    public static class Feishu {
+
+        private Boolean enabled;
+
+        @Size(max = 128)
+        private String appId;
+
+        @Schema(writeOnly = true)
+        @Size(max = 512)
+        private String appSecret;
+
+        @Size(max = 2048)
+        private String redirectUri;
+
+        @Pattern(regexp = ValidationUtils.URL_REGEX)
+        @Size(max = 2048)
+        private String authorizationUri;
+
+        @Size(max = 1024)
+        private String scope;
+
+        @Min(0)
+        @Max(2592000)
+        private Long syncIntervalSeconds;
+
+        @Size(max = 128)
+        private String alertChatId;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @Schema(name = "ParameterSettingPat")
+    public static class Pat {
+
+        @Schema(description = "Whether users may create new personal access tokens.")
+        private Boolean enabled;
+
+        @Schema(description = "Maximum PAT lifetime in days; 0 disables the limit.")
+        @Min(0)
+        @Max(3650)
+        private Integer maxLifetimeDays;
     }
 
     @Data

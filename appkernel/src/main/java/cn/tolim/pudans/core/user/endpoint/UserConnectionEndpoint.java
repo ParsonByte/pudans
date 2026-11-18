@@ -15,7 +15,8 @@ import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.index.query.Queries;
-import cn.tolim.pudans.infra.properties.OidcProperties;
+import cn.tolim.pudans.core.user.service.UserConnectionService;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import cn.tolim.pudans.security.authentication.oidc.OidcClient;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.nio.charset.StandardCharsets;
@@ -50,9 +51,11 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     private final UserService userService;
 
+    private final UserConnectionService connectionService;
+
     private final OidcClient oidcClient;
 
-    private final OidcProperties oidcProperties;
+    private final SecurityParameterSettingService securitySettings;
 
     private final AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
 
@@ -109,14 +112,14 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> list(ServerRequest request) {
         return currentUsername()
-                .flatMapMany(username -> listConnections(username))
+                .flatMapMany(connectionService::listConnections)
                 .collectList()
                 .flatMap(connections -> ServerResponse.ok().bodyValue(connections));
     }
 
     private Mono<ServerResponse> listOidcProviders(ServerRequest request) {
         return currentUsername()
-                .map(username -> oidcProperties.getProviders().stream()
+                .map(username -> securitySettings.oidcProviders().stream()
                         .map(provider -> new OidcProviderVo(
                                 provider.getRegistrationId(),
                                 provider.getDisplayName(),
@@ -205,7 +208,8 @@ class UserConnectionEndpoint implements CustomEndpoint {
     }
 
     private Mono<Boolean> canRemove(String username, UserConnection target) {
-        return listConnections(username)
+        return connectionService
+                .listConnections(username)
                 .filter(connection -> !connection.getMetadata().getName().equals(target.getMetadata().getName()))
                 .collectList()
                 .flatMap(remaining -> userService
@@ -222,14 +226,6 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .map(Authentication::getName)
                 .switchIfEmpty(Mono.error(
                         new ResponseStatusException(HttpStatus.FORBIDDEN, "需要身份认证。")));
-    }
-
-    private reactor.core.publisher.Flux<UserConnection> listConnections(String username) {
-        var options = ListOptions.builder()
-                .andQuery(notDeleting())
-                .andQuery(Queries.equal("spec.username", username))
-                .build();
-        return client.listAll(UserConnection.class, options, defaultSort());
     }
 
     @Override

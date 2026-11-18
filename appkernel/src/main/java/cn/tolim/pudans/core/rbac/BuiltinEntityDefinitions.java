@@ -71,9 +71,12 @@ public final class BuiltinEntityDefinitions {
                         .resources(
                                 "users",
                                 "users/batch",
+                                "users/local",
                                 "users/password",
                                 "users/permissions",
                                 "users/usergroup",
+                                "users/connections",
+                                "users/activity",
                                 "users/ui-permissions",
                                 "users/self")
                         .verbs("get", "list", "create", "update", "patch", "delete")

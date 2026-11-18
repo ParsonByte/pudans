@@ -37,7 +37,7 @@ import tools.jackson.databind.node.ObjectNode;
 public class ParameterSettingGroupService {
 
     public static final Set<String> NEW_GROUPS =
-            Set.of("site", "session", "captcha", "mail", "audit", "server");
+            Set.of("site", "session", "captcha", "mail", "audit", "server", "authentication");
 
     public static final Set<String> LEGACY_GROUPS = Set.of("basic", "user", "seo", "authProvider");
 
@@ -47,7 +47,8 @@ public class ParameterSettingGroupService {
             "captcha", ParameterSetting.Captcha.class,
             "mail", ParameterSetting.Mail.class,
             "audit", ParameterSetting.Audit.class,
-            "server", ParameterSetting.Server.class);
+            "server", ParameterSetting.Server.class,
+            "authentication", ParameterSetting.Authentication.class);
 
     private static final Duration RETRY_BACKOFF = Duration.ofMillis(100);
 
@@ -93,6 +94,9 @@ public class ParameterSettingGroupService {
                         node.put("announcementVersion", announcementVersion(text(node, "siteAnnouncement")));
                     }
                     ParameterSettingSensitiveFields.mask(node, group);
+                    if (ParameterSetting.Authentication.GROUP.equals(group)) {
+                        AuthenticationSettingSecrets.mask(node);
+                    }
                     return node;
                 });
     }
@@ -108,6 +112,9 @@ public class ParameterSettingGroupService {
                         node.put("announcementVersion", announcementVersion(text(node, "siteAnnouncement")));
                     }
                     ParameterSettingSensitiveFields.mask(node, group);
+                    if (ParameterSetting.Authentication.GROUP.equals(group)) {
+                        AuthenticationSettingSecrets.mask(node);
+                    }
                     return node;
                 });
     }
@@ -177,12 +184,15 @@ public class ParameterSettingGroupService {
                 .map(effective -> {
                     applyComputedValues(group, persisted, effective, existing, incoming);
                     ParameterSettingSensitiveFields.restoreMasked(persisted, existing, group);
+                    AuthenticationSettingSecrets.restoreMasked(persisted, existing);
                     ParameterSettingSensitiveFields.encrypt(persisted, group, secretCipher);
+                    AuthenticationSettingSecrets.encrypt(persisted, secretCipher);
                     mirrorLegacyFields(group, persisted);
                     if (ParameterSetting.Site.GROUP.equals(group)) {
                         mirrorSiteToBasic(persisted, configMap.getData());
                     }
                     ParameterSettingSensitiveFields.decryptForValidation(effective, group, secretCipher);
+                    AuthenticationSettingSecrets.decryptForValidation(effective, secretCipher);
                     validate(group, effective);
                     configMap.getData().put(group, persisted.toString());
                     return restartRequired;

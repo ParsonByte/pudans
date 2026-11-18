@@ -5,6 +5,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import cn.tolim.pudans.contract.security.authentication.CryptoService;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
 import cn.tolim.pudans.core.risk.service.RiskScene;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import cn.tolim.pudans.security.authentication.exception.TooManyRequestsException;
 import cn.tolim.pudans.security.captcha.CaptchaService;
@@ -29,11 +30,17 @@ public class LoginAuthenticationConverter extends ServerFormLoginAuthenticationC
 
     private final CaptchaService captchaService;
 
+    private final SecurityParameterSettingService securitySettings;
+
     public LoginAuthenticationConverter(
-            CryptoService cryptoService, RiskControlService riskControlService, CaptchaService captchaService) {
+            CryptoService cryptoService,
+            RiskControlService riskControlService,
+            CaptchaService captchaService,
+            SecurityParameterSettingService securitySettings) {
         this.cryptoService = cryptoService;
         this.riskControlService = riskControlService;
         this.captchaService = captchaService;
+        this.securitySettings = securitySettings;
     }
 
     private Mono<Boolean> verifyCaptcha(ServerWebExchange exchange) {
@@ -56,6 +63,9 @@ public class LoginAuthenticationConverter extends ServerFormLoginAuthenticationC
                         return Mono.error(new BadCredentialsException("凭据不能为空。"));
                     }
                     var credentials = (String) token.getCredentials();
+                    if (!securitySettings.isRsaLoginEncryptionEnabled()) {
+                        return Mono.just(new UsernamePasswordAuthenticationToken(token.getPrincipal(), credentials));
+                    }
                     byte[] credentialsBytes;
                     try {
                         credentialsBytes = Base64.getDecoder().decode(credentials);

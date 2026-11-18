@@ -8,8 +8,10 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
+import cn.tolim.pudans.contract.infra.ValidationUtils;
 import cn.tolim.pudans.infra.setting.MailSettingsService;
 import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import cn.tolim.pudans.security.authentication.AuthenticationConnectionTester;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
@@ -31,17 +33,29 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
 
     private static final String GROUP_PARAMETER = "group";
 
-    private static final java.util.regex.Pattern EMAIL_PATTERN =
-            java.util.regex.Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
-
     private final ParameterSettingGroupService groupService;
 
     private final MailSettingsService mailSettingsService;
+
+    private final AuthenticationConnectionTester connectionTester;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         final var tag = "ParameterSettingV1alpha1";
         return SpringdocRouteBuilder.route()
+                .POST(
+                        "/parameter-settings/authentication/-/test",
+                        this::testAuthenticationConnection,
+                        builder -> builder.operationId("TestAuthenticationConnection")
+                                .description("Test an authentication provider configuration without saving it.")
+                                .tag(tag)
+                                .requestBody(requestBodyBuilder()
+                                        .required(true)
+                                        .implementation(
+                                                AuthenticationConnectionTester.ConnectionTestRequest.class))
+                                .response(responseBuilder()
+                                        .implementation(
+                                                AuthenticationConnectionTester.ConnectionTestResult.class)))
                 .POST(
                         "/parameter-settings/mail/-/test",
                         this::sendTestMail,
@@ -108,11 +122,19 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                 .description(description);
     }
 
+    private Mono<ServerResponse> testAuthenticationConnection(ServerRequest request) {
+        return request
+                .bodyToMono(AuthenticationConnectionTester.ConnectionTestRequest.class)
+                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
+                .flatMap(connectionTester::test)
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
     private Mono<ServerResponse> sendTestMail(ServerRequest request) {
         return request.bodyToMono(TestMailRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
                 .flatMap(body -> {
-                    if (body.to() == null || !EMAIL_PATTERN.matcher(body.to()).matches()) {
+                    if (body.to() == null || !ValidationUtils.EMAIL_PATTERN.matcher(body.to()).matches()) {
                         return Mono.error(new ServerWebInputException("to 必须是有效的邮箱地址。"));
                     }
                     return mailSettingsService.sendTest(body.to()).then(ServerResponse.noContent().build());

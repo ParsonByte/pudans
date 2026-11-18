@@ -18,25 +18,29 @@ Turn a set of changes into one or more commits whose messages are single-line Co
 
 ## Steps
 
-1. Inspect the change set:
+1. Inspect the change set and branch context:
    ```bash
    git status --short
+   git branch --show-current
    git diff --stat
    git diff --staged --stat
+   git merge-base --is-ancestor origin/dev HEAD
+   git log --oneline origin/dev..HEAD
    ```
-2. Confirm the work is coherent and verified. Tests must pass first; see `.agents/rules/development.md`.
-3. Pick the type: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `build`, `ci`, `perf`, `style`.
-4. Draft the subject as `<type>: <area> <lowercase imperative phrase>`, at most 72 characters, no trailing period, no capital after the type.
-5. Stage only the intended paths; never stage build output, `.env`, local config or lockfile noise that does not belong to the change.
-6. Commit with a single `-m`:
+2. Confirm the work is coherent, belongs to the current task and is verified. Tests must pass first; see `.agents/rules/development.md`.
+3. If the change set contains multiple unrelated tasks, split it into separate commits. Do not collapse unrelated work into one commit without explicit approval.
+4. Pick the type: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`, `build`, `ci`, `perf`, `style`.
+5. Draft the subject as `<type>: <area> <lowercase imperative phrase>`, at most 72 characters, no trailing period, no capital after the type.
+6. Stage only the intended paths; never stage build output, `.env`, local config or lockfile noise that does not belong to the change.
+7. Commit with a single `-m`:
    ```bash
    git commit -m "refactor: web consolidate packages and centralize api access"
    ```
-7. Verify the message is exactly one line:
+8. Verify the message is exactly one line:
    ```bash
    git log -1 --pretty=%B
    ```
-8. Report the commit hash and the subject you used.
+9. Report the commit hash and the subject you used. Do not push; the user pushes unless explicitly asked.
 
 ## Examples
 
@@ -69,4 +73,5 @@ Body paragraph explaining why.  # body is forbidden
 - Never `git commit -m "title" -m "body"`.
 - One commit does one thing; split unrelated edits into separate commits.
 - Never commit unless the user asked or the task explicitly includes committing.
+- Never push, delete a remote branch, run `reset --hard`, `branch -D`, or rewrite history unless the user explicitly asks for that exact operation.
 - Never rewrite, amend or force-push commits you do not own.

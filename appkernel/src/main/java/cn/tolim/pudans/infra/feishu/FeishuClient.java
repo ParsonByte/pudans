@@ -28,6 +28,10 @@ public class FeishuClient {
         return sdkClient.tenantAccessToken().onErrorMap(this::mapError);
     }
 
+    public Mono<String> testConnection(String appId, String appSecret) {
+        return sdkClient.tenantAccessToken(appId, appSecret).onErrorMap(this::mapError);
+    }
+
     public Mono<FeishuUserInfo> fetchContactUser(String userId) {
         return sdkClient
                 .fetchContactUser(userId)

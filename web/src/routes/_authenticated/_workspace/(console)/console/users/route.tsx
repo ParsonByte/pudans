@@ -1,6 +1,5 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { Outlet, createFileRoute, redirect } from "@tanstack/react-router";
 
-import { ConsoleFeaturePlaceholder } from "@/modules/workspace/console/feature-placeholder";
 import { UI_PERMISSION_USERS_MANAGE, hasUiPermission } from "@/modules/workspace/lib/permissions";
 
 export const Route = createFileRoute("/_authenticated/_workspace/(console)/console/users")({
@@ -9,9 +8,9 @@ export const Route = createFileRoute("/_authenticated/_workspace/(console)/conso
       throw redirect({ to: "/403", replace: true });
     }
   },
-  component: ConsoleUsersRoute,
+  component: UsersLayout,
 });
 
-function ConsoleUsersRoute() {
-  return <ConsoleFeaturePlaceholder title="用户" />;
+function UsersLayout() {
+  return <Outlet />;
 }

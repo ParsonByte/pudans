@@ -44,6 +44,31 @@ export type ParameterGroup = {
   fields: readonly ParameterField[];
 };
 
+export type ParameterFieldSet = {
+  fields: readonly ParameterField[];
+};
+
+export type ParameterFieldSection = {
+  title?: string;
+  fields: ParameterField[];
+};
+
+export function groupParameterFieldsBySection(
+  fields: readonly ParameterField[],
+): ParameterFieldSection[] {
+  return fields.reduce<ParameterFieldSection[]>((sections, field) => {
+    const current = sections[sections.length - 1];
+
+    if (current && current.title === field.section) {
+      current.fields.push(field);
+    } else {
+      sections.push({ title: field.section, fields: [field] });
+    }
+
+    return sections;
+  }, []);
+}
+
 export type ParameterFormValues = Record<string, string | number | boolean>;
 
 const CAPTCHA_PROVIDERS = [
@@ -158,7 +183,7 @@ export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
   {
     key: "session",
     label: "会话",
-    description: "登录方式、邮箱可见性与头像存储参数。",
+    description: "登录方式、登录安全、邮箱可见性与头像存储参数。",
     fields: [
       {
         name: "passkeyLoginEnabled",
@@ -207,6 +232,22 @@ export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
         min: 16,
         max: 2048,
         hint: "上传头像会被调整到给定尺寸，单位为像素。",
+      },
+      {
+        name: "rsaLoginEncryptionEnabled",
+        label: "RSA 加密传输",
+        kind: "boolean",
+        section: "登录安全",
+        defaultValue: "true",
+        hint: "登录密码在浏览器端使用 RSA 公钥加密后提交；关闭后密码将以明文提交，请确保站点已启用 HTTPS。",
+      },
+      {
+        name: "argon2PasswordStorageEnabled",
+        label: "Argon2 存储",
+        kind: "boolean",
+        section: "登录安全",
+        defaultValue: "true",
+        hint: "开启后新密码使用 Argon2 编码；关闭后新密码使用 BCrypt，已有密码仍可正常验证。",
       },
     ],
   },
@@ -423,7 +464,7 @@ export function normalizeParameterGroupKey(value: unknown): ParameterGroupKey {
 }
 
 export function createParameterFormValues(
-  group: ParameterGroup,
+  group: ParameterFieldSet,
   source: Record<string, unknown>,
 ): ParameterFormValues {
   const values: ParameterFormValues = {};
@@ -432,9 +473,9 @@ export function createParameterFormValues(
     const value = readPath(source, field.path ?? [field.name]);
 
     if (field.kind === "boolean") {
-      values[field.name] = typeof value === "boolean" ? value : false;
+      values[field.name] = typeof value === "boolean" ? value : field.defaultValue === "true";
     } else if (field.kind === "number") {
-      values[field.name] = typeof value === "number" ? value : 0;
+      values[field.name] = typeof value === "number" ? value : Number(field.defaultValue ?? 0);
     } else if (field.kind === "select") {
       values[field.name] =
         typeof value === "string" && value ? value : (field.options?.[0]?.value ?? "");
@@ -448,7 +489,7 @@ export function createParameterFormValues(
 }
 
 export function createParameterRequestBody(
-  group: ParameterGroup,
+  group: ParameterFieldSet,
   values: ParameterFormValues,
 ): Record<string, unknown> {
   const body: Record<string, unknown> = {};
@@ -468,7 +509,7 @@ export function createParameterRequestBody(
 }
 
 export function createParameterSchema(
-  group: ParameterGroup,
+  group: ParameterFieldSet,
 ): z.ZodType<ParameterFormValues, ParameterFormValues> {
   const shape: Record<string, z.ZodType> = {};
 

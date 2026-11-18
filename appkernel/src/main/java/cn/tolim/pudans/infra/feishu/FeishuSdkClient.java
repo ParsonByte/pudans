@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.feishu;
 
-import cn.tolim.pudans.infra.properties.FeishuProperties;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import com.lark.oapi.Client;
 import com.lark.oapi.core.request.RequestOptions;
 import com.lark.oapi.service.auth.v3.model.InternalTenantAccessTokenReq;
@@ -10,8 +10,10 @@ import com.lark.oapi.service.authen.v1.model.CreateAccessTokenReqBody;
 import com.lark.oapi.service.contact.v3.model.GetUserReq;
 import com.lark.oapi.service.im.v1.model.CreateMessageReq;
 import com.lark.oapi.service.im.v1.model.CreateMessageReqBody;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
@@ -20,19 +22,35 @@ import reactor.core.scheduler.Schedulers;
 @Component
 public class FeishuSdkClient {
 
-    private final FeishuProperties properties;
+    private final SecurityParameterSettingService securitySettings;
 
-    private final Client client;
+    private final AtomicReference<CachedClient> cachedClient = new AtomicReference<>();
 
-    public FeishuSdkClient(FeishuProperties properties) {
-        this.properties = properties;
-        this.client = Client.newBuilder(properties.getAppId(), properties.getAppSecret())
+    public FeishuSdkClient(SecurityParameterSettingService securitySettings) {
+        this.securitySettings = securitySettings;
+    }
+
+    private Client client(SecurityParameterSettingService.FeishuSettings settings) {
+        return client(settings.appId(), settings.appSecret());
+    }
+
+    private Client client(String appId, String appSecret) {
+        var current = cachedClient.get();
+        if (current != null
+                && Objects.equals(current.appId(), appId)
+                && Objects.equals(current.appSecret(), appSecret)) {
+            return current.client();
+        }
+        var client = Client.newBuilder(appId, appSecret)
                 .requestTimeout(5, TimeUnit.SECONDS)
                 .logReqAtDebug(false)
                 .build();
+        cachedClient.set(new CachedClient(appId, appSecret, client));
+        return client;
     }
 
     public Mono<Token> exchangeCode(String code) {
+        var client = client(securitySettings.feishu());
         return call(() -> {
             var request = CreateAccessTokenReq.newBuilder()
                     .createAccessTokenReqBody(CreateAccessTokenReqBody.newBuilder()
@@ -54,6 +72,7 @@ public class FeishuSdkClient {
     }
 
     public Mono<UserInfo> fetchUserInfo(String accessToken) {
+        var client = client(securitySettings.feishu());
         return call(() -> {
             var options = RequestOptions.newBuilder()
                     .userAccessToken(accessToken)
@@ -73,11 +92,20 @@ public class FeishuSdkClient {
     }
 
     public Mono<String> tenantAccessToken() {
+        var settings = securitySettings.feishu();
+        return tenantAccessToken(client(settings), settings.appId(), settings.appSecret());
+    }
+
+    public Mono<String> tenantAccessToken(String appId, String appSecret) {
+        return tenantAccessToken(client(appId, appSecret), appId, appSecret);
+    }
+
+    private Mono<String> tenantAccessToken(Client client, String appId, String appSecret) {
         return call(() -> {
             var request = InternalTenantAccessTokenReq.newBuilder()
                     .internalTenantAccessTokenReqBody(InternalTenantAccessTokenReqBody.newBuilder()
-                            .appId(properties.getAppId())
-                            .appSecret(properties.getAppSecret())
+                            .appId(appId)
+                            .appSecret(appSecret)
                             .build())
                     .build();
             var response = client.auth().v3().tenantAccessToken().internal(request);
@@ -91,6 +119,7 @@ public class FeishuSdkClient {
     }
 
     public Mono<UserInfo> fetchContactUser(String userId) {
+        var client = client(securitySettings.feishu());
         return call(() -> {
             var userIdType = userId != null && userId.startsWith("on_") ? "union_id" : "open_id";
             var request = GetUserReq.newBuilder()
@@ -115,6 +144,7 @@ public class FeishuSdkClient {
     }
 
     public Mono<Void> sendMessage(String receiveId, String receiveIdType, String msgType, String content) {
+        var client = client(securitySettings.feishu());
         return call(() -> {
             var request = CreateMessageReq.newBuilder()
                     .receiveIdType(receiveIdType)
@@ -139,6 +169,8 @@ public class FeishuSdkClient {
     private static String failure(String prefix, int code, String message) {
         return prefix + ": " + code + " " + message;
     }
+
+    private record CachedClient(String appId, String appSecret, Client client) {}
 
     public record Token(String accessToken, long expiresIn) {}
 

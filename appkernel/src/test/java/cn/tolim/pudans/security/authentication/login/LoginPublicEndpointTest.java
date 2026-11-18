@@ -7,8 +7,12 @@ import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.core.rbac.service.UiPermissionService;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
+import cn.tolim.pudans.infra.properties.OidcProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
+import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
+import cn.tolim.pudans.infra.setting.ParameterSettingSecretCipher;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import cn.tolim.pudans.security.authentication.AuthProviderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,20 +37,33 @@ class LoginPublicEndpointTest {
     @Mock
     UiPermissionService uiPermissionService;
 
+    @Mock
+    ParameterSettingFetcher parameterSettingFetcher;
+
+    @Mock
+    ParameterSettingSecretCipher parameterSettingSecretCipher;
+
     private FeishuProperties feishuProperties;
+
+    private SecurityParameterSettingService securitySettings;
 
     private WebTestClient webTestClient;
 
     @BeforeEach
     void setUp() {
         feishuProperties = new FeishuProperties();
+        securitySettings = new SecurityParameterSettingService(
+                parameterSettingFetcher,
+                parameterSettingSecretCipher,
+                new OidcProperties(),
+                feishuProperties);
         when(authProviderService.getEnabledProviders()).thenReturn(Flux.empty());
 
         var endpoint = new LoginPublicEndpoint(
                 new SecurityProperties(),
                 userService,
                 authProviderService,
-                feishuProperties,
+                securitySettings,
                 initializationStateGetter,
                 uiPermissionService);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();

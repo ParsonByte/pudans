@@ -7,6 +7,8 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.security.authentication.CryptoService;
 import cn.tolim.pudans.core.risk.service.RiskControlService;
+import cn.tolim.pudans.core.risk.service.RiskDecision;
+import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
 import cn.tolim.pudans.security.captcha.CaptchaService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +33,9 @@ class LoginAuthenticationConverterTest {
     @Mock
     CaptchaService captchaService;
 
+    @Mock
+    SecurityParameterSettingService securitySettings;
+
     @Test
     void rejectsLoginWhenCaptchaVerificationFails() {
         when(captchaService.loginEnabled()).thenReturn(Mono.just(true));
@@ -38,7 +43,8 @@ class LoginAuthenticationConverterTest {
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/login")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body("username=alice&password=secret&captchaChallengeId=c1&captchaAnswer=wrong"));
-        var converter = new LoginAuthenticationConverter(cryptoService, riskControlService, captchaService);
+        var converter = new LoginAuthenticationConverter(
+                cryptoService, riskControlService, captchaService, securitySettings);
 
         StepVerifier.create(converter.convert(exchange))
                 .expectErrorSatisfies(error -> assertThat(error)
@@ -50,24 +56,47 @@ class LoginAuthenticationConverterTest {
     @Test
     void skipsCaptchaWhenItIsDisabled() {
         when(captchaService.loginEnabled()).thenReturn(Mono.just(false));
+        when(securitySettings.isRsaLoginEncryptionEnabled()).thenReturn(true);
         when(cryptoService.decrypt(any())).thenReturn(Mono.just("secret".getBytes()));
         when(riskControlService.evaluate(any(), any())).thenReturn(Mono.empty());
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/login")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body("username=alice&password=c2VjcmV0"));
-        var converter = new LoginAuthenticationConverter(cryptoService, riskControlService, captchaService);
+        var converter = new LoginAuthenticationConverter(
+                cryptoService, riskControlService, captchaService, securitySettings);
 
         StepVerifier.create(converter.convert(exchange)).verifyComplete();
     }
 
     @Test
+    void acceptsPlainPasswordWhenRsaEncryptionIsDisabled() {
+        when(captchaService.loginEnabled()).thenReturn(Mono.just(false));
+        when(securitySettings.isRsaLoginEncryptionEnabled()).thenReturn(false);
+        when(riskControlService.evaluate(any(), any())).thenReturn(Mono.just(RiskDecision.permit()));
+        var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/login")
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body("username=alice&password=plain-secret"));
+        var converter = new LoginAuthenticationConverter(
+                cryptoService, riskControlService, captchaService, securitySettings);
+
+        StepVerifier.create(converter.convert(exchange))
+                .assertNext(authentication -> {
+                    assertThat(authentication.getPrincipal()).isEqualTo("alice");
+                    assertThat(authentication.getCredentials()).isEqualTo("plain-secret");
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void missingUsernameIsRejectedWithoutANullPointer() {
         when(captchaService.loginEnabled()).thenReturn(Mono.just(false));
+        when(securitySettings.isRsaLoginEncryptionEnabled()).thenReturn(true);
         when(cryptoService.decrypt(any())).thenReturn(Mono.just("secret".getBytes()));
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/login")
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body("password=c2VjcmV0"));
-        var converter = new LoginAuthenticationConverter(cryptoService, riskControlService, captchaService);
+        var converter = new LoginAuthenticationConverter(
+                cryptoService, riskControlService, captchaService, securitySettings);
 
         StepVerifier.create(converter.convert(exchange))
                 .expectErrorSatisfies(error -> assertThat(error)
