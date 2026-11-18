@@ -358,8 +358,7 @@ export function UserGroupsView() {
             );
             return groupsPath ? (
               <Link
-                to="/$"
-                params={{ _splat: `${groupsPath}/${row.original.metadata.name}` }}
+                to={`${groupsPath}/${row.original.metadata.name}` as string}
                 className="flex min-w-0 items-center gap-2"
               >
                 {content}
@@ -459,7 +458,7 @@ export function UserGroupsView() {
                 <DropdownMenuContent align="end" className="w-40">
                   {groupsPath ? (
                     <DropdownMenuItem asChild>
-                      <Link to="/$" params={{ _splat: `${groupsPath}/${group.metadata.name}` }}>
+                      <Link to={`${groupsPath}/${group.metadata.name}` as string}>
                         <Eye />
                         查看详情
                       </Link>

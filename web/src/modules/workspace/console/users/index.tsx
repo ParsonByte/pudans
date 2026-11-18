@@ -366,8 +366,7 @@ export function UsersView() {
             );
             return usersPath ? (
               <Link
-                to="/$"
-                params={{ _splat: `${usersPath}/${row.original.name ?? ""}` }}
+                to={`${usersPath}/${row.original.name ?? ""}` as string}
                 className="flex min-w-0 items-center gap-2"
               >
                 {content}
@@ -456,7 +455,7 @@ export function UsersView() {
                 <DropdownMenuContent align="end" className="w-40">
                   {usersPath ? (
                     <DropdownMenuItem asChild>
-                      <Link to="/$" params={{ _splat: `${usersPath}/${user.name ?? ""}` }}>
+                      <Link to={`${usersPath}/${user.name ?? ""}` as string}>
                         <Eye />
                         查看详情
                       </Link>

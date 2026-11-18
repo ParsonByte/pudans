@@ -11,7 +11,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.replay"
     rbac.authorization.pudans.tolim.cn/ui-component: "replay"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
-    rbac.authorization.pudans.tolim.cn/ui-path: "/console/replay"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/replay"
     rbac.authorization.pudans.tolim.cn/ui-label: "回溯"
     rbac.authorization.pudans.tolim.cn/ui-description: "查询历史链路、回放操作并管理审计归档。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:history"

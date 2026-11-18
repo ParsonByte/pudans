@@ -138,7 +138,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("用户已删除。");
       if (usersPath) {
-        void navigate({ to: "/$", params: { _splat: usersPath } });
+        void navigate({ to: usersPath });
       }
     },
     onError: (error) => toast.error(resolveUserApiError(error)),
@@ -187,7 +187,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
           <div className="flex gap-2">
             {usersPath ? (
               <Button variant="outline" size="sm" asChild>
-                <Link to="/$" params={{ _splat: usersPath }}>
+                <Link to={usersPath}>
                   <ArrowLeft />
                   返回用户列表
                 </Link>
@@ -210,7 +210,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
       <div className="flex flex-wrap items-center gap-2">
         {usersPath ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link to="/$" params={{ _splat: usersPath }}>
+            <Link to={usersPath}>
               <ArrowLeft />
               返回用户列表
             </Link>

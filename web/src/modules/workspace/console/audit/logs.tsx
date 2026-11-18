@@ -139,7 +139,7 @@ export function AuditLogsView() {
         <div className="flex flex-wrap items-center gap-2">
           {auditPath ? (
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/$" params={{ _splat: auditPath }}>
+              <Link to={auditPath}>
                 <ArrowLeft />
                 返回审计
               </Link>

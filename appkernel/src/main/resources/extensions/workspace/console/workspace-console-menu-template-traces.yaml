@@ -11,7 +11,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-menu: "console.traces"
     rbac.authorization.pudans.tolim.cn/ui-component: "traces"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
-    rbac.authorization.pudans.tolim.cn/ui-path: "/console/traces"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/traces"
     rbac.authorization.pudans.tolim.cn/ui-label: "链路"
     rbac.authorization.pudans.tolim.cn/ui-description: "查看用户活动链路和操作明细。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:waypoints"

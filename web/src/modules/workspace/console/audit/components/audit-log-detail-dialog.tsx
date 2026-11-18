@@ -175,9 +175,7 @@ export function AuditLogDetailDialog({ record, onClose }: AuditLogDetailDialogPr
           </Button>
           {traceLink ? (
             <Button asChild>
-              <Link to="/$" params={{ _splat: traceLink }}>
-                查看链路
-              </Link>
+              <Link to={traceLink}>查看链路</Link>
             </Button>
           ) : null}
         </DialogFooter>
