@@ -63,7 +63,7 @@ class AiRouteResolutionServiceTest {
         var mode = mode("pro", "group-b", AiModel.Tier.HIGH);
         when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
         when(chatModeService.get("pro")).thenReturn(Mono.just(mode));
-        when(candidateService.expand(group)).thenReturn(Mono.just(List.of(seat())));
+        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
 
         StepVerifier.create(service.resolve(input("pro", "group-a")))
@@ -84,7 +84,7 @@ class AiRouteResolutionServiceTest {
         var mode = mode("fast", "fast-group", AiModel.Tier.CHEAP);
         when(chatModeService.get("fast")).thenReturn(Mono.just(mode));
         when(routeGroupService.get("fast-group")).thenReturn(Mono.just(group("fast-group")));
-        when(candidateService.expand(any())).thenReturn(Mono.just(List.of(seat())));
+        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
 
         StepVerifier.create(service.resolve(input("fast", null)))
@@ -97,7 +97,7 @@ class AiRouteResolutionServiceTest {
     void fallsBackToTheDefaultRouteGroup() {
         when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
         when(routeGroupService.defaultGroup()).thenReturn(Mono.just(group("default")));
-        when(candidateService.expand(any())).thenReturn(Mono.just(List.of(seat())));
+        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
 
         StepVerifier.create(service.resolve(input(null, null)))
@@ -122,7 +122,7 @@ class AiRouteResolutionServiceTest {
         var group = group("group-a");
         when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
         when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(candidateService.expand(group)).thenReturn(Mono.just(List.of()));
+        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of()));
         when(routeEngine.route(any(), anyList())).thenReturn(new RoutePlan(
                 null,
                 List.of(),
@@ -133,6 +133,70 @@ class AiRouteResolutionServiceTest {
 
         StepVerifier.create(service.resolve(input(null, "group-a")))
                 .expectError(ApiException.class)
+                .verify();
+    }
+
+    @Test
+    void requiresFileInputWhenTheRequestCarriesADocument() {
+        var group = group("group-a");
+        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
+        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(routeEngine.route(any(), anyList())).thenReturn(plan());
+        var ir = new AiChatIr(
+                List.of(new AiChatMessage("user", List.of(
+                        new AiContentPart.Text("总结这份文档", null),
+                        new AiContentPart.File("application/pdf", "AA==", null, "notes.pdf", null, null)))),
+                List.of(),
+                new AiRequestParams(null, null, 128, null, null, null, null, null),
+                true);
+
+        StepVerifier.create(service.resolve(new AiRouteResolutionService.Input(
+                        null, "group-a", null, ir, new AiSetting.Spec(), null)))
+                .expectNextCount(1)
+                .verifyComplete();
+
+        org.mockito.Mockito.verify(candidateService)
+                .expand(
+                        group,
+                        Set.of(AiModel.Capability.CHAT),
+                        Set.of(AiModel.Modality.TEXT, AiModel.Modality.FILE),
+                        Set.of(AiModel.Modality.TEXT));
+    }
+
+    @Test
+    void reportsWhyEachCandidateWasEliminated() {
+        var group = group("group-a");
+        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
+        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(routeEngine.route(any(), anyList())).thenReturn(new RoutePlan(
+                null,
+                List.of(),
+                List.of(),
+                new RouteTrace(
+                        AiRouteGroup.RouteMode.SMART,
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of(new RouteTrace.Candidate(
+                                "provider-a",
+                                "account-a",
+                                "model-a",
+                                AiModel.Tier.CHEAP,
+                                false,
+                                RouteEliminationReason.RESTING,
+                                50)),
+                        null,
+                        RouteOutcome.EXHAUSTED,
+                        List.of())));
+
+        StepVerifier.create(service.resolve(input(null, "group-a")))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOf(ApiException.class)
+                        .hasMessageContaining("provider-a/account-a/model-a")
+                        .hasMessageContaining("熔断冷却中"))
                 .verify();
     }
 

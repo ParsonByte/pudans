@@ -16,6 +16,7 @@ import cn.tolim.pudans.infra.properties.AiProperties;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -61,13 +62,17 @@ public class AiRouteResolutionService {
                     HttpStatus.BAD_REQUEST, CODE_GROUP_MISSING, "路由组不可用。"));
         }
         return candidateService
-                .expand(group)
+                .expand(
+                        group,
+                        Set.of(AiModel.Capability.CHAT),
+                        inputModalities(input.ir()),
+                        Set.of(AiModel.Modality.TEXT))
                 .flatMap(seats -> {
                     var request = routeRequest(input, modeAndGroup.mode(), group);
                     var plan = routeEngine.route(request, seats);
                     if (!plan.routed()) {
                         return Mono.error(new ApiException(
-                                HttpStatus.SERVICE_UNAVAILABLE, CODE_NO_CANDIDATE, "路由组没有可用候选。"));
+                                HttpStatus.SERVICE_UNAVAILABLE, CODE_NO_CANDIDATE, noCandidateMessage(plan)));
                     }
                     return Mono.just(new Resolution(
                             group, modeAndGroup.mode(), request, plan, seats));
@@ -114,7 +119,7 @@ public class AiRouteResolutionService {
                     var plan = routeEngine.route(request, seats);
                     if (!plan.routed()) {
                         return Mono.error(new ApiException(
-                                HttpStatus.SERVICE_UNAVAILABLE, CODE_NO_CANDIDATE, "路由组没有可用候选。"));
+                                HttpStatus.SERVICE_UNAVAILABLE, CODE_NO_CANDIDATE, noCandidateMessage(plan)));
                     }
                     return Mono.just(new Resolution(group, null, request, plan, seats));
                 });
@@ -174,6 +179,8 @@ public class AiRouteResolutionService {
                 .promptTokens(AiTokenEstimator.estimateMessages(input.ir().messages()))
                 .maxOutputTokens(maxOutput)
                 .requiredCapabilities(capabilities(input.ir()))
+                .requiredInputModalities(inputModalities(input.ir()))
+                .requiredOutputModalities(Set.of(AiModel.Modality.TEXT))
                 .fallbackReferences(spec.getFallback())
                 .manualPick(spec.getManualPick())
                 .healthThreshold(properties.getRouting().getHealthThreshold())
@@ -198,6 +205,12 @@ public class AiRouteResolutionService {
         if (hasImage(ir)) {
             capabilities.add(AiModel.Capability.VISION);
         }
+        if (hasMedia(ir, "audio/")) {
+            capabilities.add(AiModel.Capability.AUDIO_UNDERSTANDING);
+        }
+        if (hasMedia(ir, "video/")) {
+            capabilities.add(AiModel.Capability.VIDEO_UNDERSTANDING);
+        }
         return capabilities;
     }
 
@@ -205,6 +218,64 @@ public class AiRouteResolutionService {
         return ir.messages().stream()
                 .flatMap(message -> message.parts().stream())
                 .anyMatch(AiContentPart.Image.class::isInstance);
+    }
+
+    private static boolean hasMedia(AiChatIr ir, String prefix) {
+        return ir.messages().stream()
+                .flatMap(message -> message.parts().stream())
+                .filter(AiContentPart.File.class::isInstance)
+                .map(AiContentPart.File.class::cast)
+                .anyMatch(file -> file.mediaType() != null && file.mediaType().startsWith(prefix));
+    }
+
+    private static Set<AiModel.Modality> inputModalities(AiChatIr ir) {
+        var modalities = EnumSet.of(AiModel.Modality.TEXT);
+        for (var message : ir.messages()) {
+            for (var part : message.parts()) {
+                if (part instanceof AiContentPart.Image) {
+                    modalities.add(AiModel.Modality.IMAGE);
+                } else if (part instanceof AiContentPart.File file && file.mediaType() != null) {
+                    var mediaType = file.mediaType();
+                    if (mediaType.startsWith("image/")) {
+                        modalities.add(AiModel.Modality.IMAGE);
+                    } else if (mediaType.startsWith("audio/")) {
+                        modalities.add(AiModel.Modality.AUDIO);
+                    } else if (mediaType.startsWith("video/")) {
+                        modalities.add(AiModel.Modality.VIDEO);
+                    } else {
+                        modalities.add(AiModel.Modality.FILE);
+                    }
+                }
+            }
+        }
+        return modalities;
+    }
+
+    private static String noCandidateMessage(RoutePlan plan) {
+        var candidates = plan.trace() == null ? List.<RouteTrace.Candidate>of() : plan.trace().candidates();
+        if (candidates.isEmpty()) {
+            return "路由组没有可用候选：没有已启用且满足本次请求能力的模型账号组合。";
+        }
+        var details = candidates.stream()
+                .limit(3)
+                .map(candidate -> candidate.provider() + "/" + candidate.account() + "/" + candidate.model()
+                        + "（" + eliminationLabel(candidate.reason()) + "）")
+                .collect(Collectors.joining("、"));
+        return "路由组没有可用候选：" + details + "。";
+    }
+
+    private static String eliminationLabel(@Nullable RouteEliminationReason reason) {
+        if (reason == null) {
+            return "未命中固定账号";
+        }
+        return switch (reason) {
+            case DISABLED -> "已禁用";
+            case RESTING -> "熔断冷却中，稍后自动恢复";
+            case UNHEALTHY -> "健康度过低";
+            case CAPABILITY_MISMATCH -> "模型能力或附件类型不匹配";
+            case CONTEXT_EXCEEDED -> "上下文超出模型窗口";
+            case SPENT -> "额度已用尽";
+        };
     }
 
     private static String lastUserText(AiChatIr ir) {
