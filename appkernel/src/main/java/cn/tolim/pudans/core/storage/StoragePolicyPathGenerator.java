@@ -136,9 +136,8 @@ public class StoragePolicyPathGenerator {
             case "{randomnum8}" -> String.valueOf(RANDOM.nextInt(8));
             case "{uuid}" -> UUID.randomUUID().toString();
             case "{uid}" -> StringUtils.hasText(context.owner()) ? sanitizeName(context.owner()) : "";
-            case "{timestamp}" -> String.valueOf(context.now().getEpochSecond());
-            case "{timestamp_nano}" -> String.valueOf(
-                    context.now().getEpochSecond() * 1_000_000_000L + context.now().getNano());
+            // {timestamp} 与 {timestamp_nano} 同为纳秒时间戳，避免秒级重名覆盖
+            case "{timestamp}", "{timestamp_nano}" -> String.valueOf(epochNanos(context));
             case "{datetime}" -> DATETIME.format(time);
             case "{date}" -> DATE.format(time);
             case "{year}" -> YEAR.format(time);
@@ -153,6 +152,11 @@ public class StoragePolicyPathGenerator {
             case "{path}" -> pathAvailable ? sanitizePath(context.originPath()) : "";
             default -> variable;
         };
+    }
+
+    private static long epochNanos(StoragePathContext context) {
+        var now = context.now();
+        return now.getEpochSecond() * 1_000_000_000L + now.getNano();
     }
 
     private static String randomString(int length) {
