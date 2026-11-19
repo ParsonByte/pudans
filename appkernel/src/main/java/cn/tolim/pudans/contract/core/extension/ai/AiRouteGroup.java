@@ -50,6 +50,8 @@ public class AiRouteGroup extends AbstractExtension {
         @Schema(requiredMode = REQUIRED)
         private String displayName;
 
+        private String description;
+
         private RouteMode routeMode = RouteMode.SMART;
 
         private AiModel.Tier defaultTier;

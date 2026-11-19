@@ -19,4 +19,16 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-group: "模型"
     rbac.authorization.pudans.tolim.cn/ui-order: "130"
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-route-groups:view"]'
-rules: []
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airoutegroups"
+      - "aimodels"
+      - "aiproviders"
+      - "aiprovideraccounts"
+      - "aisettings"
+      - "chats/modes"
+    verbs:
+      - "get"
+      - "list"
