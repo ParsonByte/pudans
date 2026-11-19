@@ -19,9 +19,18 @@ import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
+import cn.tolim.pudans.contract.core.extension.ai.AiChatMode;
+import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
+import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
+import cn.tolim.pudans.contract.core.extension.ai.AiTeam;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
@@ -49,10 +58,13 @@ public class BuiltinEntityPolicy {
 
     private final RolePermissionPolicy rolePermissionPolicy;
 
+    private final UserService userService;
+
     public boolean isBuiltinRole(String name) {
         return BuiltinEntities.SUPER_ROLE.equals(name)
                 || BuiltinEntities.SYSTEM_ADMIN_ROLE.equals(name)
-                || BuiltinEntities.NORMAL_ROLE.equals(name);
+                || BuiltinEntities.NORMAL_ROLE.equals(name)
+                || BuiltinEntities.AI_OPERATOR_ROLE.equals(name);
     }
 
     public boolean isBuiltinGroup(String name) {
@@ -65,6 +77,31 @@ public class BuiltinEntityPolicy {
         var kind = gvk.kind();
         if (StorageFile.KIND.equals(kind)) {
             return Mono.error(denied("存储文件由存储服务管理，请使用文件接口。"));
+        }
+        if (AiSetting.KIND.equals(kind)) {
+            return checkAiSettingName(nameOf(extension));
+        }
+        if (AiChatMode.KIND.equals(kind)) {
+            return denyReservedName(nameOf(extension), Set.of("fast", "pro"), "内置对话模式")
+                    .then(convert(extension, AiChatMode.class).flatMap(this::checkAiChatModeReferences));
+        }
+        if (AiTeam.KIND.equals(kind)) {
+            return denyReservedName(nameOf(extension), Set.of("default"), "默认团队")
+                    .then(convert(extension, AiTeam.class).flatMap(this::checkAiTeamReferences));
+        }
+        if (AiAgent.KIND.equals(kind)) {
+            return denyReservedName(nameOf(extension), Set.of("default"), "默认 Agent")
+                    .then(convert(extension, AiAgent.class).flatMap(this::checkAiAgentReferences));
+        }
+        if (AiProviderAccount.KIND.equals(kind)) {
+            return convert(extension, AiProviderAccount.class)
+                    .flatMap(this::checkAiProviderAccountReferences);
+        }
+        if (AiModel.KIND.equals(kind)) {
+            return convert(extension, AiModel.class).flatMap(this::checkAiModelReferences);
+        }
+        if (AiRouteGroup.KIND.equals(kind)) {
+            return convert(extension, AiRouteGroup.class).flatMap(this::checkAiRouteGroupReferences);
         }
         if (Role.KIND.equals(kind)) {
             return checkMutation(kind, nameOf(extension))
@@ -96,6 +133,29 @@ public class BuiltinEntityPolicy {
         }
         if (StoragePolicy.KIND.equals(kind)) {
             return checkStoragePolicyUpdate(name, extension);
+        }
+        if (AiProviderAccount.KIND.equals(kind)) {
+            return checkAiProviderAccountUpdate(name, extension)
+                    .then(convert(extension, AiProviderAccount.class)
+                            .flatMap(this::checkAiProviderAccountReferences));
+        }
+        if (AiSetting.KIND.equals(kind)) {
+            return checkAiSettingName(name);
+        }
+        if (AiChatMode.KIND.equals(kind)) {
+            return convert(extension, AiChatMode.class).flatMap(this::checkAiChatModeReferences);
+        }
+        if (AiTeam.KIND.equals(kind)) {
+            return convert(extension, AiTeam.class).flatMap(this::checkAiTeamReferences);
+        }
+        if (AiAgent.KIND.equals(kind)) {
+            return convert(extension, AiAgent.class).flatMap(this::checkAiAgentReferences);
+        }
+        if (AiModel.KIND.equals(kind)) {
+            return convert(extension, AiModel.class).flatMap(this::checkAiModelReferences);
+        }
+        if (AiRouteGroup.KIND.equals(kind)) {
+            return convert(extension, AiRouteGroup.class).flatMap(this::checkAiRouteGroupReferences);
         }
         if (Role.KIND.equals(kind)) {
             return checkMutation(kind, name)
@@ -135,6 +195,158 @@ public class BuiltinEntityPolicy {
             }
             return Mono.empty();
         });
+    }
+
+    private Mono<Void> checkAiProviderAccountUpdate(String name, Extension extension) {
+        return client.get(AiProviderAccount.class, name).flatMap(existing -> {
+            var stored = existing.getSpec() == null ? null : existing.getSpec().getApiKey();
+            if (!StringUtils.hasText(stored)) {
+                return Mono.empty();
+            }
+            if (extension instanceof Unstructured unstructured) {
+                preserveCredential(ensureChildMap(unstructured.getData(), "spec"), "apiKey", stored);
+            } else if (extension instanceof JsonExtension jsonExtension) {
+                var root = jsonExtension.getInternal();
+                var spec = root.get("spec") instanceof ObjectNode node ? node : root.putObject("spec");
+                var current = spec.get("apiKey");
+                if (current == null || !StringUtils.hasText(current.asText())) {
+                    spec.put("apiKey", stored);
+                }
+            } else if (extension instanceof AiProviderAccount account) {
+                if (account.getSpec() == null) {
+                    account.setSpec(new AiProviderAccount.Spec());
+                }
+                if (!StringUtils.hasText(account.getSpec().getApiKey())) {
+                    account.getSpec().setApiKey(stored);
+                }
+            }
+            return Mono.empty();
+        });
+    }
+
+    private static Mono<Void> checkAiSettingName(String name) {
+        if ("ai-setting".equals(name)) {
+            return Mono.empty();
+        }
+        return Mono.error(denied("AI 全局设置只允许名称为 ai-setting。"));
+    }
+
+    private static Mono<Void> denyReservedName(String name, Set<String> reserved, String label) {
+        if (name == null || !reserved.contains(name)) {
+            return Mono.empty();
+        }
+        return Mono.error(denied(label + " [" + name + "] 由系统内置，不能通过接口创建。"));
+    }
+
+    private Mono<Void> checkAiChatModeReferences(AiChatMode mode) {
+        var routeGroup = mode.getSpec() == null ? null : mode.getSpec().getRouteGroup();
+        return requireReference(AiRouteGroup.class, routeGroup, "对话模式绑定的路由组");
+    }
+
+    private Mono<Void> checkAiTeamReferences(AiTeam team) {
+        var spec = team.getSpec();
+        if (spec == null) {
+            return Mono.error(denied("团队配置不能为空。"));
+        }
+        return requireUserUid(spec.getOwnerUserId(), "团队 owner 用户", true)
+                .then(requireReference(AiAgent.class, spec.getDefaultAgent(), "团队默认 Agent", false))
+                .then(Flux.fromIterable(spec.getMembers() == null ? List.of() : spec.getMembers())
+                        .concatMap(member -> requireUserUid(member.getUserId(), "团队成员用户", true))
+                        .then());
+    }
+
+    private Mono<Void> checkAiAgentReferences(AiAgent agent) {
+        var spec = agent.getSpec();
+        if (spec == null) {
+            return Mono.error(denied("Agent 配置不能为空。"));
+        }
+        return requireReference(AiTeam.class, spec.getTeam(), "Agent 所属团队")
+                .then(requireUserUid(spec.getOwnerUserId(), "Agent owner 用户", true))
+                .then(requireReference(AiRouteGroup.class, spec.getDefaultRouteGroup(), "Agent 默认路由组", false));
+    }
+
+    private Mono<Void> checkAiProviderAccountReferences(AiProviderAccount account) {
+        var provider = account.getSpec() == null ? null : account.getSpec().getProvider();
+        return requireReference(AiProvider.class, provider, "供应商账号所属供应商");
+    }
+
+    private Mono<Void> checkAiModelReferences(AiModel model) {
+        var spec = model.getSpec();
+        if (spec == null) {
+            return Mono.error(denied("模型配置不能为空。"));
+        }
+        if (!pricingValid(spec)) {
+            return Mono.error(denied(pricingMessage(spec)));
+        }
+        if (spec.getModelType() == AiModel.ModelType.EMBEDDING
+                && (spec.getEmbeddingDim() == null || spec.getEmbeddingDim() <= 0)) {
+            return Mono.error(denied("Embedding 模型必须配置大于零的向量维度。"));
+        }
+        var provider = spec.getProvider();
+        return requireReference(AiProvider.class, provider, "模型所属供应商");
+    }
+
+    private static boolean pricingValid(AiModel.Spec spec) {
+        return switch (spec.getModelType()) {
+            case CHAT, EMBEDDING, RERANK -> spec.getInputTokensPerPoint() > 0
+                    && spec.getCacheTokensPerPoint() > 0
+                    && spec.getOutputTokensPerPoint() > 0;
+            case IMAGE -> spec.getImagePointsPerItem() > 0;
+            case VIDEO -> spec.getVideoPointsPerSecond() > 0;
+            case SPEECH -> spec.getSpeechPointsPerKiloCharacter() > 0
+                    || spec.getAudioPointsPerSecond() > 0;
+            case AUDIO, MUSIC -> spec.getAudioPointsPerSecond() > 0;
+            case THREE_D -> spec.getTaskPointsPerInvocation() > 0;
+        };
+    }
+
+    private static String pricingMessage(AiModel.Spec spec) {
+        return switch (spec.getModelType()) {
+            case CHAT, EMBEDDING, RERANK -> "模型 token 单价必须大于零。";
+            case IMAGE -> "图片模型必须配置大于零的单张积分单价。";
+            case VIDEO -> "视频模型必须配置大于零的每秒积分单价。";
+            case SPEECH -> "语音模型必须配置大于零的字符或每秒积分单价。";
+            case AUDIO, MUSIC -> "音频或音乐模型必须配置大于零的每秒积分单价。";
+            case THREE_D -> "3D 模型必须配置大于零的任务积分单价。";
+        };
+    }
+
+    private Mono<Void> checkAiRouteGroupReferences(AiRouteGroup group) {
+        var spec = group.getSpec();
+        if (spec == null) {
+            return Mono.error(denied("路由组配置不能为空。"));
+        }
+        return Flux.fromIterable(spec.getMembers() == null ? List.of() : spec.getMembers())
+                .concatMap(member -> requireReference(AiModel.class, member.getModel(), "路由组成员模型"))
+                .then();
+    }
+
+    private Mono<Void> requireUserUid(String uid, String label, boolean required) {
+        if (!StringUtils.hasText(uid)) {
+            return required ? Mono.error(denied(label + "不能为空。")) : Mono.empty();
+        }
+        if (BuiltinEntities.SYSTEM_USER.equals(uid)) {
+            return Mono.empty();
+        }
+        return userService
+                .getUserByUid(uid)
+                .switchIfEmpty(Mono.error(denied(label + " [" + uid + "] 不存在。")))
+                .then();
+    }
+
+    private Mono<Void> requireReference(Class<? extends Extension> type, String name, String label) {
+        return requireReference(type, name, label, true);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Mono<Void> requireReference(
+            Class<? extends Extension> type, String name, String label, boolean required) {
+        if (!StringUtils.hasText(name)) {
+            return required ? Mono.error(denied(label + "不能为空。")) : Mono.empty();
+        }
+        return client.fetch((Class<Extension>) type, name)
+                .switchIfEmpty(Mono.error(denied(label + " [" + name + "] 不存在。")))
+                .then();
     }
 
     @SuppressWarnings("unchecked")
@@ -202,6 +414,19 @@ public class BuiltinEntityPolicy {
     public Mono<Void> checkDelete(Extension extension) {
         if (extension instanceof StorageFile) {
             return Mono.error(denied("存储文件由存储服务管理，请使用文件接口。"));
+        }
+        if (extension instanceof AiSetting) {
+            return Mono.error(denied("AI 全局设置不可删除。"));
+        }
+        if (extension instanceof AiChatMode mode
+                && Set.of("fast", "pro").contains(mode.getMetadata().getName())) {
+            return Mono.error(denied("内置对话模式不可删除。"));
+        }
+        if (extension instanceof AiTeam team && "default".equals(team.getMetadata().getName())) {
+            return Mono.error(denied("默认团队不可删除。"));
+        }
+        if (extension instanceof AiAgent agent && "default".equals(agent.getMetadata().getName())) {
+            return Mono.error(denied("默认 Agent 不可删除。"));
         }
         if (extension instanceof Role role) {
             return checkRoleMutation(role.getMetadata().getName());

@@ -1,0 +1,22 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: AiRouteGroup
+metadata:
+  name: fast-group
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    pudans.tolim.cn/do-not-overwrite: "true"
+spec:
+  displayName: 快速路由组
+  routeMode: CHEAP
+  defaultTier: CHEAP
+  qualityThreshold: 0.6
+  affinity: AUTO
+  fallback: []
+  patienceSeconds: 60
+  firstTokenSeconds: 0
+  sink: false
+  contextMode: SMALLEST
+  rules: []
+  isDefault: false
+  enabled: true
+  members: []

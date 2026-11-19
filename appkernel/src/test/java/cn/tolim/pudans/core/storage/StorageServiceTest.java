@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,8 +25,12 @@ import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
+import cn.tolim.pudans.core.storage.driver.StorageObject;
+import cn.tolim.pudans.core.storage.driver.StorageReadOptions;
+import cn.tolim.pudans.core.storage.driver.StorageReadResult;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
@@ -139,6 +144,37 @@ class StorageServiceTest {
                 .satisfies(error -> assertThat(((ApiException) error).getStatusCode())
                         .isEqualTo(HttpStatus.CONFLICT));
         verifyNoInteractions(driverResolver);
+    }
+
+    @Test
+    void readsFileBytesWithLimit() {
+        var content = "hello".getBytes(StandardCharsets.UTF_8);
+        when(downloadService.open(eq("file-1"), any(StorageReadOptions.class)))
+                .thenReturn(Mono.just(new StorageReadResult(
+                        new StorageObject("uploads/a.txt", content.length, Instant.now(), "etag"),
+                        0,
+                        content.length - 1,
+                        content.length,
+                        Flux.just(DefaultDataBufferFactory.sharedInstance.wrap(content)))));
+
+        var bytes = service.readBytes("file-1", 1024).block();
+
+        assertThat(new String(bytes, StandardCharsets.UTF_8)).isEqualTo("hello");
+    }
+
+    @Test
+    void rejectsFileBytesAboveLimit() {
+        var content = new byte[16];
+        when(downloadService.open(eq("file-1"), any(StorageReadOptions.class)))
+                .thenReturn(Mono.just(new StorageReadResult(
+                        new StorageObject("uploads/a.txt", content.length, Instant.now(), "etag"),
+                        0,
+                        content.length - 1,
+                        content.length,
+                        Flux.just(DefaultDataBufferFactory.sharedInstance.wrap(content)))));
+
+        assertThatThrownBy(() -> service.readBytes("file-1", 8).block())
+                .isInstanceOf(DataBufferLimitException.class);
     }
 
     private static StorageFile file(StorageFileState state) {

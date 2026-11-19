@@ -1,0 +1,74 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: AiSetting
+metadata:
+  name: ai-setting
+  labels:
+    pudans.tolim.cn/do-not-overwrite: "true"
+spec:
+  defaultRouteGroup: default
+  defaultChatMode: fast
+  defaultKnowledgeBaseCodes: []
+  defaults:
+    team: default
+    agent: default
+  gateway:
+    injectionEnabled: true
+    memoryBridgeEnabled: true
+    streamIdleTimeoutSeconds: 120
+    supportedProtocols:
+      - OPENAI_CHAT
+      - ANTHROPIC
+  embedding:
+    dimension: 1536
+    memoryModel: null
+    knowledgeBaseModel: null
+    queryModel: null
+    batchSize: 64
+  retrieval:
+    strategy: HYBRID
+    rrfK: 60
+    l1Limit: 10
+    l2Limit: 3
+    orgLimit: 5
+    scoreThreshold: 0.30
+  prompt:
+    maxInputTokens: 120000
+    maxOutputTokens: 4096
+    historyWindowTurns: 20
+    knowledgeBaseCharBudget: 4000
+  routing:
+    classifierEnabled: true
+    classifierFallbackTier: HIGH
+  memory:
+    extractionEnabled: true
+    extractionRouteGroup: null
+    maxMessagesPerExtraction: 10
+    maxBackgroundMessages: 5
+    maxMemoriesPerSession: 10
+    dedupEnabled: true
+    conflictRecallTopK: 5
+    memoryLimit: 10000
+    creditLimit: 1000
+    promptEnabled: true
+    generationLogEnabled: true
+    l2Enabled: true
+    l3Enabled: true
+    jevMinConfidence: 0.70
+    l3RefreshHours: 24
+    decayEnabled: true
+    decayMinScore: 20
+    decayAccessBoost: 2
+    decayDailyAmount: 1
+    decayStaleDays: 30
+    deleteRetentionDays: 180
+    requestMinReasonLength: 10
+    orgPromotionThreshold: 3
+    requireDoubleApprovalForL0: false
+    excludeSessionPrefixes:
+      - internal-
+      - benchmark-
+  billing:
+    freezeExpirySeconds: 600
+    dailyLimitEnabled: true
+    concurrentLimit: 4
+    chargeKnowledgeBaseIngestToUploader: true
