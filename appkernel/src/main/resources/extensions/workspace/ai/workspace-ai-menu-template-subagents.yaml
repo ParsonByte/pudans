@@ -1,0 +1,24 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-subagents
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI Console"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI Subagent View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.library.subagents"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-subagents"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "ai"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/ai/library/subagents"
+    rbac.authorization.pudans.tolim.cn/ui-label: "子代理"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理子代理配置。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:users-round"
+    rbac.authorization.pudans.tolim.cn/ui-group: "使用"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "资源库"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:library"
+    rbac.authorization.pudans.tolim.cn/ui-order: "90"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-subagents:view"]'
+rules: []

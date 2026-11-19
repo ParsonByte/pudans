@@ -1,0 +1,24 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-usage-requests
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI Observability"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI Usage Request View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.usage.requests"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-usage-requests"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "ai"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/ai/usage/requests"
+    rbac.authorization.pudans.tolim.cn/ui-label: "请求"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看 AI 请求明细。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:list"
+    rbac.authorization.pudans.tolim.cn/ui-group: "观测"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "用量"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:chart-line"
+    rbac.authorization.pudans.tolim.cn/ui-order: "160"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-usage-requests:view"]'
+rules: []

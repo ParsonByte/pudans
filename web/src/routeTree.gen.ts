@@ -35,6 +35,8 @@ import { Route as AuthenticatedWorkspaceconsoleRolesRouteImport } from './routes
 import { Route as AuthenticatedWorkspaceconsoleSettingsRouteImport } from './routes/_authenticated/_workspace/(console)/settings'
 import { Route as AuthenticatedWorkspaceconsoleStoragePoliciesRouteImport } from './routes/_authenticated/_workspace/(console)/storage-policies'
 import { Route as AuthenticatedWorkspaceindexIndexRouteImport } from './routes/_authenticated/_workspace/(index)/index'
+import { Route as AuthenticatedWorkspaceaiAiAgentRuntimeRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/agent-runtime'
+import { Route as AuthenticatedWorkspaceaiAiSessionsRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/sessions'
 import { Route as AuthenticatedWorkspaceconsoleAuditIndexRouteImport } from './routes/_authenticated/_workspace/(console)/audit/index'
 import { Route as AuthenticatedWorkspaceconsoleAuditLogsRouteImport } from './routes/_authenticated/_workspace/(console)/audit/logs'
 import { Route as AuthenticatedWorkspaceconsoleTracesIndexRouteImport } from './routes/_authenticated/_workspace/(console)/traces/index'
@@ -44,7 +46,24 @@ import { Route as AuthenticatedWorkspaceconsoleUserGroupsNameRouteImport } from 
 import { Route as AuthenticatedWorkspaceconsoleUsersIndexRouteImport } from './routes/_authenticated/_workspace/(console)/users/index'
 import { Route as AuthenticatedWorkspaceconsoleUsersNameRouteImport } from './routes/_authenticated/_workspace/(console)/users/$name'
 import { Route as AuthenticatedWorkspaceindexChatConversationIdRouteImport } from './routes/_authenticated/_workspace/(index)/chat/$conversationId'
+import { Route as AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/library/environment-variables'
+import { Route as AuthenticatedWorkspaceaiAiLibraryHooksRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/library/hooks'
+import { Route as AuthenticatedWorkspaceaiAiLibraryInstructionsRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/library/instructions'
+import { Route as AuthenticatedWorkspaceaiAiLibraryMcpServersRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/library/mcp-servers'
+import { Route as AuthenticatedWorkspaceaiAiLibraryMemoryRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/library/memory'
+import { Route as AuthenticatedWorkspaceaiAiLibrarySkillsRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/library/skills'
+import { Route as AuthenticatedWorkspaceaiAiLibrarySlashCommandsRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/library/slash-commands'
+import { Route as AuthenticatedWorkspaceaiAiLibrarySubagentsRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/library/subagents'
+import { Route as AuthenticatedWorkspaceaiAiModelsGatewayRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/models/gateway'
+import { Route as AuthenticatedWorkspaceaiAiModelsMarketRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/models/market'
+import { Route as AuthenticatedWorkspaceaiAiModelsRouteGroupsRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/models/route-groups'
+import { Route as AuthenticatedWorkspaceaiAiModelsRoutingRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/models/routing'
+import { Route as AuthenticatedWorkspaceaiAiUsageContextRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/usage/context'
+import { Route as AuthenticatedWorkspaceaiAiUsageOverviewRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/usage/overview'
+import { Route as AuthenticatedWorkspaceaiAiUsageRequestsRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/usage/requests'
+import { Route as AuthenticatedWorkspaceaiAiUsageSessionsRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/usage/sessions'
 import { Route as AuthenticatedWorkspaceconsoleTracesUserUidRouteImport } from './routes/_authenticated/_workspace/(console)/traces/user/$uid'
+import { Route as AuthenticatedWorkspaceaiAiModelsProvidersIndexRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/models/providers/index'
 
 const accountRouteRoute = accountRouteRouteImport.update({
   id: '/(account)',
@@ -181,6 +200,18 @@ const AuthenticatedWorkspaceindexIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
   } as any)
+const AuthenticatedWorkspaceaiAiAgentRuntimeRoute =
+  AuthenticatedWorkspaceaiAiAgentRuntimeRouteImport.update({
+    id: '/(ai)/ai/agent-runtime',
+    path: '/ai/agent-runtime',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiSessionsRoute =
+  AuthenticatedWorkspaceaiAiSessionsRouteImport.update({
+    id: '/(ai)/ai/sessions',
+    path: '/ai/sessions',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
 const AuthenticatedWorkspaceconsoleAuditIndexRoute =
   AuthenticatedWorkspaceconsoleAuditIndexRouteImport.update({
     id: '/(console)/audit/',
@@ -235,10 +266,112 @@ const AuthenticatedWorkspaceindexChatConversationIdRoute =
     path: '/chat/$conversationId',
     getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
   } as any)
+const AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRoute =
+  AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRouteImport.update({
+    id: '/(ai)/ai/library/environment-variables',
+    path: '/ai/library/environment-variables',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiLibraryHooksRoute =
+  AuthenticatedWorkspaceaiAiLibraryHooksRouteImport.update({
+    id: '/(ai)/ai/library/hooks',
+    path: '/ai/library/hooks',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiLibraryInstructionsRoute =
+  AuthenticatedWorkspaceaiAiLibraryInstructionsRouteImport.update({
+    id: '/(ai)/ai/library/instructions',
+    path: '/ai/library/instructions',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiLibraryMcpServersRoute =
+  AuthenticatedWorkspaceaiAiLibraryMcpServersRouteImport.update({
+    id: '/(ai)/ai/library/mcp-servers',
+    path: '/ai/library/mcp-servers',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiLibraryMemoryRoute =
+  AuthenticatedWorkspaceaiAiLibraryMemoryRouteImport.update({
+    id: '/(ai)/ai/library/memory',
+    path: '/ai/library/memory',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiLibrarySkillsRoute =
+  AuthenticatedWorkspaceaiAiLibrarySkillsRouteImport.update({
+    id: '/(ai)/ai/library/skills',
+    path: '/ai/library/skills',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiLibrarySlashCommandsRoute =
+  AuthenticatedWorkspaceaiAiLibrarySlashCommandsRouteImport.update({
+    id: '/(ai)/ai/library/slash-commands',
+    path: '/ai/library/slash-commands',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiLibrarySubagentsRoute =
+  AuthenticatedWorkspaceaiAiLibrarySubagentsRouteImport.update({
+    id: '/(ai)/ai/library/subagents',
+    path: '/ai/library/subagents',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiModelsGatewayRoute =
+  AuthenticatedWorkspaceaiAiModelsGatewayRouteImport.update({
+    id: '/(ai)/ai/models/gateway',
+    path: '/ai/models/gateway',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiModelsMarketRoute =
+  AuthenticatedWorkspaceaiAiModelsMarketRouteImport.update({
+    id: '/(ai)/ai/models/market',
+    path: '/ai/models/market',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiModelsRouteGroupsRoute =
+  AuthenticatedWorkspaceaiAiModelsRouteGroupsRouteImport.update({
+    id: '/(ai)/ai/models/route-groups',
+    path: '/ai/models/route-groups',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiModelsRoutingRoute =
+  AuthenticatedWorkspaceaiAiModelsRoutingRouteImport.update({
+    id: '/(ai)/ai/models/routing',
+    path: '/ai/models/routing',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiUsageContextRoute =
+  AuthenticatedWorkspaceaiAiUsageContextRouteImport.update({
+    id: '/(ai)/ai/usage/context',
+    path: '/ai/usage/context',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiUsageOverviewRoute =
+  AuthenticatedWorkspaceaiAiUsageOverviewRouteImport.update({
+    id: '/(ai)/ai/usage/overview',
+    path: '/ai/usage/overview',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiUsageRequestsRoute =
+  AuthenticatedWorkspaceaiAiUsageRequestsRouteImport.update({
+    id: '/(ai)/ai/usage/requests',
+    path: '/ai/usage/requests',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiUsageSessionsRoute =
+  AuthenticatedWorkspaceaiAiUsageSessionsRouteImport.update({
+    id: '/(ai)/ai/usage/sessions',
+    path: '/ai/usage/sessions',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
 const AuthenticatedWorkspaceconsoleTracesUserUidRoute =
   AuthenticatedWorkspaceconsoleTracesUserUidRouteImport.update({
     id: '/(console)/traces/user/$uid',
     path: '/traces/user/$uid',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiModelsProvidersIndexRoute =
+  AuthenticatedWorkspaceaiAiModelsProvidersIndexRouteImport.update({
+    id: '/(ai)/ai/models/providers/',
+    path: '/ai/models/providers/',
     getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
   } as any)
 
@@ -264,6 +397,8 @@ export interface FileRoutesByFullPath {
   '/roles': typeof AuthenticatedWorkspaceconsoleRolesRoute
   '/settings': typeof AuthenticatedWorkspaceconsoleSettingsRoute
   '/storage-policies': typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
+  '/ai/agent-runtime': typeof AuthenticatedWorkspaceaiAiAgentRuntimeRoute
+  '/ai/sessions': typeof AuthenticatedWorkspaceaiAiSessionsRoute
   '/audit/logs': typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   '/traces/$traceFlowId': typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
   '/user-groups/$name': typeof AuthenticatedWorkspaceconsoleUserGroupsNameRoute
@@ -273,7 +408,24 @@ export interface FileRoutesByFullPath {
   '/traces/': typeof AuthenticatedWorkspaceconsoleTracesIndexRoute
   '/user-groups/': typeof AuthenticatedWorkspaceconsoleUserGroupsIndexRoute
   '/users/': typeof AuthenticatedWorkspaceconsoleUsersIndexRoute
+  '/ai/library/environment-variables': typeof AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRoute
+  '/ai/library/hooks': typeof AuthenticatedWorkspaceaiAiLibraryHooksRoute
+  '/ai/library/instructions': typeof AuthenticatedWorkspaceaiAiLibraryInstructionsRoute
+  '/ai/library/mcp-servers': typeof AuthenticatedWorkspaceaiAiLibraryMcpServersRoute
+  '/ai/library/memory': typeof AuthenticatedWorkspaceaiAiLibraryMemoryRoute
+  '/ai/library/skills': typeof AuthenticatedWorkspaceaiAiLibrarySkillsRoute
+  '/ai/library/slash-commands': typeof AuthenticatedWorkspaceaiAiLibrarySlashCommandsRoute
+  '/ai/library/subagents': typeof AuthenticatedWorkspaceaiAiLibrarySubagentsRoute
+  '/ai/models/gateway': typeof AuthenticatedWorkspaceaiAiModelsGatewayRoute
+  '/ai/models/market': typeof AuthenticatedWorkspaceaiAiModelsMarketRoute
+  '/ai/models/route-groups': typeof AuthenticatedWorkspaceaiAiModelsRouteGroupsRoute
+  '/ai/models/routing': typeof AuthenticatedWorkspaceaiAiModelsRoutingRoute
+  '/ai/usage/context': typeof AuthenticatedWorkspaceaiAiUsageContextRoute
+  '/ai/usage/overview': typeof AuthenticatedWorkspaceaiAiUsageOverviewRoute
+  '/ai/usage/requests': typeof AuthenticatedWorkspaceaiAiUsageRequestsRoute
+  '/ai/usage/sessions': typeof AuthenticatedWorkspaceaiAiUsageSessionsRoute
   '/traces/user/$uid': typeof AuthenticatedWorkspaceconsoleTracesUserUidRoute
+  '/ai/models/providers/': typeof AuthenticatedWorkspaceaiAiModelsProvidersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof AuthenticatedWorkspaceindexIndexRoute
@@ -297,6 +449,8 @@ export interface FileRoutesByTo {
   '/roles': typeof AuthenticatedWorkspaceconsoleRolesRoute
   '/settings': typeof AuthenticatedWorkspaceconsoleSettingsRoute
   '/storage-policies': typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
+  '/ai/agent-runtime': typeof AuthenticatedWorkspaceaiAiAgentRuntimeRoute
+  '/ai/sessions': typeof AuthenticatedWorkspaceaiAiSessionsRoute
   '/audit/logs': typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   '/traces/$traceFlowId': typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
   '/user-groups/$name': typeof AuthenticatedWorkspaceconsoleUserGroupsNameRoute
@@ -306,7 +460,24 @@ export interface FileRoutesByTo {
   '/traces': typeof AuthenticatedWorkspaceconsoleTracesIndexRoute
   '/user-groups': typeof AuthenticatedWorkspaceconsoleUserGroupsIndexRoute
   '/users': typeof AuthenticatedWorkspaceconsoleUsersIndexRoute
+  '/ai/library/environment-variables': typeof AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRoute
+  '/ai/library/hooks': typeof AuthenticatedWorkspaceaiAiLibraryHooksRoute
+  '/ai/library/instructions': typeof AuthenticatedWorkspaceaiAiLibraryInstructionsRoute
+  '/ai/library/mcp-servers': typeof AuthenticatedWorkspaceaiAiLibraryMcpServersRoute
+  '/ai/library/memory': typeof AuthenticatedWorkspaceaiAiLibraryMemoryRoute
+  '/ai/library/skills': typeof AuthenticatedWorkspaceaiAiLibrarySkillsRoute
+  '/ai/library/slash-commands': typeof AuthenticatedWorkspaceaiAiLibrarySlashCommandsRoute
+  '/ai/library/subagents': typeof AuthenticatedWorkspaceaiAiLibrarySubagentsRoute
+  '/ai/models/gateway': typeof AuthenticatedWorkspaceaiAiModelsGatewayRoute
+  '/ai/models/market': typeof AuthenticatedWorkspaceaiAiModelsMarketRoute
+  '/ai/models/route-groups': typeof AuthenticatedWorkspaceaiAiModelsRouteGroupsRoute
+  '/ai/models/routing': typeof AuthenticatedWorkspaceaiAiModelsRoutingRoute
+  '/ai/usage/context': typeof AuthenticatedWorkspaceaiAiUsageContextRoute
+  '/ai/usage/overview': typeof AuthenticatedWorkspaceaiAiUsageOverviewRoute
+  '/ai/usage/requests': typeof AuthenticatedWorkspaceaiAiUsageRequestsRoute
+  '/ai/usage/sessions': typeof AuthenticatedWorkspaceaiAiUsageSessionsRoute
   '/traces/user/$uid': typeof AuthenticatedWorkspaceconsoleTracesUserUidRoute
+  '/ai/models/providers': typeof AuthenticatedWorkspaceaiAiModelsProvidersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -336,6 +507,8 @@ export interface FileRoutesById {
   '/_authenticated/_workspace/(console)/settings': typeof AuthenticatedWorkspaceconsoleSettingsRoute
   '/_authenticated/_workspace/(console)/storage-policies': typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
   '/_authenticated/_workspace/(index)/': typeof AuthenticatedWorkspaceindexIndexRoute
+  '/_authenticated/_workspace/(ai)/ai/agent-runtime': typeof AuthenticatedWorkspaceaiAiAgentRuntimeRoute
+  '/_authenticated/_workspace/(ai)/ai/sessions': typeof AuthenticatedWorkspaceaiAiSessionsRoute
   '/_authenticated/_workspace/(console)/audit/logs': typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   '/_authenticated/_workspace/(console)/traces/$traceFlowId': typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
   '/_authenticated/_workspace/(console)/user-groups/$name': typeof AuthenticatedWorkspaceconsoleUserGroupsNameRoute
@@ -345,7 +518,24 @@ export interface FileRoutesById {
   '/_authenticated/_workspace/(console)/traces/': typeof AuthenticatedWorkspaceconsoleTracesIndexRoute
   '/_authenticated/_workspace/(console)/user-groups/': typeof AuthenticatedWorkspaceconsoleUserGroupsIndexRoute
   '/_authenticated/_workspace/(console)/users/': typeof AuthenticatedWorkspaceconsoleUsersIndexRoute
+  '/_authenticated/_workspace/(ai)/ai/library/environment-variables': typeof AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRoute
+  '/_authenticated/_workspace/(ai)/ai/library/hooks': typeof AuthenticatedWorkspaceaiAiLibraryHooksRoute
+  '/_authenticated/_workspace/(ai)/ai/library/instructions': typeof AuthenticatedWorkspaceaiAiLibraryInstructionsRoute
+  '/_authenticated/_workspace/(ai)/ai/library/mcp-servers': typeof AuthenticatedWorkspaceaiAiLibraryMcpServersRoute
+  '/_authenticated/_workspace/(ai)/ai/library/memory': typeof AuthenticatedWorkspaceaiAiLibraryMemoryRoute
+  '/_authenticated/_workspace/(ai)/ai/library/skills': typeof AuthenticatedWorkspaceaiAiLibrarySkillsRoute
+  '/_authenticated/_workspace/(ai)/ai/library/slash-commands': typeof AuthenticatedWorkspaceaiAiLibrarySlashCommandsRoute
+  '/_authenticated/_workspace/(ai)/ai/library/subagents': typeof AuthenticatedWorkspaceaiAiLibrarySubagentsRoute
+  '/_authenticated/_workspace/(ai)/ai/models/gateway': typeof AuthenticatedWorkspaceaiAiModelsGatewayRoute
+  '/_authenticated/_workspace/(ai)/ai/models/market': typeof AuthenticatedWorkspaceaiAiModelsMarketRoute
+  '/_authenticated/_workspace/(ai)/ai/models/route-groups': typeof AuthenticatedWorkspaceaiAiModelsRouteGroupsRoute
+  '/_authenticated/_workspace/(ai)/ai/models/routing': typeof AuthenticatedWorkspaceaiAiModelsRoutingRoute
+  '/_authenticated/_workspace/(ai)/ai/usage/context': typeof AuthenticatedWorkspaceaiAiUsageContextRoute
+  '/_authenticated/_workspace/(ai)/ai/usage/overview': typeof AuthenticatedWorkspaceaiAiUsageOverviewRoute
+  '/_authenticated/_workspace/(ai)/ai/usage/requests': typeof AuthenticatedWorkspaceaiAiUsageRequestsRoute
+  '/_authenticated/_workspace/(ai)/ai/usage/sessions': typeof AuthenticatedWorkspaceaiAiUsageSessionsRoute
   '/_authenticated/_workspace/(console)/traces/user/$uid': typeof AuthenticatedWorkspaceconsoleTracesUserUidRoute
+  '/_authenticated/_workspace/(ai)/ai/models/providers/': typeof AuthenticatedWorkspaceaiAiModelsProvidersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -371,6 +561,8 @@ export interface FileRouteTypes {
     | '/roles'
     | '/settings'
     | '/storage-policies'
+    | '/ai/agent-runtime'
+    | '/ai/sessions'
     | '/audit/logs'
     | '/traces/$traceFlowId'
     | '/user-groups/$name'
@@ -380,7 +572,24 @@ export interface FileRouteTypes {
     | '/traces/'
     | '/user-groups/'
     | '/users/'
+    | '/ai/library/environment-variables'
+    | '/ai/library/hooks'
+    | '/ai/library/instructions'
+    | '/ai/library/mcp-servers'
+    | '/ai/library/memory'
+    | '/ai/library/skills'
+    | '/ai/library/slash-commands'
+    | '/ai/library/subagents'
+    | '/ai/models/gateway'
+    | '/ai/models/market'
+    | '/ai/models/route-groups'
+    | '/ai/models/routing'
+    | '/ai/usage/context'
+    | '/ai/usage/overview'
+    | '/ai/usage/requests'
+    | '/ai/usage/sessions'
     | '/traces/user/$uid'
+    | '/ai/models/providers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -404,6 +613,8 @@ export interface FileRouteTypes {
     | '/roles'
     | '/settings'
     | '/storage-policies'
+    | '/ai/agent-runtime'
+    | '/ai/sessions'
     | '/audit/logs'
     | '/traces/$traceFlowId'
     | '/user-groups/$name'
@@ -413,7 +624,24 @@ export interface FileRouteTypes {
     | '/traces'
     | '/user-groups'
     | '/users'
+    | '/ai/library/environment-variables'
+    | '/ai/library/hooks'
+    | '/ai/library/instructions'
+    | '/ai/library/mcp-servers'
+    | '/ai/library/memory'
+    | '/ai/library/skills'
+    | '/ai/library/slash-commands'
+    | '/ai/library/subagents'
+    | '/ai/models/gateway'
+    | '/ai/models/market'
+    | '/ai/models/route-groups'
+    | '/ai/models/routing'
+    | '/ai/usage/context'
+    | '/ai/usage/overview'
+    | '/ai/usage/requests'
+    | '/ai/usage/sessions'
     | '/traces/user/$uid'
+    | '/ai/models/providers'
   id:
     | '__root__'
     | '/(account)'
@@ -442,6 +670,8 @@ export interface FileRouteTypes {
     | '/_authenticated/_workspace/(console)/settings'
     | '/_authenticated/_workspace/(console)/storage-policies'
     | '/_authenticated/_workspace/(index)/'
+    | '/_authenticated/_workspace/(ai)/ai/agent-runtime'
+    | '/_authenticated/_workspace/(ai)/ai/sessions'
     | '/_authenticated/_workspace/(console)/audit/logs'
     | '/_authenticated/_workspace/(console)/traces/$traceFlowId'
     | '/_authenticated/_workspace/(console)/user-groups/$name'
@@ -451,7 +681,24 @@ export interface FileRouteTypes {
     | '/_authenticated/_workspace/(console)/traces/'
     | '/_authenticated/_workspace/(console)/user-groups/'
     | '/_authenticated/_workspace/(console)/users/'
+    | '/_authenticated/_workspace/(ai)/ai/library/environment-variables'
+    | '/_authenticated/_workspace/(ai)/ai/library/hooks'
+    | '/_authenticated/_workspace/(ai)/ai/library/instructions'
+    | '/_authenticated/_workspace/(ai)/ai/library/mcp-servers'
+    | '/_authenticated/_workspace/(ai)/ai/library/memory'
+    | '/_authenticated/_workspace/(ai)/ai/library/skills'
+    | '/_authenticated/_workspace/(ai)/ai/library/slash-commands'
+    | '/_authenticated/_workspace/(ai)/ai/library/subagents'
+    | '/_authenticated/_workspace/(ai)/ai/models/gateway'
+    | '/_authenticated/_workspace/(ai)/ai/models/market'
+    | '/_authenticated/_workspace/(ai)/ai/models/route-groups'
+    | '/_authenticated/_workspace/(ai)/ai/models/routing'
+    | '/_authenticated/_workspace/(ai)/ai/usage/context'
+    | '/_authenticated/_workspace/(ai)/ai/usage/overview'
+    | '/_authenticated/_workspace/(ai)/ai/usage/requests'
+    | '/_authenticated/_workspace/(ai)/ai/usage/sessions'
     | '/_authenticated/_workspace/(console)/traces/user/$uid'
+    | '/_authenticated/_workspace/(ai)/ai/models/providers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -651,6 +898,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkspaceindexIndexRouteImport
       parentRoute: typeof AuthenticatedWorkspaceRouteRoute
     }
+    '/_authenticated/_workspace/(ai)/ai/agent-runtime': {
+      id: '/_authenticated/_workspace/(ai)/ai/agent-runtime'
+      path: '/ai/agent-runtime'
+      fullPath: '/ai/agent-runtime'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiAgentRuntimeRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/sessions': {
+      id: '/_authenticated/_workspace/(ai)/ai/sessions'
+      path: '/ai/sessions'
+      fullPath: '/ai/sessions'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiSessionsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
     '/_authenticated/_workspace/(console)/audit/': {
       id: '/_authenticated/_workspace/(console)/audit/'
       path: '/audit'
@@ -714,11 +975,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkspaceindexChatConversationIdRouteImport
       parentRoute: typeof AuthenticatedWorkspaceRouteRoute
     }
+    '/_authenticated/_workspace/(ai)/ai/library/environment-variables': {
+      id: '/_authenticated/_workspace/(ai)/ai/library/environment-variables'
+      path: '/ai/library/environment-variables'
+      fullPath: '/ai/library/environment-variables'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/library/hooks': {
+      id: '/_authenticated/_workspace/(ai)/ai/library/hooks'
+      path: '/ai/library/hooks'
+      fullPath: '/ai/library/hooks'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiLibraryHooksRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/library/instructions': {
+      id: '/_authenticated/_workspace/(ai)/ai/library/instructions'
+      path: '/ai/library/instructions'
+      fullPath: '/ai/library/instructions'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiLibraryInstructionsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/library/mcp-servers': {
+      id: '/_authenticated/_workspace/(ai)/ai/library/mcp-servers'
+      path: '/ai/library/mcp-servers'
+      fullPath: '/ai/library/mcp-servers'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiLibraryMcpServersRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/library/memory': {
+      id: '/_authenticated/_workspace/(ai)/ai/library/memory'
+      path: '/ai/library/memory'
+      fullPath: '/ai/library/memory'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiLibraryMemoryRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/library/skills': {
+      id: '/_authenticated/_workspace/(ai)/ai/library/skills'
+      path: '/ai/library/skills'
+      fullPath: '/ai/library/skills'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiLibrarySkillsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/library/slash-commands': {
+      id: '/_authenticated/_workspace/(ai)/ai/library/slash-commands'
+      path: '/ai/library/slash-commands'
+      fullPath: '/ai/library/slash-commands'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiLibrarySlashCommandsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/library/subagents': {
+      id: '/_authenticated/_workspace/(ai)/ai/library/subagents'
+      path: '/ai/library/subagents'
+      fullPath: '/ai/library/subagents'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiLibrarySubagentsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/models/gateway': {
+      id: '/_authenticated/_workspace/(ai)/ai/models/gateway'
+      path: '/ai/models/gateway'
+      fullPath: '/ai/models/gateway'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiModelsGatewayRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/models/market': {
+      id: '/_authenticated/_workspace/(ai)/ai/models/market'
+      path: '/ai/models/market'
+      fullPath: '/ai/models/market'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiModelsMarketRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/models/route-groups': {
+      id: '/_authenticated/_workspace/(ai)/ai/models/route-groups'
+      path: '/ai/models/route-groups'
+      fullPath: '/ai/models/route-groups'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiModelsRouteGroupsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/models/routing': {
+      id: '/_authenticated/_workspace/(ai)/ai/models/routing'
+      path: '/ai/models/routing'
+      fullPath: '/ai/models/routing'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiModelsRoutingRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/usage/context': {
+      id: '/_authenticated/_workspace/(ai)/ai/usage/context'
+      path: '/ai/usage/context'
+      fullPath: '/ai/usage/context'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiUsageContextRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/usage/overview': {
+      id: '/_authenticated/_workspace/(ai)/ai/usage/overview'
+      path: '/ai/usage/overview'
+      fullPath: '/ai/usage/overview'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiUsageOverviewRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/usage/requests': {
+      id: '/_authenticated/_workspace/(ai)/ai/usage/requests'
+      path: '/ai/usage/requests'
+      fullPath: '/ai/usage/requests'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiUsageRequestsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/usage/sessions': {
+      id: '/_authenticated/_workspace/(ai)/ai/usage/sessions'
+      path: '/ai/usage/sessions'
+      fullPath: '/ai/usage/sessions'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiUsageSessionsRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
     '/_authenticated/_workspace/(console)/traces/user/$uid': {
       id: '/_authenticated/_workspace/(console)/traces/user/$uid'
       path: '/traces/user/$uid'
       fullPath: '/traces/user/$uid'
       preLoaderRoute: typeof AuthenticatedWorkspaceconsoleTracesUserUidRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/models/providers/': {
+      id: '/_authenticated/_workspace/(ai)/ai/models/providers/'
+      path: '/ai/models/providers'
+      fullPath: '/ai/models/providers/'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiModelsProvidersIndexRouteImport
       parentRoute: typeof AuthenticatedWorkspaceRouteRoute
     }
   }
@@ -777,6 +1157,8 @@ interface AuthenticatedWorkspaceRouteRouteChildren {
   AuthenticatedWorkspaceconsoleSettingsRoute: typeof AuthenticatedWorkspaceconsoleSettingsRoute
   AuthenticatedWorkspaceconsoleStoragePoliciesRoute: typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
   AuthenticatedWorkspaceindexIndexRoute: typeof AuthenticatedWorkspaceindexIndexRoute
+  AuthenticatedWorkspaceaiAiAgentRuntimeRoute: typeof AuthenticatedWorkspaceaiAiAgentRuntimeRoute
+  AuthenticatedWorkspaceaiAiSessionsRoute: typeof AuthenticatedWorkspaceaiAiSessionsRoute
   AuthenticatedWorkspaceconsoleAuditLogsRoute: typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute: typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
   AuthenticatedWorkspaceconsoleUserGroupsNameRoute: typeof AuthenticatedWorkspaceconsoleUserGroupsNameRoute
@@ -786,7 +1168,24 @@ interface AuthenticatedWorkspaceRouteRouteChildren {
   AuthenticatedWorkspaceconsoleTracesIndexRoute: typeof AuthenticatedWorkspaceconsoleTracesIndexRoute
   AuthenticatedWorkspaceconsoleUserGroupsIndexRoute: typeof AuthenticatedWorkspaceconsoleUserGroupsIndexRoute
   AuthenticatedWorkspaceconsoleUsersIndexRoute: typeof AuthenticatedWorkspaceconsoleUsersIndexRoute
+  AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRoute: typeof AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRoute
+  AuthenticatedWorkspaceaiAiLibraryHooksRoute: typeof AuthenticatedWorkspaceaiAiLibraryHooksRoute
+  AuthenticatedWorkspaceaiAiLibraryInstructionsRoute: typeof AuthenticatedWorkspaceaiAiLibraryInstructionsRoute
+  AuthenticatedWorkspaceaiAiLibraryMcpServersRoute: typeof AuthenticatedWorkspaceaiAiLibraryMcpServersRoute
+  AuthenticatedWorkspaceaiAiLibraryMemoryRoute: typeof AuthenticatedWorkspaceaiAiLibraryMemoryRoute
+  AuthenticatedWorkspaceaiAiLibrarySkillsRoute: typeof AuthenticatedWorkspaceaiAiLibrarySkillsRoute
+  AuthenticatedWorkspaceaiAiLibrarySlashCommandsRoute: typeof AuthenticatedWorkspaceaiAiLibrarySlashCommandsRoute
+  AuthenticatedWorkspaceaiAiLibrarySubagentsRoute: typeof AuthenticatedWorkspaceaiAiLibrarySubagentsRoute
+  AuthenticatedWorkspaceaiAiModelsGatewayRoute: typeof AuthenticatedWorkspaceaiAiModelsGatewayRoute
+  AuthenticatedWorkspaceaiAiModelsMarketRoute: typeof AuthenticatedWorkspaceaiAiModelsMarketRoute
+  AuthenticatedWorkspaceaiAiModelsRouteGroupsRoute: typeof AuthenticatedWorkspaceaiAiModelsRouteGroupsRoute
+  AuthenticatedWorkspaceaiAiModelsRoutingRoute: typeof AuthenticatedWorkspaceaiAiModelsRoutingRoute
+  AuthenticatedWorkspaceaiAiUsageContextRoute: typeof AuthenticatedWorkspaceaiAiUsageContextRoute
+  AuthenticatedWorkspaceaiAiUsageOverviewRoute: typeof AuthenticatedWorkspaceaiAiUsageOverviewRoute
+  AuthenticatedWorkspaceaiAiUsageRequestsRoute: typeof AuthenticatedWorkspaceaiAiUsageRequestsRoute
+  AuthenticatedWorkspaceaiAiUsageSessionsRoute: typeof AuthenticatedWorkspaceaiAiUsageSessionsRoute
   AuthenticatedWorkspaceconsoleTracesUserUidRoute: typeof AuthenticatedWorkspaceconsoleTracesUserUidRoute
+  AuthenticatedWorkspaceaiAiModelsProvidersIndexRoute: typeof AuthenticatedWorkspaceaiAiModelsProvidersIndexRoute
 }
 
 const AuthenticatedWorkspaceRouteRouteChildren: AuthenticatedWorkspaceRouteRouteChildren =
@@ -807,6 +1206,10 @@ const AuthenticatedWorkspaceRouteRouteChildren: AuthenticatedWorkspaceRouteRoute
       AuthenticatedWorkspaceconsoleStoragePoliciesRoute,
     AuthenticatedWorkspaceindexIndexRoute:
       AuthenticatedWorkspaceindexIndexRoute,
+    AuthenticatedWorkspaceaiAiAgentRuntimeRoute:
+      AuthenticatedWorkspaceaiAiAgentRuntimeRoute,
+    AuthenticatedWorkspaceaiAiSessionsRoute:
+      AuthenticatedWorkspaceaiAiSessionsRoute,
     AuthenticatedWorkspaceconsoleAuditLogsRoute:
       AuthenticatedWorkspaceconsoleAuditLogsRoute,
     AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute:
@@ -825,8 +1228,42 @@ const AuthenticatedWorkspaceRouteRouteChildren: AuthenticatedWorkspaceRouteRoute
       AuthenticatedWorkspaceconsoleUserGroupsIndexRoute,
     AuthenticatedWorkspaceconsoleUsersIndexRoute:
       AuthenticatedWorkspaceconsoleUsersIndexRoute,
+    AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRoute:
+      AuthenticatedWorkspaceaiAiLibraryEnvironmentVariablesRoute,
+    AuthenticatedWorkspaceaiAiLibraryHooksRoute:
+      AuthenticatedWorkspaceaiAiLibraryHooksRoute,
+    AuthenticatedWorkspaceaiAiLibraryInstructionsRoute:
+      AuthenticatedWorkspaceaiAiLibraryInstructionsRoute,
+    AuthenticatedWorkspaceaiAiLibraryMcpServersRoute:
+      AuthenticatedWorkspaceaiAiLibraryMcpServersRoute,
+    AuthenticatedWorkspaceaiAiLibraryMemoryRoute:
+      AuthenticatedWorkspaceaiAiLibraryMemoryRoute,
+    AuthenticatedWorkspaceaiAiLibrarySkillsRoute:
+      AuthenticatedWorkspaceaiAiLibrarySkillsRoute,
+    AuthenticatedWorkspaceaiAiLibrarySlashCommandsRoute:
+      AuthenticatedWorkspaceaiAiLibrarySlashCommandsRoute,
+    AuthenticatedWorkspaceaiAiLibrarySubagentsRoute:
+      AuthenticatedWorkspaceaiAiLibrarySubagentsRoute,
+    AuthenticatedWorkspaceaiAiModelsGatewayRoute:
+      AuthenticatedWorkspaceaiAiModelsGatewayRoute,
+    AuthenticatedWorkspaceaiAiModelsMarketRoute:
+      AuthenticatedWorkspaceaiAiModelsMarketRoute,
+    AuthenticatedWorkspaceaiAiModelsRouteGroupsRoute:
+      AuthenticatedWorkspaceaiAiModelsRouteGroupsRoute,
+    AuthenticatedWorkspaceaiAiModelsRoutingRoute:
+      AuthenticatedWorkspaceaiAiModelsRoutingRoute,
+    AuthenticatedWorkspaceaiAiUsageContextRoute:
+      AuthenticatedWorkspaceaiAiUsageContextRoute,
+    AuthenticatedWorkspaceaiAiUsageOverviewRoute:
+      AuthenticatedWorkspaceaiAiUsageOverviewRoute,
+    AuthenticatedWorkspaceaiAiUsageRequestsRoute:
+      AuthenticatedWorkspaceaiAiUsageRequestsRoute,
+    AuthenticatedWorkspaceaiAiUsageSessionsRoute:
+      AuthenticatedWorkspaceaiAiUsageSessionsRoute,
     AuthenticatedWorkspaceconsoleTracesUserUidRoute:
       AuthenticatedWorkspaceconsoleTracesUserUidRoute,
+    AuthenticatedWorkspaceaiAiModelsProvidersIndexRoute:
+      AuthenticatedWorkspaceaiAiModelsProvidersIndexRoute,
   }
 
 const AuthenticatedWorkspaceRouteRouteWithChildren =

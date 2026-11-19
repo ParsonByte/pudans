@@ -1,0 +1,22 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-route-groups
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI Models"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI Route Group View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.models.route-groups"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-route-groups"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "ai"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/ai/models/route-groups"
+    rbac.authorization.pudans.tolim.cn/ui-label: "路由组"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理模型路由组。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:layers"
+    rbac.authorization.pudans.tolim.cn/ui-group: "模型"
+    rbac.authorization.pudans.tolim.cn/ui-order: "130"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-route-groups:view"]'
+rules: []

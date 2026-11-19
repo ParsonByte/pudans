@@ -1,0 +1,24 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-hooks
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI Console"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI Hook View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.library.hooks"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-hooks"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "ai"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/ai/library/hooks"
+    rbac.authorization.pudans.tolim.cn/ui-label: "Hooks"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理 Agent Hooks。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:webhook"
+    rbac.authorization.pudans.tolim.cn/ui-group: "使用"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "资源库"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:library"
+    rbac.authorization.pudans.tolim.cn/ui-order: "70"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-hooks:view"]'
+rules: []
