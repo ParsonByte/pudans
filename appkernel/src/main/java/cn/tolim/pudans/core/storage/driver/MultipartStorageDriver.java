@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.storage.driver;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.core.io.buffer.DataBuffer;
 import reactor.core.publisher.Flux;
@@ -21,6 +22,13 @@ public interface MultipartStorageDriver {
     Mono<Void> abortMultipart(NativeMultipartUpload upload);
 
     Mono<List<UploadedPart>> listParts(NativeMultipartUpload upload);
+
+    static List<UploadedPart> mergeParts(List<UploadedPart> first, List<UploadedPart> second) {
+        var merged = new ArrayList<UploadedPart>(first.size() + second.size());
+        merged.addAll(first);
+        merged.addAll(second);
+        return merged;
+    }
 
     record StorageMultipartRequest(String key, long size, String contentType) {}
 

@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
 import cn.tolim.pudans.contract.extension.ListResult;
-import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadPartUrl;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadedPart;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
@@ -90,7 +89,6 @@ public class StorageService {
             }
             return parameterSettingGroupService
                     .getStorage()
-                    .defaultIfEmpty(new ParameterSetting.Storage())
                     .flatMap(settings -> {
                         var now = Instant.now();
                         file.getSpec().setState(StorageFileState.TRASHED);
@@ -119,6 +117,10 @@ public class StorageService {
         return fileService.fetch(fileId).flatMap(file -> {
             if (file.getSpec().getState() == StorageFileState.UPLOADING) {
                 return uploadService.abort(fileId);
+            }
+            if (file.getSpec().getState() != StorageFileState.TRASHED) {
+                return Mono.error(new ApiException(
+                        HttpStatus.CONFLICT, "storage-file-state-invalid", "只有回收站中的文件可以彻底删除。"));
             }
             return driverResolver
                     .driver(file.getSpec().getPolicy())

@@ -38,7 +38,6 @@ import com.obs.services.model.CompleteMultipartUploadRequest;
 import com.obs.services.model.GetObjectRequest;
 import com.obs.services.model.InitiateMultipartUploadRequest;
 import com.obs.services.model.ListPartsRequest;
-import com.obs.services.model.ObjectMetadata;
 import com.obs.services.model.PartEtag;
 import com.obs.services.model.PutObjectRequest;
 import com.obs.services.model.SetBucketCorsRequest;
@@ -242,16 +241,32 @@ public class ObsStorageDriver implements StorageDriver, MultipartStorageDriver, 
 
     @Override
     public Mono<List<UploadedPart>> listParts(NativeMultipartUpload upload) {
-        return Mono.fromCallable(() -> client
-                        .listParts(new ListPartsRequest(bucket(), upload.key(), upload.uploadId()))
-                        .getMultipartList()
-                        .stream()
-                        .map(part -> new UploadedPart(
-                                part.getPartNumber(),
-                                part.getEtag(),
-                                part.getSize() == null ? 0 : part.getSize()))
-                        .toList())
+        return listPartsPage(upload, null);
+    }
+
+    private Mono<List<UploadedPart>> listPartsPage(NativeMultipartUpload upload, Integer marker) {
+        return Mono.fromCallable(() -> {
+                    var request = new ListPartsRequest(bucket(), upload.key(), upload.uploadId());
+                    if (marker != null) {
+                        request.setPartNumberMarker(marker);
+                    }
+                    return client.listParts(request);
+                })
                 .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(listing -> {
+                    var page = listing.getMultipartList().stream()
+                            .map(part -> new UploadedPart(
+                                    part.getPartNumber(),
+                                    part.getEtag(),
+                                    part.getSize() == null ? 0 : part.getSize()))
+                            .toList();
+                    if (listing.isTruncated() && StringUtils.hasText(listing.getNextPartNumberMarker())) {
+                        var nextMarker = Integer.parseInt(listing.getNextPartNumberMarker());
+                        return listPartsPage(upload, nextMarker)
+                                .map(next -> MultipartStorageDriver.mergeParts(page, next));
+                    }
+                    return Mono.just(page);
+                })
                 .onErrorMap(ObsException.class, this::mapError);
     }
 

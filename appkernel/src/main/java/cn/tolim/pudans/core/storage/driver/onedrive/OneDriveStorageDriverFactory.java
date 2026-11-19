@@ -32,6 +32,6 @@ public class OneDriveStorageDriverFactory implements StorageDriverFactory {
     @Override
     public StorageDriver create(ResolvedStoragePolicy resolved) {
         Path tempDirectory = properties.getWorkDir().toAbsolutePath().normalize().resolve("uploads/.tmp");
-        return new OneDriveStorageDriver(resolved.policy(), tempDirectory);
+        return new OneDriveStorageDriver(resolved.policy(), resolved.credentials(), tempDirectory);
     }
 }

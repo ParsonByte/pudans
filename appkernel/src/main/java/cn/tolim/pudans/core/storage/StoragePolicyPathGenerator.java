@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
@@ -49,8 +50,7 @@ public class StoragePolicyPathGenerator {
             "{path}");
 
     private static final Set<String> UNIQUE_VARIABLES =
-            Set.of("{randomkey16}", "{randomkey8}", "{randomnum2}", "{randomnum3}", "{randomnum4}",
-                    "{randomnum8}", "{uuid}", "{timestamp}", "{timestamp_nano}");
+            Set.of("{randomkey16}", "{randomkey8}", "{uuid}", "{timestamp}", "{timestamp_nano}");
 
     private static final DateTimeFormatter DATETIME = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
@@ -121,7 +121,8 @@ public class StoragePolicyPathGenerator {
     }
 
     private String render(String rule, StoragePathContext context, boolean pathAvailable) {
-        return VARIABLE.matcher(rule).replaceAll(match -> value(match.group(), context, pathAvailable));
+        return VARIABLE.matcher(rule).replaceAll(match -> Matcher.quoteReplacement(
+                value(match.group(), context, pathAvailable)));
     }
 
     private String value(String variable, StoragePathContext context, boolean pathAvailable) {
@@ -136,7 +137,8 @@ public class StoragePolicyPathGenerator {
             case "{uuid}" -> UUID.randomUUID().toString();
             case "{uid}" -> StringUtils.hasText(context.owner()) ? sanitizeName(context.owner()) : "";
             case "{timestamp}" -> String.valueOf(context.now().getEpochSecond());
-            case "{timestamp_nano}" -> String.valueOf(context.now().getNano());
+            case "{timestamp_nano}" -> String.valueOf(
+                    context.now().getEpochSecond() * 1_000_000_000L + context.now().getNano());
             case "{datetime}" -> DATETIME.format(time);
             case "{date}" -> DATE.format(time);
             case "{year}" -> YEAR.format(time);

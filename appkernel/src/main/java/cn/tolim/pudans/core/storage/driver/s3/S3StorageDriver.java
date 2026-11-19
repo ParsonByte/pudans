@@ -282,16 +282,30 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
 
     @Override
     public Mono<List<UploadedPart>> listParts(NativeMultipartUpload upload) {
-        var request = ListPartsRequest.builder()
+        return listPartsPage(upload, null);
+    }
+
+    private Mono<List<UploadedPart>> listPartsPage(NativeMultipartUpload upload, Integer marker) {
+        var builder = ListPartsRequest.builder()
                 .bucket(bucket)
                 .key(upload.key())
-                .uploadId(upload.uploadId())
-                .build();
-        return Mono.fromFuture(client.listParts(request))
-                .map(response -> response.parts().stream()
-                        .map(part -> new UploadedPart(
-                                part.partNumber(), part.eTag(), part.size() == null ? 0 : part.size()))
-                        .toList())
+                .uploadId(upload.uploadId());
+        if (marker != null) {
+            builder.partNumberMarker(marker);
+        }
+        return Mono.fromFuture(client.listParts(builder.build()))
+                .flatMap(response -> {
+                    var page = response.parts().stream()
+                            .map(part -> new UploadedPart(
+                                    part.partNumber(), part.eTag(), part.size() == null ? 0 : part.size()))
+                            .toList();
+                    if (Boolean.TRUE.equals(response.isTruncated())
+                            && response.nextPartNumberMarker() != null) {
+                        return listPartsPage(upload, response.nextPartNumberMarker())
+                                .map(next -> MultipartStorageDriver.mergeParts(page, next));
+                    }
+                    return Mono.just(page);
+                })
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 

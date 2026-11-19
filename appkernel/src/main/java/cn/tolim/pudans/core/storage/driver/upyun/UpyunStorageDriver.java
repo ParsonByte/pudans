@@ -103,7 +103,7 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
 
     @Override
     public Mono<StorageObject> put(StoragePutRequest request) {
-        return Mono.fromCallable(() -> client.getFileInfo(request.key()))
+        return Mono.fromCallable(() -> fileInfo(request.key()))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(error -> Mono.empty())
                 .flatMap(info -> request.overwrite() ? Mono.empty() : Mono.error(conflict()))
@@ -125,30 +125,35 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
     public Mono<StorageReadResult> get(String key, StorageReadOptions options) {
         var range = options == null ? null : options.range();
         return Mono.fromCallable(() -> {
-                    var total = statBlocking(key).size();
+                    var object = statBlocking(key);
+                    var total = object.size();
                     var temp = Files.createTempFile(tempDirectory, ".download-", ".tmp");
-                    var success = client.readFile(key, temp.toFile());
-                    if (!success) {
+                    try {
+                        var success = client.readFile(key, temp.toFile());
+                        if (!success) {
+                            throw new ApiException(
+                                    HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储读取失败。");
+                        }
+                        var start = range == null ? 0 : range.start();
+                        var end = range == null
+                                ? Math.max(-1, total - 1)
+                                : Math.min(range.end(), Math.max(0, total - 1));
+                        var length = total == 0 ? 0 : end - start + 1;
+                        var input = Files.newInputStream(temp);
+                        if (start > 0) {
+                            input.skipNBytes(start);
+                        }
+                        var body = StorageIo.read(input, length)
+                                .doFinally(signal -> StorageIo.deleteQuietly(temp));
+                        return new StorageReadResult(object, start, end, length, body);
+                    } catch (IOException | UpException | RuntimeException e) {
                         StorageIo.deleteQuietly(temp);
-                        throw new ApiException(
-                                HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储读取失败。");
+                        throw e;
                     }
-                    var start = range == null ? 0 : range.start();
-                    var end = range == null
-                            ? Math.max(-1, total - 1)
-                            : Math.min(range.end(), Math.max(0, total - 1));
-                    var length = total == 0 ? 0 : end - start + 1;
-                    var input = Files.newInputStream(temp);
-                    if (start > 0) {
-                        input.skip(start);
-                    }
-                    var body = StorageIo.read(input, length)
-                            .doFinally(signal -> StorageIo.deleteQuietly(temp));
-                    return new StorageReadResult(
-                            statBlocking(key), start, end, length, body);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
-                .onErrorMap(UpException.class, this::mapError);
+                .onErrorMap(UpException.class, this::mapError)
+                .onErrorMap(IOException.class, this::ioError);
     }
 
     @Override
@@ -194,11 +199,20 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
     }
 
     private StorageObject statBlocking(String key) throws IOException, UpException {
-        var info = client.getFileInfo(key);
+        var info = fileInfo(key);
+        if (info == null) {
+            throw notFound();
+        }
         var size = parseLong(info.get("size"));
         var lastModified = parseDate(info.get("last-modified"));
         var etag = info.getOrDefault("etag", info.get("file-hash"));
         return new StorageObject(key, size, lastModified, etag);
+    }
+
+    private Map<String, String> fileInfo(String key) throws IOException, UpException {
+        synchronized (client) {
+            return client.getFileInfo(key);
+        }
     }
 
     private static long parseLong(String value) {
@@ -240,6 +254,15 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
     private ApiException mapError(UpException error) {
         return new ApiException(
                 HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储服务请求失败。", error);
+    }
+
+    private ApiException ioError(IOException error) {
+        return new ApiException(
+                HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储读取失败。", error);
+    }
+
+    private static ApiException notFound() {
+        return new ApiException(HttpStatus.NOT_FOUND, "storage-object-not-found", "文件不存在。");
     }
 
     private static String safeMessage(Throwable error) {
