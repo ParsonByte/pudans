@@ -105,6 +105,26 @@ public class AiTaskRepository {
                 .map(updated -> updated > 0);
     }
 
+    public Mono<Boolean> reschedule(long id, Instant nextRunAt) {
+        return databaseClient.sql("""
+                        UPDATE ai_task
+                        SET status = :pending,
+                            retry_count = 0,
+                            next_run_at = :nextRunAt,
+                            locked_by = NULL,
+                            locked_until = NULL,
+                            updated_at = now()
+                        WHERE id = :id AND status = :running
+                        """)
+                .bind("pending", STATUS_PENDING)
+                .bind("running", STATUS_RUNNING)
+                .bind("nextRunAt", offset(nextRunAt))
+                .bind("id", id)
+                .fetch()
+                .rowsUpdated()
+                .map(updated -> updated > 0);
+    }
+
     public Mono<Boolean> markFailed(long id, String error, Instant nextRunAt) {
         return databaseClient.sql("""
                         UPDATE ai_task

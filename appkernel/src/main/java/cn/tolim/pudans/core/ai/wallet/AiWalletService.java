@@ -328,7 +328,8 @@ public class AiWalletService {
                 usage.outputTokens(),
                 usage.traceId(),
                 usage.billingSource(),
-                idempotencyKey);
+                idempotencyKey,
+                usage.remark());
     }
 
     private static WalletTxn unfreezeTxn(

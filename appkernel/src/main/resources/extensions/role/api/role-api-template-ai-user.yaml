@@ -11,6 +11,14 @@ rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
+      - "aigenerations"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "chats/completions"
       - "chats/modes"
       - "conversations"
