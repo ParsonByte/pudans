@@ -19,4 +19,12 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-group: "模型"
     rbac.authorization.pudans.tolim.cn/ui-order: "115"
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-model-market:view"]'
-rules: []
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiproviders"
+      - "aimodels"
+    verbs:
+      - "get"
+      - "list"
