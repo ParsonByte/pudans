@@ -1,0 +1,76 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-create-ai-route-groups
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-route-groups" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.models.route-groups"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "新增路由组"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建路由组并添加模型成员。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-route-groups:create"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airoutegroups"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-update-ai-route-groups
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-route-groups" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.models.route-groups"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "update"
+    rbac.authorization.pudans.tolim.cn/ui-label: "编辑路由组"
+    rbac.authorization.pudans.tolim.cn/ui-description: "编辑路由组、成员和全局路由设置。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-route-groups:update"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airoutegroups"
+    verbs:
+      - "update"
+      - "patch"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aisettings"
+    verbs:
+      - "update"
+      - "patch"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-delete-ai-route-groups
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-route-groups" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.models.route-groups"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "delete"
+    rbac.authorization.pudans.tolim.cn/ui-label: "删除路由组"
+    rbac.authorization.pudans.tolim.cn/ui-description: "删除不再使用的路由组。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-route-groups:delete"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airoutegroups"
+    verbs:
+      - "delete"
