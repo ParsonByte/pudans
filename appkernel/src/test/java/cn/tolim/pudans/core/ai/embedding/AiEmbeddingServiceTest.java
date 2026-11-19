@@ -2,7 +2,6 @@ package cn.tolim.pudans.core.ai.embedding;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -17,7 +16,14 @@ import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.core.ai.model.AiModelAdapter;
+import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
+import cn.tolim.pudans.core.ai.model.AiModelContent;
+import cn.tolim.pudans.core.ai.model.AiModelRequest;
+import cn.tolim.pudans.core.ai.model.AiModelResponse;
+import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import cn.tolim.pudans.infra.exception.ApiException;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +51,10 @@ class AiEmbeddingServiceTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiEmbeddingClient embeddingClient;
+    AiModelAdapterRegistry adapterRegistry;
+
+    @Mock
+    AiModelAdapter adapter;
 
     @InjectMocks
     AiEmbeddingService service;
@@ -60,7 +69,7 @@ class AiEmbeddingServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-embedding-model-missing"))
                 .verify();
 
-        verifyNoInteractions(client, embeddingClient);
+        verifyNoInteractions(client, adapter);
     }
 
     @Test
@@ -71,7 +80,7 @@ class AiEmbeddingServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-embedding-model-missing"))
                 .verify();
 
-        verifyNoInteractions(client, embeddingClient);
+        verifyNoInteractions(client, adapter);
     }
 
     @Test
@@ -115,9 +124,7 @@ class AiEmbeddingServiceTest {
         custom.getSpec().setModelCode("custom-embedding");
         stubEmbeddingTarget(custom);
         stubAccounts(account("account-a", true));
-        when(embeddingClient.embed(any(AiProvider.class), any(AiProviderAccount.class),
-                        eq("custom-embedding"), eq(List.of("hello"))))
-                .thenReturn(Mono.just(List.of(vector(1f, 2f))));
+        stubEmbedding(List.of("hello"), vector(1f, 2f));
 
         StepVerifier.create(service.embed(List.of("hello"), "custom-model"))
                 .assertNext(batch -> {
@@ -135,9 +142,10 @@ class AiEmbeddingServiceTest {
         stubEmbeddingTarget(model(MODEL_NAME));
         stubAccounts(account("disabled-account", false), account("enabled-account", true), account("later", true));
         var accountCaptor = ArgumentCaptor.forClass(AiProviderAccount.class);
-        when(embeddingClient.embed(any(AiProvider.class), accountCaptor.capture(),
-                        eq(MODEL_CODE), eq(List.of("hello"))))
-                .thenReturn(Mono.just(List.of(vector(1f, 2f))));
+        var requestCaptor = ArgumentCaptor.forClass(AiModelRequest.class);
+        when(adapter.invoke(any(AiProvider.class), accountCaptor.capture(), any(AiModel.class),
+                        requestCaptor.capture()))
+                .thenReturn(Mono.just(response(vector(1f, 2f))));
 
         StepVerifier.create(service.embed(List.of("hello")))
                 .assertNext(batch -> {
@@ -148,6 +156,9 @@ class AiEmbeddingServiceTest {
                 .verifyComplete();
 
         assertThat(accountCaptor.getValue().getMetadata().getName()).isEqualTo("enabled-account");
+        assertThat(requestCaptor.getValue().capability()).isEqualTo(AiModel.Capability.EMBEDDING);
+        assertThat(requestCaptor.getValue().inputs())
+                .containsExactly(new AiModelContent.Text("hello"));
         verify(client).get(AiModel.class, MODEL_NAME);
         verify(client).get(AiProvider.class, PROVIDER_NAME);
     }
@@ -163,7 +174,7 @@ class AiEmbeddingServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-embedding-model-missing"))
                 .verify();
 
-        verifyNoInteractions(embeddingClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
@@ -177,7 +188,7 @@ class AiEmbeddingServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-embedding-model-missing"))
                 .verify();
 
-        verifyNoInteractions(embeddingClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
@@ -190,7 +201,7 @@ class AiEmbeddingServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-embedding-provider-missing"))
                 .verify();
 
-        verifyNoInteractions(embeddingClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
@@ -203,7 +214,7 @@ class AiEmbeddingServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-embedding-account-missing"))
                 .verify();
 
-        verifyNoInteractions(embeddingClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
@@ -216,7 +227,7 @@ class AiEmbeddingServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 400, "ai-embedding-protocol-unsupported"))
                 .verify();
 
-        verifyNoInteractions(embeddingClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
@@ -235,8 +246,9 @@ class AiEmbeddingServiceTest {
                 })
                 .verifyComplete();
 
-        verify(embeddingClient, times(3)).embed(
-                any(AiProvider.class), any(AiProviderAccount.class), eq(MODEL_CODE), anyList());
+        verify(adapter, times(3)).invoke(
+                any(AiProvider.class), any(AiProviderAccount.class), any(AiModel.class),
+                any(AiModelRequest.class));
     }
 
     @Test
@@ -279,7 +291,28 @@ class AiEmbeddingServiceTest {
                 })
                 .verifyComplete();
 
-        verifyNoInteractions(embeddingClient);
+        verifyNoInteractions(adapter);
+    }
+
+    @Test
+    void forwardsMultimodalInputsToAdapter() {
+        stubSetting(64);
+        stubEmbeddingTarget(model(MODEL_NAME));
+        stubAccounts(account("account-a", true));
+        var requestCaptor = ArgumentCaptor.forClass(AiModelRequest.class);
+        when(adapter.invoke(
+                        any(AiProvider.class), any(AiProviderAccount.class), any(AiModel.class),
+                        requestCaptor.capture()))
+                .thenReturn(Mono.just(response(vector(1f, 2f), vector(3f, 4f))));
+        var image = new AiModelContent.Image("https://example.com/cat.png", null, "image/png", null, null);
+
+        StepVerifier.create(service.embedContents(
+                        List.of(new AiModelContent.Text("cat"), image), null))
+                .assertNext(batch -> assertThat(batch.vectors()).hasSize(2))
+                .verifyComplete();
+
+        assertThat(requestCaptor.getValue().inputs())
+                .containsExactly(new AiModelContent.Text("cat"), image);
     }
 
     @Test
@@ -300,7 +333,12 @@ class AiEmbeddingServiceTest {
 
     private void stubEmbeddingTarget(AiModel model) {
         stubModel(model);
-        stubProvider(provider(AiProvider.Protocol.OPENAI_CHAT));
+        var provider = provider(AiProvider.Protocol.OPENAI_CHAT);
+        stubProvider(provider);
+        when(adapterRegistry.supports(provider.getSpec().getProtocol(), AiModel.Capability.EMBEDDING))
+                .thenReturn(true);
+        when(adapterRegistry.require(provider.getSpec().getProtocol(), AiModel.Capability.EMBEDDING))
+                .thenReturn(adapter);
     }
 
     private void stubModel(AiModel model) {
@@ -316,8 +354,38 @@ class AiEmbeddingServiceTest {
     }
 
     private void stubEmbedding(List<String> inputs, float[]... vectors) {
-        when(embeddingClient.embed(any(AiProvider.class), any(AiProviderAccount.class), eq(MODEL_CODE), eq(inputs)))
-                .thenReturn(Mono.just(List.of(vectors)));
+        when(adapter.invoke(
+                        any(AiProvider.class),
+                        any(AiProviderAccount.class),
+                        any(AiModel.class),
+                        org.mockito.ArgumentMatchers.argThat(
+                                request -> texts(request).equals(inputs))))
+                .thenReturn(Mono.just(response(vectors)));
+    }
+
+    private static List<String> texts(AiModelRequest request) {
+        var texts = new ArrayList<String>();
+        for (var input : request.inputs()) {
+            if (input instanceof AiModelContent.Text text) {
+                texts.add(text.text());
+            }
+        }
+        return texts;
+    }
+
+    private static AiModelResponse response(float[]... vectors) {
+        var outputs = new ArrayList<AiModelContent>();
+        for (var vector : vectors) {
+            outputs.add(new AiModelContent.Vector(MODEL_CODE, vector.length, vector));
+        }
+        return new AiModelResponse(
+                null,
+                MODEL_CODE,
+                outputs,
+                AiModelUsage.EMPTY,
+                null,
+                null,
+                AiModelResponse.TaskStatus.SUCCEEDED);
     }
 
     private static AiSetting.Spec setting(int batchSize) {

@@ -8,10 +8,18 @@ import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.core.ai.model.AiModelAdapter;
+import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
+import cn.tolim.pudans.core.ai.model.AiModelContent;
+import cn.tolim.pudans.core.ai.model.AiModelRequest;
 import cn.tolim.pudans.infra.exception.ApiException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -32,7 +40,7 @@ public class AiRerankService {
 
     private final ReactiveExtensionClient client;
 
-    private final AiRerankClient rerankClient;
+    private final AiModelAdapterRegistry adapterRegistry;
 
     public Mono<RerankResult> rerank(String modelName, String query, List<String> documents, int topK) {
         var pending = documents == null ? List.<String>of() : List.copyOf(documents);
@@ -45,11 +53,14 @@ public class AiRerankService {
         return target(modelName)
                 .flatMap(target -> pending.isEmpty()
                         ? Mono.just(new RerankResult(List.of()))
-                        : rerankClient.rerank(
-                                target.provider(),
-                                target.account(),
-                                target.modelCode(),
-                                new RerankRequest(query, pending, topK)))
+                        : target.adapter()
+                                .invoke(
+                                        target.provider(),
+                                        target.account(),
+                                        target.model(),
+                                        request(query, pending, topK))
+                                .switchIfEmpty(Mono.error(upstreamError("重排响应为空。")))
+                                .map(response -> results(response.outputs())))
                 .map(result -> validated(result, pending.size()))
                 .map(result -> topResults(result, topK))
                 .onErrorMap(error -> error instanceof ApiException ? error : upstreamError(error));
@@ -68,12 +79,15 @@ public class AiRerankService {
                             .filter(AiRerankService::isEnabledProvider)
                             .switchIfEmpty(Mono.error(providerMissing(providerName)))
                             .flatMap(provider -> {
-                                if (provider.getSpec().getProtocol() != AiProvider.Protocol.OPENAI_CHAT) {
-                                    return Mono.error(protocolUnsupported(provider.getSpec().getProtocol()));
+                                var protocol = provider.getSpec().getProtocol();
+                                if (!adapterRegistry.supports(protocol, AiModel.Capability.RERANK)) {
+                                    return Mono.error(protocolUnsupported(protocol));
                                 }
+                                var adapter =
+                                        adapterRegistry.require(protocol, AiModel.Capability.RERANK);
                                 return account(providerName)
                                         .map(account -> new RerankTarget(
-                                                provider, account, model.getSpec().getModelCode()));
+                                                provider, account, model, adapter));
                             });
                 });
     }
@@ -86,6 +100,37 @@ public class AiRerankService {
                 .filter(account -> account.getSpec() != null && account.getSpec().isEnabled())
                 .next()
                 .switchIfEmpty(Mono.error(accountMissing(providerName)));
+    }
+
+    private static AiModelRequest request(String query, List<String> documents, int topK) {
+        var inputs = new ArrayList<AiModelContent>();
+        inputs.add(new AiModelContent.Text(query));
+        documents.forEach(document -> inputs.add(new AiModelContent.Text(document)));
+        var params = Map.<String, JsonNode>of(
+                "topK", JsonNodeFactory.instance.numberNode(topK));
+        return new AiModelRequest(AiModel.Capability.RERANK, inputs, params, false, null);
+    }
+
+    private static RerankResult results(List<AiModelContent> outputs) {
+        if (outputs == null) {
+            return new RerankResult(List.of());
+        }
+        var scored = new ArrayList<RerankResult.ScoredIndex>();
+        for (var output : outputs) {
+            if (!(output instanceof AiModelContent.Json json)) {
+                continue;
+            }
+            var index = json.value().get("index");
+            var score = json.value().get("score");
+            if (index == null || !index.isIntegralNumber()) {
+                throw upstreamError("重排响应缺少有效索引。");
+            }
+            if (score == null || !score.isNumber() || !Double.isFinite(score.doubleValue())) {
+                throw upstreamError("重排响应缺少有效分数。");
+            }
+            scored.add(new RerankResult.ScoredIndex(index.asInt(), score.doubleValue()));
+        }
+        return new RerankResult(List.copyOf(scored));
     }
 
     private static RerankResult validated(RerankResult result, int documentCount) {
@@ -157,6 +202,11 @@ public class AiRerankService {
                 "重排响应索引超出范围或重复。");
     }
 
+    private static ApiException upstreamError(String reason) {
+        return new ApiException(
+                HttpStatus.BAD_GATEWAY, AiRerankClient.UPSTREAM_ERROR_CODE, reason);
+    }
+
     private static ApiException upstreamError(Throwable cause) {
         return new ApiException(
                 HttpStatus.BAD_GATEWAY,
@@ -165,5 +215,6 @@ public class AiRerankService {
                 cause);
     }
 
-    private record RerankTarget(AiProvider provider, AiProviderAccount account, String modelCode) {}
+    private record RerankTarget(
+            AiProvider provider, AiProviderAccount account, AiModel model, AiModelAdapter adapter) {}
 }
