@@ -6,15 +6,24 @@ import { cn } from "@/lib/utils";
 type AutoScrollAreaProps = {
   children: ReactNode;
   maxHeightRatio?: number;
+  fill?: boolean;
   className?: string;
 };
 
-export function AutoScrollArea({ children, maxHeightRatio = 0.5, className }: AutoScrollAreaProps) {
+export function AutoScrollArea({
+  children,
+  maxHeightRatio = 0.5,
+  fill = false,
+  className,
+}: AutoScrollAreaProps) {
   const contentRef = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState<number>();
   const [overflowing, setOverflowing] = useState(false);
 
   useLayoutEffect(() => {
+    if (fill) {
+      return;
+    }
     const element = contentRef.current;
     if (!element) {
       return;
@@ -34,7 +43,15 @@ export function AutoScrollArea({ children, maxHeightRatio = 0.5, className }: Au
       observer.disconnect();
       window.removeEventListener("resize", update);
     };
-  }, [maxHeightRatio]);
+  }, [fill, maxHeightRatio]);
+
+  if (fill) {
+    return (
+      <ScrollArea type="auto" className={cn("min-h-0 flex-1 pe-5", className)}>
+        <div ref={contentRef}>{children}</div>
+      </ScrollArea>
+    );
+  }
 
   return (
     <ScrollArea

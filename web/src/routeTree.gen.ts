@@ -33,6 +33,7 @@ import { Route as AuthenticatedWorkspaceconsoleReplayRouteImport } from './route
 import { Route as AuthenticatedWorkspaceconsoleRiskRouteImport } from './routes/_authenticated/_workspace/(console)/risk'
 import { Route as AuthenticatedWorkspaceconsoleRolesRouteImport } from './routes/_authenticated/_workspace/(console)/roles'
 import { Route as AuthenticatedWorkspaceconsoleSettingsRouteImport } from './routes/_authenticated/_workspace/(console)/settings'
+import { Route as AuthenticatedWorkspaceconsoleStoragePoliciesRouteImport } from './routes/_authenticated/_workspace/(console)/storage-policies'
 import { Route as AuthenticatedWorkspaceindexIndexRouteImport } from './routes/_authenticated/_workspace/(index)/index'
 import { Route as AuthenticatedWorkspaceconsoleAuditIndexRouteImport } from './routes/_authenticated/_workspace/(console)/audit/index'
 import { Route as AuthenticatedWorkspaceconsoleAuditLogsRouteImport } from './routes/_authenticated/_workspace/(console)/audit/logs'
@@ -168,6 +169,12 @@ const AuthenticatedWorkspaceconsoleSettingsRoute =
     path: '/settings',
     getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
   } as any)
+const AuthenticatedWorkspaceconsoleStoragePoliciesRoute =
+  AuthenticatedWorkspaceconsoleStoragePoliciesRouteImport.update({
+    id: '/(console)/storage-policies',
+    path: '/storage-policies',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
 const AuthenticatedWorkspaceindexIndexRoute =
   AuthenticatedWorkspaceindexIndexRouteImport.update({
     id: '/(index)/',
@@ -256,6 +263,7 @@ export interface FileRoutesByFullPath {
   '/risk': typeof AuthenticatedWorkspaceconsoleRiskRoute
   '/roles': typeof AuthenticatedWorkspaceconsoleRolesRoute
   '/settings': typeof AuthenticatedWorkspaceconsoleSettingsRoute
+  '/storage-policies': typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
   '/audit/logs': typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   '/traces/$traceFlowId': typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
   '/user-groups/$name': typeof AuthenticatedWorkspaceconsoleUserGroupsNameRoute
@@ -288,6 +296,7 @@ export interface FileRoutesByTo {
   '/risk': typeof AuthenticatedWorkspaceconsoleRiskRoute
   '/roles': typeof AuthenticatedWorkspaceconsoleRolesRoute
   '/settings': typeof AuthenticatedWorkspaceconsoleSettingsRoute
+  '/storage-policies': typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
   '/audit/logs': typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   '/traces/$traceFlowId': typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
   '/user-groups/$name': typeof AuthenticatedWorkspaceconsoleUserGroupsNameRoute
@@ -325,6 +334,7 @@ export interface FileRoutesById {
   '/_authenticated/_workspace/(console)/risk': typeof AuthenticatedWorkspaceconsoleRiskRoute
   '/_authenticated/_workspace/(console)/roles': typeof AuthenticatedWorkspaceconsoleRolesRoute
   '/_authenticated/_workspace/(console)/settings': typeof AuthenticatedWorkspaceconsoleSettingsRoute
+  '/_authenticated/_workspace/(console)/storage-policies': typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
   '/_authenticated/_workspace/(index)/': typeof AuthenticatedWorkspaceindexIndexRoute
   '/_authenticated/_workspace/(console)/audit/logs': typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   '/_authenticated/_workspace/(console)/traces/$traceFlowId': typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/risk'
     | '/roles'
     | '/settings'
+    | '/storage-policies'
     | '/audit/logs'
     | '/traces/$traceFlowId'
     | '/user-groups/$name'
@@ -392,6 +403,7 @@ export interface FileRouteTypes {
     | '/risk'
     | '/roles'
     | '/settings'
+    | '/storage-policies'
     | '/audit/logs'
     | '/traces/$traceFlowId'
     | '/user-groups/$name'
@@ -428,6 +440,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_workspace/(console)/risk'
     | '/_authenticated/_workspace/(console)/roles'
     | '/_authenticated/_workspace/(console)/settings'
+    | '/_authenticated/_workspace/(console)/storage-policies'
     | '/_authenticated/_workspace/(index)/'
     | '/_authenticated/_workspace/(console)/audit/logs'
     | '/_authenticated/_workspace/(console)/traces/$traceFlowId'
@@ -624,6 +637,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWorkspaceconsoleSettingsRouteImport
       parentRoute: typeof AuthenticatedWorkspaceRouteRoute
     }
+    '/_authenticated/_workspace/(console)/storage-policies': {
+      id: '/_authenticated/_workspace/(console)/storage-policies'
+      path: '/storage-policies'
+      fullPath: '/storage-policies'
+      preLoaderRoute: typeof AuthenticatedWorkspaceconsoleStoragePoliciesRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
     '/_authenticated/_workspace/(index)/': {
       id: '/_authenticated/_workspace/(index)/'
       path: '/'
@@ -755,6 +775,7 @@ interface AuthenticatedWorkspaceRouteRouteChildren {
   AuthenticatedWorkspaceconsoleRiskRoute: typeof AuthenticatedWorkspaceconsoleRiskRoute
   AuthenticatedWorkspaceconsoleRolesRoute: typeof AuthenticatedWorkspaceconsoleRolesRoute
   AuthenticatedWorkspaceconsoleSettingsRoute: typeof AuthenticatedWorkspaceconsoleSettingsRoute
+  AuthenticatedWorkspaceconsoleStoragePoliciesRoute: typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
   AuthenticatedWorkspaceindexIndexRoute: typeof AuthenticatedWorkspaceindexIndexRoute
   AuthenticatedWorkspaceconsoleAuditLogsRoute: typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute: typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
@@ -782,6 +803,8 @@ const AuthenticatedWorkspaceRouteRouteChildren: AuthenticatedWorkspaceRouteRoute
       AuthenticatedWorkspaceconsoleRolesRoute,
     AuthenticatedWorkspaceconsoleSettingsRoute:
       AuthenticatedWorkspaceconsoleSettingsRoute,
+    AuthenticatedWorkspaceconsoleStoragePoliciesRoute:
+      AuthenticatedWorkspaceconsoleStoragePoliciesRoute,
     AuthenticatedWorkspaceindexIndexRoute:
       AuthenticatedWorkspaceindexIndexRoute,
     AuthenticatedWorkspaceconsoleAuditLogsRoute:

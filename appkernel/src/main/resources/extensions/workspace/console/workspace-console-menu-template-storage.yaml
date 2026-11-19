@@ -7,6 +7,18 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "Storage"
     rbac.authorization.pudans.tolim.cn/display-name: "Storage Policy View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
+    rbac.authorization.pudans.tolim.cn/ui-component: "storage-policies"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/storage-policies"
+    rbac.authorization.pudans.tolim.cn/ui-label: "存储"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理对象存储策略、凭据与上传配置。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:database"
+    rbac.authorization.pudans.tolim.cn/ui-group: "通用"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage:view"]'
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -28,6 +40,10 @@ metadata:
       [ "role-template-view-storage-policies" ]
     rbac.authorization.pudans.tolim.cn/module: "Storage"
     rbac.authorization.pudans.tolim.cn/display-name: "Storage Policy Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage:manage"]'
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
