@@ -30,6 +30,7 @@
   <a href="#架构">架构</a> ·
   <a href="#ai-控制台">AI 控制台</a> ·
   <a href="CONTRIBUTING.md">参与贡献</a> ·
+  <a href="#贡献者">贡献者</a> ·
   <a href="LICENSE">许可证</a>
 </p>
 
@@ -182,6 +183,18 @@ npm run build
 ## 参与贡献
 
 提交 Pull Request 前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。权威工程规范位于 [AGENTS.md](AGENTS.md) 与 [`.agents/rules`](.agents/rules)，Agent 技能位于 [`.agents/skills`](.agents/skills)。
+
+## 贡献者
+
+感谢每一位参与 Pudans 开发的人。
+
+<p align="center">
+  <a href="https://github.com/ParsonByte/pudans/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=ParsonByte/pudans" alt="Pudans 贡献者">
+  </a>
+</p>
+
+由 [@ParsonByte](https://github.com/ParsonByte) 维护。查看完整的[贡献者图谱](https://github.com/ParsonByte/pudans/graphs/contributors)。
 
 ## 安全
 
