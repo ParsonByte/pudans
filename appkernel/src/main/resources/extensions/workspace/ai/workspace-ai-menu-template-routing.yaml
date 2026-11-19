@@ -1,0 +1,22 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-routing
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI Models"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI Routing View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.models.routing"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-routing"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "ai"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/ai/models/routing"
+    rbac.authorization.pudans.tolim.cn/ui-label: "路由"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看与调整模型路由策略。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:route"
+    rbac.authorization.pudans.tolim.cn/ui-group: "模型"
+    rbac.authorization.pudans.tolim.cn/ui-order: "120"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-routing:view"]'
+rules: []

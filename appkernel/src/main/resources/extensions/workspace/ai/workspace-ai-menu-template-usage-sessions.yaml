@@ -1,0 +1,24 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-usage-sessions
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI Observability"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI Usage Session View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.usage.sessions"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-usage-sessions"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "ai"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/ai/usage/sessions"
+    rbac.authorization.pudans.tolim.cn/ui-label: "会话"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看 AI 用量会话。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:message-circle"
+    rbac.authorization.pudans.tolim.cn/ui-group: "观测"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "用量"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:chart-line"
+    rbac.authorization.pudans.tolim.cn/ui-order: "170"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-usage-sessions:view"]'
+rules: []
