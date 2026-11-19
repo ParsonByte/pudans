@@ -21,10 +21,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.web.server.context.ServerSecurityContextRepository;
@@ -76,6 +78,35 @@ class OAuth2AuthenticationSessionTest {
             return Mono.empty();
         });
         return saved;
+    }
+
+    private static UserDetails disabledUser(String username) {
+        var details = new PudansUserDetails(
+                username, "encoded", List.of(new SimpleGrantedAuthority("ROLE_authenticated")), true);
+        return new PudansUser(details, false, null);
+    }
+
+    @Test
+    void disabledAccountCannotEstablishASession() {
+        when(userDetailsService.findByUsername("bob")).thenReturn(Mono.just(disabledUser("bob")));
+
+        StepVerifier.create(session.establishAndGetAuthentication(exchange, "bob", originalToken(), false))
+                .expectError(DisabledException.class)
+                .verify();
+
+        verify(securityContextRepository, never()).save(any(), any());
+        verify(loginFlowHandler, never()).onLoginSuccess(any(), any());
+    }
+
+    @Test
+    void unknownAccountCannotEstablishASession() {
+        when(userDetailsService.findByUsername("ghost")).thenReturn(Mono.empty());
+
+        StepVerifier.create(session.establishAndGetAuthentication(exchange, "ghost", originalToken(), false))
+                .expectError(UsernameNotFoundException.class)
+                .verify();
+
+        verify(securityContextRepository, never()).save(any(), any());
     }
 
     @Test
