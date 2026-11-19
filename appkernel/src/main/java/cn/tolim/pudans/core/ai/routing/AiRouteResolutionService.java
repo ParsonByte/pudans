@@ -92,6 +92,53 @@ public class AiRouteResolutionService {
                         : Mono.empty()));
     }
 
+
+    public Mono<Resolution> resolveCapability(CapabilityInput input) {
+        return resolveGroup(input.routeGroupCode(), null)
+                .flatMap(group -> routeCapability(input, group));
+    }
+
+    private Mono<Resolution> routeCapability(CapabilityInput input, AiRouteGroup group) {
+        if (group.getSpec() == null || !group.getSpec().isEnabled()) {
+            return Mono.error(new ApiException(
+                    HttpStatus.BAD_REQUEST, CODE_GROUP_MISSING, "路由组不可用。"));
+        }
+        return candidateService
+                .expand(
+                        group,
+                        input.capabilities(),
+                        input.inputModalities(),
+                        input.outputModalities())
+                .flatMap(seats -> {
+                    var request = capabilityRequest(input, group);
+                    var plan = routeEngine.route(request, seats);
+                    if (!plan.routed()) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.SERVICE_UNAVAILABLE, CODE_NO_CANDIDATE, "路由组没有可用候选。"));
+                    }
+                    return Mono.just(new Resolution(group, null, request, plan, seats));
+                });
+    }
+
+    private RouteRequest capabilityRequest(CapabilityInput input, AiRouteGroup group) {
+        var spec = group.getSpec();
+        return RouteRequest.builder()
+                .routeMode(spec.getRouteMode())
+                .requestedTier(input.requestedTier())
+                .routeGroupDefaultTier(spec.getDefaultTier())
+                .affinity(spec.getAffinity())
+                .previousSelection(input.previousSelection())
+                .requiredCapabilities(input.capabilities())
+                .requiredInputModalities(input.inputModalities())
+                .requiredOutputModalities(input.outputModalities())
+                .fallbackReferences(spec.getFallback())
+                .manualPick(spec.getManualPick())
+                .healthThreshold(properties.getRouting().getHealthThreshold())
+                .qualityThreshold(spec.getQualityThreshold() == null ? 0.6 : spec.getQualityThreshold())
+                .classifierEnabled(false)
+                .build();
+    }
+
     private Mono<AiRouteGroup> resolveGroup(@Nullable String routeGroupCode, @Nullable AiChatMode mode) {
         if (StringUtils.hasText(routeGroupCode)) {
             return routeGroupService.get(routeGroupCode);
@@ -137,19 +184,19 @@ public class AiRouteResolutionService {
                 .build();
     }
 
-    private static Set<RouteCapability> capabilities(AiChatIr ir) {
-        var capabilities = EnumSet.noneOf(RouteCapability.class);
+    private static Set<AiModel.Capability> capabilities(AiChatIr ir) {
+        var capabilities = EnumSet.noneOf(AiModel.Capability.class);
         if (ir.stream()) {
-            capabilities.add(RouteCapability.STREAM);
+            capabilities.add(AiModel.Capability.STREAM);
         }
         if (!ir.tools().isEmpty()) {
-            capabilities.add(RouteCapability.TOOLS);
+            capabilities.add(AiModel.Capability.TOOLS);
         }
         if (ir.requestParams().extra().containsKey("response_format")) {
-            capabilities.add(RouteCapability.JSON);
+            capabilities.add(AiModel.Capability.JSON);
         }
         if (hasImage(ir)) {
-            capabilities.add(RouteCapability.VISION);
+            capabilities.add(AiModel.Capability.VISION);
         }
         return capabilities;
     }
@@ -189,6 +236,21 @@ public class AiRouteResolutionService {
             AiChatIr ir,
             AiSetting.Spec setting,
             @Nullable RouteSelection previousSelection) {}
+
+    public record CapabilityInput(
+            @Nullable String routeGroupCode,
+            Set<AiModel.Capability> capabilities,
+            Set<AiModel.Modality> inputModalities,
+            Set<AiModel.Modality> outputModalities,
+            AiModel.@Nullable Tier requestedTier,
+            @Nullable RouteSelection previousSelection) {
+
+        public CapabilityInput {
+            capabilities = capabilities == null ? Set.of() : Set.copyOf(capabilities);
+            inputModalities = inputModalities == null ? Set.of() : Set.copyOf(inputModalities);
+            outputModalities = outputModalities == null ? Set.of() : Set.copyOf(outputModalities);
+        }
+    }
 
     public record Resolution(
             AiRouteGroup routeGroup,

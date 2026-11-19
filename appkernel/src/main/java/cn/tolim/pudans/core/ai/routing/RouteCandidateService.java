@@ -16,6 +16,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -37,20 +38,37 @@ public class RouteCandidateService {
     }
 
     public Mono<List<RouteSeat>> expand(AiRouteGroup group) {
+        return expand(
+                group,
+                Set.of(AiModel.Capability.CHAT),
+                Set.of(AiModel.Modality.TEXT),
+                Set.of(AiModel.Modality.TEXT));
+    }
+
+    public Mono<List<RouteSeat>> expand(
+            AiRouteGroup group,
+            Set<AiModel.Capability> capabilities,
+            Set<AiModel.Modality> inputModalities,
+            Set<AiModel.Modality> outputModalities) {
         if (group == null || group.getSpec() == null || !group.getSpec().isEnabled()) {
             return Mono.just(List.of());
         }
         return Flux.fromIterable(group.getSpec().getMembers())
                 .filter(member -> member != null && member.isEnabled() && StringUtils.hasText(member.getModel()))
-                .concatMap(member -> expandMember(group, member))
+                .concatMap(member -> expandMember(group, member, capabilities, inputModalities, outputModalities))
                 .concatMapIterable(seats -> seats)
                 .distinct(RouteSeat::key)
                 .collectList();
     }
 
-    private Mono<List<RouteSeat>> expandMember(AiRouteGroup group, AiRouteGroup.Member member) {
+    private Mono<List<RouteSeat>> expandMember(
+            AiRouteGroup group,
+            AiRouteGroup.Member member,
+            Set<AiModel.Capability> capabilities,
+            Set<AiModel.Modality> inputModalities,
+            Set<AiModel.Modality> outputModalities) {
         return client.get(AiModel.class, member.getModel())
-                .filter(RouteCandidateService::isChatModel)
+                .filter(model -> eligible(model, capabilities, inputModalities, outputModalities))
                 .flatMap(model -> client.get(AiProvider.class, model.getSpec().getProvider())
                         .filter(RouteCandidateService::isEnabledProvider)
                         .flatMap(provider -> accountsOf(provider)
@@ -96,10 +114,9 @@ public class RouteCandidateService {
                 .spent(isSpent(quotaLimit, quotaUsed, accountSpec))
                 .enabled(true)
                 .healthScore(health(provider, account))
-                .supportsTools(modelSpec.isSupportsTools())
-                .supportsJson(modelSpec.isSupportsJson())
-                .supportsVision(modelSpec.isSupportsVision())
-                .supportsStream(modelSpec.isSupportsStream())
+                .capabilities(modelSpec.effectiveCapabilities())
+                .inputModalities(Set.copyOf(modelSpec.effectiveInputModalities()))
+                .outputModalities(Set.copyOf(modelSpec.effectiveOutputModalities()))
                 .contextWindow(modelSpec.getContextWindow() == null ? 0 : modelSpec.getContextWindow())
                 .maxOutputTokens(modelSpec.getMaxOutputTokens() == null ? 0 : modelSpec.getMaxOutputTokens())
                 .extraContextMargin(Math.max(0, member.getExtraContextMargin()))
@@ -110,10 +127,28 @@ public class RouteCandidateService {
         return member.getTierOverride() == null ? modelSpec.getTier() : member.getTierOverride();
     }
 
-    private static boolean isChatModel(AiModel model) {
-        return model.getSpec() != null
-                && model.getSpec().isEnabled()
-                && model.getSpec().getModelType() == AiModel.ModelType.CHAT;
+    private static boolean eligible(
+            AiModel model,
+            Set<AiModel.Capability> capabilities,
+            Set<AiModel.Modality> inputModalities,
+            Set<AiModel.Modality> outputModalities) {
+        if (model.getSpec() == null || !model.getSpec().isEnabled()) {
+            return false;
+        }
+        var spec = model.getSpec();
+        if (capabilities != null
+                && !capabilities.isEmpty()
+                && !spec.effectiveCapabilities().containsAll(capabilities)) {
+            return false;
+        }
+        if (inputModalities != null
+                && !inputModalities.isEmpty()
+                && !spec.effectiveInputModalities().containsAll(inputModalities)) {
+            return false;
+        }
+        return outputModalities == null
+                || outputModalities.isEmpty()
+                || spec.effectiveOutputModalities().containsAll(outputModalities);
     }
 
     private static boolean isEnabledProvider(AiProvider provider) {

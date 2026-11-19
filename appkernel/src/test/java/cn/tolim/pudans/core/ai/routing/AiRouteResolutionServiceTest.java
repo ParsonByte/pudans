@@ -20,6 +20,7 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiRequestParams;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -168,7 +169,7 @@ class AiRouteResolutionServiceTest {
                 .model("model-a")
                 .tier(AiModel.Tier.CHEAP)
                 .enabled(true)
-                .supportsStream(true)
+                .capabilities(Set.of(AiModel.Capability.CHAT, AiModel.Capability.STREAM))
                 .build();
     }
 

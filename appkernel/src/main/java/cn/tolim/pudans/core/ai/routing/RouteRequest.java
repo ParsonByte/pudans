@@ -36,7 +36,13 @@ public class RouteRequest {
     int maxOutputTokens = 0;
 
     @Builder.Default
-    Set<RouteCapability> requiredCapabilities = Set.of();
+    Set<AiModel.Capability> requiredCapabilities = Set.of();
+
+    @Builder.Default
+    Set<AiModel.Modality> requiredInputModalities = Set.of();
+
+    @Builder.Default
+    Set<AiModel.Modality> requiredOutputModalities = Set.of();
 
     @Builder.Default
     List<String> fallbackReferences = List.of();
