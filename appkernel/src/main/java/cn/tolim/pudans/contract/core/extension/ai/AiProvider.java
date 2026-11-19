@@ -44,6 +44,7 @@ public class AiProvider extends AbstractExtension {
         MINIMAX_CHAT,
         MINIMAX_NATIVE,
         MINIMAX_RESPONSES,
+        QIANWEN,
         GEMINI,
         OLLAMA,
         CUSTOM_HTTP

@@ -37,6 +37,7 @@ rules:
       - "aiproviders/completions"
       - "aiproviders/tools"
       - "aiproviders/minimax"
+      - "aiproviders/qianwen"
       - "aigenerations"
       - "aiprovideraccounts"
       - "aiprovideraccounts/test"
