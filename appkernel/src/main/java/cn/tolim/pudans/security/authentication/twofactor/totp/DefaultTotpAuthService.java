@@ -40,7 +40,8 @@ public class DefaultTotpAuthService implements TotpAuthService {
 
     private static final int KEY_SIZE_BITS = 256;
 
-    private static final long TOTP_WINDOW_MILLIS = 10 * 1000L;
+    // 允许相邻一个时间步的时钟偏差，{前后各 30 秒}
+    private static final int TOTP_STEP_TOLERANCE = 1;
 
     private static final int TOTP_TIME_STEP_SECONDS =
             TimeBasedOneTimePasswordUtil.DEFAULT_TIME_STEP_SECONDS;
@@ -168,8 +169,9 @@ public class DefaultTotpAuthService implements TotpAuthService {
     @Override
     public Long matchStep(String rawSecret, int code, long nowMillis) {
         try {
-            var start = (nowMillis - TOTP_WINDOW_MILLIS) / 1000 / TOTP_TIME_STEP_SECONDS;
-            var end = (nowMillis + TOTP_WINDOW_MILLIS) / 1000 / TOTP_TIME_STEP_SECONDS;
+            var currentStep = nowMillis / 1000 / TOTP_TIME_STEP_SECONDS;
+            var start = currentStep - TOTP_STEP_TOLERANCE;
+            var end = currentStep + TOTP_STEP_TOLERANCE;
             for (var step = end; step >= start; step--) {
                 var generated = TimeBasedOneTimePasswordUtil.generateNumber(
                         rawSecret, step * 1000L * TOTP_TIME_STEP_SECONDS, TOTP_TIME_STEP_SECONDS);
