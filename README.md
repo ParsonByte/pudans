@@ -30,6 +30,7 @@
   <a href="#architecture">Architecture</a> ·
   <a href="#ai-console">AI Console</a> ·
   <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="#contributors">Contributors</a> ·
   <a href="LICENSE">License</a>
 </p>
 
@@ -182,6 +183,18 @@ npm run build
 ## Contributing
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. The authoritative engineering rules live in [AGENTS.md](AGENTS.md) and [`.agents/rules`](.agents/rules); the agent skills are under [`.agents/skills`](.agents/skills).
+
+## Contributors
+
+Thanks to everyone who has contributed to Pudans.
+
+<p align="center">
+  <a href="https://github.com/ParsonByte/pudans/graphs/contributors">
+    <img src="https://contrib.rocks/image?repo=ParsonByte/pudans" alt="Pudans contributors">
+  </a>
+</p>
+
+Maintained by [@ParsonByte](https://github.com/ParsonByte). See the full [contributor graph](https://github.com/ParsonByte/pudans/graphs/contributors).
 
 ## Security
 
