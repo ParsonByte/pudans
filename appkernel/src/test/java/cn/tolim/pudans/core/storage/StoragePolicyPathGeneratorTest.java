@@ -95,6 +95,18 @@ class StoragePolicyPathGeneratorTest {
     }
 
     @Test
+    void keepsTimestampKeysUniqueWithinTheSameSecond() {
+        var policy = policy("uploads", "{timestamp}_{originname}");
+        var later = now.plusMillis(1);
+
+        var first = generator.generate(policy, new StoragePathContext(null, "", "a.txt", now));
+        var second = generator.generate(policy, new StoragePathContext(null, "", "a.txt", later));
+
+        assertThat(later.getEpochSecond()).isEqualTo(now.getEpochSecond());
+        assertThat(first).isNotEqualTo(second);
+    }
+
+    @Test
     void rejectsRulesThatOnlyUseRandomNumbers() {
         var errors = generator.validateRules("uploads/{path}", "{randomnum2}_{originname}");
 

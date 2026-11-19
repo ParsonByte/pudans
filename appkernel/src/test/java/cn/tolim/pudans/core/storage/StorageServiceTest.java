@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.storage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
@@ -97,6 +99,34 @@ class StorageServiceTest {
 
         verify(driver).delete(List.of("uploads/a.txt"));
         verify(fileService).delete(file);
+    }
+
+    @Test
+    void purgesTheRecordBeforeDeletingTheObject() {
+        var file = file(StorageFileState.TRASHED);
+        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        var driver = mock(StorageDriver.class);
+        when(fileService.delete(file)).thenReturn(Mono.empty());
+        when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
+        when(driver.delete(List.of("uploads/a.txt"))).thenReturn(Mono.empty());
+
+        service.purge("file-1").block();
+
+        var order = inOrder(fileService, driver);
+        order.verify(fileService).delete(file);
+        order.verify(driver).delete(List.of("uploads/a.txt"));
+    }
+
+    @Test
+    void keepsTheObjectWhenTheRecordWasRestoredConcurrently() {
+        var file = file(StorageFileState.TRASHED);
+        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileService.delete(file))
+                .thenReturn(Mono.error(new OptimisticLockingFailureException("file-1")));
+
+        assertThatThrownBy(() -> service.purge("file-1").block())
+                .isInstanceOf(OptimisticLockingFailureException.class);
+        verifyNoInteractions(driverResolver);
     }
 
     @Test
