@@ -11,17 +11,17 @@ import java.net.SocketAddress;
 import java.util.List;
 
 // 在连接时重新校验解析出的地址，防止预检后发生 DNS 重绑定。
-final class ValidatingAddressResolverGroup extends AddressResolverGroup<InetSocketAddress> {
+public final class ValidatingAddressResolverGroup extends AddressResolverGroup<InetSocketAddress> {
 
     private final OutboundRequestValidator validator;
 
     private final AddressResolverGroup<InetSocketAddress> delegate;
 
-    ValidatingAddressResolverGroup(OutboundRequestValidator validator) {
+    public ValidatingAddressResolverGroup(OutboundRequestValidator validator) {
         this(validator, DefaultAddressResolverGroup.INSTANCE);
     }
 
-    ValidatingAddressResolverGroup(
+    public ValidatingAddressResolverGroup(
             OutboundRequestValidator validator, AddressResolverGroup<InetSocketAddress> delegate) {
         this.validator = validator;
         this.delegate = delegate;
@@ -126,7 +126,7 @@ final class ValidatingAddressResolverGroup extends AddressResolverGroup<InetSock
 
         private static IllegalArgumentException nonRoutable() {
             return new IllegalArgumentException(
-                    "Webhook 目标解析到不可路由的地址。");
+                    "出站目标解析到不可路由的地址。");
         }
     }
 }

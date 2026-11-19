@@ -1,6 +1,8 @@
 package cn.tolim.pudans.security.authentication;
 
 import cn.tolim.pudans.contract.infra.ParameterSetting;
+import cn.tolim.pudans.core.webhook.OutboundRequestValidator;
+import cn.tolim.pudans.core.webhook.ValidatingAddressResolverGroup;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.OidcProperties;
 import cn.tolim.pudans.infra.setting.ParameterSettingSensitiveFields;
@@ -13,6 +15,7 @@ import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.StringUtils;
@@ -20,6 +23,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
 
 @Component
 public class AuthenticationConnectionTester {
@@ -41,7 +45,15 @@ public class AuthenticationConnectionTester {
     @Autowired
     public AuthenticationConnectionTester(
             SecurityParameterSettingService securitySettings, FeishuClient feishuClient) {
-        this(securitySettings, feishuClient, WebClient.builder().build());
+        this(
+                securitySettings,
+                feishuClient,
+                WebClient.builder()
+                        // 连接期再校验解析结果，避免测试地址绕过保存期检查指向本机或内网。
+                        .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+                                .resolver(new ValidatingAddressResolverGroup(
+                                        new OutboundRequestValidator()))))
+                        .build());
     }
 
     AuthenticationConnectionTester(
@@ -84,13 +96,25 @@ public class AuthenticationConnectionTester {
 
     private Mono<ConnectionTestResult> testOAuth2(ConnectionTestRequest request) {
         var provider = findOAuth2Provider(request.registrationId());
-        var tokenUri = firstNonBlank(request.tokenUri(), provider == null ? null : provider.getTokenUri());
+        var providerTokenUri = provider == null ? null : provider.getTokenUri();
+        var tokenUri = firstNonBlank(request.tokenUri(), providerTokenUri);
         var clientId = firstNonBlank(request.clientId(), provider == null ? null : provider.getClientId());
         var clientSecret = resolveSecret(
                 request.clientSecret(), provider == null ? null : provider.getClientSecret());
         var scopes = firstNonBlank(request.scopes(), provider == null ? null : provider.getScopes());
         if (!isHttpUrl(tokenUri)) {
             return Mono.just(failure("请填写有效的令牌地址。"));
+        }
+        // 已保存的密钥只允许发往配置过的地址，避免改地址后把密钥带出去。
+        if (usesStoredSecret(request.clientSecret())
+                && providerTokenUri != null
+                && !sameUri(tokenUri, providerTokenUri)) {
+            return Mono.just(failure("令牌地址与已保存的提供方不一致，不能使用已保存的 Client Secret。"));
+        }
+        // 令牌地址可由请求体覆盖，先拦掉本机与内网目标。
+        var unsafeEndpoint = rejectUnsafeEndpoint(tokenUri);
+        if (unsafeEndpoint != null) {
+            return Mono.just(unsafeEndpoint);
         }
         if (!StringUtils.hasText(clientId) || !StringUtils.hasText(clientSecret)) {
             return Mono.just(failure("请填写 Client ID 和 Client Secret。"));
@@ -106,6 +130,11 @@ public class AuthenticationConnectionTester {
         }
         if (!isHttpUrl(issuerUri)) {
             return Mono.just(failure("请填写有效的 Issuer URI。"));
+        }
+        // 发现请求同样会外联，issuer 也要过一遍地址校验。
+        var unsafeEndpoint = rejectUnsafeEndpoint(issuerUri);
+        if (unsafeEndpoint != null) {
+            return Mono.just(unsafeEndpoint);
         }
         var discoveryUri = issuerUri.replaceAll("/+$", "") + "/.well-known/openid-configuration";
         return webClient
@@ -214,6 +243,26 @@ public class AuthenticationConnectionTester {
 
     private static String firstNonBlank(String preferred, String fallback) {
         return StringUtils.hasText(preferred) ? preferred : fallback;
+    }
+
+    private static boolean usesStoredSecret(String supplied) {
+        return !StringUtils.hasText(supplied)
+                || ParameterSettingSensitiveFields.MASK.equals(supplied);
+    }
+
+    private static boolean sameUri(String left, String right) {
+        return left.replaceAll("/+$", "").equals(right.replaceAll("/+$", ""));
+    }
+
+    // 拒绝本机、内网与云元数据地址，避免连接测试被当作 SSRF 中转。
+    private static ConnectionTestResult rejectUnsafeEndpoint(String url) {
+        var host = OutboundRequestValidator.stripBrackets(URI.create(url).getHost());
+        if (OutboundRequestValidator.isForbiddenHost(host)
+                || (OutboundRequestValidator.isIpLiteral(host)
+                        && OutboundRequestValidator.isBlockedLiteral(host))) {
+            return failure("不允许连接本机、内网或云元数据地址。");
+        }
+        return null;
     }
 
     private static boolean isHttpUrl(String value) {

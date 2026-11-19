@@ -10,6 +10,7 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
@@ -27,6 +28,8 @@ import cn.tolim.pudans.core.storage.driver.StorageReadResult;
 import cn.tolim.pudans.core.storage.driver.StorageSource;
 import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
 import cn.tolim.pudans.core.storage.driver.StorageTestResult;
+import cn.tolim.pudans.core.webhook.OutboundRequestValidator;
+import cn.tolim.pudans.core.webhook.ValidatingAddressResolverGroup;
 import cn.tolim.pudans.infra.exception.ApiException;
 import com.qiniu.common.QiniuException;
 import com.qiniu.http.Response;
@@ -39,6 +42,7 @@ import com.qiniu.util.StringMap;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.netty.http.client.HttpClient;
 
 public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
 
@@ -63,7 +67,11 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                 new UploadManager(new Configuration(Region.autoRegion())),
                 new BucketManager(auth, new Configuration(Region.autoRegion())),
                 tempDirectory,
-                WebClient.builder().build());
+                // 代理下载在连接期重新校验解析地址，防止下载域名指向内网。
+                WebClient.builder()
+                        .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+                                .resolver(new ValidatingAddressResolverGroup(new OutboundRequestValidator()))))
+                        .build());
     }
 
     QiniuStorageDriver(

@@ -207,6 +207,73 @@ class AuthenticationConnectionTesterTest {
                 .verifyComplete();
     }
 
+    @Test
+    void rejectsALoopbackTokenEndpoint() {
+        tester = new AuthenticationConnectionTester(
+                securitySettings, feishuClient, webClient(HttpStatus.OK, "{\"access_token\":\"x\"}"));
+
+        StepVerifier.create(tester.test(new ConnectionTestRequest(
+                        "oauth2", null, null, null, "http://127.0.0.1:8080/token", null,
+                        "client", "secret", null, null, null)))
+                .assertNext(result -> {
+                    assertThat(result.success()).isFalse();
+                    assertThat(result.message()).contains("内网");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void rejectsAMetadataIssuerUri() {
+        tester = new AuthenticationConnectionTester(
+                securitySettings, feishuClient, webClient(HttpStatus.OK, "{}"));
+
+        StepVerifier.create(tester.test(new ConnectionTestRequest(
+                        "oidc", null, "http://169.254.169.254", null, null, null, null, null, null, null, null)))
+                .assertNext(result -> {
+                    assertThat(result.success()).isFalse();
+                    assertThat(result.message()).contains("内网");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void rejectsTheStoredSecretWhenTheTokenUriChanged() {
+        when(securitySettings.oauth2Providers()).thenReturn(List.of(oauth2Provider()));
+        tester = new AuthenticationConnectionTester(
+                securitySettings, feishuClient, webClient(HttpStatus.OK, "{\"access_token\":\"x\"}"));
+
+        StepVerifier.create(tester.test(new ConnectionTestRequest(
+                        "oauth2", "github", null, null, "https://attacker.example.com/token", null,
+                        null, ParameterSettingSensitiveFields.MASK, null, null, null)))
+                .assertNext(result -> {
+                    assertThat(result.success()).isFalse();
+                    assertThat(result.message()).contains("Client Secret");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void acceptsASuppliedSecretWithACustomTokenUri() {
+        when(securitySettings.oauth2Providers()).thenReturn(List.of(oauth2Provider()));
+        tester = new AuthenticationConnectionTester(
+                securitySettings, feishuClient, webClient(HttpStatus.OK, "{\"access_token\":\"x\"}"));
+
+        StepVerifier.create(tester.test(new ConnectionTestRequest(
+                        "oauth2", "github", null, null, "https://attacker.example.com/token", null,
+                        "client", "supplied", null, null, null)))
+                .assertNext(result -> assertThat(result.success()).isTrue())
+                .verifyComplete();
+    }
+
+    private static ParameterSetting.OAuth2Provider oauth2Provider() {
+        var provider = new ParameterSetting.OAuth2Provider();
+        provider.setRegistrationId("github");
+        provider.setTokenUri("https://idp.example.com/token");
+        provider.setClientId("client");
+        provider.setClientSecret("stored");
+        return provider;
+    }
+
     private static WebClient webClient(HttpStatus status, String body) {
         return WebClient.builder()
                 .exchangeFunction(request -> Mono.just(ClientResponse.create(status)
