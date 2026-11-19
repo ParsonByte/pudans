@@ -10,10 +10,18 @@ rules:
       - "api.pudans.tolim.cn"
     resources:
       - "userconnections"
-      - "userconnections/oidc/providers"
-      - "userconnections/oidc/bind"
+      - "userconnections/providers"
+      - "userconnections/bind"
     verbs:
       - "create"
       - "get"
       - "list"
       - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "*"
+    resourceNames:
+      - "oidc/authorize-url"
+    verbs:
+      - "get"
