@@ -7,32 +7,46 @@ import {
   useState,
 } from "react";
 
-import { Mic, Paperclip, SendHorizontal } from "lucide-react";
+import { Loader2, Mic, Paperclip, SendHorizontal } from "lucide-react";
 import { toast } from "sonner";
 
 import { InputGroup, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
 
-import { CHAT_FUNCTIONS, CHAT_MODES, type ChatMode } from "../lib/chat-functions";
+import type { ChatAttachmentRef, ChatMode } from "../lib/chat-api";
+import { resolveChatError, uploadChatAttachment } from "../lib/chat-api";
+import {
+  type ChatFunction,
+  chatFunctionsForModes,
+  chatModeIcon,
+  chatModeLabel,
+} from "../lib/chat-functions";
 import { type ChatAttachment, ChatAttachments } from "./chat-attachments";
 import { ChatCommandMenu } from "./chat-command-menu";
 import { type ChatMentionItem, ChatMentionMenu } from "./chat-mention-menu";
 import { ChatRichInput, type ChatRichInputHandle } from "./chat-rich-input";
-import { ChatSuggestions } from "./chat-suggestions";
 
 const ADD_ATTACHMENT = "__add_attachment__";
 
 type ChatComposerProps = {
+  modes: ChatMode[];
+  mode: string | undefined;
+  onModeChange: (mode: string) => void;
+  onSend: (prompt: string, attachments: ChatAttachmentRef[]) => Promise<void> | void;
+  sending?: boolean;
   placeholder?: string;
-  showSuggestions?: boolean;
 };
 
 export function ChatComposer({
-  placeholder = "输入 / 唤起功能菜单，@ 引用附件",
-  showSuggestions = true,
+  modes,
+  mode,
+  onModeChange,
+  onSend,
+  sending = false,
+  placeholder = "输入 / 唤起模式菜单，@ 引用附件",
 }: ChatComposerProps) {
   const [prompt, setPrompt] = useState("");
   const [files, setFiles] = useState<ChatAttachment[]>([]);
-  const [mode, setMode] = useState<ChatMode>("fast");
+  const [uploading, setUploading] = useState(false);
   const [activeFunction, setActiveFunction] = useState("");
   const [activeMention, setActiveMention] = useState("");
   const [dismissedMentionAt, setDismissedMentionAt] = useState<number | null>(null);
@@ -40,6 +54,7 @@ export function ChatComposer({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const richInputRef = useRef<ChatRichInputHandle>(null);
   const filesRef = useRef<ChatAttachment[]>([]);
+  const functions = chatFunctionsForModes(modes);
 
   useEffect(() => {
     filesRef.current = files;
@@ -56,10 +71,10 @@ export function ChatComposer({
     [],
   );
 
-  const canSend = prompt.trim().length > 0 || files.length > 0;
+  const canSend = prompt.trim().length > 0 && !sending && !uploading;
   const slashOpen = prompt.startsWith("/");
   const functionQuery = slashOpen ? prompt.slice(1).trim().toLowerCase() : "";
-  const matchedFunctions = CHAT_FUNCTIONS.filter((item) =>
+  const matchedFunctions = functions.filter((item) =>
     item.label.toLowerCase().includes(functionQuery),
   );
   const activeFunctionValue = matchedFunctions.some((item) => item.label === activeFunction)
@@ -98,12 +113,42 @@ export function ChatComposer({
     ? activeMention
     : (mentionItems[0]?.value ?? "");
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const send = async () => {
     if (!canSend) {
       return;
     }
-    toast.info("对话功能即将上线。");
+    setUploading(true);
+    try {
+      const attachments: ChatAttachmentRef[] = [];
+      for (const file of files) {
+        if (!file.file) {
+          continue;
+        }
+        if (file.file.size > 25 * 1024 * 1024) {
+          toast.error(`${file.name} 超过 25 MB，无法上传。`);
+          return;
+        }
+        attachments.push(await uploadChatAttachment(file.file));
+      }
+      await onSend(prompt.trim(), attachments);
+      richInputRef.current?.clear();
+      setPrompt("");
+      filesRef.current.forEach((file) => {
+        if (file.url) {
+          URL.revokeObjectURL(file.url);
+        }
+      });
+      setFiles([]);
+    } catch (error) {
+      toast.error(resolveChatError(error));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void send();
   };
 
   const addFiles = (incoming: File[], pasted = false) => {
@@ -132,6 +177,7 @@ export function ChatComposer({
             id: crypto.randomUUID(),
             name,
             url: isImage ? URL.createObjectURL(file) : undefined,
+            file,
           };
         }),
       ];
@@ -154,8 +200,10 @@ export function ChatComposer({
     });
   };
 
-  const applyFunction = (label: string) => {
-    richInputRef.current?.setPlainText(`${label}：`);
+  const applyFunction = (item: ChatFunction) => {
+    onModeChange(item.mode);
+    richInputRef.current?.clear();
+    setPrompt("");
     setActiveFunction("");
   };
 
@@ -173,6 +221,8 @@ export function ChatComposer({
     }
     setActiveMention("");
   };
+
+  const findFunction = (label: string) => functions.find((item) => item.label === label);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (slashOpen) {
@@ -194,12 +244,16 @@ export function ChatComposer({
       }
       if (event.key === "Enter" && activeFunctionValue) {
         event.preventDefault();
-        applyFunction(activeFunctionValue);
+        const item = findFunction(activeFunctionValue);
+        if (item) {
+          applyFunction(item);
+        }
         return;
       }
       if (event.key === "Escape") {
         event.preventDefault();
         richInputRef.current?.clear();
+        setPrompt("");
         return;
       }
     }
@@ -260,26 +314,34 @@ export function ChatComposer({
             />
             <InputGroupAddon align="block-end">
               <div className="flex items-center gap-1">
-                {CHAT_MODES.map((item) => (
-                  <InputGroupButton
-                    key={item.value}
-                    size="sm"
-                    variant="ghost"
-                    aria-pressed={mode === item.value}
-                    className={
-                      mode === item.value
-                        ? "bg-muted text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    }
-                    onClick={() => setMode(item.value)}
-                  >
-                    <item.icon />
-                    {item.label}
-                  </InputGroupButton>
-                ))}
+                {modes.map((item) => {
+                  const Icon = chatModeIcon(item.name);
+                  return (
+                    <InputGroupButton
+                      key={item.name}
+                      size="sm"
+                      variant="ghost"
+                      aria-pressed={mode === item.name}
+                      className={
+                        mode === item.name
+                          ? "bg-muted text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }
+                      onClick={() => onModeChange(item.name)}
+                    >
+                      <Icon />
+                      {chatModeLabel(item)}
+                    </InputGroupButton>
+                  );
+                })}
               </div>
               <div className="ms-auto flex items-center gap-1">
-                <InputGroupButton size="icon-sm" variant="ghost" aria-label="语音输入">
+                <InputGroupButton
+                  size="icon-sm"
+                  variant="ghost"
+                  aria-label="语音输入"
+                  onClick={() => toast.info("语音输入暂不支持。")}
+                >
                   <Mic />
                 </InputGroupButton>
                 <InputGroupButton
@@ -299,7 +361,7 @@ export function ChatComposer({
                   disabled={!canSend}
                   aria-label="发送"
                 >
-                  <SendHorizontal />
+                  {sending || uploading ? <Loader2 className="animate-spin" /> : <SendHorizontal />}
                 </InputGroupButton>
               </div>
             </InputGroupAddon>
@@ -310,7 +372,12 @@ export function ChatComposer({
             functions={matchedFunctions}
             activeValue={activeFunctionValue}
             onActiveValueChange={setActiveFunction}
-            onSelect={applyFunction}
+            onSelect={(label) => {
+              const item = findFunction(label);
+              if (item) {
+                applyFunction(item);
+              }
+            }}
           />
         ) : mentionOpen ? (
           <ChatMentionMenu
@@ -321,7 +388,6 @@ export function ChatComposer({
           />
         ) : null}
       </div>
-      {showSuggestions ? <ChatSuggestions onSelect={applyFunction} /> : null}
     </div>
   );
 }

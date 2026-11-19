@@ -14,6 +14,7 @@ export type ChatAttachment = {
   id: string;
   name: string;
   url?: string;
+  file?: File;
 };
 
 type ChatAttachmentsProps = {
