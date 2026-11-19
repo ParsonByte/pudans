@@ -34,6 +34,7 @@ rules:
       - "storagefiles/trash"
       - "storagefiles/restore"
       - "storagefiles/download-url"
+      - "storagefiles/upload"
     verbs:
       - "create"
   - apiGroups:

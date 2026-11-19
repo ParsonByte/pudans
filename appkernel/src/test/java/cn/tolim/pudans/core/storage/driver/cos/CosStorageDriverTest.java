@@ -18,6 +18,7 @@ import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.NativeMultipartUpload;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.StorageMultipartRequest;
+import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadedPart;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.model.BucketCrossOriginConfiguration;
@@ -77,6 +78,31 @@ class CosStorageDriverTest {
 
         assertThat(parts).hasSize(1);
         assertThat(parts.getFirst().etag()).isEqualTo("etag");
+    }
+
+    @Test
+    void listsAllPartPages() {
+        var firstPart = new PartSummary();
+        firstPart.setPartNumber(1);
+        firstPart.setETag("e1");
+        firstPart.setSize(5);
+        var first = new PartListing();
+        first.setParts(List.of(firstPart));
+        first.setTruncated(true);
+        first.setNextPartNumberMarker(1000);
+        var secondPart = new PartSummary();
+        secondPart.setPartNumber(1001);
+        secondPart.setETag("e1001");
+        secondPart.setSize(5);
+        var second = new PartListing();
+        second.setParts(List.of(secondPart));
+        when(client.listParts(any(ListPartsRequest.class))).thenReturn(first, second);
+
+        var parts = driver
+                .listParts(new NativeMultipartUpload("upload-1", "key", 8L * 1024L * 1024L))
+                .block();
+
+        assertThat(parts).extracting(UploadedPart::partNumber).containsExactly(1, 1001);
     }
 
     @Test

@@ -1,9 +1,11 @@
 package cn.tolim.pudans.core.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -13,12 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
+import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
 import reactor.core.publisher.Mono;
 
@@ -82,7 +86,7 @@ class StorageServiceTest {
 
     @Test
     void purgesAFileAndItsObject() {
-        var file = file(StorageFileState.ACTIVE);
+        var file = file(StorageFileState.TRASHED);
         when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
         var driver = mock(StorageDriver.class);
         when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
@@ -93,6 +97,18 @@ class StorageServiceTest {
 
         verify(driver).delete(List.of("uploads/a.txt"));
         verify(fileService).delete(file);
+    }
+
+    @Test
+    void rejectsPurgingAnActiveFile() {
+        var file = file(StorageFileState.ACTIVE);
+        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+
+        assertThatThrownBy(() -> service.purge("file-1").block())
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getStatusCode())
+                        .isEqualTo(HttpStatus.CONFLICT));
+        verifyNoInteractions(driverResolver);
     }
 
     private static StorageFile file(StorageFileState state) {

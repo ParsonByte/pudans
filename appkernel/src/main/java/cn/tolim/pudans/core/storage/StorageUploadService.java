@@ -12,6 +12,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
@@ -38,6 +39,7 @@ import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadedPart;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
+import cn.tolim.pudans.core.storage.driver.StorageIo;
 import cn.tolim.pudans.core.storage.driver.StorageObject;
 import cn.tolim.pudans.core.storage.driver.StoragePutRequest;
 import cn.tolim.pudans.core.storage.upload.StorageUploadRequest;
@@ -84,7 +86,6 @@ public class StorageUploadService {
         return resolvePolicy(request.policy())
                 .flatMap(policy -> parameterSettingGroupService
                         .getStorage()
-                        .defaultIfEmpty(new ParameterSetting.Storage())
                         .flatMap(settings -> createUpload(policy, request, settings)));
     }
 
@@ -126,11 +127,15 @@ public class StorageUploadService {
             if (partNumber < 1 || partNumber > file.getSpec().getPartCount()) {
                 return Mono.error(partInvalid());
             }
+            var maxPartSize = file.getSpec().getChunkSize();
+            if (maxPartSize > 0 && contentLength > maxPartSize) {
+                return Mono.error(partTooLarge());
+            }
             return driverResolver.driver(file.getSpec().getPolicy()).flatMap(driver -> {
                 if (driver instanceof MultipartStorageDriver multipart && hasNativeUpload(file)) {
-                    return multipart.putPart(nativeUpload(file), partNumber, body, contentLength);
+                    return multipart.putPart(nativeUpload(file), partNumber, limit(body, maxPartSize), contentLength);
                 }
-                return writeLocalPart(fileId, partNumber, body);
+                return writeLocalPart(fileId, partNumber, limit(body, maxPartSize));
             });
         });
     }
@@ -166,13 +171,20 @@ public class StorageUploadService {
                     if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
                         return Mono.error(expired());
                     }
-                    return driverResolver.driver(file.getSpec().getPolicy()).flatMap(driver -> {
-                        if (driver instanceof DirectUploadDriver && !hasNativeUpload(file)) {
-                            return driver.stat(file.getSpec().getStorageKey())
-                                    .flatMap(object -> activate(file, object));
-                        }
-                        return finishUpload(file, driver, parts).flatMap(object -> activate(file, object));
-                    });
+                    return policyService
+                            .requireReady(file.getSpec().getPolicy())
+                            .flatMap(policy -> driverResolver.driver(policy).flatMap(driver -> {
+                                if (driver instanceof DirectUploadDriver && !hasNativeUpload(file)) {
+                                    return scanLocalParts(fileId)
+                                            .flatMap(localParts -> localParts.isEmpty()
+                                                    ? driver.stat(file.getSpec().getStorageKey())
+                                                            .flatMap(object -> activate(policy, driver, file, object))
+                                                    : finishUpload(file, driver, parts)
+                                                            .flatMap(object -> activate(policy, driver, file, object)));
+                                }
+                                return finishUpload(file, driver, parts)
+                                        .flatMap(object -> activate(policy, driver, file, object));
+                            }));
                 });
     }
 
@@ -184,10 +196,6 @@ public class StorageUploadService {
                     return driverResolver
                             .driver(file.getSpec().getPolicy())
                             .flatMap(driver -> abortDriver(file, driver))
-                            .onErrorResume(error -> {
-                                log.warn("中止存储上传 [{}] 的驱动操作失败", fileId, error);
-                                return Mono.empty();
-                            })
                             .then(Mono.fromRunnable(() -> deleteSessionDirectory(fileId))
                                     .subscribeOn(Schedulers.boundedElastic()))
                             .then(Mono.defer(() -> fileService.delete(file)));
@@ -197,49 +205,120 @@ public class StorageUploadService {
 
     public Mono<StorageFile> upload(StorageWriteRequest request) {
         return resolvePolicy(request.policy())
-                .flatMap(policy -> Mono.fromCallable(() -> {
-                            validator.validateUpload(policy, request.originalName(), request.size());
-                            return policy;
-                        })
-                        .subscribeOn(Schedulers.boundedElastic()))
-                .flatMap(policy -> {
+                .flatMap(policy -> parameterSettingGroupService
+                        .getStorage()
+                        .flatMap(settings -> createWrite(policy, request, settings)));
+    }
+
+    private Mono<StorageFile> createWrite(
+            StoragePolicy policy, StorageWriteRequest request, ParameterSetting.Storage settings) {
+        return Mono.fromCallable(() -> {
+                    validator.validateUpload(policy, request.originalName(), request.size());
+                    return policy;
+                })
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(validated -> {
                     var chunkSize = validator.chunkSize(policy);
+                    var partCount = validator.partCount(request.size(), chunkSize);
                     var key = pathGenerator.generate(policy, new StoragePathContext(
                             request.owner(), request.originPath(), request.originalName(), Instant.now()));
-                    var file = new StorageFile();
-                    var metadata = new Metadata();
-                    metadata.setName(UUID.randomUUID().toString());
-                    file.setMetadata(metadata);
-                    var spec = file.getSpec();
-                    spec.setPolicy(policy.getMetadata().getName());
-                    spec.setStorageKey(key);
-                    spec.setOriginalName(StringUtils.hasText(request.originalName())
-                            ? request.originalName()
-                            : "file");
-                    spec.setExtension(StoragePolicyValidator.normalizeExtension(request.originalName()));
-                    spec.setContentType(StringUtils.hasText(request.contentType())
-                            ? request.contentType()
-                            : "application/octet-stream");
-                    spec.setSize(request.size());
-                    spec.setOwner(request.owner());
-                    spec.setModule(request.module());
-                    spec.setAttributes(copyAttributes(request.attributes()));
-                    spec.setState(StorageFileState.UPLOADING);
-                    spec.setChunkSize(chunkSize);
-                    spec.setPartCount(1);
-                    spec.setUploadExpiresAt(Instant.now().plus(Duration.ofHours(24)));
+                    var ttlHours = settings.getUploadSessionTtlHours() == null
+                            ? 24
+                            : settings.getUploadSessionTtlHours();
+                    var file = uploadingFile(
+                            policy,
+                            request.owner(),
+                            request.module(),
+                            request.originalName(),
+                            request.contentType(),
+                            request.size(),
+                            request.attributes(),
+                            null,
+                            key,
+                            chunkSize,
+                            partCount,
+                            Instant.now().plus(Duration.ofHours(ttlHours)));
                     return fileService.create(file)
                             .flatMap(created -> driverResolver
                                     .driver(policy)
-                                    .flatMap(driver -> driver.put(new StoragePutRequest(
-                                                    key,
-                                                    request.size(),
-                                                    spec.getContentType(),
-                                                    request.body(),
-                                                    request.overwrite()))
-                                            .flatMap(object -> activate(created, object)))
+                                    .flatMap(driver -> putFile(driver, created, request, chunkSize, partCount)
+                                            .flatMap(object -> activate(policy, driver, created, object)))
                                     .onErrorResume(error -> fileService.delete(created).then(Mono.error(error))));
                 });
+    }
+
+    private Mono<StorageObject> putFile(
+            StorageDriver driver, StorageFile file, StorageWriteRequest request, long chunkSize, int partCount) {
+        var spec = file.getSpec();
+        if (request.size() > chunkSize
+                && driver instanceof MultipartStorageDriver multipart
+                && driver.capabilities().contains(StorageCapability.MULTIPART_UPLOAD)) {
+            return uploadMultipartBody(multipart, file, request, chunkSize, partCount);
+        }
+        return driver.put(new StoragePutRequest(
+                spec.getStorageKey(), spec.getSize(), spec.getContentType(), request.body(), request.overwrite()));
+    }
+
+    private Mono<StorageObject> uploadMultipartBody(
+            MultipartStorageDriver multipart,
+            StorageFile file,
+            StorageWriteRequest request,
+            long chunkSize,
+            int partCount) {
+        return StorageIo.spool(request.body(), tempDirectory())
+                .flatMap(path -> Mono.fromCallable(() -> Files.size(path))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .flatMap(size -> {
+                            if (request.size() > 0 && size != request.size()) {
+                                StorageIo.deleteQuietly(path);
+                                return Mono.error(new ApiException(
+                                        HttpStatus.BAD_REQUEST,
+                                        "storage-size-mismatch",
+                                        "文件大小与声明不一致。"));
+                            }
+                            return multipart
+                                    .createMultipart(new StorageMultipartRequest(
+                                            file.getSpec().getStorageKey(), size, file.getSpec().getContentType()))
+                                    .flatMap(upload -> uploadParts(multipart, upload, path, size, chunkSize, partCount)
+                                            .flatMap(parts -> multipart.completeMultipart(upload, parts))
+                                            .onErrorResume(error -> multipart
+                                                    .abortMultipart(upload)
+                                                    .onErrorResume(abortError -> Mono.empty())
+                                                    .then(Mono.error(error))))
+                                    .doFinally(signal -> StorageIo.deleteQuietly(path));
+                        }));
+    }
+
+    private Mono<List<UploadedPart>> uploadParts(
+            MultipartStorageDriver multipart,
+            NativeMultipartUpload upload,
+            Path path,
+            long size,
+            long chunkSize,
+            int partCount) {
+        return Flux.range(1, partCount)
+                .concatMap(part -> {
+                    var offset = (long) (part - 1) * chunkSize;
+                    var length = Math.min(chunkSize, size - offset);
+                    return multipart.putPart(upload, part, readRange(path, offset, length), length);
+                })
+                .collectList();
+    }
+
+    private Flux<DataBuffer> readRange(Path path, long offset, long length) {
+        return Flux.defer(() -> {
+            try {
+                var input = Files.newInputStream(path);
+                input.skipNBytes(offset);
+                return StorageIo.read(input, length);
+            } catch (IOException e) {
+                return Flux.error(e);
+            }
+        });
+    }
+
+    private Path tempDirectory() {
+        return properties.getWorkDir().toAbsolutePath().normalize().resolve("uploads/.tmp");
     }
 
     private Mono<UploadTicket> createUpload(
@@ -258,34 +337,59 @@ public class StorageUploadService {
                             ? 24
                             : settings.getUploadSessionTtlHours();
                     var expiresAt = Instant.now().plus(Duration.ofHours(ttlHours));
-                    var file = new StorageFile();
-                    var metadata = new Metadata();
-                    metadata.setName(UUID.randomUUID().toString());
-                    file.setMetadata(metadata);
-                    var spec = file.getSpec();
-                    spec.setPolicy(policy.getMetadata().getName());
-                    spec.setStorageKey(key);
-                    spec.setOriginalName(StringUtils.hasText(request.originalName())
-                            ? request.originalName()
-                            : "file");
-                    spec.setExtension(StoragePolicyValidator.normalizeExtension(request.originalName()));
-                    spec.setContentType(StringUtils.hasText(request.contentType())
-                            ? request.contentType()
-                            : "application/octet-stream");
-                    spec.setSize(request.size());
-                    spec.setOwner(request.owner());
-                    spec.setModule(request.module());
-                    spec.setAttributes(copyAttributes(request.attributes()));
-                    spec.setState(StorageFileState.UPLOADING);
-                    spec.setSha256(request.sha256());
-                    spec.setChunkSize(chunkSize);
-                    spec.setPartCount(partCount);
-                    spec.setUploadExpiresAt(expiresAt);
+                    var file = uploadingFile(
+                            policy,
+                            request.owner(),
+                            request.module(),
+                            request.originalName(),
+                            request.contentType(),
+                            request.size(),
+                            request.attributes(),
+                            request.sha256(),
+                            key,
+                            chunkSize,
+                            partCount,
+                            expiresAt);
                     return fileService.create(file)
                             .flatMap(created -> driverResolver
                                     .driver(policy)
                                     .flatMap(driver -> prepareUpload(created, driver, expiresAt)));
                 });
+    }
+
+    private StorageFile uploadingFile(
+            StoragePolicy policy,
+            String owner,
+            String module,
+            String originalName,
+            String contentType,
+            long size,
+            Map<String, String> attributes,
+            String sha256,
+            String key,
+            long chunkSize,
+            int partCount,
+            Instant expiresAt) {
+        var file = new StorageFile();
+        var metadata = new Metadata();
+        metadata.setName(UUID.randomUUID().toString());
+        file.setMetadata(metadata);
+        var spec = file.getSpec();
+        spec.setPolicy(policy.getMetadata().getName());
+        spec.setStorageKey(key);
+        spec.setOriginalName(StringUtils.hasText(originalName) ? originalName : "file");
+        spec.setExtension(StoragePolicyValidator.normalizeExtension(originalName));
+        spec.setContentType(StringUtils.hasText(contentType) ? contentType : "application/octet-stream");
+        spec.setSize(size);
+        spec.setOwner(owner);
+        spec.setModule(module);
+        spec.setAttributes(copyAttributes(attributes));
+        spec.setState(StorageFileState.UPLOADING);
+        spec.setSha256(sha256);
+        spec.setChunkSize(chunkSize);
+        spec.setPartCount(partCount);
+        spec.setUploadExpiresAt(expiresAt);
+        return file;
     }
 
     private Mono<UploadTicket> prepareUpload(StorageFile file, StorageDriver driver, Instant expiresAt) {
@@ -365,15 +469,20 @@ public class StorageUploadService {
                                         DefaultDataBufferFactory.sharedInstance,
                                         READ_BUFFER_SIZE),
                                 true))
-                        .doFinally(signal -> deleteQuietly(merged)));
+                        .doFinally(signal -> StorageIo.deleteQuietly(merged)));
     }
 
-    private Mono<StorageFile> activate(StorageFile file, StorageObject object) {
+    private Mono<StorageFile> activate(StoragePolicy policy, StorageDriver driver, StorageFile file, StorageObject object) {
         var spec = file.getSpec();
+        if (policy.getSpec().getMaxSize() > 0 && object.size() > policy.getSpec().getMaxSize()) {
+            return deleteObject(driver, file)
+                    .then(Mono.error(new ApiException(
+                            HttpStatus.PAYLOAD_TOO_LARGE,
+                            "storage-file-too-large",
+                            "文件大小超过策略上限 " + policy.getSpec().getMaxSize() + " 字节。")));
+        }
         if (spec.getSize() > 0 && object.size() != spec.getSize()) {
-            return driverResolver
-                    .driver(spec.getPolicy())
-                    .flatMap(driver -> driver.delete(List.of(spec.getStorageKey())))
+            return deleteObject(driver, file)
                     .then(Mono.error(new ApiException(
                             HttpStatus.BAD_REQUEST, "storage-size-mismatch", "文件大小与声明不一致。")));
         }
@@ -387,6 +496,10 @@ public class StorageUploadService {
         return Mono.fromRunnable(() -> deleteSessionDirectory(file.getMetadata().getName()))
                 .subscribeOn(Schedulers.boundedElastic())
                 .then(fileService.update(file));
+    }
+
+    private Mono<Void> deleteObject(StorageDriver driver, StorageFile file) {
+        return driver.delete(List.of(file.getSpec().getStorageKey())).onErrorResume(error -> Mono.empty());
     }
 
     private Mono<UploadedPart> writeLocalPart(String fileId, int partNumber, Flux<DataBuffer> body) {
@@ -404,6 +517,21 @@ public class StorageUploadService {
                                 StandardOpenOption.WRITE)
                         .then(Mono.fromCallable(() -> new UploadedPart(partNumber, "", Files.size(path))))
                         .subscribeOn(Schedulers.boundedElastic()));
+    }
+
+    private static Flux<DataBuffer> limit(Flux<DataBuffer> body, long maxBytes) {
+        if (maxBytes <= 0) {
+            return body;
+        }
+        var written = new AtomicLong();
+        return body.concatMap(buffer -> {
+            var total = written.addAndGet(buffer.readableByteCount());
+            if (total > maxBytes) {
+                DataBufferUtils.release(buffer);
+                return Flux.error(partTooLarge());
+            }
+            return Flux.just(buffer);
+        });
     }
 
     private Mono<List<UploadedPart>> uploadedParts(StorageFile file, StorageDriver driver) {
@@ -462,7 +590,7 @@ public class StorageUploadService {
                             Files.copy(path, output);
                         }
                     } catch (RuntimeException | IOException e) {
-                        deleteQuietly(merged);
+                        StorageIo.deleteQuietly(merged);
                         throw e;
                     }
                     return merged;
@@ -490,6 +618,13 @@ public class StorageUploadService {
     private Mono<Void> abortDriver(StorageFile file, StorageDriver driver) {
         if (driver instanceof MultipartStorageDriver multipart && hasNativeUpload(file)) {
             return multipart.abortMultipart(nativeUpload(file));
+        }
+        if (driver instanceof DirectUploadDriver) {
+            return driver.delete(List.of(file.getSpec().getStorageKey()))
+                    .onErrorResume(error -> error instanceof ApiException api
+                                    && api.getStatusCode().value() == HttpStatus.NOT_FOUND.value()
+                            ? Mono.empty()
+                            : Mono.error(error));
         }
         return Mono.empty();
     }
@@ -561,16 +696,9 @@ public class StorageUploadService {
             return;
         }
         try (var paths = Files.walk(directory)) {
-            paths.sorted(Comparator.reverseOrder()).forEach(this::deleteQuietly);
+            paths.sorted(Comparator.reverseOrder()).forEach(StorageIo::deleteQuietly);
         } catch (IOException e) {
             log.warn("无法清理上传会话目录 [{}]", directory, e);
-        }
-    }
-
-    private void deleteQuietly(Path path) {
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException ignored) {
         }
     }
 
@@ -588,5 +716,9 @@ public class StorageUploadService {
 
     private static ApiException partInvalid() {
         return new ApiException(HttpStatus.BAD_REQUEST, "storage-part-invalid", "分片编号无效。");
+    }
+
+    private static ApiException partTooLarge() {
+        return new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, "storage-part-too-large", "分片大小超过上限。");
     }
 }

@@ -16,7 +16,8 @@ class OneDriveStorageDriverTest {
 
     @Test
     void exposesOneDriveTypeAndCapabilities() {
-        var driver = new OneDriveStorageDriver(policy(), workDir);
+        var policy = policy();
+        var driver = new OneDriveStorageDriver(policy, policy.getSpec().getCredentials(), workDir);
 
         assertThat(driver.type()).isEqualTo(StoragePolicyType.ONEDRIVE);
         assertThat(driver.capabilities())

@@ -74,6 +74,33 @@ class StoragePolicyPathGeneratorTest {
         assertThat(errors).anyMatch(error -> error.contains("上级目录"));
     }
 
+    @Test
+    void preservesDollarSignsInFileNames() {
+        var policy = policy("uploads/{path}", "{randomkey8}_{originname}");
+
+        var key = generator.generate(
+                policy, new StoragePathContext(null, "", "Report$2024.pdf", now));
+
+        assertThat(key).endsWith("_Report$2024.pdf");
+    }
+
+    @Test
+    void rendersEpochNanoseconds() {
+        var policy = policy("uploads", "{timestamp_nano}");
+
+        var key = generator.generate(policy, new StoragePathContext(null, "", "a.txt", now));
+
+        var expected = now.getEpochSecond() * 1_000_000_000L + now.getNano();
+        assertThat(key).isEqualTo("uploads/" + expected);
+    }
+
+    @Test
+    void rejectsRulesThatOnlyUseRandomNumbers() {
+        var errors = generator.validateRules("uploads/{path}", "{randomnum2}_{originname}");
+
+        assertThat(errors).anyMatch(error -> error.contains("随机变量"));
+    }
+
     private static StoragePolicy policy(String dir, String file) {
         var policy = new StoragePolicy();
         policy.getSpec().setDisplayName("test");

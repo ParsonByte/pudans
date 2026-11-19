@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.storage.driver.upyun;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -20,6 +21,7 @@ import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.DirectUploadDriver.StorageDirectUploadRequest;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.UpYun;
 
 @ExtendWith(MockitoExtension.class)
@@ -67,6 +69,16 @@ class UpyunStorageDriverTest {
         assertThat(object).isNotNull();
         assertThat(object.size()).isEqualTo(5);
         assertThat(object.etag()).isEqualTo("etag");
+    }
+
+    @Test
+    void reportsMissingObjectsAsNotFound() throws Exception {
+        when(client.getFileInfo("missing")).thenReturn(null);
+
+        assertThatThrownBy(() -> driver.stat("missing").block())
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo("storage-object-not-found"));
     }
 
     @Test

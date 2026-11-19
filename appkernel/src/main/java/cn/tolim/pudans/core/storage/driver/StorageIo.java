@@ -37,6 +37,7 @@ public final class StorageIo {
                                 StandardOpenOption.WRITE)
                         .thenReturn(path)
                         .doOnError(error -> deleteQuietly(path))
+                        .doOnCancel(() -> deleteQuietly(path))
                         .subscribeOn(Schedulers.boundedElastic()));
     }
 
