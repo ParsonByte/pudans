@@ -51,25 +51,34 @@ class ImageCaptchaProviderTest {
     }
 
     @Test
-    void verifyDeletesTheChallengeOnSuccess() {
-        when(challengeStore.get("challenge-1")).thenReturn(Mono.just("ABC12"));
-        when(challengeStore.delete("challenge-1")).thenReturn(Mono.just(true));
+    void verifyConsumesTheChallengeOnSuccess() {
+        when(challengeStore.take("challenge-1")).thenReturn(Mono.just("ABC12"));
 
         StepVerifier.create(provider.verify("challenge-1", "abc12"))
                 .expectNext(true)
                 .verifyComplete();
+
+        verify(challengeStore).take("challenge-1");
     }
 
     @Test
     void verifyRejectsAWrongAnswer() {
-        when(challengeStore.get("challenge-1")).thenReturn(Mono.just("ABC12"));
-        when(challengeStore.delete("challenge-1")).thenReturn(Mono.just(false));
+        when(challengeStore.take("challenge-1")).thenReturn(Mono.just("ABC12"));
 
         StepVerifier.create(provider.verify("challenge-1", "wrong"))
                 .expectNext(false)
                 .verifyComplete();
 
-        verify(challengeStore).delete("challenge-1");
+        verify(challengeStore).take("challenge-1");
+    }
+
+    @Test
+    void verifyRejectsAnAlreadyConsumedChallenge() {
+        when(challengeStore.take("challenge-1")).thenReturn(Mono.empty());
+
+        StepVerifier.create(provider.verify("challenge-1", "ABC12"))
+                .expectNext(false)
+                .verifyComplete();
     }
 
     @Test

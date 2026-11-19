@@ -45,10 +45,9 @@ public class ImageCaptchaProvider implements CaptchaProvider {
             return Mono.just(false);
         }
         return challengeStore
-                .get(challengeId)
+                .take(challengeId)
                 .map(stored -> Objects.equals(
                         stored.toLowerCase(Locale.ROOT), answer.trim().toLowerCase(Locale.ROOT)))
-                .defaultIfEmpty(false)
-                .flatMap(verified -> challengeStore.delete(challengeId).thenReturn(verified));
+                .defaultIfEmpty(false);
     }
 }
