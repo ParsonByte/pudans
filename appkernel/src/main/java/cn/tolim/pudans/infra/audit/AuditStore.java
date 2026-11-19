@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.r2dbc.core.R2dbcEntityOperations;
 import org.springframework.data.relational.core.query.Criteria;
 import org.springframework.data.relational.core.query.Query;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -47,6 +48,8 @@ public class AuditStore {
 
     private final R2dbcEntityOperations entityOperations;
 
+    private final DatabaseClient databaseClient;
+
     private final TransactionalOperator transactionalOperator;
 
     public AuditStore(
@@ -54,11 +57,13 @@ public class AuditStore {
             AuditArchiveRepository archiveRepository,
             AuditArchiveGuardRepository guardRepository,
             R2dbcEntityOperations entityOperations,
+            DatabaseClient databaseClient,
             ReactiveTransactionManager reactiveTransactionManager) {
         this.activeRepository = activeRepository;
         this.archiveRepository = archiveRepository;
         this.guardRepository = guardRepository;
         this.entityOperations = entityOperations;
+        this.databaseClient = databaseClient;
         this.transactionalOperator = TransactionalOperator.create(reactiveTransactionManager);
     }
 
@@ -337,10 +342,27 @@ public class AuditStore {
     }
 
     public Mono<Long> archiveBefore(Instant cutoff) {
-        return setGuard(true)
-                .then(Mono.defer(() -> archiveBatch(toOffsetDateTime(cutoff), 0L)))
-                .flatMap(count -> setGuard(false).thenReturn(count))
-                .onErrorResume(error -> setGuard(false).then(Mono.error(error)));
+        return acquireArchiveGuard().flatMap(acquired -> {
+            if (!acquired) {
+                return Mono.just(0L);
+            }
+            return archiveBatch(toOffsetDateTime(cutoff), 0L)
+                    .flatMap(count -> releaseArchiveGuard().thenReturn(count))
+                    .onErrorResume(error -> releaseArchiveGuard().then(Mono.error(error)));
+        });
+    }
+
+    // 条件更新抢占归档锁，多实例同时归档时只有抢到的实例继续执行
+    private Mono<Boolean> acquireArchiveGuard() {
+        return databaseClient
+                .sql("UPDATE audit_archive_guard SET enabled = TRUE WHERE id = 1 AND enabled = FALSE")
+                .fetch()
+                .rowsUpdated()
+                .map(count -> count > 0);
+    }
+
+    private Mono<Void> releaseArchiveGuard() {
+        return guardRepository.save(new AuditArchiveGuardEntity(1, false)).then();
     }
 
     private Mono<Long> archiveBatch(OffsetDateTime cutoff, long archivedCount) {
@@ -360,10 +382,6 @@ public class AuditStore {
                             .as(transactionalOperator::transactional)
                             .then(Mono.defer(() -> archiveBatch(cutoff, archivedCount + batch.size())));
                 });
-    }
-
-    private Mono<Void> setGuard(boolean enabled) {
-        return guardRepository.save(new AuditArchiveGuardEntity(1, enabled)).then();
     }
 
     private static OffsetDateTime toOffsetDateTime(Instant instant) {
