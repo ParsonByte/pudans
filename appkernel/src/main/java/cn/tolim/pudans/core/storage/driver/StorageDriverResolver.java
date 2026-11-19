@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.core.storage.StoragePolicySecretCipher;
 import cn.tolim.pudans.core.storage.StoragePolicyService;
+import cn.tolim.pudans.core.storage.StoragePolicyValidator;
 import cn.tolim.pudans.infra.exception.ApiException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -24,6 +25,8 @@ public class StorageDriverResolver {
 
     private final StoragePolicySecretCipher secretCipher;
 
+    private final StoragePolicyValidator validator;
+
     private final ConcurrentMap<String, CachedDriver> drivers = new ConcurrentHashMap<>();
 
     private final Object lock = new Object();
@@ -31,10 +34,12 @@ public class StorageDriverResolver {
     public StorageDriverResolver(
             StoragePolicyService policyService,
             StorageDriverFactoryRegistry registry,
-            StoragePolicySecretCipher secretCipher) {
+            StoragePolicySecretCipher secretCipher,
+            StoragePolicyValidator validator) {
         this.policyService = policyService;
         this.registry = registry;
         this.secretCipher = secretCipher;
+        this.validator = validator;
     }
 
     public Mono<StorageDriver> driver(String policyName) {
@@ -74,6 +79,8 @@ public class StorageDriverResolver {
                             HttpStatus.BAD_REQUEST,
                             "storage-policy-type-unsupported",
                             "不支持的存储类型：" + policy.getSpec().getType()));
+            // 建立连接前校验服务地址解析结果，避免存储策略指向本机或内网。
+            validator.verifyEndpointReachable(policy.getSpec());
             var driver = factory.create(new ResolvedStoragePolicy(policy, decrypt(policy.getSpec().getCredentials())));
             if (cached != null) {
                 closeQuietly(cached.driver());

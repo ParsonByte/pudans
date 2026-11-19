@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -127,6 +128,27 @@ class StorageUploadServiceTest {
         assertThat(ticket.presigned()).isFalse();
         assertThat(Files.isDirectory(workDir.resolve("uploads/.sessions").resolve(ticket.fileId())))
                 .isTrue();
+    }
+
+    @Test
+    void rejectsANullAttributeValue() {
+        var policy = policy();
+        var attributes = new LinkedHashMap<String, String>();
+        attributes.put("caption", null);
+        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
+        when(settingsService.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
+        when(validator.chunkSize(policy)).thenReturn(8L * 1024L * 1024L);
+        when(validator.partCount(10, 8L * 1024L * 1024L)).thenReturn(1);
+        when(pathGenerator.generate(eq(policy), any(StoragePathContext.class))).thenReturn("uploads/key");
+
+        assertThatThrownBy(() -> service
+                        .initiate(new StorageUploadRequest(
+                                "local", "owner", "chat", "chat", "a.txt", "text/plain", 10, attributes, null))
+                        .block())
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo("storage-attribute-invalid"));
+        verifyNoInteractions(fileService);
     }
 
     @Test

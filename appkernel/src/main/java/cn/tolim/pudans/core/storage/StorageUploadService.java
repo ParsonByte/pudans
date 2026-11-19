@@ -668,9 +668,15 @@ public class StorageUploadService {
         if (CollectionUtils.isEmpty(attributes)) {
             return new LinkedHashMap<>();
         }
-        var total = attributes.entrySet().stream()
-                .mapToInt(entry -> entry.getKey().length() + entry.getValue().length())
-                .sum();
+        var total = 0;
+        for (var entry : attributes.entrySet()) {
+            // 请求体允许附加信息为 null，先拦掉避免取长度时空指针。
+            if (entry.getKey() == null || entry.getValue() == null) {
+                throw new ApiException(
+                        HttpStatus.BAD_REQUEST, "storage-attribute-invalid", "文件附加信息无效。");
+            }
+            total += entry.getKey().length() + entry.getValue().length();
+        }
         if (attributes.size() > MAX_ATTRIBUTES || total > MAX_ATTRIBUTE_LENGTH) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST, "storage-attributes-too-large", "文件附加信息过大。");

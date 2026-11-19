@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
@@ -29,6 +30,7 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StorageService {
@@ -124,10 +126,16 @@ public class StorageService {
                 return Mono.error(new ApiException(
                         HttpStatus.CONFLICT, "storage-file-state-invalid", "只有回收站中的文件可以彻底删除。"));
             }
-            return driverResolver
-                    .driver(file.getSpec().getPolicy())
-                    .flatMap(driver -> driver.delete(List.of(file.getSpec().getStorageKey())))
-                    .then(Mono.defer(() -> fileService.delete(file)));
+            // 先按版本删除记录，恢复操作抢先成功时对象不会被删除
+            return fileService
+                    .delete(file)
+                    .then(Mono.defer(() -> driverResolver.driver(file.getSpec().getPolicy())))
+                    .flatMap(driver -> driver
+                            .delete(List.of(file.getSpec().getStorageKey()))
+                            .onErrorResume(error -> {
+                                log.warn("彻底删除存储对象失败 [{}]", file.getSpec().getStorageKey(), error);
+                                return Mono.empty();
+                            }));
         });
     }
 

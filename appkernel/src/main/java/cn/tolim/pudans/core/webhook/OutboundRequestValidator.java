@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -19,8 +20,14 @@ public class OutboundRequestValidator {
             Set.of("host", "authorization", "cookie", "set-cookie", "content-length", "transfer-encoding",
                     "connection", "upgrade", "proxy-authorization", "proxy-connection", "te", "trailer");
 
+    private static final Pattern IPV4_LITERAL = Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3}");
+
     private static final Set<String> FORBIDDEN_HOSTS =
             Set.of("localhost", "localhost.localdomain", "metadata", "metadata.google.internal");
+
+    public static boolean isForbiddenHost(String host) {
+        return host != null && FORBIDDEN_HOSTS.contains(host.toLowerCase(Locale.ROOT));
+    }
 
     public static boolean isBlocked(InetAddress address) {
         if (address == null) {
@@ -56,6 +63,26 @@ public class OutboundRequestValidator {
         return false;
     }
 
+    public static String stripBrackets(String host) {
+        if (host != null && host.startsWith("[") && host.endsWith("]")) {
+            return host.substring(1, host.length() - 1);
+        }
+        return host;
+    }
+
+    public static boolean isIpLiteral(String host) {
+        return host != null && (host.indexOf(':') >= 0 || IPV4_LITERAL.matcher(host).matches());
+    }
+
+    // 无法解析的字面量按不可路由处理，宁可拒绝。
+    public static boolean isBlockedLiteral(String host) {
+        try {
+            return isBlocked(InetAddress.getByName(host));
+        } catch (UnknownHostException e) {
+            return true;
+        }
+    }
+
     private static URI parse(String url) {
         if (!StringUtils.hasText(url)) {
             throw new IllegalArgumentException("Webhook URL 不能为空。");
@@ -77,7 +104,7 @@ public class OutboundRequestValidator {
         if (!StringUtils.hasText(host)) {
             throw new IllegalArgumentException("Webhook URL 必须包含主机名。");
         }
-        if (FORBIDDEN_HOSTS.contains(host.toLowerCase(Locale.ROOT))) {
+        if (isForbiddenHost(host)) {
             throw new IllegalArgumentException("不允许使用 Webhook 目标 [" + host + "]。");
         }
         InetAddress[] addresses;

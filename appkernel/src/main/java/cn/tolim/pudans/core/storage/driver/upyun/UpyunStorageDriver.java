@@ -44,6 +44,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
 
+    private static final long TEMP_SPACE_RESERVE = 64L * 1024 * 1024;
+
     private final StoragePolicy policy;
 
     private final UpYun client;
@@ -127,6 +129,7 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
         return Mono.fromCallable(() -> {
                     var object = statBlocking(key);
                     var total = object.size();
+                    ensureTempSpace(total);
                     var temp = Files.createTempFile(tempDirectory, ".download-", ".tmp");
                     try {
                         var success = client.readFile(key, temp.toFile());
@@ -154,6 +157,25 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorMap(UpException.class, this::mapError)
                 .onErrorMap(IOException.class, this::ioError);
+    }
+
+    // 临时盘容不下整份对象时直接拒绝，避免 Range 下载写满磁盘。
+    private void ensureTempSpace(long total) {
+        try {
+            Files.createDirectories(tempDirectory);
+            var usable = Files.getFileStore(tempDirectory).getUsableSpace();
+            if (total > Math.max(0L, usable - TEMP_SPACE_RESERVE)) {
+                throw new ApiException(
+                        HttpStatus.INSUFFICIENT_STORAGE,
+                        "storage-temp-space-insufficient",
+                        "临时存储空间不足，无法下载该文件。");
+            }
+        } catch (IOException e) {
+            throw new ApiException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "storage-temp-space-unknown",
+                    "无法检测临时存储空间。");
+        }
     }
 
     @Override
