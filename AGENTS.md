@@ -90,6 +90,9 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | Path | Purpose |
 | --- | --- |
 | `appkernel/` | Backend core: identity, permissions and the extension mechanism |
+| `appkernel/src/main/java/cn/tolim/pudans/contract/core/extension/ai/` | AI extension resources: providers, accounts, models, route groups, chat modes, teams, agents, memory prompts and knowledge bases |
+| `appkernel/src/main/java/cn/tolim/pudans/core/ai/` | AI kernel: provider adapters, routing, gateway, memory, RAG, wallet and team services |
+| `appkernel/src/main/java/cn/tolim/pudans/infra/r2dbc/ai/` | AI R2DBC data access for conversations, gateway sessions, wallets, memory, tasks and knowledge-base chunks |
 | `appkernel/src/main/resources/extensions/` | YAML source of truth for roles, permissions, workspaces and menus; see `.agents/rules/extensions.md` |
 | `api-docs/` | OpenAPI aggregation and validation, no business code |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
