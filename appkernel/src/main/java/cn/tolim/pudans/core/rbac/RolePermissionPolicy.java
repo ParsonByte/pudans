@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -38,27 +40,16 @@ public class RolePermissionPolicy {
     private final PermissionCatalogService permissionCatalogService;
 
     public Mono<Void> checkCreate(Role requested) {
-        return actorContext().flatMap(actor -> {
-            if (actor.superRole()) {
-                return Mono.empty();
-            }
-            return Mono.zip(
-                            requestedPermissions(requested),
-                            grantedPermissions(actor.roleNames(), null))
-                    .flatMap(permissions -> validate(permissions.getT1(), permissions.getT2()));
-        });
+        return actorContext()
+                .flatMap(actor -> validateAggregateLabels(actor, requested)
+                        .then(checkRequestedPermissions(actor, requested, null)));
     }
 
     public Mono<Void> checkUpdate(Role requested) {
         return actorContext().flatMap(actor -> {
-            if (actor.superRole()) {
-                return Mono.empty();
-            }
             var name = requested.getMetadata() == null ? null : requested.getMetadata().getName();
-            return Mono.zip(
-                            requestedPermissions(requested),
-                            grantedPermissions(actor.roleNames(), name))
-                    .flatMap(permissions -> validate(permissions.getT1(), permissions.getT2()));
+            return validateAggregateLabels(actor, requested)
+                    .then(checkRequestedPermissions(actor, requested, name));
         });
     }
 
@@ -77,6 +68,45 @@ public class RolePermissionPolicy {
                             grantedPermissions(actor.roleNames(), null))
                     .flatMap(permissions -> validate(permissions.getT1(), permissions.getT2()));
         });
+    }
+
+    private Mono<Void> checkRequestedPermissions(ActorContext actor, Role requested, String existingRoleName) {
+        if (actor.superRole()) {
+            return Mono.empty();
+        }
+        return Mono.zip(
+                        requestedPermissions(requested),
+                        grantedPermissions(actor.roleNames(), existingRoleName))
+                .flatMap(permissions -> validate(permissions.getT1(), permissions.getT2()));
+    }
+
+    private Mono<Void> validateAggregateLabels(ActorContext actor, Role requested) {
+        var targets = aggregateTargets(requested);
+        if (targets.isEmpty()) {
+            return Mono.empty();
+        }
+        // 聚合标签让目标角色的持有人继承本角色的全部规则，只允许超级管理员设置
+        if (!actor.superRole()) {
+            return Mono.error(denied("只有超级管理员可以设置角色聚合标签。"));
+        }
+        return Flux.fromIterable(targets)
+                .concatMap(target -> client.fetch(Role.class, target)
+                        .switchIfEmpty(Mono.error(
+                                denied("角色聚合标签的目标角色 [" + target + "] 不存在。"))))
+                .then();
+    }
+
+    private static Set<String> aggregateTargets(Role role) {
+        if (role == null || role.getMetadata() == null) {
+            return Set.of();
+        }
+        return MetadataUtil.nullSafeLabels(role).entrySet().stream()
+                .filter(entry -> Boolean.parseBoolean(entry.getValue()))
+                .map(Map.Entry::getKey)
+                .filter(key -> key.startsWith(Role.ROLE_AGGREGATE_LABEL_PREFIX))
+                .map(key -> key.substring(Role.ROLE_AGGREGATE_LABEL_PREFIX.length()))
+                .filter(StringUtils::isNotBlank)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private Mono<ActorContext> actorContext() {
@@ -207,7 +237,11 @@ public class RolePermissionPolicy {
     }
 
     private static AccessDeniedException denied() {
-        return new AccessDeniedException("不能授予超出当前账号权限范围的角色权限。");
+        return denied("不能授予超出当前账号权限范围的角色权限。");
+    }
+
+    private static AccessDeniedException denied(String message) {
+        return new AccessDeniedException(message);
     }
 
     private record ActorContext(Set<String> roleNames, boolean superRole) {}

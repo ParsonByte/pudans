@@ -224,6 +224,65 @@ class RolePermissionPolicyTest {
     }
 
     @Test
+    void createRoleWithAggregateLabelIsRejectedForNonSuperActor() {
+        var actor = role(
+                "limited-manager",
+                List.of(rule(new String[] {"api.pudans.tolim.cn"}, new String[] {"roles"}, new String[] {"update"})));
+        var requested = withAggregateLabel(
+                role("existing-role", List.of(rule(new String[] {"*"}, new String[] {"*"}, new String[] {"*"}))),
+                "limited-manager");
+        stubRoles(actor);
+
+        StepVerifier.create(withActor(policy.checkCreate(requested), "limited-manager"))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("聚合标签");
+                })
+                .verify();
+    }
+
+    @Test
+    void updateRoleWithAggregateLabelIsRejectedForNonSuperActor() {
+        var actor = role(
+                "limited-manager",
+                List.of(rule(new String[] {"api.pudans.tolim.cn"}, new String[] {"roles"}, new String[] {"update"})));
+        var existing = role(
+                "existing-role",
+                List.of(rule(new String[] {"*"}, new String[] {"*"}, new String[] {"*"})));
+        var requested = withAggregateLabel(existing, "limited-manager");
+        stubRoles(actor, existing);
+
+        StepVerifier.create(withActor(policy.checkUpdate(requested), "limited-manager"))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("聚合标签");
+                })
+                .verify();
+    }
+
+    @Test
+    void createRoleWithMissingAggregateTargetIsRejected() {
+        var requested = withAggregateLabel(role("new-role", List.of()), "missing-role");
+        when(client.fetch(Role.class, "missing-role")).thenReturn(Mono.empty());
+
+        StepVerifier.create(withActor(policy.checkCreate(requested), "super-role"))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("不存在");
+                })
+                .verify();
+    }
+
+    @Test
+    void createRoleWithExistingAggregateTargetPasses() {
+        var requested = withAggregateLabel(role("new-role", List.of()), "existing-role");
+        when(client.fetch(Role.class, "existing-role")).thenReturn(Mono.just(role("existing-role", List.of())));
+
+        StepVerifier.create(withActor(policy.checkCreate(requested), "super-role"))
+                .verifyComplete();
+    }
+
+    @Test
     void grantRoleWithinActorPermissionsPasses() {
         var actor = role(
                 "limited-manager",
@@ -307,6 +366,16 @@ class RolePermissionPolicyTest {
         annotations.put(
                 Role.ROLE_DEPENDENCIES_ANNO, JsonUtils.objectToJson(Arrays.asList(dependencies)));
         role.getMetadata().setAnnotations(annotations);
+        return role;
+    }
+
+    private static Role withAggregateLabel(Role role, String targetRoleName) {
+        var labels = new HashMap<String, String>();
+        if (role.getMetadata().getLabels() != null) {
+            labels.putAll(role.getMetadata().getLabels());
+        }
+        labels.put(Role.ROLE_AGGREGATE_LABEL_PREFIX + targetRoleName, Boolean.TRUE.toString());
+        role.getMetadata().setLabels(labels);
         return role;
     }
 
