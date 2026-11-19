@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AiConsolePage } from "@/modules/workspace/ai";
+import { ModelMarketView } from "@/modules/workspace/ai/market";
 
 export const Route = createFileRoute("/_authenticated/_workspace/(ai)/ai/models/market")({
-  component: AiConsolePage,
+  component: ModelMarketView,
 });
