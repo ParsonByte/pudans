@@ -4,12 +4,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
+import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.chat.AiChatCompletionResult;
 import cn.tolim.pudans.core.ai.chat.AiChatService;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.chat.AiChatStreamEvent;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.rag.Citation;
+import cn.tolim.pudans.core.storage.StorageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -19,8 +23,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -33,12 +40,15 @@ class AiChatEndpointTest {
     @Mock
     AiEndpointRequests requests;
 
+    @Mock
+    StorageService storageService;
+
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         when(requests.userId(any(), anyString(), anyString())).thenReturn(Mono.just("user-1"));
-        var endpoint = new AiChatEndpoint(chatService, requests, new ObjectMapper());
+        var endpoint = new AiChatEndpoint(chatService, requests, storageService, new ObjectMapper());
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(principal())).build()))
@@ -100,6 +110,76 @@ class AiChatEndpointTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .exchange()
                 .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void uploadsAnImageAttachment() {
+        when(storageService.upload(any())).thenReturn(Mono.just(storageFile()));
+        var builder = new MultipartBodyBuilder();
+        builder.part("file", new ByteArrayResource(new byte[] {1, 2, 3}))
+                .filename("image.png")
+                .contentType(MediaType.IMAGE_PNG);
+
+        client.post()
+                .uri("/chats/-/attachments")
+                .body(BodyInserters.fromMultipartData(builder.build()))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.fileId").isEqualTo("file-1")
+                .jsonPath("$.name").isEqualTo("image.png")
+                .jsonPath("$.contentType").isEqualTo("image/png")
+                .jsonPath("$.size").isEqualTo(3)
+                .jsonPath("$.type").isEqualTo("IMAGE");
+    }
+
+    @Test
+    void uploadsADocumentAttachment() {
+        when(storageService.upload(any())).thenReturn(Mono.just(storageFile("notes.pdf", "application/pdf")));
+        var builder = new MultipartBodyBuilder();
+        builder.part("file", new ByteArrayResource(new byte[] {1, 2, 3}))
+                .filename("notes.pdf")
+                .contentType(MediaType.APPLICATION_PDF);
+
+        client.post()
+                .uri("/chats/-/attachments")
+                .body(BodyInserters.fromMultipartData(builder.build()))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.name").isEqualTo("notes.pdf")
+                .jsonPath("$.contentType").isEqualTo("application/pdf")
+                .jsonPath("$.type").isEqualTo("DOCUMENT");
+    }
+
+    @Test
+    void rejectsAnUnsafeAttachment() {
+        var builder = new MultipartBodyBuilder();
+        builder.part("file", new ByteArrayResource("<html></html>".getBytes()))
+                .filename("page.html")
+                .contentType(MediaType.TEXT_HTML);
+
+        client.post()
+                .uri("/chats/-/attachments")
+                .body(BodyInserters.fromMultipartData(builder.build()))
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    private static StorageFile storageFile() {
+        return storageFile("image.png", "image/png");
+    }
+
+    private static StorageFile storageFile(String name, String contentType) {
+        var file = new StorageFile();
+        var metadata = new Metadata();
+        metadata.setName("file-1");
+        file.setMetadata(metadata);
+        file.getSpec().setOriginalName(name);
+        file.getSpec().setContentType(contentType);
+        file.getSpec().setSize(3);
+        file.getSpec().setState(StorageFileState.ACTIVE);
+        return file;
     }
 
     private static Principal principal() {

@@ -31,6 +31,7 @@ import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseAcl;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalService;
 import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.storage.StorageService;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
@@ -86,6 +87,9 @@ class AiChatServiceMemoryTaskTest {
     @Mock
     MemoryTaskScheduler memoryTaskScheduler;
 
+    @Mock
+    StorageService storageService;
+
     private AiChatService service;
 
     @BeforeEach
@@ -101,7 +105,8 @@ class AiChatServiceMemoryTaskTest {
                 embeddingService,
                 memoryContextBuilder,
                 gatewayService,
-                memoryTaskScheduler);
+                memoryTaskScheduler,
+                storageService);
     }
 
     @Test
@@ -130,7 +135,7 @@ class AiChatServiceMemoryTaskTest {
                 new AiGatewayEvent.Meta(gatewayMeta()),
                 new AiGatewayEvent.Done("21", "stop", false)));
         when(conversationService.appendAssistantMessage(
-                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any()))
+                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
 
@@ -180,7 +185,8 @@ class AiChatServiceMemoryTaskTest {
         when(teamService.requireAgent("default", "user-1")).thenReturn(Mono.just(agent()));
         when(conversationService.createOrGet(any())).thenReturn(Mono.just(conversation()));
         when(memoryContextBuilder.build(any(), anyString(), anyInt(), anyInt())).thenReturn(Mono.empty());
-        when(conversationService.appendUserMessage(any(), anyInt(), anyInt(), anyString(), anyString()))
+        when(conversationService.appendUserMessage(
+                        any(), anyInt(), anyInt(), anyString(), anyString(), any()))
                 .thenReturn(Mono.just(userMessage()));
         when(conversationService.markPending(any(), anyInt())).thenReturn(Mono.just(2));
     }

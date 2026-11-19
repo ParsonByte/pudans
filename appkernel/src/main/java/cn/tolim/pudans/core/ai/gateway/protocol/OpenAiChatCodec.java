@@ -332,7 +332,14 @@ public final class OpenAiChatCodec implements AiProtocolCodec {
                 block.put("type", "file");
                 var fileNode = block.putObject("file");
                 if (file.data() != null) {
-                    fileNode.put("file_data", file.data());
+                    var data = file.data();
+                    if (!data.startsWith("data:")) {
+                        var mediaType = file.mediaType() == null
+                                ? "application/octet-stream"
+                                : file.mediaType();
+                        data = "data:" + mediaType + ";base64," + data;
+                    }
+                    fileNode.put("file_data", data);
                 }
                 if (file.fileId() != null) {
                     fileNode.put("file_id", file.fileId());

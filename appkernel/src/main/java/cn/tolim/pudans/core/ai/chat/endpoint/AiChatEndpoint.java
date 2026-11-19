@@ -4,27 +4,41 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
+import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
 import cn.tolim.pudans.core.ai.chat.AiChatCommand;
 import cn.tolim.pudans.core.ai.chat.AiChatCompletionRequest;
 import cn.tolim.pudans.core.ai.chat.AiChatCompletionResult;
 import cn.tolim.pudans.core.ai.chat.AiChatService;
 import cn.tolim.pudans.core.ai.chat.AiChatStreamEvent;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
+import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.upload.StorageWriteRequest;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
+import org.springframework.core.io.buffer.DataBufferLimitException;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.codec.multipart.FilePart;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -35,9 +49,24 @@ public class AiChatEndpoint implements CustomEndpoint {
 
     private static final String CODE_BODY_INVALID = "ai-chat-request-invalid";
 
+    private static final String CODE_ATTACHMENT_INVALID = "ai-chat-attachment-invalid";
+
+    private static final int MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+
+    private static final Set<String> UNSAFE_TYPES = Set.of(
+            "text/html",
+            "application/xhtml+xml",
+            "image/svg+xml",
+            "text/javascript",
+            "application/javascript");
+
+    private static final String ATTACHMENT_MODULE = "ai-chat";
+
     private final AiChatService chatService;
 
     private final AiEndpointRequests requests;
+
+    private final StorageService storageService;
 
     private final ObjectMapper mapper;
 
@@ -55,6 +84,16 @@ public class AiChatEndpoint implements CustomEndpoint {
                         .description("Run a streaming chat completion over SSE.")
                         .tag(TAG)
                         .requestBody(requestBodyBuilder().required(true).implementation(AiChatCompletionRequest.class))
+                        .response(responseBuilder()))
+                .POST("/chats/-/attachments", this::uploadAttachment, builder -> builder
+                        .operationId("uploadChatAttachment")
+                        .description("Upload a multimodal attachment for a chat message.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementation(AttachmentView.class)))
+                .GET("/chats/-/attachments/{name}", this::attachmentContent, builder -> builder
+                        .operationId("getChatAttachmentContent")
+                        .description("Download an attachment owned by the current user.")
+                        .tag(TAG)
                         .response(responseBuilder()))
                 .build();
     }
@@ -74,6 +113,153 @@ public class AiChatEndpoint implements CustomEndpoint {
                     .body(body, String.class);
         });
     }
+
+    private Mono<ServerResponse> uploadAttachment(ServerRequest request) {
+        return requests
+                .userId(request, "ai-chat-unauthenticated", "未认证。")
+                .flatMap(userId -> request.multipartData().flatMap(parts -> {
+                    var part = parts.getFirst("file");
+                    if (!(part instanceof FilePart filePart)) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST, CODE_ATTACHMENT_INVALID, "缺少附件文件。"));
+                    }
+                    var contentType = filePart.headers().getContentType();
+                    var mediaType = contentType == null ? "application/octet-stream" : contentType.toString();
+                    if (UNSAFE_TYPES.contains(mediaType)) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST,
+                                CODE_ATTACHMENT_INVALID,
+                                "不支持上传该类型的附件。"));
+                    }
+                    var fileName = StringUtils.hasText(filePart.filename())
+                            ? filePart.filename()
+                            : "image";
+                    return DataBufferUtils.join(filePart.content(), MAX_ATTACHMENT_BYTES + 1)
+                            .switchIfEmpty(Mono.error(new ApiException(
+                                    HttpStatus.BAD_REQUEST, CODE_ATTACHMENT_INVALID, "附件内容为空。")))
+                            .onErrorMap(
+                                    DataBufferLimitException.class,
+                                    error -> attachmentTooLarge())
+                            .flatMap(buffer -> {
+                                var size = buffer.readableByteCount();
+                                if (size > MAX_ATTACHMENT_BYTES) {
+                                    DataBufferUtils.release(buffer);
+                                    return Mono.error(attachmentTooLarge());
+                                }
+                                var bytes = new byte[size];
+                                buffer.read(bytes);
+                                DataBufferUtils.release(buffer);
+                                return storageService
+                                        .upload(new StorageWriteRequest(
+                                                null,
+                                                userId,
+                                                ATTACHMENT_MODULE,
+                                                null,
+                                                fileName,
+                                                mediaType,
+                                                size,
+                                                Map.of("purpose", "chat-attachment"),
+                                                Flux.just(DefaultDataBufferFactory.sharedInstance.wrap(bytes)),
+                                                false))
+                                        .map(file -> new AttachmentView(
+                                                file.getMetadata().getName(),
+                                                file.getSpec().getOriginalName(),
+                                                file.getSpec().getContentType(),
+                                                file.getSpec().getSize(),
+                                                attachmentType(file.getSpec().getContentType())));
+                            });
+                }))
+                .flatMap(view -> ServerResponse.ok().bodyValue(view));
+    }
+
+    private Mono<ServerResponse> attachmentContent(ServerRequest request) {
+        var name = request.pathVariable("name");
+        return requests
+                .userId(request, "ai-chat-unauthenticated", "未认证。")
+                .flatMap(userId -> storageService
+                        .getFile(name)
+                        .filter(file -> userId.equals(file.getSpec().getOwner()))
+                        .switchIfEmpty(Mono.error(attachmentNotFound()))
+                        .filter(file -> file.getSpec().getState() == StorageFileState.ACTIVE)
+                        .switchIfEmpty(Mono.error(attachmentNotFound()))
+                        .flatMap(file -> storageService
+                                .readBytes(name, MAX_ATTACHMENT_BYTES)
+                                .flatMap(bytes -> {
+                                    var mediaType = contentType(file);
+                                    var inline = isInline(mediaType);
+                                    return ServerResponse.ok().headers(headers -> {
+                                        headers.setContentType(
+                                                inline ? mediaType : MediaType.APPLICATION_OCTET_STREAM);
+                                        if (!inline) {
+                                            headers.setContentDisposition(ContentDisposition.attachment()
+                                                    .filename(
+                                                            file.getSpec().getOriginalName(),
+                                                            StandardCharsets.UTF_8)
+                                                    .build());
+                                        }
+                                    }).bodyValue(bytes);
+                                })));
+    }
+
+    private static ApiException attachmentTooLarge() {
+        return new ApiException(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                CODE_ATTACHMENT_INVALID,
+                "附件不能超过 25 MB。");
+    }
+
+    private static ApiException attachmentNotFound() {
+        return new ApiException(
+                HttpStatus.NOT_FOUND, "ai-chat-attachment-not-found", "附件不存在。");
+    }
+
+    private static MediaType contentType(StorageFile file) {
+        var value = file.getSpec().getContentType();
+        if (!StringUtils.hasText(value)) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+        try {
+            return MediaType.parseMediaType(value);
+        } catch (IllegalArgumentException error) {
+            return MediaType.APPLICATION_OCTET_STREAM;
+        }
+    }
+
+    private static boolean isInline(MediaType mediaType) {
+        return switch (mediaType.getType()) {
+            case "image" -> !"svg+xml".equals(mediaType.getSubtype());
+            case "video", "audio" -> true;
+            default -> false;
+        };
+    }
+
+    private static String attachmentType(@Nullable String contentType) {
+        if (!StringUtils.hasText(contentType)) {
+            return "FILE";
+        }
+        var type = contentType.toLowerCase();
+        if (type.startsWith("image/")) {
+            return "IMAGE";
+        }
+        if (type.startsWith("video/")) {
+            return "VIDEO";
+        }
+        if (type.startsWith("audio/")) {
+            return "AUDIO";
+        }
+        if (type.startsWith("text/")
+                || type.startsWith("application/pdf")
+                || type.startsWith("application/msword")
+                || type.startsWith("application/vnd.openxmlformats")
+                || type.startsWith("application/vnd.ms-")
+                || type.startsWith("application/json")) {
+            return "DOCUMENT";
+        }
+        return "FILE";
+    }
+
+    public record AttachmentView(
+            String fileId, String name, String contentType, long size, String type) {}
 
     private Mono<AiChatCommand> command(ServerRequest request) {
         return requests
