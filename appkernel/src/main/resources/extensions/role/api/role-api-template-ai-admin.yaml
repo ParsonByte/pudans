@@ -32,6 +32,7 @@ rules:
       - "memoryrecords/export"
       - "aiproviders"
       - "aiproviders/test"
+      - "aigenerations"
       - "aiprovideraccounts"
       - "aiprovideraccounts/test"
       - "aiprovideraccounts/quota"

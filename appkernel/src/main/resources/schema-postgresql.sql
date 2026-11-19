@@ -316,6 +316,55 @@ CREATE INDEX IF NOT EXISTS idx_ai_chat_request_account ON ai_chat_request (selec
 @
 CREATE INDEX IF NOT EXISTS idx_ai_chat_request_status ON ai_chat_request (status, created_at);
 @
+CREATE TABLE IF NOT EXISTS ai_model_request (
+    id BIGSERIAL PRIMARY KEY,
+    request_id VARCHAR(64) NOT NULL UNIQUE,
+    space_id VARCHAR(64) NOT NULL DEFAULT 'default',
+    user_id VARCHAR(128) NOT NULL,
+    team_id VARCHAR(128),
+    agent_id VARCHAR(128),
+    session_id VARCHAR(256),
+    idempotency_key VARCHAR(64) NOT NULL,
+    route_group VARCHAR(64),
+    model_type VARCHAR(16) NOT NULL,
+    capability VARCHAR(32) NOT NULL,
+    selected_provider VARCHAR(64),
+    selected_account VARCHAR(128),
+    selected_model VARCHAR(128),
+    tier VARCHAR(16),
+    status VARCHAR(16) NOT NULL DEFAULT 'RUNNING',
+    error_code VARCHAR(64),
+    error_message VARCHAR(1024),
+    provider_task_id VARCHAR(256),
+    input_tokens INT,
+    cache_tokens INT,
+    output_tokens INT,
+    image_count INT,
+    video_seconds INT,
+    audio_seconds INT,
+    speech_characters INT,
+    task_count INT,
+    hold_points NUMERIC(12,2),
+    points NUMERIC(12,2),
+    billing_source VARCHAR(16),
+    billing_status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+    latency_ms INT,
+    usage_source VARCHAR(16),
+    upstream_request_id VARCHAR(128),
+    request_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    result_payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+    route_trace JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    UNIQUE (space_id, user_id, idempotency_key)
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_model_request_user ON ai_model_request (user_id, created_at DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_model_request_model ON ai_model_request (selected_model, created_at DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_model_request_status ON ai_model_request (status, created_at);
+@
 -- Agent 网关会话绑定
 CREATE TABLE IF NOT EXISTS ai_gateway_session (
     id BIGSERIAL PRIMARY KEY,

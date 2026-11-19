@@ -50,6 +50,12 @@ public class AiStatsEndpoint implements CustomEndpoint {
                         .description("Knowledge base document, chunk and query counts.")
                         .tag(TAG)
                         .response(responseBuilder().implementation(KnowledgeBaseStatsRow.class)))
+                .GET("/aistats/-/models", this::models, builder -> builder
+                        .operationId("getAiModelStats")
+                        .description("Model request counts, points and media units by model and capability.")
+                        .tag(TAG)
+                        .parameter(daysParameter())
+                        .response(responseBuilder().implementation(AiStatsService.ModelStats.class)))
                 .build();
     }
 
@@ -69,6 +75,11 @@ public class AiStatsEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> knowledgeBase(ServerRequest request) {
         return statsService.knowledgeBase().flatMap(stats -> ServerResponse.ok().bodyValue(stats));
+    }
+
+    private Mono<ServerResponse> models(ServerRequest request) {
+        return statsService.models(days(request))
+                .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
     }
 
     private static int days(ServerRequest request) {

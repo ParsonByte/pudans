@@ -13,8 +13,10 @@ import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
 import cn.tolim.pudans.core.ai.embedding.EmbeddingBatch;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
+import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
 import cn.tolim.pudans.core.ai.provider.AiProviderAdapter;
 import cn.tolim.pudans.core.ai.provider.AiProviderAdapterRegistry;
+import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,20 +41,27 @@ class AiProviderEndpointTest {
     @Mock
     AiEmbeddingService embeddingService;
 
+    @Mock
+    AiModelAdapterRegistry modelAdapters;
+
+    @Mock
+    AiProviderAccountService accountService;
+
     private WebTestClient webClient;
 
     @BeforeEach
     void setUp() {
         when(adapter.protocol()).thenReturn(AiProvider.Protocol.OPENAI_CHAT);
         var registry = new AiProviderAdapterRegistry(List.of(adapter));
-        var endpoint = new AiProviderEndpoint(client, registry, embeddingService);
+        var endpoint =
+                new AiProviderEndpoint(client, registry, modelAdapters, embeddingService, accountService);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
     @Test
     void testsAProviderThroughItsFirstAccountAndModel() {
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider()));
-        when(client.listAll(eq(AiProviderAccount.class), any(), any())).thenReturn(Flux.just(account()));
+        when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account()));
         when(client.listAll(eq(AiModel.class), any(), any())).thenReturn(Flux.just(model()));
         when(adapter.chat(any(), any(), any(), any())).thenReturn(Mono.just(new AiChatResponse(
                 "resp-1", "gpt-test", new AiChatMessage("assistant", List.of()), null, "stop")));
