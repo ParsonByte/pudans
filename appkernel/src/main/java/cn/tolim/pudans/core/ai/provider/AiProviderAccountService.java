@@ -1,6 +1,10 @@
 package cn.tolim.pudans.core.ai.provider;
 
+import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -21,6 +25,13 @@ public class AiProviderAccountService {
 
     public Mono<AiProviderAccount> requireEnabled(String name) {
         return get(name).filter(account -> account.getSpec() != null && account.getSpec().isEnabled());
+    }
+
+    public Mono<AiProviderAccount> firstEnabled(String providerName) {
+        var options = ListOptions.builder().andQuery(equal("spec.provider", providerName)).build();
+        return client.listAll(AiProviderAccount.class, options, defaultSort())
+                .filter(account -> account.getSpec() != null && account.getSpec().isEnabled())
+                .next();
     }
 
     public Mono<String> apiKey(AiProviderAccount account) {

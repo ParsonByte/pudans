@@ -6,11 +6,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-final class AiProviderJsonSupport {
+public final class AiProviderJsonSupport {
 
     private AiProviderJsonSupport() {}
 
-    static String write(ObjectMapper mapper, JsonNode node, String protocol) {
+    public static String write(ObjectMapper mapper, JsonNode node, String protocol) {
         try {
             return mapper.writeValueAsString(node);
         } catch (JsonProcessingException error) {
@@ -18,7 +18,7 @@ final class AiProviderJsonSupport {
         }
     }
 
-    static String argumentsText(ObjectMapper mapper, JsonNode arguments, String protocol) {
+    public static String argumentsText(ObjectMapper mapper, JsonNode arguments, String protocol) {
         if (arguments == null || arguments.isNull()) {
             return "{}";
         }
@@ -28,7 +28,7 @@ final class AiProviderJsonSupport {
         return write(mapper, arguments, protocol);
     }
 
-    static JsonNode parseArguments(ObjectMapper mapper, String arguments) {
+    public static JsonNode parseArguments(ObjectMapper mapper, String arguments) {
         if (arguments == null) {
             return null;
         }
@@ -39,7 +39,7 @@ final class AiProviderJsonSupport {
         }
     }
 
-    static JsonNode parseArguments(ObjectMapper mapper, JsonNode arguments) {
+    public static JsonNode parseArguments(ObjectMapper mapper, JsonNode arguments) {
         if (arguments == null || !arguments.isTextual()) {
             return arguments;
         }

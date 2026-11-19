@@ -24,6 +24,8 @@ import cn.tolim.pudans.core.storage.upload.UploadStatus;
 import cn.tolim.pudans.core.storage.upload.UploadTicket;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -137,6 +139,12 @@ public class StorageService {
         return downloadService.open(fileId, options);
     }
 
+    public Mono<byte[]> readBytes(String fileId, int maxBytes) {
+        return open(fileId, StorageReadOptions.full())
+                .flatMap(result -> DataBufferUtils.join(result.body(), maxBytes))
+                .map(StorageService::toBytes);
+    }
+
     public Mono<StorageSource> sourceUrl(String fileId, StorageSourceOptions options) {
         return downloadService.sourceUrl(fileId, options);
     }
@@ -161,5 +169,15 @@ public class StorageService {
 
     public Mono<StorageTestResult> test(String policyName) {
         return driverResolver.test(policyName);
+    }
+
+    private static byte[] toBytes(DataBuffer buffer) {
+        try {
+            var bytes = new byte[buffer.readableByteCount()];
+            buffer.read(bytes);
+            return bytes;
+        } finally {
+            DataBufferUtils.release(buffer);
+        }
     }
 }

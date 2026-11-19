@@ -10,11 +10,11 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiRequestParams;
 import java.util.List;
 import java.util.Map;
 
-final class AiProviderAdapterTestFixtures {
+public final class AiProviderAdapterTestFixtures {
 
     private AiProviderAdapterTestFixtures() {}
 
-    static AiProvider provider(AiProvider.Protocol protocol) {
+    public static AiProvider provider(AiProvider.Protocol protocol) {
         var provider = new AiProvider();
         provider.getSpec().setDisplayName("upstream");
         provider.getSpec().setProtocol(protocol);
@@ -22,13 +22,13 @@ final class AiProviderAdapterTestFixtures {
         return provider;
     }
 
-    static AiProviderAccount account() {
+    public static AiProviderAccount account() {
         var account = new AiProviderAccount();
         account.getSpec().setProvider("upstream");
         return account;
     }
 
-    static AiModel model(String modelCode, Integer maxOutputTokens) {
+    public static AiModel model(String modelCode, Integer maxOutputTokens) {
         var model = new AiModel();
         model.getSpec().setProvider("upstream");
         model.getSpec().setModelCode(modelCode);
@@ -36,7 +36,7 @@ final class AiProviderAdapterTestFixtures {
         return model;
     }
 
-    static AiChatIr request() {
+    public static AiChatIr request() {
         return new AiChatIr(
                 List.of(new AiChatMessage("user", List.of(new AiContentPart.Text("hello", null)))),
                 List.of(),

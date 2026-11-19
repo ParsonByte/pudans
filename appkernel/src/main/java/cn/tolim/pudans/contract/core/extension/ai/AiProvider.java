@@ -37,6 +37,13 @@ public class AiProvider extends AbstractExtension {
         OPENAI_CHAT,
         OPENAI_RESPONSES,
         ANTHROPIC,
+        DEEPSEEK,
+        DEEPSEEK_CHAT,
+        DEEPSEEK_RESPONSES,
+        MINIMAX,
+        MINIMAX_CHAT,
+        MINIMAX_NATIVE,
+        MINIMAX_RESPONSES,
         GEMINI,
         OLLAMA,
         CUSTOM_HTTP

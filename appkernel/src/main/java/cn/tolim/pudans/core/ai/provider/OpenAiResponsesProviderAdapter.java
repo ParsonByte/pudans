@@ -9,11 +9,13 @@ import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
+import cn.tolim.pudans.core.ai.gateway.ir.AiRequestParams;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -60,7 +62,7 @@ public class OpenAiResponsesProviderAdapter extends AbstractAiProviderAdapter {
             AiProvider provider, AiProviderAccount account, AiModel model, AiChatIr request) {
         return Mono.defer(() -> {
             AiProviderConfigSupport.validate(provider);
-            return post(provider, account, RESPONSES_PATH, serialize(request, model, false), false)
+            return post(provider, account, path(), serialize(request, model, false), false)
                     .map(this::parseChatResponse);
         });
     }
@@ -70,7 +72,7 @@ public class OpenAiResponsesProviderAdapter extends AbstractAiProviderAdapter {
             AiProvider provider, AiProviderAccount account, AiModel model, AiChatIr request) {
         return Flux.defer(() -> {
             AiProviderConfigSupport.validate(provider);
-            return postStream(provider, account, RESPONSES_PATH, serialize(request, model, true))
+            return postStream(provider, account, path(), serialize(request, model, true))
                     .concatMap(data -> Mono.justOrEmpty(parseStreamEvent(data)));
         });
     }
@@ -87,11 +89,16 @@ public class OpenAiResponsesProviderAdapter extends AbstractAiProviderAdapter {
         return headers;
     }
 
-    String serialize(AiChatIr request, AiModel model, boolean stream) {
+    protected String path() {
+        return RESPONSES_PATH;
+    }
+
+    protected String serialize(AiChatIr request, AiModel model, boolean stream) {
         var prepared = AiProviderHttpSupport.withDefaultMaxTokens(
                 AiProviderHttpSupport.withModelAndStream(request, model, stream), maxOutputTokens(model));
         var params = prepared.requestParams();
         var root = mapper.createObjectNode();
+        writeExtras(root, params);
         if (params.model() != null) {
             root.put("model", params.model());
         }
@@ -171,7 +178,9 @@ public class OpenAiResponsesProviderAdapter extends AbstractAiProviderAdapter {
         };
     }
 
-    private void writeMessage(ArrayNode input, AiChatMessage message) {
+    protected void writeExtras(ObjectNode root, AiRequestParams params) {}
+
+    protected void writeMessage(ArrayNode input, AiChatMessage message) {
         for (var part : message.parts()) {
             if (part instanceof AiContentPart.ToolResult result) {
                 var item = input.addObject();
