@@ -10,5 +10,6 @@ rules:
       - "api.pudans.tolim.cn"
     resources:
       - "personalaccesstokens"
+      - "personalaccesstokens/actions"
     verbs:
       - "*"

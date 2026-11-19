@@ -10,8 +10,8 @@ rules:
       - "api.pudans.tolim.cn"
     resources:
       - "passkeys"
-      - "passkeys/registration/options"
-      - "passkeys/registration/verify"
+      - "passkeys/options"
+      - "passkeys/verify"
     verbs:
       - "create"
       - "get"
