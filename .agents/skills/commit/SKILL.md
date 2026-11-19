@@ -24,8 +24,8 @@ Turn a set of changes into one or more commits whose messages are single-line Co
    git branch --show-current
    git diff --stat
    git diff --staged --stat
-   git merge-base --is-ancestor origin/dev HEAD
-   git log --oneline origin/dev..HEAD
+   git merge-base --is-ancestor origin/main HEAD
+   git log --oneline origin/main..HEAD
    ```
 2. Confirm the work is coherent, belongs to the current task and is verified. Tests must pass first; see `.agents/rules/development.md`.
 3. If the change set contains multiple unrelated tasks, split it into separate commits. Do not collapse unrelated work into one commit without explicit approval.
