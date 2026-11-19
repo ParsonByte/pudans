@@ -21,11 +21,8 @@ public class CaptchaChallengeStore {
                 .then();
     }
 
-    public Mono<String> get(String challengeId) {
-        return redisTemplate.opsForValue().get(KEY_PREFIX + challengeId);
-    }
-
-    public Mono<Boolean> delete(String challengeId) {
-        return redisTemplate.delete(KEY_PREFIX + challengeId).map(count -> count > 0);
+    // 取值与删除在 Redis 端原子完成，保证验证码只能被消费一次
+    public Mono<String> take(String challengeId) {
+        return redisTemplate.opsForValue().getAndDelete(KEY_PREFIX + challengeId);
     }
 }
