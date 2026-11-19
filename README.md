@@ -1,50 +1,103 @@
-# Pudans
+<p align="center">
+  <img src="web/public/brand/icon-256.png" width="112" alt="Pudans">
+</p>
 
-Pudans 是一个企业身份与权限管理平台，内置 AI Console 与 AI 网关。
+<h1 align="center">Pudans</h1>
 
-它将响应式 Spring Boot 后端、以扩展资源（Extension Resource）描述的用户 / 角色 / 工作区 / 菜单 / AI 资源模型，以及用于统一操作身份、权限与 AI 流量的 React 控制台结合在一起。
+<p align="center">
+  <strong>Every identity. Every model. One platform.</strong>
+</p>
 
-## 核心能力
+<p align="center">
+  Users, roles, workspaces and permissions on one side. Providers, routing, gateways and conversations on the other.<br>
+  Pudans gives operators one console for both.
+</p>
 
-- **身份与权限**：用户、用户组、角色、权限、工作区、菜单、审计记录与风险规则。
-- **扩展资源**：角色、权限、工作区、菜单、AI 供应商、账号、模型、路由组与设置均以 YAML 资源声明，并由平台协调（reconcile）。
-- **AI Console**：供应商与账号管理、实时模型发现、模型广场、实时路由拓扑、面向对话模式的路由组，以及 OpenAI / Anthropic 兼容网关。
-- **对话工作区**：流式对话、思考过程、Markdown 渲染与多模态附件，全部基于真实 API。
-- **响应式优先**：WebFlux、Spring Security Reactive、Spring Data R2DBC、Redis 会话与缓存、虚拟线程。
+<p align="center">
+  <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue.svg"></a>
+  <img alt="Java 25" src="https://img.shields.io/badge/Java-25-orange.svg">
+  <img alt="Spring Boot 4.2" src="https://img.shields.io/badge/Spring_Boot-4.2-6DB33F.svg">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB.svg">
+  <img alt="PostgreSQL R2DBC" src="https://img.shields.io/badge/PostgreSQL-R2DBC-4169E1.svg">
+</p>
 
-## 技术栈
+<p align="center">
+  <a href="README.md"><strong>English</strong></a> · <a href="README.zh-CN.md">简体中文</a>
+</p>
 
-| 领域 | 技术 |
+<p align="center">
+  <a href="#quick-start">Quick start</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#ai-console">AI Console</a> ·
+  <a href="CONTRIBUTING.md">Contributing</a> ·
+  <a href="LICENSE">License</a>
+</p>
+
+## What is Pudans?
+
+Pudans is an enterprise identity and permission management platform with a built-in AI Console and AI gateway.
+
+It combines a reactive Spring Boot backend, an extension-resource model for users, roles, workspaces, menus and AI resources, and a React console for operating identity, permissions and AI traffic from one place.
+
+## Why Pudans
+
+- **Identity, not just login.** Users, groups, roles, permissions, workspaces, menus, audit records and risk rules share one extension-resource model.
+- **AI operations in the same console.** Register providers and accounts, discover models, route traffic across them and watch live requests without leaving the admin surface.
+- **Real conversations.** Streaming chat with reasoning, markdown and multimodal attachments, plus memory and retrieval backed by live APIs.
+- **Reactive from day one.** WebFlux, R2DBC and Redis keep the request path non-blocking; the React console ships inside the backend jar.
+
+## AI Console
+
+| Page | What it does |
 | --- | --- |
-| 后端 | Java 25、Spring Boot 4.2、WebFlux、Spring Security Reactive、Spring Data R2DBC |
-| 数据 | PostgreSQL、Redis |
-| 构建 | Gradle 多模块、版本目录（version catalog） |
-| 前端 | React 19、TypeScript 5.9、Vite 8、TanStack Router / Query、Tailwind CSS v4、shadcn/ui |
-| 接口文档 | OpenAPI，由 `api-docs` 模块校验 |
+| **Providers** | Provider and account management, protocol presets, brand icons, quotas and live model discovery. |
+| **Model market** | Browse and filter configured models by capability, author, input/output modality, context window and pricing. |
+| **Routing** | Live user → PUDANS → provider topology with animated flow edges, request history and route decisions. |
+| **Route groups** | Model members, weights, tiers and routing modes, mapped to the fast/pro chat modes. |
+| **Gateway** | OpenAI/Anthropic-compatible endpoints, PAT-based access, model list, recent calls and display limits. |
 
-## 仓库结构
+## Architecture
 
-| 路径 | 用途 |
+```text
+Browser / Agents
+       │
+       ▼
+┌──────────────────────────────────────────┐
+│ Pudans appkernel (Spring Boot / WebFlux) │
+│ identity · RBAC · workspaces · audit     │
+│ extension resources · AI kernel          │
+│ providers → routing → gateway → chat     │
+└──────────────────────────────────────────┘
+       │                          │
+       ▼                          ▼
+   PostgreSQL                    Redis
+```
+
+The backend owns identity, permission decisions, extension reconciliation, AI routing and conversations. The frontend is a React SPA built into the backend jar, so a single deployment serves both the console and the compatibility APIs.
+
+## Repository layout
+
+| Path | Purpose |
 | --- | --- |
-| `appkernel/` | 后端核心：身份、权限、扩展机制、AI 内核与 HTTP 接口 |
-| `appkernel/src/main/resources/extensions/` | 角色、权限、工作区、菜单与 AI 资源的 YAML 配置源 |
-| `api-docs/` | OpenAPI 聚合与校验 |
-| `platform/appkernel/` | 后端依赖约束（BOM） |
-| `gradle/libs.versions.toml` | 后端依赖版本目录 |
-| `web/` | React 控制台，构建后打包进后端 jar |
+| `appkernel/` | Backend core: identity, permissions, extension mechanism, AI kernel and HTTP endpoints |
+| `appkernel/src/main/resources/extensions/` | YAML source of truth for roles, permissions, workspaces, menus and AI resources |
+| `api-docs/` | OpenAPI aggregation and validation |
+| `platform/appkernel/` | Backend dependency constraints (BOM) |
+| `gradle/libs.versions.toml` | Backend dependency version catalog |
+| `web/` | React console, bundled into the backend jar |
 
-## 环境要求
+## Quick start
+
+### Requirements
 
 - JDK 25
-- Node.js 20.19 或更高版本，以及 npm
-- 可访问的 PostgreSQL 与 Redis
-- Docker（可选，便于启动依赖服务）
+- Node.js 20.19 or newer with npm
+- PostgreSQL and Redis
+- Docker, optional but handy for the two services
 
-Gradle 构建会安装前端依赖、构建 `web/`，再打包后端 jar。
+The Gradle build installs the frontend dependencies and builds `web/` before packaging the backend jar.
 
-## 快速开始
-
-### 1. 启动 PostgreSQL 与 Redis
+### 1. Start PostgreSQL and Redis
 
 ```bash
 docker run -d --name pudans-pgsql \
@@ -58,17 +111,17 @@ docker run -d --name pudans-pgsql \
 docker run -d --name pudans-redis -p 6379:6379 redis:latest
 ```
 
-默认配置与 `appkernel/src/main/resources/application.yaml` 一致。如果依赖服务使用其他地址，请通过下表中的环境变量覆盖。
+The defaults match `appkernel/src/main/resources/application.yaml`. Override them with the environment variables below when your services use different endpoints.
 
-### 2. 启动后端
+### 2. Run Pudans
 
 ```bash
 ./gradlew :appkernel:bootRun
 ```
 
-访问 http://localhost:8090。后端会提供构建后的 React 页面，在启动时创建或更新 PostgreSQL 表结构，并协调扩展资源。
+Open <http://localhost:8090>. The backend serves the built React app, creates or updates the PostgreSQL schema on startup and reconciles the extension resources.
 
-### 3. 启动前端开发服务器（可选）
+### 3. Frontend dev server (optional)
 
 ```bash
 cd web
@@ -76,38 +129,43 @@ npm install
 npm run dev
 ```
 
-Vite 会把 `/apis`、`/login` 和 `/logout` 代理到 `http://localhost:8090`，请先启动后端。
+Vite proxies `/apis`, `/login` and `/logout` to `http://localhost:8090`, so start the backend first.
 
-## 配置
+## Configuration
 
-后端使用标准 Spring Boot 配置，并支持以下环境变量：
+The backend reads standard Spring Boot configuration and the following environment variables:
 
-| 变量 | 默认值 | 用途 |
+<details>
+<summary>Environment variables</summary>
+
+| Variable | Default | Purpose |
 | --- | --- | --- |
-| `PUDANS_DB_URL` | `r2dbc:postgresql://localhost:5432/pudans` | PostgreSQL R2DBC 地址 |
-| `PUDANS_DB_USERNAME` | `pudans` | 数据库用户 |
-| `PUDANS_DB_PASSWORD` | `pudans` | 数据库密码 |
-| `PUDANS_REDIS_HOST` | `localhost` | Redis 地址 |
-| `PUDANS_REDIS_PORT` | `6379` | Redis 端口 |
-| `PUDANS_REDIS_PASSWORD` | 空 | Redis 密码 |
-| `PUDANS_REDIS_DATABASE` | `0` | Redis 数据库 |
-| `PUDANS_WORK_DIR` | `~/.pudans` | 日志与运行时工作目录 |
-| `PUDANS_AI_ENABLED` | `true` | 是否启用 AI 内核 |
-| `FEISHU_ENABLED` | `false` | 是否启用飞书登录与资料同步 |
-| `FEISHU_APP_ID` / `FEISHU_APP_SECRET` | 空 | 飞书 OAuth 凭据 |
-| `FEISHU_REDIRECT_URI` | `{baseUrl}/apis/api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu` | 飞书回调地址 |
-| `WEBAUTHN_RP_ID` | `localhost` | WebAuthn 依赖方 ID |
-| `WEBAUTHN_ORIGINS` | `http://localhost:8090` | 允许的 WebAuthn 来源 |
+| `PUDANS_DB_URL` | `r2dbc:postgresql://localhost:5432/pudans` | PostgreSQL R2DBC URL |
+| `PUDANS_DB_USERNAME` | `pudans` | Database user |
+| `PUDANS_DB_PASSWORD` | `pudans` | Database password |
+| `PUDANS_REDIS_HOST` | `localhost` | Redis host |
+| `PUDANS_REDIS_PORT` | `6379` | Redis port |
+| `PUDANS_REDIS_PASSWORD` | empty | Redis password |
+| `PUDANS_REDIS_DATABASE` | `0` | Redis database |
+| `PUDANS_WORK_DIR` | `~/.pudans` | Logs and runtime work directory |
+| `PUDANS_AI_ENABLED` | `true` | Enable the AI kernel |
+| `FEISHU_ENABLED` | `false` | Enable Feishu login and profile sync |
+| `FEISHU_APP_ID` / `FEISHU_APP_SECRET` | empty | Feishu OAuth credentials |
+| `FEISHU_REDIRECT_URI` | `{baseUrl}/apis/api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu` | Feishu callback URL |
+| `WEBAUTHN_RP_ID` | `localhost` | WebAuthn relying party ID |
+| `WEBAUTHN_ORIGINS` | `http://localhost:8090` | Allowed WebAuthn origins |
 
-使用 `--spring.profiles.active=dev` 可启用本地开发配置（`application-dev.yaml`），其中会开启 Basic Auth 与调试日志。
+</details>
 
-敏感信息应放在环境变量或本地配置中，禁止提交到仓库。
+Use `--spring.profiles.active=dev` for the local development profile (`application-dev.yaml`), which enables basic authentication and debug logging.
 
-## 构建与测试
+Secrets belong in environment variables or local configuration; never commit them.
+
+## Build and test
 
 ```bash
-./gradlew test                    # 后端测试，同时构建打包的前端
-./gradlew build                   # 后端与前端构建
+./gradlew test                    # backend tests, including the bundled web build
+./gradlew build                   # backend and web build
 ./gradlew :api-docs:validateOpenApiDocs
 ```
 
@@ -119,20 +177,20 @@ npm run typecheck
 npm run build
 ```
 
-`make verify` 会执行后端编译 / 测试 / OpenAPI 校验，以及 `git diff --check`。
+`make verify` runs the backend compile/test/OpenAPI gate plus `git diff --check`.
 
-## 参与贡献
+## Contributing
 
-提交 Pull Request 前请阅读 [CONTRIBUTING.md](CONTRIBUTING.md)。权威工程规范位于 [AGENTS.md](AGENTS.md) 与 [`.agents/rules`](.agents/rules)，Agent 技能位于 [`.agents/skills`](.agents/skills)。
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. The authoritative engineering rules live in [AGENTS.md](AGENTS.md) and [`.agents/rules`](.agents/rules); the agent skills are under [`.agents/skills`](.agents/skills).
 
-## 安全
+## Security
 
-请不要在公开 Issue 中报告安全漏洞。请私下联系仓库所有者，并提供复现步骤与受影响版本。禁止提交凭据、令牌、私钥或生产数据。
+Do not report security vulnerabilities in public issues. Contact the repository owner privately with reproduction steps and affected versions. Never commit credentials, tokens, private keys or production data.
 
-## 许可证
+## License
 
-Copyright (C) 2026 ParsonByte。
+Copyright (C) 2026 ParsonByte.
 
-Pudans 是自由软件：你可以依据自由软件基金会发布的 GNU 通用公共许可证第 3 版（或你选择的任何更新版本）的条款重新分发和 / 或修改它。
+Pudans is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
-Pudans 分发时希望它有用，但不提供任何担保，甚至不提供适销性或特定用途适用性的默示担保。详情见 [LICENSE](LICENSE) 中的 GNU 通用公共许可证原文；如有歧义，以英文原文为准。
+Pudans is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the [GNU General Public License](LICENSE) for more details.
