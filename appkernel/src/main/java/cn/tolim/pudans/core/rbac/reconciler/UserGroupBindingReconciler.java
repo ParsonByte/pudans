@@ -39,6 +39,12 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
 
         var bindingName = binding.getMetadata() == null ? null : binding.getMetadata().getName();
         if (superAdminResolver.isSuperAdminBindingName(bindingName)) {
+            // 名字与 roleRef 不一致即为伪造绑定，只能删除，修复等于把伪造对象升级为超管成员
+            if (!isSuperAdminsBinding(binding)) {
+                log.warn("超管绑定名 [{}] 未指向 super-admins 用户组，正在移除", bindingName);
+                deleteBinding(binding);
+                return Result.doNotRetry();
+            }
             reconcileSuperAdminBinding(binding);
             return Result.doNotRetry();
         }
@@ -81,13 +87,6 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
             binding.setSubjects(new LinkedList<>(List.of(UserGroupBinding.Subject.user(owner))));
             changed = true;
         }
-        var roleRef = binding.getRoleRef();
-        if (roleRef == null
-                || !UserGroup.KIND.equals(roleRef.getKind())
-                || !BuiltinEntities.SUPER_ADMINS_GROUP.equals(roleRef.getName())) {
-            binding.setRoleRef(UserGroupBinding.RoleRef.userGroup(BuiltinEntities.SUPER_ADMINS_GROUP));
-            changed = true;
-        }
         if (ExtensionUtil.addFinalizers(binding.getMetadata(), Set.of(MetadataUtil.SYSTEM_FINALIZER))) {
             changed = true;
         }
@@ -108,13 +107,20 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
                 && owner.equals(subjects.get(0).getName());
     }
 
+    private boolean isSuperAdminsBinding(UserGroupBinding binding) {
+        var roleRef = binding.getRoleRef();
+        return roleRef != null
+                && UserGroup.KIND.equals(roleRef.getKind())
+                && BuiltinEntities.SUPER_ADMINS_GROUP.equals(roleRef.getName());
+    }
+
     private boolean hasSuperAdminSubject(UserGroupBinding binding) {
         if (CollectionUtils.isEmpty(binding.getSubjects())) {
             return false;
         }
         return binding.getSubjects().stream()
                 .filter(subject -> User.KIND.equals(subject.getKind()))
-                .anyMatch(subject -> superAdminResolver.hasSuperAdminBindingBlocking(subject.getName()));
+                .anyMatch(subject -> superAdminResolver.hasCanonicalBindingBlocking(subject.getName()));
     }
 
     private void deleteBinding(UserGroupBinding binding) {

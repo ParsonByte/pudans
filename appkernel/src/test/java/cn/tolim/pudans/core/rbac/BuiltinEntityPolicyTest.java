@@ -107,10 +107,29 @@ class BuiltinEntityPolicyTest {
 
     private static UserGroupBinding membershipBinding(String username, String groupName) {
         var binding = UserGroupBinding.membership(username, groupName);
-        var metadata = new Metadata();
-        metadata.setName(BuiltinEntities.membershipBindingName(username, groupName));
-        binding.setMetadata(metadata);
+        binding.setMetadata(metadataNamed(BuiltinEntities.membershipBindingName(username, groupName)));
         return binding;
+    }
+
+    private static UserGroupBinding superAdminNamedBinding(String username, String groupName) {
+        var binding = UserGroupBinding.membership(username, groupName);
+        binding.setMetadata(metadataNamed(SuperAdminResolver.bindingName(username)));
+        return binding;
+    }
+
+    private static Metadata metadataNamed(String name) {
+        var metadata = new Metadata();
+        metadata.setName(name);
+        return metadata;
+    }
+
+    private static User userNamed(String name) {
+        var user = new User();
+        var metadata = new Metadata();
+        metadata.setName(name);
+        user.setMetadata(metadata);
+        user.setSpec(new User.UserSpec());
+        return user;
     }
 
     private static Role role(String name, String dependencies) {
@@ -327,6 +346,58 @@ class BuiltinEntityPolicyTest {
                 .expectErrorSatisfies(error -> {
                     assertThat(error).isInstanceOf(AccessDeniedException.class);
                     assertThat(error.getMessage()).contains("超级管理员用户组不可修改");
+                })
+                .verify();
+    }
+
+    @Test
+    void forgedSuperAdminBindingNameIsRejected() {
+        StepVerifier.create(policy.checkCreate(
+                        userGroupBindingGvk(), superAdminNamedBinding("mallory", "normal-users")))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("内置成员绑定");
+                })
+                .verify();
+    }
+
+    @Test
+    void superAdminBindingNameWithoutRoleRefIsRejected() {
+        var binding = new UserGroupBinding();
+        binding.setMetadata(metadataNamed(SuperAdminResolver.bindingName("mallory")));
+
+        StepVerifier.create(policy.checkCreate(userGroupBindingGvk(), binding))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("内置成员绑定");
+                })
+                .verify();
+    }
+
+    @Test
+    void creatingASuperAdminsMembershipRequiresAnExistingSuperAdmin() {
+        var binding = UserGroupBinding.membership("mallory", BuiltinEntities.SUPER_ADMINS_GROUP);
+        binding.setMetadata(metadataNamed(SuperAdminResolver.bindingName("mallory")));
+        when(client.fetch(User.class, "mallory")).thenReturn(Mono.just(userNamed("mallory")));
+        when(superAdminResolver.isCanonicalSuperAdmin("mallory")).thenReturn(Mono.just(false));
+
+        StepVerifier.create(policy.checkCreate(userGroupBindingGvk(), binding))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("只有已存在的超级管理员");
+                })
+                .verify();
+    }
+
+    @Test
+    void deletingASuperAdminsMembershipIsDenied() {
+        var binding = UserGroupBinding.membership("alice", BuiltinEntities.SUPER_ADMINS_GROUP);
+        binding.setMetadata(metadataNamed(SuperAdminResolver.bindingName("alice")));
+
+        StepVerifier.create(policy.checkBindingMutation(binding, true))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("不可更改");
                 })
                 .verify();
     }
