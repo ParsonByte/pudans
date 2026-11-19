@@ -1,0 +1,18 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: AiAgent
+metadata:
+  name: default
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    pudans.tolim.cn/do-not-overwrite: "true"
+spec:
+  team: default
+  ownerUserId: system
+  displayName: 默认 Agent
+  description: 未指定 Agent 时的默认作用域。
+  prompt: null
+  visibility: TEAM
+  status: ACTIVE
+  defaultRouteGroup: default
+  defaultChatMode: fast
+  metadata: {}

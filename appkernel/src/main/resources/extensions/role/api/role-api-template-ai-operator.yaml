@@ -1,0 +1,30 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-ai-operator
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 记忆管理员"
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-ai-user" ]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memoryrecords"
+      - "memoryrecords/pipeline"
+      - "memoryrequests"
+      - "orgmemories"
+      - "orgmemories/pending"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memoryrecords/freeze"
+      - "memoryrequests/approve"
+      - "memoryrequests/reject"
+    verbs:
+      - "create"

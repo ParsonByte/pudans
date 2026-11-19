@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import cn.tolim.pudans.contract.core.extension.RememberMeToken;
 import cn.tolim.pudans.contract.core.extension.Webhook;
+import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import tools.jackson.databind.json.JsonMapper;
@@ -17,6 +18,7 @@ final class SensitiveExtensionMixins {
         builder.addMixIn(RememberMeToken.Spec.class, RememberMeTokenSpecMixin.class);
         builder.addMixIn(Webhook.Spec.class, WebhookSpecMixin.class);
         builder.addMixIn(StoragePolicy.Credentials.class, StoragePolicyCredentialsMixin.class);
+        builder.addMixIn(AiProviderAccount.Spec.class, AiProviderAccountSpecMixin.class);
     }
 
     abstract static class UserSpecMixin {
@@ -59,5 +61,11 @@ final class SensitiveExtensionMixins {
 
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         abstract String getClientSecret();
+    }
+
+    abstract static class AiProviderAccountSpecMixin {
+
+        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+        abstract String getApiKey();
     }
 }

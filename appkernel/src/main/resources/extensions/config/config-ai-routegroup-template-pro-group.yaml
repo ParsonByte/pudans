@@ -1,0 +1,22 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: AiRouteGroup
+metadata:
+  name: pro-group
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    pudans.tolim.cn/do-not-overwrite: "true"
+spec:
+  displayName: 进阶路由组
+  routeMode: ORDER
+  defaultTier: AUTO
+  qualityThreshold: 0.6
+  affinity: AUTO
+  fallback: []
+  patienceSeconds: 60
+  firstTokenSeconds: 0
+  sink: false
+  contextMode: SMALLEST
+  rules: []
+  isDefault: false
+  enabled: true
+  members: []

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.tolim.pudans.contract.core.extension.RememberMeToken;
 import cn.tolim.pudans.contract.core.extension.Webhook;
+import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import org.junit.jupiter.api.Test;
@@ -81,5 +82,19 @@ class SensitiveExtensionMixinsTest {
         var written = mapper.readValue(
                 "{\"spec\":{\"credentials\":{\"accessKey\":\"access\"}}}", StoragePolicy.class);
         assertThat(written.getSpec().getCredentials().getAccessKey()).isEqualTo("access");
+    }
+
+    @Test
+    void aiProviderAccountKeyIsHiddenFromResponsesButAcceptedOnInput() {
+        var account = new AiProviderAccount();
+        var spec = new AiProviderAccount.Spec();
+        spec.setApiKey("sk-secret");
+        account.setSpec(spec);
+
+        var json = mapper.writeValueAsString(account);
+
+        assertThat(json).doesNotContain("sk-secret");
+        var written = mapper.readValue("{\"spec\":{\"apiKey\":\"sk-secret\"}}", AiProviderAccount.class);
+        assertThat(written.getSpec().getApiKey()).isEqualTo("sk-secret");
     }
 }
