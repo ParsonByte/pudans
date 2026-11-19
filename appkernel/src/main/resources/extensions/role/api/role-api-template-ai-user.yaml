@@ -1,0 +1,72 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-ai-user
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 普通用户"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "chats/completions"
+      - "chats/modes"
+      - "conversations"
+      - "conversations/messages"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiteams"
+      - "aiagents"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memories"
+      - "memories/search"
+      - "memories/scenes"
+      - "memories/profile"
+      - "memories/requests"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memories/correction-request"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "knowledgebases"
+      - "knowledgebases/search"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "knowledgebases/documents"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "wallet"
+      - "wallet/transactions"
+    verbs:
+      - "get"
+      - "list"

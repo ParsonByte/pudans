@@ -10,6 +10,8 @@ public interface UserService {
 
     Mono<User> getUser(String username);
 
+    Mono<User> getUserByUid(String uid);
+
     Mono<User> findUserByVerifiedEmail(String email);
 
     Mono<User> updatePassword(String username, String newPassword);
