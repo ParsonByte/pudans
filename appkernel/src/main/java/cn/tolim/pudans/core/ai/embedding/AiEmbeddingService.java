@@ -10,9 +10,14 @@ import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.core.ai.model.AiModelAdapter;
+import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
+import cn.tolim.pudans.core.ai.model.AiModelContent;
+import cn.tolim.pudans.core.ai.model.AiModelRequest;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,14 +43,21 @@ public class AiEmbeddingService {
 
     private final ReactiveExtensionClient client;
 
-    private final AiEmbeddingClient embeddingClient;
+    private final AiModelAdapterRegistry adapterRegistry;
 
     public Mono<EmbeddingBatch> embed(List<String> inputs) {
         return embed(inputs, null);
     }
 
     public Mono<EmbeddingBatch> embed(List<String> inputs, String modelName) {
-        var pending = inputs == null ? List.<String>of() : List.copyOf(inputs);
+        List<AiModelContent> contents = inputs == null
+                ? new ArrayList<>()
+                : inputs.stream().<AiModelContent>map(AiModelContent.Text::new).toList();
+        return embedContents(contents, modelName);
+    }
+
+    public Mono<EmbeddingBatch> embedContents(List<AiModelContent> inputs, String modelName) {
+        var pending = inputs == null ? List.<AiModelContent>of() : List.copyOf(inputs);
         return settingService.spec()
                 .switchIfEmpty(Mono.error(modelMissing(null)))
                 .flatMap(spec -> target(spec, modelName).flatMap(target -> embedBatches(target, pending)));
@@ -81,14 +93,17 @@ public class AiEmbeddingService {
                 .filter(AiEmbeddingService::isEnabledProvider)
                 .switchIfEmpty(Mono.error(providerMissing(providerName)))
                 .flatMap(provider -> {
-                    if (provider.getSpec().getProtocol() != AiProvider.Protocol.OPENAI_CHAT) {
-                        return Mono.error(protocolUnsupported(provider.getSpec().getProtocol()));
+                    var protocol = provider.getSpec().getProtocol();
+                    if (!adapterRegistry.supports(protocol, AiModel.Capability.EMBEDDING)) {
+                        return Mono.error(protocolUnsupported(protocol));
                     }
+                    var adapter = adapterRegistry.require(protocol, AiModel.Capability.EMBEDDING);
                     return account(providerName)
                             .map(account -> new EmbeddingTarget(
                                     provider,
                                     account,
-                                    model.getSpec().getModelCode(),
+                                    model,
+                                    adapter,
                                     expectedDimension(model, embedding),
                                     batchSize(embedding)));
                 });
@@ -104,16 +119,37 @@ public class AiEmbeddingService {
                 .switchIfEmpty(Mono.error(accountMissing(providerName)));
     }
 
-    private Mono<EmbeddingBatch> embedBatches(EmbeddingTarget target, List<String> inputs) {
+    private Mono<EmbeddingBatch> embedBatches(EmbeddingTarget target, List<AiModelContent> inputs) {
+        var modelCode = target.model().getSpec().getModelCode();
         if (inputs.isEmpty()) {
-            return Mono.just(new EmbeddingBatch(target.modelCode(), target.dimension(), List.of()));
+            return Mono.just(new EmbeddingBatch(modelCode, target.dimension(), List.of()));
         }
         return Flux.fromIterable(partition(inputs, target.batchSize()))
-                .concatMap(batch -> embeddingClient
-                        .embed(target.provider(), target.account(), target.modelCode(), batch)
-                        .map(vectors -> validate(batch.size(), vectors, target.dimension())))
+                .concatMap(batch -> target.adapter()
+                        .invoke(
+                                target.provider(),
+                                target.account(),
+                                target.model(),
+                                new AiModelRequest(
+                                        AiModel.Capability.EMBEDDING, batch, Map.of(), false, null))
+                        .switchIfEmpty(Mono.error(upstreamError("嵌入响应为空。")))
+                        .map(response -> validate(
+                                batch.size(), vectors(response.outputs()), target.dimension())))
                 .collectList()
-                .map(batches -> new EmbeddingBatch(target.modelCode(), target.dimension(), flatten(batches)));
+                .map(batches -> new EmbeddingBatch(modelCode, target.dimension(), flatten(batches)));
+    }
+
+    private static List<float[]> vectors(List<AiModelContent> outputs) {
+        if (outputs == null) {
+            return List.of();
+        }
+        var vectors = new ArrayList<float[]>();
+        for (var output : outputs) {
+            if (output instanceof AiModelContent.Vector vector) {
+                vectors.add(vector.values());
+            }
+        }
+        return vectors;
     }
 
     private static List<float[]> validate(int expectedCount, List<float[]> vectors, int dimension) {
@@ -134,8 +170,8 @@ public class AiEmbeddingService {
         return vectors;
     }
 
-    private static List<List<String>> partition(List<String> inputs, int batchSize) {
-        var batches = new ArrayList<List<String>>();
+    private static List<List<AiModelContent>> partition(List<AiModelContent> inputs, int batchSize) {
+        var batches = new ArrayList<List<AiModelContent>>();
         for (var start = 0; start < inputs.size(); start += batchSize) {
             batches.add(inputs.subList(start, Math.min(inputs.size(), start + batchSize)));
         }
@@ -151,7 +187,8 @@ public class AiEmbeddingService {
     private static boolean isUsableModel(AiModel model) {
         return model.getSpec() != null
                 && model.getSpec().isEnabled()
-                && model.getSpec().getModelType() == AiModel.ModelType.EMBEDDING;
+                && model.getSpec().getModelType() == AiModel.ModelType.EMBEDDING
+                && model.getSpec().effectiveCapabilities().contains(AiModel.Capability.EMBEDDING);
     }
 
     private static boolean isEnabledProvider(AiProvider provider) {
@@ -203,6 +240,16 @@ public class AiEmbeddingService {
                 HttpStatus.BAD_REQUEST, PROTOCOL_UNSUPPORTED_CODE, "暂不支持该嵌入协议：" + protocol + "。");
     }
 
+    private static ApiException upstreamError(String reason) {
+        return new ApiException(
+                HttpStatus.BAD_GATEWAY, AiEmbeddingClient.UPSTREAM_ERROR_CODE, reason);
+    }
+
     private record EmbeddingTarget(
-            AiProvider provider, AiProviderAccount account, String modelCode, int dimension, int batchSize) {}
+            AiProvider provider,
+            AiProviderAccount account,
+            AiModel model,
+            AiModelAdapter adapter,
+            int dimension,
+            int batchSize) {}
 }

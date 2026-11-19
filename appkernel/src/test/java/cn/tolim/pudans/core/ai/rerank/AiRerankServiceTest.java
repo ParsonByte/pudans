@@ -12,7 +12,16 @@ import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.core.ai.model.AiModelAdapter;
+import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
+import cn.tolim.pudans.core.ai.model.AiModelContent;
+import cn.tolim.pudans.core.ai.model.AiModelRequest;
+import cn.tolim.pudans.core.ai.model.AiModelResponse;
+import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import cn.tolim.pudans.infra.exception.ApiException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +46,10 @@ class AiRerankServiceTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiRerankClient rerankClient;
+    AiModelAdapterRegistry adapterRegistry;
+
+    @Mock
+    AiModelAdapter adapter;
 
     @InjectMocks
     AiRerankService service;
@@ -45,13 +57,16 @@ class AiRerankServiceTest {
     @Test
     void resolvesModelProviderAndFirstEnabledAccount() {
         stubModel(model(MODEL_NAME));
-        stubProvider(provider(AiProvider.Protocol.OPENAI_CHAT, true));
+        var provider = provider(AiProvider.Protocol.OPENAI_CHAT, true);
+        stubProvider(provider);
+        stubAdapterSupport(provider);
         stubAccounts(account("disabled-account", false), account("enabled-account", true), account("later", true));
         var accountCaptor = ArgumentCaptor.forClass(AiProviderAccount.class);
-        var requestCaptor = ArgumentCaptor.forClass(RerankRequest.class);
-        when(rerankClient.rerank(
-                        any(AiProvider.class), accountCaptor.capture(), eq(MODEL_CODE), requestCaptor.capture()))
-                .thenReturn(Mono.just(new RerankResult(List.of(scored(0, 0.9), scored(1, 0.4)))));
+        var requestCaptor = ArgumentCaptor.forClass(AiModelRequest.class);
+        when(adapter.invoke(
+                        any(AiProvider.class), accountCaptor.capture(), any(AiModel.class),
+                        requestCaptor.capture()))
+                .thenReturn(Mono.just(response(scored(0, 0.9), scored(1, 0.4))));
 
         StepVerifier.create(service.rerank(MODEL_NAME, "安装", List.of("a", "b"), 2))
                 .assertNext(result -> {
@@ -63,9 +78,12 @@ class AiRerankServiceTest {
                 .verifyComplete();
 
         assertThat(accountCaptor.getValue().getMetadata().getName()).isEqualTo("enabled-account");
-        assertThat(requestCaptor.getValue().query()).isEqualTo("安装");
-        assertThat(requestCaptor.getValue().documents()).containsExactly("a", "b");
-        assertThat(requestCaptor.getValue().topK()).isEqualTo(2);
+        assertThat(requestCaptor.getValue().capability()).isEqualTo(AiModel.Capability.RERANK);
+        assertThat(requestCaptor.getValue().inputs()).containsExactly(
+                new AiModelContent.Text("安装"),
+                new AiModelContent.Text("a"),
+                new AiModelContent.Text("b"));
+        assertThat(requestCaptor.getValue().params().get("topK").asInt()).isEqualTo(2);
         verify(client).get(AiModel.class, MODEL_NAME);
         verify(client).get(AiProvider.class, PROVIDER_NAME);
     }
@@ -73,10 +91,7 @@ class AiRerankServiceTest {
     @Test
     void sortsByScoreDescendingAndKeepsOriginalIndexes() {
         stubTarget();
-        when(rerankClient.rerank(
-                        any(AiProvider.class), any(AiProviderAccount.class), eq(MODEL_CODE), any(RerankRequest.class)))
-                .thenReturn(Mono.just(new RerankResult(
-                        List.of(scored(1, 0.2), scored(0, 0.8), scored(2, 0.5)))));
+        stubAdapter(scored(1, 0.2), scored(0, 0.8), scored(2, 0.5));
 
         StepVerifier.create(service.rerank(MODEL_NAME, "查询", List.of("a", "b", "c"), 3))
                 .assertNext(result -> assertThat(result.results())
@@ -88,10 +103,7 @@ class AiRerankServiceTest {
     @Test
     void truncatesResultsToTopK() {
         stubTarget();
-        when(rerankClient.rerank(
-                        any(AiProvider.class), any(AiProviderAccount.class), eq(MODEL_CODE), any(RerankRequest.class)))
-                .thenReturn(Mono.just(new RerankResult(
-                        List.of(scored(0, 0.1), scored(1, 0.9), scored(2, 0.5)))));
+        stubAdapter(scored(0, 0.1), scored(1, 0.9), scored(2, 0.5));
 
         StepVerifier.create(service.rerank(MODEL_NAME, "查询", List.of("a", "b", "c"), 2))
                 .assertNext(result -> {
@@ -110,7 +122,7 @@ class AiRerankServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-rerank-model-missing"))
                 .verify();
 
-        verifyNoInteractions(rerankClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
@@ -123,7 +135,7 @@ class AiRerankServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-rerank-model-missing"))
                 .verify();
 
-        verifyNoInteractions(rerankClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
@@ -135,7 +147,7 @@ class AiRerankServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 400, "ai-rerank-protocol-unsupported"))
                 .verify();
 
-        verifyNoInteractions(rerankClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
@@ -147,28 +159,28 @@ class AiRerankServiceTest {
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-rerank-provider-missing"))
                 .verify();
 
-        verifyNoInteractions(rerankClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
     void rejectsMissingAccounts() {
         stubModel(model(MODEL_NAME));
-        stubProvider(provider(AiProvider.Protocol.OPENAI_CHAT, true));
+        var provider = provider(AiProvider.Protocol.OPENAI_CHAT, true);
+        stubProvider(provider);
+        stubAdapterSupport(provider);
         stubAccounts();
 
         StepVerifier.create(service.rerank(MODEL_NAME, "查询", List.of("a"), 1))
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-rerank-account-missing"))
                 .verify();
 
-        verifyNoInteractions(rerankClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
     void rejectsOutOfRangeIndexes() {
         stubTarget();
-        when(rerankClient.rerank(
-                        any(AiProvider.class), any(AiProviderAccount.class), eq(MODEL_CODE), any(RerankRequest.class)))
-                .thenReturn(Mono.just(new RerankResult(List.of(scored(5, 0.9)))));
+        stubAdapter(scored(5, 0.9));
 
         StepVerifier.create(service.rerank(MODEL_NAME, "查询", List.of("a", "b"), 2))
                 .expectErrorSatisfies(error -> assertApiError(error, 502, "ai-rerank-upstream-error"))
@@ -178,8 +190,9 @@ class AiRerankServiceTest {
     @Test
     void mapsUpstreamFailuresToBadGateway() {
         stubTarget();
-        when(rerankClient.rerank(
-                        any(AiProvider.class), any(AiProviderAccount.class), eq(MODEL_CODE), any(RerankRequest.class)))
+        when(adapter.invoke(
+                        any(AiProvider.class), any(AiProviderAccount.class), any(AiModel.class),
+                        any(AiModelRequest.class)))
                 .thenReturn(Mono.error(new IllegalStateException("boom")));
 
         StepVerifier.create(service.rerank(MODEL_NAME, "查询", List.of("a"), 1))
@@ -195,7 +208,7 @@ class AiRerankServiceTest {
                 .assertNext(result -> assertThat(result.results()).isEmpty())
                 .verifyComplete();
 
-        verifyNoInteractions(rerankClient);
+        verifyNoInteractions(adapter);
     }
 
     @Test
@@ -204,13 +217,47 @@ class AiRerankServiceTest {
                 .expectError(IllegalArgumentException.class)
                 .verify();
 
-        verifyNoInteractions(client, rerankClient);
+        verifyNoInteractions(client, adapter);
     }
 
     private void stubTarget() {
         stubModel(model(MODEL_NAME));
-        stubProvider(provider(AiProvider.Protocol.OPENAI_CHAT, true));
+        var provider = provider(AiProvider.Protocol.OPENAI_CHAT, true);
+        stubProvider(provider);
         stubAccounts(account("account-a", true));
+        stubAdapterSupport(provider);
+    }
+
+    private void stubAdapterSupport(AiProvider provider) {
+        when(adapterRegistry.supports(provider.getSpec().getProtocol(), AiModel.Capability.RERANK))
+                .thenReturn(true);
+        when(adapterRegistry.require(provider.getSpec().getProtocol(), AiModel.Capability.RERANK))
+                .thenReturn(adapter);
+    }
+
+    private void stubAdapter(RerankResult.ScoredIndex... results) {
+        when(adapter.invoke(
+                        any(AiProvider.class), any(AiProviderAccount.class), any(AiModel.class),
+                        any(AiModelRequest.class)))
+                .thenReturn(Mono.just(response(results)));
+    }
+
+    private static AiModelResponse response(RerankResult.ScoredIndex... results) {
+        var outputs = new ArrayList<AiModelContent>();
+        for (var scored : results) {
+            JsonNode node = JsonNodeFactory.instance.objectNode()
+                    .put("index", scored.index())
+                    .put("score", scored.score());
+            outputs.add(new AiModelContent.Json(node));
+        }
+        return new AiModelResponse(
+                null,
+                MODEL_CODE,
+                outputs,
+                AiModelUsage.EMPTY,
+                null,
+                null,
+                AiModelResponse.TaskStatus.SUCCEEDED);
     }
 
     private void stubModel(AiModel model) {
