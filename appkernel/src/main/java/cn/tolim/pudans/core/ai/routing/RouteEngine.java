@@ -237,7 +237,9 @@ public class RouteEngine {
         if (effectiveHealth(seat) < request.getHealthThreshold()) {
             return RouteEliminationReason.UNHEALTHY;
         }
-        if (!supports(seat, request.getRequiredCapabilities())) {
+        if (!supports(seat, request.getRequiredCapabilities())
+                || !supportsModalities(seat.getInputModalities(), request.getRequiredInputModalities())
+                || !supportsModalities(seat.getOutputModalities(), request.getRequiredOutputModalities())) {
             return RouteEliminationReason.CAPABILITY_MISMATCH;
         }
         if (exceedsContext(seat, request)) {
@@ -266,26 +268,22 @@ public class RouteEngine {
         return health;
     }
 
-    private static boolean supports(RouteSeat seat, Set<RouteCapability> required) {
-        if (required == null || required.isEmpty()) {
-            return true;
-        }
-        for (var capability : required) {
-            var supported = switch (capability) {
-                case TOOLS -> seat.isSupportsTools();
-                case JSON -> seat.isSupportsJson();
-                case VISION -> seat.isSupportsVision();
-                case STREAM -> seat.isSupportsStream();
-            };
-            if (!supported) {
-                return false;
-            }
-        }
-        return true;
+    private static boolean supports(RouteSeat seat, Set<AiModel.Capability> required) {
+        return required == null
+                || required.isEmpty()
+                || (seat.getCapabilities() != null && seat.getCapabilities().containsAll(required));
+    }
+
+    private static boolean supportsModalities(
+            Set<AiModel.Modality> supported, Set<AiModel.Modality> required) {
+        return required == null
+                || required.isEmpty()
+                || (supported != null && supported.containsAll(required));
     }
 
     private static boolean exceedsContext(RouteSeat seat, RouteRequest request) {
-        if (seat.getContextWindow() <= 0) {
+        if (seat.getContextWindow() <= 0
+                || (request.getPromptTokens() <= 0 && request.getMaxOutputTokens() <= 0)) {
             return false;
         }
         long output = request.getMaxOutputTokens() > 0 ? request.getMaxOutputTokens() : seat.getMaxOutputTokens();

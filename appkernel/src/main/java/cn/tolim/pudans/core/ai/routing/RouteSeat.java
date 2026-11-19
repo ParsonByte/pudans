@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.ai.routing;
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Set;
 import lombok.Builder;
 import lombok.Value;
 
@@ -58,16 +59,13 @@ public class RouteSeat {
     double healthScore = 100;
 
     @Builder.Default
-    boolean supportsTools = false;
+    Set<AiModel.Capability> capabilities = Set.of();
 
     @Builder.Default
-    boolean supportsJson = false;
+    Set<AiModel.Modality> inputModalities = Set.of();
 
     @Builder.Default
-    boolean supportsVision = false;
-
-    @Builder.Default
-    boolean supportsStream = true;
+    Set<AiModel.Modality> outputModalities = Set.of();
 
     @Builder.Default
     int contextWindow = 0;
