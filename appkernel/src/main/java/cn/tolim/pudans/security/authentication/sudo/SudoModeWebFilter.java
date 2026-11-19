@@ -7,6 +7,7 @@ import static org.springframework.security.web.server.util.matcher.ServerWebExch
 import java.util.List;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.codec.HttpMessageReader;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.server.util.matcher.OrServerWebExchangeMatcher;
@@ -129,7 +130,9 @@ class SudoModeWebFilter implements WebFilter {
     private Mono<Void> enforceSudo(ServerWebExchange exchange) {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
-                .filter(SudoService::isSessionAuthentication)
+                // 令牌认证同样需要安全确认，避免持令牌绕过 sudo 直接改密或管理令牌
+                .filter(authentication -> authentication.isAuthenticated()
+                        && !(authentication instanceof AnonymousAuthenticationToken))
                 .flatMap(auth -> sudoService.requireSudo(exchange, auth.getName()));
     }
 }
