@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -17,11 +18,13 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.relational.core.query.Query;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.data.r2dbc.core.R2dbcEntityOperations;
 import org.springframework.transaction.ReactiveTransactionManager;
 import reactor.core.publisher.Flux;
@@ -45,6 +48,9 @@ class AuditStoreTest {
     @Mock
     R2dbcEntityOperations entityOperations;
 
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    DatabaseClient databaseClient;
+
     @Mock
     ReactiveTransactionManager reactiveTransactionManager;
 
@@ -53,7 +59,12 @@ class AuditStoreTest {
     @BeforeEach
     void setUp() {
         store = new AuditStore(
-                activeRepository, archiveRepository, guardRepository, entityOperations, reactiveTransactionManager);
+                activeRepository,
+                archiveRepository,
+                guardRepository,
+                entityOperations,
+                databaseClient,
+                reactiveTransactionManager);
     }
 
     private static AuditRecordEntity entity(String id) {
@@ -229,6 +240,34 @@ class AuditStoreTest {
                 .thenReturn(Mono.error(new DuplicateKeyException("duplicate fingerprint")));
 
         StepVerifier.create(store.append(record())).verifyComplete();
+    }
+
+    @Test
+    void archiveSkipsTheBatchWhenAnotherInstanceHoldsTheGuard() {
+        when(databaseClient.sql(anyString()).fetch().rowsUpdated()).thenReturn(Mono.just(0L));
+
+        StepVerifier.create(store.archiveBefore(Instant.now()))
+                .expectNext(0L)
+                .verifyComplete();
+
+        verify(guardRepository, never()).save(any());
+        verifyNoInteractions(activeRepository, archiveRepository);
+    }
+
+    @Test
+    void archiveReleasesTheGuardAfterTheLastBatch() {
+        when(databaseClient.sql(anyString()).fetch().rowsUpdated()).thenReturn(Mono.just(1L));
+        when(guardRepository.save(any(AuditArchiveGuardEntity.class)))
+                .thenReturn(Mono.just(new AuditArchiveGuardEntity(1, false)));
+        doReturn(Flux.empty()).when(entityOperations).select(any(Query.class), eq(AuditRecordEntity.class));
+
+        StepVerifier.create(store.archiveBefore(Instant.now()))
+                .expectNext(0L)
+                .verifyComplete();
+
+        var captor = ArgumentCaptor.forClass(AuditArchiveGuardEntity.class);
+        verify(guardRepository).save(captor.capture());
+        assertThat(captor.getValue().getEnabled()).isFalse();
     }
 
     private static AuditRecord record() {
