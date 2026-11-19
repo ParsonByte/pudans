@@ -16,6 +16,13 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
+import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekChatProviderAdapter;
+import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProviderAdapter;
+import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekResponsesProviderAdapter;
+import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxChatProviderAdapter;
+import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxMessagesProviderAdapter;
+import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxNativeProviderAdapter;
+import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxResponsesProviderAdapter;
 import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -136,6 +143,13 @@ class CustomHttpProviderAdapterTest {
                 new OpenAiResponsesProviderAdapter(webClient, mapper, accountService),
                 new GeminiProviderAdapter(webClient, mapper, accountService),
                 new OllamaProviderAdapter(webClient, mapper, accountService),
+                new DeepSeekProviderAdapter(webClient, mapper, accountService),
+                new DeepSeekChatProviderAdapter(webClient, mapper, accountService),
+                new DeepSeekResponsesProviderAdapter(webClient, mapper, accountService),
+                new MinimaxMessagesProviderAdapter(webClient, mapper, accountService),
+                new MinimaxChatProviderAdapter(webClient, mapper, accountService),
+                new MinimaxNativeProviderAdapter(webClient, mapper, accountService),
+                new MinimaxResponsesProviderAdapter(webClient, mapper, accountService),
                 new CustomHttpProviderAdapter(webClient, mapper, accountService)));
 
         for (var protocol : AiProvider.Protocol.values()) {

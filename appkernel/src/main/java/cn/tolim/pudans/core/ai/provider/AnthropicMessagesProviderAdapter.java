@@ -59,15 +59,19 @@ public class AnthropicMessagesProviderAdapter extends AbstractAiProviderAdapter 
     public Mono<AiChatResponse> chat(
             AiProvider provider, AiProviderAccount account, AiModel model, AiChatIr request) {
         return Mono.defer(() -> post(
-                        provider, account, MESSAGES_PATH, serialize(request, model, false), false)
+                        provider, account, path(), serialize(request, model, false), false)
                 .map(this::parseChatResponse));
     }
 
     @Override
     public Flux<AiStreamEvent> streamChat(
             AiProvider provider, AiProviderAccount account, AiModel model, AiChatIr request) {
-        return Flux.defer(() -> postStream(provider, account, MESSAGES_PATH, serialize(request, model, true))
+        return Flux.defer(() -> postStream(provider, account, path(), serialize(request, model, true))
                 .concatMap(data -> Mono.justOrEmpty(parseStreamEvent(data))));
+    }
+
+    protected String path() {
+        return MESSAGES_PATH;
     }
 
     @Override

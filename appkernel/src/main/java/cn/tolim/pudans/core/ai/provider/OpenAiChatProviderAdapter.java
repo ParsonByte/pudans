@@ -60,16 +60,20 @@ public class OpenAiChatProviderAdapter extends AbstractAiProviderAdapter {
     public Mono<AiChatResponse> chat(
             AiProvider provider, AiProviderAccount account, AiModel model, AiChatIr request) {
         return Mono.defer(() -> post(
-                        provider, account, CHAT_PATH, serialize(request, model, false), false)
+                        provider, account, path(), serialize(request, model, false), false)
                 .map(this::parseChatResponse));
     }
 
     @Override
     public Flux<AiStreamEvent> streamChat(
             AiProvider provider, AiProviderAccount account, AiModel model, AiChatIr request) {
-        return Flux.defer(() -> postStream(provider, account, CHAT_PATH, serialize(request, model, true))
+        return Flux.defer(() -> postStream(provider, account, path(), serialize(request, model, true))
                 .takeWhile(data -> !SSE_DONE.equals(data.strip()))
                 .concatMap(data -> Mono.justOrEmpty(parseStreamEvent(data))));
+    }
+
+    protected String path() {
+        return CHAT_PATH;
     }
 
     @Override
@@ -84,8 +88,9 @@ public class OpenAiChatProviderAdapter extends AbstractAiProviderAdapter {
         return headers;
     }
 
-    AiChatResponse parseChatResponse(String body) {
+    protected AiChatResponse parseChatResponse(String body) {
         var root = AiProviderHttpSupport.readObject(mapper, body, PROTOCOL);
+        validateResponse(root);
         var choices = root.get("choices");
         if (choices == null || !choices.isArray() || choices.isEmpty()) {
             throw new AiProtocolException("OpenAI Chat 响应缺少 choices");
@@ -111,7 +116,7 @@ public class OpenAiChatProviderAdapter extends AbstractAiProviderAdapter {
                 AiProviderHttpSupport.text(choice, "finish_reason"));
     }
 
-    Optional<AiStreamEvent> parseStreamEvent(String data) {
+    protected Optional<AiStreamEvent> parseStreamEvent(String data) {
         if (data == null || data.isBlank()) {
             return Optional.empty();
         }
@@ -120,6 +125,7 @@ public class OpenAiChatProviderAdapter extends AbstractAiProviderAdapter {
             return Optional.empty();
         }
         var root = AiProviderHttpSupport.readObject(mapper, trimmed, PROTOCOL);
+        validateStreamEvent(root);
         String content = null;
         String reasoning = null;
         String finishReason = null;
@@ -142,9 +148,13 @@ public class OpenAiChatProviderAdapter extends AbstractAiProviderAdapter {
         return Optional.of(new AiStreamEvent(content, reasoning, toolCall, usage, finishReason));
     }
 
-    private String serialize(AiChatIr request, AiModel model, boolean stream) {
+    protected String serialize(AiChatIr request, AiModel model, boolean stream) {
         return codec.serialize(AiProviderHttpSupport.withModelAndStream(request, model, stream));
     }
+
+    protected void validateResponse(JsonNode root) {}
+
+    protected void validateStreamEvent(JsonNode root) {}
 
     private void addContent(List<AiContentPart> parts, JsonNode content) {
         if (content == null || content.isNull()) {

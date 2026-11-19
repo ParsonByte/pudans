@@ -14,11 +14,11 @@ import java.util.Objects;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.StringUtils;
 
-final class AiProviderHttpSupport {
+public final class AiProviderHttpSupport {
 
     private AiProviderHttpSupport() {}
 
-    static String endpoint(AiProvider provider, String path) {
+    public static String endpoint(AiProvider provider, String path) {
         var spec = provider == null ? null : provider.getSpec();
         var baseUrl = spec == null ? null : spec.getBaseUrl();
         if (!StringUtils.hasText(baseUrl)) {
@@ -33,7 +33,7 @@ final class AiProviderHttpSupport {
         return base + (path.startsWith("/") ? path : "/" + path);
     }
 
-    static void addProviderHeaders(HttpHeaders headers, AiProvider provider) {
+    public static void addProviderHeaders(HttpHeaders headers, AiProvider provider) {
         var spec = provider == null ? null : provider.getSpec();
         if (spec == null || spec.getHeaders() == null) {
             return;
@@ -45,7 +45,7 @@ final class AiProviderHttpSupport {
         });
     }
 
-    static AiChatIr withModelAndStream(AiChatIr request, AiModel model, boolean stream) {
+    public static AiChatIr withModelAndStream(AiChatIr request, AiModel model, boolean stream) {
         var source = Objects.requireNonNull(request, "聊天 IR 不能为空");
         var spec = model == null ? null : model.getSpec();
         var modelCode = source.requestParams().model();
@@ -59,7 +59,7 @@ final class AiProviderHttpSupport {
                 stream);
     }
 
-    static AiChatIr withDefaultMaxTokens(AiChatIr request, Integer maxTokens) {
+    public static AiChatIr withDefaultMaxTokens(AiChatIr request, Integer maxTokens) {
         var params = request.requestParams();
         if (params.maxTokens() != null || maxTokens == null) {
             return request;
@@ -71,7 +71,7 @@ final class AiProviderHttpSupport {
                 request.stream());
     }
 
-    static ObjectNode readObject(ObjectMapper mapper, String body, String protocol) {
+    public static ObjectNode readObject(ObjectMapper mapper, String body, String protocol) {
         try {
             var node = mapper.readTree(body);
             if (node == null || !node.isObject()) {
@@ -83,17 +83,17 @@ final class AiProviderHttpSupport {
         }
     }
 
-    static String text(JsonNode node, String field) {
+    public static String text(JsonNode node, String field) {
         var value = node == null ? null : node.get(field);
         return value != null && value.isTextual() ? value.textValue() : null;
     }
 
-    static Integer integer(JsonNode node, String field) {
+    public static Integer integer(JsonNode node, String field) {
         var value = node == null ? null : node.get(field);
         return value != null && value.isIntegralNumber() ? value.asInt() : null;
     }
 
-    static JsonNode value(JsonNode node, String field) {
+    public static JsonNode value(JsonNode node, String field) {
         var value = node == null ? null : node.get(field);
         return value == null || value.isNull() ? null : value;
     }
