@@ -6,8 +6,10 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.GenericModelsClient;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekModelsClient;
-import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProviderAccess;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,16 +23,22 @@ import reactor.core.publisher.Mono;
 class AiProviderModelEndpointTest {
 
     @Mock
-    DeepSeekProviderAccess access;
+    ReactiveExtensionClient client;
+
+    @Mock
+    AiProviderAccountService accountService;
 
     @Mock
     DeepSeekModelsClient modelsClient;
+
+    @Mock
+    GenericModelsClient genericModelsClient;
 
     private WebTestClient webClient;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new AiProviderModelEndpoint(access, modelsClient);
+        var endpoint = new AiProviderModelEndpoint(client, accountService, modelsClient, genericModelsClient);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -38,8 +46,8 @@ class AiProviderModelEndpointTest {
     void listsModels() {
         var provider = provider();
         var account = account();
-        when(access.requireProvider("provider-a")).thenReturn(Mono.just(provider));
-        when(access.requireAccount(provider)).thenReturn(Mono.just(account));
+        when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider));
+        when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account));
         when(modelsClient.list(eq(provider), eq(account)))
                 .thenReturn(Mono.just(new DeepSeekModelsClient.ModelList(
                         "list",

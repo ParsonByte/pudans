@@ -46,6 +46,7 @@ public class AiProvider extends AbstractExtension {
         MINIMAX_RESPONSES,
         QIANWEN,
         GEMINI,
+        GEMINI_OPENAI,
         OLLAMA,
         CUSTOM_HTTP
     }

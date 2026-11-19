@@ -26,6 +26,8 @@ rules:
       - "api.pudans.tolim.cn"
     resources:
       - "aiproviders/models"
+      - "aiproviders/minimax"
+      - "aiproviders/qianwen"
     verbs:
       - "get"
 ---
@@ -61,6 +63,14 @@ rules:
     verbs:
       - "create"
       - "update"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiproviders/models"
+      - "aiproviders/minimax"
+      - "aiproviders/qianwen"
+    verbs:
+      - "get"
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role

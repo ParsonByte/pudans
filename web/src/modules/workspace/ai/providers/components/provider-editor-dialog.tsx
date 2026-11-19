@@ -4,12 +4,16 @@ import { type Resolver, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Boxes,
   ChevronDown,
   ChevronRight,
+  KeyRound,
+  Link2,
   Loader2,
   Pencil,
   Plus,
   RefreshCw,
+  SlidersHorizontal,
   Trash2,
   X,
   Zap,
@@ -21,11 +25,11 @@ import { AutoScrollArea } from "@/components/auto-scroll-area";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -70,19 +74,19 @@ import {
 import {
   AFFINITY_OPTIONS,
   DEFAULT_PROVIDER_SPEC,
-  PROTOCOL_OPTIONS,
   ROUTING_OPTIONS,
   formatBalance,
   formatQuota,
   formatTestResult,
   modelNameFromCode,
-  optionLabel,
   providerEndpoints,
   supportsModelDiscovery,
   uniqueModelName,
 } from "../lib/model";
+import { protocolFamilyLabel, websiteForProvider } from "../lib/presets";
 import { AccountDialog } from "./account-dialog";
 import { ModelDialog } from "./model-dialog";
+import { ProviderBrandIcon } from "./provider-brand-icon";
 import { QuotaDialog } from "./quota-dialog";
 
 const ROUTING_VALUES = ROUTING_OPTIONS.map((option) => option.value) as [
@@ -139,6 +143,8 @@ export function ProviderEditorDialog({
   );
   const [quotaTarget, setQuotaTarget] = useState<AiProviderAccountItem | null>(null);
   const [modelTarget, setModelTarget] = useState<AiModelItem | null>(null);
+  const [modelView, setModelView] = useState<"all" | "selected">("all");
+  const [fetchModels, setFetchModels] = useState(true);
   const [deleteProviderOpen, setDeleteProviderOpen] = useState(false);
   const [deleteAccountTarget, setDeleteAccountTarget] = useState<AiProviderAccountItem | null>(
     null,
@@ -165,15 +171,21 @@ export function ProviderEditorDialog({
   const accounts = accountsQuery.data ?? [];
   const models = modelsQuery.data ?? [];
   const remoteEnabled = supportsModelDiscovery(provider.spec.protocol);
+  const canDiscoverModels = canCreate || canUpdate;
   const remoteQuery = useQuery({
     queryKey: ["ai-provider-remote-models", name, provider.spec.protocol],
-    queryFn: () => fetchProviderRemoteModels(name),
-    enabled: remoteEnabled && accounts.length > 0,
+    queryFn: () => fetchProviderRemoteModels(name, provider.spec.protocol),
+    enabled: remoteEnabled && canDiscoverModels && accounts.length > 0 && fetchModels,
     retry: false,
   });
   const remoteModels = remoteQuery.data ?? [];
   const existingCodes = new Set(models.map((model) => model.spec.modelCode));
   const importedCandidates = remoteModels.filter((model) => !existingCodes.has(model.id));
+  const displayedModels =
+    modelView === "selected" ? models.filter((model) => model.spec.enabled !== false) : models;
+  const remoteCandidates = modelView === "all" && fetchModels ? importedCandidates : [];
+  const activeAccount = accounts.find((account) => account.spec.enabled) ?? accounts[0];
+  const website = websiteForProvider(provider);
   const endpoints = providerEndpoints(provider.spec.protocol, provider.spec.baseUrl);
 
   const form = useForm<EditorFormValues>({
@@ -440,18 +452,25 @@ export function ProviderEditorDialog({
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-3xl">
+      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-5xl">
         <DialogHeader>
-          <div className="flex items-start justify-between gap-4 pe-8">
+          <div className="flex items-start justify-between gap-4 pe-10">
             <div className="min-w-0 space-y-1">
               <DialogTitle className="flex items-center gap-2">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                  <ProviderBrandIcon provider={provider} className="size-5" />
+                </span>
                 <span className="truncate">{provider.spec.displayName || name}</span>
                 <Badge variant={provider.spec.enabled === false ? "outline" : "secondary"}>
                   {provider.spec.enabled === false ? "已停用" : "已启用"}
                 </Badge>
               </DialogTitle>
               <DialogDescription>
-                {provider.spec.baseUrl ? (
+                {website ? (
+                  <a href={website} target="_blank" rel="noreferrer">
+                    {hostOf(website)} ↗
+                  </a>
+                ) : provider.spec.baseUrl ? (
                   <a href={provider.spec.baseUrl} target="_blank" rel="noreferrer">
                     {provider.spec.baseUrl}
                   </a>
@@ -460,7 +479,7 @@ export function ProviderEditorDialog({
                 )}
               </DialogDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               {toggleProviderMutation.isPending ? (
                 <Loader2 className="size-4 animate-spin text-muted-foreground" />
               ) : null}
@@ -470,20 +489,39 @@ export function ProviderEditorDialog({
                 onCheckedChange={() => toggleProviderMutation.mutate()}
                 aria-label="启用供应商"
               />
+              {canDelete ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setDeleteProviderOpen(true)}
+                >
+                  <Trash2 />
+                  移除
+                </Button>
+              ) : null}
+              {canUpdate ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={saveMutation.isPending}
+                  onClick={() => void onSubmit()}
+                >
+                  {saveMutation.isPending ? <Loader2 className="animate-spin" /> : null}
+                  保存
+                </Button>
+              ) : null}
             </div>
           </div>
         </DialogHeader>
 
-        <AutoScrollArea maxHeightRatio={0.72} className="min-h-0 flex-1">
-          <div className="space-y-6 pb-2">
-            <section className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-1 text-sm">
-                  <span className="text-xs text-muted-foreground">ID</span>
-                  <Input value={name} disabled />
-                </label>
-                <label className="space-y-1 text-sm">
-                  <span className="text-xs text-muted-foreground">名称</span>
+        <AutoScrollArea fill>
+          <div className="space-y-6 pb-6">
+            <section className="space-y-4 rounded-2xl border bg-card/30 p-4">
+              <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
+                <span className="text-sm text-muted-foreground">名称</span>
+                <div className="min-w-0 space-y-1">
                   <Input
                     disabled={!canUpdate}
                     {...form.register("displayName")}
@@ -494,14 +532,21 @@ export function ProviderEditorDialog({
                       {form.formState.errors.displayName.message}
                     </span>
                   ) : null}
-                </label>
+                </div>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
+                <span className="text-sm text-muted-foreground">ID</span>
+                <Input value={name} disabled />
               </div>
             </section>
 
-            <section className="space-y-3">
+            <section className="space-y-3 rounded-2xl border bg-card/30 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-semibold">账号</h3>
+                  <h3 className="flex items-center gap-2 text-sm font-semibold">
+                    <KeyRound className="size-4" />
+                    账号
+                  </h3>
                   <p className="text-xs text-muted-foreground">
                     {accounts.length} 个密钥用于实际调用供应商接口。
                   </p>
@@ -586,17 +631,24 @@ export function ProviderEditorDialog({
                         aria-label={account.spec.enabled ? "停用密钥" : "启用密钥"}
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {account.spec.displayName || account.metadata.name}
-                        </p>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <p className="truncate text-sm font-medium">
+                            {account.spec.displayName || account.metadata.name}
+                          </p>
+                          {account.metadata.name === activeAccount?.metadata.name ? (
+                            <Badge variant="outline">使用中</Badge>
+                          ) : null}
+                        </div>
                         <p className="truncate text-xs text-muted-foreground">
-                          密钥已配置（不可查看） ·{" "}
-                          {optionLabel(PROTOCOL_OPTIONS, provider.spec.protocol)}
+                          密钥已配置（不可查看） · {protocolFamilyLabel(provider.spec.protocol)} ·
+                          并发 {account.spec.maxConcurrency ?? "不限"}
                         </p>
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                         <Badge variant="outline">权重 {account.spec.weight}</Badge>
-                        <span>{formatQuota(account.spec.quota)}</span>
+                        <span>
+                          {account.spec.quota ? formatQuota(account.spec.quota) : "无消费上限"}
+                        </span>
                         <span>{formatBalance(account.spec.balance)}</span>
                       </div>
                       <div className="flex items-center gap-1">
@@ -655,10 +707,13 @@ export function ProviderEditorDialog({
               )}
             </section>
 
-            <section className="space-y-3">
+            <section className="space-y-3 rounded-2xl border bg-card/30 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h3 className="text-sm font-semibold">模型</h3>
+                  <h3 className="flex items-center gap-2 text-sm font-semibold">
+                    <Boxes className="size-4" />
+                    模型
+                  </h3>
                   <p className="text-xs text-muted-foreground">
                     {models.length} 个已导入模型；虚线为供应商返回但尚未导入的模型。
                   </p>
@@ -686,13 +741,19 @@ export function ProviderEditorDialog({
                       </Button>
                     </>
                   ) : null}
-                  {remoteEnabled ? (
+                  {remoteEnabled && canDiscoverModels ? (
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       disabled={remoteQuery.isFetching}
-                      onClick={() => void remoteQuery.refetch()}
+                      onClick={() => {
+                        if (!fetchModels) {
+                          setFetchModels(true);
+                          return;
+                        }
+                        void remoteQuery.refetch();
+                      }}
                     >
                       {remoteQuery.isFetching ? (
                         <Loader2 className="animate-spin" />
@@ -721,6 +782,42 @@ export function ProviderEditorDialog({
                 </div>
               </div>
 
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="inline-flex gap-1 rounded-lg bg-muted p-1">
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                      modelView === "all"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setModelView("all")}
+                  >
+                    供应商列表
+                  </button>
+                  <button
+                    type="button"
+                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                      modelView === "selected"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    onClick={() => setModelView("selected")}
+                  >
+                    仅所选
+                  </button>
+                </div>
+                {remoteEnabled && canDiscoverModels ? (
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Checkbox
+                      checked={fetchModels}
+                      onCheckedChange={(checked) => setFetchModels(checked === true)}
+                    />
+                    拉取模型列表
+                  </label>
+                ) : null}
+              </div>
+
               {remoteQuery.isError ? (
                 <p className="text-xs text-muted-foreground">
                   无法获取供应商模型列表：{resolveAiProviderApiError(remoteQuery.error)}
@@ -728,7 +825,7 @@ export function ProviderEditorDialog({
               ) : null}
 
               <div className="flex flex-wrap gap-1.5">
-                {models.map((model) => (
+                {displayedModels.map((model) => (
                   <div
                     key={model.metadata.name}
                     className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs ${
@@ -740,6 +837,7 @@ export function ProviderEditorDialog({
                     <button
                       type="button"
                       className="max-w-48 truncate"
+                      title="打开模型设置"
                       onClick={() => setModelTarget(model)}
                     >
                       {model.spec.modelCode}
@@ -747,11 +845,16 @@ export function ProviderEditorDialog({
                     {canUpdate ? (
                       <button
                         type="button"
-                        className="text-muted-foreground hover:text-foreground"
+                        className="flex size-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
                         aria-label={model.spec.enabled === false ? "启用模型" : "停用模型"}
+                        title={model.spec.enabled === false ? "启用模型" : "停用模型"}
                         onClick={() => toggleModelMutation.mutate(model)}
                       >
-                        <span className="block size-1.5 rounded-full bg-current" />
+                        <span
+                          className={`block size-2 rounded-full ${
+                            model.spec.enabled === false ? "bg-muted-foreground/40" : "bg-primary"
+                          }`}
+                        />
                       </button>
                     ) : null}
                     {canDelete ? (
@@ -766,7 +869,7 @@ export function ProviderEditorDialog({
                     ) : null}
                   </div>
                 ))}
-                {importedCandidates.map((remote) => (
+                {remoteCandidates.map((remote) => (
                   <button
                     key={remote.id}
                     type="button"
@@ -779,6 +882,9 @@ export function ProviderEditorDialog({
                   </button>
                 ))}
               </div>
+              <p className="text-xs text-muted-foreground">
+                点击模型编码编辑设置；圆点切换启用；× 删除。虚线为供应商返回但尚未导入的模型。
+              </p>
 
               {canCreate ? (
                 <div className="flex flex-wrap items-center gap-2">
@@ -808,8 +914,11 @@ export function ProviderEditorDialog({
               ) : null}
             </section>
 
-            <section className="space-y-2">
-              <h3 className="text-sm font-semibold">端点</h3>
+            <section className="space-y-2 rounded-2xl border bg-card/30 p-4">
+              <h3 className="flex items-center gap-2 text-sm font-semibold">
+                <Link2 className="size-4" />
+                端点
+              </h3>
               {endpoints.length === 0 ? (
                 <p className="text-sm text-muted-foreground">配置接入地址后显示端点。</p>
               ) : (
@@ -839,12 +948,13 @@ export function ProviderEditorDialog({
               ) : null}
             </section>
 
-            <section className="space-y-3">
+            <section className="space-y-3 rounded-2xl border bg-card/30 p-4">
               <button
                 type="button"
-                className="flex items-center gap-1 text-sm font-semibold"
+                className="flex items-center gap-2 text-sm font-semibold"
                 onClick={() => setAdvancedOpen((open) => !open)}
               >
+                <SlidersHorizontal className="size-4" />
                 {advancedOpen ? (
                   <ChevronDown className="size-4" />
                 ) : (
@@ -955,37 +1065,6 @@ export function ProviderEditorDialog({
             </section>
           </div>
         </AutoScrollArea>
-
-        <DialogFooter className="sm:justify-between">
-          <div>
-            {canDelete ? (
-              <Button
-                type="button"
-                variant="ghost"
-                className="text-destructive hover:text-destructive"
-                onClick={() => setDeleteProviderOpen(true)}
-              >
-                <Trash2 />
-                移除
-              </Button>
-            ) : null}
-          </div>
-          <div className="flex flex-col-reverse gap-2 sm:flex-row">
-            <Button type="button" variant="outline" onClick={onClose}>
-              关闭
-            </Button>
-            {canUpdate ? (
-              <Button
-                type="button"
-                disabled={saveMutation.isPending}
-                onClick={() => void onSubmit()}
-              >
-                {saveMutation.isPending ? <Loader2 className="animate-spin" /> : null}
-                保存
-              </Button>
-            ) : null}
-          </div>
-        </DialogFooter>
       </DialogContent>
 
       {accountTarget !== undefined ? (
@@ -1050,4 +1129,8 @@ export function ProviderEditorDialog({
       />
     </Dialog>
   );
+}
+
+function hostOf(url: string): string {
+  return url.replace(/^https?:\/\//i, "").replace(/\/.*$/, "");
 }
