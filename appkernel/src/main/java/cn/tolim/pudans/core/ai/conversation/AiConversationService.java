@@ -6,7 +6,9 @@ import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.NewConversation;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.MessageMetadata;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.NewMessage;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -78,9 +80,20 @@ public class AiConversationService {
 
     public Mono<Message> appendUserMessage(
             Conversation conversation, int turnIndex, int messageIndex, String content, @Nullable String requestId) {
+        return appendUserMessage(conversation, turnIndex, messageIndex, content, requestId, null);
+    }
+
+    public Mono<Message> appendUserMessage(
+            Conversation conversation,
+            int turnIndex,
+            int messageIndex,
+            String content,
+            @Nullable String requestId,
+            @Nullable JsonNode metadata) {
         Assert.notNull(conversation, "会话不能为空");
         Assert.hasText(content, "消息内容不能为空");
-        return appendMessage(conversation, turnIndex, messageIndex, ROLE_USER, content, requestId, null, null);
+        return appendMessage(
+                conversation, turnIndex, messageIndex, ROLE_USER, content, requestId, null, null, metadata);
     }
 
     public Mono<Message> appendAssistantMessage(
@@ -91,10 +104,28 @@ public class AiConversationService {
             @Nullable String requestId,
             @Nullable String modelCode,
             @Nullable Integer tokenCount) {
+        return appendAssistantMessage(
+                conversation, turnIndex, messageIndex, content, requestId, modelCode, tokenCount, null);
+    }
+
+    public Mono<Message> appendAssistantMessage(
+            Conversation conversation,
+            int turnIndex,
+            int messageIndex,
+            String content,
+            @Nullable String requestId,
+            @Nullable String modelCode,
+            @Nullable Integer tokenCount,
+            @Nullable JsonNode metadata) {
         Assert.notNull(conversation, "会话不能为空");
         Assert.notNull(content, "消息内容不能为空");
         return appendMessage(
-                conversation, turnIndex, messageIndex, ROLE_ASSISTANT, content, requestId, modelCode, tokenCount);
+                conversation, turnIndex, messageIndex, ROLE_ASSISTANT, content, requestId, modelCode, tokenCount, metadata);
+    }
+
+    public Flux<MessageMetadata> metadata(Conversation conversation) {
+        Assert.notNull(conversation, "会话不能为空");
+        return messageRepository.metadata(conversation.id());
     }
 
     public Mono<Integer> markPending(Conversation conversation, int messageCount) {
@@ -143,7 +174,9 @@ public class AiConversationService {
             String content,
             @Nullable String requestId,
             @Nullable String modelCode,
-            @Nullable Integer tokenCount) {        var newMessage = new NewMessage(
+            @Nullable Integer tokenCount,
+            @Nullable JsonNode metadata) {
+        var newMessage = new NewMessage(
                 conversation.id(),
                 conversation.spaceId(),
                 conversation.userId(),
@@ -158,7 +191,8 @@ public class AiConversationService {
                 content,
                 CONTENT_TYPE_TEXT,
                 tokenCount,
-                modelCode);
+                modelCode,
+                metadata);
         return messageRepository.appendMessage(newMessage);
     }
 

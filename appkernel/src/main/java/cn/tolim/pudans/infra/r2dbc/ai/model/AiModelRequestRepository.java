@@ -239,11 +239,8 @@ public class AiModelRequestRepository {
     }
 
     private static JsonNode json(@Nullable Object value) {
-        if (value == null) {
-            return null;
-        }
-        var text = value.toString();
-        return text.isBlank() ? null : JsonUtils.jsonToObject(text, JsonNode.class);
+        var text = AiR2dbcBindings.jsonText(value);
+        return text == null || text.isBlank() ? null : JsonUtils.jsonToObject(text, JsonNode.class);
     }
 
     private static long count(Row row, String column) {

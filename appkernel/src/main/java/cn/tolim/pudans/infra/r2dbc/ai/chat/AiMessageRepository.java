@@ -1,5 +1,7 @@
 package cn.tolim.pudans.infra.r2dbc.ai.chat;
 
+import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.r2dbc.spi.Row;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -20,11 +22,11 @@ public class AiMessageRepository {
                         INSERT INTO ai_message (
                             conversation_id, space_id, user_id, team_id, agent_id, session_id,
                             task_id, request_id, turn_index, message_index, role, content,
-                            content_type, token_count, model_code
+                            content_type, token_count, model_code, metadata
                         ) VALUES (
                             :conversationId, :spaceId, :userId, :teamId, :agentId, :sessionId,
                             :taskId, :requestId, :turnIndex, :messageIndex, :role, :content,
-                            :contentType, :tokenCount, :modelCode
+                            :contentType, :tokenCount, :modelCode, CAST(:metadata AS jsonb)
                         )
                         RETURNING id, conversation_id, space_id, user_id, team_id, agent_id, session_id,
                                   task_id, request_id, turn_index, message_index, role, content,
@@ -45,6 +47,11 @@ public class AiMessageRepository {
         spec = AiR2dbcBindings.bindNullable(spec, "content", newMessage.content(), String.class);
         spec = AiR2dbcBindings.bindNullable(spec, "tokenCount", newMessage.tokenCount(), Integer.class);
         spec = AiR2dbcBindings.bindNullable(spec, "modelCode", newMessage.modelCode(), String.class);
+        spec = AiR2dbcBindings.bindNullable(
+                spec,
+                "metadata",
+                newMessage.metadata() == null ? "{}" : JsonUtils.objectToJson(newMessage.metadata()),
+                String.class);
         return spec.map((row, metadata) -> mapMessage(row)).one();
     }
 
@@ -64,6 +71,20 @@ public class AiMessageRepository {
                 .bind("afterId", afterId)
                 .bind("limit", limit)
                 .map((row, metadata) -> mapMessage(row))
+                .all();
+    }
+
+    public Flux<MessageMetadata> metadata(long conversationId) {
+        return databaseClient.sql("""
+                        SELECT id, metadata::text AS metadata
+                        FROM ai_message
+                        WHERE conversation_id = :conversationId
+                          AND deleted_at IS NULL
+                          AND metadata <> '{}'::jsonb
+                        """)
+                .bind("conversationId", conversationId)
+                .map((row, metadata) -> new MessageMetadata(
+                        row.get("id", Long.class), json(row.get("metadata", String.class))))
                 .all();
     }
 
@@ -105,6 +126,14 @@ public class AiMessageRepository {
                 .all();
     }
 
+    private static JsonNode json(@Nullable Object value) {
+        if (value == null) {
+            return null;
+        }
+        var text = value.toString();
+        return text.isBlank() ? null : JsonUtils.jsonToObject(text, JsonNode.class);
+    }
+
     static Message mapMessage(Row row) {
         return new Message(
                 row.get("id", Long.class),
@@ -141,7 +170,8 @@ public class AiMessageRepository {
             @Nullable String content,
             String contentType,
             @Nullable Integer tokenCount,
-            @Nullable String modelCode) {
+            @Nullable String modelCode,
+            @Nullable JsonNode metadata) {
 
         public NewMessage {
             requireText(spaceId, "spaceId");
@@ -164,6 +194,8 @@ public class AiMessageRepository {
             }
         }
     }
+
+    public record MessageMetadata(long messageId, @Nullable JsonNode metadata) {}
 
     public record Message(
             long id,
