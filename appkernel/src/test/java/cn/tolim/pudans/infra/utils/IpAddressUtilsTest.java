@@ -51,6 +51,13 @@ class IpAddressUtilsTest {
     }
 
     @Test
+    void junkBetweenTheForgedEntriesDoesNotHideTheRealAddress() {
+        var request = request("127.0.0.1", "6.6.6.6, foo, 1.2.3.4");
+
+        assertThat(IpAddressUtils.getClientIp(request)).isEqualTo("1.2.3.4");
+    }
+
+    @Test
     void trustedHopsAreSkippedFromTheRight() {
         var request = request("127.0.0.1", "1.2.3.4, 10.0.0.5, 10.0.0.6");
 

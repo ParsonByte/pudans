@@ -54,14 +54,12 @@ public class IpAddressUtils {
             var realIp = normalize(request.getHeaders().getFirst(REAL_IP));
             return realIp == null ? remote : realIp;
         }
-        chain.add(remote);
-        for (var i = chain.size() - 1; i >= 0; i--) {
-            var hop = chain.get(i);
+        for (var hop : chain) {
             if (!isTrustedProxy(hop)) {
                 return hop;
             }
         }
-        return chain.get(0);
+        return chain.get(chain.size() - 1);
     }
 
     public static String getIpAddress(ServerRequest request) {
@@ -95,10 +93,11 @@ public class IpAddressUtils {
             return chain;
         }
         var parts = header.split(",");
-        for (var i = 0; i < parts.length && chain.size() < MAX_FORWARDED_HOPS; i++) {
+        // 从右向左解析，跳过而非终止于非法项，代理追加的真实客户端 IP 位于最右
+        for (var i = parts.length - 1; i >= 0 && chain.size() < MAX_FORWARDED_HOPS; i--) {
             var ip = normalize(parts[i]);
             if (ip == null) {
-                break;
+                continue;
             }
             chain.add(ip);
         }
