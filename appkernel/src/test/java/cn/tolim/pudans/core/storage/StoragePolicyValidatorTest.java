@@ -177,6 +177,58 @@ class StoragePolicyValidatorTest {
         assertThat(result.errors()).anyMatch(error -> error.contains("密码"));
     }
 
+    @Test
+    void rejectsALoopbackServerAddress() {
+        var policy = s3Policy();
+        policy.getSpec().setServer("http://127.0.0.1:9000");
+
+        var result = validator.validatePolicy(policy);
+
+        assertThat(result.valid()).isFalse();
+        assertThat(result.errors()).anyMatch(error -> error.contains("本机或内网"));
+    }
+
+    @Test
+    void rejectsAMetadataServerHost() {
+        var policy = s3Policy();
+        policy.getSpec().setServer("http://metadata.google.internal");
+
+        var result = validator.validatePolicy(policy);
+
+        assertThat(result.valid()).isFalse();
+        assertThat(result.errors()).anyMatch(error -> error.contains("不允许使用服务地址"));
+    }
+
+    @Test
+    void rejectsAServerAddressWithUserInfo() {
+        var policy = s3Policy();
+        policy.getSpec().setServer("http://user:pass@s3.example.com");
+
+        var result = validator.validatePolicy(policy);
+
+        assertThat(result.valid()).isFalse();
+        assertThat(result.errors()).anyMatch(error -> error.contains("用户信息"));
+    }
+
+    @Test
+    void rejectsAnEndpointResolvingToABlockedAddress() {
+        var spec = s3Policy().getSpec();
+        spec.setServer("http://10.0.0.8:9000");
+
+        assertThatThrownBy(() -> validator.verifyEndpointReachable(spec))
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo("storage-endpoint-forbidden"));
+    }
+
+    @Test
+    void acceptsAPublicEndpointAddress() {
+        var spec = s3Policy().getSpec();
+        spec.setServer("https://93.184.216.34");
+
+        validator.verifyEndpointReachable(spec);
+    }
+
     private static StoragePolicy upyunPolicy() {
         var policy = new StoragePolicy();
         var spec = policy.getSpec();

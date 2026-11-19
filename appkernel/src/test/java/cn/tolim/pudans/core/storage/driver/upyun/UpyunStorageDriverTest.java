@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,6 +80,17 @@ class UpyunStorageDriverTest {
                 .isInstanceOf(ApiException.class)
                 .satisfies(error -> assertThat(((ApiException) error).getCode())
                         .isEqualTo("storage-object-not-found"));
+    }
+
+    @Test
+    void rejectsADownloadLargerThanTheAvailableTemporarySpace() throws Exception {
+        when(client.getFileInfo("huge")).thenReturn(Map.of("size", String.valueOf(Long.MAX_VALUE)));
+
+        assertThatThrownBy(() -> driver.get("huge", null).block())
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo("storage-temp-space-insufficient"));
+        verify(client, never()).readFile(eq("huge"), any());
     }
 
     @Test

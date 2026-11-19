@@ -1,7 +1,9 @@
 package cn.tolim.pudans.core.storage;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +16,7 @@ import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.StorageDriverFactoryRegistry;
+import cn.tolim.pudans.core.webhook.OutboundRequestValidator;
 import cn.tolim.pudans.infra.exception.ApiException;
 
 @Component
@@ -223,9 +226,63 @@ public class StoragePolicyValidator {
             var uri = new URI(spec.getServer());
             if (!"http".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(uri.getScheme())) {
                 errors.add("服务地址必须是 http 或 https URL。");
+                return;
+            }
+            var host = uri.getHost();
+            if (!StringUtils.hasText(host)) {
+                errors.add("服务地址必须包含主机名。");
+                return;
+            }
+            if (uri.getUserInfo() != null) {
+                errors.add("服务地址不能包含用户信息。");
+            }
+            if (OutboundRequestValidator.isForbiddenHost(host)) {
+                errors.add("不允许使用服务地址 [" + host + "]。");
+                return;
+            }
+            var literal = OutboundRequestValidator.stripBrackets(host);
+            if (OutboundRequestValidator.isIpLiteral(literal)
+                    && OutboundRequestValidator.isBlockedLiteral(literal)) {
+                errors.add("服务地址不能指向本机或内网地址。");
             }
         } catch (URISyntaxException e) {
             errors.add("服务地址不是合法的 URL。");
+        }
+    }
+
+    // 保存期只校验结构，解析结果留到建连前，避免启动时依赖外部 DNS。
+    public void verifyEndpointReachable(StoragePolicy.Spec spec) {
+        if (spec == null || !StringUtils.hasText(spec.getServer())) {
+            return;
+        }
+        var host = endpointHost(spec.getServer());
+        if (!StringUtils.hasText(host)) {
+            return;
+        }
+        InetAddress[] addresses;
+        try {
+            addresses = InetAddress.getAllByName(host);
+        } catch (UnknownHostException e) {
+            throw new ApiException(
+                    HttpStatus.BAD_GATEWAY,
+                    "storage-endpoint-unresolvable",
+                    "无法解析存储服务地址 [" + host + "]。");
+        }
+        for (var address : addresses) {
+            if (OutboundRequestValidator.isBlocked(address)) {
+                throw new ApiException(
+                        HttpStatus.BAD_REQUEST,
+                        "storage-endpoint-forbidden",
+                        "存储服务地址 [" + host + "] 指向本机或内网地址。");
+            }
+        }
+    }
+
+    private static String endpointHost(String server) {
+        try {
+            return OutboundRequestValidator.stripBrackets(new URI(server).getHost());
+        } catch (URISyntaxException e) {
+            return null;
         }
     }
 
