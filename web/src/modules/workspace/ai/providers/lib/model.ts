@@ -1,5 +1,6 @@
 import type {
   AiAccountType,
+  AiModelItem,
   AiModelTier,
   AiModelType,
   AiProviderAccountBalance,
@@ -18,23 +19,6 @@ type Option<T extends string> = {
 export const RESOURCE_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 
 export const RESOURCE_NAME_HINT = "仅支持小写字母、数字和中划线，且以字母或数字开头结尾。";
-
-export const PROTOCOL_OPTIONS: Option<AiProviderProtocol>[] = [
-  { value: "OPENAI_CHAT", label: "OpenAI Chat" },
-  { value: "OPENAI_RESPONSES", label: "OpenAI Responses" },
-  { value: "ANTHROPIC", label: "Anthropic" },
-  { value: "DEEPSEEK", label: "DeepSeek" },
-  { value: "DEEPSEEK_CHAT", label: "DeepSeek Chat" },
-  { value: "DEEPSEEK_RESPONSES", label: "DeepSeek Responses" },
-  { value: "MINIMAX", label: "MiniMax" },
-  { value: "MINIMAX_CHAT", label: "MiniMax Chat" },
-  { value: "MINIMAX_NATIVE", label: "MiniMax 原生" },
-  { value: "MINIMAX_RESPONSES", label: "MiniMax Responses" },
-  { value: "QIANWEN", label: "通义千问" },
-  { value: "GEMINI", label: "Gemini" },
-  { value: "OLLAMA", label: "Ollama" },
-  { value: "CUSTOM_HTTP", label: "自定义 HTTP" },
-];
 
 export const ROUTING_OPTIONS: Option<AiProviderRouting>[] = [
   { value: "SMART", label: "智能" },
@@ -136,16 +120,6 @@ export const DEFAULT_ACCOUNT_SPEC: AccountDefaults = {
   creditsEnabled: false,
 };
 
-export const PROTOCOL_DEFAULT_BASE_URLS: Partial<Record<AiProviderProtocol, string>> = {
-  DEEPSEEK: "https://api.deepseek.com",
-  DEEPSEEK_CHAT: "https://api.deepseek.com",
-  DEEPSEEK_RESPONSES: "https://api.deepseek.com",
-};
-
-export function defaultBaseUrlFor(protocol: AiProviderProtocol | undefined): string {
-  return protocol ? (PROTOCOL_DEFAULT_BASE_URLS[protocol] ?? "") : "";
-}
-
 export function optionLabel<T extends string>(
   options: readonly Option<T>[],
   value: T | undefined,
@@ -162,6 +136,10 @@ export function formatNumber(value: number | undefined, maximumFractionDigits = 
     return "0";
   }
   return new Intl.NumberFormat("zh-CN", { maximumFractionDigits }).format(value);
+}
+
+export function modelDisplayName(model: AiModelItem): string {
+  return model.spec.displayName || model.spec.modelCode;
 }
 
 export function formatQuota(quota: AiProviderAccountQuota | undefined): string {
@@ -193,8 +171,15 @@ export function formatTestResult(result: {
 }
 
 export function supportsModelDiscovery(protocol: AiProviderProtocol | undefined): boolean {
-  return (
-    protocol === "DEEPSEEK" || protocol === "DEEPSEEK_CHAT" || protocol === "DEEPSEEK_RESPONSES"
+  return Boolean(
+    protocol &&
+    (protocol.startsWith("DEEPSEEK") ||
+      protocol.startsWith("MINIMAX") ||
+      protocol === "QIANWEN" ||
+      protocol === "OPENAI_CHAT" ||
+      protocol === "OPENAI_RESPONSES" ||
+      protocol === "ANTHROPIC" ||
+      protocol === "GEMINI_OPENAI"),
   );
 }
 
@@ -223,6 +208,48 @@ export type ProviderEndpoint = {
   url: string;
 };
 
+export function protocolEndpoint(
+  protocol: AiProviderProtocol | undefined,
+  baseUrl: string | undefined,
+): string | undefined {
+  if (!protocol || !baseUrl) {
+    return undefined;
+  }
+  const base = baseUrl.replace(/\/+$/, "");
+  switch (protocol) {
+    case "DEEPSEEK":
+      return `${base}/anthropic/v1/messages`;
+    case "DEEPSEEK_CHAT":
+      return `${base}/chat/completions`;
+    case "DEEPSEEK_RESPONSES":
+      return `${base}/responses`;
+    case "OPENAI_CHAT":
+      return `${base}/v1/chat/completions`;
+    case "OPENAI_RESPONSES":
+      return `${base}/v1/responses`;
+    case "ANTHROPIC":
+      return `${base}/v1/messages`;
+    case "GEMINI":
+      return `${base}/v1beta/models/{model}:generateContent`;
+    case "GEMINI_OPENAI":
+      return `${base}/chat/completions`;
+    case "QIANWEN":
+      return `${base}/compatible-mode/v1/chat/completions`;
+    case "MINIMAX":
+      return `${base}/anthropic/v1/messages`;
+    case "MINIMAX_CHAT":
+      return `${base}/v1/chat/completions`;
+    case "MINIMAX_NATIVE":
+      return `${base}/v1/text/chatcompletion_v2`;
+    case "MINIMAX_RESPONSES":
+      return `${base}/v1/responses`;
+    case "OLLAMA":
+      return `${base}/api/chat`;
+    case "CUSTOM_HTTP":
+      return base;
+  }
+}
+
 export function providerEndpoints(
   protocol: AiProviderProtocol | undefined,
   baseUrl: string | undefined,
@@ -248,13 +275,18 @@ export function providerEndpoints(
       return [{ label: "Anthropic", url: `${base}/v1/messages` }];
     case "GEMINI":
       return [{ label: "Gemini", url: `${base}/v1beta/models/{model}:generateContent` }];
+    case "GEMINI_OPENAI":
+      return [{ label: "OpenAI", url: `${base}/chat/completions` }];
     case "QIANWEN":
       return [{ label: "OpenAI 兼容", url: `${base}/compatible-mode/v1/chat/completions` }];
     case "MINIMAX":
+      return [{ label: "Anthropic", url: `${base}/anthropic/v1/messages` }];
     case "MINIMAX_CHAT":
+      return [{ label: "OpenAI", url: `${base}/v1/chat/completions` }];
     case "MINIMAX_NATIVE":
-    case "MINIMAX_RESPONSES":
       return [{ label: "MiniMax", url: `${base}/v1/text/chatcompletion_v2` }];
+    case "MINIMAX_RESPONSES":
+      return [{ label: "Responses", url: `${base}/v1/responses` }];
     case "OLLAMA":
       return [{ label: "Ollama", url: `${base}/api/chat` }];
     case "CUSTOM_HTTP":

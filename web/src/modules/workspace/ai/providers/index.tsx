@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronRight, Loader2, Plug, Plus, RefreshCw, Search } from "lucide-react";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, Loader2, Plus, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -17,16 +17,30 @@ import {
 import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
 import { CustomProviderDialog } from "./components/custom-provider-dialog";
+import { ProviderBrandIcon } from "./components/provider-brand-icon";
 import { ProviderEditorDialog } from "./components/provider-editor-dialog";
 import {
   type AiProviderItem,
   fetchAllProviderAccounts,
   fetchAllProviderModels,
+  fetchProviderAccountBalance,
   fetchProviders,
   resolveAiProviderApiError,
   updateProvider,
 } from "./lib/api";
-import { PROVIDER_PRESETS, type ProviderPreset } from "./lib/presets";
+import {
+  PROVIDER_GROUP_LABELS,
+  PROVIDER_PRESETS,
+  type ProviderGroup,
+  type ProviderPreset,
+  type ProviderProtocolFamily,
+} from "./lib/presets";
+
+const FAMILY_LABELS: Record<ProviderProtocolFamily, string> = {
+  openai: "OpenAI",
+  responses: "Responses",
+  anthropic: "Anthropic",
+};
 
 export function AiProvidersView() {
   const queryClient = useQueryClient();
@@ -53,7 +67,7 @@ export function AiProvidersView() {
     retry: false,
   });
 
-  const providers = providersQuery.data?.items ?? [];
+  const providers = useMemo(() => providersQuery.data?.items ?? [], [providersQuery.data]);
   const accountCounts = useMemo(
     () => countBy(accountsQuery.data ?? [], (account) => account.spec.provider),
     [accountsQuery.data],
@@ -62,6 +76,47 @@ export function AiProvidersView() {
     () => countBy(modelsQuery.data ?? [], (model) => model.spec.provider),
     [modelsQuery.data],
   );
+  const providerProtocols = useMemo(
+    () => new Map(providers.map((provider) => [provider.metadata.name, provider.spec.protocol])),
+    [providers],
+  );
+  const balanceAccounts = useMemo(
+    () =>
+      (accountsQuery.data ?? []).filter(
+        (account) =>
+          account.spec.enabled &&
+          providerProtocols.get(account.spec.provider)?.startsWith("DEEPSEEK"),
+      ),
+    [accountsQuery.data, providerProtocols],
+  );
+  const balanceQueries = useQueries({
+    queries: balanceAccounts.map((account) => ({
+      queryKey: ["ai-account-balance", account.metadata.name],
+      queryFn: () => fetchProviderAccountBalance(account.metadata.name),
+      retry: false,
+      staleTime: 60_000,
+    })),
+  });
+  const balances = new Map<string, ProviderBalance>();
+  balanceAccounts.forEach((account, index) => {
+    const data = balanceQueries[index]?.data;
+    if (!data?.available) {
+      return;
+    }
+    for (const info of data.balanceInfos ?? []) {
+      const total = Number(info.totalBalance);
+      if (!Number.isFinite(total)) {
+        continue;
+      }
+      const currency = info.currency ?? "";
+      const existing = balances.get(account.spec.provider);
+      if (existing && existing.currency === currency) {
+        existing.total += total;
+      } else if (!existing) {
+        balances.set(account.spec.provider, { currency, total });
+      }
+    }
+  });
   const presets = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     if (!keyword) {
@@ -70,9 +125,23 @@ export function AiProvidersView() {
     return PROVIDER_PRESETS.filter(
       (preset) =>
         preset.displayName.toLowerCase().includes(keyword) ||
-        preset.baseUrl.toLowerCase().includes(keyword),
+        preset.regions.some(
+          (region) =>
+            region.openai?.baseUrl.toLowerCase().includes(keyword) ||
+            region.responses?.baseUrl.toLowerCase().includes(keyword) ||
+            region.anthropic?.baseUrl.toLowerCase().includes(keyword),
+        ),
     );
   }, [search]);
+
+  const presetGroups: { group: ProviderGroup; items: ProviderPreset[] }[] = (
+    ["international", "domestic"] as ProviderGroup[]
+  )
+    .map((group) => ({
+      group,
+      items: presets.filter((preset) => preset.group === group),
+    }))
+    .filter((entry) => entry.items.length > 0);
 
   const toggleMutation = useMutation({
     mutationFn: (provider: AiProviderItem) =>
@@ -97,8 +166,14 @@ export function AiProvidersView() {
 
   return (
     <ConsolePage title="供应商">
-      <div className="flex flex-1 flex-col gap-4 sm:gap-6">
-        <div className="flex flex-wrap items-center justify-end gap-2">
+      <div className="flex flex-1 flex-col gap-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold">当前供应商</h2>
+            <p className="text-xs text-muted-foreground">
+              {providers.length} 个供应商，管理密钥、模型与端点。
+            </p>
+          </div>
           <Button type="button" variant="outline" onClick={refresh} disabled={refreshing}>
             {refreshing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
             刷新
@@ -106,7 +181,7 @@ export function AiProvidersView() {
         </div>
 
         {providersQuery.isPending ? (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3">
             {Array.from({ length: 3 }, (_, index) => (
               <Skeleton key={index} className="h-20 rounded-xl" />
             ))}
@@ -126,13 +201,14 @@ export function AiProvidersView() {
             <ConsoleEmpty>还没有供应商。从下方选择一个供应商预设，或自定义供应商。</ConsoleEmpty>
           </ConsoleSection>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3">
             {providers.map((provider) => (
               <ProviderCard
                 key={provider.metadata.name}
                 provider={provider}
                 accountCount={accountCounts.get(provider.metadata.name)}
                 modelCount={modelCounts.get(provider.metadata.name)}
+                balance={balances.get(provider.metadata.name)}
                 canUpdate={canUpdate}
                 toggling={
                   toggleMutation.isPending &&
@@ -146,12 +222,12 @@ export function AiProvidersView() {
         )}
 
         {canCreate ? (
-          <ConsoleSection>
-            <div className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
+          <ConsoleSection className="overflow-hidden">
+            <div className="flex flex-wrap items-start justify-between gap-3 border-b px-5 py-5">
               <div className="space-y-1">
-                <h2 className="text-sm font-semibold">添加供应商</h2>
+                <h2 className="text-base font-semibold">添加供应商</h2>
                 <p className="text-xs text-muted-foreground">
-                  从预设开始，或自定义一个兼容的供应商地址和密钥。
+                  选择官方供应商预设，或自定义兼容地址。
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -171,26 +247,50 @@ export function AiProvidersView() {
                 </Button>
               </div>
             </div>
-            {presets.length === 0 ? (
+            {presetGroups.length === 0 ? (
               <ConsoleEmpty>没有匹配的供应商预设，使用自定义供应商。</ConsoleEmpty>
             ) : (
-              <div className="grid gap-3 px-5 pb-5 sm:grid-cols-2 xl:grid-cols-3">
-                {presets.map((preset) => (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => setCustomTarget(preset)}
-                    className="flex items-center gap-3 rounded-xl border p-4 text-start transition-colors hover:border-primary/50 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                  >
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                      <Plug className="size-4" />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">{preset.displayName}</p>
-                      <p className="truncate text-xs text-muted-foreground">{preset.baseUrl}</p>
+              <div className="space-y-6 px-5 py-5">
+                {presetGroups.map(({ group, items }) => (
+                  <div key={group} className="space-y-3">
+                    <h3 className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                      {PROVIDER_GROUP_LABELS[group]}
+                    </h3>
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                      {items.map((preset) => (
+                        <button
+                          key={preset.id}
+                          type="button"
+                          onClick={() => setCustomTarget(preset)}
+                          className="group flex items-center gap-3 rounded-2xl border bg-card/40 p-4 text-start transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                        >
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+                            <ProviderBrandIcon preset={preset} className="size-6" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold">{preset.displayName}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {preset.description}
+                            </p>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+                              <span>
+                                {preset.families.map((family) => FAMILY_LABELS[family]).join(" / ")}
+                              </span>
+                              {preset.regions.length > 1 ? (
+                                <>
+                                  <span>·</span>
+                                  <span>
+                                    {preset.regions.map((region) => region.label).join(" / ")}
+                                  </span>
+                                </>
+                              ) : null}
+                            </div>
+                          </div>
+                          <Plus className="size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-primary" />
+                        </button>
+                      ))}
                     </div>
-                    <Plus className="size-4 shrink-0 text-muted-foreground" />
-                  </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -201,6 +301,10 @@ export function AiProvidersView() {
       {customTarget !== undefined ? (
         <CustomProviderDialog
           preset={customTarget ?? undefined}
+          onCreated={(provider) => {
+            setCustomTarget(undefined);
+            setEditingProvider(provider);
+          }}
           onClose={() => setCustomTarget(undefined)}
         />
       ) : null}
@@ -215,6 +319,7 @@ type ProviderCardProps = {
   provider: AiProviderItem;
   accountCount: number | undefined;
   modelCount: number | undefined;
+  balance: ProviderBalance | undefined;
   canUpdate: boolean;
   toggling: boolean;
   onToggle: () => void;
@@ -225,38 +330,54 @@ function ProviderCard({
   provider,
   accountCount,
   modelCount,
+  balance,
   canUpdate,
   toggling,
   onToggle,
   onOpen,
 }: ProviderCardProps) {
   const enabled = provider.spec.enabled !== false;
+  const healthScore = provider.status?.healthScore;
   return (
-    <div className="flex items-center gap-3 rounded-xl border p-4">
+    <div className="group flex items-center gap-3 rounded-2xl border bg-card/40 p-4 transition-colors hover:bg-accent/20">
       <button
         type="button"
         onClick={onOpen}
         className="flex min-w-0 flex-1 items-center gap-3 text-start"
       >
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-          <Plug className="size-5" />
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+          <ProviderBrandIcon provider={provider} className="size-6" />
         </span>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="truncate text-sm font-medium">
+            <span className="truncate text-sm font-semibold">
               {provider.spec.displayName || provider.metadata.name}
             </span>
-            <Badge variant={enabled ? "secondary" : "outline"}>
-              {enabled ? "已启用" : "已停用"}
-            </Badge>
-            {provider.spec.free ? <Badge variant="outline">免费</Badge> : null}
+            <Badge variant="secondary">{provider.spec.free ? "免费" : "按量付费"}</Badge>
+            {!enabled ? <Badge variant="outline">已停用</Badge> : null}
           </div>
-          <p className="truncate text-xs text-muted-foreground">
+          <p className="truncate font-mono text-[11px] text-muted-foreground">
             {provider.spec.baseUrl || "未配置接入地址"}
-            {` · ${modelCount ?? "—"} 个模型 · ${accountCount ?? "—"} 个密钥`}
           </p>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+            <span>{modelCount ?? "—"} 个模型</span>
+            <span className="text-border">·</span>
+            <span>{accountCount ?? "—"} 个密钥</span>
+            {balance ? (
+              <>
+                <span className="text-border">·</span>
+                <span>{formatProviderBalance(balance)}</span>
+              </>
+            ) : null}
+            {healthScore == null ? null : (
+              <>
+                <span className="text-border">·</span>
+                <span>健康 {Math.round(healthScore)}%</span>
+              </>
+            )}
+          </div>
         </div>
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       </button>
       <div className="flex shrink-0 items-center gap-2">
         {toggling ? <Loader2 className="size-4 animate-spin text-muted-foreground" /> : null}
@@ -269,6 +390,25 @@ function ProviderCard({
       </div>
     </div>
   );
+}
+
+type ProviderBalance = {
+  currency: string;
+  total: number;
+};
+
+function formatProviderBalance(balance: ProviderBalance): string {
+  const amount = new Intl.NumberFormat("zh-CN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(balance.total);
+  if (balance.currency === "CNY") {
+    return `¥${amount}`;
+  }
+  if (balance.currency === "USD") {
+    return `$${amount}`;
+  }
+  return `${amount} ${balance.currency}`.trim();
 }
 
 function countBy<T>(items: readonly T[], key: (item: T) => string): Map<string, number> {

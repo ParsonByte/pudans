@@ -3,7 +3,7 @@ import { isAxiosError } from "axios";
 
 import { resolveApiError } from "@/lib/api-error";
 
-const API_PREFIX = "/apis/api.pudans.tolim.cn/v1alpha1";
+export const AI_API_PREFIX = "/apis/api.pudans.tolim.cn/v1alpha1";
 
 export const AI_API_VERSION = "pudans.tolim.cn/v1alpha1";
 
@@ -12,6 +12,10 @@ export const AI_PROVIDER_KIND = "AiProvider";
 export const AI_PROVIDER_ACCOUNT_KIND = "AiProviderAccount";
 
 export const AI_MODEL_KIND = "AiModel";
+
+export const AI_ROUTE_GROUP_KIND = "AiRouteGroup";
+
+export const AI_SETTING_NAME = "ai-setting";
 
 export type AiProviderProtocol =
   | "OPENAI_CHAT"
@@ -26,6 +30,7 @@ export type AiProviderProtocol =
   | "MINIMAX_RESPONSES"
   | "QIANWEN"
   | "GEMINI"
+  | "GEMINI_OPENAI"
   | "OLLAMA"
   | "CUSTOM_HTTP";
 
@@ -50,6 +55,8 @@ export type AiQuotaUnit = "TOKEN" | "REQUEST" | "CREDIT" | "USD";
 
 export type AiModelType =
   "CHAT" | "EMBEDDING" | "RERANK" | "IMAGE" | "VIDEO" | "SPEECH" | "AUDIO" | "MUSIC" | "THREE_D";
+
+export type AiModality = "TEXT" | "IMAGE" | "AUDIO" | "VIDEO" | "FILE" | "THREE_D";
 
 export type AiModelTier = "CHEAP" | "MEDIUM" | "HIGH" | "ULTRA";
 
@@ -177,6 +184,8 @@ export type AiModelSpec = {
   supportsVision?: boolean;
   supportsAsync?: boolean;
   capabilities?: AiModelCapability[];
+  inputModalities?: AiModality[];
+  outputModalities?: AiModality[];
   embeddingDim?: number;
   enabled?: boolean;
   [key: string]: unknown;
@@ -187,6 +196,74 @@ export type AiModelItem = {
   kind: string;
   metadata: AiMetadata;
   spec: AiModelSpec;
+};
+
+export type AiRouteGroupMode =
+  | "SMART"
+  | "ORDER"
+  | "ROTATE"
+  | "USAGE"
+  | "PACE"
+  | "WEIGHT"
+  | "FREE"
+  | "FAST"
+  | "CHEAP"
+  | "DRAIN"
+  | "EXPIRING"
+  | "MANUAL";
+
+export type AiRouteGroupMember = {
+  model: string;
+  tierOverride?: AiModelTier;
+  weight?: number;
+  capabilityTags?: string[];
+  extraContextMargin?: number;
+  enabled?: boolean;
+};
+
+export type AiRouteGroupTier = AiModelTier | "AUTO";
+
+export type AiRouteGroupSpec = {
+  displayName: string;
+  description?: string;
+  routeMode?: AiRouteGroupMode;
+  defaultTier?: AiRouteGroupTier;
+  affinity?: AiProviderAffinity;
+  fallback?: string[];
+  patienceSeconds?: number;
+  firstTokenSeconds?: number;
+  sink?: boolean;
+  contextMode?: string;
+  manualPick?: string;
+  isDefault?: boolean;
+  enabled?: boolean;
+  members?: AiRouteGroupMember[];
+};
+
+export type AiRouteGroupItem = {
+  apiVersion: string;
+  kind: string;
+  metadata: AiMetadata;
+  spec: AiRouteGroupSpec;
+};
+
+export type AiSettingRouting = {
+  classifierEnabled?: boolean;
+  classifierFallbackTier?: AiRouteGroupTier;
+};
+
+export type AiSettingSpec = {
+  defaultRouteGroup?: string;
+  defaultChatMode?: string;
+  routing?: AiSettingRouting;
+  [key: string]: unknown;
+};
+
+export type AiSettingItem = {
+  apiVersion: string;
+  kind: string;
+  metadata: AiMetadata;
+  spec: AiSettingSpec;
 };
 
 export type AiProviderTestResult = {
@@ -203,8 +280,8 @@ export type AiRemoteModel = {
   name?: string;
   contextWindow?: number;
   maxOutputTokens?: number;
-  inputModalities?: string[];
-  outputModalities?: string[];
+  inputModalities?: AiModality[];
+  outputModalities?: AiModality[];
 };
 
 export type AiRemoteModelList = {
@@ -237,7 +314,7 @@ function toPageResult<T>(data: ListResponse<T>): PageResult<T> {
 async function listAll<T>(path: string, params: Record<string, unknown> = {}): Promise<T[]> {
   const items: T[] = [];
   for (let page = 1; ; page += 1) {
-    const response = await axiosInstance.get<ListResponse<T>>(`${API_PREFIX}${path}`, {
+    const response = await axiosInstance.get<ListResponse<T>>(`${AI_API_PREFIX}${path}`, {
       params: { page, size: ALL_PAGE_SIZE, ...params },
     });
     const pageItems = response.data.items ?? [];
@@ -251,7 +328,7 @@ async function listAll<T>(path: string, params: Record<string, unknown> = {}): P
 
 export async function fetchProviders(page = 1, size = 10): Promise<PageResult<AiProviderItem>> {
   const response = await axiosInstance.get<ListResponse<AiProviderItem>>(
-    `${API_PREFIX}/aiproviders`,
+    `${AI_API_PREFIX}/aiproviders`,
     { params: { page, size } },
   );
   return toPageResult(response.data);
@@ -259,7 +336,7 @@ export async function fetchProviders(page = 1, size = 10): Promise<PageResult<Ai
 
 export async function fetchProvider(name: string): Promise<AiProviderItem> {
   const response = await axiosInstance.get<AiProviderItem>(
-    `${API_PREFIX}/aiproviders/${encodeURIComponent(name)}`,
+    `${AI_API_PREFIX}/aiproviders/${encodeURIComponent(name)}`,
   );
   return response.data;
 }
@@ -284,26 +361,68 @@ export function fetchProviderModels(providerName: string): Promise<AiModelItem[]
   });
 }
 
+export function fetchAllRouteGroups(): Promise<AiRouteGroupItem[]> {
+  return listAll<AiRouteGroupItem>("/airoutegroups");
+}
+
+export async function createRouteGroup(group: AiRouteGroupItem): Promise<AiRouteGroupItem> {
+  const response = await axiosInstance.post<AiRouteGroupItem>(
+    `${AI_API_PREFIX}/airoutegroups`,
+    group,
+  );
+  return response.data;
+}
+
+export async function updateRouteGroup(group: AiRouteGroupItem): Promise<AiRouteGroupItem> {
+  const response = await axiosInstance.put<AiRouteGroupItem>(
+    `${AI_API_PREFIX}/airoutegroups/${encodeURIComponent(group.metadata.name)}`,
+    group,
+  );
+  return response.data;
+}
+
+export async function deleteRouteGroup(name: string): Promise<void> {
+  await axiosInstance.delete(`${AI_API_PREFIX}/airoutegroups/${encodeURIComponent(name)}`);
+}
+
+export async function fetchAiSetting(): Promise<AiSettingItem> {
+  const response = await axiosInstance.get<AiSettingItem>(
+    `${AI_API_PREFIX}/aisettings/${AI_SETTING_NAME}`,
+  );
+  return response.data;
+}
+
+export async function updateAiSetting(setting: AiSettingItem): Promise<AiSettingItem> {
+  const response = await axiosInstance.put<AiSettingItem>(
+    `${AI_API_PREFIX}/aisettings/${AI_SETTING_NAME}`,
+    setting,
+  );
+  return response.data;
+}
+
 export async function createProvider(provider: AiProviderItem): Promise<AiProviderItem> {
-  const response = await axiosInstance.post<AiProviderItem>(`${API_PREFIX}/aiproviders`, provider);
+  const response = await axiosInstance.post<AiProviderItem>(
+    `${AI_API_PREFIX}/aiproviders`,
+    provider,
+  );
   return response.data;
 }
 
 export async function updateProvider(provider: AiProviderItem): Promise<AiProviderItem> {
   const response = await axiosInstance.put<AiProviderItem>(
-    `${API_PREFIX}/aiproviders/${encodeURIComponent(provider.metadata.name)}`,
+    `${AI_API_PREFIX}/aiproviders/${encodeURIComponent(provider.metadata.name)}`,
     provider,
   );
   return response.data;
 }
 
 export async function deleteProvider(name: string): Promise<void> {
-  await axiosInstance.delete(`${API_PREFIX}/aiproviders/${encodeURIComponent(name)}`);
+  await axiosInstance.delete(`${AI_API_PREFIX}/aiproviders/${encodeURIComponent(name)}`);
 }
 
 export async function testProvider(name: string): Promise<AiProviderTestResult> {
   const response = await axiosInstance.post<AiProviderTestResult>(
-    `${API_PREFIX}/aiproviders/${encodeURIComponent(name)}/test`,
+    `${AI_API_PREFIX}/aiproviders/${encodeURIComponent(name)}/test`,
   );
   return response.data;
 }
@@ -312,7 +431,7 @@ export async function createProviderAccount(
   account: AiProviderAccountItem & { spec: AiProviderAccountSpec & { apiKey?: string } },
 ): Promise<AiProviderAccountItem> {
   const response = await axiosInstance.post<AiProviderAccountItem>(
-    `${API_PREFIX}/aiprovideraccounts`,
+    `${AI_API_PREFIX}/aiprovideraccounts`,
     account,
   );
   return response.data;
@@ -323,7 +442,7 @@ export async function patchProviderAccount(
   operations: JsonPatchOperation[],
 ): Promise<AiProviderAccountItem> {
   const response = await axiosInstance.patch<AiProviderAccountItem>(
-    `${API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}`,
+    `${AI_API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}`,
     operations,
     { headers: { "Content-Type": "application/json-patch+json" } },
   );
@@ -331,12 +450,12 @@ export async function patchProviderAccount(
 }
 
 export async function deleteProviderAccount(name: string): Promise<void> {
-  await axiosInstance.delete(`${API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}`);
+  await axiosInstance.delete(`${AI_API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}`);
 }
 
 export async function testProviderAccount(name: string): Promise<AiProviderTestResult> {
   const response = await axiosInstance.post<AiProviderTestResult>(
-    `${API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}/test`,
+    `${AI_API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}/test`,
   );
   return response.data;
 }
@@ -347,41 +466,76 @@ export async function updateAccountQuota(
   balance: AiProviderAccountBalance,
 ): Promise<AiProviderAccountItem> {
   const response = await axiosInstance.post<AiProviderAccountItem>(
-    `${API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}/quota`,
+    `${AI_API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}/quota`,
     { quota, balance },
   );
   return response.data;
 }
 
 export async function createModel(model: AiModelItem): Promise<AiModelItem> {
-  const response = await axiosInstance.post<AiModelItem>(`${API_PREFIX}/aimodels`, model);
+  const response = await axiosInstance.post<AiModelItem>(`${AI_API_PREFIX}/aimodels`, model);
   return response.data;
 }
 
 export async function updateModel(model: AiModelItem): Promise<AiModelItem> {
   const response = await axiosInstance.put<AiModelItem>(
-    `${API_PREFIX}/aimodels/${encodeURIComponent(model.metadata.name)}`,
+    `${AI_API_PREFIX}/aimodels/${encodeURIComponent(model.metadata.name)}`,
     model,
   );
   return response.data;
 }
 
 export async function deleteModel(name: string): Promise<void> {
-  await axiosInstance.delete(`${API_PREFIX}/aimodels/${encodeURIComponent(name)}`);
+  await axiosInstance.delete(`${AI_API_PREFIX}/aimodels/${encodeURIComponent(name)}`);
 }
 
 export async function testModel(name: string): Promise<AiProviderTestResult> {
   const response = await axiosInstance.post<AiProviderTestResult>(
-    `${API_PREFIX}/aimodels/${encodeURIComponent(name)}/test`,
+    `${AI_API_PREFIX}/aimodels/${encodeURIComponent(name)}/test`,
   );
   return response.data;
 }
 
-export async function fetchProviderRemoteModels(name: string): Promise<AiRemoteModel[]> {
+export async function fetchProviderRemoteModels(
+  name: string,
+  protocol: AiProviderProtocol,
+): Promise<AiRemoteModel[]> {
   const response = await axiosInstance.get<AiRemoteModelList>(
-    `${API_PREFIX}/aiproviders/${encodeURIComponent(name)}/models`,
+    `${AI_API_PREFIX}${remoteModelsPath(name, protocol)}`,
   );
   return response.data.data ?? [];
+}
+
+function remoteModelsPath(name: string, protocol: AiProviderProtocol): string {
+  const encoded = encodeURIComponent(name);
+  if (protocol.startsWith("MINIMAX")) {
+    return protocol === "MINIMAX"
+      ? `/aiproviders/${encoded}/minimax/anthropic/models`
+      : `/aiproviders/${encoded}/minimax/models`;
+  }
+  if (protocol === "QIANWEN") {
+    return `/aiproviders/${encoded}/qianwen/compatible-mode/v1/models`;
+  }
+  return `/aiproviders/${encoded}/models`;
+}
+
+export type AiProviderBalanceInfo = {
+  currency?: string;
+  totalBalance?: string;
+  grantedBalance?: string;
+  toppedUpBalance?: string;
+};
+
+export type AiProviderBalanceResult = {
+  available?: boolean;
+  balanceInfos?: AiProviderBalanceInfo[];
+};
+
+export async function fetchProviderAccountBalance(name: string): Promise<AiProviderBalanceResult> {
+  const response = await axiosInstance.get<AiProviderBalanceResult>(
+    `${AI_API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}/balance`,
+  );
+  return response.data;
 }
 
 export function resolveAiProviderApiError(error: unknown): string {

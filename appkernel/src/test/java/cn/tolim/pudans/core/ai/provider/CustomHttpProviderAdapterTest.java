@@ -143,6 +143,7 @@ class CustomHttpProviderAdapterTest {
                 new AnthropicMessagesProviderAdapter(webClient, mapper, accountService),
                 new OpenAiResponsesProviderAdapter(webClient, mapper, accountService),
                 new GeminiProviderAdapter(webClient, mapper, accountService),
+                new GeminiOpenAiProviderAdapter(webClient, mapper, accountService),
                 new OllamaProviderAdapter(webClient, mapper, accountService),
                 new DeepSeekProviderAdapter(webClient, mapper, accountService),
                 new DeepSeekChatProviderAdapter(webClient, mapper, accountService),

@@ -6,8 +6,6 @@ import { Boxes } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { FormDialog, FormDialogSection } from "@/components/form-dialog";
-import { FormField } from "@/components/form-field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -35,6 +33,11 @@ import {
   RESOURCE_NAME_HINT,
   RESOURCE_NAME_PATTERN,
 } from "../lib/model";
+import {
+  ProviderDialogSection,
+  ProviderDialogShell,
+  ProviderFieldRow,
+} from "./provider-dialog-shell";
 
 const MODEL_TYPE_VALUES = MODEL_TYPE_OPTIONS.map((option) => option.value) as [
   AiModelType,
@@ -138,44 +141,41 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
   );
 
   return (
-    <FormDialog
-      open
+    <ProviderDialogShell
       onClose={onClose}
       icon={<Boxes />}
       title={model ? "编辑模型" : "添加模型"}
       description={`为供应商 ${provider.spec.displayName || provider.metadata.name} 配置可用模型。`}
-      form={form}
       onSubmit={onSubmit}
       isPending={mutation.isPending}
       submitLabel={model ? "保存模型" : "创建模型"}
-      maxHeightRatio={0.6}
     >
-      <FormDialogSection title="基础信息">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
+      <ProviderDialogSection title="基础信息">
+        <div className="space-y-3">
+          <ProviderFieldRow
             label="名称"
             htmlFor="ai-model-name"
             hint={model ? "名称创建后不可修改。" : RESOURCE_NAME_HINT}
             error={form.formState.errors.name?.message}
           >
             <Input id="ai-model-name" disabled={Boolean(model)} {...form.register("name")} />
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="模型编码"
             htmlFor="ai-model-code"
             hint="供应商接口使用的模型标识。"
             error={form.formState.errors.modelCode?.message}
           >
             <Input id="ai-model-code" placeholder="gpt-4o-mini" {...form.register("modelCode")} />
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="显示名称"
             htmlFor="ai-model-display-name"
             error={form.formState.errors.displayName?.message}
           >
             <Input id="ai-model-display-name" {...form.register("displayName")} />
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="类型"
             htmlFor="ai-model-type"
             error={form.formState.errors.modelType?.message}
@@ -197,8 +197,8 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
                 ))}
               </SelectContent>
             </Select>
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="档位"
             htmlFor="ai-model-tier"
             error={form.formState.errors.tier?.message}
@@ -219,8 +219,8 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
                 ))}
               </SelectContent>
             </Select>
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="上下文长度"
             htmlFor="ai-model-context-window"
             hint="0 表示未设置。"
@@ -232,8 +232,8 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
               min={0}
               {...form.register("contextWindow")}
             />
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="最大输出"
             htmlFor="ai-model-max-output"
             hint="0 表示未设置。"
@@ -245,9 +245,9 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
               min={0}
               {...form.register("maxOutputTokens")}
             />
-          </FormField>
+          </ProviderFieldRow>
           {modelType === "EMBEDDING" ? (
-            <FormField
+            <ProviderFieldRow
               label="向量维度"
               htmlFor="ai-model-embedding-dim"
               hint="0 表示未设置。"
@@ -259,12 +259,12 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
                 min={0}
                 {...form.register("embeddingDim")}
               />
-            </FormField>
+            </ProviderFieldRow>
           ) : null}
         </div>
-      </FormDialogSection>
+      </ProviderDialogSection>
 
-      <FormDialogSection title="能力">
+      <ProviderDialogSection title="能力">
         <div className="grid gap-3 sm:grid-cols-2">
           <SwitchRow
             label="流式输出"
@@ -297,8 +297,8 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
             onChange={(checked) => form.setValue("enabled", checked, { shouldDirty: true })}
           />
         </div>
-      </FormDialogSection>
-    </FormDialog>
+      </ProviderDialogSection>
+    </ProviderDialogShell>
   );
 }
 

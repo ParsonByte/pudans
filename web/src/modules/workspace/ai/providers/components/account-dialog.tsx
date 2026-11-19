@@ -6,8 +6,6 @@ import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { FormDialog, FormDialogSection } from "@/components/form-dialog";
-import { FormField } from "@/components/form-field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -35,6 +33,11 @@ import {
   RESOURCE_NAME_HINT,
   RESOURCE_NAME_PATTERN,
 } from "../lib/model";
+import {
+  ProviderDialogSection,
+  ProviderDialogShell,
+  ProviderFieldRow,
+} from "./provider-dialog-shell";
 
 const ACCOUNT_TYPE_VALUES = ACCOUNT_TYPE_OPTIONS.map((option) => option.value) as [
   AiAccountType,
@@ -132,36 +135,33 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
   );
 
   return (
-    <FormDialog
-      open
+    <ProviderDialogShell
       onClose={onClose}
       icon={<KeyRound />}
       title={account ? "编辑账号" : "添加账号"}
       description="账号用于调用供应商接口，可配置权重、优先级和并发限制。"
-      form={form}
       onSubmit={onSubmit}
       isPending={mutation.isPending}
       submitLabel={account ? "保存账号" : "创建账号"}
-      maxHeightRatio={0.6}
     >
-      <FormDialogSection title="基础信息">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
+      <ProviderDialogSection title="基础信息">
+        <div className="space-y-3">
+          <ProviderFieldRow
             label="名称"
             htmlFor="ai-account-name"
             hint={account ? "名称创建后不可修改。" : RESOURCE_NAME_HINT}
             error={form.formState.errors.name?.message}
           >
             <Input id="ai-account-name" disabled={Boolean(account)} {...form.register("name")} />
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="显示名称"
             htmlFor="ai-account-display-name"
             error={form.formState.errors.displayName?.message}
           >
             <Input id="ai-account-display-name" {...form.register("displayName")} />
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="账号类型"
             htmlFor="ai-account-type"
             error={form.formState.errors.accountType?.message}
@@ -183,8 +183,8 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
                 ))}
               </SelectContent>
             </Select>
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="API Key"
             htmlFor="ai-account-api-key"
             hint={account ? "留空表示保留现有密钥。" : "OAuth 或自定义账号可留空。"}
@@ -196,27 +196,27 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
               autoComplete="new-password"
               {...form.register("apiKey")}
             />
-          </FormField>
+          </ProviderFieldRow>
         </div>
-      </FormDialogSection>
+      </ProviderDialogSection>
 
-      <FormDialogSection title="调度">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <FormField
+      <ProviderDialogSection title="调度">
+        <div className="space-y-3">
+          <ProviderFieldRow
             label="权重"
             htmlFor="ai-account-weight"
             error={form.formState.errors.weight?.message}
           >
             <Input id="ai-account-weight" type="number" min={1} {...form.register("weight")} />
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="优先级"
             htmlFor="ai-account-priority"
             error={form.formState.errors.priority?.message}
           >
             <Input id="ai-account-priority" type="number" min={0} {...form.register("priority")} />
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="最大并发"
             htmlFor="ai-account-max-concurrency"
             error={form.formState.errors.maxConcurrency?.message}
@@ -227,15 +227,15 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
               min={1}
               {...form.register("maxConcurrency")}
             />
-          </FormField>
-          <FormField
+          </ProviderFieldRow>
+          <ProviderFieldRow
             label="每分钟请求上限"
             htmlFor="ai-account-max-rpm"
             hint="0 表示不限制。"
             error={form.formState.errors.maxRPM?.message}
           >
             <Input id="ai-account-max-rpm" type="number" min={0} {...form.register("maxRPM")} />
-          </FormField>
+          </ProviderFieldRow>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <SwitchRow
@@ -254,8 +254,8 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
             onChange={(checked) => form.setValue("creditsEnabled", checked, { shouldDirty: true })}
           />
         </div>
-      </FormDialogSection>
-    </FormDialog>
+      </ProviderDialogSection>
+    </ProviderDialogShell>
   );
 }
 
