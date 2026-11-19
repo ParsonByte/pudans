@@ -5,7 +5,9 @@ import cn.tolim.pudans.contract.core.extension.ai.AiChatMode;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
+import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.config.AiChatModeService;
 import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
@@ -25,18 +27,23 @@ import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryInjection;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
 import cn.tolim.pudans.core.ai.rag.Citation;
+import cn.tolim.pudans.core.ai.rag.DocumentParser;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseAcl;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalRequest;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalResult;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalService;
 import cn.tolim.pudans.core.ai.rag.RetrievalOptions;
 import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.storage.StorageService;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.NewConversation;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -44,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -71,6 +79,10 @@ public class AiChatService {
 
     private static final int TITLE_LIMIT = 80;
 
+    private static final int MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024;
+
+    private static final int MAX_INLINE_TEXT_BYTES = 1024 * 1024;
+
     private final AiSettingService settingService;
 
     private final AiChatModeService chatModeService;
@@ -92,6 +104,8 @@ public class AiChatService {
     private final AiGatewayService gatewayService;
 
     private final MemoryTaskScheduler memoryTaskScheduler;
+
+    private final StorageService storageService;
 
     public Mono<AiChatCompletionResult> complete(AiChatCommand command) {
         return prepare(command, false).flatMap(prepared -> gatewayService
@@ -123,6 +137,7 @@ public class AiChatService {
             var citations = Flux.fromIterable(prepared.citations()).map(AiChatStreamEvent.CitationEvent::new);
             var usage = new AtomicReference<AiTokenUsage>();
             var model = new AtomicReference<String>();
+            var reasoning = new StringBuilder();
             return gatewayService.stream(prepared.invocation()).concatMap(event -> switch (event) {
                 case AiGatewayEvent.Meta meta -> {
                     model.set(meta.meta().model());
@@ -133,6 +148,9 @@ public class AiChatService {
                 case AiGatewayEvent.Delta delta -> {
                     if (delta.event().content() != null) {
                         prepared.content().append(delta.event().content());
+                    }
+                    if (delta.event().reasoning() != null) {
+                        reasoning.append(delta.event().reasoning());
                     }
                     yield Flux.just(new AiChatStreamEvent.Delta(
                             delta.event().content(), delta.event().reasoning()));
@@ -148,7 +166,8 @@ public class AiChatService {
                                 prepared.content().toString(),
                                 prepared.requestId(),
                                 model.get(),
-                                usage.get() == null ? null : usage.get().outputTokens())
+                                usage.get() == null ? null : usage.get().outputTokens(),
+                                reasoning.toString())
                         .flatMap(message -> conversationService
                                 .markPending(prepared.conversation(), 2)
                                 .then(enqueueExtraction(prepared, message))
@@ -161,24 +180,108 @@ public class AiChatService {
     }
 
     private Mono<Prepared> prepare(AiChatCommand command, boolean stream) {
-        if (command.request().attachments() != null && !command.request().attachments().isEmpty()) {
-            return Mono.error(new ApiException(
-                    HttpStatus.BAD_REQUEST, CODE_REQUEST_INVALID, "当前版本暂不支持附件。"));
-        }
         var userContent = lastUserContent(command.request());
         return settingService.spec().flatMap(setting -> resolveMode(command.request().mode(), setting)
                 .flatMap(mode -> resolveConversation(command, mode, setting)
                         .flatMap(conversationState -> retrieve(command, mode, setting, conversationState, userContent)
                                 .flatMap(retrieval -> memory(command, conversationState, setting, userContent)
-                                        .flatMap(memory -> buildPrepared(
-                                                command,
-                                                setting,
-                                                mode,
-                                                conversationState,
-                                                retrieval,
-                                                memory,
-                                                userContent,
-                                                stream))))));
+                                        .flatMap(memory -> attachments(command)
+                                                .flatMap(attachmentParts -> buildPrepared(
+                                                        command,
+                                                        setting,
+                                                        mode,
+                                                        conversationState,
+                                                        retrieval,
+                                                        memory,
+                                                        userContent,
+                                                        attachmentParts,
+                                                        stream)))))));
+    }
+
+    private Mono<List<AiContentPart>> attachments(AiChatCommand command) {
+        var attachments = command.request().attachments();
+        if (attachments == null || attachments.isEmpty()) {
+            return Mono.just(List.of());
+        }
+        return Flux.fromIterable(attachments)
+                .concatMap(attachment -> attachmentPart(command.userId(), attachment))
+                .collectList();
+    }
+
+    Mono<AiContentPart> attachmentPart(
+            String userId, AiChatCompletionRequest.AiChatAttachment attachment) {
+        return storageService
+                .getFile(attachment.storageFileId())
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.BAD_REQUEST, CODE_REQUEST_INVALID, "附件不存在。")))
+                .filter(file -> userId.equals(file.getSpec().getOwner()))
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.FORBIDDEN, CODE_REQUEST_INVALID, "无权访问附件。")))
+                .filter(file -> file.getSpec().getState() == StorageFileState.ACTIVE)
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.BAD_REQUEST, CODE_REQUEST_INVALID, "附件不可用。")))
+                .flatMap(file -> {
+                    var contentType = StringUtils.hasText(file.getSpec().getContentType())
+                            ? file.getSpec().getContentType()
+                            : attachment.contentType();
+                    if (!StringUtils.hasText(contentType)) {
+                        contentType = "application/octet-stream";
+                    }
+                    if (isUnsafeAttachment(contentType)) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST, CODE_REQUEST_INVALID, "不支持该类型的附件。"));
+                    }
+                    var mediaType = contentType;
+                    var fileName = StringUtils.hasText(file.getSpec().getOriginalName())
+                            ? file.getSpec().getOriginalName()
+                            : attachment.name();
+                    var data = storageService.readBytes(attachment.storageFileId(), MAX_ATTACHMENT_BYTES);
+                    if (mediaType.startsWith("image/")) {
+                        return data.map(bytes -> new AiContentPart.Image(
+                                mediaType,
+                                Base64.getEncoder().encodeToString(bytes),
+                                null,
+                                "auto",
+                                null));
+                    }
+                    if (isInlineText(mediaType)) {
+                        return data.map(bytes -> {
+                            if (bytes.length <= MAX_INLINE_TEXT_BYTES) {
+                                return new AiContentPart.Text(textAttachment(fileName, bytes), null);
+                            }
+                            return filePart(mediaType, fileName, bytes);
+                        });
+                    }
+                    return data.map(bytes -> filePart(mediaType, fileName, bytes));
+                });
+    }
+
+    private static boolean isInlineText(String contentType) {
+        var type = contentType.toLowerCase();
+        return type.startsWith("text/")
+                || type.equals("application/json")
+                || type.equals("application/xml")
+                || type.equals("application/yaml")
+                || type.equals("application/x-yaml");
+    }
+
+    private static AiContentPart filePart(String mediaType, @Nullable String fileName, byte[] bytes) {
+        return new AiContentPart.File(
+                mediaType, Base64.getEncoder().encodeToString(bytes), null, fileName, null, null);
+    }
+
+    private static String textAttachment(@Nullable String fileName, byte[] bytes) {
+        var name = StringUtils.hasText(fileName) ? fileName : "附件";
+        return "附件《" + name + "》内容：\n\n" + DocumentParser.decodeUtf8(bytes);
+    }
+
+    private static boolean isUnsafeAttachment(String contentType) {
+        var type = contentType.toLowerCase();
+        return type.equals("text/html")
+                || type.equals("application/xhtml+xml")
+                || type.equals("image/svg+xml")
+                || type.equals("text/javascript")
+                || type.equals("application/javascript");
     }
 
     private Mono<AiChatMode> resolveMode(String modeCode, AiSetting.Spec setting) {
@@ -329,6 +432,7 @@ public class AiChatService {
             Retrieval retrieval,
             MemoryInjection memory,
             String userContent,
+            List<AiContentPart> attachmentParts,
             boolean stream) {
         var prompt = setting.getPrompt() == null ? new AiSetting.Prompt() : setting.getPrompt();
         var memorySetting = setting.getMemory() == null ? new AiSetting.Memory() : setting.getMemory();
@@ -352,7 +456,10 @@ public class AiChatService {
                         message.role(), List.of(new AiContentPart.Text(message.content(), null))));
             }
         }
-        messages.add(new AiChatMessage("user", List.of(new AiContentPart.Text(userContent, null))));
+        var userParts = new ArrayList<AiContentPart>();
+        userParts.add(new AiContentPart.Text(userContent, null));
+        userParts.addAll(attachmentParts);
+        messages.add(new AiChatMessage("user", userParts));
         var ir = new AiChatIr(
                 messages,
                 List.of(),
@@ -380,7 +487,13 @@ public class AiChatService {
                 state.agent().getMetadata().getName(),
                 state.conversation().id());
         return conversationService
-                .appendUserMessage(state.conversation(), turnIndex, 0, userContent, requestId)
+                .appendUserMessage(
+                        state.conversation(),
+                        turnIndex,
+                        0,
+                        userContent,
+                        requestId,
+                        attachmentMetadata(command.request().attachments()))
                 .thenReturn(new Prepared(
                         invocation,
                         state.conversation(),
@@ -389,6 +502,29 @@ public class AiChatService {
                         requestId,
                         new StringBuilder(),
                         memorySetting));
+    }
+
+    private static JsonNode attachmentMetadata(List<AiChatCompletionRequest.AiChatAttachment> attachments) {
+        if (attachments == null || attachments.isEmpty()) {
+            return null;
+        }
+        var root = JsonUtils.mapper().createObjectNode();
+        var array = root.putArray("attachments");
+        for (var attachment : attachments) {
+            var node = array.addObject();
+            node.put("fileId", attachment.storageFileId());
+            node.put("type", attachment.type());
+            if (StringUtils.hasText(attachment.name())) {
+                node.put("name", attachment.name());
+            }
+            if (StringUtils.hasText(attachment.contentType())) {
+                node.put("contentType", attachment.contentType());
+            }
+            if (attachment.size() != null) {
+                node.put("size", attachment.size());
+            }
+        }
+        return root;
     }
 
     private Mono<Void> enqueueExtraction(Prepared prepared, Message message) {
@@ -411,6 +547,22 @@ public class AiChatService {
             Integer outputTokens) {
         return conversationService.appendAssistantMessage(
                 conversation, turnIndex, 1, content, requestId, modelCode, outputTokens);
+    }
+
+    private Mono<Message> appendAssistant(
+            Conversation conversation,
+            int turnIndex,
+            String content,
+            String requestId,
+            String modelCode,
+            Integer outputTokens,
+            @Nullable String reasoning) {
+        JsonNode metadata = null;
+        if (reasoning != null && !reasoning.isBlank()) {
+            metadata = JsonUtils.mapper().createObjectNode().put("reasoning", reasoning);
+        }
+        return conversationService.appendAssistantMessage(
+                conversation, turnIndex, 1, content, requestId, modelCode, outputTokens, metadata);
     }
 
     private static AiChatCompletionResult.StreamMeta streamMeta(cn.tolim.pudans.core.ai.gateway.AiGatewayMeta meta) {
@@ -476,10 +628,12 @@ public class AiChatService {
         return Math.max(1, retrieval.getL1Limit()) * 3;
     }
 
-    private String systemContent(String agentPrompt, MemoryInjection memory, String knowledgePrompt) {
+    String systemContent(String agentPrompt, MemoryInjection memory, String knowledgePrompt) {
         var sections = new ArrayList<String>();
         if (StringUtils.hasText(agentPrompt)) {
             sections.add(agentPrompt);
+        } else {
+            sections.add(defaultSystemPrompt());
         }
         var memorySystem = memoryContextBuilder.systemMessage(memory);
         if (StringUtils.hasText(memorySystem)) {
@@ -490,6 +644,14 @@ public class AiChatService {
                     + knowledgePrompt);
         }
         return sections.stream().filter(StringUtils::hasText).collect(Collectors.joining("\n\n"));
+    }
+
+    static String defaultSystemPrompt() {
+        return "你是 PUDANS AI 助手，运行在 PUDANS 平台。请用用户使用的语言回答，保持准确、简洁、诚实。"
+                + "当前日期是 " + LocalDate.now() + "。"
+                + "不确定时说明不确定，不要编造日期、事实或能力。"
+                + "不要声称自己是 OpenAI、ChatGPT 或其他公司的产品；"
+                + "如果被问到模型身份，说明当前请求由 PUDANS 网关路由到供应商模型。";
     }
 
     private static String textOf(AiChatMessage message) {

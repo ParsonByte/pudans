@@ -42,12 +42,22 @@ public record AiChatCompletionRequest(
         }
     }
 
-    public record AiChatAttachment(String storageFileId, String type) {
+    public record AiChatAttachment(
+            String storageFileId,
+            String type,
+            @Nullable String name,
+            @Nullable String contentType,
+            @Nullable Long size) {
 
         public AiChatAttachment {
             if (storageFileId == null || storageFileId.isBlank()) {
                 throw new IllegalArgumentException("附件文件标识不能为空。");
             }
+            type = type == null || type.isBlank() ? "FILE" : type;
+        }
+
+        public AiChatAttachment(String storageFileId, String type) {
+            this(storageFileId, type, null, null, null);
         }
     }
 }
