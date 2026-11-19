@@ -640,7 +640,15 @@ public class BuiltinEntityPolicy {
     }
 
     public Mono<Void> checkBindingMutation(UserGroupBinding binding, boolean deleting) {
-        if (binding == null || binding.getRoleRef() == null) {
+        if (binding == null) {
+            return Mono.empty();
+        }
+        var bindingName = binding.getMetadata() == null ? null : binding.getMetadata().getName();
+        // 名字后缀命中即视为超管目标，防止伪造名字被 reconciler 判定为超管绑定
+        if (SuperAdminResolver.isSuperAdminBindingName(bindingName) && !isSuperAdminsTarget(binding)) {
+            return Mono.error(denied("只允许使用超级管理员的内置成员绑定。"));
+        }
+        if (binding.getRoleRef() == null) {
             return Mono.empty();
         }
         if (isSuperAdminsTarget(binding)) {

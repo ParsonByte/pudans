@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -54,10 +55,13 @@ class SuperAdminResolverTest {
     void identityIsDerivedFromTheDeterministicBindingName() {
         when(reactiveClient.fetch(UserGroupBinding.class, "alice-super-admins-binding"))
                 .thenReturn(Mono.just(canonicalBinding("alice")));
+        when(client.fetch(UserGroupBinding.class, "alice-super-admins-binding"))
+                .thenReturn(Optional.of(canonicalBinding("alice")));
 
         StepVerifier.create(resolver.hasSuperAdminBinding("alice"))
                 .expectNext(true)
                 .verifyComplete();
+        assertThat(resolver.hasCanonicalBindingBlocking("alice")).isTrue();
         StepVerifier.create(resolver.isCanonicalSuperAdmin("alice"))
                 .expectNext(true)
                 .verifyComplete();
@@ -89,10 +93,13 @@ class SuperAdminResolverTest {
         tampered.setRoleRef(UserGroupBinding.RoleRef.userGroup("normal-users"));
         when(reactiveClient.fetch(UserGroupBinding.class, "alice-super-admins-binding"))
                 .thenReturn(Mono.just(tampered));
+        when(client.fetch(UserGroupBinding.class, "alice-super-admins-binding"))
+                .thenReturn(Optional.of(tampered));
 
         StepVerifier.create(resolver.hasSuperAdminBinding("alice"))
                 .expectNext(true)
                 .verifyComplete();
+        assertThat(resolver.hasCanonicalBindingBlocking("alice")).isFalse();
         StepVerifier.create(resolver.isCanonicalSuperAdmin("alice"))
                 .expectNext(false)
                 .verifyComplete();

@@ -90,12 +90,13 @@ public class SuperAdminResolver {
                 .defaultIfEmpty(false);
     }
 
-    public boolean hasSuperAdminBindingBlocking(String username) {
+    public boolean hasCanonicalBindingBlocking(String username) {
         if (!StringUtils.hasText(username)) {
             return false;
         }
+        // 删除依据必须来自规范绑定，伪造名字的绑定不得触发对其它绑定的清理
         return client.fetch(UserGroupBinding.class, bindingName(username))
-                .filter(binding -> !isDeleted(binding))
+                .filter(this::isCanonicalBinding)
                 .isPresent();
     }
 
