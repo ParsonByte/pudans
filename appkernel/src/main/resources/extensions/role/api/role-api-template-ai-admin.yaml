@@ -1,0 +1,71 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-ai-admin
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 系统管理员"
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-ai-operator" ]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memoryrecords"
+    verbs:
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memoryrecords/restore"
+      - "memoryrecords/rebuild"
+      - "memoryrecords/flush"
+      - "orgmemories/approve"
+      - "orgmemories/reject"
+      - "orgmemories/revoke"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "memoryrecords/export"
+      - "aiproviders"
+      - "aiproviders/test"
+      - "aiprovideraccounts"
+      - "aiprovideraccounts/test"
+      - "aiprovideraccounts/quota"
+      - "aimodels"
+      - "aimodels/test"
+      - "airoutegroups"
+      - "aichatmodes"
+      - "aisettings"
+      - "aisettings/rebuild-embeddings"
+      - "aiteams"
+      - "aiteams/members"
+      - "aiagents"
+      - "aimemoryprompts"
+      - "aimemoryprompts/resolve"
+      - "aimemorypromptbindings"
+      - "knowledgebases"
+      - "knowledgebases/documents"
+      - "knowledgebases/reindex"
+      - "knowledgebases/querylogs"
+      - "wallets"
+      - "wallets/adjust"
+      - "wallets/freeze"
+      - "wallets/batch-adjust"
+      - "pointtransactions"
+      - "pointtransactions/export"
+      - "aistats/routing"
+      - "aistats/points"
+      - "aistats/memory"
+      - "aistats/kb"
+      - "aigatewaysessions"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"

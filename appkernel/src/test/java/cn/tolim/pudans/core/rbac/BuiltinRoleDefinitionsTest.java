@@ -15,7 +15,8 @@ class BuiltinRoleDefinitionsTest {
                 .containsExactlyInAnyOrder(
                         BuiltinEntities.SUPER_ROLE,
                         BuiltinEntities.SYSTEM_ADMIN_ROLE,
-                        BuiltinEntities.NORMAL_ROLE);
+                        BuiltinEntities.NORMAL_ROLE,
+                        BuiltinEntities.AI_OPERATOR_ROLE);
         assertThat(definitions.builtinGroups())
                 .extracting(group -> group.getMetadata().getName())
                 .containsExactlyInAnyOrder(

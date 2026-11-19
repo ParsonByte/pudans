@@ -53,7 +53,8 @@ metadata:
         "role-template-approve-temproles",
         "role-template-view-temproles",
         "role-template-view-riskrules",
-        "role-template-view-settings"
+        "role-template-view-settings",
+        "role-template-ai-admin"
       ]
   finalizers:
     - system-protection
@@ -80,7 +81,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/system-reserved: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/display-name: "普通用户"
-    rbac.authorization.pudans.tolim.cn/dependencies: '[ "authenticated" ]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "authenticated", "role-template-ai-user" ]'
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["profile:manage","authentications:manage"]'
   finalizers:
     - system-protection
@@ -104,3 +105,17 @@ rules:
       - "create"
       - "update"
       - "patch"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: ai-operator-role
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    rbac.authorization.pudans.tolim.cn/system-reserved: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 记忆管理员"
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-ai-operator" ]'
+  finalizers:
+    - system-protection
+rules: []

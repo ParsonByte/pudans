@@ -1,0 +1,15 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: AiChatMode
+metadata:
+  name: pro
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    pudans.tolim.cn/do-not-overwrite: "true"
+spec:
+  displayName: 进阶模式
+  description: 自动判断复杂度，匹配最佳模型。
+  routeGroup: pro-group
+  defaultTier: AUTO
+  knowledgeBaseCodes: []
+  enabled: true
+  sortOrder: 20

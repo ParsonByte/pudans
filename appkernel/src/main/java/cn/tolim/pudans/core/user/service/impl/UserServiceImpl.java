@@ -71,6 +71,17 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Mono<User> getUserByUid(String uid) {
+        if (!StringUtils.hasText(uid)) {
+            return Mono.empty();
+        }
+        var listOptions = ListOptions.builder()
+                .andQuery(equal("spec.uid", uid))
+                .build();
+        return client.listAll(User.class, listOptions, defaultSort()).next();
+    }
+
+    @Override
     public Mono<User> findUserByVerifiedEmail(String email) {
         if (!StringUtils.hasText(email)) {
             return Mono.empty();
