@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -105,7 +106,11 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
                                     }))
 
                                     .flatMap(connection -> authenticationSession.establish(
-                                            exchange, connection.getSpec().getUsername(), oauth2Token));
+                                            exchange, connection.getSpec().getUsername(), oauth2Token))
+                                    .onErrorResume(
+                                            AuthenticationException.class,
+                                            error -> OAuth2AuthenticationSession.rejectUnavailableAccount(
+                                                    exchange, context));
                         })
                         .then()));
     }

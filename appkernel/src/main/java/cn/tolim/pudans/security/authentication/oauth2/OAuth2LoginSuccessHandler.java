@@ -7,6 +7,7 @@ import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication
 import java.net.URI;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
@@ -80,7 +81,10 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
                                 HttpStatus.UNAUTHORIZED,
                                 "oauth2-connection-required",
                                 "请先绑定该第三方账号。",
-                                ProblemDetailResponses.SIGN_IN_PATH));
+                                ProblemDetailResponses.SIGN_IN_PATH))
+                .onErrorResume(
+                        AuthenticationException.class,
+                        error -> OAuth2AuthenticationSession.rejectUnavailableAccount(exchange, context));
     }
 
     private static final class OAuth2ConnectionRequiredException extends RuntimeException {}
