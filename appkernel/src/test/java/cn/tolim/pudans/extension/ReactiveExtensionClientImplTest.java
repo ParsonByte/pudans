@@ -142,6 +142,21 @@ class ReactiveExtensionClientImplTest {
     }
 
     @Test
+    void updateDuringDeletionRejectsClientSuppliedFinalizers() {
+        givenStored(unstructured(bindingJson(", \"deletionTimestamp\": \"2026-11-15T00:00:00Z\"", "alice")));
+        var tampered = unstructured(bindingJson(
+                ", \"deletionTimestamp\": \"2026-11-15T00:00:00Z\", \"finalizers\": [\"evil-finalizer\"]", "alice"));
+
+        StepVerifier.create(client.update(tampered))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOf(AccessDeniedException.class)
+                        .hasMessageContaining("finalizers"))
+                .verify();
+
+        verify(storeClient, never()).update(anyString(), any(), any());
+    }
+
+    @Test
     void updateWithoutProtectedFieldsIsStillPersisted() {
         var stored = unstructured(bindingJson("", "alice"));
         var updated = unstructured(bindingJson("", "bob"));

@@ -376,10 +376,9 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         }
         newMetadata.setDeletionTimestamp(oldMetadata.getDeletionTimestamp());
 
-        var deletionInProgress = oldMetadata.getDeletionTimestamp() != null;
         var requestedFinalizers = newMetadata.getFinalizers();
-        if (!deletionInProgress
-                && requestedFinalizers != null
+        // 删除中的对象同样不允许改写终结器，否则可清空终结器绕过清理
+        if (requestedFinalizers != null
                 && !requestedFinalizers.isEmpty()
                 && !Objects.equals(
                         new HashSet<>(requestedFinalizers),
@@ -388,9 +387,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                                 : new HashSet<>(oldMetadata.getFinalizers()))) {
             throw new AccessDeniedException("metadata.finalizers 是受保护的字段。");
         }
-        if (!deletionInProgress) {
-            newMetadata.setFinalizers(oldMetadata.getFinalizers());
-        }
+        newMetadata.setFinalizers(oldMetadata.getFinalizers());
 
         if (!isUserKind(oldExtension)) {
             return;
