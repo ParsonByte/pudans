@@ -23,6 +23,7 @@ import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxChatProviderAdap
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxMessagesProviderAdapter;
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxNativeProviderAdapter;
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxResponsesProviderAdapter;
+import cn.tolim.pudans.core.ai.provider.supplier.qianwen.QianwenChatProviderAdapter;
 import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
@@ -150,6 +151,7 @@ class CustomHttpProviderAdapterTest {
                 new MinimaxChatProviderAdapter(webClient, mapper, accountService),
                 new MinimaxNativeProviderAdapter(webClient, mapper, accountService),
                 new MinimaxResponsesProviderAdapter(webClient, mapper, accountService),
+                new QianwenChatProviderAdapter(webClient, mapper, accountService),
                 new CustomHttpProviderAdapter(webClient, mapper, accountService)));
 
         for (var protocol : AiProvider.Protocol.values()) {
