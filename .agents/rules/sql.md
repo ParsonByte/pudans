@@ -8,7 +8,7 @@
 ## Required
 
 - All database access uses Spring Data R2DBC; queries remain reactive and non-blocking.
-- Hand-written SQL is allowed only in the R2DBC data access layer: `infra/r2dbc/store/ReactiveExtensionStoreClientImpl`, `infra/r2dbc/store/ExtensionStoreRepository`, `infra/audit/AuditStore`, `infra/audit/AuditRecordRepository`, `infra/audit/AuditArchiveRepository` and `infra/audit/AuditArchiveGuardRepository`.
+- Hand-written SQL is allowed only in the R2DBC data access layer: `infra/r2dbc/store/ReactiveExtensionStoreClientImpl`, `infra/r2dbc/store/ExtensionStoreRepository`, `infra/r2dbc/ai/**`, `infra/audit/AuditStore`, `infra/audit/AuditRecordRepository`, `infra/audit/AuditArchiveRepository` and `infra/audit/AuditArchiveGuardRepository`.
 - Prefer Spring Data R2DBC repository derived queries; add custom queries to the data access layer when a derived query is not sufficient.
 - Bind every value as a parameter; never insert values into SQL text by concatenation or interpolation.
 - Keep SQL identifiers inside the data access layer; endpoints, services, controllers, reconcilers and filters call typed data access methods.
@@ -26,7 +26,7 @@
 - `appkernel/src/main/resources/schema-postgresql.sql` is the only SQL resource in the repository.
 - It is loaded by `spring.sql.init.schema-locations` with `spring.sql.init.mode=always` and remains the single legacy exception.
 - Do not add another `.sql` file and do not extend this exception to any other path.
-- Changes to `schema-postgresql.sql` are limited to idempotent schema bootstrap required by the R2DBC model, including the audit tables and triggers; no data seeding and no unrelated SQL.
+- Changes to `schema-postgresql.sql` are limited to idempotent schema bootstrap required by the R2DBC model, including the audit tables, AI kernel tables and triggers; no data seeding and no unrelated SQL.
 
 ## Verification
 

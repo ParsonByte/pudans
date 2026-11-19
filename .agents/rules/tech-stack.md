@@ -26,6 +26,14 @@
 - Do not replace Redis sessions or the Redis cache with a local or alternative distributed store.
 - Do not make a blocking dependency mandatory for the request path.
 
+## AI kernel
+
+- Use the existing WebFlux `WebClient`, R2DBC and Jackson setup for AI providers, routing, gateway and memory. Do not introduce Spring AI, a model SDK, a second HTTP client or a second JSON mapper.
+- AI provider protocols are implemented as internal `AiProviderAdapter` components; providers, accounts, models and route groups are extension resources, not static Spring beans.
+- Agent compatibility endpoints stay under `/apis/api.pudans.tolim.cn/v1alpha1/aigateway/...`. Root `/v1/...` compatibility is prohibited unless this rule is changed.
+- Memory and knowledge-base work uses the existing `StorageService` and `AuditService`. Do not add a second object-storage, audit or permission implementation.
+- Document parsing with Apache Tika/PDFBox is allowed only when the dependency is declared in the version catalog and executed on `Schedulers.boundedElastic()`; it must never run on the request path.
+
 ## Frontend
 
 - The frontend lives in `web/` and is packaged into the backend jar through `web/build.gradle`. The root Gradle build installs npm dependencies, builds `web/`, copies the output into `appkernel` static resources and serves it from the backend on port 8090. Node and npm are required for Gradle builds. Use npm with `web/package.json` and the committed `web/package-lock.json`; run `npm run dev` for local development and do not add another package manager or lockfile.
