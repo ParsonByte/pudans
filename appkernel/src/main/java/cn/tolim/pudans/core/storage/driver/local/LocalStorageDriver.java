@@ -22,8 +22,8 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
-import cn.tolim.pudans.core.storage.driver.ByteRange;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
+import cn.tolim.pudans.core.storage.driver.StorageIo;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
 import cn.tolim.pudans.core.storage.driver.StorageObject;
 import cn.tolim.pudans.core.storage.driver.StoragePutRequest;
@@ -90,7 +90,8 @@ public class LocalStorageDriver implements StorageDriver {
                                     java.nio.file.StandardCopyOption.REPLACE_EXISTING);
                             return stat(target, request.key());
                         }))
-                        .doOnError(error -> deleteQuietly(temp))
+                        .doOnError(error -> StorageIo.deleteQuietly(temp))
+                        .doOnCancel(() -> StorageIo.deleteQuietly(temp))
                         .subscribeOn(Schedulers.boundedElastic()));
     }
 
@@ -132,7 +133,7 @@ public class LocalStorageDriver implements StorageDriver {
     @Override
     public Mono<Void> delete(Collection<String> keys) {
         return Flux.fromIterable(keys)
-                .concatMap(key -> Mono.fromRunnable(() -> deleteQuietly(resolve(key)))
+                .concatMap(key -> Mono.fromRunnable(() -> StorageIo.deleteQuietly(resolve(key)))
                         .subscribeOn(Schedulers.boundedElastic()))
                 .then();
     }
@@ -217,13 +218,6 @@ public class LocalStorageDriver implements StorageDriver {
             return new ReadState(FileChannel.open(path, StandardOpenOption.READ), new AtomicLong(start), new AtomicLong(length));
         } catch (IOException e) {
             throw new IllegalStateException("无法打开文件 " + path, e);
-        }
-    }
-
-    private static void deleteQuietly(Path path) {
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException ignored) {
         }
     }
 

@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.storage.endpoint;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
@@ -26,6 +28,7 @@ import cn.tolim.pudans.core.storage.driver.StorageObject;
 import cn.tolim.pudans.core.storage.driver.StorageReadOptions;
 import cn.tolim.pudans.core.storage.driver.StorageReadResult;
 import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
+import cn.tolim.pudans.core.storage.upload.UploadTicket;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -41,6 +44,63 @@ class StorageTransferEndpointTest {
     void setUp() {
         var endpoint = new StorageTransferEndpoint(storageService);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
+    }
+
+    @Test
+    void initiatesAnUpload() {
+        when(storageService.initiateUpload(any()))
+                .thenReturn(Mono.just(new UploadTicket(
+                        "file-1",
+                        "local",
+                        "uploads/key",
+                        8L * 1024L * 1024L,
+                        1,
+                        Instant.now().plusSeconds(600),
+                        "token",
+                        false,
+                        null)));
+
+        client.post()
+                .uri("/storagefiles/-/upload")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"policy\":\"local\",\"originalName\":\"a.txt\",\"size\":4}")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.fileId")
+                .isEqualTo("file-1")
+                .jsonPath("$.uploadToken")
+                .isEqualTo("token");
+    }
+
+    @Test
+    void issuesAnUploadToken() {
+        when(storageService.issueUploadToken("file-1")).thenReturn(Mono.just("new-token"));
+
+        client.post()
+                .uri("/storagefiles/file-1/upload/token")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.token")
+                .isEqualTo("new-token");
+    }
+
+    @Test
+    void rejectsAnUnsatisfiableRange() {
+        when(storageService.getFile("file-1")).thenReturn(Mono.just(file()));
+        when(storageService.sourceUrl(eq("file-1"), any(StorageSourceOptions.class))).thenReturn(Mono.empty());
+
+        client.get()
+                .uri("/storagefiles/file-1/content?token=token")
+                .header(HttpHeaders.RANGE, "bytes=1000-")
+                .exchange()
+                .expectStatus()
+                .isEqualTo(416);
+
+        verify(storageService, never()).open(eq("file-1"), any());
     }
 
     @Test

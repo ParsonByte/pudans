@@ -1,14 +1,16 @@
 package cn.tolim.pudans.core.storage.driver.qiniu;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +23,8 @@ import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.DirectUploadDriver.StorageDirectUploadRequest;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
+import cn.tolim.pudans.infra.exception.ApiException;
+import com.qiniu.common.QiniuException;
 import com.qiniu.http.Response;
 import com.qiniu.storage.BucketManager;
 import com.qiniu.storage.model.FileInfo;
@@ -60,6 +64,9 @@ class QiniuStorageDriverTest {
         assertThat(result.provider()).isEqualTo("qiniu");
         assertThat(result.uploadUrl()).isEqualTo("https://upload.qiniup.com");
         assertThat(result.token()).isNotBlank();
+        var payload = new String(
+                Base64.getUrlDecoder().decode(result.token().split(":")[2]), StandardCharsets.UTF_8);
+        assertThat(payload).contains("\"fsizeLimit\":5");
     }
 
     @Test
@@ -90,6 +97,23 @@ class QiniuStorageDriverTest {
     }
 
     @Test
+    void treatsMissingObjectsAsDeleted() throws Exception {
+        when(bucketManager.delete("bucket", "key")).thenThrow(error(612));
+
+        driver.delete(List.of("key")).block();
+
+        verify(bucketManager).delete(eq("bucket"), eq("key"));
+    }
+
+    @Test
+    void keepsOtherDeleteFailures() throws Exception {
+        when(bucketManager.delete("bucket", "key")).thenThrow(error(500));
+
+        assertThatThrownBy(() -> driver.delete(List.of("key")).block())
+                .isInstanceOf(ApiException.class);
+    }
+
+    @Test
     void testsTheBucketConnection() throws Exception {
         when(bucketManager.buckets()).thenReturn(new String[] {"bucket"});
 
@@ -97,6 +121,20 @@ class QiniuStorageDriverTest {
 
         assertThat(result).isNotNull();
         assertThat(result.success()).isTrue();
+    }
+
+    private static QiniuException error(int code) {
+        var raw = new okhttp3.Response.Builder()
+                .request(new okhttp3.Request.Builder()
+                        .url("https://upload.qiniup.com")
+                        .build())
+                .protocol(okhttp3.Protocol.HTTP_1_1)
+                .code(code)
+                .message("error")
+                .body(okhttp3.ResponseBody.create(
+                        okhttp3.MediaType.parse("application/json"), "{}"))
+                .build();
+        return new QiniuException(Response.create(raw, "POST", 0.0));
     }
 
     private static StoragePolicy policy() {

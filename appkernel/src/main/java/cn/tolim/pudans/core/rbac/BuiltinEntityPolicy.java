@@ -1,7 +1,9 @@
 package cn.tolim.pudans.core.rbac;
 
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -18,6 +20,7 @@ import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
+import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.Extension;
@@ -32,6 +35,7 @@ import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import cn.tolim.pudans.contract.extension.Unstructured;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @Component
 @RequiredArgsConstructor
@@ -90,6 +94,9 @@ public class BuiltinEntityPolicy {
         if (StorageFile.KIND.equals(kind)) {
             return Mono.error(denied("存储文件由存储服务管理，请使用文件接口。"));
         }
+        if (StoragePolicy.KIND.equals(kind)) {
+            return checkStoragePolicyUpdate(name, extension);
+        }
         if (Role.KIND.equals(kind)) {
             return checkMutation(kind, name)
                     .then(convert(extension, Role.class)
@@ -111,6 +118,85 @@ public class BuiltinEntityPolicy {
             return convert(extension, PersonalAccessToken.class).flatMap(this::checkPatUpdate);
         }
         return Mono.empty();
+    }
+
+    private Mono<Void> checkStoragePolicyUpdate(String name, Extension extension) {
+        return client.get(StoragePolicy.class, name).flatMap(existing -> {
+            var stored = existing.getSpec().getCredentials();
+            if (stored == null) {
+                return Mono.empty();
+            }
+            if (extension instanceof Unstructured unstructured) {
+                preserveUnstructuredCredentials(unstructured, stored);
+            } else if (extension instanceof JsonExtension jsonExtension) {
+                preserveJsonCredentials(jsonExtension.getInternal(), stored);
+            } else if (extension instanceof StoragePolicy policy) {
+                preservePolicyCredentials(policy, stored);
+            }
+            return Mono.empty();
+        });
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> ensureChildMap(Map<?, ?> parent, String key) {
+        var value = parent.get(key);
+        if (value instanceof Map<?, ?> map) {
+            return (Map<String, Object>) map;
+        }
+        var created = new LinkedHashMap<String, Object>();
+        ((Map<String, Object>) parent).put(key, created);
+        return created;
+    }
+
+    private static void preserveUnstructuredCredentials(Unstructured unstructured, StoragePolicy.Credentials stored) {
+        var credentials = ensureChildMap(ensureChildMap(unstructured.getData(), "spec"), "credentials");
+        preserveCredential(credentials, "accessKey", stored.getAccessKey());
+        preserveCredential(credentials, "secretKey", stored.getSecretKey());
+        preserveCredential(credentials, "token", stored.getToken());
+        preserveCredential(credentials, "clientSecret", stored.getClientSecret());
+    }
+
+    private static void preserveCredential(Map<String, Object> credentials, String field, String stored) {
+        var current = credentials.get(field);
+        if (StringUtils.hasText(stored) && !(current instanceof String value && StringUtils.hasText(value))) {
+            credentials.put(field, stored);
+        }
+    }
+
+    private static void preserveJsonCredentials(ObjectNode extension, StoragePolicy.Credentials stored) {
+        var spec = extension.get("spec") instanceof ObjectNode node ? node : extension.putObject("spec");
+        var credentials = spec.get("credentials") instanceof ObjectNode node ? node : spec.putObject("credentials");
+        preserveJsonCredential(credentials, "accessKey", stored.getAccessKey());
+        preserveJsonCredential(credentials, "secretKey", stored.getSecretKey());
+        preserveJsonCredential(credentials, "token", stored.getToken());
+        preserveJsonCredential(credentials, "clientSecret", stored.getClientSecret());
+    }
+
+    private static void preserveJsonCredential(ObjectNode credentials, String field, String stored) {
+        var current = credentials.get(field);
+        if (StringUtils.hasText(stored) && (current == null || !StringUtils.hasText(current.asText()))) {
+            credentials.put(field, stored);
+        }
+    }
+
+    private static void preservePolicyCredentials(StoragePolicy policy, StoragePolicy.Credentials stored) {
+        var credentials = policy.getSpec().getCredentials();
+        if (credentials == null) {
+            credentials = new StoragePolicy.Credentials();
+            policy.getSpec().setCredentials(credentials);
+        }
+        if (!StringUtils.hasText(credentials.getAccessKey())) {
+            credentials.setAccessKey(stored.getAccessKey());
+        }
+        if (!StringUtils.hasText(credentials.getSecretKey())) {
+            credentials.setSecretKey(stored.getSecretKey());
+        }
+        if (!StringUtils.hasText(credentials.getToken())) {
+            credentials.setToken(stored.getToken());
+        }
+        if (!StringUtils.hasText(credentials.getClientSecret())) {
+            credentials.setClientSecret(stored.getClientSecret());
+        }
     }
 
     public Mono<Void> checkDelete(Extension extension) {

@@ -101,7 +101,12 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                             ? Instant.now().plusSeconds(3600)
                             : request.expiresAt();
                     var seconds = Math.max(3600, Duration.between(Instant.now(), expiresAt).getSeconds());
-                    var token = auth.uploadToken(bucket(), request.key(), seconds, new StringMap());
+                    var maxSize = request.size() > 0 ? request.size() : policy.getSpec().getMaxSize();
+                    var policyMap = new StringMap();
+                    if (maxSize > 0) {
+                        policyMap.put("fsizeLimit", maxSize);
+                    }
+                    var token = auth.uploadToken(bucket(), request.key(), seconds, policyMap);
                     return new DirectUploadCredential(
                             "qiniu",
                             "https://upload.qiniup.com",
@@ -179,7 +184,11 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                             ensureOk(bucketManager.delete(bucket(), key));
                             return true;
                         })
-                        .subscribeOn(Schedulers.boundedElastic()))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .onErrorResume(QiniuException.class, error -> {
+                            var code = error.code();
+                            return code == 404 || code == 612 ? Mono.empty() : Mono.error(mapError(error));
+                        }))
                 .then()
                 .onErrorMap(QiniuException.class, this::mapError);
     }

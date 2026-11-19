@@ -1,13 +1,21 @@
 package cn.tolim.pudans.core.storage;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -21,6 +29,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
+import org.springframework.http.HttpStatus;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
@@ -38,8 +48,11 @@ import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
 import cn.tolim.pudans.core.storage.driver.StorageObject;
 import cn.tolim.pudans.core.storage.driver.StoragePutRequest;
 import cn.tolim.pudans.core.storage.upload.StorageUploadRequest;
+import cn.tolim.pudans.core.storage.upload.StorageWriteRequest;
+import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
@@ -155,12 +168,14 @@ class StorageUploadServiceTest {
     @Test
     void completesADirectUpload() {
         var file = uploadingFile();
+        var policy = policy();
         var driver = mock(
                 StorageDriver.class, withSettings().extraInterfaces(DirectUploadDriver.class));
+        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
         when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
         when(fileService.update(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
+        when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
         when(driver.stat("uploads/a.txt"))
                 .thenReturn(Mono.just(new StorageObject("uploads/a.txt", 4, Instant.now(), "etag")));
 
@@ -169,6 +184,137 @@ class StorageUploadServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getSpec().getState()).isEqualTo(StorageFileState.ACTIVE);
         assertThat(result.getSpec().getSize()).isEqualTo(4);
+    }
+
+    @Test
+    void completesADirectUploadWithLocalParts() throws Exception {
+        var file = uploadingFile();
+        var policy = policy();
+        var driver = mock(
+                StorageDriver.class, withSettings().extraInterfaces(DirectUploadDriver.class));
+        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
+        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileService.update(any(StorageFile.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
+        when(driver.put(any(StoragePutRequest.class)))
+                .thenReturn(Mono.just(new StorageObject("uploads/a.txt", 4, Instant.now(), "etag")));
+        var directory = workDir.resolve("uploads/.sessions/file-1");
+        Files.createDirectories(directory);
+        Files.write(directory.resolve("part-1"), "data".getBytes(StandardCharsets.UTF_8));
+
+        var result = service.complete("file-1", List.of()).block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.getSpec().getState()).isEqualTo(StorageFileState.ACTIVE);
+        verify(driver).put(any(StoragePutRequest.class));
+        verify(driver, never()).stat("uploads/a.txt");
+    }
+
+    @Test
+    void rejectsAnOversizedObjectWhenTheDeclaredSizeIsUnknown() {
+        var file = uploadingFile();
+        file.getSpec().setSize(0);
+        var policy = policy();
+        policy.getSpec().setMaxSize(3);
+        var driver = mock(
+                StorageDriver.class, withSettings().extraInterfaces(DirectUploadDriver.class));
+        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
+        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
+        when(driver.stat("uploads/a.txt"))
+                .thenReturn(Mono.just(new StorageObject("uploads/a.txt", 4, Instant.now(), "etag")));
+        when(driver.delete(List.of("uploads/a.txt"))).thenReturn(Mono.empty());
+
+        assertThatThrownBy(() -> service.complete("file-1", List.of()).block())
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo("storage-file-too-large"));
+        verify(driver).delete(List.of("uploads/a.txt"));
+    }
+
+    @Test
+    void keepsTheUploadRecordWhenAbortFails() {
+        var file = uploadingFile();
+        file.getSpec().setNativeUploadId("upload-1");
+        var driver = mock(
+                StorageDriver.class, withSettings().extraInterfaces(MultipartStorageDriver.class));
+        var multipart = (MultipartStorageDriver) driver;
+        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
+        when(multipart.abortMultipart(any())).thenReturn(Mono.error(
+                new ApiException(HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储服务请求失败。")));
+
+        assertThatThrownBy(() -> service.abort("file-1").block()).isInstanceOf(ApiException.class);
+        verify(fileService, never()).delete(any(StorageFile.class));
+    }
+
+    @Test
+    void deletesDirectUploadObjectsOnAbort() {
+        var file = uploadingFile();
+        var driver = mock(
+                StorageDriver.class, withSettings().extraInterfaces(DirectUploadDriver.class));
+        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
+        when(driver.delete(List.of("uploads/a.txt"))).thenReturn(Mono.empty());
+        when(fileService.delete(file)).thenReturn(Mono.empty());
+
+        service.abort("file-1").block();
+
+        verify(driver).delete(List.of("uploads/a.txt"));
+        verify(fileService).delete(file);
+    }
+
+    @Test
+    void rejectsAPartAboveTheChunkSize() {
+        var file = uploadingFile();
+        file.getSpec().setChunkSize(4);
+        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+
+        assertThatThrownBy(() -> service.putPart("file-1", 1, 5, Flux.empty()).block())
+                .isInstanceOf(ApiException.class)
+                .satisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo("storage-part-too-large"));
+        verifyNoInteractions(driverResolver);
+    }
+
+    @Test
+    void chunksAServerSideUploadAboveTheChunkSize() {
+        var policy = policy();
+        var driver = mock(
+                StorageDriver.class, withSettings().extraInterfaces(MultipartStorageDriver.class));
+        var multipart = (MultipartStorageDriver) driver;
+        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
+        when(settingsService.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
+        when(validator.chunkSize(policy)).thenReturn(4L);
+        when(validator.partCount(10, 4L)).thenReturn(3);
+        when(pathGenerator.generate(eq(policy), any(StoragePathContext.class))).thenReturn("uploads/key");
+        when(fileService.create(any(StorageFile.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(fileService.update(any(StorageFile.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
+        when(driver.capabilities()).thenReturn(Set.of(StorageCapability.MULTIPART_UPLOAD));
+        when(multipart.createMultipart(any()))
+                .thenReturn(Mono.just(new NativeMultipartUpload("upload-1", "uploads/key", 4)));
+        when(multipart.putPart(any(), anyInt(), any(), anyLong()))
+                .thenAnswer(invocation -> Mono.just(new UploadedPart(
+                        invocation.getArgument(1), "etag", invocation.getArgument(3))));
+        when(multipart.completeMultipart(any(), any()))
+                .thenReturn(Mono.just(new StorageObject("uploads/key", 10, Instant.now(), "etag")));
+        var body = Flux.<org.springframework.core.io.buffer.DataBuffer>just(
+                DefaultDataBufferFactory.sharedInstance.wrap(
+                        ByteBuffer.wrap("abcdefghij".getBytes(StandardCharsets.UTF_8))));
+
+        var result = service
+                .upload(new StorageWriteRequest(
+                        "local", "owner", "chat", "chat", "a.txt", "text/plain", 10, Map.of(), body, true))
+                .block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.getSpec().getState()).isEqualTo(StorageFileState.ACTIVE);
+        verify(multipart, times(3)).putPart(any(), anyInt(), any(), anyLong());
+        verify(multipart).completeMultipart(any(), any());
     }
 
     @Test
@@ -204,11 +350,13 @@ class StorageUploadServiceTest {
     @Test
     void completesALocalUploadAndActivatesTheFile() throws Exception {
         var file = uploadingFile();
+        var policy = policy();
         var driver = mock(StorageDriver.class);
+        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
         when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
         when(fileService.update(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
+        when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
         when(driver.put(any(StoragePutRequest.class)))
                 .thenReturn(Mono.just(new StorageObject("uploads/a.txt", 4, Instant.now(), "etag")));
         var directory = workDir.resolve("uploads/.sessions/file-1");

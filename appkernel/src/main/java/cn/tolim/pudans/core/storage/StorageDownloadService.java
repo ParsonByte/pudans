@@ -7,7 +7,6 @@ import org.springframework.stereotype.Service;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
 import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
 import cn.tolim.pudans.core.storage.driver.StorageReadOptions;
@@ -50,7 +49,6 @@ public class StorageDownloadService {
             ensureActive(file);
             return parameterSettingGroupService
                     .getStorage()
-                    .defaultIfEmpty(new ParameterSetting.Storage())
                     .map(settings -> {
                         var defaultTtl = Duration.ofSeconds(
                                 settings.getDownloadTokenTtlSeconds() == null

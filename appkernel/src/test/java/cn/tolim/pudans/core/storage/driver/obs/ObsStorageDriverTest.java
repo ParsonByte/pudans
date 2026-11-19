@@ -15,11 +15,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
+import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.NativeMultipartUpload;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.StorageMultipartRequest;
+import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadedPart;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import com.obs.services.ObsClient;
 import com.obs.services.model.InitiateMultipartUploadRequest;
 import com.obs.services.model.InitiateMultipartUploadResult;
+import com.obs.services.model.ListPartsRequest;
+import com.obs.services.model.ListPartsResult;
+import com.obs.services.model.Multipart;
 import com.obs.services.model.SetBucketCorsRequest;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +58,41 @@ class ObsStorageDriverTest {
 
         assertThat(upload).isNotNull();
         assertThat(upload.uploadId()).isEqualTo("upload-1");
+    }
+
+    @Test
+    void listsAllPartPages() {
+        var first = new ListPartsResult(
+                "bucket",
+                "key",
+                "upload-1",
+                null,
+                null,
+                null,
+                List.of(new Multipart(1, null, "e1", 5L)),
+                1000,
+                true,
+                null,
+                "1000");
+        var second = new ListPartsResult(
+                "bucket",
+                "key",
+                "upload-1",
+                null,
+                null,
+                null,
+                List.of(new Multipart(1001, null, "e1001", 5L)),
+                1000,
+                false,
+                "1000",
+                null);
+        when(client.listParts(any(ListPartsRequest.class))).thenReturn(first, second);
+
+        var parts = driver
+                .listParts(new NativeMultipartUpload("upload-1", "key", 8L * 1024L * 1024L))
+                .block();
+
+        assertThat(parts).extracting(UploadedPart::partNumber).containsExactly(1, 1001);
     }
 
     @Test

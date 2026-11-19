@@ -257,13 +257,28 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
 
     @Override
     public Mono<List<UploadedPart>> listParts(NativeMultipartUpload upload) {
-        return Mono.fromCallable(() -> client.listParts(
-                        new ListPartsRequest(bucket(), upload.key(), upload.uploadId()))
-                .getParts()
-                .stream()
-                .map(part -> new UploadedPart(part.getPartNumber(), part.getETag(), part.getSize()))
-                .toList())
+        return listPartsPage(upload, null);
+    }
+
+    private Mono<List<UploadedPart>> listPartsPage(NativeMultipartUpload upload, Integer marker) {
+        return Mono.fromCallable(() -> {
+                    var request = new ListPartsRequest(bucket(), upload.key(), upload.uploadId());
+                    if (marker != null) {
+                        request.setPartNumberMarker(marker);
+                    }
+                    return client.listParts(request);
+                })
                 .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(listing -> {
+                    var page = listing.getParts().stream()
+                            .map(part -> new UploadedPart(part.getPartNumber(), part.getETag(), part.getSize()))
+                            .toList();
+                    if (listing.isTruncated() && listing.getNextPartNumberMarker() != null) {
+                        return listPartsPage(upload, listing.getNextPartNumberMarker())
+                                .map(next -> MultipartStorageDriver.mergeParts(page, next));
+                    }
+                    return Mono.just(page);
+                })
                 .onErrorMap(ServiceException.class, this::mapError);
     }
 

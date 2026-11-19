@@ -29,6 +29,8 @@ public class OneDriveOAuthService {
 
     private static final String TOKEN_URL = "https://login.microsoftonline.com/%s/oauth2/v2.0/token";
 
+    private static final String GRAPH = "https://graph.microsoft.com/v1.0";
+
     private static final String SCOPE = "offline_access Files.ReadWrite.All";
 
     private static final Duration STATE_TTL = Duration.ofMinutes(10);
@@ -43,7 +45,7 @@ public class OneDriveOAuthService {
 
     private final StoragePolicySecretCipher secretCipher;
 
-    private final WebClient webClient = WebClient.builder().build();
+    private final WebClient webClient;
 
     public OneDriveOAuthService(
             StoragePolicyService policyService,
@@ -51,11 +53,28 @@ public class OneDriveOAuthService {
             ExternalUrlSupplier externalUrl,
             StorageDriverResolver driverResolver,
             StoragePolicySecretCipher secretCipher) {
+        this(
+                policyService,
+                tokenService,
+                externalUrl,
+                driverResolver,
+                secretCipher,
+                WebClient.builder().build());
+    }
+
+    OneDriveOAuthService(
+            StoragePolicyService policyService,
+            StorageTokenService tokenService,
+            ExternalUrlSupplier externalUrl,
+            StorageDriverResolver driverResolver,
+            StoragePolicySecretCipher secretCipher,
+            WebClient webClient) {
         this.policyService = policyService;
         this.tokenService = tokenService;
         this.externalUrl = externalUrl;
         this.driverResolver = driverResolver;
         this.secretCipher = secretCipher;
+        this.webClient = webClient;
     }
 
     public Mono<OAuthUrl> authorizeUrl(String policyName) {
@@ -100,7 +119,7 @@ public class OneDriveOAuthService {
                     .bodyToMono(String.class)
                     .map(this::refreshToken)
                     .flatMap(refreshToken -> {
-                        credentials.setToken(refreshToken);
+                        credentials.setToken(secretCipher.encrypt(refreshToken));
                         return policyService.update(policy);
                     })
                     .doOnNext(updated -> driverResolver.evict(policyName))
@@ -146,27 +165,39 @@ public class OneDriveOAuthService {
                     webClient);
             return tokenClient.accessToken().flatMap(accessToken -> {
                 var graphUrl = siteGraphUrl(siteUrl);
-                return webClient
-                        .get()
-                        .uri(graphUrl)
-                        .headers(headers -> headers.setBearerAuth(accessToken))
-                        .retrieve()
-                        .onStatus(status -> status.value() == 404, response -> Mono.error(new ApiException(
-                                HttpStatus.NOT_FOUND, "storage-onedrive-site-not-found", "OneDrive 站点不存在。")))
-                        .onStatus(status -> status.value() == 401 || status.value() == 403, response -> Mono.error(
-                                new ApiException(HttpStatus.FORBIDDEN, "storage-access-denied", "存储访问被拒绝。")))
-                        .onStatus(status -> status.isError(), response -> Mono.error(new ApiException(
-                                HttpStatus.BAD_GATEWAY, "storage-driver-error", "OneDrive 站点查询失败。")))
-                        .bodyToMono(String.class)
-                        .map(body -> JsonMapper.shared().readTree(body).path("id").asString())
+                return graphGet(graphUrl, accessToken)
+                        .map(OneDriveOAuthService::readId)
                         .filter(StringUtils::hasText)
-                        .map(id -> "sites/" + id + "/drive")
+                        .flatMap(siteId -> graphGet(
+                                        GRAPH + "/sites/" + StorageIo.encodePath(siteId) + "/drive?$select=id",
+                                        accessToken)
+                                .map(OneDriveOAuthService::readId)
+                                .filter(StringUtils::hasText))
                         .switchIfEmpty(Mono.error(new ApiException(
                                 HttpStatus.BAD_GATEWAY,
                                 "storage-onedrive-root-missing",
                                 "OneDrive 站点未返回驱动器 ID。")));
             });
         });
+    }
+
+    private Mono<String> graphGet(String url, String accessToken) {
+        return webClient
+                .get()
+                .uri(url)
+                .headers(headers -> headers.setBearerAuth(accessToken))
+                .retrieve()
+                .onStatus(status -> status.value() == 404, response -> Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND, "storage-onedrive-site-not-found", "OneDrive 站点不存在。")))
+                .onStatus(status -> status.value() == 401 || status.value() == 403, response -> Mono.error(
+                        new ApiException(HttpStatus.FORBIDDEN, "storage-access-denied", "存储访问被拒绝。")))
+                .onStatus(status -> status.isError(), response -> Mono.error(new ApiException(
+                        HttpStatus.BAD_GATEWAY, "storage-driver-error", "OneDrive 站点查询失败。")))
+                .bodyToMono(String.class);
+    }
+
+    private static String readId(String body) {
+        return JsonMapper.shared().readTree(body).path("id").asString();
     }
 
     private static String siteGraphUrl(String siteUrl) {
@@ -187,7 +218,7 @@ public class OneDriveOAuthService {
         if (path.startsWith("/")) {
             path = path.substring(1);
         }
-        return "https://graph.microsoft.com/v1.0/sites/" + host + ":/" + StorageIo.encodePath(path);
+        return GRAPH + "/sites/" + host + ":/" + StorageIo.encodePath(path);
     }
 
     private String refreshToken(String body) {

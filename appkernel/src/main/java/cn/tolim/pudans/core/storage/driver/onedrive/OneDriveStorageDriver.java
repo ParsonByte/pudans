@@ -58,13 +58,16 @@ public class OneDriveStorageDriver implements StorageDriver {
 
     private final Path tempDirectory;
 
-    private final WebClient webClient = WebClient.builder().build();    public OneDriveStorageDriver(StoragePolicy policy, Path tempDirectory) {
+    private final WebClient webClient = WebClient.builder().build();
+
+    public OneDriveStorageDriver(
+            StoragePolicy policy, StoragePolicy.Credentials credentials, Path tempDirectory) {
         this.policy = policy;
         var spec = policy.getSpec();
-        var credentials = spec.getCredentials();
+        var resolved = credentials == null ? new StoragePolicy.Credentials() : credentials;
         var settings = spec.getSettings();
         this.tokenClient = new OneDriveTokenClient(
-                policy, credentials.getClientSecret(), credentials.getToken(), webClient);
+                policy, resolved.getClientSecret(), resolved.getToken(), webClient);
         this.driveId = settings == null ? null : settings.getDriveId();
         this.tempDirectory = tempDirectory;
     }
