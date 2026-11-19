@@ -1,6 +1,8 @@
 package cn.tolim.pudans.core.ai.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -50,6 +53,19 @@ class AiProviderAccountServiceTest {
         when(client.get(AiProviderAccount.class, "account-1")).thenReturn(Mono.just(disabled));
 
         StepVerifier.create(service.requireEnabled("account-1"))
+                .verifyComplete();
+    }
+
+    @Test
+    void firstEnabledSkipsDisabledAccounts() {
+        var disabled = account("enc:key");
+        disabled.getSpec().setEnabled(false);
+        var enabled = account("enc:key-2");
+        when(client.listAll(eq(AiProviderAccount.class), any(), any()))
+                .thenReturn(Flux.just(disabled, enabled));
+
+        StepVerifier.create(service.firstEnabled("openai-primary"))
+                .expectNext(enabled)
                 .verifyComplete();
     }
 

@@ -6,15 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-final class AiProviderIrSupport {
+public final class AiProviderIrSupport {
 
     private AiProviderIrSupport() {}
 
-    static boolean isSystem(String role) {
+    public static boolean isSystem(String role) {
         return "system".equals(role) || "developer".equals(role);
     }
 
-    static String text(List<AiContentPart> parts) {
+    public static String text(List<AiContentPart> parts) {
         var text = new StringBuilder();
         for (var part : parts) {
             if (part instanceof AiContentPart.Text value) {
@@ -24,7 +24,7 @@ final class AiProviderIrSupport {
         return text.toString();
     }
 
-    static void appendLine(StringBuilder buffer, String value) {
+    public static void appendLine(StringBuilder buffer, String value) {
         if (value == null || value.isEmpty()) {
             return;
         }
