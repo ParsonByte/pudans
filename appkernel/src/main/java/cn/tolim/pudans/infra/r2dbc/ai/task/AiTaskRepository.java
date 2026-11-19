@@ -184,12 +184,8 @@ public class AiTaskRepository {
     }
 
     private static Map<String, Object> payload(Row row) {
-        var value = row.get("payload", Object.class);
-        if (value == null) {
-            return Map.of();
-        }
-        var text = value.toString();
-        if (text.isBlank()) {
+        var text = AiR2dbcBindings.jsonText(row.get("payload", Object.class));
+        if (text == null || text.isBlank()) {
             return Map.of();
         }
         return JsonUtils.jsonToObject(text, new TypeReference<Map<String, Object>>() {});

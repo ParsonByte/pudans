@@ -77,6 +77,7 @@ class AiMessageRepositoryTest {
                         "内容",
                         "TEXT",
                         null,
+                        null,
                         null))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("messageIndex");

@@ -17,6 +17,8 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.NewConversation;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.MessageMetadata;
+import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Instant;
 import java.util.UUID;
@@ -182,8 +184,13 @@ public class AiConversationEndpoint implements CustomEndpoint {
                 .flatMap(userId -> conversationService.requireOwned(conversationId, userId))
                 .flatMap(conversation -> conversationService
                         .history(conversation, afterId, limit)
-                        .map(MessageView::from)
-                        .collectList())
+                        .collectList()
+                        .flatMap(messages -> conversationService
+                                .metadata(conversation)
+                                .collectMap(MessageMetadata::messageId, MessageMetadata::metadata)
+                                .map(metadata -> messages.stream()
+                                        .map(message -> MessageView.from(message, metadata.get(message.id())))
+                                        .toList())))
                 .flatMap(views -> ServerResponse.ok().bodyValue(views));
     }
 
@@ -253,9 +260,10 @@ public class AiConversationEndpoint implements CustomEndpoint {
             String contentType,
             @Nullable Integer tokenCount,
             @Nullable String modelCode,
+            @Nullable JsonNode metadata,
             Instant createdAt) {
 
-        static MessageView from(Message message) {
+        static MessageView from(Message message, @Nullable JsonNode metadata) {
             return new MessageView(
                     message.id(),
                     message.conversationId(),
@@ -266,6 +274,7 @@ public class AiConversationEndpoint implements CustomEndpoint {
                     message.contentType(),
                     message.tokenCount(),
                     message.modelCode(),
+                    metadata,
                     message.createdAt());
         }
     }

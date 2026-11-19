@@ -218,6 +218,7 @@ class AiConversationEndpointTest {
         when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(conversationService.requireOwned(7L, USER_ID)).thenReturn(Mono.just(conversation()));
         when(conversationService.history(conversation(), 0L, 50)).thenReturn(Flux.just(message()));
+        when(conversationService.metadata(conversation())).thenReturn(Flux.empty());
 
         client.get()
                 .uri("/conversations/7/messages")
@@ -235,6 +236,7 @@ class AiConversationEndpointTest {
         when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(conversationService.requireOwned(7L, USER_ID)).thenReturn(Mono.just(conversation()));
         when(conversationService.history(conversation(), 12L, 100)).thenReturn(Flux.empty());
+        when(conversationService.metadata(conversation())).thenReturn(Flux.empty());
 
         client.get()
                 .uri("/conversations/7/messages?afterId=12&limit=100")
