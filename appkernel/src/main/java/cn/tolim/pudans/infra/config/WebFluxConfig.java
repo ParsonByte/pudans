@@ -15,6 +15,7 @@ import org.springframework.http.codec.HttpMessageWriter;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.http.codec.json.JacksonJsonDecoder;
 import org.springframework.http.codec.json.JacksonJsonEncoder;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.filter.reactive.ServerWebExchangeContextFilter;
 import org.springframework.web.filter.reactive.UrlHandlerFilter;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
@@ -59,6 +60,7 @@ public class WebFluxConfig implements WebFluxConfigurer {
 
     @Override
     public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
+        configurer.defaultCodecs().maxInMemorySize((int) DataSize.ofMegabytes(16).toBytes());
         configurer.defaultCodecs().jacksonJsonDecoder(new JacksonJsonDecoder(jsonMapper));
         configurer.defaultCodecs().jacksonJsonEncoder(new JacksonJsonEncoder(jsonMapper));
     }

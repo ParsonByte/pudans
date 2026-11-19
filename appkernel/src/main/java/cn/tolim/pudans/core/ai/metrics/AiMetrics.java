@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.ai.metrics;
 
+import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -30,6 +31,12 @@ public class AiMetrics {
     private static final String METER_GATEWAY_POINTS = "ai.gateway.points";
 
     private static final String METER_ROUTING_DECISIONS = "ai.routing.decisions";
+
+    private static final String METER_GENERATION_REQUESTS = "ai.generation.requests";
+
+    private static final String METER_GENERATION_UNITS = "ai.generation.units";
+
+    private static final String METER_GENERATION_POINTS = "ai.generation.points";
 
     private static final String METER_MEMORY_TASKS = "ai.memory.tasks";
 
@@ -101,6 +108,49 @@ public class AiMetrics {
                 .increment());
     }
 
+    public void generationRequest(
+            @Nullable String provider,
+            @Nullable String model,
+            @Nullable String capability,
+            @Nullable String status) {
+        safe(() -> Counter.builder(METER_GENERATION_REQUESTS)
+                .tags(
+                        "provider", tag(provider),
+                        "model", tag(model),
+                        "capability", tag(capability),
+                        "status", tag(status))
+                .register(registry)
+                .increment());
+    }
+
+    public void generationUsage(
+            @Nullable String provider,
+            @Nullable String model,
+            @Nullable String capability,
+            @Nullable AiModelUsage usage) {
+        if (usage == null) {
+            return;
+        }
+        unit(provider, model, capability, "image", usage.imageCount());
+        unit(provider, model, capability, "video_second", usage.videoSeconds());
+        unit(provider, model, capability, "audio_second", usage.audioSeconds());
+        unit(provider, model, capability, "speech_character", usage.speechCharacters());
+        unit(provider, model, capability, "task", usage.taskCount());
+        unit(provider, model, capability, "input_token", usage.inputTokens());
+        unit(provider, model, capability, "output_token", usage.outputTokens());
+    }
+
+    public void generationPoints(
+            @Nullable BigDecimal points, @Nullable String provider, @Nullable String model) {
+        if (points == null || points.signum() <= 0) {
+            return;
+        }
+        safe(() -> Counter.builder(METER_GENERATION_POINTS)
+                .tags("provider", tag(provider), "model", tag(model))
+                .register(registry)
+                .increment(points.doubleValue()));
+    }
+
     public void memoryTask(@Nullable String taskType, @Nullable String status, @Nullable Duration duration) {
         var typeTag = tag(taskType);
         var statusTag = tag(status);
@@ -160,6 +210,25 @@ public class AiMetrics {
         }
         safe(() -> Counter.builder(METER_GATEWAY_TOKENS)
                 .tags("direction", direction, "provider", tag(provider), "model", tag(model))
+                .register(registry)
+                .increment(amount.doubleValue()));
+    }
+
+    private void unit(
+            @Nullable String provider,
+            @Nullable String model,
+            @Nullable String capability,
+            String unit,
+            @Nullable Integer amount) {
+        if (amount == null || amount <= 0) {
+            return;
+        }
+        safe(() -> Counter.builder(METER_GENERATION_UNITS)
+                .tags(
+                        "provider", tag(provider),
+                        "model", tag(model),
+                        "capability", tag(capability),
+                        "unit", unit)
                 .register(registry)
                 .increment(amount.doubleValue()));
     }

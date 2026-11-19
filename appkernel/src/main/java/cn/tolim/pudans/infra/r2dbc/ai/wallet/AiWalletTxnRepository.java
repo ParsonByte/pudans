@@ -25,11 +25,11 @@ public class AiWalletTxnRepository {
                         INSERT INTO ai_wallet_txn (
                             user_id, txn_type, amount, balance_after, request_id, provider_account,
                             model_code, tier, input_tokens, cache_tokens, output_tokens, trace_id,
-                            billing_source, idempotency_key
+                            billing_source, remark, idempotency_key
                         ) VALUES (
                             :userId, :txnType, :amount, :balanceAfter, :requestId, :providerAccount,
                             :modelCode, :tier, :inputTokens, :cacheTokens, :outputTokens, :traceId,
-                            :billingSource, :idempotencyKey
+                            :billingSource, :remark, :idempotencyKey
                         )
                         ON CONFLICT (idempotency_key) DO NOTHING
                         RETURNING id
@@ -47,6 +47,7 @@ public class AiWalletTxnRepository {
         spec = bindNullable(spec, "outputTokens", txn.outputTokens(), Integer.class);
         spec = bindNullable(spec, "traceId", txn.traceId(), String.class);
         spec = bindNullable(spec, "billingSource", txn.billingSource(), String.class);
+        spec = bindNullable(spec, "remark", txn.remark(), String.class);
         return spec.bind("idempotencyKey", txn.idempotencyKey())
                 .map((row, metadata) -> Boolean.TRUE)
                 .one()
@@ -176,7 +177,27 @@ public class AiWalletTxnRepository {
             @Nullable Integer outputTokens,
             @Nullable String traceId,
             @Nullable String billingSource,
-            String idempotencyKey) {
+            String idempotencyKey,
+            @Nullable String remark) {
+
+        public WalletTxn(
+                String userId,
+                String txnType,
+                BigDecimal amount,
+                BigDecimal balanceAfter,
+                @Nullable String requestId,
+                @Nullable String providerAccount,
+                @Nullable String modelCode,
+                @Nullable String tier,
+                @Nullable Integer inputTokens,
+                @Nullable Integer cacheTokens,
+                @Nullable Integer outputTokens,
+                @Nullable String traceId,
+                @Nullable String billingSource,
+                String idempotencyKey) {
+            this(userId, txnType, amount, balanceAfter, requestId, providerAccount, modelCode, tier,
+                    inputTokens, cacheTokens, outputTokens, traceId, billingSource, idempotencyKey, null);
+        }
     }
 
     public record TxnSummary(String userId, BigDecimal amount, BigDecimal balanceAfter, String idempotencyKey) {

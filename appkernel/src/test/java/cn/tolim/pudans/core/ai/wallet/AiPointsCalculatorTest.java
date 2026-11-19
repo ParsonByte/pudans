@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
@@ -51,6 +52,46 @@ class AiPointsCalculatorTest {
 
         assertThatThrownBy(() -> AiPointsCalculator.charge(model, false, 10, 0, 0))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void chargesTokenAndMediaUnitsTogether() {
+        var model = model(1000, 1000, 1000);
+        model.getSpec().setImagePointsPerItem(2);
+        model.getSpec().setVideoPointsPerSecond(3);
+        model.getSpec().setAudioPointsPerSecond(1);
+        model.getSpec().setSpeechPointsPerKiloCharacter(4);
+        model.getSpec().setTaskPointsPerInvocation(5);
+        var usage = new AiModelUsage(
+                1000, 500, null, null, 2, 10, 5, 1500, 2, java.util.Map.of());
+
+        var points = AiPointsCalculator.charge(model, false, usage);
+
+        assertThat(points).isEqualByComparingTo(new BigDecimal("59"));
+    }
+
+    @Test
+    void speechCharactersAreRoundedUpToKiloCharacterUnits() {
+        var model = model(1000, 1000, 1000);
+        model.getSpec().setSpeechPointsPerKiloCharacter(3);
+        var usage = new AiModelUsage(
+                null, null, null, null, null, null, null, 1001, null, java.util.Map.of());
+
+        var points = AiPointsCalculator.charge(model, false, usage);
+
+        assertThat(points).isEqualByComparingTo(new BigDecimal("6"));
+    }
+
+    @Test
+    void mediaUnitsAreFreeForFreeProviders() {
+        var model = model(1000, 1000, 1000);
+        model.getSpec().setImagePointsPerItem(2);
+        var usage = new AiModelUsage(
+                null, null, null, null, 10, null, null, null, null, java.util.Map.of());
+
+        var points = AiPointsCalculator.charge(model, true, usage);
+
+        assertThat(points).isEqualByComparingTo(BigDecimal.ZERO);
     }
 
     private static AiModel model(int input, int cache, int output) {
