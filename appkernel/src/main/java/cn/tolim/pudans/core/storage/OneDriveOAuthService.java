@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -47,6 +48,7 @@ public class OneDriveOAuthService {
 
     private final WebClient webClient;
 
+    @Autowired
     public OneDriveOAuthService(
             StoragePolicyService policyService,
             StorageTokenService tokenService,
