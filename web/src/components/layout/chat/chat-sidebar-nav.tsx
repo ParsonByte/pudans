@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { Link, useLocation } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Brain,
   ChevronRight,
@@ -13,6 +13,7 @@ import {
   ScanSearch,
   Sparkles,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,8 +44,24 @@ const MORE_ITEMS = [
 ] as const;
 
 export function ChatSidebarNav() {
+  const navigate = useNavigate();
   const [expanded, setExpanded] = useState(false);
   const pathname = useLocation({ select: (location) => location.pathname });
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        void navigate({ to: NEW_CHAT_URL });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [navigate]);
+
+  const openUnavailable = (label: string) => {
+    toast.info(`${label}功能尚未开放。`);
+  };
 
   return (
     <SidebarGroup>
@@ -67,7 +84,7 @@ export function ChatSidebarNav() {
         </SidebarMenuItem>
         {MAIN_ITEMS.map((item) => (
           <SidebarMenuItem key={item.label}>
-            <SidebarMenuButton className="h-10">
+            <SidebarMenuButton className="h-10" onClick={() => openUnavailable(item.label)}>
               <item.icon className="size-5" />
               <span>{item.label}</span>
               {"badge" in item && item.badge ? (
@@ -96,6 +113,7 @@ export function ChatSidebarNav() {
                   type="button"
                   variant="ghost"
                   className="h-9 w-full justify-start gap-2 px-2"
+                  onClick={() => openUnavailable(item.label)}
                 >
                   <item.icon className="size-4" />
                   <span>{item.label}</span>
@@ -107,7 +125,10 @@ export function ChatSidebarNav() {
         {expanded
           ? MORE_ITEMS.map((item) => (
               <SidebarMenuItem key={item.label}>
-                <SidebarMenuButton className="h-10 text-muted-foreground">
+                <SidebarMenuButton
+                  className="h-10 text-muted-foreground"
+                  onClick={() => openUnavailable(item.label)}
+                >
                   <item.icon className="size-5" />
                   <span>{item.label}</span>
                 </SidebarMenuButton>

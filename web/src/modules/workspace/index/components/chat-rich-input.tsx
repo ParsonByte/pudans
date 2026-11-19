@@ -315,7 +315,7 @@ export function ChatRichInput({
         onInput={emit}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
-        className="relative min-h-24 w-full flex-1 overflow-y-auto rounded-none border-0 bg-transparent p-3 text-base break-words whitespace-pre-wrap outline-none md:text-base dark:bg-transparent"
+        className="relative max-h-64 min-h-24 w-full flex-1 overflow-y-auto overscroll-contain rounded-none border-0 bg-transparent p-3 text-base break-words whitespace-pre-wrap outline-none md:text-base dark:bg-transparent"
       />
       {empty ? (
         <span className="pointer-events-none absolute inset-0 p-3 text-base text-muted-foreground md:text-base">
