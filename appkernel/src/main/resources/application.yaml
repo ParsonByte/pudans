@@ -56,6 +56,30 @@ spring:
 
 pudans:
   work-dir: ${PUDANS_WORK_DIR:${user.home}/.pudans}
+  ai:
+    enabled: ${PUDANS_AI_ENABLED:true}
+    worker:
+      poll-interval: 1s
+      batch-size: 20
+      max-concurrency: 4
+      lock-ttl: 5m
+    web-client:
+      connect-timeout: 5s
+      response-timeout: 300s
+      max-in-memory-size: 16MB
+    routing:
+      health-threshold: 60
+      circuit:
+        failure-threshold: 5
+        success-threshold: 3
+        open-duration: 30s
+        max-open-duration: 5m
+        max-latency-millis: 60000
+    gateway:
+      enabled: true
+      injection-enabled: true
+    embedding:
+      dimension: 1536
   storage:
     cleanup-interval-seconds: ${PUDANS_STORAGE_CLEANUP_INTERVAL:300}
   webhook:
