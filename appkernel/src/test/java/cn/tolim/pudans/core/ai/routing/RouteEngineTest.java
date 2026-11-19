@@ -140,6 +140,19 @@ class RouteEngineTest {
     }
 
     @Test
+    void keepsASeatEligibleAfterOneFailureWhileTheCircuitIsClosed() {
+        breaker.recordFailure("p", CircuitFailure.defaultFailure());
+        breaker.recordFailure("a", CircuitFailure.defaultFailure());
+        var seat = RouteSeats.seat("p", "a", "m1", AiModel.Tier.HIGH);
+
+        var plan = engine.route(
+                RouteRequest.builder().routeMode(AiRouteGroup.RouteMode.ORDER).build(), List.of(seat));
+
+        assertThat(plan.routed()).isTrue();
+        assertThat(plan.selected().model()).isEqualTo("m1");
+    }
+
+    @Test
     void resolvesExplicitTierBeforeDefaults() {
         var request = RouteRequest.builder()
                 .requestedTier(AiModel.Tier.ULTRA)

@@ -234,7 +234,7 @@ public class RouteEngine {
         if (isResting(seat)) {
             return RouteEliminationReason.RESTING;
         }
-        if (effectiveHealth(seat) < request.getHealthThreshold()) {
+        if (seat.getHealthScore() < request.getHealthThreshold()) {
             return RouteEliminationReason.UNHEALTHY;
         }
         if (!supports(seat, request.getRequiredCapabilities())
