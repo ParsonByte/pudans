@@ -26,6 +26,7 @@ type FormDialogProps<T extends FieldValues> = {
   onSubmit: FormEventHandler<HTMLFormElement>;
   isPending?: boolean;
   maxHeightRatio?: number;
+  fill?: boolean;
   contentClassName?: string;
   formClassName?: string;
   headerActions?: ReactNode;
@@ -44,6 +45,7 @@ export function FormDialog<T extends FieldValues>({
   onSubmit,
   isPending = false,
   maxHeightRatio = 0.5,
+  fill = false,
   contentClassName,
   formClassName,
   headerActions,
@@ -78,7 +80,7 @@ export function FormDialog<T extends FieldValues>({
           {headerActions ? <div>{headerActions}</div> : null}
         </DialogHeader>
 
-        <AutoScrollArea maxHeightRatio={maxHeightRatio}>
+        <AutoScrollArea maxHeightRatio={maxHeightRatio} fill={fill}>
           <form
             id={formId}
             className={cn("space-y-6", formClassName)}

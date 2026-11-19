@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,11 +19,15 @@ import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
+import cn.tolim.pudans.contract.extension.JsonExtension;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.contract.extension.Unstructured;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
 class BuiltinEntityPolicyTest {
@@ -397,5 +402,53 @@ class BuiltinEntityPolicyTest {
 
         StepVerifier.create(policy.checkUserGroupAssignment("bob", "normal-users"))
                 .verifyComplete();
+    }
+
+    @Test
+    void storagePolicyUpdateKeepsCredentialsThatTheRequestOmits() {
+        when(client.get(StoragePolicy.class, "storage-1"))
+                .thenReturn(Mono.just(storagePolicy("stored-key")));
+        var spec = new LinkedHashMap<String, Object>();
+        spec.put("displayName", "renamed");
+        var update = new Unstructured(Map.of(
+                "apiVersion", StoragePolicy.GROUP + "/" + StoragePolicy.VERSION,
+                "kind", StoragePolicy.KIND,
+                "metadata", Map.of("name", "storage-1"),
+                "spec", spec));
+
+        StepVerifier.create(policy.checkUpdate(storagePolicyGvk(), "storage-1", update))
+                .verifyComplete();
+
+        assertThat(Unstructured.getNestedValue(update.getData(), "spec", "credentials", "accessKey"))
+                .contains("stored-key");
+    }
+
+    @Test
+    void storagePolicyPatchKeepsCredentialsThatTheRequestOmits() {
+        when(client.get(StoragePolicy.class, "storage-1"))
+                .thenReturn(Mono.just(storagePolicy("stored-key")));
+        var mapper = new ObjectMapper();
+        var node = mapper.createObjectNode();
+        node.putObject("spec").put("displayName", "renamed");
+        var patched = new JsonExtension(mapper, node);
+
+        StepVerifier.create(policy.checkUpdate(storagePolicyGvk(), "storage-1", patched))
+                .verifyComplete();
+
+        assertThat(node.at("/spec/credentials/accessKey").asText()).isEqualTo("stored-key");
+    }
+
+    private static GroupVersionKind storagePolicyGvk() {
+        return new GroupVersionKind(
+                StoragePolicy.GROUP, StoragePolicy.VERSION, StoragePolicy.KIND);
+    }
+
+    private static StoragePolicy storagePolicy(String accessKey) {
+        var storagePolicy = new StoragePolicy();
+        var metadata = new Metadata();
+        metadata.setName("storage-1");
+        storagePolicy.setMetadata(metadata);
+        storagePolicy.getSpec().getCredentials().setAccessKey(accessKey);
+        return storagePolicy;
     }
 }

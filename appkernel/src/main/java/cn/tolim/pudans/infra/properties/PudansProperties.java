@@ -29,6 +29,9 @@ public class PudansProperties implements Validator {
     @Valid
     @NestedConfigurationProperty
     private final WebhookProperties webhook = new WebhookProperties();
+    @Valid
+    @NestedConfigurationProperty
+    private final StorageProperties storage = new StorageProperties();
     @NotNull
     private Path workDir;
     private URL externalUrl;

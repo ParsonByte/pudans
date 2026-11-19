@@ -39,6 +39,21 @@ class AuthorizationExchangeConfigurers {
                         ApiGroups.API_PREFIX + "/avatars/**",
                         "/avatars/**")
                 .permitAll()
+                .pathMatchers(
+                        HttpMethod.GET,
+                        ApiGroups.API_PREFIX + "/storagefiles/*/content",
+                        ApiGroups.API_PREFIX + "/storagefiles/*/upload",
+                        ApiGroups.API_PREFIX + "/storagefiles/*/upload/parts/*/url")
+                .permitAll()
+                .pathMatchers(
+                        HttpMethod.PUT, ApiGroups.API_PREFIX + "/storagefiles/*/upload/parts/*")
+                .permitAll()
+                .pathMatchers(
+                        HttpMethod.POST, ApiGroups.API_PREFIX + "/storagefiles/*/upload/complete")
+                .permitAll()
+                .pathMatchers(
+                        HttpMethod.DELETE, ApiGroups.API_PREFIX + "/storagefiles/*/upload")
+                .permitAll()
                 .pathMatchers(ApiGroups.API_ROOT + "/**", "/actuator/**")
                 .access(new RequestInfoAuthorizationManager(roleService, tempRoleService, auditService)));
     }

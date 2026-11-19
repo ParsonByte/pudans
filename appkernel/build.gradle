@@ -63,6 +63,13 @@ dependencies {
         libs.therapi.runtime.javadoc,
         libs.java.semver,
         libs.bouncycastle.bcprov,
+        libs.aws.sdk.s3,
+        libs.aws.sdk.netty.nio.client,
+        libs.aliyun.oss,
+        libs.tencent.cos,
+        libs.qiniu.java.sdk,
+        libs.upyun.java.sdk,
+        libs.huawei.obs,
     ]
     sharedDeps.each { d ->
         add('implementation', d)

@@ -145,7 +145,6 @@ export function AuditLogsView() {
               </Link>
             </Button>
           ) : null}
-          <h2 className="text-2xl font-bold tracking-tight">查询日志</h2>
           <Button
             type="button"
             variant="outline"

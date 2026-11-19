@@ -214,13 +214,7 @@ export function ReplayView() {
   return (
     <ConsolePage title="回溯">
       <div className="flex flex-1 flex-col gap-4 sm:gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight">回溯</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              查询历史链路、回放操作快照，并管理审计归档。
-            </p>
-          </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             type="button"
             variant="outline"
@@ -240,14 +234,14 @@ export function ReplayView() {
           </Button>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-1 flex-col gap-4">
           <TabsList>
             <TabsTrigger value="query">回溯查询</TabsTrigger>
             <TabsTrigger value="replay">回放</TabsTrigger>
             <TabsTrigger value="archive">归档管理</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="query" className="flex flex-col gap-4">
+          <TabsContent value="query" className="flex flex-1 flex-col gap-4">
             <ConsoleSection>
               <ConsoleSectionHeader
                 title="查询条件"
@@ -410,7 +404,7 @@ export function ReplayView() {
             />
           </TabsContent>
 
-          <TabsContent value="replay" className="flex flex-col gap-4">
+          <TabsContent value="replay" className="flex flex-1 flex-col gap-4">
             <ConsoleSection>
               {selectedFlowId ? (
                 <ReplayPlayer key={selectedFlowId} traceFlowId={selectedFlowId} />
@@ -420,7 +414,7 @@ export function ReplayView() {
             </ConsoleSection>
           </TabsContent>
 
-          <TabsContent value="archive" className="flex flex-col gap-4">
+          <TabsContent value="archive" className="flex flex-1 flex-col gap-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <ConsoleStat label="活跃记录" value={stats?.activeCount ?? 0} icon={History} />
               <ConsoleStat label="已归档记录" value={stats?.archivedCount ?? 0} icon={Archive} />

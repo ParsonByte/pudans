@@ -1,0 +1,72 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-storage-policies
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Storage"
+    rbac.authorization.pudans.tolim.cn/display-name: "Storage Policy View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
+    rbac.authorization.pudans.tolim.cn/ui-component: "storage-policies"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/storage-policies"
+    rbac.authorization.pudans.tolim.cn/ui-label: "存储"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理对象存储策略、凭据与上传配置。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:database"
+    rbac.authorization.pudans.tolim.cn/ui-group: "通用"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies"
+      - "storagepolicies/types"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-storage-policies
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-storage-policies" ]
+    rbac.authorization.pudans.tolim.cn/module: "Storage"
+    rbac.authorization.pudans.tolim.cn/display-name: "Storage Policy Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage:manage"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies/validate"
+      - "storagepolicies/test"
+      - "storagepolicies/cors"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies/oauth"
+    verbs:
+      - "get"
+      - "list"
+      - "create"

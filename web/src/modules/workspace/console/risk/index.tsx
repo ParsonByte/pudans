@@ -270,8 +270,7 @@ export function RiskView() {
   return (
     <ConsolePage title="风险">
       <div className="flex flex-1 flex-col gap-4 sm:gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-2xl font-bold tracking-tight">风险控制</h2>
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button type="button" variant="outline" onClick={refresh} disabled={refreshing}>
             {refreshing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
             刷新
@@ -285,14 +284,14 @@ export function RiskView() {
           <ConsoleStat label="近 7 天事件" value={events.length} icon={Activity} />
         </div>
 
-        <Tabs defaultValue="rules" className="gap-4">
+        <Tabs defaultValue="rules" className="flex flex-1 flex-col gap-4">
           <TabsList>
             <TabsTrigger value="rules">风险规则</TabsTrigger>
             <TabsTrigger value="events">风险事件</TabsTrigger>
             <TabsTrigger value="bans">封禁对象</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="rules" className="flex flex-col gap-4">
+          <TabsContent value="rules" className="flex flex-1 flex-col gap-4">
             <ConsoleSection>
               {rulesQuery.isPending ? (
                 <TableSkeleton rows={6} />
@@ -409,7 +408,7 @@ export function RiskView() {
             />
           </TabsContent>
 
-          <TabsContent value="events" className="flex flex-col gap-4">
+          <TabsContent value="events" className="flex flex-1 flex-col gap-4">
             <DataTableToolbar
               searchPlaceholder="搜索场景、对象或路径..."
               searchValue={eventSearch}
@@ -571,7 +570,7 @@ export function RiskView() {
             />
           </TabsContent>
 
-          <TabsContent value="bans" className="flex flex-col gap-4">
+          <TabsContent value="bans" className="flex flex-1 flex-col gap-4">
             <ConsoleSection>
               {bansQuery.isPending ? (
                 <TableSkeleton rows={4} />
