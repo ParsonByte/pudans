@@ -34,6 +34,17 @@ public class AiStatsEndpoint implements CustomEndpoint {
                         .tag(TAG)
                         .parameter(daysParameter())
                         .response(responseBuilder().implementation(AiStatsService.RoutingStats.class)))
+                .GET("/aistats/-/routing/live", this::routingLive, builder -> builder
+                        .operationId("getAiRoutingLive")
+                        .description("Live routing overview with recent gateway requests.")
+                        .tag(TAG)
+                        .parameter(daysParameter())
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("limit")
+                                .required(false)
+                                .description("Recent request limit (1-200, default 20)."))
+                        .response(responseBuilder().implementation(AiStatsService.RoutingLive.class)))
                 .GET("/aistats/-/points", this::points, builder -> builder
                         .operationId("getAiPointStats")
                         .description("Daily point consumption by model.")
@@ -64,6 +75,12 @@ public class AiStatsEndpoint implements CustomEndpoint {
                 .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
     }
 
+    private Mono<ServerResponse> routingLive(ServerRequest request) {
+        return statsService
+                .routingLive(days(request), limit(request))
+                .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
+    }
+
     private Mono<ServerResponse> points(ServerRequest request) {
         return statsService.points(days(request))
                 .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
@@ -88,6 +105,19 @@ public class AiStatsEndpoint implements CustomEndpoint {
             return Integer.parseInt(value);
         } catch (NumberFormatException error) {
             throw new ServerWebInputException("days 必须是整数。");
+        }
+    }
+
+    private static int limit(ServerRequest request) {
+        var value = request.queryParam("limit").orElse("20");
+        try {
+            var parsed = Integer.parseInt(value);
+            if (parsed < 1 || parsed > 200) {
+                throw new ServerWebInputException("limit 必须在 1 到 200 之间。");
+            }
+            return parsed;
+        } catch (NumberFormatException error) {
+            throw new ServerWebInputException("limit 必须是整数。");
         }
     }
 
