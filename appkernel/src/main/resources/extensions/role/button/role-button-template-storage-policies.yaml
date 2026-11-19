@@ -1,0 +1,131 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-create-storage-policies
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-policies" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "添加存储策略"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建本机、对象存储或 OneDrive 存储策略。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage:create"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies/validate"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-update-storage-policies
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-policies" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "update"
+    rbac.authorization.pudans.tolim.cn/ui-label: "编辑存储策略"
+    rbac.authorization.pudans.tolim.cn/ui-description: "修改存储凭据、桶配置和上传规则。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage:update"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies"
+    verbs:
+      - "update"
+      - "patch"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies/validate"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-delete-storage-policies
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-policies" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "delete"
+    rbac.authorization.pudans.tolim.cn/ui-label: "删除存储策略"
+    rbac.authorization.pudans.tolim.cn/ui-description: "删除未被文件引用且非默认的存储策略。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage:delete"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies"
+    verbs:
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-test-storage-policies
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-policies" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "test"
+    rbac.authorization.pudans.tolim.cn/ui-label: "测试与跨域配置"
+    rbac.authorization.pudans.tolim.cn/ui-description: "测试存储连接并配置 Bucket 跨域策略。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "40"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage:test"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies/validate"
+      - "storagepolicies/test"
+      - "storagepolicies/cors"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-oauth-storage-policies
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-policies" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "oauth"
+    rbac.authorization.pudans.tolim.cn/ui-label: "OneDrive 授权"
+    rbac.authorization.pudans.tolim.cn/ui-description: "发起 OneDrive OAuth 授权并查询授权状态。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "50"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage:oauth"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagepolicies/oauth"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
