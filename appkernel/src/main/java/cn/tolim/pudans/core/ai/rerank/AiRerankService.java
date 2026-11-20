@@ -1,30 +1,22 @@
 package cn.tolim.pudans.core.ai.rerank;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
-
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.ai.model.AiModelAdapter;
-import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
-import cn.tolim.pudans.core.ai.model.AiModelContent;
-import cn.tolim.pudans.core.ai.model.AiModelRequest;
+import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jScoringModelFactory;
 import cn.tolim.pudans.infra.exception.ApiException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import dev.langchain4j.data.segment.TextSegment;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -38,9 +30,13 @@ public class AiRerankService {
 
     public static final String PROTOCOL_UNSUPPORTED_CODE = "ai-rerank-protocol-unsupported";
 
+    public static final String UPSTREAM_ERROR_CODE = "ai-rerank-upstream-error";
+
     private final ReactiveExtensionClient client;
 
-    private final AiModelAdapterRegistry adapterRegistry;
+    private final AiProviderAccountService accountService;
+
+    private final LangChain4jScoringModelFactory scoringModelFactory;
 
     public Mono<RerankResult> rerank(String modelName, String query, List<String> documents, int topK) {
         var pending = documents == null ? List.<String>of() : List.copyOf(documents);
@@ -51,18 +47,44 @@ public class AiRerankService {
             return Mono.error(new IllegalArgumentException("重排数量必须大于 0。"));
         }
         return target(modelName)
-                .flatMap(target -> pending.isEmpty()
-                        ? Mono.just(new RerankResult(List.of()))
-                        : target.adapter()
-                                .invoke(
-                                        target.provider(),
-                                        target.account(),
-                                        target.model(),
-                                        request(query, pending, topK))
-                                .switchIfEmpty(Mono.error(upstreamError("重排响应为空。")))
-                                .map(response -> results(response.outputs())))
-                .map(result -> validated(result, pending.size()))
-                .map(result -> topResults(result, topK))
+                .flatMap(target -> rerank(
+                        target.provider(), target.account(), target.model(), query, pending, topK))
+                .onErrorMap(error -> error instanceof ApiException ? error : upstreamError(error));
+    }
+
+    public Mono<RerankResult> rerank(
+            AiProvider provider,
+            AiProviderAccount account,
+            AiModel model,
+            String query,
+            List<String> documents,
+            int topK) {
+        if (topK < 1) {
+            return Mono.error(new IllegalArgumentException("重排数量必须大于 0。"));
+        }
+        var protocol = provider == null || provider.getSpec() == null
+                ? null
+                : provider.getSpec().getProtocol();
+        if (!scoringModelFactory.supports(protocol)) {
+            return Mono.error(protocolUnsupported(protocol));
+        }
+        var pending = documents == null ? List.<String>of() : List.copyOf(documents);
+        if (pending.isEmpty()) {
+            return Mono.just(new RerankResult(List.of()));
+        }
+        var modelCode = model == null || model.getSpec() == null ? null : model.getSpec().getModelCode();
+        if (!StringUtils.hasText(modelCode)) {
+            return Mono.error(modelMissing(null));
+        }
+        return accountService
+                .apiKey(account)
+                .defaultIfEmpty("")
+                .map(apiKey -> scoringModelFactory.create(provider, apiKey, modelCode))
+                .flatMap(scoringModel -> Mono.fromCallable(() -> scoringModel.scoreAll(
+                                pending.stream().map(TextSegment::from).toList(), query))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .map(response -> results(response.content(), pending.size()))
+                        .map(result -> topResults(result, topK)))
                 .onErrorMap(error -> error instanceof ApiException ? error : upstreamError(error));
     }
 
@@ -80,73 +102,30 @@ public class AiRerankService {
                             .switchIfEmpty(Mono.error(providerMissing(providerName)))
                             .flatMap(provider -> {
                                 var protocol = provider.getSpec().getProtocol();
-                                if (!adapterRegistry.supports(protocol, AiModel.Capability.RERANK)) {
+                                if (!scoringModelFactory.supports(protocol)) {
                                     return Mono.error(protocolUnsupported(protocol));
                                 }
-                                var adapter =
-                                        adapterRegistry.require(protocol, AiModel.Capability.RERANK);
-                                return account(providerName)
-                                        .map(account -> new RerankTarget(
-                                                provider, account, model, adapter));
+                                return accountService
+                                        .firstEnabled(providerName)
+                                        .switchIfEmpty(Mono.error(accountMissing(providerName)))
+                                        .map(account -> new RerankTarget(provider, account, model));
                             });
                 });
     }
 
-    private Mono<AiProviderAccount> account(String providerName) {
-        var options = ListOptions.builder()
-                .andQuery(equal("spec.provider", providerName))
-                .build();
-        return client.listAll(AiProviderAccount.class, options, defaultSort())
-                .filter(account -> account.getSpec() != null && account.getSpec().isEnabled())
-                .next()
-                .switchIfEmpty(Mono.error(accountMissing(providerName)));
-    }
-
-    private static AiModelRequest request(String query, List<String> documents, int topK) {
-        var inputs = new ArrayList<AiModelContent>();
-        inputs.add(new AiModelContent.Text(query));
-        documents.forEach(document -> inputs.add(new AiModelContent.Text(document)));
-        var params = Map.<String, JsonNode>of(
-                "topK", JsonNodeFactory.instance.numberNode(topK));
-        return new AiModelRequest(AiModel.Capability.RERANK, inputs, params, false, null);
-    }
-
-    private static RerankResult results(List<AiModelContent> outputs) {
-        if (outputs == null) {
-            return new RerankResult(List.of());
+    private static RerankResult results(List<Double> scores, int documentCount) {
+        if (scores == null || scores.size() != documentCount) {
+            throw upstreamError("重排分数数量与文档数量不一致。");
         }
-        var scored = new ArrayList<RerankResult.ScoredIndex>();
-        for (var output : outputs) {
-            if (!(output instanceof AiModelContent.Json json)) {
-                continue;
+        var scored = new ArrayList<RerankResult.ScoredIndex>(scores.size());
+        for (var index = 0; index < scores.size(); index++) {
+            var score = scores.get(index);
+            if (score == null || !Double.isFinite(score)) {
+                throw upstreamError("重排响应包含无效分数。");
             }
-            var index = json.value().get("index");
-            var score = json.value().get("score");
-            if (index == null || !index.isIntegralNumber()) {
-                throw upstreamError("重排响应缺少有效索引。");
-            }
-            if (score == null || !score.isNumber() || !Double.isFinite(score.doubleValue())) {
-                throw upstreamError("重排响应缺少有效分数。");
-            }
-            scored.add(new RerankResult.ScoredIndex(index.asInt(), score.doubleValue()));
+            scored.add(new RerankResult.ScoredIndex(index, score));
         }
         return new RerankResult(List.copyOf(scored));
-    }
-
-    private static RerankResult validated(RerankResult result, int documentCount) {
-        if (result == null || result.results() == null) {
-            throw invalidIndex();
-        }
-        var indexes = new HashSet<Integer>();
-        for (var scored : result.results()) {
-            if (scored == null
-                    || scored.index() < 0
-                    || scored.index() >= documentCount
-                    || !indexes.add(scored.index())) {
-                throw invalidIndex();
-            }
-        }
-        return result;
     }
 
     private static RerankResult topResults(RerankResult result, int topK) {
@@ -195,26 +174,17 @@ public class AiRerankService {
                 "暂不支持该重排协议：" + protocol + "。");
     }
 
-    private static ApiException invalidIndex() {
-        return new ApiException(
-                HttpStatus.BAD_GATEWAY,
-                AiRerankClient.UPSTREAM_ERROR_CODE,
-                "重排响应索引超出范围或重复。");
-    }
-
     private static ApiException upstreamError(String reason) {
-        return new ApiException(
-                HttpStatus.BAD_GATEWAY, AiRerankClient.UPSTREAM_ERROR_CODE, reason);
+        return new ApiException(HttpStatus.BAD_GATEWAY, UPSTREAM_ERROR_CODE, reason);
     }
 
     private static ApiException upstreamError(Throwable cause) {
         return new ApiException(
                 HttpStatus.BAD_GATEWAY,
-                AiRerankClient.UPSTREAM_ERROR_CODE,
+                UPSTREAM_ERROR_CODE,
                 "重排服务调用失败。",
                 cause);
     }
 
-    private record RerankTarget(
-            AiProvider provider, AiProviderAccount account, AiModel model, AiModelAdapter adapter) {}
+    private record RerankTarget(AiProvider provider, AiProviderAccount account, AiModel model) {}
 }

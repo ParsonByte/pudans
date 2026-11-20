@@ -10,20 +10,21 @@ import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.model.AiModelAdapter;
-import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
-import cn.tolim.pudans.core.ai.model.AiModelRequest;
+import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jEmbeddingModelFactory;
 import cn.tolim.pudans.infra.exception.ApiException;
+import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.data.segment.TextSegment;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -39,11 +40,17 @@ public class AiEmbeddingService {
 
     public static final String DIMENSION_MISMATCH_CODE = "ai-embedding-dimension-mismatch";
 
+    public static final String INPUT_UNSUPPORTED_CODE = "ai-embedding-input-unsupported";
+
+    private static final String UPSTREAM_ERROR_CODE = "ai-embedding-upstream-error";
+
     private final AiSettingService settingService;
 
     private final ReactiveExtensionClient client;
 
-    private final AiModelAdapterRegistry adapterRegistry;
+    private final AiProviderAccountService accountService;
+
+    private final LangChain4jEmbeddingModelFactory embeddingModelFactory;
 
     public Mono<EmbeddingBatch> embed(List<String> inputs) {
         return embed(inputs, null);
@@ -94,16 +101,15 @@ public class AiEmbeddingService {
                 .switchIfEmpty(Mono.error(providerMissing(providerName)))
                 .flatMap(provider -> {
                     var protocol = provider.getSpec().getProtocol();
-                    if (!adapterRegistry.supports(protocol, AiModel.Capability.EMBEDDING)) {
+                    if (!LangChain4jEmbeddingModelFactory.supports(protocol)) {
                         return Mono.error(protocolUnsupported(protocol));
                     }
-                    var adapter = adapterRegistry.require(protocol, AiModel.Capability.EMBEDDING);
                     return account(providerName)
                             .map(account -> new EmbeddingTarget(
                                     provider,
                                     account,
                                     model,
-                                    adapter,
+                                    protocol,
                                     expectedDimension(model, embedding),
                                     batchSize(embedding)));
                 });
@@ -124,39 +130,57 @@ public class AiEmbeddingService {
         if (inputs.isEmpty()) {
             return Mono.just(new EmbeddingBatch(modelCode, target.dimension(), List.of()));
         }
-        return Flux.fromIterable(partition(inputs, target.batchSize()))
-                .concatMap(batch -> target.adapter()
-                        .invoke(
-                                target.provider(),
-                                target.account(),
-                                target.model(),
-                                new AiModelRequest(
-                                        AiModel.Capability.EMBEDDING, batch, Map.of(), false, null))
-                        .switchIfEmpty(Mono.error(upstreamError("嵌入响应为空。")))
-                        .map(response -> validate(
-                                batch.size(), vectors(response.outputs()), target.dimension())))
+        var texts = texts(inputs);
+        return accountService
+                .apiKey(target.account())
+                .defaultIfEmpty("")
+                .flatMapMany(apiKey -> {
+                    var embeddingModel = embeddingModelFactory.embeddingModel(
+                            target.provider(),
+                            target.protocol(),
+                            modelCode,
+                            apiKey,
+                            target.dimension());
+                    return Flux.fromIterable(partition(texts, target.batchSize()))
+                            .concatMap(batch -> Mono.fromCallable(() -> embeddingModel
+                                            .embedAll(batch.stream()
+                                                    .map(TextSegment::from)
+                                                    .toList())
+                                            .content())
+                                    .subscribeOn(Schedulers.boundedElastic())
+                                    .switchIfEmpty(Mono.error(upstreamError("嵌入响应为空。")))
+                                    .map(embeddings -> validate(
+                                            batch.size(), vectors(embeddings), target.dimension())));
+                })
                 .collectList()
                 .map(batches -> new EmbeddingBatch(modelCode, target.dimension(), flatten(batches)));
     }
 
-    private static List<float[]> vectors(List<AiModelContent> outputs) {
-        if (outputs == null) {
-            return List.of();
-        }
-        var vectors = new ArrayList<float[]>();
-        for (var output : outputs) {
-            if (output instanceof AiModelContent.Vector vector) {
-                vectors.add(vector.values());
+    private static List<String> texts(List<AiModelContent> inputs) {
+        var texts = new ArrayList<String>();
+        for (var input : inputs) {
+            if (input instanceof AiModelContent.Text text) {
+                texts.add(text.text());
+            } else {
+                throw new ApiException(
+                        HttpStatus.BAD_REQUEST, INPUT_UNSUPPORTED_CODE, "嵌入协议仅支持文本输入。");
             }
         }
-        return vectors;
+        return texts;
+    }
+
+    private static List<float[]> vectors(List<Embedding> embeddings) {
+        if (embeddings == null) {
+            return List.of();
+        }
+        return embeddings.stream().map(Embedding::vector).toList();
     }
 
     private static List<float[]> validate(int expectedCount, List<float[]> vectors, int dimension) {
         if (vectors == null || vectors.size() != expectedCount) {
             throw new ApiException(
                     HttpStatus.BAD_GATEWAY,
-                    AiEmbeddingClient.UPSTREAM_ERROR_CODE,
+                    UPSTREAM_ERROR_CODE,
                     "嵌入响应数量与请求不一致。");
         }
         for (var vector : vectors) {
@@ -170,8 +194,8 @@ public class AiEmbeddingService {
         return vectors;
     }
 
-    private static List<List<AiModelContent>> partition(List<AiModelContent> inputs, int batchSize) {
-        var batches = new ArrayList<List<AiModelContent>>();
+    private static <T> List<List<T>> partition(List<T> inputs, int batchSize) {
+        var batches = new ArrayList<List<T>>();
         for (var start = 0; start < inputs.size(); start += batchSize) {
             batches.add(inputs.subList(start, Math.min(inputs.size(), start + batchSize)));
         }
@@ -241,15 +265,14 @@ public class AiEmbeddingService {
     }
 
     private static ApiException upstreamError(String reason) {
-        return new ApiException(
-                HttpStatus.BAD_GATEWAY, AiEmbeddingClient.UPSTREAM_ERROR_CODE, reason);
+        return new ApiException(HttpStatus.BAD_GATEWAY, UPSTREAM_ERROR_CODE, reason);
     }
 
     private record EmbeddingTarget(
             AiProvider provider,
             AiProviderAccount account,
             AiModel model,
-            AiModelAdapter adapter,
+            AiProvider.Protocol protocol,
             int dimension,
             int batchSize) {}
 }
