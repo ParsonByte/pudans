@@ -1,0 +1,30 @@
+name: Setup Environment
+description: Setup environment to check and build Pudans, including the web and appkernel projects.
+
+inputs:
+  node-version:
+    description: Node.js version.
+    required: false
+    default: "24"
+
+  java-version:
+    description: Java version.
+    required: false
+    default: "25"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v7
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: web/package-lock.json
+
+    - name: Setup JDK
+      uses: actions/setup-java@v5
+      with:
+        distribution: "temurin"
+        cache: "gradle"
+        java-version: ${{ inputs.java-version }}
