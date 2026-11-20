@@ -82,10 +82,16 @@ class AiChatServiceSystemPromptTest {
     @Mock
     cn.tolim.pudans.core.ai.library.hook.HookService hookService;
 
+    @Mock
+    cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore journalStore;
+
     private AiChatService service;
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient()
+                .when(journalStore.open(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(Mono.just(new cn.tolim.pudans.core.ai.harness.journal.InMemoryThreadJournal()));
         service = new AiChatService(
                 settingService,
                 chatModeService,
@@ -102,7 +108,8 @@ class AiChatServiceSystemPromptTest {
                 agentContextService,
                 toolService,
                 slashCommandService,
-                hookService);
+                hookService,
+                journalStore);
     }
 
     @Test

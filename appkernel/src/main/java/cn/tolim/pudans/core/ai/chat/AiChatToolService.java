@@ -8,6 +8,9 @@ import cn.tolim.pudans.core.ai.agent.GatewayChatContext;
 import cn.tolim.pudans.core.ai.agent.GatewayChatModel;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
+import cn.tolim.pudans.core.ai.harness.agent.HarnessAgent;
+import cn.tolim.pudans.core.ai.harness.agent.InMemoryAgentStateStore;
+import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import cn.tolim.pudans.core.ai.library.LibraryView;
 import cn.tolim.pudans.core.ai.library.hook.HookService;
 import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
@@ -16,7 +19,6 @@ import cn.tolim.pudans.core.ai.library.subagent.SubagentService;
 import cn.tolim.pudans.core.ai.prompt.ChatPrompts;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService;
 import com.fasterxml.jackson.databind.JsonNode;
-import dev.langchain4j.service.AiServices;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,7 +29,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 // 执行模型发起的工具调用，并把生命周期事件交给 Hook。
 @Component
@@ -185,18 +186,16 @@ public class AiChatToolService {
                 agent.getMetadata().getName(),
                 null,
                 spec == null ? null : spec.getModel());
-        return Mono.fromCallable(() -> {
-                    var assistant = AiServices.builder(SubagentAssistant.class)
-                            .chatModel(new GatewayChatModel(gatewayService, context))
-                            .systemMessage(systemPrompt)
-                            .chatRequestTransformer(request -> request.toBuilder()
-                                    .temperature(0.2)
-                                    .maxOutputTokens(SUBAGENT_MAX_OUTPUT_TOKENS)
-                                    .build())
-                            .build();
-                    return assistant.chat(prompt);
-                })
-                .subscribeOn(Schedulers.boundedElastic());
+        return HarnessAgent.builder()
+                .name("subagent-" + agent.getMetadata().getName())
+                .systemPrompt(systemPrompt)
+                .chatModel(new GatewayChatModel(gatewayService, context))
+                .stateStore(new InMemoryAgentStateStore())
+                .temperature(0.2)
+                .maxOutputTokens(SUBAGENT_MAX_OUTPUT_TOKENS)
+                .build()
+                .call(prompt, RuntimeContext.of(userId, "subagent-" + requestId))
+                .map(result -> result.content());
     }
 
     private static ToolOutcome outcome(
@@ -228,11 +227,6 @@ public class AiChatToolService {
     private static String text(JsonNode node, String name) {
         var value = node == null ? null : node.get(name);
         return value == null || value.isNull() ? "" : value.asText("");
-    }
-
-    interface SubagentAssistant {
-
-        String chat(String prompt);
     }
 
     private static String errorMessage(Throwable error) {

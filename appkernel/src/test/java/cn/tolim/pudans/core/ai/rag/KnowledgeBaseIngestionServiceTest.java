@@ -50,7 +50,7 @@ class KnowledgeBaseIngestionServiceTest {
                 documentRepository,
                 chunkRepository,
                 new ChunkingService(),
-                List.of(new TxtDocumentParser(), new MarkdownDocumentParser()),
+                new DocumentParserResolver(List.of(new TxtDocumentParser(), new MarkdownDocumentParser())),
                 embeddingServiceProvider);
     }
 
@@ -162,7 +162,7 @@ class KnowledgeBaseIngestionServiceTest {
                 documentRepository,
                 chunkRepository,
                 new ChunkingService(),
-                List.of(),
+                new DocumentParserResolver(List.of()),
                 embeddingServiceProvider);
         when(documentRepository.findByKbNameAndChecksum("kb-a", "sum")).thenReturn(Mono.empty());
         when(documentRepository.insertPending(any())).thenReturn(Mono.just(7L));

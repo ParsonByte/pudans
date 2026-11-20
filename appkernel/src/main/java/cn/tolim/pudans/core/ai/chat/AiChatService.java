@@ -25,6 +25,18 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.gateway.ir.AiRequestParams;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import cn.tolim.pudans.core.ai.gateway.session.AiGatewaySessionService;
+import cn.tolim.pudans.core.ai.harness.agent.AgentResult;
+import cn.tolim.pudans.core.ai.harness.agent.AgentRun;
+import cn.tolim.pudans.core.ai.harness.agent.AgentState;
+import cn.tolim.pudans.core.ai.harness.agent.AgentStateStore;
+import cn.tolim.pudans.core.ai.harness.agent.HarnessAgent;
+import cn.tolim.pudans.core.ai.harness.agent.InMemoryAgentStateStore;
+import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
+import cn.tolim.pudans.core.ai.harness.event.AgentEvent;
+import cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore;
+import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
+import cn.tolim.pudans.core.ai.harness.permission.PermissionEngine;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
 import cn.tolim.pudans.core.ai.library.hook.HookService;
 import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
@@ -37,7 +49,6 @@ import cn.tolim.pudans.core.ai.rag.Citation;
 import cn.tolim.pudans.core.ai.rag.DocumentParser;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseAcl;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseContentRetriever;
-import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalAugmentor;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalService;
 import cn.tolim.pudans.core.ai.rag.RagContext;
 import cn.tolim.pudans.core.ai.rag.RetrievalOptions;
@@ -51,35 +62,29 @@ import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
 import cn.tolim.pudans.core.ai.chat.AiChatToolService.ToolOutcome;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
-import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.Content;
-import dev.langchain4j.data.message.ToolExecutionResultMessage;
-import dev.langchain4j.invocation.InvocationContext;
-import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.service.AiServiceStreamingEvent;
-import dev.langchain4j.service.AiServices;
-import dev.langchain4j.service.Result;
-import dev.langchain4j.service.tool.ToolExecutionResult;
-import dev.langchain4j.service.tool.ToolExecutor;
+import dev.langchain4j.data.message.TextContent;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.rag.query.Query;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Flow;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
-import org.reactivestreams.FlowAdapters;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -140,9 +145,11 @@ public class AiChatService {
 
     private final HookService hookService;
 
+    private final ThreadJournalStore journalStore;
+
     public Mono<AiChatCompletionResult> complete(AiChatCommand command) {
-        return prepare(command, false)
-                .flatMap(prepared -> completeWithAiServices(prepared)
+        return prepare(command)
+                .flatMap(prepared -> completeWithHarness(prepared)
                         .flatMap(round -> appendAssistant(
                                         prepared.conversation(),
                                         prepared.turnIndex(),
@@ -167,58 +174,25 @@ public class AiChatService {
                                                 prepared.citations())))));
     }
 
-    private Mono<AgentRound> completeWithAiServices(Prepared prepared) {
+    private Mono<AgentRound> completeWithHarness(Prepared prepared) {
         var currentUser = lastUserMessage(prepared.messages());
         if (currentUser == null) {
             return Mono.error(new ApiException(
                     HttpStatus.BAD_REQUEST, CODE_MESSAGES_INVALID, "缺少本轮用户消息。"));
         }
-        var system = systemText(prepared.messages());
-        var memory = chatMemory(prepared.messages(), currentUser);
         var outcomes = new CopyOnWriteArrayList<ToolOutcome>();
-        var state = new GatewayRunState();
-        var context = new GatewayChatContext(
-                prepared.userId(),
-                AGENT_SOURCE,
-                prepared.conversation().sessionKey(),
-                null,
-                prepared.requestId(),
-                prepared.idempotencyKey(),
-                prepared.modeCode(),
-                prepared.routeGroup(),
-                prepared.agentName(),
-                prepared.conversation().id(),
-                prepared.modelOverride());
-        var tools = toolExecutors(prepared, outcomes);
-        return Mono.fromCallable(() -> {
-                    var builder = AiServices.builder(ChatAssistant.class)
-                            .chatModel(new GatewayChatModel(gatewayService, context, state))
-                            .chatMemory(memory)
-                            .chatRequestTransformer(request -> applyParams(request, prepared.params()))
-                            .hallucinatedToolNameStrategy(request -> {
-                                var outcome = executeTool(prepared, request, outcomes);
-                                return ToolExecutionResultMessage.builder()
-                                        .id(request.id())
-                                        .toolName(request.name())
-                                        .text(outcome.output())
-                                        .isError(outcome.isError())
-                                        .build();
-                            });
-                    if (StringUtils.hasText(system)) {
-                        builder.systemMessage(system);
-                    }
-                    if (prepared.retriever() != null) {
-                        builder.retrievalAugmentor(
-                                new KnowledgeBaseRetrievalAugmentor(prepared.retriever()));
-                    }
-                    if (!tools.isEmpty()) {
-                        builder.tools(tools);
-                    }
-                    return builder.build()
-                            .complete(GatewayChatMessageMapper.toContents(currentUser));
-                })
-                .subscribeOn(Schedulers.boundedElastic())
-                .map(result -> agentRound(result, state, outcomes));
+        var turn = new TurnCollector(false);
+        return retrieveKnowledge(prepared, userText(currentUser))
+                .flatMap(knowledge -> seededStore(prepared).flatMap(store -> {
+                    var state = new GatewayRunState();
+                    var agent = harnessAgent(prepared, store, state, outcomes);
+                    var run = agent.start(
+                            userMessage(currentUser, knowledge),
+                            runtimeContext(prepared),
+                            false);
+                    run.onEvent(turn);
+                    return run.result().map(result -> agentRound(result, state, outcomes, turn));
+                }));
     }
 
     private static @Nullable AiChatMessage lastUserMessage(List<AiChatMessage> messages) {
@@ -249,52 +223,115 @@ public class AiChatService {
         return String.join("\n\n", sections);
     }
 
-    private static MessageWindowChatMemory chatMemory(
+    private static List<ChatMessage> historyMessages(
             List<AiChatMessage> messages, AiChatMessage currentUser) {
-        var memory = MessageWindowChatMemory.withMaxMessages(Math.max(2, messages.size() + 2));
+        var history = new ArrayList<ChatMessage>();
         for (var message : messages) {
             if (message == currentUser || "system".equals(message.role())) {
                 continue;
             }
-            memory.add(GatewayChatMessageMapper.toChatMessage(message));
+            history.add(GatewayChatMessageMapper.toChatMessage(message));
         }
-        return memory;
+        return history;
     }
 
-    private static void appendContent(StringBuilder content, @Nullable String text) {
-        if (!StringUtils.hasText(text)) {
-            return;
+    private static String userText(AiChatMessage message) {
+        var text = new StringBuilder();
+        for (var part : message.parts()) {
+            if (part instanceof AiContentPart.Text content) {
+                text.append(content.text());
+            }
         }
-        if (!content.isEmpty()) {
-            content.append("\n\n");
-        }
-        content.append(text);
+        return text.toString();
     }
 
-    private Map<ToolSpecification, ToolExecutor> toolExecutors(
-            Prepared prepared, CopyOnWriteArrayList<ToolOutcome> outcomes) {
-        var specifications = LangChain4jToolMapper.toSpecifications(prepared.tools());
-        var tools = new LinkedHashMap<ToolSpecification, ToolExecutor>();
-        for (var specification : specifications) {
-            tools.put(specification, new ToolExecutor() {
+    private static UserMessage userMessage(AiChatMessage currentUser, String knowledge) {
+        var contents = new ArrayList<Content>();
+        if (StringUtils.hasText(knowledge)) {
+            contents.add(TextContent.from(knowledge));
+        }
+        contents.addAll(GatewayChatMessageMapper.toContents(currentUser));
+        return UserMessage.from(contents);
+    }
 
-                @Override
-                public String execute(ToolExecutionRequest request, Object memoryId) {
-                    return executeTool(prepared, request, outcomes).output();
-                }
+    private Mono<AgentStateStore> seededStore(Prepared prepared) {
+        var store = new InMemoryAgentStateStore();
+        var state = new AgentState(
+                historyMessages(prepared.messages(), lastUserMessage(prepared.messages())),
+                "",
+                Map.of());
+        return store.save(
+                        prepared.userId(),
+                        prepared.conversation().sessionKey(),
+                        state)
+                .thenReturn(store);
+    }
 
-                @Override
-                public ToolExecutionResult executeWithContext(
-                        ToolExecutionRequest request, InvocationContext context) {
-                    var outcome = executeTool(prepared, request, outcomes);
-                    return ToolExecutionResult.builder()
-                            .resultText(outcome.output())
-                            .isError(outcome.isError())
-                            .build();
-                }
+    private static RuntimeContext runtimeContext(Prepared prepared) {
+        return RuntimeContext.of(prepared.userId(), prepared.conversation().sessionKey());
+    }
+
+    private Mono<String> retrieveKnowledge(Prepared prepared, String query) {
+        if (prepared.retriever() == null) {
+            return Mono.just("");
+        }
+        return Mono.fromCallable(() -> prepared.retriever()
+                        .retrieve(Query.from(query))
+                        .stream()
+                        .map(content -> content.textSegment().text())
+                        .collect(Collectors.joining("\n\n")))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private HarnessAgent harnessAgent(
+            Prepared prepared,
+            AgentStateStore store,
+            GatewayRunState state,
+            CopyOnWriteArrayList<ToolOutcome> outcomes) {
+        var context = new GatewayChatContext(
+                prepared.userId(),
+                AGENT_SOURCE,
+                prepared.conversation().sessionKey(),
+                null,
+                prepared.requestId(),
+                prepared.idempotencyKey(),
+                prepared.modeCode(),
+                prepared.routeGroup(),
+                prepared.agentName(),
+                prepared.conversation().id(),
+                prepared.modelOverride());
+        var params = prepared.params();
+        return HarnessAgent.builder()
+                .name(prepared.agentName())
+                .systemPrompt(systemText(prepared.messages()))
+                .chatModel(new GatewayChatModel(gatewayService, context, state))
+                .streamingChatModel(new GatewayStreamingChatModel(gatewayService, context, state))
+                .toolkit(toolkit(prepared, outcomes))
+                .stateStore(store)
+                .journalStore(journalStore)
+                .permissionEngine(new PermissionEngine(PermissionContext.bypass()))
+                .temperature(params.temperature())
+                .maxOutputTokens(params.maxTokens())
+                .topP(params.topP())
+                .topK(params.topK())
+                .stopSequences(params.stop())
+                .build();
+    }
+
+    private HarnessToolkit toolkit(Prepared prepared, CopyOnWriteArrayList<ToolOutcome> outcomes) {
+        var toolkit = new HarnessToolkit();
+        for (var tool : prepared.tools()) {
+            toolkit.register(tool, (request, arguments) -> {
+                var outcome = executeTool(prepared, request, outcomes);
+                return new HarnessToolkit.ToolResult(outcome.output(), outcome.isError());
             });
         }
-        return tools;
+        // 模型可能调用未声明的工具，按用户权限执行，保持与旧版一致的容错行为。
+        toolkit.fallbackHandler((request, arguments) -> {
+            var outcome = executeTool(prepared, request, outcomes);
+            return new HarnessToolkit.ToolResult(outcome.output(), outcome.isError());
+        });
+        return toolkit;
     }
 
     private ToolOutcome executeTool(
@@ -312,179 +349,168 @@ public class AiChatService {
         return outcome;
     }
 
-    private static dev.langchain4j.model.chat.request.ChatRequest applyParams(
-            dev.langchain4j.model.chat.request.ChatRequest request, AiRequestParams params) {
-        var builder = request.toBuilder();
-        if (params.temperature() != null) {
-            builder.temperature(params.temperature());
-        }
-        if (params.topP() != null) {
-            builder.topP(params.topP());
-        }
-        if (params.topK() != null) {
-            builder.topK(params.topK());
-        }
-        if (params.maxTokens() != null) {
-            builder.maxOutputTokens(params.maxTokens());
-        }
-        if (!params.stop().isEmpty()) {
-            builder.stopSequences(params.stop());
-        }
-        return builder.build();
-    }
-
     private static AgentRound agentRound(
-            Result<String> result, GatewayRunState state, List<ToolOutcome> outcomes) {
+            AgentResult result,
+            GatewayRunState state,
+            List<ToolOutcome> outcomes,
+            TurnCollector turn) {
         var meta = state.meta();
-        var usage = result.tokenUsage() == null
-                ? state.usage()
-                : new AiTokenUsage(
-                        result.tokenUsage().inputTokenCount(),
-                        result.tokenUsage().outputTokenCount(),
-                        null,
-                        null);
-        var reasoning = result.finalResponse() == null
-                ? ""
-                : result.finalResponse().aiMessage().thinking();
-        var content = new StringBuilder();
-        for (var intermediate : result.intermediateResponses()) {
-            appendContent(content, intermediate.aiMessage().text());
-        }
-        appendContent(content, result.content());
         return new AgentRound(
-                content.toString(),
+                turn.content(result.content()),
                 meta == null ? null : meta.model(),
                 meta == null ? null : meta.provider(),
                 meta == null ? null : meta.account(),
-                usage,
+                state.usage(),
                 state.points(),
-                roundMetadata(reasoning, outcomes));
+                roundMetadata(turn.thinking(), outcomes));
     }
 
     public Flux<AiChatStreamEvent> stream(AiChatCommand command) {
-        return Flux.defer(() -> prepare(command, true)
-                .flatMapMany(this::streamWithAiServices));
+        return Flux.defer(() -> prepare(command).flatMapMany(this::streamWithHarness));
     }
 
-    private Flux<AiChatStreamEvent> streamWithAiServices(Prepared prepared) {
+    private Flux<AiChatStreamEvent> streamWithHarness(Prepared prepared) {
         var currentUser = lastUserMessage(prepared.messages());
         if (currentUser == null) {
             return Flux.error(new ApiException(
                     HttpStatus.BAD_REQUEST, CODE_MESSAGES_INVALID, "缺少本轮用户消息。"));
         }
-        var system = systemText(prepared.messages());
-        var memory = chatMemory(prepared.messages(), currentUser);
         var outcomes = new CopyOnWriteArrayList<ToolOutcome>();
-        var state = new GatewayRunState();
-        var context = new GatewayChatContext(
-                prepared.userId(),
-                AGENT_SOURCE,
-                prepared.conversation().sessionKey(),
-                null,
-                prepared.requestId(),
-                prepared.idempotencyKey(),
-                prepared.modeCode(),
-                prepared.routeGroup(),
-                prepared.agentName(),
-                prepared.conversation().id(),
-                prepared.modelOverride());
-        var tools = toolExecutors(prepared, outcomes);
-        var metaEmitted = new AtomicBoolean();
-        return Flux.defer(() -> {
-                    var builder = AiServices.builder(StreamingChatAssistant.class)
-                            .streamingChatModel(new GatewayStreamingChatModel(
-                                    gatewayService, context, state))
-                            .chatMemory(memory)
-                            .chatRequestTransformer(request -> applyParams(request, prepared.params()))
-                            .hallucinatedToolNameStrategy(request -> {
-                                var outcome = executeTool(prepared, request, outcomes);
-                                return ToolExecutionResultMessage.builder()
-                                        .id(request.id())
-                                        .toolName(request.name())
-                                        .text(outcome.output())
-                                        .isError(outcome.isError())
-                                        .build();
-                            });
-                    if (StringUtils.hasText(system)) {
-                        builder.systemMessage(system);
-                    }
-                    if (prepared.retriever() != null) {
-                        builder.retrievalAugmentor(
-                                new KnowledgeBaseRetrievalAugmentor(prepared.retriever()));
-                    }
-                    if (!tools.isEmpty()) {
-                        builder.tools(tools);
-                    }
-                    var publisher = builder.build()
-                            .stream(GatewayChatMessageMapper.toContents(currentUser));
-                    return Flux.from(FlowAdapters.toPublisher(publisher))
-                            .concatMap(event -> mapStreamEvent(
-                                    event, prepared, state, outcomes, metaEmitted));
-                })
+        return retrieveKnowledge(prepared, userText(currentUser))
+                .flatMapMany(knowledge -> Flux.defer(() -> seededStore(prepared)
+                        .flatMapMany(store -> {
+                            var state = new GatewayRunState();
+                            var turn = new TurnCollector(true);
+                            var agent = harnessAgent(prepared, store, state, outcomes);
+                            var run = agent.start(
+                                    userMessage(currentUser, knowledge),
+                                    runtimeContext(prepared),
+                                    true);
+                            return streamRun(prepared, run, state, outcomes, turn)
+                                    .onErrorResume(error -> Flux.just(new AiChatStreamEvent.Error(
+                                            "ai-chat-stream-failed",
+                                            errorMessage(error),
+                                            false,
+                                            !turn.content("").isEmpty())));
+                        })))
                 .onErrorResume(error -> Flux.just(new AiChatStreamEvent.Error(
-                        "ai-chat-stream-failed",
-                        errorMessage(error),
-                        false,
-                        !prepared.content().isEmpty())));
+                        "ai-chat-stream-failed", errorMessage(error), false, false)));
     }
 
-    private Flux<AiChatStreamEvent> mapStreamEvent(
-            AiServiceStreamingEvent event,
+    private Flux<AiChatStreamEvent> streamRun(
+            Prepared prepared,
+            AgentRun run,
+            GatewayRunState state,
+            List<ToolOutcome> outcomes,
+            TurnCollector turn) {
+        return Flux.create(sink -> {
+            var metaEmitted = new AtomicBoolean();
+            run.onEvent(event -> {
+                var mapped = mapHarnessEvent(event, outcomes);
+                if (mapped.isEmpty()) {
+                    return;
+                }
+                emitMeta(sink, prepared, state, metaEmitted);
+                mapped.forEach(sink::next);
+            });
+            sink.onCancel(run::cancel);
+            run.result().subscribe(
+                    result -> persistStreamResult(prepared, state, outcomes, turn, result)
+                            .subscribe(message -> {
+                                emitMeta(sink, prepared, state, metaEmitted);
+                                var usage = state.usage();
+                                var hasUsage = usage != null
+                                        && (usage.inputTokens() != null
+                                                || usage.outputTokens() != null
+                                                || usage.cacheReadTokens() != null
+                                                || usage.cacheWriteTokens() != null);
+                                if (hasUsage || state.points().signum() > 0) {
+                                    sink.next(new AiChatStreamEvent.Usage(
+                                            usage, state.points(), state.billingSource()));
+                                }
+                                sink.next(new AiChatStreamEvent.Done(
+                                        String.valueOf(message.id()),
+                                        finishReason(result.response()),
+                                        false));
+                                sink.complete();
+                            }, sink::error),
+                    sink::error);
+        }, FluxSink.OverflowStrategy.BUFFER);
+    }
+
+    private Mono<Message> persistStreamResult(
             Prepared prepared,
             GatewayRunState state,
             List<ToolOutcome> outcomes,
-            AtomicBoolean metaEmitted) {
-        var meta = metaEvents(prepared, state, metaEmitted);
-        if (event instanceof AiServiceStreamingEvent.PartialResponseEvent partial) {
-            var text = partial.partialResponse().text();
-            prepared.content().append(text);
-            return Flux.concat(meta, Flux.just(new AiChatStreamEvent.Delta(text, null)));
-        }
-        if (event instanceof AiServiceStreamingEvent.PartialThinkingEvent partial) {
-            return Flux.concat(meta, Flux.just(new AiChatStreamEvent.Delta(
-                    null, partial.partialThinking().text())));
-        }
-        if (event instanceof AiServiceStreamingEvent.BeforeToolExecutionEvent before) {
-            var request = before.beforeToolExecution().request();
-            return Flux.concat(
-                    meta,
-                    Flux.just(new AiChatStreamEvent.Stage("tool", "正在执行工具调用。")),
-                    Flux.just(new AiChatStreamEvent.ToolCall(
-                            request.id(),
-                            request.name(),
-                            serverOf(request.name()),
-                            LangChain4jToolMapper.arguments(request.arguments()))));
-        }
-        if (event instanceof AiServiceStreamingEvent.AfterToolExecutionEvent after) {
-            var execution = after.toolExecution();
-            var request = execution.request();
-            var outcome = outcomes.stream()
-                    .filter(item -> item.id().equals(request.id()))
-                    .reduce((first, second) -> second)
-                    .orElse(null);
-            return Flux.concat(meta, Flux.just(new AiChatStreamEvent.ToolResult(
-                    request.id(),
-                    request.name(),
-                    outcome == null ? execution.result() : outcome.output(),
-                    outcome == null ? execution.hasFailed() : outcome.isError(),
-                    outcome == null ? 0 : outcome.durationMs())));
-        }
-        if (event instanceof AiServiceStreamingEvent.FinalResponseEvent finalEvent) {
-            return Flux.concat(meta, finalStreamEvents(prepared, state, outcomes, finalEvent));
-        }
-        return meta;
+            TurnCollector turn,
+            AgentResult result) {
+        var usage = state.usage();
+        return appendAssistant(
+                        prepared.conversation(),
+                        prepared.turnIndex(),
+                        turn.content(result.content()),
+                        prepared.requestId(),
+                        modelName(result, state),
+                        usage == null ? null : usage.outputTokens(),
+                        roundMetadata(turn.thinking(), outcomes))
+                .flatMap(message -> conversationService
+                        .markPending(prepared.conversation(), 2)
+                        .then(enqueueExtraction(prepared, message))
+                        .then(dispatchSessionEnd(prepared))
+                        .thenReturn(message));
     }
 
-    private Flux<AiChatStreamEvent> metaEvents(
-            Prepared prepared, GatewayRunState state, AtomicBoolean metaEmitted) {
+    private static @Nullable String modelName(AgentResult result, GatewayRunState state) {
+        if (result.response() != null && StringUtils.hasText(result.response().modelName())) {
+            return result.response().modelName();
+        }
+        var meta = state.meta();
+        return meta == null ? null : meta.model();
+    }
+
+    private void emitMeta(
+            FluxSink<AiChatStreamEvent> sink,
+            Prepared prepared,
+            GatewayRunState state,
+            AtomicBoolean metaEmitted) {
         if (!metaEmitted.compareAndSet(false, true)) {
-            return Flux.empty();
+            return;
         }
         var meta = state.meta() == null ? fallbackMeta(prepared) : state.meta();
-        var events = new ArrayList<AiChatStreamEvent>();
-        events.add(new AiChatStreamEvent.Meta(streamMeta(meta)));
-        prepared.citations().forEach(citation -> events.add(new AiChatStreamEvent.CitationEvent(citation)));
-        return Flux.fromIterable(events);
+        sink.next(new AiChatStreamEvent.Meta(streamMeta(meta)));
+        prepared.citations().forEach(citation -> sink.next(new AiChatStreamEvent.CitationEvent(citation)));
+    }
+
+    private static List<AiChatStreamEvent> mapHarnessEvent(
+            AgentEvent event, List<ToolOutcome> outcomes) {
+        if (event instanceof AgentEvent.TextBlockDelta delta) {
+            return List.of(new AiChatStreamEvent.Delta(delta.delta(), null));
+        }
+        if (event instanceof AgentEvent.ThinkingBlockDelta delta) {
+            return List.of(new AiChatStreamEvent.Delta(null, delta.delta()));
+        }
+        if (event instanceof AgentEvent.ToolCallStart start) {
+            return List.of(
+                    new AiChatStreamEvent.Stage("tool", "正在执行工具调用。"),
+                    new AiChatStreamEvent.ToolCall(
+                            start.id(),
+                            start.name(),
+                            serverOf(start.name()),
+                            LangChain4jToolMapper.arguments(start.arguments())));
+        }
+        if (event instanceof AgentEvent.ToolResultEnd end) {
+            var outcome = outcomes.stream()
+                    .filter(item -> item.id().equals(end.id()))
+                    .reduce((first, second) -> second)
+                    .orElse(null);
+            return List.of(new AiChatStreamEvent.ToolResult(
+                    end.id(),
+                    end.name(),
+                    outcome == null ? end.output() : outcome.output(),
+                    end.error(),
+                    outcome == null ? 0 : outcome.durationMs()));
+        }
+        return List.of();
     }
 
     private static AiGatewayMeta fallbackMeta(Prepared prepared) {
@@ -502,51 +528,6 @@ public class AiChatService {
                 prepared.conversation().sessionKey());
     }
 
-    private Flux<AiChatStreamEvent> finalStreamEvents(
-            Prepared prepared,
-            GatewayRunState state,
-            List<ToolOutcome> outcomes,
-            AiServiceStreamingEvent.FinalResponseEvent event) {
-        var response = event.chatResponse();
-        var content = prepared.content().isEmpty()
-                ? (response.aiMessage().text() == null ? "" : response.aiMessage().text())
-                : prepared.content().toString();
-        var usage = response.tokenUsage() == null
-                ? state.usage()
-                : new AiTokenUsage(
-                        response.tokenUsage().inputTokenCount(),
-                        response.tokenUsage().outputTokenCount(),
-                        null,
-                        null);
-        var metadata = roundMetadata(response.aiMessage().thinking(), outcomes);
-        var hasUsage = usage != null
-                && (usage.inputTokens() != null
-                        || usage.outputTokens() != null
-                        || usage.cacheReadTokens() != null
-                        || usage.cacheWriteTokens() != null);
-        var hasPoints = state.points().signum() > 0;
-        Flux<AiChatStreamEvent> usageEvent = hasUsage || hasPoints
-                ? Flux.<AiChatStreamEvent>just(new AiChatStreamEvent.Usage(
-                        usage, state.points(), state.billingSource()))
-                : Flux.empty();
-        return usageEvent.concatWith(appendAssistant(
-                        prepared.conversation(),
-                        prepared.turnIndex(),
-                        content,
-                        prepared.requestId(),
-                        response.modelName(),
-                        usage == null ? null : usage.outputTokens(),
-                        metadata)
-                .flatMapMany(message -> conversationService
-                        .markPending(prepared.conversation(), 2)
-                        .then(enqueueExtraction(prepared, message))
-                        .then(dispatchSessionEnd(prepared))
-                        .thenMany(Flux.just((AiChatStreamEvent) new AiChatStreamEvent.Done(
-                                String.valueOf(message.id()),
-                                finishReason(response),
-                                false)))));
-    }
-
     private static String finishReason(dev.langchain4j.model.chat.response.ChatResponse response) {
         if (response.finishReason() == null) {
             return "stop";
@@ -560,7 +541,7 @@ public class AiChatService {
         };
     }
 
-    private Mono<Prepared> prepare(AiChatCommand command, boolean stream) {
+    private Mono<Prepared> prepare(AiChatCommand command) {
         return settingService.spec().flatMap(setting -> resolveMode(command.request().mode(), setting)
                 .flatMap(mode -> resolveConversation(command, mode, setting)
                         .flatMap(conversationState -> resolveUserContent(command, conversationState)
@@ -585,8 +566,7 @@ public class AiChatService {
                                                                         memory,
                                                                         context,
                                                                         userContent,
-                                                                        attachmentParts,
-                                                                        stream)))))))));
+                                                                        attachmentParts)))))))));
     }
 
     private Mono<String> resolveUserContent(AiChatCommand command, ConversationState state) {
@@ -833,8 +813,7 @@ public class AiChatService {
             MemoryInjection memory,
             AiAgentContextService.AgentContext context,
             String userContent,
-            List<AiContentPart> attachmentParts,
-            boolean stream) {
+            List<AiContentPart> attachmentParts) {
         var prompt = setting.getPrompt() == null ? new AiSetting.Prompt() : setting.getPrompt();
         var memorySetting = setting.getMemory() == null ? new AiSetting.Memory() : setting.getMemory();
         var maxOutput = command.request().maxOutputTokens() != null
@@ -894,15 +873,13 @@ public class AiChatService {
                 retriever,
                 requestId,
                 idempotencyKey,
-                new StringBuilder(),
                 memorySetting,
                 List.copyOf(messages),
                 context.tools(),
                 params,
                 mode.getMetadata().getName(),
                 command.request().routeGroup(),
-                command.request().model(),
-                stream);
+                command.request().model());
         var appendUser = command.request().isRegenerate()
                 ? Mono.<Message>empty()
                 : conversationService.appendUserMessage(
@@ -1015,48 +992,57 @@ public class AiChatService {
             BigDecimal points,
             @Nullable JsonNode metadata) {}
 
-    interface ChatAssistant {
+    private static final class TurnCollector implements Consumer<AgentEvent> {
 
-        Result<String> complete(List<Content> contents);
-    }
+        private final boolean streaming;
 
-    interface StreamingChatAssistant {
+        private final StringBuilder content = new StringBuilder();
 
-        Flow.Publisher<AiServiceStreamingEvent> stream(List<Content> contents);
+        private String thinking = "";
+
+        private TurnCollector(boolean streaming) {
+            this.streaming = streaming;
+        }
+
+        @Override
+        public void accept(AgentEvent event) {
+            if (streaming && event instanceof AgentEvent.TextBlockStart) {
+                if (!content.isEmpty()) {
+                    content.append("\n\n");
+                }
+                return;
+            }
+            if (streaming && event instanceof AgentEvent.TextBlockDelta delta) {
+                content.append(delta.delta());
+                return;
+            }
+            if (!streaming && event instanceof AgentEvent.TextBlockEnd end) {
+                if (!content.isEmpty()) {
+                    content.append("\n\n");
+                }
+                content.append(end.text());
+                return;
+            }
+            if (event instanceof AgentEvent.ThinkingBlockEnd end) {
+                thinking = end.text();
+            }
+        }
+
+        private String content(String fallback) {
+            if (!content.isEmpty()) {
+                return content.toString();
+            }
+            return fallback == null ? "" : fallback;
+        }
+
+        private String thinking() {
+            return thinking;
+        }
     }
 
     private static String errorMessage(Throwable error) {
         var message = error.getMessage();
         return StringUtils.hasText(message) ? "AI 对话失败：" + message : "AI 对话失败。";
-    }
-
-    private Mono<Message> appendAssistant(
-            Conversation conversation,
-            int turnIndex,
-            String content,
-            String requestId,
-            String modelCode,
-            Integer outputTokens) {
-        return conversationService.appendAssistantMessage(
-                conversation, turnIndex, 1, content, requestId, modelCode, outputTokens);
-    }
-
-    private Mono<Message> appendAssistant(
-            Conversation conversation,
-            int turnIndex,
-            String content,
-            String requestId,
-            String modelCode,
-            Integer outputTokens,
-            @Nullable String reasoning) {
-        return appendAssistant(
-                conversation,
-                turnIndex,
-                content,
-                requestId,
-                modelCode,
-                outputTokens,
-                roundMetadata(reasoning, List.of()));
     }
 
     private Mono<Message> appendAssistant(
@@ -1158,15 +1144,13 @@ public class AiChatService {
             @Nullable KnowledgeBaseContentRetriever retriever,
             String requestId,
             String idempotencyKey,
-            StringBuilder content,
             AiSetting.Memory memorySetting,
             List<AiChatMessage> messages,
             List<AiTool> tools,
             AiRequestParams params,
             String modeCode,
             @Nullable String routeGroup,
-            @Nullable String modelOverride,
-            boolean stream) {
+            @Nullable String modelOverride) {
 
         private Prepared {
             messages = messages == null ? List.of() : List.copyOf(messages);

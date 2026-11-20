@@ -1,9 +1,11 @@
 package cn.tolim.pudans.core.ai.rag;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(0)
 public class TxtDocumentParser implements DocumentParser {
 
     private static final String MIME_TYPE = "text/plain";

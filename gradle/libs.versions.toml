@@ -23,6 +23,9 @@ huawei-obs = '3.26.9'
 node = '7.1.0'
 langchain4j = '1.23.0'
 langchain4j-beta = '1.23.0-beta33'
+apache-tika = '4.2.0'
+pdfbox = '3.0.8'
+poi = '5.5.1'
 
 [libraries]
 
@@ -40,6 +43,16 @@ langchain4j-google-ai-gemini = { module = 'dev.langchain4j:langchain4j-google-ai
 langchain4j-ollama = { module = 'dev.langchain4j:langchain4j-ollama' }
 langchain4j-mcp = { module = 'dev.langchain4j:langchain4j-mcp', version.ref = 'langchain4j-beta' }
 langchain4j-community-dashscope = { module = 'dev.langchain4j:langchain4j-community-dashscope', version.ref = 'langchain4j-beta' }
+
+tika-core = { module = 'org.apache.tika:tika-core', version.ref = 'apache-tika' }
+tika-parser-text-module = { module = 'org.apache.tika:tika-parser-text-module', version.ref = 'apache-tika' }
+tika-parser-html-module = { module = 'org.apache.tika:tika-parser-html-module', version.ref = 'apache-tika' }
+tika-parser-xml-module = { module = 'org.apache.tika:tika-parser-xml-module', version.ref = 'apache-tika' }
+tika-parser-miscoffice-module = { module = 'org.apache.tika:tika-parser-miscoffice-module', version.ref = 'apache-tika' }
+tika-parser-microsoft-module = { module = 'org.apache.tika:tika-parser-microsoft-module', version.ref = 'apache-tika' }
+tika-parser-image-module = { module = 'org.apache.tika:tika-parser-image-module', version.ref = 'apache-tika' }
+pdfbox = { module = 'org.apache.pdfbox:pdfbox', version.ref = 'pdfbox' }
+poi-ooxml = { module = 'org.apache.poi:poi-ooxml', version.ref = 'poi' }
 
 spring-boot-starter-data-redis-reactive = { module = 'org.springframework.boot:spring-boot-starter-data-redis-reactive' }
 spring-session-data-redis = { module = 'org.springframework.session:spring-session-data-redis' }

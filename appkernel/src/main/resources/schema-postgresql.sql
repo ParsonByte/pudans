@@ -388,6 +388,43 @@ CREATE INDEX IF NOT EXISTS idx_ai_gateway_session_team_agent ON ai_gateway_sessi
 @
 CREATE INDEX IF NOT EXISTS idx_ai_gateway_session_session ON ai_gateway_session (session_id);
 @
+-- Agent 状态快照
+CREATE TABLE IF NOT EXISTS ai_agent_state (
+    user_id VARCHAR(128) NOT NULL,
+    session_id VARCHAR(256) NOT NULL,
+    state JSONB NOT NULL,
+    version BIGINT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, session_id)
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_agent_state_updated ON ai_agent_state (updated_at);
+@
+-- Harness 线程日志头
+CREATE TABLE IF NOT EXISTS ai_harness_journal_head (
+    user_id VARCHAR(128) NOT NULL,
+    session_id VARCHAR(256) NOT NULL,
+    last_seq BIGINT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, session_id)
+);
+@
+-- Harness 线程日志事件
+CREATE TABLE IF NOT EXISTS ai_harness_journal_event (
+    user_id VARCHAR(128) NOT NULL,
+    session_id VARCHAR(256) NOT NULL,
+    seq BIGINT NOT NULL,
+    event_id VARCHAR(64) NOT NULL,
+    event_type VARCHAR(64) NOT NULL,
+    run_id VARCHAR(128),
+    turn_id VARCHAR(128),
+    required BOOLEAN NOT NULL DEFAULT TRUE,
+    payload JSONB NOT NULL,
+    occurred_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (user_id, session_id, seq),
+    UNIQUE (user_id, session_id, event_id)
+);
+@
 -- 钱包
 CREATE TABLE IF NOT EXISTS ai_wallet (
     id BIGSERIAL PRIMARY KEY,

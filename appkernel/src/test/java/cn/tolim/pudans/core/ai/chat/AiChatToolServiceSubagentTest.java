@@ -48,7 +48,7 @@ class AiChatToolServiceSubagentTest {
             libraryView, skillService, subagentService, hookService, gatewayService, runtimeService);
 
     @Test
-    void runsSubagentsThroughLangChain4jAiServices() {
+    void runsSubagentsThroughHarnessAgent() {
         var captured = new AtomicReference<AiGatewayInvocation>();
         when(hookService.dispatch(any(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
         when(subagentService.resolve("agent-a", "helper")).thenReturn(Mono.just(subagent()));
