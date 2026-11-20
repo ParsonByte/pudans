@@ -21,12 +21,18 @@ import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
 import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
 import cn.tolim.pudans.contract.core.extension.ai.AiChatMode;
+import cn.tolim.pudans.contract.core.extension.ai.AiInstruction;
+import cn.tolim.pudans.contract.core.extension.ai.AiMcpServer;
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
 import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
+import cn.tolim.pudans.contract.core.extension.ai.AiSkill;
 import cn.tolim.pudans.contract.core.extension.ai.AiTeam;
+import cn.tolim.pudans.core.ai.library.instruction.InstructionService;
+import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
+import cn.tolim.pudans.core.ai.library.skill.SkillService;
 import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
 import cn.tolim.pudans.contract.core.extension.user.User;
@@ -93,6 +99,15 @@ public class BuiltinEntityPolicy {
             return denyReservedName(nameOf(extension), Set.of("default"), "默认 Agent")
                     .then(convert(extension, AiAgent.class).flatMap(this::checkAiAgentReferences));
         }
+        if (AiMcpServer.KIND.equals(kind)) {
+            return convert(extension, AiMcpServer.class).flatMap(McpServerService::validate);
+        }
+        if (AiSkill.KIND.equals(kind)) {
+            return convert(extension, AiSkill.class).flatMap(SkillService::validate);
+        }
+        if (AiInstruction.KIND.equals(kind)) {
+            return convert(extension, AiInstruction.class).flatMap(InstructionService::validate);
+        }
         if (AiProviderAccount.KIND.equals(kind)) {
             return convert(extension, AiProviderAccount.class)
                     .flatMap(this::checkAiProviderAccountReferences);
@@ -150,6 +165,15 @@ public class BuiltinEntityPolicy {
         }
         if (AiAgent.KIND.equals(kind)) {
             return convert(extension, AiAgent.class).flatMap(this::checkAiAgentReferences);
+        }
+        if (AiMcpServer.KIND.equals(kind)) {
+            return convert(extension, AiMcpServer.class).flatMap(McpServerService::validate);
+        }
+        if (AiSkill.KIND.equals(kind)) {
+            return convert(extension, AiSkill.class).flatMap(SkillService::validate);
+        }
+        if (AiInstruction.KIND.equals(kind)) {
+            return convert(extension, AiInstruction.class).flatMap(InstructionService::validate);
         }
         if (AiModel.KIND.equals(kind)) {
             return convert(extension, AiModel.class).flatMap(this::checkAiModelReferences);
