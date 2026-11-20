@@ -5,9 +5,11 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 @Component
+@Order(1)
 public class MarkdownDocumentParser implements DocumentParser {
 
     private static final Set<String> MIME_TYPES = Set.of("text/markdown", "text/x-markdown");

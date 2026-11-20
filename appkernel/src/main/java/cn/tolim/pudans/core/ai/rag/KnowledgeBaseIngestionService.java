@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +25,7 @@ public class KnowledgeBaseIngestionService {
 
     private final ChunkingService chunkingService;
 
-    private final List<DocumentParser> documentParsers;
+    private final DocumentParserResolver parserResolver;
 
     private final ObjectProvider<ChunkEmbeddingService> embeddingServiceProvider;
 
@@ -80,8 +79,7 @@ public class KnowledgeBaseIngestionService {
 
     private Mono<IngestionResult> process(
             KnowledgeBase knowledgeBase, String kbName, long documentId, KnowledgeBaseIngestionRequest request) {
-        return Mono.fromCallable(() -> prepare(knowledgeBase, request))
-                .subscribeOn(Schedulers.boundedElastic())
+        return prepare(knowledgeBase, request)
                 .flatMap(prepared -> {
                     prepared.chunks().forEach(chunk -> {
                         chunk.setKbName(kbName);
@@ -101,20 +99,20 @@ public class KnowledgeBaseIngestionService {
                 .onErrorResume(error -> fail(documentId, error));
     }
 
-    private PreparedChunks prepare(KnowledgeBase knowledgeBase, KnowledgeBaseIngestionRequest request) {
-        var parser = documentParsers.stream()
-                .filter(candidate -> candidate.supports(request.fileName(), request.mimeType()))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("不支持的文档类型。"));
-        var parsed = parser.parse(request.content());
-        var spec = knowledgeBase.getSpec();
-        var chunks = chunkingService.chunk(
-                parsed, spec.getChunkStrategy(), spec.getChunkSize(), spec.getChunkOverlap());
-        if (chunks.isEmpty()) {
-            throw new IllegalArgumentException("文档解析后没有可入库的内容。");
-        }
-        var tokenCount = chunks.stream().mapToInt(KnowledgeBaseChunk::getTokenCount).sum();
-        return new PreparedChunks(chunks, tokenCount);
+    private Mono<PreparedChunks> prepare(KnowledgeBase knowledgeBase, KnowledgeBaseIngestionRequest request) {
+        return Mono.defer(() -> parserResolver
+                        .resolve(request.fileName(), request.mimeType())
+                        .parseAsync(request.content()))
+                .map(parsed -> {
+                    var spec = knowledgeBase.getSpec();
+                    var chunks = chunkingService.chunk(
+                            parsed, spec.getChunkStrategy(), spec.getChunkSize(), spec.getChunkOverlap());
+                    if (chunks.isEmpty()) {
+                        throw new IllegalArgumentException("文档解析后没有可入库的内容。");
+                    }
+                    var tokenCount = chunks.stream().mapToInt(KnowledgeBaseChunk::getTokenCount).sum();
+                    return new PreparedChunks(chunks, tokenCount);
+                });
     }
 
     private Mono<List<KnowledgeBaseChunk>> embed(KnowledgeBase knowledgeBase, List<KnowledgeBaseChunk> chunks) {

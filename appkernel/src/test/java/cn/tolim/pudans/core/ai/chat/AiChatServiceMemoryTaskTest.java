@@ -111,10 +111,16 @@ class AiChatServiceMemoryTaskTest {
     @Mock
     HookService hookService;
 
+    @Mock
+    cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore journalStore;
+
     private AiChatService service;
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient()
+                .when(journalStore.open(any()))
+                .thenReturn(Mono.just(new cn.tolim.pudans.core.ai.harness.journal.InMemoryThreadJournal()));
         service = new AiChatService(
                 settingService,
                 chatModeService,
@@ -131,7 +137,8 @@ class AiChatServiceMemoryTaskTest {
                 agentContextService,
                 toolService,
                 slashCommandService,
-                hookService);
+                hookService,
+                journalStore);
     }
 
     @Test
@@ -289,6 +296,38 @@ class AiChatServiceMemoryTaskTest {
                 .verifyComplete();
 
         verify(gatewayService, times(2)).stream(any());
+    }
+
+    @Test
+    void streamEmitsHarnessTextDeltasAndPersistsTheCombinedAnswer() {
+        stubPrepare(true);
+        when(gatewayService.stream(any())).thenReturn(Flux.just(
+                new AiGatewayEvent.Meta(gatewayMeta()),
+                new AiGatewayEvent.Delta(new AiStreamEvent("你", null, null, null, null)),
+                new AiGatewayEvent.Delta(new AiStreamEvent("好", null, null, null, null)),
+                new AiGatewayEvent.Usage(new AiTokenUsage(1, 2, null, null), BigDecimal.ONE, "PROVIDER"),
+                new AiGatewayEvent.Done("21", "stop", false)));
+        when(conversationService.appendAssistantMessage(
+                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
+                .thenReturn(Mono.just(assistantMessage()));
+        when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
+        var contentCaptor = ArgumentCaptor.forClass(String.class);
+
+        StepVerifier.create(service.stream(command()).collectList())
+                .assertNext(events -> {
+                    var deltas = events.stream()
+                            .filter(AiChatStreamEvent.Delta.class::isInstance)
+                            .map(AiChatStreamEvent.Delta.class::cast)
+                            .toList();
+                    assertThat(deltas).extracting(AiChatStreamEvent.Delta::content)
+                            .containsExactly("你", "好");
+                    assertThat(events).anyMatch(AiChatStreamEvent.Done.class::isInstance);
+                })
+                .verifyComplete();
+
+        verify(conversationService).appendAssistantMessage(
+                any(), anyInt(), anyInt(), contentCaptor.capture(), anyString(), anyString(), any(), any());
+        assertThat(contentCaptor.getValue()).isEqualTo("你好");
     }
 
     @Test

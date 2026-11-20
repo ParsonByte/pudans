@@ -4,12 +4,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 public interface DocumentParser {
 
     boolean supports(String fileName, @Nullable String mimeType);
 
     ParsedDocument parse(byte[] content);
+
+    default Mono<ParsedDocument> parseAsync(byte[] content) {
+        return Mono.fromCallable(() -> parse(content)).subscribeOn(Schedulers.boundedElastic());
+    }
 
     static String decodeUtf8(byte[] content) {
         if (content == null) {

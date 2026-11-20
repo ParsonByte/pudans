@@ -1,0 +1,828 @@
+package cn.tolim.pudans.core.ai.harness.agent;
+
+import cn.tolim.pudans.core.ai.harness.compaction.CompactionConfig;
+import cn.tolim.pudans.core.ai.harness.compaction.ContextCompactor;
+import cn.tolim.pudans.core.ai.harness.event.AgentEvent;
+import cn.tolim.pudans.core.ai.harness.journal.JournalEventSink;
+import cn.tolim.pudans.core.ai.harness.journal.JournalEventType;
+import cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore;
+import cn.tolim.pudans.core.ai.harness.observability.HarnessObservationMapper;
+import cn.tolim.pudans.core.ai.harness.observability.HarnessObservability;
+import cn.tolim.pudans.core.ai.harness.permission.PermissionBehavior;
+import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
+import cn.tolim.pudans.core.ai.harness.permission.PermissionEngine;
+import cn.tolim.pudans.core.ai.harness.output.StructuredOutputRequest;
+import cn.tolim.pudans.core.ai.harness.output.StructuredOutputService;
+import cn.tolim.pudans.core.ai.harness.plan.HarnessBuiltInTools;
+import cn.tolim.pudans.core.ai.harness.skill.HarnessSkillTools;
+import cn.tolim.pudans.core.ai.harness.skill.SkillRuntime;
+import cn.tolim.pudans.core.ai.harness.subagent.SubagentTools;
+import cn.tolim.pudans.core.ai.harness.team.TeamTools;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
+import cn.tolim.pudans.core.ai.harness.tool.InMemoryToolResultStore;
+import cn.tolim.pudans.core.ai.harness.tool.MetaToolFactory;
+import cn.tolim.pudans.core.ai.harness.tool.ToolResultEvictionConfig;
+import cn.tolim.pudans.core.ai.harness.tool.ToolResultStore;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jToolMapper;
+import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalTool;
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.agent.tool.ToolSpecification;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.ChatMessage;
+import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.StreamingChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.model.chat.response.PartialThinking;
+import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.jspecify.annotations.Nullable;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+import tools.jackson.databind.json.JsonMapper;
+
+public final class ReActAgent implements Agent {
+
+    private static final int DEFAULT_MAX_ITERS = 10;
+
+    private final String name;
+
+    private final String systemPrompt;
+
+    private final ChatModel chatModel;
+
+    private final @Nullable StreamingChatModel streamingChatModel;
+
+    private final HarnessToolkit toolkit;
+
+    private final AgentStateStore stateStore;
+
+    private final @Nullable ThreadJournalStore journalStore;
+
+    private final int maxIters;
+
+    private final Double temperature;
+
+    private final Integer maxOutputTokens;
+
+    private final @Nullable Double topP;
+
+    private final @Nullable Integer topK;
+
+    private final List<String> stopSequences;
+
+    private final PermissionEngine permissionEngine;
+
+    private final boolean planModeEnabled;
+
+    private final boolean todoEnabled;
+
+    private final @Nullable ContextCompactor compactor;
+
+    private final ToolResultEvictionConfig evictionConfig;
+
+    private final ToolResultStore toolResultStore;
+
+    private final @Nullable SkillRuntime skillRuntime;
+
+    private final @Nullable SubagentTools subagentTools;
+
+    private final @Nullable TeamTools teamTools;
+
+    private final @Nullable KnowledgeBaseRetrievalTool knowledgeBaseRetrievalTool;
+
+    private final @Nullable HarnessObservationMapper observationMapper;
+
+    private ReActAgent(Builder builder) {
+        this.name = Objects.requireNonNull(builder.name, "Agent 名称不能为空");
+        this.systemPrompt = builder.systemPrompt == null ? "" : builder.systemPrompt;
+        this.chatModel = Objects.requireNonNull(builder.chatModel, "ChatModel 不能为空");
+        this.streamingChatModel = builder.streamingChatModel;
+        this.toolkit = builder.toolkit == null ? new HarnessToolkit() : builder.toolkit;
+        this.stateStore = builder.stateStore == null ? new InMemoryAgentStateStore() : builder.stateStore;
+        this.journalStore = builder.journalStore;
+        this.maxIters = builder.maxIters <= 0 ? DEFAULT_MAX_ITERS : builder.maxIters;
+        this.temperature = builder.temperature;
+        this.maxOutputTokens = builder.maxOutputTokens;
+        this.topP = builder.topP;
+        this.topK = builder.topK;
+        this.stopSequences = builder.stopSequences == null ? List.of() : List.copyOf(builder.stopSequences);
+        this.permissionEngine = builder.permissionEngine == null
+                ? new PermissionEngine(PermissionContext.builder().build())
+                : builder.permissionEngine;
+        this.planModeEnabled = builder.planModeEnabled;
+        this.todoEnabled = builder.todoEnabled;
+        this.compactor = builder.compaction != null && builder.compaction.enabled()
+                ? new ContextCompactor(chatModel, builder.compaction)
+                : null;
+        this.evictionConfig = builder.evictionConfig == null
+                ? ToolResultEvictionConfig.disabled()
+                : builder.evictionConfig;
+        this.toolResultStore = builder.toolResultStore == null
+                ? new InMemoryToolResultStore()
+                : builder.toolResultStore;
+        this.skillRuntime = builder.skillRuntime;
+        this.subagentTools = builder.subagentTools;
+        this.teamTools = builder.teamTools;
+        this.knowledgeBaseRetrievalTool = builder.knowledgeBaseRetrievalTool;
+        this.observationMapper = builder.observability == null
+                ? null
+                : new HarnessObservationMapper(builder.observability);
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    @Override
+    public String name() {
+        return name;
+    }
+
+    @Override
+    public Mono<AgentResult> call(String input, RuntimeContext context) {
+        return start(input, context).result();
+    }
+
+    @Override
+    public AgentRun start(String input, RuntimeContext context) {
+        return start(UserMessage.from(input), context, false);
+    }
+
+    public AgentRun start(UserMessage input, RuntimeContext context, boolean streaming) {
+        var run = new AgentRun("run-" + UUID.randomUUID());
+        if (observationMapper != null) {
+            run.onEvent(observationMapper::onEvent);
+        }
+        run.attach(execute(input, context, run, streaming));
+        return run;
+    }
+
+    public <T> Mono<T> call(String input, Class<T> type, RuntimeContext context) {
+        return new StructuredOutputService(JsonMapper.shared())
+                .generate(chatModel, StructuredOutputRequest.of(systemPrompt, input), type);
+    }
+
+    private Mono<AgentResult> execute(
+            UserMessage input, RuntimeContext context, AgentRun run, boolean streaming) {
+        run.emit(new AgentEvent.AgentStart(run.id(), name));
+        var journal = journalStore == null
+                ? Mono.just(JournalEventSink.disabled())
+                : journalStore.open(context).map(JournalEventSink::new);
+        return journal.flatMap(sink -> execute(input, context, run, streaming, sink));
+    }
+
+    private Mono<AgentResult> execute(
+            UserMessage input,
+            RuntimeContext context,
+            AgentRun run,
+            boolean streaming,
+            JournalEventSink journal) {
+        journal.record(
+                JournalEventType.RUN_START, run.id(), Map.of("agentName", name));
+        var journalClosed = new AtomicBoolean();
+        return stateStore
+                .load(context.userId(), context.sessionId())
+                .defaultIfEmpty(new AgentState())
+                .flatMap(state -> {
+                    state.addMessage(input);
+                    journal.checkpoint(state, "run-start");
+                    var compacted = compactor == null ? Mono.just(false) : compactor.compactIfNeeded(state);
+                    var execution = compacted
+                            .then(Mono.defer(() -> loop(state, context, run, 0, streaming, journal)))
+                            .map(result -> {
+                                journal.record(
+                                        JournalEventType.RUN_OUTPUT,
+                                        run.id(),
+                                        Map.of("content", result.content()));
+                                journal.checkpoint(state, "run-end");
+                                journal.record(
+                                        JournalEventType.RUN_END,
+                                        run.id(),
+                                        Map.of("status", "completed"));
+                                return result;
+                            });
+                    return execution
+                            .flatMap(result -> {
+                                journalClosed.set(true);
+                                return journal.flush().thenReturn(result);
+                            })
+                            .onErrorResume(error -> {
+                                if (!journalClosed.get()) {
+                                    journal.record(
+                                            JournalEventType.RUN_END,
+                                            run.id(),
+                                            Map.of(
+                                                    "status", "failed",
+                                                    "message", errorMessage(error)));
+                                }
+                                return stateStore
+                                        .save(context.userId(), context.sessionId(), state)
+                                        .then(journal.flush()
+                                                .onErrorResume(flushError -> {
+                                                    error.addSuppressed(flushError);
+                                                    return Mono.empty();
+                                                }))
+                                        .then(Mono.error(error));
+                            });
+                })
+                .doOnNext(result -> run.emit(new AgentEvent.AgentResult(run.id(), result.content())))
+                .doFinally(signal -> run.emit(new AgentEvent.AgentEnd(run.id(), name)));
+    }
+
+    private static String errorMessage(Throwable error) {
+        var message = error.getMessage();
+        return message == null || message.isBlank() ? error.getClass().getSimpleName() : message;
+    }
+
+    private Mono<AgentResult> loop(
+            AgentState state,
+            RuntimeContext context,
+            AgentRun run,
+            int iteration,
+            boolean streaming,
+            JournalEventSink journal) {
+        if (run.cancelled()) {
+            run.emit(new AgentEvent.RequestStop(run.id()));
+            return Mono.error(new AgentInterruptedException("Agent 运行已中断。"));
+        }
+        if (iteration >= maxIters) {
+            run.emit(new AgentEvent.ExceedMaxIters(run.id(), maxIters));
+            return stateStore
+                    .save(context.userId(), context.sessionId(), state)
+                    .then(Mono.error(new IllegalStateException(
+                            "Agent 超过最大迭代次数：" + maxIters + "。")));
+        }
+        var requestBuilder = ChatRequest.builder()
+                .messages(messages(state))
+                .toolSpecifications(specifications());
+        if (temperature != null) {
+            requestBuilder.temperature(temperature);
+        }
+        if (maxOutputTokens != null) {
+            requestBuilder.maxOutputTokens(maxOutputTokens);
+        }
+        if (topP != null) {
+            requestBuilder.topP(topP);
+        }
+        if (topK != null) {
+            requestBuilder.topK(topK);
+        }
+        if (!stopSequences.isEmpty()) {
+            requestBuilder.stopSequences(stopSequences);
+        }
+        var request = requestBuilder.build();
+        run.emit(new AgentEvent.ModelCallStart(run.id(), iteration));
+        journal.modelCallStart(run.id(), iteration);
+        return modelCall(request, run, streaming)
+                .flatMap(call -> {
+                    var response = call.response();
+                    var finishReason =
+                            response.finishReason() == null ? null : response.finishReason().name();
+                    run.emit(new AgentEvent.ModelCallEnd(run.id(), iteration, finishReason));
+                    journal.modelCallEnd(run.id(), iteration, finishReason);
+                    state.addMessage(response.aiMessage());
+                    if (!call.streamed()) {
+                        emitText(run, response.aiMessage());
+                        emitThinking(run, response.aiMessage());
+                    }
+                    var toolCalls = response.aiMessage().toolExecutionRequests();
+                    if (toolCalls.isEmpty()) {
+                        return stateStore
+                                .save(context.userId(), context.sessionId(), state)
+                                .thenReturn(new AgentResult(response.aiMessage().text(), response));
+                    }
+                    return Flux.fromIterable(toolCalls)
+                            .concatMap(toolCall ->
+                                    executeToolCall(state, context, run, toolCall, journal))
+                            .then(Mono.defer(() ->
+                                    loop(state, context, run, iteration + 1, streaming, journal)));
+                });
+    }
+
+    private Mono<ModelCall> modelCall(ChatRequest request, AgentRun run, boolean streaming) {
+        if (streaming && streamingChatModel != null) {
+            return streamCall(request, run).map(response -> new ModelCall(response, true));
+        }
+        return Mono.fromCallable(() -> new ModelCall(chatModel.chat(request), false))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private Mono<ChatResponse> streamCall(ChatRequest request, AgentRun run) {
+        var text = new StringBuilder();
+        var thinking = new StringBuilder();
+        var textStarted = new AtomicBoolean();
+        var thinkingStarted = new AtomicBoolean();
+        return Mono.create(sink -> streamingChatModel.chat(
+                request,
+                new StreamingChatResponseHandler() {
+
+                    @Override
+                    public void onPartialResponse(String partial) {
+                        if (textStarted.compareAndSet(false, true)) {
+                            run.emit(new AgentEvent.TextBlockStart(run.id()));
+                        }
+                        text.append(partial);
+                        run.emit(new AgentEvent.TextBlockDelta(run.id(), partial));
+                    }
+
+                    @Override
+                    public void onPartialThinking(PartialThinking partial) {
+                        if (thinkingStarted.compareAndSet(false, true)) {
+                            run.emit(new AgentEvent.ThinkingBlockStart(run.id()));
+                        }
+                        thinking.append(partial.text());
+                        run.emit(new AgentEvent.ThinkingBlockDelta(run.id(), partial.text()));
+                    }
+
+                    @Override
+                    public void onCompleteResponse(ChatResponse response) {
+                        var message = response.aiMessage();
+                        if (!textStarted.get()
+                                && message != null
+                                && message.text() != null
+                                && !message.text().isBlank()) {
+                            textStarted.set(true);
+                            text.append(message.text());
+                            run.emit(new AgentEvent.TextBlockStart(run.id()));
+                            run.emit(new AgentEvent.TextBlockDelta(run.id(), message.text()));
+                        }
+                        if (!thinkingStarted.get()
+                                && message != null
+                                && message.thinking() != null
+                                && !message.thinking().isBlank()) {
+                            thinkingStarted.set(true);
+                            thinking.append(message.thinking());
+                            run.emit(new AgentEvent.ThinkingBlockStart(run.id()));
+                            run.emit(new AgentEvent.ThinkingBlockDelta(
+                                    run.id(), message.thinking()));
+                        }
+                        if (textStarted.get()) {
+                            run.emit(new AgentEvent.TextBlockEnd(run.id(), text.toString()));
+                        }
+                        if (thinkingStarted.get()) {
+                            run.emit(new AgentEvent.ThinkingBlockEnd(run.id(), thinking.toString()));
+                        }
+                        sink.success(response);
+                    }
+
+                    @Override
+                    public void onError(Throwable error) {
+                        sink.error(error);
+                    }
+                }));
+    }
+
+    private record ModelCall(ChatResponse response, boolean streamed) {}
+
+    private Mono<Void> executeToolCall(
+            AgentState state,
+            RuntimeContext context,
+            AgentRun run,
+            ToolExecutionRequest call,
+            JournalEventSink journal) {
+        var id = call.id() == null ? UUID.randomUUID().toString() : call.id();
+        var arguments = call.arguments() == null ? "" : call.arguments();
+        journal.toolCallStart(run.id(), id, call.name(), arguments);
+        return executeToolCallCore(state, context, run, call, id, arguments, journal)
+                .then(Mono.fromRunnable(
+                        () -> recordToolResult(state, id, call.name(), run, journal)));
+    }
+
+    private static void recordToolResult(
+            AgentState state, String id, String name, AgentRun run, JournalEventSink journal) {
+        state.messages().stream()
+                .filter(ToolExecutionResultMessage.class::isInstance)
+                .map(ToolExecutionResultMessage.class::cast)
+                .filter(message -> id.equals(message.id()))
+                .findFirst()
+                .ifPresent(message ->
+                        journal.toolResultEnd(run.id(), id, name, message.text(), message.isError()));
+    }
+
+    private Mono<Void> executeToolCallCore(
+            AgentState state,
+            RuntimeContext context,
+            AgentRun run,
+            ToolExecutionRequest call,
+            String id,
+            String arguments,
+            JournalEventSink journal) {
+        run.emit(new AgentEvent.ToolCallStart(run.id(), id, call.name(), arguments));
+        run.emit(new AgentEvent.ToolCallEnd(run.id(), id, call.name(), arguments));
+        if (knowledgeBaseRetrievalTool != null
+                && KnowledgeBaseRetrievalTool.NAME.equals(call.name())) {
+            return Mono.fromCallable(() ->
+                            knowledgeBaseRetrievalTool.handler().execute(call, argumentsNode(call)))
+                    .subscribeOn(Schedulers.boundedElastic())
+                    .flatMap(result -> appendToolResult(run, state, id, call.name(), result));
+        }
+        if (subagentTools != null && isSubagentTool(call.name())) {
+            return subagentTools
+                    .execute(call.name(), LangChain4jToolMapper.arguments(call.arguments()), context)
+                    .flatMap(result -> appendToolResult(run, state, id, call.name(), result));
+        }
+        if (teamTools != null && TeamTools.TEAM.equals(call.name())) {
+            return teamTools
+                    .execute(call.name(), LangChain4jToolMapper.arguments(call.arguments()), context)
+                    .flatMap(result -> appendToolResult(run, state, id, call.name(), result));
+        }
+        if (skillRuntime != null && HarnessSkillTools.SKILL.equals(call.name())) {
+            var result = HarnessSkillTools.execute(
+                    LangChain4jToolMapper.arguments(call.arguments()), skillRuntime);
+            run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
+            run.emit(new AgentEvent.ToolResultEnd(
+                    run.id(), id, call.name(), result.output(), result.error()));
+            appendToolResult(state, id, call.name(), result.output(), result.error());
+            return Mono.empty();
+        }
+        if (MetaToolFactory.RESET_TOOLS.equals(call.name())) {
+            var result = new MetaToolFactory(toolkit.groupManager())
+                    .resetTools(LangChain4jToolMapper.arguments(call.arguments()));
+            run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
+            run.emit(new AgentEvent.ToolResultEnd(
+                    run.id(), id, call.name(), result.output(), result.error()));
+            appendToolResult(state, id, call.name(), result.output(), result.error());
+            return Mono.empty();
+        }
+        if (HarnessBuiltInTools.isBuiltIn(call.name())) {
+            var builtIn = HarnessBuiltInTools.execute(
+                    call.name(), LangChain4jToolMapper.arguments(call.arguments()), state);
+            run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
+            run.emit(new AgentEvent.ToolResultEnd(
+                    run.id(), id, call.name(), builtIn.output(), builtIn.error()));
+            appendToolResult(state, id, call.name(), builtIn.output(), builtIn.error());
+            return Mono.empty();
+        }
+        if (HarnessBuiltInTools.isReadToolResult(call.name())) {
+            var resultId = LangChain4jToolMapper.arguments(call.arguments()).path("id").asText("");
+            return toolResultStore
+                    .read(resultId)
+                    .map(Optional::of)
+                    .defaultIfEmpty(Optional.<String>empty())
+                    .flatMap(stored -> {
+                        var error = stored.isEmpty();
+                        var text = error ? "工具结果不存在：" + resultId : stored.get();
+                        run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
+                        run.emit(new AgentEvent.ToolResultEnd(
+                                run.id(), id, call.name(), text, error));
+                        appendToolResult(state, id, call.name(), text, error);
+                        return Mono.empty();
+                    });
+        }
+        if (state.planMode().active() && !HarnessBuiltInTools.allowedInPlanMode(call.name())) {
+            run.emit(new AgentEvent.AllToolsDenied(run.id()));
+            journal.toolDecision(run.id(), id, "plan-mode-denied");
+            appendToolResult(
+                    state, id, call.name(), "计划模式只允许只读工具和 plan_*/todo_write。", true);
+            return Mono.empty();
+        }
+        var decision = permissionEngine.check(call);
+        if (decision.behavior() == PermissionBehavior.DENY) {
+            run.emit(new AgentEvent.AllToolsDenied(run.id()));
+            journal.toolDecision(run.id(), id, "denied");
+            appendToolResult(state, id, call.name(), decision.message(), true);
+            return Mono.empty();
+        }
+        if (decision.behavior() == PermissionBehavior.ASK) {
+            run.emit(new AgentEvent.RequireUserConfirm(
+                    run.id(), id, call.name(), decision.message()));
+            journal.toolDecision(run.id(), id, "ask");
+            return stateStore
+                    .save(context.userId(), context.sessionId(), state)
+                    .then(run.awaitConfirmation(id))
+                    .flatMap(approved -> {
+                        if (!approved) {
+                            journal.toolDecision(run.id(), id, "user-denied");
+                            appendToolResult(
+                                    state, id, call.name(), "用户拒绝了工具调用：" + call.name(), true);
+                            return Mono.empty();
+                        }
+                        return executeTool(state, run, call, id);
+                    });
+        }
+        return executeTool(state, run, call, id);
+    }
+
+    private Mono<Void> executeTool(
+            AgentState state, AgentRun run, ToolExecutionRequest call, String id) {
+        run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
+        return Mono.fromCallable(() -> toolkit.execute(call))
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(result -> evict(run, call.name(), result.output())
+                        .flatMap(output -> {
+                            run.emit(new AgentEvent.ToolResultEnd(
+                                    run.id(), id, call.name(), output, result.error()));
+                            appendToolResult(state, id, call.name(), output, result.error());
+                            return Mono.empty();
+                        }));
+    }
+
+    private static void emitText(AgentRun run, AiMessage message) {
+        var text = message.text();
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        run.emit(new AgentEvent.TextBlockStart(run.id()));
+        run.emit(new AgentEvent.TextBlockDelta(run.id(), text));
+        run.emit(new AgentEvent.TextBlockEnd(run.id(), text));
+    }
+
+    private static void emitThinking(AgentRun run, AiMessage message) {
+        var text = message.thinking();
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        run.emit(new AgentEvent.ThinkingBlockStart(run.id()));
+        run.emit(new AgentEvent.ThinkingBlockDelta(run.id(), text));
+        run.emit(new AgentEvent.ThinkingBlockEnd(run.id(), text));
+    }
+
+    private Mono<String> evict(AgentRun run, String toolName, String output) {
+        if (!evictionConfig.enabled() || output == null || output.length() <= evictionConfig.maxChars()) {
+            return Mono.just(output == null ? "" : output);
+        }
+        return toolResultStore
+                .save(run.id(), toolName, output)
+                .map(id -> "[工具输出过大，已卸载为 " + id + "，可使用 read_tool_result 读取。]");
+    }
+
+    private static Mono<Void> appendToolResult(
+            AgentRun run, AgentState state, String id, String toolName, HarnessToolkit.ToolResult result) {
+        run.emit(new AgentEvent.ToolResultStart(run.id(), id, toolName));
+        run.emit(new AgentEvent.ToolResultEnd(
+                run.id(), id, toolName, result.output(), result.error()));
+        appendToolResult(state, id, toolName, result.output(), result.error());
+        return Mono.empty();
+    }
+
+    private static void appendToolResult(
+            AgentState state, String id, String toolName, String output, boolean error) {
+        state.addMessage(ToolExecutionResultMessage.builder()
+                .id(id)
+                .toolName(toolName)
+                .text(output)
+                .isError(error)
+                .build());
+    }
+
+    private static com.fasterxml.jackson.databind.JsonNode argumentsNode(
+            ToolExecutionRequest call) {
+        return LangChain4jToolMapper.arguments(call.arguments());
+    }
+
+    private static boolean isSubagentTool(String toolName) {
+        return SubagentTools.AGENT_SPAWN.equals(toolName)
+                || SubagentTools.AGENT_SEND.equals(toolName)
+                || SubagentTools.AGENT_LIST.equals(toolName)
+                || SubagentTools.AGENT_RELEASE.equals(toolName);
+    }
+
+    private List<ToolSpecification> specifications() {
+        var specifications = new ArrayList<ToolSpecification>(toolkit.activeSpecifications());
+        specifications.addAll(HarnessBuiltInTools.specifications(planModeEnabled, todoEnabled));
+        if (evictionConfig.enabled()) {
+            specifications.add(HarnessBuiltInTools.readToolResultSpecification());
+        }
+        if (skillRuntime != null) {
+            specifications.add(HarnessSkillTools.specification());
+        }
+        if (subagentTools != null) {
+            specifications.addAll(LangChain4jToolMapper.toSpecifications(subagentTools.definitions()));
+        }
+        if (teamTools != null) {
+            specifications.addAll(LangChain4jToolMapper.toSpecifications(teamTools.definitions()));
+        }
+        if (knowledgeBaseRetrievalTool != null) {
+            specifications.addAll(LangChain4jToolMapper.toSpecifications(
+                    List.of(knowledgeBaseRetrievalTool.definition())));
+        }
+        if (!toolkit.groupManager().metaGroupNames().isEmpty()) {
+            var resetTool = new MetaToolFactory(toolkit.groupManager()).resetToolsTool();
+            specifications.addAll(LangChain4jToolMapper.toSpecifications(List.of(resetTool)));
+        }
+        return List.copyOf(specifications);
+    }
+
+    private List<ChatMessage> messages(AgentState state) {
+        var messages = new ArrayList<ChatMessage>();
+        var system = systemText(state);
+        if (!system.isBlank()) {
+            messages.add(SystemMessage.from(system));
+        }
+        messages.addAll(state.messages());
+        return List.copyOf(messages);
+    }
+
+    private String systemText(AgentState state) {
+        var sections = new ArrayList<String>();
+        if (!systemPrompt.isBlank()) {
+            sections.add(systemPrompt);
+        }
+        if (!state.summary().isBlank()) {
+            sections.add("【历史摘要】\n" + state.summary());
+        }
+        if (state.planMode().active() && !state.planMode().planContent().isBlank()) {
+            sections.add("【当前计划】\n" + state.planMode().planContent());
+        }
+        if (skillRuntime != null) {
+            var skills = skillRuntime.prompt();
+            if (!skills.isBlank()) {
+                sections.add(skills);
+            }
+        }
+        if (!state.todos().isEmpty()) {
+            var todos = new StringBuilder("【任务清单】");
+            for (var todo : state.todos()) {
+                todos.append("\n- [").append(todo.status()).append("] ").append(todo.content());
+            }
+            sections.add(todos.toString());
+        }
+        return String.join("\n\n", sections);
+    }
+
+    public static final class Builder {
+
+        private String name;
+
+        private String systemPrompt;
+
+        private ChatModel chatModel;
+
+        private StreamingChatModel streamingChatModel;
+
+        private HarnessToolkit toolkit;
+
+        private AgentStateStore stateStore;
+
+        private ThreadJournalStore journalStore;
+
+        private int maxIters = DEFAULT_MAX_ITERS;
+
+        private Double temperature;
+
+        private Integer maxOutputTokens;
+
+        private Double topP;
+
+        private Integer topK;
+
+        private List<String> stopSequences;
+
+        private PermissionEngine permissionEngine;
+
+        private boolean planModeEnabled;
+
+        private boolean todoEnabled;
+
+        private CompactionConfig compaction;
+
+        private ToolResultEvictionConfig evictionConfig;
+
+        private ToolResultStore toolResultStore;
+
+        private SkillRuntime skillRuntime;
+
+        private SubagentTools subagentTools;
+
+        private TeamTools teamTools;
+
+        private KnowledgeBaseRetrievalTool knowledgeBaseRetrievalTool;
+
+        private HarnessObservability observability;
+
+        public Builder name(String name) {
+            this.name = name;
+            return this;
+        }
+
+        public Builder systemPrompt(String systemPrompt) {
+            this.systemPrompt = systemPrompt;
+            return this;
+        }
+
+        public Builder chatModel(ChatModel chatModel) {
+            this.chatModel = chatModel;
+            return this;
+        }
+
+        public Builder streamingChatModel(StreamingChatModel streamingChatModel) {
+            this.streamingChatModel = streamingChatModel;
+            return this;
+        }
+
+        public Builder toolkit(HarnessToolkit toolkit) {
+            this.toolkit = toolkit;
+            return this;
+        }
+
+        public Builder stateStore(AgentStateStore stateStore) {
+            this.stateStore = stateStore;
+            return this;
+        }
+
+        public Builder journalStore(ThreadJournalStore journalStore) {
+            this.journalStore = journalStore;
+            return this;
+        }
+
+        public Builder maxIters(int maxIters) {
+            this.maxIters = maxIters;
+            return this;
+        }
+
+        public Builder temperature(Double temperature) {
+            this.temperature = temperature;
+            return this;
+        }
+
+        public Builder maxOutputTokens(Integer maxOutputTokens) {
+            this.maxOutputTokens = maxOutputTokens;
+            return this;
+        }
+
+        public Builder topP(Double topP) {
+            this.topP = topP;
+            return this;
+        }
+
+        public Builder topK(Integer topK) {
+            this.topK = topK;
+            return this;
+        }
+
+        public Builder stopSequences(List<String> stopSequences) {
+            this.stopSequences = stopSequences;
+            return this;
+        }
+
+        public Builder permissionEngine(PermissionEngine permissionEngine) {
+            this.permissionEngine = permissionEngine;
+            return this;
+        }
+
+        public Builder planModeEnabled(boolean planModeEnabled) {
+            this.planModeEnabled = planModeEnabled;
+            return this;
+        }
+
+        public Builder todoEnabled(boolean todoEnabled) {
+            this.todoEnabled = todoEnabled;
+            return this;
+        }
+
+        public Builder compaction(CompactionConfig compaction) {
+            this.compaction = compaction;
+            return this;
+        }
+
+        public Builder toolResultEviction(ToolResultEvictionConfig evictionConfig) {
+            this.evictionConfig = evictionConfig;
+            return this;
+        }
+
+        public Builder toolResultStore(ToolResultStore toolResultStore) {
+            this.toolResultStore = toolResultStore;
+            return this;
+        }
+
+        public Builder skillRuntime(SkillRuntime skillRuntime) {
+            this.skillRuntime = skillRuntime;
+            return this;
+        }
+
+        public Builder subagentTools(SubagentTools subagentTools) {
+            this.subagentTools = subagentTools;
+            return this;
+        }
+
+        public Builder teamTools(TeamTools teamTools) {
+            this.teamTools = teamTools;
+            return this;
+        }
+
+        public Builder knowledgeBaseRetrievalTool(KnowledgeBaseRetrievalTool tool) {
+            this.knowledgeBaseRetrievalTool = tool;
+            return this;
+        }
+
+        public Builder observability(HarnessObservability observability) {
+            this.observability = observability;
+            return this;
+        }
+
+        public ReActAgent build() {
+            return new ReActAgent(this);
+        }
+    }
+}

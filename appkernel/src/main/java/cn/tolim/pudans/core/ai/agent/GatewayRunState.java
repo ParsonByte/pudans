@@ -26,7 +26,7 @@ public final class GatewayRunState {
 
     public void record(AiGatewayResult result) {
         meta.set(result.meta());
-        usage.set(result.usage());
+        accumulateUsage(result.usage());
         recordPoints(result.points(), result.billingSource());
     }
 
@@ -35,10 +35,31 @@ public final class GatewayRunState {
     }
 
     public void recordUsage(AiTokenUsage usage, @Nullable BigDecimal points, @Nullable String source) {
-        if (usage != null) {
-            this.usage.set(usage);
-        }
+        accumulateUsage(usage);
         recordPoints(points, source);
+    }
+
+    private void accumulateUsage(@Nullable AiTokenUsage value) {
+        if (value == null) {
+            return;
+        }
+        usage.updateAndGet(current -> current == null
+                ? value
+                : new AiTokenUsage(
+                        sum(current.inputTokens(), value.inputTokens()),
+                        sum(current.outputTokens(), value.outputTokens()),
+                        sum(current.cacheReadTokens(), value.cacheReadTokens()),
+                        sum(current.cacheWriteTokens(), value.cacheWriteTokens())));
+    }
+
+    private static Integer sum(@Nullable Integer first, @Nullable Integer second) {
+        if (first == null) {
+            return second;
+        }
+        if (second == null) {
+            return first;
+        }
+        return first + second;
     }
 
     private void recordPoints(@Nullable BigDecimal points, @Nullable String source) {
