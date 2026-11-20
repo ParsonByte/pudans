@@ -600,7 +600,7 @@ public class AiGatewayService {
                 ? new AiSetting.Memory()
                 : prepared.setting().getMemory();
         return conversationService
-                .history(prepared.conversation(), 200)
+                .recentHistory(prepared.conversation(), 200)
                 .collectList()
                 .flatMap(history -> {
                     var turn = history.isEmpty() ? 1 : history.getLast().turnIndex() + 1;

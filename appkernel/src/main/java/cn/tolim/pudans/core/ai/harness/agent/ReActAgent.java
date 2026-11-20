@@ -38,13 +38,17 @@ import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.PartialThinking;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -54,6 +58,8 @@ import tools.jackson.databind.json.JsonMapper;
 public final class ReActAgent implements Agent {
 
     private static final int DEFAULT_MAX_ITERS = 10;
+
+    private static final Duration DEFAULT_CONFIRMATION_TIMEOUT = Duration.ofMinutes(5);
 
     private final String name;
 
@@ -82,6 +88,8 @@ public final class ReActAgent implements Agent {
     private final List<String> stopSequences;
 
     private final PermissionEngine permissionEngine;
+
+    private final Duration confirmationTimeout;
 
     private final boolean planModeEnabled;
 
@@ -120,6 +128,9 @@ public final class ReActAgent implements Agent {
         this.permissionEngine = builder.permissionEngine == null
                 ? new PermissionEngine(PermissionContext.builder().build())
                 : builder.permissionEngine;
+        this.confirmationTimeout = builder.confirmationTimeout == null
+                ? DEFAULT_CONFIRMATION_TIMEOUT
+                : builder.confirmationTimeout;
         this.planModeEnabled = builder.planModeEnabled;
         this.todoEnabled = builder.todoEnabled;
         this.compactor = builder.compaction != null && builder.compaction.enabled()
@@ -191,15 +202,24 @@ public final class ReActAgent implements Agent {
         journal.record(
                 JournalEventType.RUN_START, run.id(), Map.of("agentName", name));
         var journalClosed = new AtomicBoolean();
-        return stateStore
-                .load(context.userId(), context.sessionId())
-                .defaultIfEmpty(new AgentState())
-                .flatMap(state -> {
+        var loaded = stateStore instanceof VersionedAgentStateStore versioned
+                ? versioned
+                        .loadVersioned(context.userId(), context.sessionId())
+                        .map(value -> new LoadedState(value.state(), value.version()))
+                : stateStore
+                        .load(context.userId(), context.sessionId())
+                        .map(state -> new LoadedState(state, -1L));
+        return loaded
+                .defaultIfEmpty(new LoadedState(new AgentState(), -1L))
+                .flatMap(loadedState -> {
+                    var state = loadedState.state();
+                    var version = new AtomicLong(loadedState.version());
+                    closeDanglingToolCalls(state);
                     state.addMessage(input);
                     journal.checkpoint(state, "run-start");
                     var compacted = compactor == null ? Mono.just(false) : compactor.compactIfNeeded(state);
                     var execution = compacted
-                            .then(Mono.defer(() -> loop(state, context, run, 0, streaming, journal)))
+                            .then(Mono.defer(() -> loop(state, context, run, 0, streaming, journal, version, false)))
                             .map(result -> {
                                 journal.record(
                                         JournalEventType.RUN_OUTPUT,
@@ -226,8 +246,11 @@ public final class ReActAgent implements Agent {
                                                     "status", "failed",
                                                     "message", errorMessage(error)));
                                 }
-                                return stateStore
-                                        .save(context.userId(), context.sessionId(), state)
+                                return saveState(state, context, version)
+                                        .onErrorResume(saveError -> {
+                                            error.addSuppressed(saveError);
+                                            return Mono.empty();
+                                        })
                                         .then(journal.flush()
                                                 .onErrorResume(flushError -> {
                                                     error.addSuppressed(flushError);
@@ -240,6 +263,57 @@ public final class ReActAgent implements Agent {
                 .doFinally(signal -> run.emit(new AgentEvent.AgentEnd(run.id(), name)));
     }
 
+    private Mono<Void> saveState(AgentState state, RuntimeContext context, AtomicLong version) {
+        if (!(stateStore instanceof VersionedAgentStateStore versioned)) {
+            return stateStore.save(context.userId(), context.sessionId(), state);
+        }
+        var current = version.get();
+        if (current < 0) {
+            return stateStore
+                    .save(context.userId(), context.sessionId(), state)
+                    .then(versioned.loadVersioned(context.userId(), context.sessionId()))
+                    .doOnNext(loaded -> version.set(loaded.version()))
+                    .then();
+        }
+        return versioned
+                .saveIfVersion(context.userId(), context.sessionId(), state, current)
+                .switchIfEmpty(Mono.error(new AgentStateConflictException("Agent 状态版本冲突，请重试。")))
+                .doOnNext(version::set)
+                .then();
+    }
+
+    private static void closeDanglingToolCalls(AgentState state) {
+        var messages = state.messages();
+        AiMessage last = null;
+        for (var index = messages.size() - 1; index >= 0; index--) {
+            if (messages.get(index) instanceof AiMessage message
+                    && !message.toolExecutionRequests().isEmpty()) {
+                last = message;
+                break;
+            }
+        }
+        if (last == null) {
+            return;
+        }
+        var completed = messages.stream()
+                .filter(ToolExecutionResultMessage.class::isInstance)
+                .map(ToolExecutionResultMessage.class::cast)
+                .map(ToolExecutionResultMessage::id)
+                .collect(Collectors.toSet());
+        for (var call : last.toolExecutionRequests()) {
+            if (!completed.contains(call.id())) {
+                state.addMessage(ToolExecutionResultMessage.builder()
+                        .id(call.id())
+                        .toolName(call.name())
+                        .text("上次运行在工具完成前中断。")
+                        .isError(true)
+                        .build());
+            }
+        }
+    }
+
+    private record LoadedState(AgentState state, long version) {}
+
     private static String errorMessage(Throwable error) {
         var message = error.getMessage();
         return message == null || message.isBlank() ? error.getClass().getSimpleName() : message;
@@ -251,15 +325,16 @@ public final class ReActAgent implements Agent {
             AgentRun run,
             int iteration,
             boolean streaming,
-            JournalEventSink journal) {
+            JournalEventSink journal,
+            AtomicLong version,
+            boolean overflowRetried) {
         if (run.cancelled()) {
             run.emit(new AgentEvent.RequestStop(run.id()));
             return Mono.error(new AgentInterruptedException("Agent 运行已中断。"));
         }
         if (iteration >= maxIters) {
             run.emit(new AgentEvent.ExceedMaxIters(run.id(), maxIters));
-            return stateStore
-                    .save(context.userId(), context.sessionId(), state)
+            return saveState(state, context, version)
                     .then(Mono.error(new IllegalStateException(
                             "Agent 超过最大迭代次数：" + maxIters + "。")));
         }
@@ -298,16 +373,68 @@ public final class ReActAgent implements Agent {
                     }
                     var toolCalls = response.aiMessage().toolExecutionRequests();
                     if (toolCalls.isEmpty()) {
-                        return stateStore
-                                .save(context.userId(), context.sessionId(), state)
+                        return saveState(state, context, version)
                                 .thenReturn(new AgentResult(response.aiMessage().text(), response));
                     }
                     return Flux.fromIterable(toolCalls)
                             .concatMap(toolCall ->
-                                    executeToolCall(state, context, run, toolCall, journal))
+                                    executeToolCall(state, context, run, toolCall, journal, version))
                             .then(Mono.defer(() ->
-                                    loop(state, context, run, iteration + 1, streaming, journal)));
-                });
+                                    loop(state, context, run, iteration + 1, streaming, journal, version, false)));
+                })
+                .onErrorResume(error -> retryAfterCompaction(
+                        error,
+                        state,
+                        context,
+                        run,
+                        iteration,
+                        streaming,
+                        journal,
+                        version,
+                        overflowRetried));
+    }
+
+    private Mono<AgentResult> retryAfterCompaction(
+            Throwable error,
+            AgentState state,
+            RuntimeContext context,
+            AgentRun run,
+            int iteration,
+            boolean streaming,
+            JournalEventSink journal,
+            AtomicLong version,
+            boolean overflowRetried) {
+        if (overflowRetried || compactor == null || !isContextOverflow(error)) {
+            return Mono.error(error);
+        }
+        return compactor
+                .compactNow(state)
+                .onErrorResume(compactionError -> {
+                    error.addSuppressed(compactionError);
+                    return Mono.just(false);
+                })
+                .flatMap(compacted -> compacted
+                        ? loop(state, context, run, iteration, streaming, journal, version, true)
+                        : Mono.error(error));
+    }
+
+    private static boolean isContextOverflow(Throwable error) {
+        for (var current = error; current != null; current = current.getCause()) {
+            var message = current.getMessage();
+            if (message == null) {
+                continue;
+            }
+            var lower = message.toLowerCase(Locale.ROOT);
+            if (lower.contains("context length")
+                    || lower.contains("context window")
+                    || lower.contains("maximum context")
+                    || lower.contains("prompt is too long")
+                    || lower.contains("too many tokens")
+                    || lower.contains("token limit")) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Mono<ModelCall> modelCall(ChatRequest request, AgentRun run, boolean streaming) {
@@ -390,11 +517,12 @@ public final class ReActAgent implements Agent {
             RuntimeContext context,
             AgentRun run,
             ToolExecutionRequest call,
-            JournalEventSink journal) {
+            JournalEventSink journal,
+            AtomicLong version) {
         var id = call.id() == null ? UUID.randomUUID().toString() : call.id();
         var arguments = call.arguments() == null ? "" : call.arguments();
         journal.toolCallStart(run.id(), id, call.name(), arguments);
-        return executeToolCallCore(state, context, run, call, id, arguments, journal)
+        return executeToolCallCore(state, context, run, call, id, arguments, journal, version)
                 .then(Mono.fromRunnable(
                         () -> recordToolResult(state, id, call.name(), run, journal)));
     }
@@ -417,7 +545,8 @@ public final class ReActAgent implements Agent {
             ToolExecutionRequest call,
             String id,
             String arguments,
-            JournalEventSink journal) {
+            JournalEventSink journal,
+            AtomicLong version) {
         run.emit(new AgentEvent.ToolCallStart(run.id(), id, call.name(), arguments));
         run.emit(new AgentEvent.ToolCallEnd(run.id(), id, call.name(), arguments));
         if (knowledgeBaseRetrievalTool != null
@@ -498,9 +627,9 @@ public final class ReActAgent implements Agent {
             run.emit(new AgentEvent.RequireUserConfirm(
                     run.id(), id, call.name(), decision.message()));
             journal.toolDecision(run.id(), id, "ask");
-            return stateStore
-                    .save(context.userId(), context.sessionId(), state)
-                    .then(run.awaitConfirmation(id))
+            return saveState(state, context, version)
+                    .then(run.awaitConfirmation(id)
+                            .timeout(confirmationTimeout, Mono.just(false)))
                     .flatMap(approved -> {
                         if (!approved) {
                             journal.toolDecision(run.id(), id, "user-denied");
@@ -681,6 +810,8 @@ public final class ReActAgent implements Agent {
 
         private PermissionEngine permissionEngine;
 
+        private Duration confirmationTimeout;
+
         private boolean planModeEnabled;
 
         private boolean todoEnabled;
@@ -768,6 +899,11 @@ public final class ReActAgent implements Agent {
 
         public Builder permissionEngine(PermissionEngine permissionEngine) {
             this.permissionEngine = permissionEngine;
+            return this;
+        }
+
+        public Builder confirmationTimeout(Duration confirmationTimeout) {
+            this.confirmationTimeout = confirmationTimeout;
             return this;
         }
 

@@ -30,7 +30,6 @@ import cn.tolim.pudans.core.ai.harness.agent.AgentRun;
 import cn.tolim.pudans.core.ai.harness.agent.AgentState;
 import cn.tolim.pudans.core.ai.harness.agent.AgentStateStore;
 import cn.tolim.pudans.core.ai.harness.agent.HarnessAgent;
-import cn.tolim.pudans.core.ai.harness.agent.InMemoryAgentStateStore;
 import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import cn.tolim.pudans.core.ai.harness.event.AgentEvent;
 import cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore;
@@ -50,6 +49,7 @@ import cn.tolim.pudans.core.ai.rag.DocumentParser;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseAcl;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseContentRetriever;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalService;
+import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalTool;
 import cn.tolim.pudans.core.ai.rag.RagContext;
 import cn.tolim.pudans.core.ai.rag.RetrievalOptions;
 import cn.tolim.pudans.core.ai.team.AiTeamService;
@@ -73,6 +73,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -147,6 +149,10 @@ public class AiChatService {
 
     private final ThreadJournalStore journalStore;
 
+    private final AgentStateStore stateStore;
+
+    private final ConcurrentMap<String, ChatRun> activeRuns = new ConcurrentHashMap<>();
+
     public Mono<AiChatCompletionResult> complete(AiChatCommand command) {
         return prepare(command)
                 .flatMap(prepared -> completeWithHarness(prepared)
@@ -183,16 +189,27 @@ public class AiChatService {
         var outcomes = new CopyOnWriteArrayList<ToolOutcome>();
         var turn = new TurnCollector(false);
         return retrieveKnowledge(prepared, userText(currentUser))
-                .flatMap(knowledge -> seededStore(prepared).flatMap(store -> {
+                .flatMap(knowledge -> sessionStore(prepared).flatMap(store -> {
                     var state = new GatewayRunState();
                     var agent = harnessAgent(prepared, store, state, outcomes);
                     var run = agent.start(
                             userMessage(currentUser, knowledge),
                             runtimeContext(prepared),
                             false);
+                    activeRuns.put(run.id(), new ChatRun(prepared.userId(), run));
                     run.onEvent(turn);
-                    return run.result().map(result -> agentRound(result, state, outcomes, turn));
+                    return run.result()
+                            .doFinally(signal -> activeRuns.remove(run.id()))
+                            .map(result -> agentRound(result, state, outcomes, turn));
                 }));
+    }
+
+    public boolean confirm(String userId, String runId, String toolCallId, boolean approved) {
+        var chatRun = activeRuns.get(runId);
+        if (chatRun == null || !chatRun.userId().equals(userId)) {
+            return false;
+        }
+        return chatRun.run().confirm(toolCallId, approved);
     }
 
     private static @Nullable AiChatMessage lastUserMessage(List<AiChatMessage> messages) {
@@ -254,17 +271,47 @@ public class AiChatService {
         return UserMessage.from(contents);
     }
 
-    private Mono<AgentStateStore> seededStore(Prepared prepared) {
-        var store = new InMemoryAgentStateStore();
-        var state = new AgentState(
-                historyMessages(prepared.messages(), lastUserMessage(prepared.messages())),
-                "",
-                Map.of());
-        return store.save(
-                        prepared.userId(),
-                        prepared.conversation().sessionKey(),
-                        state)
-                .thenReturn(store);
+    private Mono<AgentStateStore> sessionStore(Prepared prepared) {
+        var sessionId = prepared.conversation().sessionKey();
+        var history = historyMessages(prepared.messages(), lastUserMessage(prepared.messages()));
+        return stateStore
+                .load(prepared.userId(), sessionId)
+                .flatMap(existing -> {
+                    if (existing.messages().isEmpty()) {
+                        return stateStore
+                                .save(
+                                        prepared.userId(),
+                                        sessionId,
+                                        new AgentState(history, existing.summary(), existing.attributes()))
+                                .thenReturn(stateStore);
+                    }
+                    if (prepared.regenerate()) {
+                        var trimmed = existing.copy();
+                        trimLastTurn(trimmed);
+                        return stateStore
+                                .save(prepared.userId(), sessionId, trimmed)
+                                .thenReturn(stateStore);
+                    }
+                    return Mono.just(stateStore);
+                })
+                .switchIfEmpty(Mono.defer(() -> stateStore
+                        .save(prepared.userId(), sessionId, new AgentState(history, "", Map.of()))
+                        .thenReturn(stateStore)));
+    }
+
+    static void trimLastTurn(AgentState state) {
+        var messages = new ArrayList<>(state.messages());
+        var lastUser = -1;
+        for (var index = messages.size() - 1; index >= 0; index--) {
+            if (messages.get(index) instanceof UserMessage) {
+                lastUser = index;
+                break;
+            }
+        }
+        if (lastUser < 0) {
+            return;
+        }
+        state.replaceMessages(messages.subList(0, lastUser));
     }
 
     private static RuntimeContext runtimeContext(Prepared prepared) {
@@ -309,7 +356,13 @@ public class AiChatService {
                 .toolkit(toolkit(prepared, outcomes))
                 .stateStore(store)
                 .journalStore(journalStore)
-                .permissionEngine(new PermissionEngine(PermissionContext.bypass()))
+                .permissionEngine(new PermissionEngine(prepared.harness().permission()))
+                .confirmationTimeout(prepared.harness().confirmationTimeout())
+                .knowledgeBaseRetrievalTool(prepared.knowledgeTool())
+                .planModeEnabled(prepared.harness().planModeEnabled())
+                .todoEnabled(prepared.harness().todosEnabled())
+                .compaction(prepared.harness().compaction())
+                .toolResultEviction(prepared.harness().eviction())
                 .temperature(params.temperature())
                 .maxOutputTokens(params.maxTokens())
                 .topP(params.topP())
@@ -377,7 +430,7 @@ public class AiChatService {
         }
         var outcomes = new CopyOnWriteArrayList<ToolOutcome>();
         return retrieveKnowledge(prepared, userText(currentUser))
-                .flatMapMany(knowledge -> Flux.defer(() -> seededStore(prepared)
+                .flatMapMany(knowledge -> Flux.defer(() -> sessionStore(prepared)
                         .flatMapMany(store -> {
                             var state = new GatewayRunState();
                             var turn = new TurnCollector(true);
@@ -386,6 +439,7 @@ public class AiChatService {
                                     userMessage(currentUser, knowledge),
                                     runtimeContext(prepared),
                                     true);
+                            activeRuns.put(run.id(), new ChatRun(prepared.userId(), run));
                             return streamRun(prepared, run, state, outcomes, turn)
                                     .onErrorResume(error -> Flux.just(new AiChatStreamEvent.Error(
                                             "ai-chat-stream-failed",
@@ -414,10 +468,15 @@ public class AiChatService {
                 mapped.forEach(sink::next);
             });
             sink.onCancel(run::cancel);
-            run.result().subscribe(
+            var execution = run.result().doFinally(signal -> activeRuns.remove(run.id()));
+            execution.subscribe(
                     result -> persistStreamResult(prepared, state, outcomes, turn, result)
                             .subscribe(message -> {
                                 emitMeta(sink, prepared, state, metaEmitted);
+                                if (prepared.retriever() == null && prepared.knowledgeTool() != null) {
+                                    prepared.citations().forEach(citation ->
+                                            sink.next(new AiChatStreamEvent.CitationEvent(citation)));
+                                }
                                 var usage = state.usage();
                                 var hasUsage = usage != null
                                         && (usage.inputTokens() != null
@@ -488,6 +547,10 @@ public class AiChatService {
         }
         if (event instanceof AgentEvent.ThinkingBlockDelta delta) {
             return List.of(new AiChatStreamEvent.Delta(null, delta.delta()));
+        }
+        if (event instanceof AgentEvent.RequireUserConfirm confirm) {
+            return List.of(new AiChatStreamEvent.ToolConfirm(
+                    confirm.runId(), confirm.id(), confirm.name(), confirm.message()));
         }
         if (event instanceof AgentEvent.ToolCallStart start) {
             return List.of(
@@ -746,7 +809,7 @@ public class AiChatService {
     private Mono<List<Message>> history(Conversation conversation, AiSetting.Spec setting) {
         var prompt = setting.getPrompt() == null ? new AiSetting.Prompt() : setting.getPrompt();
         var limit = Math.max(2, Math.min(DEFAULT_HISTORY_LIMIT, prompt.getHistoryWindowTurns() * 2));
-        return conversationService.history(conversation, limit).collectList();
+        return conversationService.recentHistory(conversation, limit).collectList();
     }
 
     private Mono<RagContext> ragContext(
@@ -815,6 +878,9 @@ public class AiChatService {
             String userContent,
             List<AiContentPart> attachmentParts) {
         var prompt = setting.getPrompt() == null ? new AiSetting.Prompt() : setting.getPrompt();
+        var retrievalSetting = setting.getRetrieval() == null
+                ? new AiSetting.Retrieval()
+                : setting.getRetrieval();
         var memorySetting = setting.getMemory() == null ? new AiSetting.Memory() : setting.getMemory();
         var maxOutput = command.request().maxOutputTokens() != null
                 ? command.request().maxOutputTokens()
@@ -862,15 +928,20 @@ public class AiChatService {
                 null,
                 null,
                 Map.of());
-        var retriever = rag.isEmpty()
+        var agenticRetrieval = retrievalSetting.isAgenticEnabled() && !rag.isEmpty();
+        var retriever = rag.isEmpty() || agenticRetrieval
                 ? null
                 : new KnowledgeBaseContentRetriever(retrievalService, embeddingService, rag);
+        var knowledgeTool = agenticRetrieval
+                ? new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, rag)
+                : null;
         var prepared = new Prepared(
                 command.userId(),
                 state.agent(),
                 state.conversation(),
                 turnIndex,
                 retriever,
+                knowledgeTool,
                 requestId,
                 idempotencyKey,
                 memorySetting,
@@ -879,7 +950,9 @@ public class AiChatService {
                 params,
                 mode.getMetadata().getName(),
                 command.request().routeGroup(),
-                command.request().model());
+                command.request().model(),
+                command.request().isRegenerate(),
+                context.harness());
         var appendUser = command.request().isRegenerate()
                 ? Mono.<Message>empty()
                 : conversationService.appendUserMessage(
@@ -982,6 +1055,8 @@ public class AiChatService {
             return Mono.empty();
         });
     }
+
+    private record ChatRun(String userId, AgentRun run) {}
 
     private record AgentRound(
             String content,
@@ -1142,6 +1217,7 @@ public class AiChatService {
             Conversation conversation,
             int turnIndex,
             @Nullable KnowledgeBaseContentRetriever retriever,
+            @Nullable KnowledgeBaseRetrievalTool knowledgeTool,
             String requestId,
             String idempotencyKey,
             AiSetting.Memory memorySetting,
@@ -1150,11 +1226,14 @@ public class AiChatService {
             AiRequestParams params,
             String modeCode,
             @Nullable String routeGroup,
-            @Nullable String modelOverride) {
+            @Nullable String modelOverride,
+            boolean regenerate,
+            AiAgentContextService.HarnessSettings harness) {
 
         private Prepared {
             messages = messages == null ? List.of() : List.copyOf(messages);
             tools = tools == null ? List.of() : List.copyOf(tools);
+            harness = harness == null ? AiAgentContextService.HarnessSettings.DEFAULT : harness;
         }
 
         private String agentName() {
@@ -1162,7 +1241,10 @@ public class AiChatService {
         }
 
         private List<Citation> citations() {
-            return retriever == null ? List.of() : retriever.citations();
+            if (retriever != null) {
+                return retriever.citations();
+            }
+            return knowledgeTool == null ? List.of() : knowledgeTool.citations();
         }
     }
 }

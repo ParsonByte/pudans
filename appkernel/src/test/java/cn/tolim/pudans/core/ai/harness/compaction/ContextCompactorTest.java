@@ -43,6 +43,40 @@ class ContextCompactorTest {
     }
 
     @Test
+    void compactsOnDemandBelowTheTrigger() {
+        var state = new AgentState();
+        state.addMessage(UserMessage.from("one"));
+        state.addMessage(AiMessage.from("two"));
+        state.addMessage(UserMessage.from("three"));
+        when(chatModel.chat(any(ChatRequest.class)))
+                .thenReturn(ChatResponse.builder()
+                        .aiMessage(AiMessage.from("forced summary"))
+                        .build());
+        var compactor = new ContextCompactor(chatModel, new CompactionConfig(10, 1));
+
+        assertThat(compactor.compactNow(state).block()).isTrue();
+
+        assertThat(state.messages()).hasSize(1);
+        assertThat(state.summary()).contains("forced summary");
+    }
+
+    @Test
+    void keepsMessagesWhenCompactionFails() {
+        var state = new AgentState();
+        state.addMessage(UserMessage.from("one"));
+        state.addMessage(AiMessage.from("two"));
+        state.addMessage(UserMessage.from("three"));
+        when(chatModel.chat(any(ChatRequest.class)))
+                .thenThrow(new IllegalStateException("summary failed"));
+        var compactor = new ContextCompactor(chatModel, new CompactionConfig(1, 1));
+
+        assertThat(compactor.compactIfNeeded(state).block()).isFalse();
+
+        assertThat(state.messages()).hasSize(3);
+        assertThat(state.summary()).isEmpty();
+    }
+
+    @Test
     void leavesShortConversationsUntouched() {
         var state = new AgentState();
         state.addMessage(UserMessage.from("one"));

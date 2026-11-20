@@ -14,6 +14,7 @@ import cn.tolim.pudans.core.ai.harness.tool.ToolResultStore;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
+import java.time.Duration;
 import java.util.List;
 import reactor.core.publisher.Mono;
 
@@ -123,6 +124,11 @@ public final class HarnessAgent implements Agent {
 
         public Builder permissionEngine(PermissionEngine permissionEngine) {
             delegate.permissionEngine(permissionEngine);
+            return this;
+        }
+
+        public Builder confirmationTimeout(Duration confirmationTimeout) {
+            delegate.confirmationTimeout(confirmationTimeout);
             return this;
         }
 

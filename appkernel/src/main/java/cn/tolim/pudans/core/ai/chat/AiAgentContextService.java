@@ -5,6 +5,12 @@ import cn.tolim.pudans.contract.core.extension.ai.AiSlashCommand;
 import cn.tolim.pudans.contract.core.extension.ai.AiSubagent;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
+import cn.tolim.pudans.core.ai.harness.compaction.CompactionConfig;
+import cn.tolim.pudans.core.ai.harness.permission.PermissionBehavior;
+import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
+import cn.tolim.pudans.core.ai.harness.permission.PermissionMode;
+import cn.tolim.pudans.core.ai.harness.permission.PermissionRule;
+import cn.tolim.pudans.core.ai.harness.tool.ToolResultEvictionConfig;
 import cn.tolim.pudans.core.ai.library.LibraryView;
 import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
 import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariableService;
@@ -13,6 +19,7 @@ import cn.tolim.pudans.core.ai.library.subagent.SubagentService;
 import cn.tolim.pudans.core.ai.prompt.ChatPrompts;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +60,41 @@ public class AiAgentContextService {
                         tuple.getT1().skills(),
                         tuple.getT2(),
                         tuple.getT3(),
-                        tuple.getT4()));
+                        tuple.getT4(),
+                        harness(agent)));
+    }
+
+    private static HarnessSettings harness(AiAgent agent) {
+        var spec = agent == null ? null : agent.getSpec();
+        var harness = spec == null || spec.getHarness() == null ? new AiAgent.Harness() : spec.getHarness();
+        var permissions = PermissionContext.builder()
+                .mode(harness.getPermissionMode() == null
+                        ? PermissionMode.BYPASS
+                        : PermissionMode.valueOf(harness.getPermissionMode().name()));
+        var rules = harness.getPermissionRules() == null
+                ? List.<AiAgent.Harness.PermissionRule>of()
+                : harness.getPermissionRules();
+        for (var rule : rules) {
+            if (rule == null || !StringUtils.hasText(rule.getToolName())) {
+                continue;
+            }
+            var behavior = rule.getBehavior() == null
+                    ? AiAgent.Harness.PermissionBehavior.ASK
+                    : rule.getBehavior();
+            permissions.rule(new PermissionRule(
+                    rule.getToolName(),
+                    rule.getRuleContent(),
+                    PermissionBehavior.valueOf(behavior.name()),
+                    "agent"));
+        }
+        return new HarnessSettings(
+                harness.isPlanModeEnabled(),
+                harness.isTodosEnabled(),
+                new CompactionConfig(
+                        harness.getCompactionTriggerMessages(), harness.getCompactionKeepMessages()),
+                new ToolResultEvictionConfig(harness.getToolResultEvictionMaxChars()),
+                Duration.ofSeconds(Math.max(1, harness.getConfirmationTimeoutSeconds())),
+                permissions.build());
     }
 
     public String systemMessage(AgentContext context) {
@@ -185,7 +226,8 @@ public class AiAgentContextService {
             List<SkillService.SkillSummary> skills,
             List<AiSubagent> subagents,
             List<AiSlashCommand> commands,
-            Map<String, String> environment) {
+            Map<String, String> environment,
+            HarnessSettings harness) {
 
         public AgentContext {
             systemAdditions = systemAdditions == null ? "" : systemAdditions;
@@ -194,6 +236,46 @@ public class AiAgentContextService {
             subagents = subagents == null ? List.of() : List.copyOf(subagents);
             commands = commands == null ? List.of() : List.copyOf(commands);
             environment = environment == null ? Map.of() : Map.copyOf(environment);
+            harness = harness == null ? HarnessSettings.DEFAULT : harness;
+        }
+
+        public AgentContext(
+                String systemAdditions,
+                List<AiTool> tools,
+                List<SkillService.SkillSummary> skills,
+                List<AiSubagent> subagents,
+                List<AiSlashCommand> commands,
+                Map<String, String> environment) {
+            this(systemAdditions, tools, skills, subagents, commands, environment, HarnessSettings.DEFAULT);
+        }
+    }
+
+    public record HarnessSettings(
+            boolean planModeEnabled,
+            boolean todosEnabled,
+            CompactionConfig compaction,
+            ToolResultEvictionConfig eviction,
+            Duration confirmationTimeout,
+            PermissionContext permission) {
+
+        public static final HarnessSettings DEFAULT = new HarnessSettings(
+                false,
+                true,
+                new CompactionConfig(
+                        AiAgent.Harness.DEFAULT_COMPACTION_TRIGGER_MESSAGES,
+                        AiAgent.Harness.DEFAULT_COMPACTION_KEEP_MESSAGES),
+                new ToolResultEvictionConfig(
+                        AiAgent.Harness.DEFAULT_TOOL_RESULT_EVICTION_MAX_CHARS),
+                Duration.ofSeconds(AiAgent.Harness.DEFAULT_CONFIRMATION_TIMEOUT_SECONDS),
+                PermissionContext.bypass());
+
+        public HarnessSettings {
+            compaction = compaction == null ? CompactionConfig.disabled() : compaction;
+            eviction = eviction == null ? ToolResultEvictionConfig.disabled() : eviction;
+            confirmationTimeout = confirmationTimeout == null
+                    ? Duration.ofSeconds(AiAgent.Harness.DEFAULT_CONFIRMATION_TIMEOUT_SECONDS)
+                    : confirmationTimeout;
+            permission = permission == null ? PermissionContext.bypass() : permission;
         }
     }
 }

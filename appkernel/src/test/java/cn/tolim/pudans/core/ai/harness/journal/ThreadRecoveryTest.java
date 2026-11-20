@@ -48,6 +48,36 @@ class ThreadRecoveryTest {
     }
 
     @Test
+    void abandonsUncertainToolCallsWithAnErrorResult() {
+        var projection = ThreadRecovery.abandonInterrupted(uncertainJournal(), "replica-startup").block();
+
+        assertThat(projection).isNotNull();
+        assertThat(projection.uncertainToolCalls()).isEmpty();
+        assertThat(projection.activeRuns()).isEmpty();
+        assertThat(projection.state()).isNotNull();
+        var result = (ToolExecutionResultMessage) projection.state().messages().get(1);
+        assertThat(result.id()).isEqualTo("call-1");
+        assertThat(result.toolName()).isEqualTo("echo");
+        assertThat(result.isError()).isTrue();
+    }
+
+    @Test
+    void marksInterruptedRunsWithoutABaseline() {
+        var journal = new InMemoryThreadJournal();
+        journal.append(JournalEventDraft.of(JournalEventType.RUN_START, "run-1", Map.of()))
+                .block();
+
+        var projection = ThreadRecovery.abandonInterrupted(journal, "replica-startup").block();
+
+        assertThat(projection).isNotNull();
+        assertThat(projection.state()).isNull();
+        assertThat(projection.activeRuns()).isEmpty();
+        assertThat(journal.scan(0, Long.MAX_VALUE).collectList().block())
+                .extracting(JournalEvent::type)
+                .contains(JournalEventType.RECOVERY_APPLIED);
+    }
+
+    @Test
     void rejectsRevisionWithoutBaseline() {
         var journal = new InMemoryThreadJournal();
         journal.append(JournalEventDraft.of(JournalEventType.RUN_START, "run-1", Map.of()))

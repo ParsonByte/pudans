@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.ai.harness.journal;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -24,6 +25,38 @@ public final class ThreadRecovery {
             }
             output = output == null ? "" : output;
         }
+    }
+
+    public static Mono<JournalProjection> abandonInterrupted(
+            ThreadJournal journal, String reason) {
+        Objects.requireNonNull(journal, "线程日志不能为空");
+        if (reason == null || reason.isBlank()) {
+            return Mono.error(new IllegalArgumentException("对账原因不能为空。"));
+        }
+        return JournalProjection.read(journal).flatMap(projection -> {
+            if (projection.activeRuns().isEmpty() && projection.uncertainToolCalls().isEmpty()) {
+                return Mono.just(projection);
+            }
+            if (projection.state() == null) {
+                return journal
+                        .append(
+                                projection.asOfSeq(),
+                                List.of(recoveryDraft(
+                                        projection,
+                                        List.copyOf(projection.uncertainToolCalls()),
+                                        reason)))
+                        .then(JournalProjection.read(journal));
+            }
+            var outcomes = new LinkedHashMap<String, ToolOutcome>();
+            for (var id : projection.uncertainToolCalls()) {
+                outcomes.put(id, new ToolOutcome(
+                        id,
+                        projection.toolNames().getOrDefault(id, "unknown"),
+                        "运行已中断，工具结果未知。",
+                        true));
+            }
+            return reconcile(journal, outcomes, reason);
+        });
     }
 
     public static Mono<JournalProjection> reconcile(
@@ -59,13 +92,7 @@ public final class ThreadRecovery {
                                 "error", outcome.error(),
                                 "reconciled", true)));
             }
-            drafts.add(draft(
-                    JournalEventType.RECOVERY_APPLIED,
-                    projection,
-                    Map.of(
-                            "resolvedToolCallIds", List.copyOf(outcomes.keySet()),
-                            "interruptedRuns", List.copyOf(projection.activeRuns()),
-                            "reason", reason)));
+            drafts.add(recoveryDraft(projection, List.copyOf(outcomes.keySet()), reason));
             drafts.add(draft(
                     JournalEventType.STATE_CHECKPOINT,
                     projection,
@@ -74,6 +101,17 @@ public final class ThreadRecovery {
                     .append(projection.asOfSeq(), drafts)
                     .then(JournalProjection.read(journal));
         });
+    }
+
+    private static JournalEventDraft recoveryDraft(
+            JournalProjection projection, List<String> resolvedToolCallIds, String reason) {
+        return draft(
+                JournalEventType.RECOVERY_APPLIED,
+                projection,
+                Map.of(
+                        "resolvedToolCallIds", resolvedToolCallIds,
+                        "interruptedRuns", List.copyOf(projection.activeRuns()),
+                        "reason", reason));
     }
 
     private static JournalEventDraft draft(

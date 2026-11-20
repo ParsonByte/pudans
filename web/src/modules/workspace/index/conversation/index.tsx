@@ -13,7 +13,9 @@ import {
   type ChatStreamDone,
   type ChatStreamDraft,
   type ChatStreamError,
+  type ChatToolConfirm,
   branchConversation,
+  confirmChatTool,
   fetchChatConversation,
   fetchChatMessages,
   fetchChatModes,
@@ -32,6 +34,7 @@ import {
 import { setPendingChat, takePendingChat } from "../lib/pending-chat";
 import { ConversationHeader } from "./components/conversation-header";
 import { ConversationMessages } from "./components/conversation-messages";
+import { ToolConfirmDialog } from "./components/tool-confirm-dialog";
 
 type ChatConversationViewProps = {
   conversationId: string;
@@ -77,10 +80,12 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
   const [generation, setGeneration] = useState<ChatGenerationProgress | null>(null);
   const [sending, setSending] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<ChatToolConfirm | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
   const sendingRef = useRef(false);
   const mountedRef = useRef(true);
   const pendingStartedRef = useRef(false);
+  const pendingConfirmRef = useRef<ChatToolConfirm | null>(null);
   const streamIdRef = useRef(0);
 
   const modesQuery = useQuery({
@@ -123,6 +128,27 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
       controllerRef.current?.abort();
     },
     [],
+  );
+
+  const updatePendingConfirm = useCallback((next: ChatToolConfirm | null) => {
+    pendingConfirmRef.current = next;
+    setPendingConfirm(next);
+  }, []);
+
+  const resolveToolConfirm = useCallback(
+    (approved: boolean) => {
+      const current = pendingConfirmRef.current;
+      if (!current?.runId || !current.toolCallId) {
+        return;
+      }
+      updatePendingConfirm(null);
+      void confirmChatTool(current.runId, current.toolCallId, approved).catch(() => {
+        if (mountedRef.current) {
+          toast.error("工具确认失败，请重试。");
+        }
+      });
+    },
+    [updatePendingConfirm],
   );
 
   const sendPrompt = useCallback(
@@ -203,6 +229,11 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
                 }));
               }
             },
+            onToolConfirm: (confirm) => {
+              if (mountedRef.current && streamIdRef.current === streamId) {
+                updatePendingConfirm(confirm);
+              }
+            },
             onArtifact: (artifact) => {
               if (mountedRef.current) {
                 setDraft((current) => ({
@@ -218,6 +249,7 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
             },
             onError: (error: ChatStreamError) => {
               completed = true;
+              updatePendingConfirm(null);
               void queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
               const message = error.message || "生成失败，请稍后重试。";
               if (mountedRef.current && streamIdRef.current === streamId) {
@@ -227,6 +259,7 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
             },
             onDone: (done: ChatStreamDone) => {
               completed = true;
+              updatePendingConfirm(null);
               void (async () => {
                 try {
                   await queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
@@ -281,11 +314,12 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
         sendingRef.current = false;
         if (mountedRef.current) {
           setSending(false);
+          updatePendingConfirm(null);
         }
         controllerRef.current = null;
       }
     },
-    [id, kbCodes, mode, modelOverride, queryClient, routeGroup, valid],
+    [id, kbCodes, mode, modelOverride, queryClient, routeGroup, updatePendingConfirm, valid],
   );
 
   const runGeneration = useCallback(
@@ -457,6 +491,11 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
 
   return (
     <div className="flex h-svh min-h-0 flex-col">
+      <ToolConfirmDialog
+        confirm={pendingConfirm}
+        onApprove={() => resolveToolConfirm(true)}
+        onDeny={() => resolveToolConfirm(false)}
+      />
       <ConversationHeader title={conversationQuery.data?.title || "新的对话"} />
       <ConversationMessages
         messages={messagesQuery.data ?? []}

@@ -74,6 +74,25 @@ public class AiMessageRepository {
                 .all();
     }
 
+    public Flux<Message> listRecentMessages(long conversationId, int limit) {
+        return databaseClient.sql("""
+                        SELECT id, conversation_id, space_id, user_id, team_id, agent_id, session_id,
+                               task_id, request_id, turn_index, message_index, role, content,
+                               content_type, token_count, model_code, created_at
+                        FROM ai_message
+                        WHERE conversation_id = :conversationId
+                          AND deleted_at IS NULL
+                        ORDER BY id DESC
+                        LIMIT :limit
+                        """)
+                .bind("conversationId", conversationId)
+                .bind("limit", limit)
+                .map((row, metadata) -> mapMessage(row))
+                .all()
+                .collectList()
+                .flatMapMany(messages -> Flux.fromIterable(messages.reversed()));
+    }
+
     public Flux<MessageMetadata> metadata(long conversationId) {
         return databaseClient.sql("""
                         SELECT id, metadata::text AS metadata

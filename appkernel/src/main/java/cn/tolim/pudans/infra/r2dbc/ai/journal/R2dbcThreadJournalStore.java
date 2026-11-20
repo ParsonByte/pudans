@@ -7,6 +7,8 @@ import cn.tolim.pudans.core.ai.harness.journal.JournalException;
 import cn.tolim.pudans.core.ai.harness.journal.JournalHead;
 import cn.tolim.pudans.core.ai.harness.journal.ThreadJournal;
 import cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,12 @@ public class R2dbcThreadJournalStore implements ThreadJournalStore {
         Objects.requireNonNull(context, "运行时上下文不能为空");
         return Mono.<ThreadJournal>just(
                 new R2dbcThreadJournal(repository, context.userId(), context.sessionId()));
+    }
+
+    @Override
+    public Flux<RuntimeContext> staleActiveThreads(Duration staleAfter) {
+        Objects.requireNonNull(staleAfter, "过期时长不能为空");
+        return repository.staleActiveThreads(Instant.now().minus(staleAfter));
     }
 
     private static final class R2dbcThreadJournal implements ThreadJournal {

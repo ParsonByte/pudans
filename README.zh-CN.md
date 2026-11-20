@@ -86,7 +86,7 @@ Pudans 的 AI 能力运行在 LangChain4j Agent Harness 上，而不是独立的
 
 - 本地知识库使用 pgvector 混合检索（关键词与向量检索、RRF 与可选重排），支持 PDF、Word、Tika 与图片解析。
 - 外部知识库可通过 `KnowledgeBase.spec.external` 接入 Dify、RAGFlow、Haystack 或百炼；凭据通过 `AiProviderAccount` 引用保存。
-- Agent 既可通过 `retrieve_knowledge` 工具按需检索，也可在对话中直接获得预检索上下文。
+- 开启 `AiSetting.spec.retrieval.agenticEnabled` 后，Agent 可通过 `retrieve_knowledge` 工具按需检索；否则在对话中直接获得预检索上下文。
 
 ## 架构
 

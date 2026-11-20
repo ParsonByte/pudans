@@ -70,7 +70,12 @@ public class ProtocolAgentRuntime {
                             .toolkit(toolkit)
                             .stateStore(stateStore)
                             .journalStore(journalStore)
-                            .permissionEngine(new PermissionEngine(PermissionContext.bypass()))
+                            .permissionEngine(new PermissionEngine(context.harness().permission()))
+                            .confirmationTimeout(context.harness().confirmationTimeout())
+                            .planModeEnabled(context.harness().planModeEnabled())
+                            .todoEnabled(context.harness().todosEnabled())
+                            .compaction(context.harness().compaction())
+                            .toolResultEviction(context.harness().eviction())
                             .build()
                             .start(
                                     request.input(),

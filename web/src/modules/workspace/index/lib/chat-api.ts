@@ -15,6 +15,8 @@ const CHAT_API = `${AI_API_PREFIX}/conversations`;
 
 const CHAT_COMPLETIONS = `${AI_API_PREFIX}/chats/-/completions/stream`;
 
+const CHAT_TOOL_CONFIRMATIONS = `${AI_API_PREFIX}/chats/-/tool-confirmations`;
+
 const CHAT_MODES = `${AI_API_PREFIX}/chats/-/modes`;
 
 const CHAT_COMMANDS = `${AI_API_PREFIX}/aislashcommands/-/by-agent`;
@@ -63,6 +65,13 @@ export type ChatToolResult = {
   output: string;
   isError: boolean;
   durationMs: number;
+};
+
+export type ChatToolConfirm = {
+  runId?: string;
+  toolCallId?: string;
+  name?: string;
+  message?: string;
 };
 
 export type ChatArtifact = {
@@ -222,6 +231,7 @@ export type ChatStreamHandlers = {
   onDelta?: (delta: { content?: string; reasoning?: string }) => void;
   onToolCall?: (call: ChatToolCall) => void;
   onToolResult?: (result: ChatToolResult) => void;
+  onToolConfirm?: (confirm: ChatToolConfirm) => void;
   onArtifact?: (artifact: ChatArtifact) => void;
   onStage?: (stage: ChatStreamStage) => void;
   onUsage?: (usage: ChatStreamUsage) => void;
@@ -467,6 +477,14 @@ export async function fetchChatMessages(
   return response.data;
 }
 
+export async function confirmChatTool(
+  runId: string,
+  toolCallId: string,
+  approved: boolean,
+): Promise<void> {
+  await axiosInstance.post(CHAT_TOOL_CONFIRMATIONS, { runId, toolCallId, approved });
+}
+
 export async function streamChat(
   request: ChatRequest,
   handlers: ChatStreamHandlers,
@@ -570,6 +588,9 @@ function dispatch(block: string, handlers: ChatStreamHandlers): boolean {
       break;
     case "tool_result":
       handlers.onToolResult?.(payload as ChatToolResult);
+      break;
+    case "tool_confirm":
+      handlers.onToolConfirm?.(payload as ChatToolConfirm);
       break;
     case "artifact":
       handlers.onArtifact?.(payload as ChatArtifact);
