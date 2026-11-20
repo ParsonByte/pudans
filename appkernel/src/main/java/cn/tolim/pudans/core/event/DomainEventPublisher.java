@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.event;
 import cn.tolim.pudans.contract.event.DomainEvent;
 import cn.tolim.pudans.core.webhook.WebhookEventPublisher;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -30,9 +31,13 @@ public class DomainEventPublisher implements InitializingBean, DisposableBean {
 
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(5);
 
+    private static final String DROPPED_COUNTER = "pudans.domain.events.dropped";
+
     private final ApplicationEventPublisher applicationEventPublisher;
 
     private final WebhookEventPublisher webhookEventPublisher;
+
+    private final MeterRegistry meterRegistry;
 
     private final Sinks.Many<DomainEvent> sink =
             Sinks.many().unicast().onBackpressureBuffer(new LinkedBlockingQueue<>(BUFFER_SIZE));
@@ -89,7 +94,8 @@ public class DomainEventPublisher implements InitializingBean, DisposableBean {
             result = sink.tryEmitNext(event);
         }
         if (result.isFailure()) {
-            log.warn("无法发送领域事件 [{}]：{}", type, result);
+            meterRegistry.counter(DROPPED_COUNTER, "type", type).increment();
+            log.error("领域事件队列已满，事件被丢弃 [{}]：{}", type, result);
         }
     }
 
