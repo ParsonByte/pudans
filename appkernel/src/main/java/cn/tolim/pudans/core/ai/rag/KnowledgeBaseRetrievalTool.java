@@ -1,11 +1,14 @@
 package cn.tolim.pudans.core.ai.rag;
 
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.List;
 import java.util.Objects;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Mono;
 
 public final class KnowledgeBaseRetrievalTool {
 
@@ -19,10 +22,18 @@ public final class KnowledgeBaseRetrievalTool {
 
     private final KnowledgeBaseRetrievalService retrievalService;
 
+    private final AiEmbeddingService embeddingService;
+
     private final RagContext context;
 
-    public KnowledgeBaseRetrievalTool(KnowledgeBaseRetrievalService retrievalService, RagContext context) {
+    private volatile List<Citation> citations = List.of();
+
+    public KnowledgeBaseRetrievalTool(
+            KnowledgeBaseRetrievalService retrievalService,
+            AiEmbeddingService embeddingService,
+            RagContext context) {
         this.retrievalService = Objects.requireNonNull(retrievalService, "知识库检索服务不能为空");
+        this.embeddingService = Objects.requireNonNull(embeddingService, "嵌入服务不能为空");
         this.context = Objects.requireNonNull(context, "RAG 上下文不能为空");
     }
 
@@ -52,12 +63,20 @@ public final class KnowledgeBaseRetrievalTool {
                 return new HarnessToolkit.ToolResult("检索问题不能为空。", true);
             }
             try {
+                var text = query.textValue().strip();
+                var embedding = embeddingService
+                        .embedOne(text)
+                        .onErrorResume(error -> Mono.just(new float[0]))
+                        .defaultIfEmpty(new float[0])
+                        .block();
                 var result = retrievalService
-                        .retrieve(retrievalRequest(query.textValue().strip(), limit(arguments)))
+                        .retrieve(retrievalRequest(text, limit(arguments), embedding))
                         .block();
                 if (result == null || result.citations().isEmpty()) {
+                    citations = List.of();
                     return new HarnessToolkit.ToolResult(NO_RESULT, false);
                 }
+                citations = result.citations();
                 return new HarnessToolkit.ToolResult(result.prompt(), false);
             } catch (RuntimeException error) {
                 var message = error.getMessage();
@@ -71,7 +90,12 @@ public final class KnowledgeBaseRetrievalTool {
         return toolkit.register(definition(), handler());
     }
 
-    private KnowledgeBaseRetrievalRequest retrievalRequest(String query, int limit) {
+    public List<Citation> citations() {
+        return citations;
+    }
+
+    private KnowledgeBaseRetrievalRequest retrievalRequest(
+            String query, int limit, float[] queryEmbedding) {
         var options = new RetrievalOptions(
                 context.options().rrfK(),
                 context.options().scoreThreshold(),
@@ -84,7 +108,7 @@ public final class KnowledgeBaseRetrievalTool {
                 context.knowledgeBases(),
                 context.roleNames(),
                 context.deptId(),
-                null,
+                queryEmbedding,
                 options,
                 Math.max(context.candidateLimit(), limit));
     }

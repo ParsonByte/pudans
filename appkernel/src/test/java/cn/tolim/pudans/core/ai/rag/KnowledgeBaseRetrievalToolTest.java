@@ -2,17 +2,21 @@ package cn.tolim.pudans.core.ai.rag;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
 import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jToolMapper;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import java.util.List;
 import java.util.Set;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -26,9 +30,19 @@ class KnowledgeBaseRetrievalToolTest {
     @Mock
     KnowledgeBaseRetrievalService retrievalService;
 
+    @Mock
+    AiEmbeddingService embeddingService;
+
+    @BeforeEach
+    void setUp() {
+        lenient()
+                .when(embeddingService.embedOne(anyString()))
+                .thenReturn(Mono.just(new float[] {0.1f, 0.2f}));
+    }
+
     @Test
     void definesTheToolNameAndRequiredQuerySchema() {
-        var definition = new KnowledgeBaseRetrievalTool(retrievalService, context()).definition();
+        var definition = new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, context()).definition();
 
         assertThat(definition.name()).isEqualTo(KnowledgeBaseRetrievalTool.NAME);
         assertThat(definition.parameters().path("type").asText()).isEqualTo("object");
@@ -58,7 +72,7 @@ class KnowledgeBaseRetrievalToolTest {
         assertThat(request.roleNames()).containsExactly("member");
         assertThat(request.deptId()).isEqualTo("dept-a");
         assertThat(request.knowledgeBases()).hasSize(1);
-        assertThat(request.queryEmbedding()).isNull();
+        assertThat(request.queryEmbedding()).containsExactly(0.1f, 0.2f);
         assertThat(request.options().topK()).isEqualTo(3);
         assertThat(request.options().rrfK()).isEqualTo(60);
         assertThat(request.candidateLimit()).isEqualTo(24);
@@ -111,7 +125,8 @@ class KnowledgeBaseRetrievalToolTest {
     @Test
     void registersWithTheHarnessToolkitAndExecutesThroughIt() {
         when(retrievalService.retrieve(any())).thenReturn(Mono.just(result()));
-        var toolkit = new KnowledgeBaseRetrievalTool(retrievalService, context()).register(new HarnessToolkit());
+        var toolkit = new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, context())
+                .register(new HarnessToolkit());
 
         var outcome = toolkit.execute(ToolExecutionRequest.builder()
                 .name(KnowledgeBaseRetrievalTool.NAME)
@@ -122,8 +137,19 @@ class KnowledgeBaseRetrievalToolTest {
         assertThat(outcome.output()).contains("[1]《manual.pdf》");
     }
 
+    @Test
+    void exposesCitationsAfterRetrieval() {
+        when(retrievalService.retrieve(any())).thenReturn(Mono.just(result()));
+        var tool = new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, context());
+
+        tool.handler().execute(
+                request("{\"query\":\"安装\"}"), LangChain4jToolMapper.arguments("{\"query\":\"安装\"}"));
+
+        assertThat(tool.citations()).isEqualTo(result().citations());
+    }
+
     private HarnessToolkit.ToolHandler handler() {
-        return new KnowledgeBaseRetrievalTool(retrievalService, context()).handler();
+        return new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, context()).handler();
     }
 
     private static ToolExecutionRequest request(String arguments) {

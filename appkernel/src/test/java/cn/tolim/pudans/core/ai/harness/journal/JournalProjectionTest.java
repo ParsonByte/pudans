@@ -34,6 +34,7 @@ class JournalProjectionTest {
         assertThat(projection.state().messages()).hasSize(1);
         assertThat(projection.activeRuns()).containsExactly("run-1");
         assertThat(projection.uncertainToolCalls()).containsExactly("call-1");
+        assertThat(projection.toolNames()).containsEntry("call-1", "echo");
         assertThat(projection.checkpointRunId()).isEqualTo("run-1");
     }
 

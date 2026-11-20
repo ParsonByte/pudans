@@ -120,6 +120,7 @@ public final class AgentRun {
         status.set(AgentRunStatus.CANCELLED);
         pendingConfirmations.values().forEach(sink -> sink.tryEmitValue(false));
         pendingConfirmations.clear();
+        confirmations.clear();
     }
 
     public void interrupt() {

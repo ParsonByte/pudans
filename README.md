@@ -86,7 +86,7 @@ All routes live under `/apis/api.pudans.tolim.cn/v1alpha1`.
 
 - Local knowledge bases use pgvector hybrid retrieval (keyword and vector search, RRF and optional rerank) with PDF, Word, Tika and image parsers.
 - External knowledge bases can point at Dify, RAGFlow, Haystack or Bailian through `KnowledgeBase.spec.external`; credentials stay in `AiProviderAccount` references.
-- Agents can retrieve on demand through the `retrieve_knowledge` tool or receive pre-retrieved context in chat.
+- Agents can retrieve on demand through the `retrieve_knowledge` tool when `AiSetting.spec.retrieval.agenticEnabled` is on, or receive pre-retrieved context in chat.
 
 ## Architecture
 

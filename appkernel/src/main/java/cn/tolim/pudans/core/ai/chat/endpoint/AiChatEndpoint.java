@@ -85,6 +85,12 @@ public class AiChatEndpoint implements CustomEndpoint {
                         .tag(TAG)
                         .requestBody(requestBodyBuilder().required(true).implementation(AiChatCompletionRequest.class))
                         .response(responseBuilder()))
+                .POST("/chats/-/tool-confirmations", this::confirmTool, builder -> builder
+                        .operationId("confirmChatTool")
+                        .description("Approve or deny a pending tool call.")
+                        .tag(TAG)
+                        .requestBody(requestBodyBuilder().required(true).implementation(ToolConfirmation.class))
+                        .response(responseBuilder()))
                 .POST("/chats/-/attachments", this::uploadAttachment, builder -> builder
                         .operationId("uploadChatAttachment")
                         .description("Upload a multimodal attachment for a chat message.")
@@ -112,6 +118,34 @@ public class AiChatEndpoint implements CustomEndpoint {
                     .header("X-Accel-Buffering", "no")
                     .body(body, String.class);
         });
+    }
+
+    private Mono<ServerResponse> confirmTool(ServerRequest request) {
+        return requests
+                .userId(request, "ai-chat-unauthenticated", "未认证。")
+                .zipWith(body(request, ToolConfirmation.class))
+                .flatMap(tuple -> {
+                    var confirmation = tuple.getT2();
+                    if (!StringUtils.hasText(confirmation.runId())
+                            || !StringUtils.hasText(confirmation.toolCallId())) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST,
+                                CODE_BODY_INVALID,
+                                "runId 与 toolCallId 不能为空。"));
+                    }
+                    return chatService.confirm(
+                                    tuple.getT1(),
+                                    confirmation.runId(),
+                                    confirmation.toolCallId(),
+                                    confirmation.approved())
+                            ? ServerResponse.accepted().build()
+                            : ServerResponse.status(HttpStatus.NOT_FOUND)
+                                    .bodyValue(Map.of(
+                                            "code",
+                                            "ai-chat-run-not-found",
+                                            "detail",
+                                            "工具确认请求不存在或已过期。"));
+                });
     }
 
     private Mono<ServerResponse> uploadAttachment(ServerRequest request) {
@@ -261,6 +295,8 @@ public class AiChatEndpoint implements CustomEndpoint {
     public record AttachmentView(
             String fileId, String name, String contentType, long size, String type) {}
 
+    public record ToolConfirmation(String runId, String toolCallId, boolean approved) {}
+
     private Mono<AiChatCommand> command(ServerRequest request) {
         return requests
                 .userId(request, "ai-chat-unauthenticated", "未认证。")
@@ -270,7 +306,11 @@ public class AiChatEndpoint implements CustomEndpoint {
     }
 
     private static Mono<AiChatCompletionRequest> body(ServerRequest request) {
-        return request.bodyToMono(AiChatCompletionRequest.class)
+        return body(request, AiChatCompletionRequest.class);
+    }
+
+    private static <T> Mono<T> body(ServerRequest request, Class<T> type) {
+        return request.bodyToMono(type)
                 .switchIfEmpty(Mono.error(new ApiException(
                         HttpStatus.BAD_REQUEST, CODE_BODY_INVALID, "请求体不能为空。")))
                 .onErrorMap(
@@ -297,6 +337,7 @@ public class AiChatEndpoint implements CustomEndpoint {
             case AiChatStreamEvent.CitationEvent citation -> event("citation", citationJson(citation));
             case AiChatStreamEvent.ToolCall toolCall -> event("tool_call", toolCallJson(toolCall));
             case AiChatStreamEvent.ToolResult toolResult -> event("tool_result", toolResultJson(toolResult));
+            case AiChatStreamEvent.ToolConfirm toolConfirm -> event("tool_confirm", toolConfirmJson(toolConfirm));
             case AiChatStreamEvent.Artifact artifact -> event("artifact", artifactJson(artifact));
             case AiChatStreamEvent.Stage stage -> event("stage", stageJson(stage));
             case AiChatStreamEvent.Usage usage -> event("usage", usageJson(usage));
@@ -363,6 +404,15 @@ public class AiChatEndpoint implements CustomEndpoint {
         put(node, "output", event.output());
         node.put("isError", event.isError());
         node.put("durationMs", event.durationMs());
+        return node;
+    }
+
+    private ObjectNode toolConfirmJson(AiChatStreamEvent.ToolConfirm event) {
+        var node = mapper.createObjectNode();
+        put(node, "runId", event.runId());
+        put(node, "toolCallId", event.toolCallId());
+        put(node, "name", event.name());
+        put(node, "message", event.message());
         return node;
     }
 

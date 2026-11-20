@@ -70,6 +70,17 @@ class AiConversationServicePagingTest {
     }
 
     @Test
+    void streamsTheMostRecentMessages() {
+        when(messageRepository.listRecentMessages(7L, 30)).thenReturn(Flux.just(message()));
+
+        StepVerifier.create(service.recentHistory(conversation(), 30))
+                .assertNext(found -> assertThat(found.content()).isEqualTo("内容"))
+                .verifyComplete();
+
+        verify(messageRepository).listRecentMessages(7L, 30);
+    }
+
+    @Test
     void rejectsANegativeMessageCursor() {
         assertThatThrownBy(() -> service.history(conversation(), -1L, 30))
                 .isInstanceOf(IllegalArgumentException.class)

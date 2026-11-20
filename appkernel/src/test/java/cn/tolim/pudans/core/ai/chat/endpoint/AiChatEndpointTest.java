@@ -80,6 +80,7 @@ class AiChatEndpointTest {
                         "CHEAP", "default", "default", "session-1")),
                 new AiChatStreamEvent.CitationEvent(new Citation(
                         1, 11L, "manual.md", null, "1. 引言", 0.9, "片段")),
+                new AiChatStreamEvent.ToolConfirm("run-1", "call-1", "echo", "需要确认。"),
                 new AiChatStreamEvent.Delta("你好", null),
                 new AiChatStreamEvent.Usage(new AiTokenUsage(1, 2, null, null), BigDecimal.ONE, "PROVIDER"),
                 new AiChatStreamEvent.Done("21", "stop", false)));
@@ -97,9 +98,38 @@ class AiChatEndpointTest {
                 .value(body -> {
                     org.assertj.core.api.Assertions.assertThat(body).contains("event: meta");
                     org.assertj.core.api.Assertions.assertThat(body).contains("event: citation");
+                    org.assertj.core.api.Assertions.assertThat(body).contains("event: tool_confirm");
                     org.assertj.core.api.Assertions.assertThat(body).contains("event: delta");
                     org.assertj.core.api.Assertions.assertThat(body).contains("event: done");
                 });
+    }
+
+    @Test
+    void confirmsAPendingToolCall() {
+        when(chatService.confirm("user-1", "run-1", "call-1", true)).thenReturn(true);
+
+        client.post()
+                .uri("/chats/-/tool-confirmations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"runId":"run-1","toolCallId":"call-1","approved":true}
+                        """)
+                .exchange()
+                .expectStatus().isAccepted();
+    }
+
+    @Test
+    void reportsAnUnknownToolConfirmation() {
+        when(chatService.confirm("user-1", "run-1", "call-1", false)).thenReturn(false);
+
+        client.post()
+                .uri("/chats/-/tool-confirmations")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"runId":"run-1","toolCallId":"call-1","approved":false}
+                        """)
+                .exchange()
+                .expectStatus().isNotFound();
     }
 
     @Test

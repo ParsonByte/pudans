@@ -2,8 +2,10 @@ package cn.tolim.pudans.core.ai.harness.journal;
 
 import cn.tolim.pudans.core.ai.harness.agent.AgentState;
 import cn.tolim.pudans.core.ai.harness.agent.AgentStateCodec;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
@@ -12,6 +14,7 @@ public record JournalProjection(
         long asOfSeq,
         @Nullable AgentState state,
         Set<String> uncertainToolCalls,
+        Map<String, String> toolNames,
         Set<String> activeRuns,
         @Nullable String checkpointRunId,
         @Nullable String checkpointTurnId) {
@@ -21,6 +24,7 @@ public record JournalProjection(
             throw new JournalException("线程日志投影序号不能为负数。");
         }
         uncertainToolCalls = Set.copyOf(uncertainToolCalls == null ? Set.of() : uncertainToolCalls);
+        toolNames = Map.copyOf(toolNames == null ? Map.of() : toolNames);
         activeRuns = Set.copyOf(activeRuns == null ? Set.of() : activeRuns);
     }
 
@@ -35,6 +39,7 @@ public record JournalProjection(
 
     private static JournalProjection project(long asOfSeq, List<JournalEvent> events) {
         var uncertain = new LinkedHashSet<String>();
+        var toolNames = new LinkedHashMap<String, String>();
         var runs = new LinkedHashSet<String>();
         AgentState state = null;
         String checkpointRunId = null;
@@ -52,22 +57,43 @@ public record JournalProjection(
                         runs.remove(event.runId());
                     }
                 }
-                case TOOL_CALL_START -> uncertain.add(toolCallId(event));
+                case TOOL_CALL_START -> {
+                    var id = toolCallId(event);
+                    uncertain.add(id);
+                    toolNames.put(id, toolName(event));
+                }
                 case TOOL_RESULT_END -> {
                     var id = optionalToolCallId(event);
                     if (id != null) {
                         uncertain.remove(id);
+                        toolNames.remove(id);
                     }
                 }
                 case RECOVERY_APPLIED -> {
-                    removeAll(uncertain, event.data().get("resolvedToolCallIds"));
+                    for (var id : resolvedToolCallIds(event)) {
+                        uncertain.remove(id);
+                        toolNames.remove(id);
+                    }
                     removeAll(runs, event.data().get("interruptedRuns"));
                 }
                 default -> {}
             }
         }
         return new JournalProjection(
-                asOfSeq, state, uncertain, runs, checkpointRunId, checkpointTurnId);
+                asOfSeq, state, uncertain, toolNames, runs, checkpointRunId, checkpointTurnId);
+    }
+
+    private static String toolName(JournalEvent event) {
+        var value = event.data().get("toolName");
+        return value instanceof String name && !name.isBlank() ? name : "unknown";
+    }
+
+    private static List<String> resolvedToolCallIds(JournalEvent event) {
+        var value = event.data().get("resolvedToolCallIds");
+        if (!(value instanceof List<?> items)) {
+            return List.of();
+        }
+        return items.stream().filter(String.class::isInstance).map(String.class::cast).toList();
     }
 
     private static AgentState restore(JournalEvent event) {

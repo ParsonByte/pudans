@@ -1,6 +1,7 @@
 package cn.tolim.pudans.infra.r2dbc.ai.journal;
 
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEvent;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEventDraft;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEventType;
@@ -97,6 +98,35 @@ public class AiHarnessJournalRepository {
                     }
                     return Mono.just(List.copyOf(events));
                 });
+    }
+
+    public Flux<RuntimeContext> staleActiveThreads(Instant before) {
+        return databaseClient.sql("""
+                        SELECT DISTINCT e.user_id, e.session_id
+                        FROM ai_harness_journal_event e
+                        JOIN ai_harness_journal_head h
+                          ON h.user_id = e.user_id AND h.session_id = e.session_id
+                        WHERE e.event_type = 'RUN_START'
+                          AND h.updated_at < :before
+                          AND NOT EXISTS (
+                              SELECT 1 FROM ai_harness_journal_event end_event
+                              WHERE end_event.user_id = e.user_id
+                                AND end_event.session_id = e.session_id
+                                AND end_event.run_id = e.run_id
+                                AND end_event.event_type = 'RUN_END'
+                          )
+                          AND NOT EXISTS (
+                              SELECT 1 FROM ai_harness_journal_event recovery
+                              WHERE recovery.user_id = e.user_id
+                                AND recovery.session_id = e.session_id
+                                AND recovery.event_type = 'RECOVERY_APPLIED'
+                                AND jsonb_exists(recovery.payload -> 'interruptedRuns', e.run_id)
+                          )
+                        """)
+                .bind("before", before)
+                .map((row, metadata) -> RuntimeContext.of(
+                        row.get("user_id", String.class), row.get("session_id", String.class)))
+                .all();
     }
 
     public Flux<JournalEvent> scan(

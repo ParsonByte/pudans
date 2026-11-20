@@ -82,6 +82,60 @@ public class AiAgent extends AbstractExtension {
         private Runtime runtime = new Runtime();
 
         private Map<String, Object> metadata = new LinkedHashMap<>();
+
+        private Harness harness = new Harness();
+    }
+
+    @Data
+    public static class Harness {
+
+        public static final int DEFAULT_COMPACTION_TRIGGER_MESSAGES = 80;
+
+        public static final int DEFAULT_COMPACTION_KEEP_MESSAGES = 20;
+
+        public static final int DEFAULT_TOOL_RESULT_EVICTION_MAX_CHARS = 30000;
+
+        public static final int DEFAULT_CONFIRMATION_TIMEOUT_SECONDS = 300;
+
+        private boolean planModeEnabled;
+
+        private boolean todosEnabled = true;
+
+        private int compactionTriggerMessages = DEFAULT_COMPACTION_TRIGGER_MESSAGES;
+
+        private int compactionKeepMessages = DEFAULT_COMPACTION_KEEP_MESSAGES;
+
+        private int toolResultEvictionMaxChars = DEFAULT_TOOL_RESULT_EVICTION_MAX_CHARS;
+
+        private int confirmationTimeoutSeconds = DEFAULT_CONFIRMATION_TIMEOUT_SECONDS;
+
+        private PermissionMode permissionMode = PermissionMode.BYPASS;
+
+        private List<PermissionRule> permissionRules = new ArrayList<>();
+
+        public enum PermissionMode {
+            BYPASS,
+            DEFAULT,
+            ACCEPT_EDITS,
+            EXPLORE,
+            DONT_ASK
+        }
+
+        public enum PermissionBehavior {
+            ALLOW,
+            DENY,
+            ASK
+        }
+
+        @Data
+        public static class PermissionRule {
+
+            private String toolName;
+
+            private String ruleContent;
+
+            private PermissionBehavior behavior = PermissionBehavior.ASK;
+        }
     }
 
     public enum RuntimeProvider {

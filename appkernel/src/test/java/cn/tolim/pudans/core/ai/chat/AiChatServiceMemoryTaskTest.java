@@ -34,6 +34,9 @@ import cn.tolim.pudans.core.ai.gateway.AiStreamEvent;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
+import cn.tolim.pudans.core.ai.harness.agent.AgentState;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
 import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseAcl;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalService;
@@ -114,6 +117,9 @@ class AiChatServiceMemoryTaskTest {
     @Mock
     cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore journalStore;
 
+    @Mock
+    cn.tolim.pudans.core.ai.harness.agent.AgentStateStore stateStore;
+
     private AiChatService service;
 
     @BeforeEach
@@ -121,6 +127,12 @@ class AiChatServiceMemoryTaskTest {
         org.mockito.Mockito.lenient()
                 .when(journalStore.open(any()))
                 .thenReturn(Mono.just(new cn.tolim.pudans.core.ai.harness.journal.InMemoryThreadJournal()));
+        org.mockito.Mockito.lenient()
+                .when(stateStore.load(anyString(), anyString()))
+                .thenReturn(Mono.just(new cn.tolim.pudans.core.ai.harness.agent.AgentState()));
+        org.mockito.Mockito.lenient()
+                .when(stateStore.save(anyString(), anyString(), any()))
+                .thenReturn(Mono.empty());
         service = new AiChatService(
                 settingService,
                 chatModeService,
@@ -138,7 +150,22 @@ class AiChatServiceMemoryTaskTest {
                 toolService,
                 slashCommandService,
                 hookService,
-                journalStore);
+                journalStore,
+                stateStore);
+    }
+
+    @Test
+    void trimsTheLastTurnForRegeneration() {
+        var state = new AgentState();
+        state.addMessage(UserMessage.from("first"));
+        state.addMessage(AiMessage.from("first answer"));
+        state.addMessage(UserMessage.from("second"));
+        state.addMessage(AiMessage.from("second answer"));
+
+        AiChatService.trimLastTurn(state);
+
+        assertThat(state.messages()).hasSize(2);
+        assertThat(state.messages().getLast()).isInstanceOf(AiMessage.class);
     }
 
     @Test
@@ -337,7 +364,7 @@ class AiChatServiceMemoryTaskTest {
         when(conversationService.requireOwned(7L, "user-1")).thenReturn(Mono.just(conversation()));
         when(teamService.requireAgent("agent-a", "user-1")).thenReturn(Mono.just(agent()));
         when(conversationService.deleteLastAssistant(any())).thenReturn(Mono.empty());
-        when(conversationService.history(any(), anyInt())).thenReturn(Flux.just(userMessage()));
+        when(conversationService.recentHistory(any(), anyInt())).thenReturn(Flux.just(userMessage()));
         when(memoryContextBuilder.build(any(), anyString(), anyInt(), anyInt())).thenReturn(Mono.empty());
         when(agentContextService.build(any())).thenReturn(Mono.just(new AiAgentContextService.AgentContext(
                 "", List.of(), List.of(), List.of(), List.of(), Map.of())));

@@ -12,9 +12,11 @@ import dev.langchain4j.model.chat.request.ChatRequest;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+@Slf4j
 public final class ContextCompactor {
 
     private static final String SUMMARY_PROMPT =
@@ -31,7 +33,21 @@ public final class ContextCompactor {
     }
 
     public Mono<Boolean> compactIfNeeded(AgentState state) {
-        if (!config.enabled() || state.messages().size() <= config.triggerMessages()) {
+        return compact(state, false).onErrorResume(error -> {
+            log.warn("上下文压缩失败，保留原始消息。", error);
+            return Mono.just(false);
+        });
+    }
+
+    public Mono<Boolean> compactNow(AgentState state) {
+        return compact(state, true);
+    }
+
+    private Mono<Boolean> compact(AgentState state, boolean force) {
+        if (!config.enabled()) {
+            return Mono.just(false);
+        }
+        if (!force && state.messages().size() <= config.triggerMessages()) {
             return Mono.just(false);
         }
         var messages = state.messages();

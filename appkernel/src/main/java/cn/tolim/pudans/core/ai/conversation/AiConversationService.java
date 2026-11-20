@@ -146,8 +146,10 @@ public class AiConversationService {
         return conversationRepository.reducePending(conversation.id(), delta);
     }
 
-    public Flux<Message> history(Conversation conversation, int limit) {
-        return history(conversation, 0, limit);
+    public Flux<Message> recentHistory(Conversation conversation, int limit) {
+        Assert.notNull(conversation, "会话不能为空");
+        Assert.isTrue(limit > 0, "历史消息数量必须大于零");
+        return messageRepository.listRecentMessages(conversation.id(), limit);
     }
 
     public Mono<Boolean> advanceL1Cursor(Conversation conversation, long messageId) {

@@ -110,6 +110,8 @@ public class AiSetting extends AbstractExtension {
         private int orgLimit = 5;
 
         private double scoreThreshold = 0.30;
+
+        private boolean agenticEnabled;
     }
 
     @Data

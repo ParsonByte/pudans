@@ -2,11 +2,13 @@ package cn.tolim.pudans.core.ai.harness.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
+import cn.tolim.pudans.core.ai.harness.compaction.CompactionConfig;
 import cn.tolim.pudans.core.ai.harness.event.AgentEvent;
 import cn.tolim.pudans.core.ai.harness.event.AgentEventType;
 import cn.tolim.pudans.core.ai.harness.journal.InMemoryThreadJournalStore;
@@ -28,6 +30,7 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
@@ -43,6 +46,9 @@ class ReActAgentTest {
 
     @Mock
     ChatModel chatModel;
+
+    @Mock
+    VersionedAgentStateStore versionedStateStore;
 
     @Test
     void executesToolCallsAndReturnsTheFinalAnswer() {
@@ -418,6 +424,130 @@ class ReActAgentTest {
         assertThat(result).isNotNull();
         assertThat(result.output()).isEqualTo("echo:hello");
         assertThat(result.error()).isFalse();
+    }
+
+    @Test
+    void closesDanglingToolCallsBeforeResuming() {
+        var seeded = new AgentState();
+        seeded.addMessage(UserMessage.from("old request"));
+        seeded.addMessage(toolCall("stale-1", "echo", "{\"text\":\"old\"}"));
+        var stateStore = new InMemoryAgentStateStore();
+        stateStore.save("user-1", "session-dangling", seeded).block();
+        when(chatModel.chat(any(ChatRequest.class))).thenReturn(response(AiMessage.from("done")));
+        var agent = ReActAgent.builder()
+                .name("test-agent")
+                .chatModel(chatModel)
+                .stateStore(stateStore)
+                .toolkit(new HarnessToolkit().register(new EchoTools()))
+                .permissionEngine(new PermissionEngine(PermissionContext.bypass()))
+                .build();
+
+        StepVerifier.create(agent.call("next", RuntimeContext.of("user-1", "session-dangling")))
+                .assertNext(result -> assertThat(result.content()).isEqualTo("done"))
+                .verifyComplete();
+
+        var requests = ArgumentCaptor.forClass(ChatRequest.class);
+        verify(chatModel).chat(requests.capture());
+        assertThat(requests.getValue().messages())
+                .anyMatch(message -> message instanceof ToolExecutionResultMessage result
+                        && result.id().equals("stale-1")
+                        && result.isError()
+                        && result.text().contains("中断"));
+    }
+
+    @Test
+    void deniesAnUnansweredConfirmationAfterTheTimeout() {
+        when(chatModel.chat(any(ChatRequest.class)))
+                .thenReturn(response(toolCall("1", "echo", "{\"text\":\"hello\"}")))
+                .thenReturn(response(AiMessage.from("done")));
+        var agent = ReActAgent.builder()
+                .name("test-agent")
+                .chatModel(chatModel)
+                .toolkit(new HarnessToolkit().register(new EchoTools()))
+                .permissionEngine(new PermissionEngine(PermissionContext.builder()
+                        .ask("echo")
+                        .build()))
+                .confirmationTimeout(Duration.ofMillis(50))
+                .build();
+
+        StepVerifier.create(agent.call("run", RuntimeContext.of("user-1", "session-confirm-timeout")))
+                .assertNext(result -> assertThat(result.content()).isEqualTo("done"))
+                .verifyComplete();
+
+        var requests = ArgumentCaptor.forClass(ChatRequest.class);
+        verify(chatModel, org.mockito.Mockito.times(2)).chat(requests.capture());
+        assertThat(requests.getAllValues().get(1).messages())
+                .anyMatch(message -> message instanceof ToolExecutionResultMessage result
+                        && result.isError()
+                        && result.text().contains("用户拒绝"));
+    }
+
+    @Test
+    void compactsAndRetriesOnceWhenTheContextOverflows() {
+        var seeded = new AgentState();
+        seeded.addMessage(UserMessage.from("old one"));
+        seeded.addMessage(AiMessage.from("old two"));
+        var stateStore = new InMemoryAgentStateStore();
+        stateStore.save("user-1", "session-overflow", seeded).block();
+        when(chatModel.chat(any(ChatRequest.class)))
+                .thenThrow(new IllegalStateException("maximum context length exceeded"))
+                .thenReturn(response(AiMessage.from("summary")))
+                .thenReturn(response(AiMessage.from("done")));
+        var agent = ReActAgent.builder()
+                .name("test-agent")
+                .chatModel(chatModel)
+                .stateStore(stateStore)
+                .compaction(new CompactionConfig(10, 1))
+                .build();
+
+        StepVerifier.create(agent.call("hello", RuntimeContext.of("user-1", "session-overflow")))
+                .assertNext(result -> assertThat(result.content()).isEqualTo("done"))
+                .verifyComplete();
+
+        var state = stateStore.load("user-1", "session-overflow").block();
+        assertThat(state).isNotNull();
+        assertThat(state.summary()).contains("summary");
+    }
+
+    @Test
+    void savesVersionedStateWithCompareAndSet() {
+        when(versionedStateStore.loadVersioned("user-1", "session-cas"))
+                .thenReturn(Mono.just(new VersionedAgentState(new AgentState(), 3L)));
+        when(chatModel.chat(any(ChatRequest.class))).thenReturn(response(AiMessage.from("done")));
+        when(versionedStateStore.saveIfVersion(
+                        eq("user-1"), eq("session-cas"), any(), eq(3L)))
+                .thenReturn(Mono.just(4L));
+        var agent = ReActAgent.builder()
+                .name("test-agent")
+                .chatModel(chatModel)
+                .stateStore(versionedStateStore)
+                .build();
+
+        StepVerifier.create(agent.call("hello", RuntimeContext.of("user-1", "session-cas")))
+                .assertNext(result -> assertThat(result.content()).isEqualTo("done"))
+                .verifyComplete();
+
+        verify(versionedStateStore)
+                .saveIfVersion(eq("user-1"), eq("session-cas"), any(), eq(3L));
+    }
+
+    @Test
+    void rejectsAConflictingStateVersion() {
+        when(versionedStateStore.loadVersioned("user-1", "session-conflict"))
+                .thenReturn(Mono.just(new VersionedAgentState(new AgentState(), 5L)));
+        when(chatModel.chat(any(ChatRequest.class))).thenReturn(response(AiMessage.from("done")));
+        when(versionedStateStore.saveIfVersion(
+                        eq("user-1"), eq("session-conflict"), any(), eq(5L)))
+                .thenReturn(Mono.empty());
+        var agent = ReActAgent.builder()
+                .name("test-agent")
+                .chatModel(chatModel)
+                .stateStore(versionedStateStore)
+                .build();
+
+        StepVerifier.create(agent.call("hello", RuntimeContext.of("user-1", "session-conflict")))
+                .expectError(AgentStateConflictException.class)
+                .verify();
     }
 
     @Test

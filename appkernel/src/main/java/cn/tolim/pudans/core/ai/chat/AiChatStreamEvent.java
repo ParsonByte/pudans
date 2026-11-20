@@ -20,6 +20,9 @@ public sealed interface AiChatStreamEvent {
     record ToolResult(String id, String name, String output, boolean isError, long durationMs)
             implements AiChatStreamEvent {}
 
+    record ToolConfirm(String runId, String toolCallId, String name, String message)
+            implements AiChatStreamEvent {}
+
     record Artifact(
             String kind,
             String fileId,

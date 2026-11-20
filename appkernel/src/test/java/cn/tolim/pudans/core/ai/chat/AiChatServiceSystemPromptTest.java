@@ -85,6 +85,9 @@ class AiChatServiceSystemPromptTest {
     @Mock
     cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore journalStore;
 
+    @Mock
+    cn.tolim.pudans.core.ai.harness.agent.AgentStateStore stateStore;
+
     private AiChatService service;
 
     @BeforeEach
@@ -109,7 +112,8 @@ class AiChatServiceSystemPromptTest {
                 toolService,
                 slashCommandService,
                 hookService,
-                journalStore);
+                journalStore,
+                stateStore);
     }
 
     @Test
