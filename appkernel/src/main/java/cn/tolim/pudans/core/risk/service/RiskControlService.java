@@ -85,9 +85,10 @@ public class RiskControlService {
     public Mono<Boolean> isBanned(String scene, String subject) {
         return redisTemplate.hasKey(banKey(scene, subject));
     }
-
+    //删除 `windowKey` 可以把失败计数一并清零
+    // 如果不清理，计数会一直留在 Redis 里：用户解封后只要再错一两次，累计次数就又会超过阈值，导致刚解封就立刻重新被封。
     public Mono<Long> unban(String scene, String subject) {
-        return redisTemplate.delete(banKey(scene, subject));
+        return redisTemplate.delete(banKey(scene, subject), windowKey(scene, subject));
     }
 
     public Mono<String> firstBannedScene(java.util.Collection<String> scenes, String subject) {

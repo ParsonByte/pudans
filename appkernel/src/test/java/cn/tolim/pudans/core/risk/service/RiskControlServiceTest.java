@@ -90,19 +90,23 @@ class RiskControlServiceTest {
     }
 
     @Test
-    void unbanDeletesTheSceneSpecificBanKey() {
-        when(redisTemplate.delete("pudans:risk:ban:request-flood:1.2.3.4")).thenReturn(Mono.just(1L));
+    void unbanDeletesTheBanKeyAndClearsTheRiskWindow() {
+        var banKey = "pudans:risk:ban:request-flood:1.2.3.4";
+        var windowKey = "pudans:risk:window:request-flood:1.2.3.4";
+        when(redisTemplate.delete(banKey, windowKey)).thenReturn(Mono.just(2L));
 
         StepVerifier.create(service.unban(RiskScene.REQUEST_FLOOD, "1.2.3.4"))
-                .expectNext(1L)
+                .expectNext(2L)
                 .verifyComplete();
 
-        verify(redisTemplate).delete("pudans:risk:ban:request-flood:1.2.3.4");
+        verify(redisTemplate).delete(banKey, windowKey);
     }
 
     @Test
-    void unbanReturnsZeroWhenNoBanExists() {
-        when(redisTemplate.delete("pudans:risk:ban:login-failure:5.6.7.8")).thenReturn(Mono.just(0L));
+    void unbanReturnsZeroWhenNeitherBanNorWindowExists() {
+        var banKey = "pudans:risk:ban:login-failure:5.6.7.8";
+        var windowKey = "pudans:risk:window:login-failure:5.6.7.8";
+        when(redisTemplate.delete(banKey, windowKey)).thenReturn(Mono.just(0L));
 
         StepVerifier.create(service.unban(RiskScene.LOGIN_FAILURE, "5.6.7.8"))
                 .expectNext(0L)
