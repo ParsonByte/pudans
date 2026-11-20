@@ -1,6 +1,8 @@
 import { axiosInstance } from "@pudans-dev/api-client";
 import { isAxiosError } from "axios";
 
+import { getCookie } from "@/lib/cookies";
+
 const IGNORED_PATHS = ["/sign-in", "/forgot-password", "/setup", "/429"];
 
 export type NavigationAuditContext = {
@@ -19,6 +21,10 @@ export function installApiInterceptors() {
     if (navigationAuditContext) {
       config.headers.set("X-Parent-Audit-Id", navigationAuditContext.auditId);
       config.headers.set("X-Trace-Flow-Id", navigationAuditContext.traceFlowId);
+    }
+    const csrfToken = getCookie("XSRF-TOKEN");
+    if (csrfToken) {
+      config.headers.set("X-XSRF-TOKEN", csrfToken);
     }
     return config;
   });

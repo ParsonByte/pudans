@@ -1,6 +1,8 @@
 import { axiosInstance } from "@pudans-dev/api-client";
 import { isAxiosError } from "axios";
 
+import { getCookie } from "@/lib/cookies";
+
 import {
   AI_API_PREFIX,
   type AiModelCapability,
@@ -472,6 +474,7 @@ export async function streamChat(
   handlers: ChatStreamHandlers,
   signal?: AbortSignal,
 ): Promise<void> {
+  const csrfToken = getCookie("XSRF-TOKEN");
   const response = await fetch(CHAT_COMPLETIONS, {
     method: "POST",
     credentials: "include",
@@ -479,6 +482,7 @@ export async function streamChat(
       Accept: "text/event-stream",
       "Content-Type": "application/json",
       "X-Requested-With": "XMLHttpRequest",
+      ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
     },
     body: JSON.stringify(request),
     signal,
