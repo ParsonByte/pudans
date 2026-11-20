@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AiConsolePage } from "@/modules/workspace/ai";
+import { AgentRuntimeView } from "@/modules/workspace/ai/agent-runtime";
 
 export const Route = createFileRoute("/_authenticated/_workspace/(ai)/ai/agent-runtime")({
-  component: AiConsolePage,
+  component: AgentRuntimeView,
 });

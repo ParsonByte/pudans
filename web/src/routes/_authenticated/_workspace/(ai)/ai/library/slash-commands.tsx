@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AiConsolePage } from "@/modules/workspace/ai";
+import { AiSlashCommandsView } from "@/modules/workspace/ai/library/slash-commands";
 
 export const Route = createFileRoute("/_authenticated/_workspace/(ai)/ai/library/slash-commands")({
-  component: AiConsolePage,
+  component: AiSlashCommandsView,
 });
