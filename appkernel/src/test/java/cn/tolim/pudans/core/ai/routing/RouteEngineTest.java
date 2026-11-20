@@ -395,6 +395,278 @@ class RouteEngineTest {
     }
 
     @Test
+    void contextModePrefersTheSmallestWindow() {
+        var large = RouteSeats.seat("p", "a1", "m-large", AiModel.Tier.HIGH);
+        var small = RouteSeat.builder()
+                .provider("p")
+                .account("a2")
+                .model("m-small")
+                .tier(AiModel.Tier.HIGH)
+                .contextWindow(8_000)
+                .build();
+        var request = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .contextMode("SMALLEST")
+                .build();
+
+        var plan = engine.route(request, List.of(large, small));
+
+        assertThat(plan.selected()).isEqualTo(RouteSelection.of(small));
+    }
+
+    @Test
+    void contextModePrefersTheLargestWindow() {
+        var large = RouteSeat.builder()
+                .provider("p")
+                .account("a1")
+                .model("m-large")
+                .tier(AiModel.Tier.HIGH)
+                .contextWindow(200_000)
+                .build();
+        var small = RouteSeat.builder()
+                .provider("p")
+                .account("a2")
+                .model("m-small")
+                .tier(AiModel.Tier.HIGH)
+                .contextWindow(8_000)
+                .build();
+        var request = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .contextMode("LARGEST")
+                .build();
+
+        var plan = engine.route(request, List.of(small, large));
+
+        assertThat(plan.selected()).isEqualTo(RouteSelection.of(large));
+    }
+
+    @Test
+    void ruleOnRequestedModelPinsItsMemberAndHonorsPriority() {
+        var other = RouteSeats.seat("p", "a1", "m-other", AiModel.Tier.HIGH);
+        var low = RouteSeats.seat("p", "a2", "m-low", AiModel.Tier.HIGH);
+        var high = RouteSeats.seat("p", "a3", "m-high", AiModel.Tier.HIGH);
+        var request = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .requestedModel("gpt-test")
+                .rules(List.of(
+                        rule("model:gpt-test", "m-low", 1),
+                        rule("model:gpt-test", "m-high", 5)))
+                .build();
+
+        var plan = engine.route(request, List.of(other, low, high));
+
+        assertThat(plan.selected()).isEqualTo(RouteSelection.of(high));
+    }
+
+    @Test
+    void ruleConditionRequiresEveryCapabilityAndContextClause() {
+        var pinned = RouteSeat.builder()
+                .provider("p")
+                .account("a1")
+                .model("m-pinned")
+                .tier(AiModel.Tier.HIGH)
+                .capabilities(Set.of(AiModel.Capability.TOOLS))
+                .build();
+        var other = RouteSeat.builder()
+                .provider("p")
+                .account("a2")
+                .model("m-other")
+                .tier(AiModel.Tier.HIGH)
+                .capabilities(Set.of(AiModel.Capability.TOOLS))
+                .build();
+        var matching = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .promptTokens(1200)
+                .requiredCapabilities(Set.of(AiModel.Capability.TOOLS))
+                .rules(List.of(rule("capability:TOOLS,context>=1000", "m-pinned", 1)))
+                .build();
+        var shortContext = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .promptTokens(999)
+                .requiredCapabilities(Set.of(AiModel.Capability.TOOLS))
+                .rules(List.of(rule("capability:TOOLS,context>=1000", "m-pinned", 1)))
+                .build();
+        var missingCapability = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .promptTokens(1200)
+                .rules(List.of(rule("capability:TOOLS,context>=1000", "m-pinned", 1)))
+                .build();
+
+        assertThat(engine.route(matching, List.of(other, pinned)).selected())
+                .isEqualTo(RouteSelection.of(pinned));
+        assertThat(engine.route(shortContext, List.of(other, pinned)).selected())
+                .isEqualTo(RouteSelection.of(other));
+        assertThat(engine.route(missingCapability, List.of(other, pinned)).selected())
+                .isEqualTo(RouteSelection.of(other));
+    }
+
+    @Test
+    void ruleProviderConditionMatchesTheRequestedModelProvider() {
+        var first = RouteSeats.seat("p1", "a1", "m1", AiModel.Tier.HIGH);
+        var second = RouteSeats.seat("p2", "a2", "m2", AiModel.Tier.HIGH);
+        var request = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .requestedModel("m2")
+                .rules(List.of(rule("provider:p2", "m2", 1)))
+                .build();
+
+        var plan = engine.route(request, List.of(first, second));
+
+        assertThat(plan.selected()).isEqualTo(RouteSelection.of(second));
+    }
+
+    @Test
+    void sinkGroupsExcludeRecentlyRateLimitedSeats() {
+        var sunk = RouteSeat.builder()
+                .provider("p")
+                .account("a1")
+                .model("m-sunk")
+                .tier(AiModel.Tier.HIGH)
+                .sunk(true)
+                .build();
+        var healthy = RouteSeats.seat("p", "a2", "m-ok", AiModel.Tier.HIGH);
+        var sinkRequest = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .sink(true)
+                .build();
+        var plainRequest = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .build();
+
+        var sinkPlan = engine.route(sinkRequest, List.of(sunk, healthy));
+        var plainPlan = engine.route(plainRequest, List.of(sunk, healthy));
+
+        assertThat(sinkPlan.selected()).isEqualTo(RouteSelection.of(healthy));
+        assertThat(sinkPlan.trace().candidates().getFirst().reason()).isEqualTo(RouteEliminationReason.SUNK);
+        assertThat(plainPlan.selected()).isEqualTo(RouteSelection.of(sunk));
+    }
+
+    @Test
+    void filtersSeatsWhenTheClientRequestsAnExplicitModel() {
+        var first = RouteSeats.seat("p", "a1", "m-first", AiModel.Tier.HIGH);
+        var second = RouteSeats.seat("p", "a2", "m-second", AiModel.Tier.HIGH);
+        var request = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .explicitModel("m-second")
+                .build();
+
+        var plan = engine.route(request, List.of(first, second));
+
+        assertThat(plan.routed()).isTrue();
+        assertThat(plan.selected().model()).isEqualTo("m-second");
+    }
+
+    @Test
+    void reportsNoRouteWhenTheRequestedModelIsNotAmongCandidates() {
+        var seat = RouteSeats.seat("p", "a1", "m-first", AiModel.Tier.HIGH);
+        var request = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .explicitModel("m-missing")
+                .build();
+
+        var plan = engine.route(request, List.of(seat));
+
+        assertThat(plan.routed()).isFalse();
+    }
+
+    @Test
+    void recordsTheMatchedRuleInTheTrace() {
+        var pinned = RouteSeats.seat("p", "a1", "m-pinned", AiModel.Tier.HIGH);
+        var other = RouteSeats.seat("p", "a2", "m-other", AiModel.Tier.HIGH);
+        var rule = new AiRouteGroup.Rule();
+        rule.setName("vision");
+        rule.setCondition("context>=0");
+        rule.setMember("m-pinned");
+        rule.setPriority(5);
+        rule.setAgents(List.of("agent-a"));
+        rule.setTokensGte(100);
+        rule.setImagesGte(2);
+        var request = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .agentName("agent-a")
+                .promptTokens(150)
+                .imageCount(2)
+                .rules(List.of(rule))
+                .build();
+
+        var plan = engine.route(request, List.of(other, pinned));
+
+        assertThat(plan.selected()).isEqualTo(RouteSelection.of(pinned));
+        assertThat(plan.trace().matchedRule()).isNotNull();
+        assertThat(plan.trace().matchedRule().name()).isEqualTo("vision");
+        assertThat(plan.trace().matchedRule().member()).isEqualTo("m-pinned");
+        assertThat(plan.trace().matchedRule().priority()).isEqualTo(5);
+    }
+
+    @Test
+    void ignoresPausedRulesAndStructuredFieldsThatDoNotMatch() {
+        var first = RouteSeats.seat("p", "a1", "m-first", AiModel.Tier.HIGH);
+        var second = RouteSeats.seat("p", "a2", "m-second", AiModel.Tier.HIGH);
+        var paused = rule("capability:CHAT", "m-second", 1);
+        paused.setPause(true);
+        var missingAgent = rule("capability:CHAT", "m-second", 2);
+        missingAgent.setAgents(List.of("agent-missing"));
+        var request = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .agentName("agent-a")
+                .rules(List.of(paused, missingAgent))
+                .build();
+
+        var plan = engine.route(request, List.of(first, second));
+
+        assertThat(plan.selected()).isEqualTo(RouteSelection.of(first));
+        assertThat(plan.trace().matchedRule()).isNull();
+    }
+
+    @Test
+    void useOverridesTheRuleMember() {
+        var pinned = RouteSeats.seat("p", "a1", "m-pinned", AiModel.Tier.HIGH);
+        var other = RouteSeats.seat("p", "a2", "m-other", AiModel.Tier.HIGH);
+        var rule = rule("context>=0", "m-other", 1);
+        rule.setUse("m-pinned");
+        var request = RouteRequest.builder()
+                .routeMode(AiRouteGroup.RouteMode.ORDER)
+                .rules(List.of(rule))
+                .build();
+
+        var plan = engine.route(request, List.of(other, pinned));
+
+        assertThat(plan.selected()).isEqualTo(RouteSelection.of(pinned));
+        assertThat(plan.trace().matchedRule().member()).isEqualTo("m-pinned");
+    }
+
+    @Test
+    void ordersCandidatesByProviderOrderBeforeTheStrategy() {
+        var late = RouteSeat.builder()
+                .provider("p-late")
+                .account("a-late")
+                .model("m-late")
+                .tier(AiModel.Tier.HIGH)
+                .providerOrder(2)
+                .build();
+        var early = RouteSeat.builder()
+                .provider("p-early")
+                .account("a-early")
+                .model("m-early")
+                .tier(AiModel.Tier.HIGH)
+                .providerOrder(1)
+                .build();
+        var request = RouteRequest.builder().routeMode(AiRouteGroup.RouteMode.ORDER).build();
+
+        var plan = engine.route(request, List.of(late, early));
+
+        assertThat(plan.selected()).isEqualTo(RouteSelection.of(early));
+    }
+
+    private static AiRouteGroup.Rule rule(String condition, String member, int priority) {
+        var rule = new AiRouteGroup.Rule();
+        rule.setCondition(condition);
+        rule.setMember(member);
+        rule.setPriority(priority);
+        return rule;
+    }
+
+    @Test
     void emptyCandidatesReturnExhausted() {
         var plan = engine.route(
                 RouteRequest.builder().fallbackReferences(List.of("p/backup")).build(), List.of());

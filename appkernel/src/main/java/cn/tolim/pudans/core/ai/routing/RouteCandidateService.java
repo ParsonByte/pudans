@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -30,6 +31,8 @@ public class RouteCandidateService {
     private static final double DEFAULT_HEALTH = 100;
 
     private final ReactiveExtensionClient client;
+
+    private final SunkRouteRegistry sunkRegistry;
 
     private Clock clock = Clock.systemUTC();
 
@@ -53,12 +56,17 @@ public class RouteCandidateService {
         if (group == null || group.getSpec() == null || !group.getSpec().isEnabled()) {
             return Mono.just(List.of());
         }
-        return Flux.fromIterable(group.getSpec().getMembers())
-                .filter(member -> member != null && member.isEnabled() && StringUtils.hasText(member.getModel()))
+        var members = Flux.fromIterable(group.getSpec().getMembers())
+                .filter(member -> member != null && member.isEnabled() && StringUtils.hasText(member.getModel()));
+        var primary = members
                 .concatMap(member -> expandMember(group, member, capabilities, inputModalities, outputModalities))
-                .concatMapIterable(seats -> seats)
-                .distinct(RouteSeat::key)
-                .collectList();
+                .concatMapIterable(seats -> seats);
+        // provider fallback 候选始终追加在主候选之后，去重后保持低优先
+        var fallback = members
+                .concatMap(member ->
+                        expandProviderFallback(group, member, capabilities, inputModalities, outputModalities))
+                .concatMapIterable(seats -> seats);
+        return Flux.concat(primary, fallback).distinct(RouteSeat::key).collectList();
     }
 
     private Mono<List<RouteSeat>> expandMember(
@@ -71,18 +79,76 @@ public class RouteCandidateService {
                 .filter(model -> eligible(model, capabilities, inputModalities, outputModalities))
                 .flatMap(model -> client.get(AiProvider.class, model.getSpec().getProvider())
                         .filter(RouteCandidateService::isEnabledProvider)
-                        .flatMap(provider -> accountsOf(provider)
-                                .map(account -> seat(group, member, provider, account, model))
+                        .flatMap(provider -> accountsOf(provider, group)
+                                .map(account -> seat(group, member, provider, account, model, null))
                                 .collectList()))
                 .defaultIfEmpty(List.of());
     }
 
-    private Flux<AiProviderAccount> accountsOf(AiProvider provider) {
+    private Mono<List<RouteSeat>> expandProviderFallback(
+            AiRouteGroup group,
+            AiRouteGroup.Member member,
+            Set<AiModel.Capability> capabilities,
+            Set<AiModel.Modality> inputModalities,
+            Set<AiModel.Modality> outputModalities) {
+        return client.get(AiModel.class, member.getModel())
+                .filter(model -> eligible(model, capabilities, inputModalities, outputModalities))
+                .flatMap(model -> client.get(AiProvider.class, model.getSpec().getProvider())
+                        .filter(RouteCandidateService::isEnabledProvider)
+                        .flatMapMany(provider -> fallbackProviderSeats(
+                                group, member, provider, capabilities, inputModalities, outputModalities))
+                        .collectList())
+                .defaultIfEmpty(List.of());
+    }
+
+    private Flux<RouteSeat> fallbackProviderSeats(
+            AiRouteGroup group,
+            AiRouteGroup.Member member,
+            AiProvider provider,
+            Set<AiModel.Capability> capabilities,
+            Set<AiModel.Modality> inputModalities,
+            Set<AiModel.Modality> outputModalities) {
+        var fallback = provider.getSpec() == null ? null : provider.getSpec().getFallback();
+        if (fallback == null || fallback.isEmpty()) {
+            return Flux.empty();
+        }
+        var source = provider.getMetadata().getName();
+        return Flux.fromIterable(fallback)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .filter(name -> !name.equals(source))
+                .concatMap(name -> client.get(AiProvider.class, name)
+                        .filter(RouteCandidateService::isEnabledProvider)
+                        .flatMapMany(fallbackProvider -> {
+                            var options = ListOptions.builder()
+                                    .andQuery(equal(
+                                            "spec.provider",
+                                            fallbackProvider.getMetadata().getName()))
+                                    .build();
+                            return client.listAll(AiModel.class, options, defaultSort())
+                                    .filter(model -> model.getSpec() != null
+                                            && model.getSpec().isEnabled()
+                                            && model.getSpec().getModelType() == AiModel.ModelType.CHAT)
+                                    .filter(model -> eligible(
+                                            model, capabilities, inputModalities, outputModalities))
+                                    .concatMap(model -> accountsOf(fallbackProvider, group)
+                                            .map(account -> seat(
+                                                    group, member, fallbackProvider, account, model, source))
+                                            .collectList()
+                                            .flatMapMany(Flux::fromIterable));
+                        }));
+    }
+
+    private Flux<AiProviderAccount> accountsOf(AiProvider provider, AiRouteGroup group) {
         var options = ListOptions.builder()
                 .andQuery(equal("spec.provider", provider.getMetadata().getName()))
                 .build();
+        var allowed = group.getSpec().getAccounts();
         return client.listAll(AiProviderAccount.class, options, defaultSort())
                 .filter(account -> account.getSpec() != null && account.getSpec().isEnabled())
+                .filter(account -> allowed == null
+                        || allowed.isEmpty()
+                        || allowed.contains(account.getMetadata().getName()))
                 .sort(Comparator.comparingInt(account -> account.getSpec().getPriority()));
     }
 
@@ -91,7 +157,8 @@ public class RouteCandidateService {
             AiRouteGroup.Member member,
             AiProvider provider,
             AiProviderAccount account,
-            AiModel model) {
+            AiModel model,
+            @Nullable String fallbackSource) {
         var modelSpec = model.getSpec();
         var accountSpec = account.getSpec();
         var quota = accountSpec.getQuota();
@@ -103,6 +170,8 @@ public class RouteCandidateService {
                 .account(account.getMetadata().getName())
                 .model(model.getMetadata().getName())
                 .tier(resolveTier(member, modelSpec))
+                .providerOrder(provider.getSpec().getOrder())
+                .fallbackSource(fallbackSource)
                 .weight(Math.max(1, member.getWeight()) * Math.max(1, accountSpec.getWeight()))
                 .free(provider.getSpec().isFree())
                 .freePlan(accountSpec.isFreePlan())
@@ -112,6 +181,7 @@ public class RouteCandidateService {
                 .pace(pace(quotaLimit, quotaUsed, resetsAt))
                 .cost(cost(modelSpec))
                 .spent(isSpent(quotaLimit, quotaUsed, accountSpec))
+                .sunk(sunkRegistry.isSunk(provider.getMetadata().getName(), account.getMetadata().getName()))
                 .enabled(true)
                 .healthScore(health(provider, account))
                 .capabilities(modelSpec.effectiveCapabilities())

@@ -14,6 +14,7 @@ import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,11 +32,15 @@ class RouteCandidateServiceTest {
     @Mock
     ReactiveExtensionClient client;
 
+    private SunkRouteRegistry sunkRegistry;
+
     private RouteCandidateService service;
 
     @BeforeEach
     void setUp() {
-        service = new RouteCandidateService(client);
+        sunkRegistry = new SunkRouteRegistry();
+        sunkRegistry.setClock(Clock.fixed(NOW, ZoneOffset.UTC));
+        service = new RouteCandidateService(client, sunkRegistry);
         service.setClock(Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
@@ -112,6 +117,26 @@ class RouteCandidateServiceTest {
     }
 
     @Test
+    void marksRecentlyRateLimitedAccountsAsSunkUntilTheWindowExpires() {
+        var group = group(member("model-a"));
+        when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model("model-a", "provider-a")));
+        when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider("provider-a", true)));
+        when(client.listAll(eq(AiProviderAccount.class), any(), any()))
+                .thenReturn(Flux.just(account("account-a", 10)));
+        sunkRegistry.markSunk("provider-a", "account-a");
+
+        StepVerifier.create(service.expand(group))
+                .assertNext(seats -> assertThat(seats.getFirst().isSunk()).isTrue())
+                .verifyComplete();
+
+        sunkRegistry.setClock(Clock.fixed(NOW.plusSeconds(61), ZoneOffset.UTC));
+
+        StepVerifier.create(service.expand(group))
+                .assertNext(seats -> assertThat(seats.getFirst().isSunk()).isFalse())
+                .verifyComplete();
+    }
+
+    @Test
     void deduplicatesRepeatedMembers() {
         var group = group(member("model-a"), member("model-a"));
         when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model("model-a", "provider-a")));
@@ -121,6 +146,53 @@ class RouteCandidateServiceTest {
 
         StepVerifier.create(service.expand(group))
                 .assertNext(seats -> assertThat(seats).hasSize(1))
+                .verifyComplete();
+    }
+
+    @Test
+    void filtersAccountsByTheRouteGroupWhitelist() {
+        var group = group(member("model-a"));
+        group.getSpec().setAccounts(List.of("account-b"));
+        when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model("model-a", "provider-a")));
+        when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider("provider-a", true)));
+        when(client.listAll(eq(AiProviderAccount.class), any(), any()))
+                .thenReturn(Flux.just(account("account-a", 0), account("account-b", 1)));
+
+        StepVerifier.create(service.expand(group))
+                .assertNext(seats -> {
+                    assertThat(seats).hasSize(1);
+                    assertThat(seats.getFirst().getAccount()).isEqualTo("account-b");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void appendsProviderFallbackSeatsAfterThePrimarySeats() {
+        var group = group(member("model-a"));
+        var primary = provider("provider-a", true);
+        primary.getSpec().setOrder(1);
+        primary.getSpec().setFallback(List.of("provider-b"));
+        var fallback = provider("provider-b", true);
+        fallback.getSpec().setOrder(5);
+        when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model("model-a", "provider-a")));
+        when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(primary));
+        when(client.get(AiProvider.class, "provider-b")).thenReturn(Mono.just(fallback));
+        when(client.listAll(eq(AiProviderAccount.class), any(), any()))
+                .thenReturn(Flux.just(account("account-a", 0)))
+                .thenReturn(Flux.just(account("account-b", 0)));
+        when(client.listAll(eq(AiModel.class), any(), any()))
+                .thenReturn(Flux.just(model("model-b", "provider-b")));
+
+        StepVerifier.create(service.expand(group))
+                .assertNext(seats -> {
+                    assertThat(seats).hasSize(2);
+                    assertThat(seats.getFirst().getProvider()).isEqualTo("provider-a");
+                    assertThat(seats.getFirst().getProviderOrder()).isEqualTo(1);
+                    assertThat(seats.get(1).getProvider()).isEqualTo("provider-b");
+                    assertThat(seats.get(1).getAccount()).isEqualTo("account-b");
+                    assertThat(seats.get(1).getFallbackSource()).isEqualTo("provider-a");
+                    assertThat(seats.get(1).getProviderOrder()).isEqualTo(5);
+                })
                 .verifyComplete();
     }
 

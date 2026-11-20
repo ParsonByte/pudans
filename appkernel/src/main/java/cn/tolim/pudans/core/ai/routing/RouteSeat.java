@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 
 @Value
 @Builder
@@ -18,6 +19,12 @@ public class RouteSeat {
     String model;
 
     AiModel.Tier tier;
+
+    @Builder.Default
+    int providerOrder = 0;
+
+    @Nullable
+    String fallbackSource;
 
     @Builder.Default
     int weight = 1;
@@ -51,6 +58,9 @@ public class RouteSeat {
 
     @Builder.Default
     boolean spent = false;
+
+    @Builder.Default
+    boolean sunk = false;
 
     @Builder.Default
     boolean enabled = true;

@@ -9,6 +9,7 @@ spec:
   displayName: 进阶路由组
   routeMode: ORDER
   defaultTier: AUTO
+  parentMode: PRO
   qualityThreshold: 0.6
   affinity: AUTO
   fallback: []

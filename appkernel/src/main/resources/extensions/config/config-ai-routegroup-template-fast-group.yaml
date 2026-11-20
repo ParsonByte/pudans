@@ -9,6 +9,7 @@ spec:
   displayName: 快速路由组
   routeMode: CHEAP
   defaultTier: CHEAP
+  parentMode: FAST
   qualityThreshold: 0.6
   affinity: AUTO
   fallback: []

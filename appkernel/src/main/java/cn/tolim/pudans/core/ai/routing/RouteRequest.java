@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Value;
+import org.jspecify.annotations.Nullable;
 
 @Value
 @Builder
@@ -14,6 +15,33 @@ public class RouteRequest {
 
     @Builder.Default
     AiRouteGroup.RouteMode routeMode = AiRouteGroup.RouteMode.SMART;
+
+    // 客户端显式请求的模型名，用于规则条件匹配。
+    String requestedModel;
+
+    @Nullable
+    String agentName;
+
+    @Builder.Default
+    int imageCount = 0;
+
+    // 客户端强制选择的模型，路由只在匹配该模型的候选内选择。
+    String explicitModel;
+
+    @Builder.Default
+    String contextMode = "SMALLEST";
+
+    @Builder.Default
+    int patienceSeconds = 60;
+
+    @Builder.Default
+    int firstTokenSeconds = 0;
+
+    @Builder.Default
+    boolean sink = false;
+
+    @Builder.Default
+    List<AiRouteGroup.Rule> rules = List.of();
 
     AiModel.Tier requestedTier;
 

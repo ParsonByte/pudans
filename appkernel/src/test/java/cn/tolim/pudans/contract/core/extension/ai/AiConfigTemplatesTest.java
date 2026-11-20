@@ -32,6 +32,12 @@ class AiConfigTemplatesTest {
         assertThat(setting.getSpec().getDefaults().getAgent()).isEqualTo("default");
         assertThat(setting.getSpec().getGateway().getSupportedProtocols())
                 .containsExactly(AiProvider.Protocol.OPENAI_CHAT, AiProvider.Protocol.ANTHROPIC);
+        assertThat(setting.getSpec().getGateway().isRateLimitEnabled()).isTrue();
+        assertThat(setting.getSpec().getGateway().getMaxRetries()).isEqualTo(2);
+        assertThat(setting.getSpec().getGateway().getRetryBackoffMs()).isEqualTo(200);
+        assertThat(setting.getSpec().getGateway().getRetryOnStatuses())
+                .containsExactly(429, 500, 502, 503, 504);
+        assertThat(setting.getSpec().getGateway().getRequestTimeoutSeconds()).isEqualTo(120);
         assertThat(setting.getSpec().getEmbedding().getDimension()).isEqualTo(1536);
         assertThat(setting.getSpec().getMemory().getOrgPromotionThreshold()).isEqualTo(3);
 
@@ -49,6 +55,17 @@ class AiConfigTemplatesTest {
                 byName.get("AiRouteGroup|default").getData(), AiRouteGroup.class);
         assertThat(defaultGroup.getSpec().isDefault()).isTrue();
         assertThat(defaultGroup.getSpec().getRouteMode()).isEqualTo(AiRouteGroup.RouteMode.ORDER);
+        assertThat(defaultGroup.effectiveParentMode()).isEqualTo(AiRouteGroup.ParentMode.NONE);
+
+        var fastGroup = Unstructured.OBJECT_MAPPER.convertValue(
+                byName.get("AiRouteGroup|fast-group").getData(), AiRouteGroup.class);
+        assertThat(fastGroup.getSpec().getParentMode()).isEqualTo(AiRouteGroup.ParentMode.FAST);
+        assertThat(fastGroup.effectiveParentMode()).isEqualTo(AiRouteGroup.ParentMode.FAST);
+
+        var proGroup = Unstructured.OBJECT_MAPPER.convertValue(
+                byName.get("AiRouteGroup|pro-group").getData(), AiRouteGroup.class);
+        assertThat(proGroup.getSpec().getParentMode()).isEqualTo(AiRouteGroup.ParentMode.PRO);
+        assertThat(proGroup.effectiveParentMode()).isEqualTo(AiRouteGroup.ParentMode.PRO);
 
         var team = Unstructured.OBJECT_MAPPER.convertValue(
                 byName.get("AiTeam|default").getData(), AiTeam.class);

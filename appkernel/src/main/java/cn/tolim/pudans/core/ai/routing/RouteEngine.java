@@ -11,11 +11,15 @@ import cn.tolim.pudans.core.ai.routing.classifier.ComplexityVerdict;
 import cn.tolim.pudans.core.ai.routing.strategy.RouteStrategyContext;
 import cn.tolim.pudans.core.ai.routing.strategy.RouteStrategyRegistry;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
+import org.springframework.util.StringUtils;
 
 @Slf4j
 public class RouteEngine {
@@ -52,19 +56,24 @@ public class RouteEngine {
                     seat.getTier(),
                     reason == null,
                     reason,
-                    effectiveHealth(seat)));
+                    effectiveHealth(seat),
+                    seat.getFallbackSource()));
             if (reason == null) {
                 eligible.add(seat);
             }
         }
+        var matchedRule = matchedRule(request, eligible, tier.tier());
         var strategy = strategies.strategyFor(routeModeOf(request));
-        var ordered = strategy.sort(eligible, new RouteStrategyContext(request.getManualPick()));
+        var ordered = strategy.sort(orderByProvider(eligible), new RouteStrategyContext(request.getManualPick()));
         ordered = preferResolvedTier(ordered, tier.tier());
+        ordered = preferContext(ordered, request.getContextMode());
+        ordered = filterExplicitModel(ordered, request);
         var affinity = affinityOf(request);
         if (affinity == AiProvider.Affinity.STRICT && request.getPreviousSelection() != null) {
-            return strictPlan(request, tier, traceCandidates, ordered);
+            return strictPlan(request, tier, traceCandidates, ordered, matchedRule);
         }
         ordered = applyAffinity(request, ordered, affinity);
+        ordered = preferRule(ordered, matchedRule);
         if (ordered.isEmpty()) {
             return new RoutePlan(
                     null,
@@ -76,7 +85,8 @@ public class RouteEngine {
                             traceCandidates,
                             null,
                             RouteOutcome.EXHAUSTED,
-                            request.getFallbackReferences()));
+                            request.getFallbackReferences(),
+                            matchedRule));
         }
         var selected = ordered.get(0);
         var fallbackSeats = ordered.stream().skip(1).map(RouteSelection::of).toList();
@@ -91,14 +101,24 @@ public class RouteEngine {
                         traceCandidates,
                         RouteSelection.of(selected),
                         RouteOutcome.SELECTED,
-                        fallback));
+                        fallback,
+                        matchedRule));
+    }
+
+    // 供应商 order 与 fallback 标记在策略排序前确定稳定次序
+    private static List<RouteSeat> orderByProvider(List<RouteSeat> seats) {
+        var ordered = new ArrayList<>(seats);
+        ordered.sort(Comparator.comparingInt(RouteSeat::getProviderOrder)
+                .thenComparingInt(seat -> seat.getFallbackSource() == null ? 0 : 1));
+        return ordered;
     }
 
     private RoutePlan strictPlan(
             RouteRequest request,
             TierResolution tier,
             List<RouteTrace.Candidate> traceCandidates,
-            List<RouteSeat> ordered) {
+            List<RouteSeat> ordered,
+            RouteTrace.@Nullable MatchedRule matchedRule) {
         var previous = request.getPreviousSelection();
         var pinned = ordered.stream().filter(seat -> matchesAccount(seat, previous)).toList();
         if (pinned.isEmpty()) {
@@ -112,7 +132,8 @@ public class RouteEngine {
                             traceCandidates,
                             null,
                             RouteOutcome.STRICT_PINNED_UNAVAILABLE,
-                            List.of()));
+                            List.of(),
+                            matchedRule));
         }
         var exactModel = pinned.stream()
                 .filter(seat -> Objects.equals(seat.getModel(), previous.model()))
@@ -122,7 +143,7 @@ public class RouteEngine {
                 selected,
                 List.of(),
                 List.of(),
-                trace(request, tier, traceCandidates, selected, RouteOutcome.SELECTED, List.of()));
+                trace(request, tier, traceCandidates, selected, RouteOutcome.SELECTED, List.of(), matchedRule));
     }
 
     private List<RouteSeat> applyAffinity(
@@ -248,6 +269,9 @@ public class RouteEngine {
         if (seat.isSpent()) {
             return RouteEliminationReason.SPENT;
         }
+        if (request.isSink() && seat.isSunk()) {
+            return RouteEliminationReason.SUNK;
+        }
         return null;
     }
 
@@ -305,6 +329,179 @@ public class RouteEngine {
         return preferred;
     }
 
+    private static List<RouteSeat> filterExplicitModel(List<RouteSeat> seats, RouteRequest request) {
+        var explicit = request.getExplicitModel();
+        if (explicit == null || explicit.isBlank()) {
+            return seats;
+        }
+        return seats.stream().filter(seat -> seat.matches(explicit)).toList();
+    }
+
+    private static List<RouteSeat> preferContext(List<RouteSeat> seats, @Nullable String contextMode) {
+        if (seats.size() < 2 || contextMode == null) {
+            return seats;
+        }
+        Comparator<RouteSeat> comparator = switch (contextMode.strip().toUpperCase(Locale.ROOT)) {
+            case "SMALLEST" -> Comparator.comparingInt(RouteEngine::smallestWindow);
+            case "LARGEST" -> Comparator.comparingInt(RouteSeat::getContextWindow).reversed();
+            default -> null;
+        };
+        if (comparator == null) {
+            return seats;
+        }
+        var ordered = new ArrayList<>(seats);
+        ordered.sort(comparator);
+        return ordered;
+    }
+
+    private static int smallestWindow(RouteSeat seat) {
+        var window = seat.getContextWindow();
+        return window <= 0 ? Integer.MAX_VALUE : window;
+    }
+
+    private static List<RouteSeat> preferRule(
+            List<RouteSeat> ordered, RouteTrace.@Nullable MatchedRule matchedRule) {
+        if (matchedRule == null || matchedRule.member() == null) {
+            return ordered;
+        }
+        var member = matchedRule.member();
+        var preferred = new ArrayList<RouteSeat>();
+        var rest = new ArrayList<RouteSeat>();
+        for (var seat : ordered) {
+            if (seat.matches(member)) {
+                preferred.add(seat);
+            } else {
+                rest.add(seat);
+            }
+        }
+        if (preferred.isEmpty()) {
+            return ordered;
+        }
+        preferred.addAll(rest);
+        return preferred;
+    }
+
+    private static RouteTrace.@Nullable MatchedRule matchedRule(
+            RouteRequest request, List<RouteSeat> candidates, AiModel.Tier resolvedTier) {
+        var rules = request.getRules();
+        if (rules == null || rules.isEmpty()) {
+            return null;
+        }
+        // 高优先级规则先匹配，同优先级保持配置顺序
+        var ordered = rules.stream()
+                .filter(Objects::nonNull)
+                .sorted(Comparator.comparingInt(AiRouteGroup.Rule::getPriority).reversed())
+                .toList();
+        for (var rule : ordered) {
+            if (rule.isPause()) {
+                continue;
+            }
+            var member = StringUtils.hasText(rule.getUse()) ? rule.getUse() : rule.getMember();
+            if (!StringUtils.hasText(member)) {
+                continue;
+            }
+            if (matchesRule(rule, request, candidates, resolvedTier)) {
+                return new RouteTrace.MatchedRule(
+                        rule.getName(), rule.getCondition(), member, rule.getPriority());
+            }
+        }
+        return null;
+    }
+
+    private static boolean matchesRule(
+            AiRouteGroup.Rule rule, RouteRequest request, List<RouteSeat> candidates, AiModel.Tier resolvedTier) {
+        if (!matchesCondition(rule.getCondition(), request, candidates, resolvedTier, rule)) {
+            return false;
+        }
+        var agents = rule.getAgents();
+        if (agents != null
+                && !agents.isEmpty()
+                && (request.getAgentName() == null
+                        || agents.stream().noneMatch(agent -> equalsText(request.getAgentName(), agent)))) {
+            return false;
+        }
+        if (rule.getTokensGte() != null && request.getPromptTokens() < rule.getTokensGte()) {
+            return false;
+        }
+        return rule.getImagesGte() == null || request.getImageCount() >= rule.getImagesGte();
+    }
+
+    private static boolean matchesCondition(
+            @Nullable String condition,
+            RouteRequest request,
+            List<RouteSeat> candidates,
+            AiModel.Tier resolvedTier,
+            AiRouteGroup.Rule rule) {
+        if (condition == null || condition.isBlank()) {
+            return hasStructuredSelectors(rule);
+        }
+        for (var clause : condition.split("[,;]")) {
+            var trimmed = clause.strip();
+            if (!trimmed.isEmpty() && !matchesClause(trimmed, request, candidates, resolvedTier)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean hasStructuredSelectors(AiRouteGroup.Rule rule) {
+        return (rule.getAgents() != null && !rule.getAgents().isEmpty())
+                || rule.getTokensGte() != null
+                || rule.getImagesGte() != null;
+    }
+
+    private static boolean matchesClause(
+            String clause, RouteRequest request, List<RouteSeat> candidates, AiModel.Tier resolvedTier) {
+        if (clause.toLowerCase(Locale.ROOT).startsWith("context>=")) {
+            var threshold = parseInteger(clause.substring("context>=".length()).strip());
+            return threshold != null && request.getPromptTokens() >= threshold;
+        }
+        var separator = clause.indexOf(':');
+        if (separator <= 0 || separator == clause.length() - 1) {
+            return false;
+        }
+        var key = clause.substring(0, separator).strip().toLowerCase(Locale.ROOT);
+        var value = clause.substring(separator + 1).strip();
+        return switch (key) {
+            case "model" -> equalsText(request.getRequestedModel(), value);
+            case "tier" -> resolvedTier != null && resolvedTier.name().equalsIgnoreCase(value);
+            case "capability" -> matchesCapability(request.getRequiredCapabilities(), value);
+            case "provider" -> matchesProvider(request, candidates, value);
+            default -> false;
+        };
+    }
+
+    private static boolean equalsText(@Nullable String left, String right) {
+        return left != null && left.equalsIgnoreCase(right);
+    }
+
+    private static boolean matchesCapability(Set<AiModel.Capability> capabilities, String value) {
+        return capabilities != null
+                && capabilities.stream().anyMatch(capability -> capability.name().equalsIgnoreCase(value));
+    }
+
+    private static boolean matchesProvider(RouteRequest request, List<RouteSeat> candidates, String provider) {
+        var previous = request.getPreviousSelection();
+        if (previous != null && provider.equalsIgnoreCase(previous.provider())) {
+            return true;
+        }
+        var requested = request.getRequestedModel();
+        if (requested == null || requested.isBlank()) {
+            return false;
+        }
+        return candidates.stream()
+                .anyMatch(seat -> provider.equalsIgnoreCase(seat.getProvider()) && seat.matches(requested));
+    }
+
+    private static @Nullable Integer parseInteger(String value) {
+        try {
+            return Integer.valueOf(value);
+        } catch (NumberFormatException error) {
+            log.warn("路由规则条件无法解析整数：{}", value, error);
+            return null;
+        }
+    }
+
     private static List<String> fallbackReferences(List<RouteSelection> seats, List<String> configured) {
         var references = new ArrayList<String>();
         if (configured != null) {
@@ -322,7 +519,8 @@ public class RouteEngine {
             List<RouteTrace.Candidate> candidates,
             RouteSelection selected,
             RouteOutcome outcome,
-            List<String> fallback) {
+            List<String> fallback,
+            RouteTrace.@Nullable MatchedRule matchedRule) {
         return new RouteTrace(
                 routeModeOf(request),
                 request.getRequestedTier(),
@@ -332,7 +530,13 @@ public class RouteEngine {
                 candidates,
                 selected,
                 outcome,
-                fallback);
+                fallback,
+                matchedRule,
+                List.of(),
+                List.of(),
+                null,
+                null,
+                null);
     }
 
     private static AiRouteGroup.RouteMode routeModeOf(RouteRequest request) {

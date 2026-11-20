@@ -26,8 +26,29 @@ public class AiRouteGroup extends AbstractExtension {
     public static final String GROUP = "pudans.tolim.cn";
     public static final String VERSION = "v1alpha1";
     public static final String KIND = "AiRouteGroup";
+    public static final String BUILTIN_FAST_GROUP = "fast-group";
+    public static final String BUILTIN_PRO_GROUP = "pro-group";
 
     private Spec spec = new Spec();
+
+    // 内置固定组的父模式由名称强制决定，配置值不得覆盖。
+    public ParentMode effectiveParentMode() {
+        var name = getMetadata() == null ? null : getMetadata().getName();
+        if (BUILTIN_FAST_GROUP.equals(name)) {
+            return ParentMode.FAST;
+        }
+        if (BUILTIN_PRO_GROUP.equals(name)) {
+            return ParentMode.PRO;
+        }
+        var configured = spec == null ? null : spec.getParentMode();
+        return configured == null ? ParentMode.NONE : configured;
+    }
+
+    public enum ParentMode {
+        FAST,
+        PRO,
+        NONE
+    }
 
     public enum RouteMode {
         SMART,
@@ -56,11 +77,17 @@ public class AiRouteGroup extends AbstractExtension {
 
         private AiModel.Tier defaultTier;
 
+        private ParentMode parentMode = ParentMode.NONE;
+
         private Double qualityThreshold = 0.6;
 
         private AiProvider.Affinity affinity = AiProvider.Affinity.AUTO;
 
         private List<String> fallback = new ArrayList<>();
+
+        private List<String> accounts = new ArrayList<>();
+
+        private int order;
 
         private Integer patienceSeconds = 60;
 
@@ -109,5 +136,15 @@ public class AiRouteGroup extends AbstractExtension {
         private String member;
 
         private int priority;
+
+        private List<String> agents = new ArrayList<>();
+
+        private Integer tokensGte;
+
+        private Integer imagesGte;
+
+        private boolean pause;
+
+        private String use;
     }
 }
