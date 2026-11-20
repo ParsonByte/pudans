@@ -17,7 +17,9 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -384,43 +386,200 @@ public class AuditLogEndpoint implements CustomEndpoint {
         var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
         var summary = Boolean.parseBoolean(request.queryParam("summary").orElse("false"));
-        var query = auditQuery(request, null, MAX_JOURNEY_RECORDS, false);
+        var scan = new JourneyScan((int) Math.min(MAX_JOURNEY_RECORDS, (long) page * size));
         return auditService
-                .query(query)
-                .filter(record -> StringUtils.hasText(record.getUid())
-                        && !"anonymous".equalsIgnoreCase(record.getUid())
-                        && !"unknown".equalsIgnoreCase(record.getUid()))
-                .collectList()
-                .map(records -> toJourneyPage(records, page, size, !summary))
+                .query(auditQuery(request, null, MAX_JOURNEY_RECORDS + 1, false))
+                .filter(AuditLogEndpoint::isJourneyUid)
+                .reduce(scan, (current, record) -> current.add(record))
+                .flatMap(current -> !summary && current.needsDetailRefill(page, size)
+                        ? refillJourneyDetails(request, current, page, size)
+                        : Mono.just(current.toPage(page, size, !summary)))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
-    static AuditJourneyPage toJourneyPage(List<AuditRecord> records, int page, int size) {
-        return toJourneyPage(records, page, size, true);
+    private Mono<AuditJourneyPage> refillJourneyDetails(
+            ServerRequest request, JourneyScan scan, int page, int size) {
+        // 首页条目缺少明细时补查一次，保证返回的足迹仍带完整步骤。
+        var uids = scan.missingDetailUids(page, size);
+        var limits = scan.recordCounts(uids);
+        return auditService
+                .query(auditQuery(request, null, MAX_JOURNEY_RECORDS + 1, false))
+                .filter(record -> uids.contains(record.getUid()))
+                .take(MAX_JOURNEY_RECORDS)
+                .collect(Collectors.groupingBy(AuditRecord::getUid))
+                .doOnNext(grouped -> scan.attachDetails(grouped, limits))
+                .then(Mono.fromSupplier(() -> scan.toPage(page, size, true)));
     }
 
-    static AuditJourneyPage toJourneyPage(
-            List<AuditRecord> records, int page, int size, boolean includeSteps) {
-        var byUid = records.stream().collect(Collectors.groupingBy(AuditRecord::getUid));
-        var journeys = byUid.entrySet().stream()
-                .map(entry -> toJourney(entry.getKey(), entry.getValue()))
-                .map(journey -> includeSteps ? journey : journey.withoutSteps())
-                .sorted(Comparator.comparing(AuditJourney::end).reversed())
-                .toList();
-        var total = journeys.size();
-        var from = (int) Math.min(total, (long) (page - 1) * size);
-        var to = Math.min(total, from + size);
-        var pageViews = journeys.stream().mapToLong(AuditJourney::pageCount).sum();
-        var actionCount = journeys.stream().mapToLong(AuditJourney::actionCount).sum();
-        return new AuditJourneyPage(
-                journeys.subList(from, to),
-                total,
-                page,
-                size,
-                records.size() >= MAX_JOURNEY_RECORDS,
-                pageViews,
-                actionCount);
+    private static boolean isJourneyUid(AuditRecord record) {
+        return StringUtils.hasText(record.getUid())
+                && !"anonymous".equalsIgnoreCase(record.getUid())
+                && !"unknown".equalsIgnoreCase(record.getUid());
     }
+
+    private static final class JourneyScan {
+
+        private final int candidateLimit;
+        // 只为首页窗口内的用户保留明细记录，其余用户仅累计计数。
+        private final Map<String, UidAggregate> aggregates = new LinkedHashMap<>();
+        private int accepted;
+        private boolean truncated;
+
+        private JourneyScan(int candidateLimit) {
+            this.candidateLimit = candidateLimit;
+        }
+
+        private JourneyScan add(AuditRecord record) {
+            if (accepted >= MAX_JOURNEY_RECORDS) {
+                truncated = true;
+                return this;
+            }
+            accepted++;
+            var aggregate = aggregates.get(record.getUid());
+            if (aggregate == null) {
+                aggregate = new UidAggregate(aggregates.size() < candidateLimit);
+                aggregates.put(record.getUid(), aggregate);
+            }
+            aggregate.accept(record);
+            return this;
+        }
+
+        private boolean needsDetailRefill(int page, int size) {
+            return pageAggregates(page, size).stream()
+                    .anyMatch(entry -> !entry.getValue().hasDetails());
+        }
+
+        private List<String> missingDetailUids(int page, int size) {
+            return pageAggregates(page, size).stream()
+                    .filter(entry -> !entry.getValue().hasDetails())
+                    .map(Map.Entry::getKey)
+                    .toList();
+        }
+
+        private Map<String, Long> recordCounts(List<String> uids) {
+            return uids.stream()
+                    .collect(Collectors.toMap(uid -> uid, uid -> aggregates.get(uid).recordCount()));
+        }
+
+        private void attachDetails(Map<String, List<AuditRecord>> grouped, Map<String, Long> limits) {
+            for (var entry : grouped.entrySet()) {
+                var aggregate = aggregates.get(entry.getKey());
+                if (aggregate != null) {
+                    aggregate.attach(entry.getValue(), limits.getOrDefault(entry.getKey(), 0L));
+                }
+            }
+        }
+
+        private AuditJourneyPage toPage(int page, int size, boolean includeSteps) {
+            var items = pageAggregates(page, size).stream()
+                    .map(entry -> {
+                        var journey = toJourney(entry.getKey(), entry.getValue().details());
+                        return includeSteps ? journey : journey.withoutSteps();
+                    })
+                    .toList();
+            var pageViews = aggregates.values().stream().mapToLong(UidAggregate::pageCount).sum();
+            var actionCount = aggregates.values().stream().mapToLong(UidAggregate::actionCount).sum();
+            return new AuditJourneyPage(
+                    items, aggregates.size(), page, size, truncated, pageViews, actionCount);
+        }
+
+        private List<Map.Entry<String, UidAggregate>> pageAggregates(int page, int size) {
+            var ordered = aggregates.entrySet().stream()
+                    .sorted(Comparator.comparing(
+                                    (Map.Entry<String, UidAggregate> entry) -> entry.getValue().end())
+                            .reversed())
+                    .toList();
+            var from = (int) Math.min(ordered.size(), (long) (page - 1) * size);
+            var to = Math.min(ordered.size(), from + size);
+            return ordered.subList(from, to);
+        }
+    }
+
+    private static final class UidAggregate {
+
+        private final List<PageMark> pages = new ArrayList<>();
+        private List<AuditRecord> details;
+        private long recordCount;
+        private long actionCount;
+        private Instant end = Instant.EPOCH;
+
+        private UidAggregate(boolean retainDetails) {
+            this.details = retainDetails ? new ArrayList<>() : null;
+        }
+
+        private void accept(AuditRecord record) {
+            recordCount++;
+            var timestamp = record.getTimestamp() == null ? Instant.EPOCH : record.getTimestamp();
+            if (timestamp.isAfter(end)) {
+                end = timestamp;
+            }
+            if (isPage(record)) {
+                pages.add(new PageMark(
+                        pagePath(record),
+                        traceStart(record),
+                        record.getStepIndex(),
+                        record.getMetadata().getName()));
+            } else {
+                actionCount++;
+            }
+            if (details != null) {
+                details.add(record);
+            }
+        }
+
+        private void attach(List<AuditRecord> records, long limit) {
+            details = records.stream()
+                    .sorted(Comparator.comparing(
+                                    (AuditRecord record) -> record.getMetadata().getName())
+                            .reversed())
+                    .limit(Math.max(0L, limit))
+                    .toList();
+        }
+
+        private boolean hasDetails() {
+            return details != null;
+        }
+
+        private List<AuditRecord> details() {
+            return details == null ? List.of() : details;
+        }
+
+        private long recordCount() {
+            return recordCount;
+        }
+
+        private long actionCount() {
+            return actionCount;
+        }
+
+        private Instant end() {
+            return end;
+        }
+
+        private long pageCount() {
+            var ordered = pages.stream().sorted(PAGE_MARK_ORDER).toList();
+            var count = 0L;
+            PageMark previous = null;
+            for (var mark : ordered) {
+                if (previous != null
+                        && Objects.equals(previous.path(), mark.path())
+                        && mark.traceStart().toEpochMilli() - previous.traceStart().toEpochMilli()
+                                <= PAGE_DUPLICATE_WINDOW_MS) {
+                    continue;
+                }
+                count++;
+                previous = mark;
+            }
+            return count;
+        }
+    }
+
+    private record PageMark(String path, Instant traceStart, Integer stepIndex, String name) {}
+
+    private static final Comparator<PageMark> PAGE_MARK_ORDER = Comparator
+            .comparing(PageMark::traceStart)
+            .thenComparing(mark -> mark.stepIndex() == null ? Integer.MAX_VALUE : mark.stepIndex())
+            .thenComparing(PageMark::name);
 
     static AuditJourney toJourney(String uid, List<AuditRecord> records) {        var sorted = records.stream()
                 .sorted(Comparator.comparing(AuditLogEndpoint::traceStart)
