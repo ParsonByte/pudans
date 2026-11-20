@@ -5,7 +5,9 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import cn.tolim.pudans.contract.extension.AbstractExtension;
 import cn.tolim.pudans.contract.extension.GVK;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -63,6 +65,50 @@ public class AiAgent extends AbstractExtension {
 
         private String defaultChatMode;
 
+        private List<String> skills = new ArrayList<>();
+
+        private List<String> mcpServers = new ArrayList<>();
+
+        private List<String> hooks = new ArrayList<>();
+
+        private List<String> environmentVariables = new ArrayList<>();
+
+        private List<String> subagents = new ArrayList<>();
+
+        private List<String> slashCommands = new ArrayList<>();
+
+        private List<String> instructions = new ArrayList<>();
+
+        private Runtime runtime = new Runtime();
+
         private Map<String, Object> metadata = new LinkedHashMap<>();
+    }
+
+    public enum RuntimeProvider {
+        NONE,
+        ALIYUN,
+        TENCENT
+    }
+
+    @Data
+    public static class Runtime {
+
+        private RuntimeProvider provider = RuntimeProvider.NONE;
+
+        private String image;
+
+        private String entrypoint;
+
+        private Double cpu = 1.0;
+
+        private Integer memoryMb = 1024;
+
+        private Integer timeoutSeconds = 3600;
+
+        private boolean autoStart;
+
+        private boolean networkEnabled = true;
+
+        private String workdir = "/workspace";
     }
 }

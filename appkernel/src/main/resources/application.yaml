@@ -80,6 +80,15 @@ pudans:
       injection-enabled: true
     embedding:
       dimension: 1536
+    runtime:
+      gateway-url: ${PUDANS_GATEWAY_URL:http://127.0.0.1:8090/apis/api.pudans.tolim.cn/v1alpha1/aigateway}
+      log-buffer-size: 500
+      lock-seconds: 60
+      request-timeout-seconds: 60
+      log-poll-seconds: 2
+      log-file: ${PUDANS_RUNTIME_LOG_FILE:/tmp/pudans-agent.log}
+      tencent-data-plane-template: ${PUDANS_TENCENT_SANDBOX_DATA_PLANE:https://49983-%s.%s.tencentags.com}
+      tencent-api-version: 2025-09-20
   storage:
     cleanup-interval-seconds: ${PUDANS_STORAGE_CLEANUP_INTERVAL:300}
   webhook:

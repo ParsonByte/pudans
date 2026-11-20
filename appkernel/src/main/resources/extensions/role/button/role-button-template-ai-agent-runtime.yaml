@@ -1,0 +1,224 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-create-ai-agent-runtime
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-agent-runtime" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.agent-runtime"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "新增沙箱提供方"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建阿里云或腾讯云沙箱提供方配置。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-agent-runtime:create"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiagents"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aisandboxproviders"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-update-ai-agent-runtime
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-agent-runtime" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.agent-runtime"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "update"
+    rbac.authorization.pudans.tolim.cn/ui-label: "编辑运行时配置"
+    rbac.authorization.pudans.tolim.cn/ui-description: "编辑 Agent 沙箱参数或沙箱提供方配置。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-agent-runtime:update"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiagents"
+    verbs:
+      - "update"
+      - "patch"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aisandboxproviders"
+    verbs:
+      - "update"
+      - "patch"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-delete-ai-agent-runtime
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-agent-runtime" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.agent-runtime"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "delete"
+    rbac.authorization.pudans.tolim.cn/ui-label: "删除运行时或沙箱提供方"
+    rbac.authorization.pudans.tolim.cn/ui-description: "删除 Agent 运行时记录或沙箱提供方配置。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-agent-runtime:delete"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiagents"
+      - "airuntimes"
+      - "aisandboxproviders"
+    verbs:
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-start-ai-agent-runtime
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-agent-runtime" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.agent-runtime"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "toggle"
+    rbac.authorization.pudans.tolim.cn/ui-label: "启动运行时"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建并启动 Agent 沙箱。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "40"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-agent-runtime:start"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airuntimes/start"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-stop-ai-agent-runtime
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-agent-runtime" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.agent-runtime"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "toggle"
+    rbac.authorization.pudans.tolim.cn/ui-label: "停止运行时"
+    rbac.authorization.pudans.tolim.cn/ui-description: "停止并销毁 Agent 沙箱。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "50"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-agent-runtime:stop"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airuntimes/stop"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-restart-ai-agent-runtime
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-agent-runtime" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.agent-runtime"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "toggle"
+    rbac.authorization.pudans.tolim.cn/ui-label: "重建运行时"
+    rbac.authorization.pudans.tolim.cn/ui-description: "销毁并重新创建 Agent 沙箱。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "60"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-agent-runtime:restart"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airuntimes/restart"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-exec-ai-agent-runtime
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-agent-runtime" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.agent-runtime"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "execute"
+    rbac.authorization.pudans.tolim.cn/ui-label: "执行命令"
+    rbac.authorization.pudans.tolim.cn/ui-description: "在 Agent 沙箱内执行命令。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "70"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-agent-runtime:exec"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airuntimes/exec"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-files-ai-agent-runtime
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-agent-runtime" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.agent-runtime"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "update"
+    rbac.authorization.pudans.tolim.cn/ui-label: "读写沙箱文件"
+    rbac.authorization.pudans.tolim.cn/ui-description: "读取或写入 Agent 沙箱内的文件。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "80"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-agent-runtime:files"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airuntimes/files"
+    verbs:
+      - "get"
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-logs-ai-agent-runtime
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-agent-runtime" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.agent-runtime"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "export"
+    rbac.authorization.pudans.tolim.cn/ui-label: "导出运行时日志"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看或导出 Agent 沙箱日志。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "90"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-agent-runtime:logs"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airuntimes/logs"
+    verbs:
+      - "get"
+      - "list"
