@@ -7,6 +7,7 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "AI"
     rbac.authorization.pudans.tolim.cn/display-name: "AI 普通用户"
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-usage-overview", "role-template-usage-overview-view", "role-template-usage-overview-use-voucher" ]'
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
