@@ -26,20 +26,28 @@ import {
   type AiModality,
   type AiModelCapability,
   type AiModelItem,
+  type AiModelTier,
   type AiModelType,
   type AiProviderItem,
   fetchAllProviderModels,
   fetchProviders,
   resolveAiProviderApiError,
 } from "../providers/lib/api";
-import { formatNumber, modelDisplayName } from "../providers/lib/model";
+import { MODEL_TIER_OPTIONS, formatNumber, modelDisplayName } from "../providers/lib/model";
 import {
   CAPABILITY_LABELS,
+  CONTEXT_FILTER_OPTIONS,
+  ENABLED_FILTER_OPTIONS,
   MODALITY_LABELS,
+  type ModelContextFilter,
+  type ModelEnabledFilter,
+  matchesContextFilter,
+  matchesEnabledFilter,
   modelCapabilities,
   modelCapabilityLabels,
   modelInputModalities,
   modelOutputModalities,
+  modelTierLabel,
   modelTypeLabel,
   toggleSetValue,
 } from "./lib/model";
@@ -55,7 +63,7 @@ type ModelInfo = {
 export function ModelMarketView() {
   const providersPath = useMenuPath("ai-providers");
   const modelsQuery = useQuery({
-    queryKey: ["ai-models", "all"],
+    queryKey: ["ai-provider-models", "all"],
     queryFn: fetchAllProviderModels,
     retry: false,
   });
@@ -91,11 +99,23 @@ export function ModelMarketView() {
   const [authors, setAuthors] = useState<ReadonlySet<string>>(new Set());
   const [inputs, setInputs] = useState<ReadonlySet<AiModality>>(new Set());
   const [outputs, setOutputs] = useState<ReadonlySet<AiModality>>(new Set());
+  const [tiers, setTiers] = useState<ReadonlySet<AiModelTier>>(new Set());
+  const [contextFilter, setContextFilter] = useState<ModelContextFilter>("all");
+  const [enabledFilter, setEnabledFilter] = useState<ModelEnabledFilter>("all");
   const [capabilityFilter, setCapabilityFilter] = useState("all");
 
   const typeOptions = useMemo(() => {
     const present = new Set(modelInfos.map((info) => info.model.spec.modelType));
     return [...present].sort((left, right) => left.localeCompare(right));
+  }, [modelInfos]);
+  const tierOptions = useMemo(() => {
+    const present = new Set<AiModelTier>();
+    for (const info of modelInfos) {
+      if (info.model.spec.tier) {
+        present.add(info.model.spec.tier);
+      }
+    }
+    return MODEL_TIER_OPTIONS.map((option) => option.value).filter((tier) => present.has(tier));
   }, [modelInfos]);
   const capabilityOptions = useMemo(() => {
     const present = new Set<AiModelCapability>();
@@ -169,6 +189,15 @@ export function ModelMarketView() {
       if (authors.size > 0 && !authors.has(info.model.spec.provider)) {
         return false;
       }
+      if (tiers.size > 0 && (!info.model.spec.tier || !tiers.has(info.model.spec.tier))) {
+        return false;
+      }
+      if (!matchesContextFilter(contextFilter, info.model.spec.contextWindow)) {
+        return false;
+      }
+      if (!matchesEnabledFilter(enabledFilter, info.model.spec.enabled !== false)) {
+        return false;
+      }
       if (inputs.size > 0 && ![...inputs].every((item) => info.inputs.includes(item))) {
         return false;
       }
@@ -177,7 +206,19 @@ export function ModelMarketView() {
       }
       return true;
     });
-  }, [modelInfos, search, types, capabilities, capabilityFilter, authors, inputs, outputs]);
+  }, [
+    modelInfos,
+    search,
+    types,
+    capabilities,
+    capabilityFilter,
+    authors,
+    tiers,
+    contextFilter,
+    enabledFilter,
+    inputs,
+    outputs,
+  ]);
 
   return (
     <ConsolePage title="模型广场">
@@ -208,6 +249,30 @@ export function ModelMarketView() {
               ))}
             </FilterGroup>
           ) : null}
+
+          {tierOptions.length > 0 ? (
+            <FilterGroup title="模型档位">
+              {tierOptions.map((tier) => (
+                <FilterChip
+                  key={tier}
+                  label={modelTierLabel(tier)}
+                  active={tiers.has(tier)}
+                  onClick={() => setTiers(toggleSetValue(tiers, tier))}
+                />
+              ))}
+            </FilterGroup>
+          ) : null}
+
+          <FilterGroup title="上下文窗口">
+            {CONTEXT_FILTER_OPTIONS.map((option) => (
+              <FilterChip
+                key={option.value}
+                label={option.label}
+                active={contextFilter === option.value}
+                onClick={() => setContextFilter(option.value)}
+              />
+            ))}
+          </FilterGroup>
 
           {authorOptions.length > 0 ? (
             <FilterGroup title="模型作者">
@@ -275,6 +340,21 @@ export function ModelMarketView() {
                   {capabilityOptions.map((capability) => (
                     <SelectItem key={capability} value={capability}>
                       {CAPABILITY_LABELS[capability]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={enabledFilter}
+                onValueChange={(value) => setEnabledFilter(value as ModelEnabledFilter)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="全部状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ENABLED_FILTER_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -351,6 +431,7 @@ function ModelCard({ info }: { info: ModelInfo }) {
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         <Badge variant="outline">{modelTypeLabel(model.spec.modelType)}</Badge>
+        <Badge variant="outline">{modelTierLabel(model.spec.tier)}</Badge>
         {capabilityLabels.slice(0, 5).map((label) => (
           <Badge key={label} variant="outline">
             {label}

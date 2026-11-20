@@ -2,9 +2,10 @@ import type {
   AiModality,
   AiModelCapability,
   AiModelSpec,
+  AiModelTier,
   AiModelType,
 } from "../../providers/lib/api";
-import { MODEL_TYPE_OPTIONS, optionLabel } from "../../providers/lib/model";
+import { MODEL_TIER_OPTIONS, MODEL_TYPE_OPTIONS, optionLabel } from "../../providers/lib/model";
 
 export const CAPABILITY_LABELS: Record<AiModelCapability, string> = {
   CHAT: "文本生成",
@@ -136,6 +137,60 @@ export function modelOutputModalities(spec: AiModelSpec): AiModality[] {
 
 export function modelTypeLabel(type: AiModelType): string {
   return optionLabel(MODEL_TYPE_OPTIONS, type, type);
+}
+
+export function modelTierLabel(tier: AiModelTier | undefined): string {
+  return optionLabel(MODEL_TIER_OPTIONS, tier, "未分档");
+}
+
+export type ModelContextFilter = "all" | "lt32k" | "32k-128k" | "128k-256k" | "gte256k" | "unset";
+
+export const CONTEXT_FILTER_OPTIONS: { value: ModelContextFilter; label: string }[] = [
+  { value: "all", label: "全部上下文" },
+  { value: "lt32k", label: "32K 以下" },
+  { value: "32k-128k", label: "32K–128K" },
+  { value: "128k-256k", label: "128K–256K" },
+  { value: "gte256k", label: "256K 以上" },
+  { value: "unset", label: "未设置" },
+];
+
+export function matchesContextFilter(
+  filter: ModelContextFilter,
+  contextWindow: number | undefined,
+): boolean {
+  if (filter === "all") {
+    return true;
+  }
+  if (contextWindow == null) {
+    return filter === "unset";
+  }
+  switch (filter) {
+    case "lt32k":
+      return contextWindow < 32_000;
+    case "32k-128k":
+      return contextWindow >= 32_000 && contextWindow < 128_000;
+    case "128k-256k":
+      return contextWindow >= 128_000 && contextWindow < 256_000;
+    case "gte256k":
+      return contextWindow >= 256_000;
+    case "unset":
+      return false;
+  }
+}
+
+export type ModelEnabledFilter = "all" | "enabled" | "disabled";
+
+export const ENABLED_FILTER_OPTIONS: { value: ModelEnabledFilter; label: string }[] = [
+  { value: "all", label: "全部状态" },
+  { value: "enabled", label: "已启用" },
+  { value: "disabled", label: "已停用" },
+];
+
+export function matchesEnabledFilter(filter: ModelEnabledFilter, enabled: boolean): boolean {
+  if (filter === "all") {
+    return true;
+  }
+  return filter === "enabled" ? enabled : !enabled;
 }
 
 export function modelCapabilityLabels(spec: AiModelSpec): string[] {

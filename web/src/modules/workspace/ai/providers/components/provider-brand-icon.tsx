@@ -4,6 +4,7 @@ import { Plug } from "lucide-react";
 
 import type { AiProviderItem } from "../lib/api";
 import { type ProviderPreset, presetIcon, presetOfProvider } from "../lib/presets";
+import { useProviderPresetsQuery } from "../lib/queries";
 
 type ProviderBrandIconProps = {
   preset?: ProviderPreset;
@@ -16,7 +17,10 @@ export function ProviderBrandIcon({
   provider,
   className = "size-5",
 }: ProviderBrandIconProps) {
-  const selected = preset ?? (provider ? presetOfProvider(provider) : undefined);
+  const presetsQuery = useProviderPresetsQuery(!preset && Boolean(provider));
+  const selected =
+    preset ??
+    (provider ? presetOfProvider(presetsQuery.data?.supported ?? [], provider) : undefined);
   const source = selected ? presetIcon(selected) : undefined;
   if (!source) {
     return <Plug className={className} />;

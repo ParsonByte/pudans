@@ -1,15 +1,21 @@
 import type {
   AiAccountType,
+  AiModality,
+  AiModelCapability,
   AiModelItem,
   AiModelTier,
   AiModelType,
   AiProviderAccountBalance,
   AiProviderAccountQuota,
+  AiProviderAccountQuotaWindow,
   AiProviderAffinity,
-  AiProviderProtocol,
+  AiProviderItem,
   AiProviderRouting,
+  AiProviderStatus,
+  AiProviderVendor,
   AiQuotaUnit,
 } from "./api";
+import { vendorLabel } from "./presets";
 
 type Option<T extends string> = {
   value: T;
@@ -74,8 +80,38 @@ export const MODEL_TIER_OPTIONS: Option<AiModelTier>[] = [
   { value: "ULTRA", label: "旗舰" },
 ];
 
+export const MODEL_CAPABILITY_OPTIONS: Option<AiModelCapability>[] = [
+  { value: "CHAT", label: "对话" },
+  { value: "TOOLS", label: "工具调用" },
+  { value: "JSON", label: "JSON 输出" },
+  { value: "VISION", label: "图像理解" },
+  { value: "AUDIO_UNDERSTANDING", label: "音频理解" },
+  { value: "VIDEO_UNDERSTANDING", label: "视频理解" },
+  { value: "EMBEDDING", label: "向量" },
+  { value: "RERANK", label: "重排" },
+  { value: "IMAGE_GENERATION", label: "图像生成" },
+  { value: "IMAGE_EDITING", label: "图像编辑" },
+  { value: "VIDEO_GENERATION", label: "视频生成" },
+  { value: "SPEECH_RECOGNITION", label: "语音识别" },
+  { value: "SPEECH_SYNTHESIS", label: "语音合成" },
+  { value: "AUDIO_GENERATION", label: "音频生成" },
+  { value: "MUSIC_GENERATION", label: "音乐生成" },
+  { value: "THREE_D_GENERATION", label: "3D 生成" },
+  { value: "OCR", label: "OCR" },
+  { value: "STREAM", label: "流式输出" },
+];
+
+export const MODALITY_OPTIONS: Option<AiModality>[] = [
+  { value: "TEXT", label: "文本" },
+  { value: "IMAGE", label: "图像" },
+  { value: "AUDIO", label: "音频" },
+  { value: "VIDEO", label: "视频" },
+  { value: "FILE", label: "文件" },
+  { value: "THREE_D", label: "3D" },
+];
+
 type ProviderDefaults = {
-  protocol: AiProviderProtocol;
+  vendor: AiProviderVendor;
   routing: AiProviderRouting;
   affinity: AiProviderAffinity;
   maxConcurrency: number;
@@ -87,7 +123,7 @@ type ProviderDefaults = {
 };
 
 export const DEFAULT_PROVIDER_SPEC: ProviderDefaults = {
-  protocol: "OPENAI_CHAT",
+  vendor: "CUSTOM",
   routing: "SMART",
   affinity: "AUTO",
   maxConcurrency: 100,
@@ -170,16 +206,67 @@ export function formatTestResult(result: {
   return result.message ? `${result.message}${latency}` : `连通性正常${latency}`;
 }
 
-export function supportsModelDiscovery(protocol: AiProviderProtocol | undefined): boolean {
+export function formatTestTimestamp(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+  return date.toLocaleString("zh-CN", { hour12: false });
+}
+
+export function statusLabel(status: AiProviderStatus | undefined): string {
+  if (!status) {
+    return "尚未测试";
+  }
+  if (status.message) {
+    return status.healthScore != null && status.healthScore < 100 ? "异常" : "已记录";
+  }
+  return status.healthScore == null ? "尚未测试" : "正常";
+}
+
+function formatWindow(window: AiProviderAccountQuotaWindow): string {
+  const unit = optionLabel(QUOTA_UNIT_OPTIONS, window.unit);
+  const limit = window.limit == null ? "不限" : formatNumber(window.limit);
+  const used = formatNumber(window.used);
+  return `${window.name || "窗口"} ${used} / ${limit} ${unit}`;
+}
+
+export function windowsSummary(
+  windows: readonly AiProviderAccountQuotaWindow[] | undefined,
+): string {
+  if (!windows || windows.length === 0) {
+    return "未设置窗口";
+  }
+  return windows.map((window) => formatWindow(window)).join(" · ");
+}
+
+function providerSortOrder(provider: AiProviderItem): number {
+  return provider.spec.order ?? Number.MAX_SAFE_INTEGER;
+}
+
+export function sortProvidersByOrder(providers: readonly AiProviderItem[]): AiProviderItem[] {
+  return [...providers].sort(
+    (left, right) =>
+      providerSortOrder(left) - providerSortOrder(right) ||
+      (left.spec.displayName || left.metadata.name).localeCompare(
+        right.spec.displayName || right.metadata.name,
+        "zh-CN",
+      ),
+  );
+}
+
+export function supportsModelDiscovery(vendor: AiProviderVendor | undefined): boolean {
   return Boolean(
-    protocol &&
-    (protocol.startsWith("DEEPSEEK") ||
-      protocol.startsWith("MINIMAX") ||
-      protocol === "QIANWEN" ||
-      protocol === "OPENAI_CHAT" ||
-      protocol === "OPENAI_RESPONSES" ||
-      protocol === "ANTHROPIC" ||
-      protocol === "GEMINI_OPENAI"),
+    vendor &&
+    (vendor === "OPENAI" ||
+      vendor === "ANTHROPIC" ||
+      vendor === "GEMINI" ||
+      vendor === "DEEPSEEK" ||
+      vendor === "MINIMAX" ||
+      vendor === "QIANWEN"),
   );
 }
 
@@ -208,88 +295,38 @@ export type ProviderEndpoint = {
   url: string;
 };
 
-export function protocolEndpoint(
-  protocol: AiProviderProtocol | undefined,
+export function vendorEndpoint(
+  vendor: AiProviderVendor | undefined,
   baseUrl: string | undefined,
 ): string | undefined {
-  if (!protocol || !baseUrl) {
+  if (!vendor || !baseUrl) {
     return undefined;
   }
   const base = baseUrl.replace(/\/+$/, "");
-  switch (protocol) {
-    case "DEEPSEEK":
-      return `${base}/anthropic/v1/messages`;
-    case "DEEPSEEK_CHAT":
-      return `${base}/chat/completions`;
-    case "DEEPSEEK_RESPONSES":
-      return `${base}/responses`;
-    case "OPENAI_CHAT":
+  switch (vendor) {
+    case "OPENAI":
       return `${base}/v1/chat/completions`;
-    case "OPENAI_RESPONSES":
-      return `${base}/v1/responses`;
     case "ANTHROPIC":
       return `${base}/v1/messages`;
     case "GEMINI":
       return `${base}/v1beta/models/{model}:generateContent`;
-    case "GEMINI_OPENAI":
+    case "DEEPSEEK":
       return `${base}/chat/completions`;
+    case "MINIMAX":
+      return `${base}/v1/chat/completions`;
     case "QIANWEN":
       return `${base}/compatible-mode/v1/chat/completions`;
-    case "MINIMAX":
-      return `${base}/anthropic/v1/messages`;
-    case "MINIMAX_CHAT":
-      return `${base}/v1/chat/completions`;
-    case "MINIMAX_NATIVE":
-      return `${base}/v1/text/chatcompletion_v2`;
-    case "MINIMAX_RESPONSES":
-      return `${base}/v1/responses`;
     case "OLLAMA":
       return `${base}/api/chat`;
-    case "CUSTOM_HTTP":
+    case "CUSTOM":
       return base;
   }
 }
 
 export function providerEndpoints(
-  protocol: AiProviderProtocol | undefined,
+  vendor: AiProviderVendor | undefined,
   baseUrl: string | undefined,
 ): ProviderEndpoint[] {
-  if (!protocol || !baseUrl) {
-    return [];
-  }
-  const base = baseUrl.replace(/\/+$/, "");
-  switch (protocol) {
-    case "DEEPSEEK":
-    case "DEEPSEEK_CHAT":
-    case "DEEPSEEK_RESPONSES":
-      return [
-        { label: "OpenAI", url: `${base}/chat/completions` },
-        { label: "Responses", url: `${base}/responses` },
-        { label: "Anthropic", url: `${base}/anthropic/v1/messages` },
-      ];
-    case "OPENAI_CHAT":
-      return [{ label: "OpenAI", url: `${base}/v1/chat/completions` }];
-    case "OPENAI_RESPONSES":
-      return [{ label: "Responses", url: `${base}/v1/responses` }];
-    case "ANTHROPIC":
-      return [{ label: "Anthropic", url: `${base}/v1/messages` }];
-    case "GEMINI":
-      return [{ label: "Gemini", url: `${base}/v1beta/models/{model}:generateContent` }];
-    case "GEMINI_OPENAI":
-      return [{ label: "OpenAI", url: `${base}/chat/completions` }];
-    case "QIANWEN":
-      return [{ label: "OpenAI 兼容", url: `${base}/compatible-mode/v1/chat/completions` }];
-    case "MINIMAX":
-      return [{ label: "Anthropic", url: `${base}/anthropic/v1/messages` }];
-    case "MINIMAX_CHAT":
-      return [{ label: "OpenAI", url: `${base}/v1/chat/completions` }];
-    case "MINIMAX_NATIVE":
-      return [{ label: "MiniMax", url: `${base}/v1/text/chatcompletion_v2` }];
-    case "MINIMAX_RESPONSES":
-      return [{ label: "Responses", url: `${base}/v1/responses` }];
-    case "OLLAMA":
-      return [{ label: "Ollama", url: `${base}/api/chat` }];
-    case "CUSTOM_HTTP":
-      return [{ label: "自定义", url: base }];
-  }
+  const url = vendorEndpoint(vendor, baseUrl);
+  return url ? [{ label: vendorLabel(vendor), url }] : [];
 }
