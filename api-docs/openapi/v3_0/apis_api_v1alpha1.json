@@ -5333,9 +5333,41 @@
         ]
       }
     },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aistats/-/units": {
+      "get": {
+        "description": "Daily usage units by model.",
+        "operationId": "getAiUnitStats",
+        "parameters": [
+          {
+            "description": "Number of days (1-90, default 14).",
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PointStats"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiStatsV1alpha1"
+        ]
+      }
+    },
     "/apis/api.pudans.tolim.cn/v1alpha1/aistats/-/points": {
       "get": {
-        "description": "Daily standard-token unit consumption by model.",
+        "deprecated": true,
+        "description": "Deprecated: use /aistats/-/units instead.",
         "operationId": "getAiPointStats",
         "parameters": [
           {
@@ -14638,12 +14670,12 @@
           "model": {
             "type": "string"
           },
-          "points": {
-            "type": "number",
-            "description": "Standard-token units consumed by the request. The field name is kept for compatibility."
-          },
           "provider": {
             "type": "string"
+          },
+          "units": {
+            "type": "number",
+            "description": "Standard-token units consumed by the request."
           },
           "usage": {
             "$ref": "#/components/schemas/AiTokenUsage"
@@ -14821,10 +14853,6 @@
               ]
             }
           },
-          "points": {
-            "type": "number",
-            "description": "Standard-token units consumed by the request. The field name is kept for compatibility."
-          },
           "provider": {
             "type": "string"
           },
@@ -14836,6 +14864,10 @@
           },
           "status": {
             "type": "string"
+          },
+          "units": {
+            "type": "number",
+            "description": "Standard-token units consumed by the request."
           },
           "usage": {
             "$ref": "#/components/schemas/AiModelUsage"
@@ -15193,6 +15225,16 @@
       "AiPlanBindingBulkRequest": {
         "type": "object",
         "properties": {
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "plan": {
             "type": "string"
           },
@@ -15336,6 +15378,16 @@
       "AiPlanBindingSummary": {
         "type": "object",
         "properties": {
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
           "kind": {
             "type": "string",
             "enum": [
@@ -19236,10 +19288,6 @@
           "modelType": {
             "type": "string"
           },
-          "points": {
-            "type": "number",
-            "description": "Standard-token units consumed."
-          },
           "requests": {
             "type": "integer",
             "format": "int64"
@@ -19254,6 +19302,10 @@
           "tasks": {
             "type": "integer",
             "format": "int64"
+          },
+          "units": {
+            "type": "number",
+            "description": "Standard-token units consumed."
           },
           "videoSeconds": {
             "type": "integer",
@@ -19866,10 +19918,6 @@
           "model": {
             "type": "string"
           },
-          "points": {
-            "type": "number",
-            "description": "Standard-token units consumed."
-          },
           "requests": {
             "type": "integer",
             "format": "int64"
@@ -19877,6 +19925,10 @@
           "tokens": {
             "type": "integer",
             "format": "int64"
+          },
+          "units": {
+            "type": "number",
+            "description": "Standard-token units consumed."
           }
         }
       },
@@ -20728,10 +20780,6 @@
           "model": {
             "type": "string"
           },
-          "points": {
-            "type": "number",
-            "description": "Standard-token units consumed."
-          },
           "provider": {
             "type": "string"
           },
@@ -20741,6 +20789,10 @@
           },
           "status": {
             "type": "string"
+          },
+          "units": {
+            "type": "number",
+            "description": "Standard-token units consumed."
           }
         }
       },
@@ -22206,7 +22258,7 @@
           "menus": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/Menu"
+              "$ref": "#/components/schemas/WorkspaceMenu"
             }
           },
           "name": {
@@ -22217,6 +22269,122 @@
             "format": "int32"
           },
           "plan": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkspaceMenu": {
+        "type": "object",
+        "properties": {
+          "component": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "group": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "manage": {
+            "$ref": "#/components/schemas/WorkspaceMenuLevel"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceMenuOperation"
+            }
+          },
+          "order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "parent": {
+            "type": "string"
+          },
+          "parentIcon": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "publicMenu": {
+            "type": "boolean"
+          },
+          "view": {
+            "$ref": "#/components/schemas/WorkspaceMenuLevel"
+          }
+        }
+      },
+      "WorkspaceMenuLevel": {
+        "type": "object",
+        "properties": {
+          "capability": {
+            "type": "string"
+          },
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "permission": {
+            "type": "string"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PolicyRule"
+            }
+          },
+          "template": {
+            "type": "string"
+          }
+        }
+      },
+      "WorkspaceMenuOperation": {
+        "type": "object",
+        "properties": {
+          "dependencies": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "permission": {
+            "type": "string"
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PolicyRule"
+            }
+          },
+          "template": {
+            "type": "string"
+          },
+          "type": {
             "type": "string"
           }
         }
