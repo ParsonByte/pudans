@@ -1,0 +1,47 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-usage-requests-view
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-usage-requests" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.usage.requests"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "view"
+    rbac.authorization.pudans.tolim.cn/ui-label: "查看请求详情"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看请求的路由、检索与计费轨迹。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-usage-requests:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aistats/usage"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-usage-requests-export
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-usage-requests" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.usage.requests"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "export"
+    rbac.authorization.pudans.tolim.cn/ui-label: "导出请求明细"
+    rbac.authorization.pudans.tolim.cn/ui-description: "按当前筛选导出请求用量 CSV。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-usage-requests:export"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aistats/usage"
+    verbs:
+      - "get"
+      - "list"

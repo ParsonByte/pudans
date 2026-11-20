@@ -1,8 +1,13 @@
 package cn.tolim.pudans.infra.r2dbc.ai.stats;
 
+import static cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRowValues.count;
+import static cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRowValues.decimal;
+
 import io.r2dbc.spi.Row;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.r2dbc.core.DatabaseClient;
@@ -159,6 +164,86 @@ public class AiStatsRepository {
                 .all();
     }
 
+    public Flux<RoutingHistoryRow> routingHistory(
+            Instant fromAt,
+            Instant toAt,
+            String status,
+            String provider,
+            String model,
+            String agent,
+            String group,
+            boolean all,
+            String userId,
+            long beforeId,
+            int limit) {
+        return databaseClient.sql("""
+                        SELECT r.id,
+                               r.request_id,
+                               r.conversation_id,
+                               r.session_key,
+                               c.title AS session_title,
+                               r.agent_id,
+                               r.mode_code,
+                               r.route_group,
+                               r.selected_provider,
+                               r.selected_account,
+                               r.selected_model,
+                               r.tier,
+                               r.status,
+                               CASE WHEN r.route_trace ->> 'tries' ~ '^[0-9]+$'
+                                    THEN (r.route_trace ->> 'tries')::int
+                                    ELSE 0 END AS tries,
+                               r.latency_ms,
+                               r.created_at
+                        FROM ai_chat_request r
+                        LEFT JOIN ai_conversation c ON c.id = r.conversation_id
+                        WHERE r.created_at >= :fromAt
+                          AND r.created_at < :toAt
+                          AND (:all OR r.user_id = :userId)
+                          AND (:status = '' OR r.status = :status)
+                          AND (:provider = '' OR r.selected_provider = :provider)
+                          AND (:model = '' OR r.selected_model = :model)
+                          AND (:agent = '' OR r.agent_id = :agent)
+                          AND (:group = '' OR r.route_group = :group)
+                          AND r.id < :beforeId
+                        ORDER BY r.id DESC
+                        LIMIT :limit
+                        """)
+                .bind("fromAt", OffsetDateTime.ofInstant(fromAt, ZoneOffset.UTC))
+                .bind("toAt", OffsetDateTime.ofInstant(toAt, ZoneOffset.UTC))
+                .bind("all", all)
+                .bind("userId", userId)
+                .bind("status", status)
+                .bind("provider", provider)
+                .bind("model", model)
+                .bind("agent", agent)
+                .bind("group", group)
+                .bind("beforeId", beforeId)
+                .bind("limit", limit)
+                .map((row, metadata) -> mapRoutingHistory(row))
+                .all();
+    }
+
+    static RoutingHistoryRow mapRoutingHistory(Row row) {
+        return new RoutingHistoryRow(
+                row.get("id", Long.class),
+                row.get("request_id", String.class),
+                row.get("conversation_id", Long.class),
+                row.get("session_key", String.class),
+                row.get("session_title", String.class),
+                row.get("agent_id", String.class),
+                row.get("mode_code", String.class),
+                row.get("route_group", String.class),
+                row.get("selected_provider", String.class),
+                row.get("selected_account", String.class),
+                row.get("selected_model", String.class),
+                row.get("tier", String.class),
+                row.get("status", String.class),
+                count(row, "tries"),
+                row.get("latency_ms", Integer.class),
+                row.get("created_at", Instant.class));
+    }
+
     public Flux<AccountActivityRow> accountActivityToday() {
         return databaseClient.sql("""
                         SELECT selected_provider AS provider,
@@ -238,16 +323,6 @@ public class AiStatsRepository {
                 .one();
     }
 
-    private static long count(Row row, String column) {
-        var value = row.get(column, Long.class);
-        return value == null ? 0 : value;
-    }
-
-    private static BigDecimal decimal(Row row, String column) {
-        var value = row.get(column, BigDecimal.class);
-        return value == null ? BigDecimal.ZERO : value;
-    }
-
     public record RoutingStatsRow(
             String provider, String model, String status, long requests, BigDecimal points) {}
 
@@ -292,6 +367,24 @@ public class AiStatsRepository {
             @Nullable Long conversationId,
             Instant createdAt,
             @Nullable Instant completedAt) {}
+
+    public record RoutingHistoryRow(
+            long id,
+            String requestId,
+            @Nullable Long conversationId,
+            @Nullable String sessionKey,
+            @Nullable String sessionTitle,
+            String agent,
+            @Nullable String mode,
+            @Nullable String routeGroup,
+            @Nullable String provider,
+            @Nullable String account,
+            @Nullable String model,
+            @Nullable String tier,
+            String status,
+            long tries,
+            @Nullable Integer latencyMs,
+            Instant createdAt) {}
 
     public record AccountActivityRow(
             String provider, String account, long requests, long success, long failed) {}

@@ -5,6 +5,11 @@ import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.stats.AiStatsService;
+import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryDetail;
+import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryPage;
+import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryQuery;
+import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
+import cn.tolim.pudans.core.ai.stats.UsageQueryParameters;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.KnowledgeBaseStatsRow;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.MemoryStatsRow;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -24,6 +29,8 @@ public class AiStatsEndpoint implements CustomEndpoint {
     private static final String TAG = "AiStatsV1alpha1";
 
     private final AiStatsService statsService;
+
+    private final UsageAccessResolver accessResolver;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -45,6 +52,28 @@ public class AiStatsEndpoint implements CustomEndpoint {
                                 .required(false)
                                 .description("Recent request limit (1-200, default 20)."))
                         .response(responseBuilder().implementation(AiStatsService.RoutingLive.class)))
+                .GET("/aistats/-/routing/history", this::routingHistory, builder -> builder
+                        .operationId("listAiRoutingHistory")
+                        .description("Paginated routing history with route traces.")
+                        .tag(TAG)
+                        .parameter(queryParameter("from"))
+                        .parameter(queryParameter("to"))
+                        .parameter(queryParameter("status"))
+                        .parameter(queryParameter("provider"))
+                        .parameter(queryParameter("model"))
+                        .parameter(queryParameter("agent"))
+                        .parameter(queryParameter("group"))
+                        .parameter(queryParameter("beforeId"))
+                        .parameter(queryParameter("limit"))
+                        .parameter(scopeParameter())
+                        .response(responseBuilder().implementation(RoutingHistoryPage.class)))
+                .GET("/aistats/-/routing/history/{requestId}", this::routingHistoryDetail, builder -> builder
+                        .operationId("getAiRoutingHistory")
+                        .description("Routing history detail with full route and retrieval traces.")
+                        .tag(TAG)
+                        .parameter(parameterBuilder().in(ParameterIn.PATH).name("requestId").required(true))
+                        .parameter(scopeParameter())
+                        .response(responseBuilder().implementation(RoutingHistoryDetail.class)))
                 .GET("/aistats/-/points", this::points, builder -> builder
                         .operationId("getAiPointStats")
                         .description("Daily point consumption by model.")
@@ -79,6 +108,31 @@ public class AiStatsEndpoint implements CustomEndpoint {
         return statsService
                 .routingLive(days(request), limit(request))
                 .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
+    }
+
+    private Mono<ServerResponse> routingHistory(ServerRequest request) {
+        var query = new RoutingHistoryQuery(
+                UsageQueryParameters.date(request, "from"),
+                UsageQueryParameters.date(request, "to"),
+                UsageQueryParameters.text(request, "status"),
+                UsageQueryParameters.text(request, "provider"),
+                UsageQueryParameters.text(request, "model"),
+                UsageQueryParameters.text(request, "agent"),
+                UsageQueryParameters.text(request, "group"));
+        var beforeId = UsageQueryParameters.beforeId(request);
+        var limit = UsageQueryParameters.limit(request);
+        return accessResolver
+                .viewer(request)
+                .flatMap(viewer -> statsService.routingHistory(query, beforeId, limit, viewer))
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    private Mono<ServerResponse> routingHistoryDetail(ServerRequest request) {
+        var requestId = request.pathVariable("requestId");
+        return accessResolver
+                .viewer(request)
+                .flatMap(viewer -> statsService.routingHistoryDetail(requestId, viewer))
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> points(ServerRequest request) {
@@ -119,6 +173,18 @@ public class AiStatsEndpoint implements CustomEndpoint {
         } catch (NumberFormatException error) {
             throw new ServerWebInputException("limit 必须是整数。");
         }
+    }
+
+    private static org.springdoc.core.fn.builders.parameter.Builder queryParameter(String name) {
+        return parameterBuilder().in(ParameterIn.QUERY).name(name).required(false);
+    }
+
+    private static org.springdoc.core.fn.builders.parameter.Builder scopeParameter() {
+        return parameterBuilder()
+                .in(ParameterIn.QUERY)
+                .name("scope")
+                .required(false)
+                .description("读取范围：self 或 all（仅管理员）。");
     }
 
     private static org.springdoc.core.fn.builders.parameter.Builder daysParameter() {
