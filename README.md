@@ -29,6 +29,7 @@
   <a href="#quick-start">Quick start</a> ·
   <a href="#architecture">Architecture</a> ·
   <a href="#ai-console">AI Console</a> ·
+  <a href="#agent-runtime">Agent runtime</a> ·
   <a href="CONTRIBUTING.md">Contributing</a> ·
   <a href="#contributors">Contributors</a> ·
   <a href="LICENSE">License</a>
@@ -45,6 +46,9 @@ It combines a reactive Spring Boot backend, an extension-resource model for user
 - **Identity, not just login.** Users, groups, roles, permissions, workspaces, menus, audit records and risk rules share one extension-resource model.
 - **AI operations in the same console.** Register providers and accounts, discover models, route traffic across them and watch live requests without leaving the admin surface.
 - **Real conversations.** Streaming chat with reasoning, markdown and multimodal attachments, plus memory and retrieval backed by live APIs.
+- **Agent-native runtime.** The LangChain4j harness powers chat, tools, subagents and protocols with streaming, permissions, plan mode, compaction, durable state and a thread journal.
+- **Open agent protocols.** Expose agents over AG-UI, A2A and Agent Protocol alongside the OpenAI/Anthropic-compatible model gateway.
+- **Retrieval your way.** Local pgvector hybrid retrieval with PDF, Word, Tika and image parsers, or Dify, RAGFlow, Haystack and Bailian knowledge bases through external connectors.
 - **Reactive from day one.** WebFlux, R2DBC and Redis keep the request path non-blocking; the React console ships inside the backend jar.
 
 ## AI Console
@@ -56,6 +60,33 @@ It combines a reactive Spring Boot backend, an extension-resource model for user
 | **Routing** | Live user → PUDANS → provider topology with animated flow edges, request history and route decisions. |
 | **Route groups** | Model members, weights, tiers and routing modes, mapped to the fast/pro chat modes. |
 | **Gateway** | OpenAI/Anthropic-compatible endpoints, PAT-based access, model list, recent calls and display limits. |
+| **Knowledge base** | Local and external knowledge bases, document ingestion, retrieval settings and citations. |
+
+## Agent runtime
+
+Pudans runs its AI features on a LangChain4j agent harness instead of a separate chat loop.
+
+- **Harness loop.** `ReActAgent` and `HarnessAgent` run streaming chat, tool calls, plan and todo state, context compaction, tool-result eviction and structured output on LangChain4j chat and streaming models.
+- **Tools and agents.** `@Tool` reflection, tool groups and search, async tools, subagents, teams, skills, workspace and sandbox abstractions register into one toolkit.
+- **Human control.** Permission rules and ask/deny/bypass modes provide suspend-and-confirm HITL, cancellation and resumable runs.
+- **Durable context.** Agent state is stored in PostgreSQL JSONB with optimistic concurrency; thread journals record run, model, tool and checkpoint events for recovery and audit.
+
+### Protocol endpoints
+
+All routes live under `/apis/api.pudans.tolim.cn/v1alpha1`.
+
+| Protocol | Endpoint | Purpose |
+| --- | --- | --- |
+| AG-UI | `POST /aiagui/-/run` | SSE event stream for web frontends |
+| A2A | `GET /aia2a/.well-known/agent.json`, `POST /aia2a` | Agent card and JSON-RPC task exchange |
+| Agent Protocol | `/aiagentprotocol/-/runs`, `/aiagentprotocol/-/threads/{threadId}/state` | Run lifecycle and thread state |
+| OpenAI / Anthropic / Gemini | `/aigateway/-/...` | Model-compatible gateway endpoints |
+
+## Knowledge and retrieval
+
+- Local knowledge bases use pgvector hybrid retrieval (keyword and vector search, RRF and optional rerank) with PDF, Word, Tika and image parsers.
+- External knowledge bases can point at Dify, RAGFlow, Haystack or Bailian through `KnowledgeBase.spec.external`; credentials stay in `AiProviderAccount` references.
+- Agents can retrieve on demand through the `retrieve_knowledge` tool or receive pre-retrieved context in chat.
 
 ## Architecture
 
@@ -66,21 +97,25 @@ Browser / Agents
 ┌──────────────────────────────────────────┐
 │ Pudans appkernel (Spring Boot / WebFlux) │
 │ identity · RBAC · workspaces · audit     │
-│ extension resources · AI kernel          │
-│ providers → routing → gateway → chat     │
+│ extension resources · LangChain4j harness│
+│ providers → routing → gateway → agents   │
+│ AG-UI · A2A · Agent Protocol · RAG       │
 └──────────────────────────────────────────┘
        │                          │
        ▼                          ▼
    PostgreSQL                    Redis
 ```
 
-The backend owns identity, permission decisions, extension reconciliation, AI routing and conversations. The frontend is a React SPA built into the backend jar, so a single deployment serves both the console and the compatibility APIs.
+The backend owns identity, permission decisions, extension reconciliation, AI routing, the agent harness, protocols and conversations. The frontend is a React SPA built into the backend jar, so a single deployment serves both the console and the compatibility APIs.
 
 ## Repository layout
 
 | Path | Purpose |
 | --- | --- |
 | `appkernel/` | Backend core: identity, permissions, extension mechanism, AI kernel and HTTP endpoints |
+| `appkernel/src/main/java/cn/tolim/pudans/core/ai/harness/` | LangChain4j agent harness: tools, permissions, journal, skills and subagents |
+| `appkernel/src/main/java/cn/tolim/pudans/core/ai/protocol/` | AG-UI, A2A and Agent Protocol endpoints on the shared protocol runtime |
+| `appkernel/src/main/java/cn/tolim/pudans/core/ai/rag/` | Hybrid retrieval, document parsers and external RAG connectors |
 | `appkernel/src/main/resources/extensions/` | YAML source of truth for roles, permissions, workspaces, menus and AI resources |
 | `api-docs/` | OpenAPI aggregation and validation |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
