@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.dashboard.endpoint;
 
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
 
 import cn.tolim.pudans.contract.core.extension.RiskRule;
 import cn.tolim.pudans.contract.core.extension.Webhook;
@@ -29,12 +30,12 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import reactor.core.publisher.Flux;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.fn.builders.apiresponse.Builder;
@@ -95,9 +96,7 @@ public class DashboardEndpoint implements CustomEndpoint {
     Mono<DashboardOverview> aggregate() {
         var now = Instant.now();
         var dayStart = now.truncatedTo(ChronoUnit.DAYS);
-        var users = client
-                .listAll(User.class, ListOptions.builder().andQuery(notDeleting()).build(), defaultSort())
-                .collectList();
+        var totalUsers = countNotDeleting(User.class);
         var globalInfo = systemInfoGetter
                 .get()
                 .map(DashboardEndpoint::toSummary)
@@ -111,11 +110,12 @@ public class DashboardEndpoint implements CustomEndpoint {
                 Mono.just((long) riskRuleRegistry.ruleCount()),
                 countNotDeleting(Webhook.class));
         var todayOperations = auditService.countSince(dayStart).onErrorReturn(0L);
-        var recentOperations = auditService
+        var recentRecords = auditService
                 .findRecent(RECENT_AUDIT_LOG_LIMIT)
                 .collectList()
-                .flatMap(this::toRecentOperations)
-                .onErrorReturn(List.of());
+                .defaultIfEmpty(List.of())
+                .onErrorReturn(List.of())
+                .cache();
         var loginTrend = auditService
                 .countPerDay(dayStart.minus(Duration.ofDays(TREND_DAYS - 1L)), "LOGIN", "SUCCESS")
                 .map(days -> toDailyTrend(days, now))
@@ -174,31 +174,36 @@ public class DashboardEndpoint implements CustomEndpoint {
                         false))
                 .collectList()
                 .defaultIfEmpty(List.of())
-                .onErrorReturn(List.of());
-        return Mono.zip(
-                        globalInfo,
-                        users,
-                        realRoles,
-                        counts,
-                        todayOperations,
-                        recentOperations,
-                        trends,
-                        activeUserRecords)
-                .flatMap(tuple -> toRoleDistribution(tuple.getT2(), tuple.getT3())
+                .onErrorReturn(List.of())
+                .cache();
+        var operatorNames = Mono.zip(recentRecords, activeUserRecords)
+                .flatMap(tuple -> displayNamesOf(Stream.concat(tuple.getT1().stream(), tuple.getT2().stream())
+                        .map(DashboardEndpoint::nullSafeUidOfRecord)
+                        .filter(uid -> !"anonymous".equals(uid))
+                        .toList()))
+                .defaultIfEmpty(Map.of());
+        var traffic = Mono.zip(todayOperations, recentRecords, activeUserRecords, operatorNames)
+                .map(tuple -> new Traffic(
+                        tuple.getT1(),
+                        toRecentOperations(tuple.getT2(), tuple.getT4()),
+                        toActiveUsers(tuple.getT3(), tuple.getT4())))
+                .defaultIfEmpty(new Traffic(0L, List.of(), List.of()));
+        return Mono.zip(globalInfo, totalUsers, realRoles, counts, traffic, trends)
+                .flatMap(tuple -> toRoleDistribution(tuple.getT3())
                         .map(roleDistribution -> new DashboardOverview(
                                 tuple.getT1(),
-                                tuple.getT2().size(),
+                                tuple.getT2(),
                                 tuple.getT3().size(),
                                 tuple.getT4().getT1(),
                                 tuple.getT4().getT2(),
                                 tuple.getT4().getT3(),
-                                tuple.getT5(),
-                                tuple.getT6(),
-                                tuple.getT7().loginTrend(),
-                                tuple.getT7().operationTrend(),
-                                tuple.getT7().riskRuleTrend(),
-                                tuple.getT7().webhookTrend(),
-                                toActiveUsers(tuple.getT2(), tuple.getT8()),
+                                tuple.getT5().todayOperations(),
+                                tuple.getT5().recentOperations(),
+                                tuple.getT6().loginTrend(),
+                                tuple.getT6().operationTrend(),
+                                tuple.getT6().riskRuleTrend(),
+                                tuple.getT6().webhookTrend(),
+                                tuple.getT5().activeUsers(),
                                 roleDistribution)));
     }
 
@@ -244,12 +249,10 @@ public class DashboardEndpoint implements CustomEndpoint {
             List<LoginTrendPoint> riskRuleTrend,
             List<LoginTrendPoint> webhookTrend) {}
 
-    private static List<ActiveUser> toActiveUsers(List<User> users, List<AuditRecord> records) {
-        var names = users.stream()
-                .collect(Collectors.toMap(
-                        DashboardEndpoint::nullSafeUid,
-                        DashboardEndpoint::displayNameOf,
-                        (left, right) -> left));
+    private record Traffic(
+            long todayOperations, List<RecentOperation> recentOperations, List<ActiveUser> activeUsers) {}
+
+    private static List<ActiveUser> toActiveUsers(List<AuditRecord> records, Map<String, String> names) {
         return records.stream()
                 .map(AuditRecord::getUid)
                 .filter(java.util.Objects::nonNull)
@@ -266,35 +269,52 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .toList();
     }
 
-    private Mono<List<RoleUserCount>> toRoleDistribution(List<User> users, List<Role> realRoles) {
-        if (users.isEmpty() || realRoles.isEmpty()) {
+    private Mono<List<RoleUserCount>> toRoleDistribution(List<Role> realRoles) {
+        if (realRoles.isEmpty()) {
             return Mono.just(List.of());
         }
         var realRolesByName = realRoles.stream()
                 .collect(Collectors.toMap(role -> role.getMetadata().getName(), Function.identity()));
-        return Flux.fromIterable(users)
-                .flatMap(
-                        user -> userGroupService
-                                .getRoleNamesByUsername(user.getMetadata().getName())
-                                .collectList()
-                                .map(roles -> Map.entry(user.getMetadata().getName(), roles)),
-                        4)
-                .collectMap(Map.Entry::getKey, entry -> entry.getValue())
-                .defaultIfEmpty(new LinkedHashMap<>())
-                .map(assignments -> {
-                    Map<String, Long> counts = assignments.values().stream()
-                            .flatMap(Collection::stream)
-                            .filter(realRolesByName::containsKey)
-                            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-                    return counts.entrySet().stream()
-                            .map(entry -> {
-                                var role = realRolesByName.get(entry.getKey());
-                                return new RoleUserCount(entry.getKey(), roleDisplayName(role), entry.getValue());
-                            })
-                            .sorted((left, right) -> Long.compare(right.users(), left.users()))
-                            .toList();
-                })
+        return userGroupService
+                .listMemberships()
+                .collect(Collectors.toMap(
+                        UserGroupService.Membership::username,
+                        UserGroupService.Membership::groupName,
+                        (left, right) -> left))
+                .flatMap(groupsByUser -> rolesByGroup(
+                                groupsByUser.values().stream().distinct().toList())
+                        .map(roles -> toRoleCounts(groupsByUser, roles, realRolesByName)))
                 .onErrorReturn(List.of());
+    }
+
+    private Mono<Map<String, List<String>>> rolesByGroup(List<String> groupNames) {
+        if (groupNames.isEmpty()) {
+            return Mono.just(Map.of());
+        }
+        return userGroupService
+                .listUserGroups(groupNames)
+                .flatMap(group -> userGroupService
+                        .listRoleNamesOfGroup(group)
+                        .collectList()
+                        .map(roles -> Map.entry(group.getMetadata().getName(), roles)))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private static List<RoleUserCount> toRoleCounts(
+            Map<String, String> groupsByUser,
+            Map<String, List<String>> rolesByGroup,
+            Map<String, Role> realRolesByName) {
+        Map<String, Long> counts = groupsByUser.values().stream()
+                .flatMap(group -> rolesByGroup.getOrDefault(group, List.of()).stream())
+                .filter(realRolesByName::containsKey)
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        return counts.entrySet().stream()
+                .map(entry -> {
+                    var role = realRolesByName.get(entry.getKey());
+                    return new RoleUserCount(entry.getKey(), roleDisplayName(role), entry.getValue());
+                })
+                .sorted((left, right) -> Long.compare(right.users(), left.users()))
+                .toList();
     }
 
     private static String roleDisplayName(Role role) {
@@ -306,26 +326,34 @@ public class DashboardEndpoint implements CustomEndpoint {
         return displayName;
     }
 
+    private Mono<Map<String, String>> displayNamesOf(Collection<String> uids) {
+        if (uids.isEmpty()) {
+            return Mono.just(Map.of());
+        }
+        var options = ListOptions.builder()
+                .andQuery(notDeleting())
+                .andQuery(in("spec.uid", new HashSet<>(uids)))
+                .build();
+        return client.listAll(User.class, options, defaultSort())
+                .collect(Collectors.toMap(
+                        DashboardEndpoint::nullSafeUid,
+                        DashboardEndpoint::displayNameOf,
+                        (left, right) -> left))
+                .defaultIfEmpty(Map.of())
+                .onErrorReturn(Map.of());
+    }
+
     private Mono<Long> countNotDeleting(Class<? extends cn.tolim.pudans.contract.extension.Extension> type) {
         return client
                 .countBy(type, ListOptions.builder().andQuery(notDeleting()).build())
                 .onErrorReturn(0L);
     }
 
-    private Mono<List<RecentOperation>> toRecentOperations(List<AuditRecord> records) {
-        if (records.isEmpty()) {
-            return Mono.just(List.of());
-        }
-        return client
-                .listAll(User.class, ListOptions.builder().andQuery(notDeleting()).build(), defaultSort())
-                .collectMap(
-                        user -> nullSafeUid(user),
-                        user -> displayNameOf(user),
-                        () -> new LinkedHashMap<String, String>())
-                .defaultIfEmpty(new LinkedHashMap<>())
-                .map(users -> records.stream()
-                        .map(record -> toRecentOperation(record, users))
-                        .toList());
+    private static List<RecentOperation> toRecentOperations(
+            List<AuditRecord> records, Map<String, String> usersByUid) {
+        return records.stream()
+                .map(record -> toRecentOperation(record, usersByUid))
+                .toList();
     }
 
     private static RecentOperation toRecentOperation(AuditRecord record, Map<String, String> usersByUid) {
