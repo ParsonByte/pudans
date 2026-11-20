@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.dashboard.endpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
@@ -85,6 +86,14 @@ class DashboardEndpointTest {
         return user;
     }
 
+    private static UserGroup userGroup(String name) {
+        var group = new UserGroup();
+        var metadata = new Metadata();
+        metadata.setName(name);
+        group.setMetadata(metadata);
+        return group;
+    }
+
     private static RiskRule riskRule(String name, Instant creationTimestamp) {
         var riskRule = new RiskRule();
         var metadata = new Metadata();
@@ -147,6 +156,7 @@ class DashboardEndpointTest {
         when(client.listAll(eq(User.class), any(ListOptions.class), any()))
                 .thenReturn(Flux.just(alice, bob));
         stubRealRoles();
+        when(client.countBy(eq(User.class), any(ListOptions.class))).thenReturn(Mono.just(2L));
         when(client.countBy(eq(UserGroup.class), any(ListOptions.class))).thenReturn(Mono.just(3L));
         when(riskRuleRegistry.ruleCount()).thenReturn(8);
         when(client.countBy(eq(Webhook.class), any(ListOptions.class))).thenReturn(Mono.just(2L));
@@ -165,9 +175,19 @@ class DashboardEndpointTest {
                         record("audit-1", "uid-1", "LOGIN", "SUCCESS"),
                         record("audit-2", "uid-1", "LOGIN", "SUCCESS"),
                         record("audit-3", "uid-2", "LOGIN", "SUCCESS")));
-        when(userGroupService.getRoleNamesByUsername("alice")).thenReturn(Flux.just("super-role"));
-        when(userGroupService.getRoleNamesByUsername("bob"))
-                .thenReturn(Flux.just("system-admin-role", "role-template-manage-users"));
+        when(userGroupService.listMemberships())
+                .thenReturn(Flux.just(
+                        new UserGroupService.Membership("alice", "admins"),
+                        new UserGroupService.Membership("bob", "operators")));
+        when(userGroupService.listUserGroups(anyCollection()))
+                .thenReturn(Flux.just(userGroup("admins"), userGroup("operators")));
+        when(userGroupService.listRoleNamesOfGroup(any()))
+                .thenAnswer(invocation -> "admins"
+                                .equals(invocation.getArgument(0, UserGroup.class)
+                                        .getMetadata()
+                                        .getName())
+                        ? Flux.just("super-role")
+                        : Flux.just("system-admin-role", "role-template-manage-users"));
 
         var overview = endpoint.aggregate().block();
 
@@ -203,7 +223,6 @@ class DashboardEndpointTest {
     @Test
     void aggregateSurvivesLookupFailuresWithSafeDefaults() {
         when(systemInfoGetter.get()).thenReturn(Mono.error(new IllegalStateException("down")));
-        when(client.listAll(eq(User.class), any(ListOptions.class), any())).thenReturn(Flux.empty());
         when(client.listAll(eq(Role.class), any(ListOptions.class), any())).thenReturn(Flux.empty());
         when(client.listAll(eq(RiskRule.class), any(ListOptions.class), any()))
                 .thenReturn(Flux.error(new IllegalStateException("down")));
