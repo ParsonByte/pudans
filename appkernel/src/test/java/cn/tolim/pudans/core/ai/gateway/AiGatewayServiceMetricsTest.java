@@ -33,7 +33,9 @@ import cn.tolim.pudans.core.ai.routing.RouteRequest;
 import cn.tolim.pudans.core.ai.routing.RouteSelection;
 import cn.tolim.pudans.core.ai.routing.RouteTrace;
 import cn.tolim.pudans.core.ai.routing.SunkRouteRegistry;
+import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
+import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
 import cn.tolim.pudans.core.ai.wallet.AiWalletService;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
@@ -94,6 +96,12 @@ class AiGatewayServiceMetricsTest {
     CircuitBreaker circuitBreaker;
 
     @Mock
+    ProviderSpendGuard providerSpendGuard;
+
+    @Mock
+    AiTeamQuotaService teamQuotaService;
+
+    @Mock
     AiGatewayKeyService keyService;
 
     private SimpleMeterRegistry registry;
@@ -110,6 +118,8 @@ class AiGatewayServiceMetricsTest {
         lenient().when(keyService.acquire(any()))
                 .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
         lenient().when(keyService.release(any())).thenReturn(Mono.empty());
+        lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
+        lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
         service = new AiGatewayService(
                 client,
                 chatService,
@@ -127,7 +137,9 @@ class AiGatewayServiceMetricsTest {
                 keyService,
                 new SunkRouteRegistry(),
                 properties,
-                new AiMetrics(registry));
+                new AiMetrics(registry),
+                providerSpendGuard,
+                teamQuotaService);
     }
 
     @Test

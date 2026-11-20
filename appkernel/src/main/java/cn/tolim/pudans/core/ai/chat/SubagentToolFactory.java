@@ -18,6 +18,7 @@ import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionEngine;
 import cn.tolim.pudans.core.ai.harness.skill.ResourceSkillRepository;
 import cn.tolim.pudans.core.ai.harness.skill.SkillRuntime;
+import cn.tolim.pudans.core.ai.harness.skill.curator.SkillUsageStore;
 import cn.tolim.pudans.core.ai.harness.subagent.SubagentRuntime;
 import cn.tolim.pudans.core.ai.harness.subagent.SubagentTools;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
@@ -50,6 +51,8 @@ public class SubagentToolFactory {
     private final ThreadJournalStore journalStore;
 
     private final SkillService skillService;
+
+    private final SkillUsageStore skillUsageStore;
 
     private final McpServerService mcpServerService;
 
@@ -88,11 +91,12 @@ public class SubagentToolFactory {
                     for (var subagent : valid) {
                         var name = subagent.getMetadata().getName();
                         var spec = subagent.getSpec();
-                        var skillRuntime = new SkillRuntime(List.of(new ResourceSkillRepository(
-                                strings(spec.getSkills()).stream()
+                        var skillRuntime = new SkillRuntime(
+                                List.of(new ResourceSkillRepository(strings(spec.getSkills()).stream()
                                         .map(skills::get)
                                         .filter(Objects::nonNull)
-                                        .toList())));
+                                        .toList())),
+                                skillUsageStore);
                         var toolkit = toolkit(definitions, strings(spec.getMcpServers()));
                         runtime.register(
                                 name,

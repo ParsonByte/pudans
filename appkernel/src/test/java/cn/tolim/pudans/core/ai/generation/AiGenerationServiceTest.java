@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,11 +21,14 @@ import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
 import cn.tolim.pudans.core.ai.routing.RouteOutcome;
 import cn.tolim.pudans.core.ai.routing.RoutePlan;
 import cn.tolim.pudans.core.ai.routing.RouteSelection;
 import cn.tolim.pudans.core.ai.routing.RouteTrace;
+import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
+import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
 import cn.tolim.pudans.core.ai.wallet.AiWalletService;
 import cn.tolim.pudans.core.ai.wallet.AiWalletService.FreezeResult;
 import cn.tolim.pudans.core.ai.wallet.AiWalletService.ReleaseResult;
@@ -34,6 +38,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -74,10 +79,25 @@ class AiGenerationServiceTest {
     AiModelTaskScheduler taskScheduler;
 
     @Mock
+    CircuitBreaker circuitBreaker;
+
+    @Mock
+    AiTeamQuotaService teamQuotaService;
+
+    @Mock
+    ProviderSpendGuard providerSpendGuard;
+
+    @Mock
     AiModelAdapter adapter;
 
     @InjectMocks
     AiGenerationService service;
+
+    @BeforeEach
+    void setUpGuards() {
+        lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
+        lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
+    }
 
     @Test
     void generatesWithExplicitModelAndRecordsSuccess() {

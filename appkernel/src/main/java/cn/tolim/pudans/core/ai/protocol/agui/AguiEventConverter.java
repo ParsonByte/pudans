@@ -54,8 +54,12 @@ public final class AguiEventConverter {
             case AgentEvent.ToolCallDelta delta -> toolCallArgs(delta.id(), delta.partialArguments());
             case AgentEvent.ToolCallEnd end -> toolCallEnd(end);
             case AgentEvent.ToolResultEnd end -> List.of(toolCallResult(end));
+            case AgentEvent.DataBlockStart start -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "data_block_start", start.mediaType()));
             case AgentEvent.DataBlockDelta delta -> List.of(new AguiEvent.Raw(
                     threadId, runId, delta.data()));
+            case AgentEvent.DataBlockEnd end -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "data_block_end", end.mediaType()));
             case AgentEvent.HintBlock hint -> List.of(new AguiEvent.Custom(
                     threadId, runId, "hint", hint.hint()));
             case AgentEvent.RequireUserConfirm confirm -> List.of(new AguiEvent.Custom(

@@ -124,6 +124,76 @@ public class AiStatsRepository {
                 .all();
     }
 
+    // 供应商账号累计花费，用于 spendCapPoints 上限判断
+    public Mono<BigDecimal> providerAccountSpent(String provider, String account) {
+        return databaseClient.sql("""
+                        SELECT COALESCE((
+                                   SELECT SUM(points) FROM ai_chat_request
+                                   WHERE selected_provider = :provider AND selected_account = :account
+                                     AND status = 'SUCCEEDED'
+                               ), 0)
+                             + COALESCE((
+                                   SELECT SUM(points) FROM ai_model_request
+                                   WHERE selected_provider = :provider AND selected_account = :account
+                                     AND status = 'SUCCEEDED'
+                               ), 0) AS spent
+                        """)
+                .bind("provider", provider)
+                .bind("account", account)
+                .map((row, metadata) -> decimal(row, "spent"))
+                .one()
+                .defaultIfEmpty(BigDecimal.ZERO);
+    }
+
+    // 团队在窗口内已消耗积分，用于团队配额判断
+    public Mono<BigDecimal> teamPointsUsed(String teamId, Instant since) {
+        return databaseClient.sql("""
+                        SELECT COALESCE((
+                                   SELECT SUM(points) FROM ai_chat_request
+                                   WHERE team_id = :teamId AND created_at >= :since
+                                     AND status = 'SUCCEEDED'
+                               ), 0)
+                             + COALESCE((
+                                   SELECT SUM(points) FROM ai_model_request
+                                   WHERE team_id = :teamId AND created_at >= :since
+                                     AND status = 'SUCCEEDED'
+                               ), 0) AS used
+                        """)
+                .bind("teamId", teamId)
+                .bind("since", OffsetDateTime.ofInstant(since, ZoneOffset.UTC))
+                .map((row, metadata) -> decimal(row, "used"))
+                .one()
+                .defaultIfEmpty(BigDecimal.ZERO);
+    }
+
+    // 路由候选的实时性能输入：近窗口内成功请求的平均首字延迟、吞吐和输出量
+    public Flux<RoutePerformanceRow> recentRoutePerformance(Instant since) {
+        return databaseClient.sql("""
+                        SELECT selected_provider AS provider,
+                               selected_account AS account,
+                               selected_model AS model,
+                               AVG(ttft_ms) AS avg_ttft_ms,
+                               AVG(tps) AS avg_tps,
+                               COALESCE(SUM(output_tokens), 0) AS tokens
+                        FROM ai_chat_request
+                        WHERE created_at >= :since
+                          AND status = 'SUCCEEDED'
+                          AND selected_provider IS NOT NULL
+                          AND selected_account IS NOT NULL
+                          AND selected_model IS NOT NULL
+                        GROUP BY selected_provider, selected_account, selected_model
+                        """)
+                .bind("since", OffsetDateTime.ofInstant(since, ZoneOffset.UTC))
+                .map((row, metadata) -> new RoutePerformanceRow(
+                        row.get("provider", String.class),
+                        row.get("account", String.class),
+                        row.get("model", String.class),
+                        decimal(row, "avg_ttft_ms"),
+                        decimal(row, "avg_tps"),
+                        count(row, "tokens")))
+                .all();
+    }
+
     public Flux<RecentChatRequestRow> recentChatRequests(int days, int limit) {
         return databaseClient.sql("""
                         SELECT request_id, user_id, agent_source, route_group,
@@ -322,6 +392,14 @@ public class AiStatsRepository {
                         count(row, "queries")))
                 .one();
     }
+
+    public record RoutePerformanceRow(
+            String provider,
+            String account,
+            String model,
+            @Nullable BigDecimal avgTtftMillis,
+            @Nullable BigDecimal avgTps,
+            long tokens) {}
 
     public record RoutingStatsRow(
             String provider, String model, String status, long requests, BigDecimal points) {}

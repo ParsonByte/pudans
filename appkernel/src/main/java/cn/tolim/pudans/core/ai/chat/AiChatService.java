@@ -425,7 +425,8 @@ public class AiChatService {
                     return new HarnessToolkit.ToolResult(outcome.output(), outcome.isError());
                 },
                 prepared.harness().toolGroupsEnabled(),
-                prepared.harness().asyncToolPatterns());
+                prepared.harness().asyncToolPatterns(),
+                prepared.userId() + ":" + prepared.requestId());
     }
 
     private ToolOutcome executeTool(
@@ -615,6 +616,25 @@ public class AiChatService {
                             start.name(),
                             serverOf(start.name()),
                             LangChain4jToolMapper.arguments(start.arguments())));
+        }
+        if (event instanceof AgentEvent.ToolResultProgress progress) {
+            return List.of(new AiChatStreamEvent.ToolProgress(progress.id(), progress.message()));
+        }
+        if (event instanceof AgentEvent.ToolResultTextDelta delta) {
+            return List.of(new AiChatStreamEvent.ToolResultDelta(delta.id(), delta.delta()));
+        }
+        if (event instanceof AgentEvent.ToolCompensated compensated) {
+            return List.of(new AiChatStreamEvent.ToolCompensated(
+                    compensated.id(), compensated.name(), compensated.message()));
+        }
+        if (event instanceof AgentEvent.DataBlockStart start) {
+            return List.of(new AiChatStreamEvent.DataBlock("start", start.mediaType(), null));
+        }
+        if (event instanceof AgentEvent.DataBlockDelta delta) {
+            return List.of(new AiChatStreamEvent.DataBlock("delta", delta.mediaType(), delta.data()));
+        }
+        if (event instanceof AgentEvent.DataBlockEnd end) {
+            return List.of(new AiChatStreamEvent.DataBlock("end", end.mediaType(), null));
         }
         if (event instanceof AgentEvent.ToolResultEnd end) {
             var outcome = outcomes.stream()

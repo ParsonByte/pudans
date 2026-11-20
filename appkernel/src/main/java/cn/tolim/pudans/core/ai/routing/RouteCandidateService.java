@@ -9,6 +9,8 @@ import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.RoutePerformanceRow;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
@@ -16,23 +18,34 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RouteCandidateService {
 
     private static final double DEFAULT_HEALTH = 100;
 
+    private static final Duration PERFORMANCE_WINDOW = Duration.ofHours(1);
+
+    private static final Duration PERFORMANCE_TTL = Duration.ofSeconds(30);
+
     private final ReactiveExtensionClient client;
 
     private final SunkRouteRegistry sunkRegistry;
+
+    private final AiStatsRepository statsRepository;
+
+    private volatile PerformanceCache performanceCache = new PerformanceCache(Map.of(), Instant.EPOCH);
 
     private Clock clock = Clock.systemUTC();
 
@@ -56,17 +69,49 @@ public class RouteCandidateService {
         if (group == null || group.getSpec() == null || !group.getSpec().isEnabled()) {
             return Mono.just(List.of());
         }
+        return performance().flatMap(performance -> expand(
+                group, capabilities, inputModalities, outputModalities, performance));
+    }
+
+    private Mono<List<RouteSeat>> expand(
+            AiRouteGroup group,
+            Set<AiModel.Capability> capabilities,
+            Set<AiModel.Modality> inputModalities,
+            Set<AiModel.Modality> outputModalities,
+            Map<String, RoutePerformanceRow> performance) {
         var members = Flux.fromIterable(group.getSpec().getMembers())
                 .filter(member -> member != null && member.isEnabled() && StringUtils.hasText(member.getModel()));
         var primary = members
-                .concatMap(member -> expandMember(group, member, capabilities, inputModalities, outputModalities))
+                .concatMap(member -> expandMember(
+                        group, member, capabilities, inputModalities, outputModalities, performance))
                 .concatMapIterable(seats -> seats);
         // provider fallback 候选始终追加在主候选之后，去重后保持低优先
         var fallback = members
-                .concatMap(member ->
-                        expandProviderFallback(group, member, capabilities, inputModalities, outputModalities))
+                .concatMap(member -> expandProviderFallback(
+                        group, member, capabilities, inputModalities, outputModalities, performance))
                 .concatMapIterable(seats -> seats);
         return Flux.concat(primary, fallback).distinct(RouteSeat::key).collectList();
+    }
+
+    // 每 30 秒最多查询一次近一小时的实际延迟与吞吐，查询失败时沿用旧快照
+    private Mono<Map<String, RoutePerformanceRow>> performance() {
+        var now = clock.instant();
+        var cached = performanceCache;
+        if (Duration.between(cached.loadedAt(), now).compareTo(PERFORMANCE_TTL) < 0) {
+            return Mono.just(cached.rows());
+        }
+        return statsRepository
+                .recentRoutePerformance(now.minus(PERFORMANCE_WINDOW))
+                .collectMap(RouteCandidateService::performanceKey)
+                .doOnNext(rows -> performanceCache = new PerformanceCache(rows, now))
+                .onErrorResume(error -> {
+                    log.warn("读取路由性能快照失败，沿用上一次结果。", error);
+                    return Mono.just(cached.rows());
+                });
+    }
+
+    private static String performanceKey(RoutePerformanceRow row) {
+        return row.provider() + "|" + row.account() + "|" + row.model();
     }
 
     private Mono<List<RouteSeat>> expandMember(
@@ -74,13 +119,14 @@ public class RouteCandidateService {
             AiRouteGroup.Member member,
             Set<AiModel.Capability> capabilities,
             Set<AiModel.Modality> inputModalities,
-            Set<AiModel.Modality> outputModalities) {
+            Set<AiModel.Modality> outputModalities,
+            Map<String, RoutePerformanceRow> performance) {
         return client.get(AiModel.class, member.getModel())
                 .filter(model -> eligible(model, capabilities, inputModalities, outputModalities))
                 .flatMap(model -> client.get(AiProvider.class, model.getSpec().getProvider())
                         .filter(RouteCandidateService::isEnabledProvider)
                         .flatMap(provider -> accountsOf(provider, group)
-                                .map(account -> seat(group, member, provider, account, model, null))
+                                .map(account -> seat(group, member, provider, account, model, null, performance))
                                 .collectList()))
                 .defaultIfEmpty(List.of());
     }
@@ -90,13 +136,20 @@ public class RouteCandidateService {
             AiRouteGroup.Member member,
             Set<AiModel.Capability> capabilities,
             Set<AiModel.Modality> inputModalities,
-            Set<AiModel.Modality> outputModalities) {
+            Set<AiModel.Modality> outputModalities,
+            Map<String, RoutePerformanceRow> performance) {
         return client.get(AiModel.class, member.getModel())
                 .filter(model -> eligible(model, capabilities, inputModalities, outputModalities))
                 .flatMap(model -> client.get(AiProvider.class, model.getSpec().getProvider())
                         .filter(RouteCandidateService::isEnabledProvider)
                         .flatMapMany(provider -> fallbackProviderSeats(
-                                group, member, provider, capabilities, inputModalities, outputModalities))
+                                group,
+                                member,
+                                provider,
+                                capabilities,
+                                inputModalities,
+                                outputModalities,
+                                performance))
                         .collectList())
                 .defaultIfEmpty(List.of());
     }
@@ -107,7 +160,8 @@ public class RouteCandidateService {
             AiProvider provider,
             Set<AiModel.Capability> capabilities,
             Set<AiModel.Modality> inputModalities,
-            Set<AiModel.Modality> outputModalities) {
+            Set<AiModel.Modality> outputModalities,
+            Map<String, RoutePerformanceRow> performance) {
         var fallback = provider.getSpec() == null ? null : provider.getSpec().getFallback();
         if (fallback == null || fallback.isEmpty()) {
             return Flux.empty();
@@ -133,7 +187,13 @@ public class RouteCandidateService {
                                             model, capabilities, inputModalities, outputModalities))
                                     .concatMap(model -> accountsOf(fallbackProvider, group)
                                             .map(account -> seat(
-                                                    group, member, fallbackProvider, account, model, source))
+                                                    group,
+                                                    member,
+                                                    fallbackProvider,
+                                                    account,
+                                                    model,
+                                                    source,
+                                                    performance))
                                             .collectList()
                                             .flatMapMany(Flux::fromIterable));
                         }));
@@ -158,13 +218,18 @@ public class RouteCandidateService {
             AiProvider provider,
             AiProviderAccount account,
             AiModel model,
-            @Nullable String fallbackSource) {
+            @Nullable String fallbackSource,
+            Map<String, RoutePerformanceRow> performance) {
         var modelSpec = model.getSpec();
         var accountSpec = account.getSpec();
         var quota = accountSpec.getQuota();
         Long quotaLimit = quota == null ? null : quota.getLimit();
         Long quotaUsed = quota == null ? null : quota.getUsed();
         Instant resetsAt = quota == null ? null : quota.getResetAt();
+        var stats = performance.get(
+                provider.getMetadata().getName() + "|"
+                        + account.getMetadata().getName() + "|"
+                        + model.getMetadata().getName());
         return RouteSeat.builder()
                 .provider(provider.getMetadata().getName())
                 .account(account.getMetadata().getName())
@@ -179,6 +244,11 @@ public class RouteCandidateService {
                 .quotaLimit(quotaLimit)
                 .resetsAt(resetsAt)
                 .pace(pace(quotaLimit, quotaUsed, resetsAt))
+                .ttftMillis(stats == null || stats.avgTtftMillis() == null
+                        ? 0
+                        : stats.avgTtftMillis().max(BigDecimal.ZERO).longValue())
+                .tps(stats == null || stats.avgTps() == null ? 0 : stats.avgTps().doubleValue())
+                .tokensUsed(stats == null ? 0 : Math.max(0, stats.tokens()))
                 .cost(cost(modelSpec))
                 .spent(isSpent(quotaLimit, quotaUsed, accountSpec))
                 .sunk(sunkRegistry.isSunk(provider.getMetadata().getName(), account.getMetadata().getName()))
@@ -229,8 +299,20 @@ public class RouteCandidateService {
         if (quotaLimit != null && quotaLimit > 0 && quotaUsed != null && quotaUsed >= quotaLimit) {
             return true;
         }
+        if (account.getWindows() != null
+                && account.getWindows().stream().anyMatch(RouteCandidateService::exhaustedWindow)) {
+            return true;
+        }
         var balance = account.getBalance();
         return balance != null && balance.getLeft() != null && balance.getLeft().signum() <= 0;
+    }
+
+    private static boolean exhaustedWindow(AiProviderAccount.QuotaWindow window) {
+        if (window == null || window.getLimit() == null || window.getLimit() <= 0
+                || window.getUsed() == null || window.getUsed() < window.getLimit()) {
+            return false;
+        }
+        return window.getResetsAt() == null || window.getResetsAt().isAfter(Instant.now());
     }
 
     private static double health(AiProvider provider, AiProviderAccount account) {
@@ -256,6 +338,8 @@ public class RouteCandidateService {
         var remaining = Math.max(0, quotaLimit - used);
         return remaining * 3600.0 / remainingSeconds;
     }
+
+    private record PerformanceCache(Map<String, RoutePerformanceRow> rows, Instant loadedAt) {}
 
     private static BigDecimal cost(AiModel.Spec modelSpec) {
         var input = BigDecimal.ONE.divide(

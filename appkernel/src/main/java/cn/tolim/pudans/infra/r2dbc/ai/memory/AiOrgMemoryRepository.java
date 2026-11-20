@@ -55,6 +55,31 @@ public class AiOrgMemoryRepository {
                 .all();
     }
 
+    // 聊天召回只使用已核验且被当前团队来源覆盖的组织记忆
+    public Flux<OrgMemoryRecord> searchVerified(String teamId, String query, int limit) {
+        if (limit <= 0 || teamId == null || teamId.isBlank()) {
+            return Flux.empty();
+        }
+        var normalized = query == null ? "" : query.strip();
+        var hasQuery = !normalized.isEmpty();
+        return databaseClient.sql("SELECT " + ORG_COLUMNS + """
+                         FROM ai_org_memory
+                         WHERE trust_level = 'VERIFIED'
+                           AND is_active = TRUE
+                           AND (source_type = 'CROSS_TEAM' OR :teamId = ANY(source_team_ids))
+                           AND (:hasQuery = FALSE OR content ILIKE :pattern ESCAPE '\\')
+                         ORDER BY similarity(content, :query) DESC, cross_vote_count DESC, updated_at DESC
+                         LIMIT :limit
+                         """)
+                .bind("teamId", teamId)
+                .bind("hasQuery", hasQuery)
+                .bind("pattern", AiMemorySql.likePattern(normalized))
+                .bind("query", normalized)
+                .bind("limit", limit)
+                .map((row, metadata) -> mapOrgMemory(row))
+                .all();
+    }
+
     public Mono<OrgMemoryRecord> recordVote(NewOrgMemory memory) {
         return databaseClient.sql("""
                          INSERT INTO ai_org_memory (

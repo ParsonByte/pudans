@@ -68,6 +68,9 @@ class AgentRuntimeServiceTest {
     AiAgentRuntimeRepository repository;
 
     @Mock
+    cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository snapshotRepository;
+
+    @Mock
     SandboxProviderRegistry registry;
 
     @Mock
@@ -93,6 +96,7 @@ class AgentRuntimeServiceTest {
                 teamService,
                 environmentService,
                 repository,
+                snapshotRepository,
                 registry,
                 logBuffer,
                 redisTemplate,
@@ -250,6 +254,55 @@ class AgentRuntimeServiceTest {
         verify(adapter).destroy("sb-1");
         verify(repository).delete(AGENT);
         verify(logBuffer).remove(AGENT);
+    }
+
+    @Test
+    void storesAWorkspaceSnapshot() {
+        var adapter = mock(SandboxProviderAdapter.class);
+        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
+        when(registry.adapter(AiSandboxProvider.Provider.ALIYUN)).thenReturn(Mono.just(adapter));
+        when(environmentService.resolveValues(AGENT)).thenReturn(Mono.just(Map.of()));
+        when(repository.markActive(AGENT)).thenReturn(Mono.empty());
+        when(adapter.exec(eq("sb-1"), any()))
+                .thenReturn(Mono.just(new SandboxExecResult(0, "", "", 5)));
+        when(adapter.readFile(eq("sb-1"), anyString()))
+                .thenReturn(Mono.just(new cn.tolim.pudans.core.ai.runtime.sandbox.SandboxFile(
+                        "/tmp/snapshot.tgz", "base64", "aGVsbG8=", 5)));
+        when(snapshotRepository.insert(eq(AGENT), eq("release"), eq(USER), any()))
+                .thenReturn(Mono.just(new cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository
+                        .SnapshotRecord(7L, AGENT, "release", null, 5, USER, NOW)));
+
+        StepVerifier.create(service.snapshot(AGENT, USER, "release", USER))
+                .assertNext(view -> {
+                    assertThat(view.id()).isEqualTo(7L);
+                    assertThat(view.name()).isEqualTo("release");
+                    assertThat(view.sizeBytes()).isEqualTo(5);
+                })
+                .verifyComplete();
+
+        verify(adapter).readFile(eq("sb-1"), anyString());
+    }
+
+    @Test
+    void restoresAWorkspaceSnapshot() {
+        var adapter = mock(SandboxProviderAdapter.class);
+        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
+        when(registry.adapter(AiSandboxProvider.Provider.ALIYUN)).thenReturn(Mono.just(adapter));
+        when(snapshotRepository.find(7L, AGENT)).thenReturn(Mono.just(
+                new cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository.SnapshotRecord(
+                        7L, AGENT, "release", "hello".getBytes(), 5, USER, NOW)));
+        when(adapter.writeFile(eq("sb-1"), anyString(), any())).thenReturn(Mono.empty());
+        when(environmentService.resolveValues(AGENT)).thenReturn(Mono.just(Map.of()));
+        when(repository.markActive(AGENT)).thenReturn(Mono.empty());
+        when(adapter.exec(eq("sb-1"), any()))
+                .thenReturn(Mono.just(new SandboxExecResult(0, "", "", 5)));
+
+        StepVerifier.create(service.restoreSnapshot(AGENT, USER, 7L)).verifyComplete();
+
+        verify(adapter).writeFile(eq("sb-1"), anyString(), any());
+        verify(adapter).exec(eq("sb-1"), any());
     }
 
     @Test

@@ -7,6 +7,7 @@ import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
 import cn.tolim.pudans.contract.core.extension.ai.AiSkill;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
+import cn.tolim.pudans.core.ai.harness.skill.curator.SkillCuratorService;
 import cn.tolim.pudans.core.ai.library.skill.SkillService;
 import cn.tolim.pudans.core.ai.team.AiTeamService;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
@@ -32,12 +33,15 @@ class AiSkillEndpointTest {
     @Mock
     AiEndpointRequests requests;
 
+    @Mock
+    SkillCuratorService curatorService;
+
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         client = WebTestClient.bindToRouterFunction(
-                        new AiSkillEndpoint(skillService, teamService, requests).endpoint())
+                        new AiSkillEndpoint(skillService, teamService, requests, curatorService).endpoint())
                 .build();
     }
 

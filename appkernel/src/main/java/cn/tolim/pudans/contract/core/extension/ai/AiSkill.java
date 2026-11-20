@@ -34,6 +34,12 @@ public class AiSkill extends AbstractExtension {
         GIT
     }
 
+    public enum Status {
+        DRAFT,
+        PUBLISHED,
+        ARCHIVED
+    }
+
     @Data
     public static class Spec {
 
@@ -54,6 +60,8 @@ public class AiSkill extends AbstractExtension {
         private String content;
 
         private boolean enabled = true;
+
+        private Status status = Status.PUBLISHED;
 
         private List<String> agents = new ArrayList<>();
     }

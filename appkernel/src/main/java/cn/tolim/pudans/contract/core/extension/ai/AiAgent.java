@@ -153,7 +153,8 @@ public class AiAgent extends AbstractExtension {
     public enum RuntimeProvider {
         NONE,
         ALIYUN,
-        TENCENT
+        TENCENT,
+        E2B
     }
 
     @Data

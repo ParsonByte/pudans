@@ -114,7 +114,9 @@ public class SkillService {
 
     private Flux<AiSkill> enabledSkills() {
         return client.listAll(AiSkill.class, ListOptions.builder().build(), defaultSort())
-                .filter(skill -> skill.getSpec() != null && skill.getSpec().isEnabled());
+                .filter(skill -> skill.getSpec() != null
+                        && skill.getSpec().isEnabled()
+                        && skill.getSpec().getStatus() == AiSkill.Status.PUBLISHED);
     }
 
     public Flux<SkillSummary> skillsForAgent(String agentName) {

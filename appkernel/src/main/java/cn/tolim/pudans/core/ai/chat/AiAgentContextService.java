@@ -12,6 +12,7 @@ import cn.tolim.pudans.core.ai.harness.permission.PermissionMode;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionRule;
 import cn.tolim.pudans.core.ai.harness.skill.ResourceSkillRepository;
 import cn.tolim.pudans.core.ai.harness.skill.SkillRuntime;
+import cn.tolim.pudans.core.ai.harness.skill.curator.SkillUsageStore;
 import cn.tolim.pudans.core.ai.harness.team.TeamRuntimeRegistry;
 import cn.tolim.pudans.core.ai.harness.team.TeamTools;
 import cn.tolim.pudans.core.ai.harness.tool.ToolResultEvictionConfig;
@@ -50,6 +51,8 @@ public class AiAgentContextService {
 
     private final SkillService skillService;
 
+    private final SkillUsageStore skillUsageStore;
+
     private final TeamRuntimeRegistry teamRuntimeRegistry;
 
     public Mono<AgentContext> build(AiAgent agent) {
@@ -70,7 +73,8 @@ public class AiAgentContextService {
                             tuple.getT3(),
                             tuple.getT4(),
                             settings,
-                            new SkillRuntime(List.of(new ResourceSkillRepository(tuple.getT5()))),
+                            new SkillRuntime(
+                                    List.of(new ResourceSkillRepository(tuple.getT5())), skillUsageStore),
                             teamTools(agent));
                 });
     }

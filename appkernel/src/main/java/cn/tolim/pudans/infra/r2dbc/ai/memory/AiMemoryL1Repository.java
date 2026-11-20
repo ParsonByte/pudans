@@ -74,6 +74,20 @@ public class AiMemoryL1Repository {
         return spec.map((row, metadata) -> record.withId(row.get("id", Long.class))).one();
     }
 
+    // 记忆主体写入后单独补向量，失败不影响主流程
+    public Mono<Boolean> updateEmbedding(long id, float[] embedding) {
+        return databaseClient.sql("""
+                        UPDATE ai_memory_l1
+                        SET embedding = CAST(:embedding AS vector), updated_at = now()
+                        WHERE id = :id
+                        """)
+                .bind("embedding", cn.tolim.pudans.infra.r2dbc.ai.vector.VectorCodec.format(embedding))
+                .bind("id", id)
+                .fetch()
+                .rowsUpdated()
+                .map(updated -> updated > 0);
+    }
+
     public Mono<Long> applyDecay(int amount, int minScore, int staleDays) {
         return databaseClient.sql("""
                         UPDATE ai_memory_l1

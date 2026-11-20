@@ -1,15 +1,23 @@
 package cn.tolim.pudans.core.ai.memory;
 
+import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
 import cn.tolim.pudans.core.ai.prompt.MemoryPrompts;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL3Repository;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryRecallRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryRecallRepository.RecalledMemory;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -17,6 +25,8 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class AiMemoryRecallService {
+
+    private static final Logger log = LoggerFactory.getLogger(AiMemoryRecallService.class);
 
     private static final String PREPEND_BUDGET_KEY = "${pudans.ai.memory.recall.prepend-budget:3000}";
 
@@ -28,6 +38,10 @@ public class AiMemoryRecallService {
 
     private final MemoryPromptResolver promptResolver;
 
+    private final @Nullable AiEmbeddingService embeddingService;
+
+    private final @Nullable AiOrgMemoryRepository orgMemoryRepository;
+
     private final int prependBudget;
 
     private final int appendBudget;
@@ -36,11 +50,25 @@ public class AiMemoryRecallService {
             AiMemoryRecallRepository recallRepository,
             AiMemoryL3Repository personaRepository,
             MemoryPromptResolver promptResolver,
+            int prependBudget,
+            int appendBudget) {
+        this(recallRepository, personaRepository, promptResolver, null, null, prependBudget, appendBudget);
+    }
+
+    @Autowired
+    public AiMemoryRecallService(
+            AiMemoryRecallRepository recallRepository,
+            AiMemoryL3Repository personaRepository,
+            MemoryPromptResolver promptResolver,
+            @Nullable AiEmbeddingService embeddingService,
+            @Nullable AiOrgMemoryRepository orgMemoryRepository,
             @Value(PREPEND_BUDGET_KEY) int prependBudget,
             @Value(APPEND_BUDGET_KEY) int appendBudget) {
         this.recallRepository = Objects.requireNonNull(recallRepository, "recallRepository");
         this.personaRepository = Objects.requireNonNull(personaRepository, "personaRepository");
         this.promptResolver = Objects.requireNonNull(promptResolver, "promptResolver");
+        this.embeddingService = embeddingService;
+        this.orgMemoryRepository = orgMemoryRepository;
         if (prependBudget < 1 || appendBudget < 1) {
             throw new IllegalArgumentException("字符预算必须大于 0");
         }
@@ -75,12 +103,7 @@ public class AiMemoryRecallService {
         var scopes = mergeScopes(context, borrowedScopes);
         var facts = factLimit == 0 || normalizedQuery.isEmpty()
                 ? Flux.<RecalledMemory>empty()
-                : Flux.fromIterable(scopes)
-                        .concatMap(scope -> recallRepository.searchL1(
-                                scope.teamId(), scope.agentId(), scope.userId(), normalizedQuery, factLimit))
-                        .collectList()
-                        .map(AiMemoryRecallService::dedupeFacts)
-                        .flatMapMany(Flux::fromIterable);
+                : recallFacts(context, scopes, normalizedQuery, factLimit).flatMapMany(Flux::fromIterable);
         var scenes = sceneLimit == 0
                 ? Flux.<ScopedScene>empty()
                 : Flux.fromIterable(scopes)
@@ -110,13 +133,84 @@ public class AiMemoryRecallService {
         return List.copyOf(scopes);
     }
 
-    private static List<RecalledMemory> dedupeFacts(List<RecalledMemory> facts) {
-        var unique = new LinkedHashMap<String, RecalledMemory>();
-        for (var fact : facts) {
-            var key = hasText(fact.recordId()) ? "record:" + fact.recordId() : "id:" + fact.id();
-            unique.putIfAbsent(key, fact);
+    // 优先使用向量召回，嵌入不可用或没有命中时回退到关键词评分
+    private Mono<List<RecalledMemory>> recallFacts(
+            MemoryContext origin, List<MemoryContext> scopes, String query, int limit) {
+        var keyword = Flux.fromIterable(scopes)
+                .concatMap(scope -> recallRepository.searchL1(
+                        scope.teamId(), scope.agentId(), scope.userId(), query, limit))
+                .collectList();
+        var vector = embeddingQuery(query)
+                .flatMap(vectorValue -> Flux.fromIterable(scopes)
+                        .concatMap(scope -> recallRepository.searchL1Vector(
+                                scope.teamId(),
+                                scope.agentId(),
+                                scope.userId(),
+                                vectorValue,
+                                limit))
+                        .collectList())
+                .filter(facts -> !facts.isEmpty());
+        return vector.switchIfEmpty(Mono.defer(() -> keyword))
+                .flatMap(l1 -> orgFacts(origin, query, limit)
+                        .map(org -> mergeFacts(l1, org, limit)));
+    }
+
+    private Mono<float[]> embeddingQuery(String query) {
+        if (embeddingService == null || query.isEmpty()) {
+            return Mono.empty();
         }
-        return List.copyOf(unique.values());
+        return embeddingService
+                .embedOne(query)
+                .onErrorResume(error -> {
+                    log.debug("记忆召回嵌入不可用，回退关键词召回：{}", error.getMessage());
+                    return Mono.empty();
+                });
+    }
+
+    private Mono<List<RecalledMemory>> orgFacts(MemoryContext origin, String query, int limit) {
+        if (orgMemoryRepository == null || !hasText(origin.teamId())) {
+            return Mono.just(List.of());
+        }
+        return orgMemoryRepository
+                .searchVerified(origin.teamId(), query, Math.max(1, Math.min(limit, 5)))
+                .map(AiMemoryRecallService::fromOrg)
+                .collectList()
+                .onErrorResume(error -> {
+                    log.debug("组织记忆召回失败：{}", error.getMessage());
+                    return Mono.just(List.of());
+                });
+    }
+
+    private static RecalledMemory fromOrg(OrgMemoryRecord record) {
+        return new RecalledMemory(
+                record.id(),
+                "org:" + record.id(),
+                record.content(),
+                MemoryType.WORK_FACT,
+                "组织记忆",
+                80,
+                1,
+                record.updatedAt() == null ? Instant.now() : record.updatedAt(),
+                0.8);
+    }
+
+    private static List<RecalledMemory> mergeFacts(
+            List<RecalledMemory> local, List<RecalledMemory> org, int limit) {
+        var merged = new LinkedHashMap<String, RecalledMemory>();
+        for (var fact : local) {
+            merged.putIfAbsent(factKey(fact), fact);
+        }
+        for (var fact : org) {
+            merged.putIfAbsent(factKey(fact), fact);
+        }
+        return merged.values().stream()
+                .sorted(Comparator.comparingDouble(RecalledMemory::score).reversed())
+                .limit(Math.max(1, limit))
+                .toList();
+    }
+
+    private static String factKey(RecalledMemory fact) {
+        return hasText(fact.recordId()) ? "record:" + fact.recordId() : "id:" + fact.id();
     }
 
     private static List<ScopedScene> dedupeScenes(List<ScopedScene> scenes) {

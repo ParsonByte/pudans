@@ -11,6 +11,7 @@ import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -32,6 +33,9 @@ class RouteCandidateServiceTest {
     @Mock
     ReactiveExtensionClient client;
 
+    @Mock
+    AiStatsRepository statsRepository;
+
     private SunkRouteRegistry sunkRegistry;
 
     private RouteCandidateService service;
@@ -40,8 +44,31 @@ class RouteCandidateServiceTest {
     void setUp() {
         sunkRegistry = new SunkRouteRegistry();
         sunkRegistry.setClock(Clock.fixed(NOW, ZoneOffset.UTC));
-        service = new RouteCandidateService(client, sunkRegistry);
+        when(statsRepository.recentRoutePerformance(any())).thenReturn(Flux.empty());
+        service = new RouteCandidateService(client, sunkRegistry, statsRepository);
         service.setClock(Clock.fixed(NOW, ZoneOffset.UTC));
+    }
+
+    @Test
+    void appliesRecentPerformanceToSeats() {
+        var group = group(member("model-a"));
+        when(statsRepository.recentRoutePerformance(any())).thenReturn(Flux.just(
+                new AiStatsRepository.RoutePerformanceRow(
+                        "provider-a", "account-a", "model-a",
+                        java.math.BigDecimal.valueOf(320), java.math.BigDecimal.valueOf(42.5), 900L)));
+        when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model("model-a", "provider-a")));
+        when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider("provider-a", true)));
+        when(client.listAll(eq(AiProviderAccount.class), any(), any()))
+                .thenReturn(Flux.just(account("account-a", 10)));
+
+        StepVerifier.create(service.expand(group))
+                .assertNext(seats -> {
+                    assertThat(seats).hasSize(1);
+                    assertThat(seats.getFirst().getTtftMillis()).isEqualTo(320);
+                    assertThat(seats.getFirst().getTps()).isEqualTo(42.5);
+                    assertThat(seats.getFirst().getTokensUsed()).isEqualTo(900);
+                })
+                .verifyComplete();
     }
 
     @Test

@@ -156,7 +156,7 @@ class AiChatServiceMemoryTaskTest {
                 .when(subagentToolFactory.create(any(), any()))
                 .thenReturn(Mono.just(new SubagentTools(new SubagentRuntime())));
         org.mockito.Mockito.lenient()
-                .when(harnessToolkitFactory.create(any(), any(), anyBoolean(), any()))
+                .when(harnessToolkitFactory.create(any(), any(), anyBoolean(), any(), any()))
                 .thenAnswer(invocation -> new HarnessToolkit().fallbackHandler(
                         invocation.getArgument(1, HarnessToolkit.ToolHandler.class)));
         org.mockito.Mockito.lenient()

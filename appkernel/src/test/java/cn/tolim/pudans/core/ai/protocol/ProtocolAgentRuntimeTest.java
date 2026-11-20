@@ -75,7 +75,7 @@ class ProtocolAgentRuntimeTest {
                 "", List.of(), List.of(), List.of(), List.of(), Map.of())));
         when(subagentToolFactory.create(any(), any())).thenReturn(
                 Mono.just(new SubagentTools(new SubagentRuntime())));
-        when(harnessToolkitFactory.create(any(), any(), anyBoolean(), any()))
+        when(harnessToolkitFactory.create(any(), any(), anyBoolean(), any(), any()))
                 .thenReturn(new HarnessToolkit());
         when(mcpServerService.decorateToolkit(any(), any()))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));

@@ -22,6 +22,14 @@ public sealed interface AiChatStreamEvent {
     record ToolResult(String id, String name, String output, boolean isError, long durationMs)
             implements AiChatStreamEvent {}
 
+    record ToolProgress(String id, String message) implements AiChatStreamEvent {}
+
+    record ToolResultDelta(String id, String delta) implements AiChatStreamEvent {}
+
+    record ToolCompensated(String id, String name, String message) implements AiChatStreamEvent {}
+
+    record DataBlock(String phase, String mediaType, @Nullable String data) implements AiChatStreamEvent {}
+
     record ToolConfirm(String runId, String toolCallId, String name, String message)
             implements AiChatStreamEvent {}
 

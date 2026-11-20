@@ -12,8 +12,12 @@ import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import cn.tolim.pudans.core.ai.model.AiModelUsageEstimator;
 import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
 import cn.tolim.pudans.core.ai.routing.RouteSelection;
+import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
+import cn.tolim.pudans.core.ai.routing.circuit.CircuitFailure;
+import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
 import cn.tolim.pudans.core.ai.wallet.AiPointsCalculator;
 import cn.tolim.pudans.core.ai.wallet.AiWalletService;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -80,6 +84,12 @@ public class AiGenerationService {
     private final AiGenerationRecorder recorder;
 
     private final AiModelTaskScheduler taskScheduler;
+
+    private final CircuitBreaker circuitBreaker;
+
+    private final AiTeamQuotaService teamQuotaService;
+
+    private final ProviderSpendGuard providerSpendGuard;
 
     public Mono<AiGenerationResult> generate(AiGenerationCommand command) {
         if (!SUPPORTED.contains(command.capability())) {
@@ -162,9 +172,12 @@ public class AiGenerationService {
         var free = resolved.provider().getSpec().isFree()
                 || resolved.account().getSpec().isFreePlan();
         var estimatedPoints = AiPointsCalculator.estimate(model, free, estimate);
-        var hold = estimatedPoints.signum() > 0
+        var guard = providerSpendGuard
+                .check(resolved.provider(), resolved.account(), estimatedPoints)
+                .then(teamQuotaService.check(command.teamId(), estimatedPoints));
+        var hold = guard.then(estimatedPoints.signum() > 0
                 ? walletService.freeze(requestId, command.userId(), estimatedPoints, HOLD_TTL).then()
-                : Mono.<Void>empty();
+                : Mono.<Void>empty());
         var requestPayload = JsonUtils.objectToJson(Map.of(
                 "capability", capability.name(),
                 "inputs", command.inputs(),
@@ -266,6 +279,19 @@ public class AiGenerationService {
                     : lastError);
         }
         var candidate = candidates.get(index);
+        if (circuitOpen(candidate)) {
+            return attempt(
+                    command,
+                    candidates,
+                    index + 1,
+                    row,
+                    estimate,
+                    startedAt,
+                    new ApiException(
+                            HttpStatus.SERVICE_UNAVAILABLE,
+                            "ai-generation-circuit-open",
+                            "供应商当前处于熔断冷却中。"));
+        }
         var protocol = candidate.provider().getSpec().getProtocol();
         if (!adapterRegistry.supports(protocol, command.capability())) {
             return attempt(
@@ -281,8 +307,11 @@ public class AiGenerationService {
                             "供应商协议 " + protocol + " 不支持能力 " + command.capability()));
         }
         return invokeOnce(command, candidate, row, estimate, startedAt)
-                .onErrorResume(CandidateFailure.class, failure -> attempt(
-                        command, candidates, index + 1, row, estimate, startedAt, failure.getCause()));
+                .onErrorResume(CandidateFailure.class, failure -> {
+                    recordFailure(candidate);
+                    return attempt(
+                            command, candidates, index + 1, row, estimate, startedAt, failure.getCause());
+                });
     }
 
     private Mono<AiGenerationResult> invokeOnce(
@@ -313,6 +342,7 @@ public class AiGenerationService {
                             return Mono.error(new CandidateFailure(
                                     new IllegalStateException("供应商任务缺少任务 ID。")));
                         }
+                        recordSuccess(resolved);
                         return requestRepository
                                 .markTask(row.requestId(), response.providerTaskId())
                                 .flatMap(updated -> taskScheduler.enqueuePoll(updated)
@@ -325,6 +355,7 @@ public class AiGenerationService {
                                 "ai-generation-provider-failed",
                                 "供应商生成失败。")));
                     }
+                    recordSuccess(resolved);
                     return recorder.succeed(row, model, free, response, estimate, startedAt);
                 });
     }
@@ -359,6 +390,23 @@ public class AiGenerationService {
             case THREE_D_GENERATION -> Set.of(AiModel.Modality.THREE_D);
             default -> Set.of();
         };
+    }
+
+    private boolean circuitOpen(Resolved candidate) {
+        return circuitBreaker.isOpen(candidate.provider().getMetadata().getName())
+                || circuitBreaker.isOpen(candidate.account().getMetadata().getName());
+    }
+
+    private void recordSuccess(Resolved candidate) {
+        circuitBreaker.recordSuccess(candidate.provider().getMetadata().getName());
+        circuitBreaker.recordSuccess(candidate.account().getMetadata().getName());
+    }
+
+    private void recordFailure(Resolved candidate) {
+        circuitBreaker.recordFailure(
+                candidate.provider().getMetadata().getName(), CircuitFailure.defaultFailure());
+        circuitBreaker.recordFailure(
+                candidate.account().getMetadata().getName(), CircuitFailure.defaultFailure());
     }
 
     private static ApiException invalid(String reason) {

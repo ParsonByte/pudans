@@ -50,6 +50,7 @@ class SubagentToolFactoryTest {
                 new InMemoryAgentStateStore(),
                 new InMemoryThreadJournalStore(),
                 skillService,
+                new cn.tolim.pudans.core.ai.harness.skill.curator.InMemorySkillUsageStore(),
                 mcpServerService);
         when(skillService.byNames(any())).thenReturn(Mono.just(List.of()));
         when(mcpServerService.toolCatalogFor(any()))

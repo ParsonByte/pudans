@@ -3,12 +3,15 @@ package cn.tolim.pudans.core.ai.routing;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreakerConfig;
 import cn.tolim.pudans.core.ai.routing.circuit.InMemoryCircuitBreaker;
+import cn.tolim.pudans.core.ai.routing.circuit.RedisCircuitBreaker;
 import cn.tolim.pudans.core.ai.routing.classifier.ComplexityClassifier;
 import cn.tolim.pudans.core.ai.routing.classifier.HeuristicComplexityClassifier;
 import cn.tolim.pudans.core.ai.routing.strategy.RouteStrategyRegistry;
 import cn.tolim.pudans.infra.properties.AiProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 
 @Configuration
 public class AiRoutingConfiguration {
@@ -24,14 +27,17 @@ public class AiRoutingConfiguration {
     }
 
     @Bean
-    public CircuitBreaker circuitBreaker(AiProperties properties) {
+    public CircuitBreaker circuitBreaker(
+            AiProperties properties, ObjectProvider<ReactiveStringRedisTemplate> redisTemplate) {
         var circuit = properties.getRouting().getCircuit();
-        return new InMemoryCircuitBreaker(new CircuitBreakerConfig(
+        var config = new CircuitBreakerConfig(
                 circuit.getFailureThreshold(),
                 circuit.getSuccessThreshold(),
                 circuit.getOpenDuration(),
                 circuit.getMaxOpenDuration(),
-                circuit.getMaxLatencyMillis()));
+                circuit.getMaxLatencyMillis());
+        var redis = redisTemplate.getIfAvailable();
+        return redis == null ? new InMemoryCircuitBreaker(config) : new RedisCircuitBreaker(config, redis);
     }
 
     @Bean

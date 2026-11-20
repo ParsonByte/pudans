@@ -18,6 +18,8 @@ import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
 import cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentRuntimeRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository.SnapshotRecord;
 import cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentRuntimeRepository.RuntimeRecord;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,6 +48,8 @@ public class AgentRuntimeService {
 
     private static final long MAX_FILE_BYTES = 5L * 1024 * 1024;
 
+    private static final long MAX_SNAPSHOT_BYTES = 64L * 1024 * 1024;
+
     private static final int MAX_ERROR_LENGTH = 2000;
 
     private static final double MIN_CPU = 0.1;
@@ -72,6 +76,8 @@ public class AgentRuntimeService {
 
     private final AiAgentRuntimeRepository repository;
 
+    private final AiAgentSnapshotRepository snapshotRepository;
+
     private final SandboxProviderRegistry registry;
 
     private final RuntimeLogBuffer logBuffer;
@@ -86,6 +92,7 @@ public class AgentRuntimeService {
             AiTeamService teamService,
             EnvironmentVariableService environmentService,
             AiAgentRuntimeRepository repository,
+            AiAgentSnapshotRepository snapshotRepository,
             SandboxProviderRegistry registry,
             RuntimeLogBuffer logBuffer,
             ReactiveStringRedisTemplate redisTemplate,
@@ -94,6 +101,7 @@ public class AgentRuntimeService {
         this.teamService = teamService;
         this.environmentService = environmentService;
         this.repository = repository;
+        this.snapshotRepository = snapshotRepository;
         this.registry = registry;
         this.logBuffer = logBuffer;
         this.redisTemplate = redisTemplate;
@@ -259,6 +267,142 @@ public class AgentRuntimeService {
                     .onErrorMap(error -> SandboxErrors.fileFailed(agentName, error));
         });
     }
+
+    public Flux<SnapshotView> snapshots(String agentName, String userId, int limit) {
+        return teamService
+                .requireAgent(agentName, userId)
+                .thenMany(snapshotRepository.list(agentName, limit).map(AgentRuntimeService::snapshotView));
+    }
+
+    // 快照使用工作区 tar 包，所有沙箱提供方共用同一实现
+    public Mono<SnapshotView> snapshot(
+            String agentName, String userId, @Nullable String name, String createdBy) {
+        return teamService.requireAgent(agentName, userId).flatMap(agent -> {
+            var runtime = runtimeSpec(agentName, agent);
+            return runningRecord(agentName).flatMap(record -> {
+                var temp = tempSnapshotPath();
+                var script = "mkdir -p " + quote(runtime.workdir())
+                        + " && tar -czf " + quote(temp) + " -C " + quote(runtime.workdir()) + " .";
+                return exec(agentName, userId, "bash", List.of("-lc", script), null, 120)
+                        .flatMap(result -> result.exitCode() == 0
+                                ? readSandboxFile(record, temp)
+                                : Mono.error(SandboxErrors.execFailed(
+                                        agentName,
+                                        new IllegalStateException("快照打包失败：" + result.stderr()))))
+                        .flatMap(content -> content.length > MAX_SNAPSHOT_BYTES
+                                ? Mono.error(SandboxErrors.fileTooLarge(content.length, MAX_SNAPSHOT_BYTES))
+                                : cleanupTemp(agentName, userId, temp)
+                                        .then(snapshotRepository.insert(
+                                                agentName, snapshotName(name), createdBy, content)))
+                        .map(AgentRuntimeService::snapshotView);
+            });
+        });
+    }
+
+    public Mono<Void> restoreSnapshot(String agentName, String userId, long snapshotId) {
+        return teamService.requireAgent(agentName, userId).flatMap(agent -> {
+            var runtime = runtimeSpec(agentName, agent);
+            return snapshotRepository
+                    .find(snapshotId, agentName)
+                    .switchIfEmpty(Mono.error(SandboxErrors.configInvalid("快照不存在：" + snapshotId + "。")))
+                    .flatMap(snapshot -> {
+                        if (snapshot.content() != null && snapshot.content().length > MAX_SNAPSHOT_BYTES) {
+                            return Mono.error(SandboxErrors.fileTooLarge(
+                                    snapshot.content().length, MAX_SNAPSHOT_BYTES));
+                        }
+                        return runningRecord(agentName).flatMap(record -> {
+                        var temp = tempSnapshotPath();
+                        return adapter(record)
+                                .flatMap(sandbox -> sandbox.writeFile(
+                                        record.sandboxId(), temp, snapshot.content()))
+                                .then(Mono.defer(() -> {
+                                    var script = "mkdir -p " + quote(runtime.workdir())
+                                            + " && tar -xzf " + quote(temp)
+                                            + " -C " + quote(runtime.workdir())
+                                            + " && rm -f " + quote(temp);
+                                    return exec(
+                                                    agentName,
+                                                    userId,
+                                                    "bash",
+                                                    List.of("-lc", script),
+                                                    null,
+                                                    120)
+                                            .flatMap(result -> result.exitCode() == 0
+                                                    ? Mono.empty()
+                                                    : Mono.error(SandboxErrors.execFailed(
+                                                            agentName,
+                                                            new IllegalStateException(
+                                                                    "快照恢复失败：" + result.stderr()))));
+                                }));
+                        });
+                    });
+        });
+    }
+
+    public Mono<Void> deleteSnapshot(String agentName, String userId, long snapshotId) {
+        return teamService
+                .requireAgent(agentName, userId)
+                .then(snapshotRepository.delete(snapshotId, agentName))
+                .flatMap(deleted -> deleted
+                        ? Mono.empty()
+                        : Mono.error(SandboxErrors.configInvalid("快照不存在：" + snapshotId + "。")));
+    }
+
+    private Mono<RuntimeRecord> runningRecord(String agentName) {
+        return repository
+                .find(agentName)
+                .switchIfEmpty(Mono.error(SandboxErrors.notFound(agentName)))
+                .flatMap(record -> record.state() == SandboxState.RUNNING
+                                && StringUtils.hasText(record.sandboxId())
+                        ? Mono.just(record)
+                        : Mono.error(SandboxErrors.notRunning(agentName)));
+    }
+
+    private Mono<byte[]> readSandboxFile(RuntimeRecord record, String path) {
+        return adapter(record)
+                .flatMap(sandbox -> sandbox.readFile(record.sandboxId(), path))
+                .map(file -> SandboxFiles.decode(file.encoding(), file.content()));
+    }
+
+    private Mono<Void> cleanupTemp(String agentName, String userId, String path) {
+        return exec(agentName, userId, "rm", List.of("-f", path), null, 30)
+                .then()
+                .onErrorResume(error -> {
+                    log.warn("清理 Agent {} 的快照临时文件失败。", agentName);
+                    return Mono.empty();
+                });
+    }
+
+    private static String tempSnapshotPath() {
+        return "/tmp/pudans-snapshot-" + UUID.randomUUID() + ".tgz";
+    }
+
+    private static String snapshotName(@Nullable String name) {
+        var value = StringUtils.hasText(name) ? name.strip() : "snapshot";
+        return value.length() <= 128 ? value : value.substring(0, 128);
+    }
+
+    private static String quote(String value) {
+        return "'" + value.replace("'", "'\\''") + "'";
+    }
+
+    private static SnapshotView snapshotView(SnapshotRecord record) {
+        return new SnapshotView(
+                record.id(),
+                record.agentName(),
+                record.name(),
+                record.sizeBytes(),
+                record.createdBy(),
+                record.createdAt());
+    }
+
+    public record SnapshotView(
+            Long id,
+            String agent,
+            String name,
+            Integer sizeBytes,
+            @Nullable String createdBy,
+            Instant createdAt) {}
 
     public Flux<SandboxLogEvent> logs(
             String agentName, String userId, boolean follow, @Nullable String cursor) {
