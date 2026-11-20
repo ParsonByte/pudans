@@ -9,6 +9,7 @@ def requiredFiles = ['apis_api_v1alpha1.json']
 def forbiddenSchemas = ~/(?i)^(Post|SinglePage|Category|Tag|Comment|Attachment|AttachmentGroup|AttachmentPolicy|Storage|StoragePolicy|Policy|PolicyTemplate|Menu|MenuItem|Theme|Snapshot|Counter|Backup)/
 def forbiddenPathSegments = ['/posts', '/singlepages', '/categories', '/tags', '/comments', '/attachments', '/storage', '/menus', '/themes', '/snapshots']
 def apiPrefix = '/apis/api.pudans.tolim.cn/v1alpha1/'
+def yamlFiles = fileTree(projectDir) { include '**/*.yaml', '**/*.yml' }
 
 tasks.register('validateOpenApiDocs') {
     group = 'verification'
@@ -23,8 +24,7 @@ tasks.register('validateOpenApiDocs') {
             parsed[name] = slurper.parse(file)
         }
 
-        def yamlFiles = fileTree(projectDir) { include '**/*.yaml', '**/*.yml' }.files
-        assert yamlFiles.isEmpty(): "api-docs must not contain YAML files: ${yamlFiles}"
+        assert yamlFiles.files.isEmpty(): "api-docs must not contain YAML files: ${yamlFiles.files}"
 
         parsed.each { name, doc ->
             assert doc.openapi?.startsWith('3.0'): "Unsupported OpenAPI version in ${name}"

@@ -1,0 +1,60 @@
+name: Pudans Workflow
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**"
+      - "!**.md"
+  push:
+    branches:
+      - main
+    paths:
+      - "**"
+      - "!**.md"
+
+concurrency:
+  group: ${{github.workflow}} - ${{github.ref}}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+      - name: Check Pudans
+        run: ./gradlew clean check --configuration-cache --configuration-cache-problems=warn
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: test-reports
+          path: |
+            appkernel/build/reports/tests/
+            appkernel/build/test-results/
+          retention-days: 7
+      - name: Upload coverage reports to Codecov
+        if: github.repository == 'ParsonByte/pudans'
+        uses: codecov/codecov-action@v6
+
+  build:
+    runs-on: ubuntu-latest
+    if: always() && (needs.test.result == 'skipped' || needs.test.result == 'success')
+    needs: test
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup Environment
+        uses: ./.github/actions/setup-env
+      - name: Build Pudans
+        run: ./gradlew clean build -x check --configuration-cache --configuration-cache-problems=warn
+      - name: Upload Artifacts
+        if: github.repository == 'ParsonByte/pudans'
+        uses: actions/upload-artifact@v6
+        with:
+          name: pudans-artifacts
+          path: appkernel/build/libs
+          retention-days: 1

@@ -11,9 +11,11 @@
   },
   "scripts": {
     "dev": "vite",
-    "prebuild": "npm run build --workspace @pudans-dev/api-client",
+    "build:api-client": "npm run build --workspace @pudans-dev/api-client",
+    "prebuild": "npm run build:api-client",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "pretypecheck": "npm run build:api-client",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
