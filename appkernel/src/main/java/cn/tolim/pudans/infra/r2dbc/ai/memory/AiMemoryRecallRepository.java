@@ -2,6 +2,7 @@ package cn.tolim.pudans.infra.r2dbc.ai.memory;
 
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiR2dbcBindings;
 import io.r2dbc.spi.Row;
 import java.time.Instant;
 import java.util.Objects;
@@ -43,7 +44,7 @@ public class AiMemoryRecallRepository {
                         LIMIT :limit
                         """)
                 .bind("hasQuery", hasQuery)
-                .bind("keywordPattern", likePattern(normalizedQuery))
+                .bind("keywordPattern", AiMemorySql.likePattern(normalizedQuery))
                 .bind("query", normalizedQuery)
                 .bind("teamId", teamId)
                 .bind("agentId", agentId)
@@ -85,11 +86,6 @@ public class AiMemoryRecallRepository {
                 row.get("version", Integer.class),
                 row.get("updated_at", Instant.class),
                 row.get("score", Double.class));
-    }
-
-    private static String likePattern(String query) {
-        var escaped = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
-        return "%" + escaped + "%";
     }
 
     public record RecalledMemory(

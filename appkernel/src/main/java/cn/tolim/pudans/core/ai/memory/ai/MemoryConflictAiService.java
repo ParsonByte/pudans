@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.ai;
 
+import cn.tolim.pudans.core.ai.prompt.MemoryPrompts;
 import cn.tolim.pudans.core.ai.memory.DedupAction;
 import cn.tolim.pudans.core.ai.memory.DedupDecision;
 import cn.tolim.pudans.core.ai.memory.L1DedupService.DedupCandidate;
@@ -19,21 +20,6 @@ public class MemoryConflictAiService {
 
     private static final int MAX_OUTPUT_TOKENS = 2048;
 
-    private static final String SYSTEM_PROMPT = """
-            你是记忆冲突判定器，负责对每条新记忆给出 store、update、merge 或 skip 决策。
-            规则：
-            1. 只能使用输入中提供的 recordId 和 targetIds；targetIds 必须来自 existing 列表。
-            2. UPDATE 和 MERGE 必须提供非空 targetIds；STORE 和 SKIP 不得提供 targetIds。
-            3. mergedType 只能取 MemoryType 枚举值；mergedPriority 为 -1 到 100 的整数。
-            4. 每条新记忆必须恰好输出一个决策，不要遗漏任何 recordId。
-            5. 没有冲突时使用 STORE；完全重复且无新增信息时使用 SKIP。
-            只输出一个 JSON 对象，不要输出解释、Markdown 代码块或任何多余文本。
-            JSON 结构：
-            {"decisions":[{"recordId":"mem-1","action":"STORE|UPDATE|MERGE|SKIP",
-              "targetIds":["old-1"],"mergedContent":"合并后的内容","mergedType":"EPISODIC",
-              "mergedPriority":50,"mergedTimestamps":["2026-01-01T00:00:00Z"]}]}
-            """;
-
     private final MemoryAiSupport support;
 
     public Mono<List<DedupDecision>> judge(
@@ -43,7 +29,7 @@ public class MemoryConflictAiService {
             return Mono.just(List.of());
         }
         return Mono.defer(() -> support.generate(
-                        MemoryAiSupport.combine(systemPrompt, SYSTEM_PROMPT),
+                        MemoryAiSupport.combine(systemPrompt, MemoryPrompts.CONFLICT),
                         userPrompt(batch),
                         MAX_OUTPUT_TOKENS)
                 .map(result -> decisions(result.content(), batch))

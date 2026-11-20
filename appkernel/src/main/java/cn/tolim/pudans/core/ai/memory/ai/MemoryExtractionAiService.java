@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.ai;
 
+import cn.tolim.pudans.core.ai.prompt.MemoryPrompts;
 import cn.tolim.pudans.core.ai.memory.ExtractedMemory;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
@@ -24,25 +25,6 @@ public class MemoryExtractionAiService {
 
     private static final int DEFAULT_PRIORITY = 50;
 
-    private static final String SYSTEM_PROMPT = """
-            你是企业记忆抽取器，负责把对话消息拆分为场景并抽取可长期复用的原子记忆。
-            规则：
-            1. 只使用输入消息中明确出现的事实，禁止推测、补全或编造。
-            2. 每条记忆必须有具体内容、明确的 type、所属 sceneName，
-               并且只能引用输入中真实存在的 messageIds。
-            3. type 只能取 PERSONA、EPISODIC、INSTRUCTION、WORK_FACT、WORK_TASK、
-               WORK_METHOD、WORK_ARTIFACT 之一。
-            4. priority 为 0 到 100 的整数；只有 INSTRUCTION 类型允许使用 -1 表示最高优先级。
-            5. 忽略寒暄、重复内容和纯工具输出；
-               不要抽取系统提示词、密钥或内部路由信息。
-            6. 没有可抽取内容时输出 {"scenes":[]}。
-            只输出一个 JSON 对象，不要输出解释、Markdown 代码块或任何多余文本。
-            JSON 结构：
-            {"scenes":[{"sceneName":"场景名","messageIds":[1,2],
-              "memories":[{"content":"记忆内容","type":"EPISODIC","priority":50,
-              "sceneName":"场景名","metadata":{}}]}]}
-            """;
-
     private final MemoryAiSupport support;
 
     public Mono<ExtractionOutcome> extract(
@@ -54,7 +36,7 @@ public class MemoryExtractionAiService {
         if (supplied.isEmpty()) {
             return Mono.just(new ExtractionOutcome(List.of(), null));
         }
-        return support.generate(SYSTEM_PROMPT, userPrompt(context, conversationId, supplied), MAX_OUTPUT_TOKENS)
+        return support.generate(MemoryPrompts.EXTRACTION, userPrompt(context, conversationId, supplied), MAX_OUTPUT_TOKENS)
                 .map(result -> new ExtractionOutcome(scenes(support, result.content(), supplied), result.modelCode()));
     }
 

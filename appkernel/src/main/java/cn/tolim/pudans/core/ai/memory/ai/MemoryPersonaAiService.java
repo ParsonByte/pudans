@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.ai;
 
+import cn.tolim.pudans.core.ai.prompt.MemoryPrompts;
 import cn.tolim.pudans.core.ai.memory.JevGate;
 import cn.tolim.pudans.core.ai.memory.L3Persona;
 import cn.tolim.pudans.core.ai.memory.L3PipelineService;
@@ -23,22 +24,6 @@ public class MemoryPersonaAiService {
 
     private static final double DEFAULT_CONFIDENCE = 0.7;
 
-    private static final String SYSTEM_PROMPT = """
-            你是团队 Agent 画像生成器，负责根据当前画像和变化场景合成长期画像。
-            规则：
-            1. personaJson 固定包含 background、preferences、work_style、expertise、current_focus、
-               communication_notes、doctrine 字段，值可为字符串、数组或对象。
-            2. personaText 使用中文，不超过 200 字，只描述稳定且可复用的团队画像。
-            3. sourceL1Count 和 sourceL2Count 为非负整数，sourceL2Count 不得超过输入场景数量。
-            4. confidence 为 0 到 1 之间的小数。
-            5. 不要编造未在输入中出现的事实。
-            只输出一个 JSON 对象，不要输出解释、Markdown 代码块或任何多余文本。
-            JSON 结构：
-            {"personaJson":{"background":"","preferences":[],"work_style":"","expertise":[],
-              "current_focus":"","communication_notes":[],"doctrine":[]},
-              "personaText":"画像正文","sourceL1Count":0,"sourceL2Count":0,"confidence":0.7}
-            """;
-
     private final MemoryAiSupport support;
 
     public Mono<L3PipelineService.GeneratedPersona> generate(
@@ -49,7 +34,7 @@ public class MemoryPersonaAiService {
                 ? List.<JevGate.ChangedScene>of()
                 : changedScenes.stream().filter(Objects::nonNull).toList();
         return support.generate(
-                        MemoryAiSupport.combine(systemPrompt, SYSTEM_PROMPT),
+                        MemoryAiSupport.combine(systemPrompt, MemoryPrompts.PERSONA),
                         userPrompt(currentPersona, scenes),
                         MAX_OUTPUT_TOKENS)
                 .map(result -> persona(result.content(), scenes.size()));
