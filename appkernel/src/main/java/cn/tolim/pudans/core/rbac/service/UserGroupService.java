@@ -8,8 +8,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -73,10 +75,48 @@ public class UserGroupService {
                 .andQuery(in("subjects", UserGroupBinding.Subject.user(username).toString()))
                 .build();
         return client.listAll(UserGroupBinding.class, options, defaultSort())
-                .filter(binding -> Optional.ofNullable(binding.getRoleRef())
-                        .map(ref -> UserGroup.KIND.equals(ref.getKind())
-                                && UserGroup.GROUP.equals(ref.getApiGroup()))
-                        .orElse(false));
+                .filter(UserGroupService::isMembership);
+    }
+
+    public Flux<String> listUsernamesOfGroups(Collection<String> groupNames) {
+        if (CollectionUtils.isEmpty(groupNames)) {
+            return Flux.empty();
+        }
+        var options = ListOptions.builder()
+                .andQuery(notDeleting())
+                .andQuery(in("roleRef.name", new HashSet<>(groupNames)))
+                .build();
+        return client.listAll(UserGroupBinding.class, options, defaultSort())
+                .filter(UserGroupService::isMembership)
+                .map(UserGroupService::memberUsername)
+                .filter(StringUtils::hasText)
+                .distinct();
+    }
+
+    public Mono<Map<String, UserGroup>> getGroupsByUsernames(Collection<String> usernames) {
+        if (CollectionUtils.isEmpty(usernames)) {
+            return Mono.just(Map.of());
+        }
+        var subjects = usernames.stream()
+                .map(username -> UserGroupBinding.Subject.user(username).toString())
+                .collect(Collectors.toSet());
+        var options = ListOptions.builder()
+                .andQuery(notDeleting())
+                .andQuery(in("subjects", subjects))
+                .build();
+        return client.listAll(UserGroupBinding.class, options, defaultSort())
+                .filter(UserGroupService::isMembership)
+                .filter(binding -> StringUtils.hasText(memberUsername(binding)))
+                .collect(Collectors.toMap(
+                        UserGroupService::memberUsername,
+                        binding -> binding.getRoleRef().getName(),
+                        (left, right) -> left))
+                .flatMap(groupsByUser -> listUserGroups(groupsByUser.values())
+                        .collectMap(group -> group.getMetadata().getName())
+                        .map(groups -> groupsByUser.entrySet().stream()
+                                .filter(entry -> groups.containsKey(entry.getValue()))
+                                .collect(Collectors.toMap(
+                                        entry -> entry.getKey(), entry -> groups.get(entry.getValue())))));
     }
 
     
@@ -189,6 +229,34 @@ public class UserGroupService {
                             .doOnSuccess(ignored -> publishGroupChanged(username, fromGroup, null));
                 })
                 .then(rbacCacheService.evictUserRoles(username));
+    }
+
+    public Flux<Membership> listMemberships() {
+        var options = ListOptions.builder().andQuery(notDeleting()).build();
+        return client.listAll(UserGroupBinding.class, options, defaultSort())
+                .filter(UserGroupService::isMembership)
+                .map(binding -> new Membership(memberUsername(binding), binding.getRoleRef().getName()))
+                .filter(membership -> StringUtils.hasText(membership.username()))
+                .distinct();
+    }
+
+    public record Membership(String username, String groupName) {}
+
+    private static boolean isMembership(UserGroupBinding binding) {
+        return Optional.ofNullable(binding.getRoleRef())
+                .map(ref -> UserGroup.KIND.equals(ref.getKind())
+                        && UserGroup.GROUP.equals(ref.getApiGroup()))
+                .orElse(false);
+    }
+
+    private static String memberUsername(UserGroupBinding binding) {
+        return Optional.ofNullable(binding.getSubjects())
+                .stream()
+                .flatMap(Collection::stream)
+                .filter(subject -> User.KIND.equals(subject.getKind()))
+                .map(UserGroupBinding.Subject::getName)
+                .findFirst()
+                .orElse("");
     }
 
     private void publishGroupChanged(String username, String fromGroup, String toGroup) {

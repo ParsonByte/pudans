@@ -1,5 +1,9 @@
 package cn.tolim.pudans.core.user.endpoint;
 
+import static cn.tolim.pudans.contract.extension.index.query.Queries.contains;
+import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
+import static cn.tolim.pudans.contract.extension.index.query.Queries.or;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
@@ -11,6 +15,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +46,7 @@ import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
+import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.PageRequestImpl;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.router.SortableRequest;
@@ -111,9 +117,7 @@ public class UserEndpoint implements CustomEndpoint {
                                     .in(ParameterIn.QUERY)
                                     .name("keyword")
                                     .required(false)
-                                    .description(
-                                            "Case-insensitive fuzzy match against displayName and email. "
-                                                    + "Disables database paging and filters in memory.")
+                                    .description("Case-insensitive fuzzy match against displayName and email.")
                                     .implementation(String.class))
                             .parameter(parameterBuilder()
                                     .in(ParameterIn.QUERY)
@@ -125,7 +129,7 @@ public class UserEndpoint implements CustomEndpoint {
                                     .in(ParameterIn.QUERY)
                                     .name("userGroup")
                                     .required(false)
-                                    .description("Filter by user group name. Disables database paging and filters in memory.")
+                                    .description("Filter by membership of a user group name.")
                                     .implementation(String.class))
                             .response(responseBuilder().implementation(UserList.class));
                     SortableRequest.buildParameters(builder);
@@ -284,49 +288,71 @@ public class UserEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> listUsers(ServerRequest request) {
         var sortable = new SortableRequest(request.exchange());
-        var listOptions = sortable.toListOptions();
         var keyword = request.queryParam("keyword").filter(StringUtils::hasText).map(String::trim).orElse(null);
         var statuses = statusValues(request);
         var userGroups = userGroupValues(request);
-        var pageRequest = sortable.toPageRequest();
-        return emailVisibilityForList().flatMap(expose -> {
-            if (keyword == null && statuses.isEmpty() && userGroups.isEmpty()) {
-                return client.listBy(User.class, listOptions, pageRequest)
-                        .flatMap(result -> groupsOf(result.getItems())
-                                .map(groupsByUser -> new UserList(
-                                        result.getPage(),
-                                        result.getSize(),
-                                        result.getTotal(),
-                                        result.getItems().stream()
-                                                .map(user -> ListedUser.from(
-                                                        user,
-                                                        expose,
-                                                        groupsByUser.get(user.getMetadata().getName())))
-                                                .toList(),
-                                        sortable.getSort().toString())))
-                        .flatMap(list -> ServerResponse.ok().bodyValue(list));
+        return emailVisibilityForList()
+                .flatMap(expose -> listOptionsOf(sortable.toListOptions(), keyword, statuses, userGroups)
+                        .flatMap(options -> client.listBy(User.class, options, sortable.toPageRequest())
+                                .flatMap(result -> groupsOf(result.getItems())
+                                        .map(groupsByUser -> new UserList(
+                                                result.getPage(),
+                                                result.getSize(),
+                                                result.getTotal(),
+                                                result.getItems().stream()
+                                                        .map(user -> ListedUser.from(
+                                                                user,
+                                                                expose,
+                                                                groupsByUser.get(user.getMetadata().getName())))
+                                                        .toList(),
+                                                sortable.getSort().toString()))))
+                        .switchIfEmpty(Mono.fromSupplier(() -> emptyUserList(sortable))))
+                .flatMap(list -> ServerResponse.ok().bodyValue(list));
+    }
+
+    private Mono<ListOptions> listOptionsOf(
+            ListOptions base,
+            String keyword,
+            Set<String> statuses,
+            Set<String> userGroups) {
+        var options = base;
+        if (!statuses.isEmpty()) {
+            var wantsActive = statuses.contains("active");
+            var wantsDisabled = statuses.contains("disabled");
+            if (!wantsActive && !wantsDisabled) {
+                return Mono.empty();
             }
-            return client
-                    .listAll(User.class, listOptions, sortable.getSort())
-                    .filter(user -> matchesKeyword(user, keyword) && matchesStatus(user, statuses))
-                    .collectList()
-                    .flatMap(users -> groupsOf(users)
-                            .map(groupsByUser -> {
-                                var filtered = userGroups.isEmpty()
-                                        ? users
-                                        : users.stream()
-                                                .filter(user -> {
-                                                    var group = groupsByUser.get(
-                                                            user.getMetadata().getName());
-                                                    return group != null
-                                                            && userGroups.contains(
-                                                                    group.getMetadata().getName());
-                                                })
-                                                .toList();
-                                return pagedUserList(filtered, groupsByUser, sortable, expose);
-                            }))
-                    .flatMap(list -> ServerResponse.ok().bodyValue(list));
-        });
+            if (wantsActive != wantsDisabled) {
+                options = ListOptions.builder(options)
+                        .andQuery(equal("spec.disabled", wantsDisabled))
+                        .build();
+            }
+        }
+        if (keyword != null) {
+            options = ListOptions.builder(options)
+                    .andQuery(or(contains("spec.displayName", keyword), contains("spec.email", keyword)))
+                    .build();
+        }
+        if (userGroups.isEmpty()) {
+            return Mono.just(options);
+        }
+        var filtered = options;
+        return userGroupService.listUsernamesOfGroups(userGroups)
+                .collectList()
+                .flatMap(usernames -> usernames.isEmpty()
+                        ? Mono.empty()
+                        : Mono.just(ListOptions.builder(filtered)
+                                .andQuery(in("metadata.name", new HashSet<>(usernames)))
+                                .build()));
+    }
+
+    private static UserList emptyUserList(SortableRequest sortable) {
+        return new UserList(
+                Math.max(1, sortable.getPage()),
+                sortable.getSize(),
+                0,
+                List.of(),
+                sortable.getSort().toString());
     }
 
     private static Set<String> statusValues(ServerRequest request) {
@@ -347,52 +373,8 @@ public class UserEndpoint implements CustomEndpoint {
     }
 
     private Mono<Map<String, UserGroup>> groupsOf(List<User> users) {
-        return Flux.fromIterable(users)
-                .flatMap(user -> userGroupService
-                        .getUserGroupByUsername(user.getMetadata().getName())
-                        .map(group -> Map.entry(user.getMetadata().getName(), group)))
-                .collectMap(Map.Entry::getKey, Map.Entry::getValue);
-    }
-
-    private static boolean matchesKeyword(User user, String keyword) {
-        if (keyword == null) {
-            return true;
-        }
-        var needle = keyword.toLowerCase(java.util.Locale.ROOT);
-        var spec = user.getSpec();
-        var displayName = spec == null ? null : spec.getDisplayName();
-        var email = spec == null ? null : spec.getEmail();
-        return containsIgnoreCase(displayName, needle) || containsIgnoreCase(email, needle);
-    }
-
-    private static boolean matchesStatus(User user, Set<String> statuses) {
-        if (statuses.isEmpty()) {
-            return true;
-        }
-        var disabled = Boolean.TRUE.equals(user.getSpec().getDisabled());
-        return statuses.contains(disabled ? "disabled" : "active");
-    }
-
-    private static boolean containsIgnoreCase(String value, String needle) {
-        return value != null && value.toLowerCase(java.util.Locale.ROOT).contains(needle);
-    }
-
-    private UserList pagedUserList(
-            List<User> users,
-            Map<String, UserGroup> groupsByUser,
-            SortableRequest sortable,
-            boolean exposeEmail) {
-        // 页码从 1 开始，与 PageRequestImpl 保持一致。
-        var page = Math.max(1, sortable.getPage());
-        var size = sortable.getSize();
-        var total = users.size();
-        var from = size > 0 ? Math.min((long) (page - 1) * size, total) : 0L;
-        var to = size > 0 ? Math.min(from + size, total) : (long) total;
-        var items = users.subList((int) from, (int) to).stream()
-                .map(user -> ListedUser.from(
-                        user, exposeEmail, groupsByUser.get(user.getMetadata().getName())))
-                .toList();
-        return new UserList(page, size, total, items, sortable.getSort().toString());
+        return userGroupService.getGroupsByUsernames(
+                users.stream().map(user -> user.getMetadata().getName()).toList());
     }
 
     private Mono<ServerResponse> createUser(ServerRequest request) {
