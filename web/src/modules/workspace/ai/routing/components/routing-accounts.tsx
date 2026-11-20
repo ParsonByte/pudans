@@ -16,7 +16,7 @@ import {
   optionLabel,
 } from "../../providers/lib/model";
 import type { AiRoutingAccountActivity, AiRoutingLive } from "../lib/api";
-import { providerDisplayName } from "../lib/model";
+import { accountHealthLabel, providerDisplayName } from "../lib/model";
 
 type RoutingAccountsProps = {
   providers: AiProviderItem[];
@@ -169,6 +169,14 @@ function AccountRow({
         {account.status?.healthScore != null ? (
           <p className="text-muted-foreground">
             健康度 {formatNumber(account.status.healthScore, 1)}
+          </p>
+        ) : null}
+        {account.status?.health ? (
+          <p className="text-muted-foreground">状态 {accountHealthLabel(account.status.health)}</p>
+        ) : null}
+        {account.status?.lastError ? (
+          <p className="max-w-64 truncate text-destructive" title={account.status.lastError}>
+            最近错误 {account.status.lastError}
           </p>
         ) : null}
       </div>

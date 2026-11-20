@@ -16,6 +16,11 @@ import {
   modelDisplayName,
   optionLabel,
 } from "../../providers/lib/model";
+import {
+  effectiveParentMode,
+  parentModeLabel,
+  routeGroupRules,
+} from "../../route-groups/lib/model";
 import type { AiRoutingLive, AiRoutingRequest } from "../lib/api";
 import {
   type AiRoutingLookups,
@@ -179,6 +184,7 @@ function RequestRow({
 }) {
   const provider = request.provider ? lookups.providers.get(request.provider) : undefined;
   const model = request.model ? lookups.models.get(request.model) : undefined;
+  const routeGroup = request.routeGroup ? lookups.routeGroups.get(request.routeGroup) : undefined;
   const cacheRate = cacheHitRate(request.inputTokens, request.cacheTokens);
   const metrics: string[] = [];
   if (request.latencyMs != null) {
@@ -256,9 +262,15 @@ function RequestRow({
         {metrics.length > 0 ? <span>{metrics.join(" · ")}</span> : <span>等待用量上报</span>}
         <span>用户 {userDisplayName(request.userId, lookups)}</span>
         {request.routeGroup ? (
-          <span>
-            路由组{" "}
-            {routeGroupDisplayName(lookups.routeGroups.get(request.routeGroup), request.routeGroup)}
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            路由组 {routeGroupDisplayName(routeGroup, request.routeGroup)}
+            {routeGroup ? (
+              <>
+                <Badge variant="outline">{parentModeLabel(effectiveParentMode(routeGroup))}</Badge>
+                <Badge variant="outline">规则 {routeGroupRules(routeGroup).length}</Badge>
+                {routeGroup.spec.sink ? <Badge variant="outline">Sink</Badge> : null}
+              </>
+            ) : null}
           </span>
         ) : null}
         {request.account ? (

@@ -4,7 +4,7 @@ import type { AiModelTier } from "../../providers/lib/api";
 
 const API_PREFIX = "/apis/api.pudans.tolim.cn/v1alpha1";
 
-export type AiRoutingSummary = {
+type AiRoutingSummary = {
   requests: number;
   failed: number;
   running: number;
@@ -18,7 +18,7 @@ export type AiRoutingSummary = {
   todayPoints: number;
 };
 
-export type AiRoutingDaily = {
+type AiRoutingDaily = {
   day: string;
   requests: number;
   failed: number;
@@ -79,5 +79,133 @@ export async function fetchRoutingLive(days = 7, limit = 20): Promise<AiRoutingL
   const response = await axiosInstance.get<AiRoutingLive>(`${API_PREFIX}/aistats/-/routing/live`, {
     params: { days, limit },
   });
+  return response.data;
+}
+
+export type AiRoutingHistoryQuery = {
+  from?: string;
+  to?: string;
+  status?: string;
+  provider?: string;
+  model?: string;
+  agent?: string;
+  group?: string;
+  beforeId?: number;
+  limit?: number;
+};
+
+export type AiRoutingHistoryItem = {
+  requestId: string;
+  conversationId?: number;
+  sessionKey?: string;
+  sessionTitle?: string;
+  agent: string;
+  mode?: string;
+  routeGroup?: string;
+  provider?: string;
+  account?: string;
+  model?: string;
+  tier?: AiModelTier;
+  status: string;
+  tries: number;
+  latencyMs?: number;
+  createdAt: string;
+};
+
+export type AiRouteTraceCandidate = {
+  provider: string;
+  account: string;
+  model: string;
+  tier?: AiModelTier;
+  eligible: boolean;
+  reason?: string;
+  healthScore?: number;
+  source?: string;
+};
+
+type AiRouteTraceClassification = {
+  level?: string;
+  confidence?: number;
+  tier?: AiModelTier;
+};
+
+type AiRouteTraceMatchedRule = {
+  name?: string;
+  condition?: string;
+  member?: string;
+  priority?: number;
+};
+
+export type AiRouteTraceAttempt = {
+  group?: string;
+  provider: string;
+  account: string;
+  model: string;
+  tier?: AiModelTier;
+  source?: string;
+  attempt: number;
+  success: boolean;
+  status?: number;
+  errorCode?: string;
+  latencyMillis?: number;
+  at?: string;
+};
+
+type AiRouteTraceSelected = {
+  provider?: string;
+  account?: string;
+  model?: string;
+  tier?: AiModelTier;
+};
+
+export type AiRouteTrace = {
+  routeMode?: string;
+  requestedTier?: AiModelTier;
+  resolvedTier?: AiModelTier;
+  affinity?: string;
+  classification?: AiRouteTraceClassification;
+  candidates?: AiRouteTraceCandidate[];
+  selected?: AiRouteTraceSelected;
+  outcome?: string;
+  fallback?: string[];
+  matchedRule?: AiRouteTraceMatchedRule | null;
+  attempts?: AiRouteTraceAttempt[];
+  fallbackGroups?: string[];
+  callerKey?: string | null;
+};
+
+export type AiRoutingHistoryDetail = AiRoutingHistoryItem & {
+  completedAt?: string;
+  routeTrace?: AiRouteTrace | null;
+  retrievalTrace?: unknown;
+};
+
+export type AiRoutingHistoryPage = {
+  items: AiRoutingHistoryItem[];
+  nextCursor?: number | null;
+};
+
+export async function fetchRoutingHistory(
+  query: AiRoutingHistoryQuery = {},
+): Promise<AiRoutingHistoryPage> {
+  const params: Record<string, string | number> = {};
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== null && value !== "" && value !== 0) {
+      params[key] = value;
+    }
+  }
+  const response = await axiosInstance.get<AiRoutingHistoryPage>(
+    `${API_PREFIX}/aistats/-/routing/history`,
+    { params },
+  );
+  return response.data;
+}
+
+export async function fetchRoutingHistoryDetail(
+  requestId: string,
+): Promise<AiRoutingHistoryDetail> {
+  const response = await axiosInstance.get<AiRoutingHistoryDetail>(
+    `${API_PREFIX}/aistats/-/routing/history/${encodeURIComponent(requestId)}`,
+  );
   return response.data;
 }

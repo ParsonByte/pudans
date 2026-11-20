@@ -5,10 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConsoleEmpty, ConsoleSection } from "@/modules/workspace/console/components/console-page";
 import type { ChatMode } from "@/modules/workspace/index/lib/chat-api";
-import { chatModeIcon, chatModeLabel } from "@/modules/workspace/index/lib/chat-functions";
+import {
+  chatModeIcon,
+  chatModeLabel,
+  chatRouteGroupParentMode,
+} from "@/modules/workspace/index/lib/chat-functions";
 
 import type { AiRouteGroupItem } from "../../providers/lib/api";
 import { routeModeLabel } from "../../routing/lib/model";
+import { effectiveParentMode, parentModeLabel } from "../lib/model";
 
 type ChatModeRoutesProps = {
   modes: ChatMode[];
@@ -54,6 +59,14 @@ export function ChatModeRoutes({
             const group = mode.routeGroup
               ? routeGroups.find((item) => item.metadata.name === mode.routeGroup)
               : undefined;
+            const parentMode = chatRouteGroupParentMode(mode.name);
+            const linkedGroups = parentMode
+              ? routeGroups.filter(
+                  (item) =>
+                    item.metadata.name !== mode.routeGroup &&
+                    effectiveParentMode(item) === parentMode,
+                )
+              : [];
             const Icon = chatModeIcon(mode.name);
             return (
               <div
@@ -75,6 +88,7 @@ export function ChatModeRoutes({
                         {group.spec.displayName || group.metadata.name}
                       </p>
                       <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {parentModeLabel(effectiveParentMode(group))} ·{" "}
                         {routeModeLabel(group.spec.routeMode)} · {(group.spec.members ?? []).length}{" "}
                         个模型成员
                       </p>
@@ -84,6 +98,15 @@ export function ChatModeRoutes({
                       未绑定路由组{mode.routeGroup ? `：${mode.routeGroup}` : ""}
                     </p>
                   )}
+                  {parentMode ? (
+                    <p className="mt-1 text-[11px] text-muted-foreground">
+                      {linkedGroups.length > 0
+                        ? `可显式选择：${linkedGroups
+                            .map((item) => item.spec.displayName || item.metadata.name)
+                            .join("、")}`
+                        : "暂无可显式选择的自定义组，把其他组的所属模式设为快速或进阶即可加入。"}
+                    </p>
+                  ) : null}
                 </div>
                 {group && canUpdate ? (
                   <Button type="button" variant="ghost" size="sm" onClick={() => onEdit(group)}>

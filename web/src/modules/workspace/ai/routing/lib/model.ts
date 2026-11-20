@@ -2,11 +2,17 @@ import type {
   AiModelItem,
   AiModelTier,
   AiProviderAccountItem,
+  AiProviderAffinity,
   AiProviderItem,
   AiRouteGroupItem,
   AiRouteGroupMode,
 } from "../../providers/lib/api";
-import { MODEL_TIER_OPTIONS, formatNumber, optionLabel } from "../../providers/lib/model";
+import {
+  AFFINITY_OPTIONS,
+  MODEL_TIER_OPTIONS,
+  formatNumber,
+  optionLabel,
+} from "../../providers/lib/model";
 import type { AiRoutingUser } from "./api";
 
 export type AiRoutingLookups = {
@@ -105,6 +111,62 @@ const AGENT_ICONS: Record<string, string> = {
 
 const WEEKDAYS = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
 
+export const HISTORY_STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "全部状态" },
+  { value: "SUCCEEDED", label: "成功" },
+  { value: "FAILED", label: "失败" },
+  { value: "RUNNING", label: "进行中" },
+];
+
+const ROUTE_ELIMINATION_REASON_LABELS: Record<string, string> = {
+  DISABLED: "已停用",
+  RESTING: "熔断冷却",
+  UNHEALTHY: "健康度不足",
+  CAPABILITY_MISMATCH: "能力不匹配",
+  CONTEXT_EXCEEDED: "超出上下文",
+  SPENT: "额度用尽",
+  SUNK: "限流冷却",
+};
+
+const ROUTE_OUTCOME_LABELS: Record<string, string> = {
+  SELECTED: "已选中",
+  EXHAUSTED: "候选耗尽",
+  STRICT_PINNED_UNAVAILABLE: "指定模型不可用",
+};
+
+const COMPLEXITY_LEVEL_LABELS: Record<string, string> = {
+  SIMPLE: "简单",
+  MEDIUM: "中等",
+  COMPLEX: "复杂",
+};
+
+const ACCOUNT_HEALTH_LABELS: Record<string, string> = {
+  HEALTHY: "正常",
+  RESTING: "熔断冷却",
+  SUNK: "限流冷却",
+  UNHEALTHY: "异常",
+};
+
+export function eliminationReasonLabel(reason: string | undefined): string {
+  return reason ? (ROUTE_ELIMINATION_REASON_LABELS[reason] ?? reason) : "可用";
+}
+
+export function outcomeLabel(outcome: string | undefined): string {
+  return outcome ? (ROUTE_OUTCOME_LABELS[outcome] ?? outcome) : "未知";
+}
+
+export function complexityLabel(level: string | undefined): string {
+  return level ? (COMPLEXITY_LEVEL_LABELS[level] ?? level) : "未分类";
+}
+
+export function traceAffinityLabel(affinity: string | undefined): string {
+  return optionLabel(AFFINITY_OPTIONS, affinity as AiProviderAffinity | undefined, "自动");
+}
+
+export function accountHealthLabel(health: string | undefined): string | undefined {
+  return health ? (ACCOUNT_HEALTH_LABELS[health] ?? health) : undefined;
+}
+
 export function routeModeLabel(mode: AiRouteGroupMode | undefined): string {
   return mode ? ROUTE_MODE_LABELS[mode] : "智能";
 }
@@ -167,6 +229,17 @@ export function formatClock(iso: string | undefined): string {
     return "—";
   }
   return date.toLocaleTimeString("zh-CN", { hour12: false });
+}
+
+export function formatDateTime(iso: string | undefined): string {
+  if (!iso) {
+    return "—";
+  }
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+  return date.toLocaleString("zh-CN", { hour12: false });
 }
 
 export function formatRelativeTime(iso: string | undefined): string {
