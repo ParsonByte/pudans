@@ -1,0 +1,100 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-create-ai-gateway
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-gateway" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.models.gateway"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "生成网关密钥"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建用于调用 AI 网关的个人访问令牌。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-gateway:create-key"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "personalaccesstokens"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-ai-gateway
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-gateway" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.models.gateway"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "update"
+    rbac.authorization.pudans.tolim.cn/ui-label: "管理网关密钥"
+    rbac.authorization.pudans.tolim.cn/ui-description: "吊销、恢复或删除网关密钥。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-gateway:manage-key"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "personalaccesstokens"
+      - "personalaccesstokens/actions"
+    verbs:
+      - "get"
+      - "list"
+      - "update"
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-settings-ai-gateway
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-gateway" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.models.gateway"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "settings"
+    rbac.authorization.pudans.tolim.cn/ui-label: "编辑网关设置"
+    rbac.authorization.pudans.tolim.cn/ui-description: "修改限流、重试、超时与上游协议。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-gateway:settings"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aisettings"
+    verbs:
+      - "get"
+      - "list"
+      - "update"
+      - "patch"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-sessions-ai-gateway
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-gateway" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.models.gateway"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "sessions"
+    rbac.authorization.pudans.tolim.cn/ui-label: "网关会话排障"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看与删除网关会话绑定。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "40"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-gateway:sessions"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aigatewaysessions"
+    verbs:
+      - "get"
+      - "list"
+      - "delete"

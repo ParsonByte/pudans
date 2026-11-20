@@ -56,7 +56,11 @@ public final class AiGatewayHeaders {
         if (StringUtils.hasText(header(request, CLAUDE_SESSION))) {
             return "claude-code";
         }
-        return protocol == AiProvider.Protocol.ANTHROPIC ? "anthropic" : "openai";
+        return switch (protocol) {
+            case ANTHROPIC -> "anthropic";
+            case GEMINI -> "gemini";
+            default -> "openai";
+        };
     }
 
     public static String idempotencyKey(ServerRequest request, String requestId) {

@@ -5,6 +5,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.user.service.PatService;
@@ -107,6 +108,10 @@ class PatServiceImpl implements PatService {
             return Mono.error(new UnsatisfiedAttributeValueException(
                     "只有管理员可以创建带 sudo 能力的令牌。"));
         }
+        var gateway = patSpec.getGateway();
+        if (gateway != null && gateway.getLimits() != null && gateway.getLimits().size() > 5) {
+            return Mono.error(new UnsatisfiedAttributeValueException("网关预算限制最多 5 条。"));
+        }
         return hasSufficientRoles(authorities, roles)
                 .filter(has -> has)
                 .switchIfEmpty(
@@ -154,6 +159,9 @@ class PatServiceImpl implements PatService {
                     }
                     pat.getSpec().setExpiresAt(patSpec.getExpiresAt());
                     pat.getSpec().setSudo(patSpec.isSudo());
+                    if (gateway != null) {
+                        pat.getSpec().setGateway(JsonUtils.deepCopy(gateway));
+                    }
                     pat.getSpec().setTokenId(idGenerator.generateId().toString());
                     return pat;
                 })

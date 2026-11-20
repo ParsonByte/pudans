@@ -68,6 +68,16 @@ public class AiSetting extends AbstractExtension {
 
         private int streamIdleTimeoutSeconds = 120;
 
+        private boolean rateLimitEnabled = true;
+
+        private int maxRetries = 2;
+
+        private int retryBackoffMs = 200;
+
+        private List<Integer> retryOnStatuses = new ArrayList<>(List.of(429, 500, 502, 503, 504));
+
+        private int requestTimeoutSeconds = 120;
+
         private List<AiProvider.Protocol> supportedProtocols =
                 new ArrayList<>(List.of(AiProvider.Protocol.OPENAI_CHAT, AiProvider.Protocol.ANTHROPIC));
     }
@@ -124,6 +134,8 @@ public class AiSetting extends AbstractExtension {
 
     @Data
     public static class Memory {
+
+        private boolean enabled = true;
 
         private boolean extractionEnabled = true;
 

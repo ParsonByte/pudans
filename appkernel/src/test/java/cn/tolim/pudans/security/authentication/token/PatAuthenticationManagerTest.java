@@ -93,6 +93,7 @@ class PatAuthenticationManagerTest {
                     var jwt = (JwtAuthenticationToken) authentication;
                     assertThat(jwt.getToken().getClaimAsString("pat_owner")).isEqualTo("alice");
                     assertThat(jwt.getToken().getClaimAsString("sudo_user")).isEqualTo("bob");
+                    assertThat(jwt.getToken().getClaimAsString("tokenId")).isEqualTo("token-id");
                     assertThat(jwt.getAuthorities().stream()
                                     .map(GrantedAuthority::getAuthority)
                                     .toList())

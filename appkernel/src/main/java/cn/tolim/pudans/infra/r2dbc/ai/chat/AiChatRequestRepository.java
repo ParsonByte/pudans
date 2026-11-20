@@ -3,6 +3,7 @@ package cn.tolim.pudans.infra.r2dbc.ai.chat;
 import io.r2dbc.spi.Row;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.r2dbc.core.DatabaseClient;
@@ -20,18 +21,22 @@ public class AiChatRequestRepository {
                         INSERT INTO ai_chat_request (
                             request_id, space_id, user_id, agent_source, team_id, agent_id, session_key,
                             conversation_id, idempotency_key, mode_code, route_group,
-                            selected_provider, selected_account, selected_model, tier
+                            selected_provider, selected_account, selected_model, tier,
+                            route_trace, caller_key
                         ) VALUES (
                             :requestId, :spaceId, :userId, :agentSource, :teamId, :agentId, :sessionKey,
                             :conversationId, :idempotencyKey, :modeCode, :routeGroup,
-                            :selectedProvider, :selectedAccount, :selectedModel, :tier
+                            :selectedProvider, :selectedAccount, :selectedModel, :tier,
+                            CAST(:routeTrace AS jsonb), :callerKey
                         )
                         RETURNING id, request_id, space_id, user_id, agent_source, team_id, agent_id, session_key,
                                   conversation_id, idempotency_key, mode_code, route_group,
                                   selected_provider, selected_account, selected_model, tier, status,
                                   error_code, input_tokens, cache_tokens, output_tokens, total_tokens,
                                   points, overdraft, billing_source, billing_status, latency_ms, ttft_ms,
-                                  tps, usage_source, upstream_request_id, created_at, completed_at
+                                  tps, usage_source, upstream_request_id,
+                                  route_trace::text AS route_trace, attempts::text AS attempts, caller_key,
+                                  created_at, completed_at
                         """)
                 .bind("requestId", request.requestId())
                 .bind("spaceId", request.spaceId())
@@ -49,6 +54,8 @@ public class AiChatRequestRepository {
         spec = AiR2dbcBindings.bindNullable(spec, "selectedAccount", request.selectedAccount(), String.class);
         spec = AiR2dbcBindings.bindNullable(spec, "selectedModel", request.selectedModel(), String.class);
         spec = AiR2dbcBindings.bindNullable(spec, "tier", request.tier(), String.class);
+        spec = AiR2dbcBindings.bindNullable(spec, "routeTrace", request.routeTrace(), String.class);
+        spec = AiR2dbcBindings.bindNullable(spec, "callerKey", request.callerKey(), String.class);
         return spec.map((row, metadata) -> mapChatRequest(row)).one();
     }
 
@@ -69,6 +76,8 @@ public class AiChatRequestRepository {
                             tps = :tps,
                             usage_source = :usageSource,
                             upstream_request_id = :upstreamRequestId,
+                            route_trace = COALESCE(CAST(:routeTrace AS jsonb), route_trace),
+                            attempts = COALESCE(CAST(:attempts AS jsonb), attempts),
                             completed_at = now()
                         WHERE request_id = :requestId
                         RETURNING id, request_id, space_id, user_id, agent_source, team_id, agent_id, session_key,
@@ -76,7 +85,9 @@ public class AiChatRequestRepository {
                                   selected_provider, selected_account, selected_model, tier, status,
                                   error_code, input_tokens, cache_tokens, output_tokens, total_tokens,
                                   points, overdraft, billing_source, billing_status, latency_ms, ttft_ms,
-                                  tps, usage_source, upstream_request_id, created_at, completed_at
+                                  tps, usage_source, upstream_request_id,
+                                  route_trace::text AS route_trace, attempts::text AS attempts, caller_key,
+                                  created_at, completed_at
                         """)
                 .bind("status", completion.status())
                 .bind("billingStatus", completion.billingStatus())
@@ -94,7 +105,60 @@ public class AiChatRequestRepository {
         spec = AiR2dbcBindings.bindNullable(spec, "usageSource", completion.usageSource(), String.class);
         spec = AiR2dbcBindings.bindNullable(
                 spec, "upstreamRequestId", completion.upstreamRequestId(), String.class);
+        spec = AiR2dbcBindings.bindNullable(spec, "routeTrace", completion.routeTrace(), String.class);
+        spec = AiR2dbcBindings.bindNullable(spec, "attempts", completion.attempts(), String.class);
         return spec.map((row, metadata) -> mapChatRequest(row)).one();
+    }
+
+    public Mono<KeyUsage> aggregateKeyUsage(
+            @Nullable String userId,
+            String callerKey,
+            @Nullable Instant since,
+            @Nullable List<String> models,
+            @Nullable String account) {
+        var sql = new StringBuilder("""
+                        SELECT COUNT(*) AS requests,
+                               COALESCE(SUM(total_tokens), 0) AS tokens,
+                               COALESCE(SUM(points), 0) AS points
+                        FROM ai_chat_request
+                        WHERE caller_key = :callerKey
+                        """);
+        if (userId != null && !userId.isBlank()) {
+            sql.append(" AND user_id = :userId");
+        }
+        if (since != null) {
+            sql.append(" AND created_at >= :since");
+        }
+        if (models != null && !models.isEmpty()) {
+            sql.append(" AND selected_model IN (:models)");
+        }
+        if (account != null && !account.isBlank()) {
+            sql.append(" AND selected_account = :account");
+        }
+        var spec = databaseClient.sql(sql.toString()).bind("callerKey", callerKey);
+        spec = AiR2dbcBindings.bindNullable(spec, "userId", userId, String.class);
+        spec = AiR2dbcBindings.bindNullable(spec, "since", since, Instant.class);
+        if (models != null && !models.isEmpty()) {
+            spec = spec.bind("models", models);
+        }
+        spec = AiR2dbcBindings.bindNullable(spec, "account", account, String.class);
+        return spec.map((row, metadata) -> new KeyUsage(
+                        row.get("requests", Long.class),
+                        row.get("tokens", Long.class),
+                        row.get("points", BigDecimal.class)))
+                .one();
+    }
+
+    public Mono<Long> countRecentFailures(Instant since) {
+        return databaseClient
+                .sql("""
+                        SELECT COUNT(*) AS failures
+                        FROM ai_chat_request
+                        WHERE status = 'FAILED' AND created_at >= :since
+                        """)
+                .bind("since", since)
+                .map((row, metadata) -> row.get("failures", Long.class))
+                .one();
     }
 
     static ChatRequest mapChatRequest(Row row) {
@@ -149,7 +213,45 @@ public class AiChatRequestRepository {
             @Nullable String selectedProvider,
             @Nullable String selectedAccount,
             @Nullable String selectedModel,
-            @Nullable String tier) {
+            @Nullable String tier,
+            @Nullable String routeTrace,
+            @Nullable String callerKey) {
+
+        public NewChatRequest(
+                String requestId,
+                String spaceId,
+                String userId,
+                String agentSource,
+                String teamId,
+                String agentId,
+                @Nullable String sessionKey,
+                @Nullable Long conversationId,
+                String idempotencyKey,
+                @Nullable String modeCode,
+                @Nullable String routeGroup,
+                @Nullable String selectedProvider,
+                @Nullable String selectedAccount,
+                @Nullable String selectedModel,
+                @Nullable String tier) {
+            this(
+                    requestId,
+                    spaceId,
+                    userId,
+                    agentSource,
+                    teamId,
+                    agentId,
+                    sessionKey,
+                    conversationId,
+                    idempotencyKey,
+                    modeCode,
+                    routeGroup,
+                    selectedProvider,
+                    selectedAccount,
+                    selectedModel,
+                    tier,
+                    null,
+                    null);
+        }
 
         public NewChatRequest {
             requireText(requestId, "requestId");
@@ -183,7 +285,45 @@ public class AiChatRequestRepository {
             @Nullable Integer ttftMs,
             @Nullable BigDecimal tps,
             @Nullable String usageSource,
-            @Nullable String upstreamRequestId) {
+            @Nullable String upstreamRequestId,
+            @Nullable String routeTrace,
+            @Nullable String attempts) {
+
+        public ChatCompletion(
+                String requestId,
+                String status,
+                @Nullable String errorCode,
+                @Nullable Integer inputTokens,
+                @Nullable Integer cacheTokens,
+                @Nullable Integer outputTokens,
+                @Nullable Integer totalTokens,
+                @Nullable BigDecimal points,
+                @Nullable String billingSource,
+                String billingStatus,
+                @Nullable Integer latencyMs,
+                @Nullable Integer ttftMs,
+                @Nullable BigDecimal tps,
+                @Nullable String usageSource,
+                @Nullable String upstreamRequestId) {
+            this(
+                    requestId,
+                    status,
+                    errorCode,
+                    inputTokens,
+                    cacheTokens,
+                    outputTokens,
+                    totalTokens,
+                    points,
+                    billingSource,
+                    billingStatus,
+                    latencyMs,
+                    ttftMs,
+                    tps,
+                    usageSource,
+                    upstreamRequestId,
+                    null,
+                    null);
+        }
 
         public ChatCompletion {
             requireText(requestId, "requestId");
@@ -197,6 +337,8 @@ public class AiChatRequestRepository {
             }
         }
     }
+
+    public record KeyUsage(long requests, long tokens, BigDecimal points) {}
 
     public record ChatRequest(
             long id,

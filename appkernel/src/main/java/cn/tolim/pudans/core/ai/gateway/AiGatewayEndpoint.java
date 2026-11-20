@@ -10,12 +10,15 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolCodecRegistry;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiResponseEncoders;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiStreamEncoder;
+import cn.tolim.pudans.core.ai.gateway.protocol.GeminiGatewayCodec;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -39,6 +42,10 @@ public class AiGatewayEndpoint implements CustomEndpoint {
 
     private final AiResponseEncoders responseEncoders;
 
+    private final GeminiGatewayCodec geminiCodec;
+
+    private final AiGatewayStatusService statusService;
+
     private final AiEndpointRequests requests;
 
     @Override
@@ -57,24 +64,95 @@ public class AiGatewayEndpoint implements CustomEndpoint {
                                 .tag(TAG)
                                 .requestBody(requestBodyBuilder().required(true))
                                 .response(responseBuilder()))
+                .POST("/aigateway/-/gemini/v1beta/models/{model}:generateContent",
+                        request -> handleGemini(request, false),
+                        builder -> builder.operationId("geminiGenerateContent")
+                                .description("Gemini generateContent compatible agent gateway.")
+                                .tag(TAG)
+                                .requestBody(requestBodyBuilder().required(true))
+                                .response(responseBuilder()))
+                .POST("/aigateway/-/gemini/v1beta/models/{model}:streamGenerateContent",
+                        request -> handleGemini(request, true),
+                        builder -> builder.operationId("geminiStreamGenerateContent")
+                                .description("Gemini streamGenerateContent compatible agent gateway.")
+                                .tag(TAG)
+                                .requestBody(requestBodyBuilder().required(true))
+                                .response(responseBuilder()))
+                .GET("/aigateway/-/status", this::status,
+                        builder -> builder.operationId("aiGatewayStatus")
+                                .description("Agent gateway runtime status.")
+                                .tag(TAG)
+                                .response(responseBuilder()))
                 .build();
     }
 
     private Mono<ServerResponse> handle(ServerRequest request, AiProvider.Protocol protocol) {
         return userId(request)
-                .zipWith(request.bodyToMono(String.class)
-                        .switchIfEmpty(Mono.error(new ApiException(
-                                HttpStatus.BAD_REQUEST, "ai-gateway-body-invalid", "请求体不能为空。"))))
+                .zipWith(body(request))
+                .zipWith(callerKey(request).defaultIfEmpty(""))
                 .flatMap(tuple -> {
-                    var body = tuple.getT2();
-                    if (!StringUtils.hasText(body)) {
-                        return Mono.error(new ApiException(
-                                HttpStatus.BAD_REQUEST, "ai-gateway-body-invalid", "请求体不能为空。"));
-                    }
-                    var ir = codecRegistry.require(protocol).parse(body);
-                    var invocation = invocation(request, protocol, ir, tuple.getT1());
+                    var ir = codecRegistry.require(protocol).parse(tuple.getT1().getT2());
+                    var invocation = invocation(
+                            request, protocol, ir, tuple.getT1().getT1(), caller(tuple.getT2()));
                     return ir.stream() ? stream(invocation) : complete(invocation);
                 });
+    }
+
+    private Mono<ServerResponse> handleGemini(ServerRequest request, boolean stream) {
+        return userId(request)
+                .zipWith(body(request))
+                .zipWith(callerKey(request).defaultIfEmpty(""))
+                .flatMap(tuple -> {
+                    var model = request.pathVariable("model");
+                    var ir = geminiCodec.parse(tuple.getT1().getT2(), model, stream);
+                    var invocation = invocation(
+                            request,
+                            AiProvider.Protocol.GEMINI,
+                            ir,
+                            tuple.getT1().getT1(),
+                            caller(tuple.getT2()));
+                    return stream ? stream(invocation) : complete(invocation);
+                });
+    }
+
+    private Mono<ServerResponse> status(ServerRequest request) {
+        return statusService
+                .status()
+                .flatMap(status -> ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(status));
+    }
+
+    private static @Nullable String caller(String value) {
+        return StringUtils.hasText(value) ? value : null;
+    }
+
+    // PAT 使用 pat_name 标识调用密钥，非 PAT 的 JWT 回退到 jti
+    private static Mono<String> callerKey(ServerRequest request) {
+        return request.principal()
+                .flatMap(principal -> principal instanceof JwtAuthenticationToken jwt
+                        ? Mono.justOrEmpty(patClaim(jwt))
+                        : Mono.empty());
+    }
+
+    private static String patClaim(JwtAuthenticationToken jwt) {
+        var token = jwt.getToken();
+        var patName = token.getClaimAsString("pat_name");
+        if (StringUtils.hasText(patName)) {
+            return patName;
+        }
+        var tokenId = token.getClaimAsString("tokenId");
+        return StringUtils.hasText(tokenId) ? tokenId : token.getClaimAsString("jti");
+    }
+
+    private static Mono<String> body(ServerRequest request) {
+        return request.bodyToMono(String.class)
+                .switchIfEmpty(Mono.error(bodyInvalid()))
+                .flatMap(body -> StringUtils.hasText(body) ? Mono.just(body) : Mono.error(bodyInvalid()));
+    }
+
+    private static ApiException bodyInvalid() {
+        return new ApiException(HttpStatus.BAD_REQUEST, "ai-gateway-body-invalid", "请求体不能为空。");
     }
 
     private Mono<ServerResponse> complete(AiGatewayInvocation invocation) {
@@ -144,6 +222,9 @@ public class AiGatewayEndpoint implements CustomEndpoint {
         return switch (protocol) {
             case ANTHROPIC -> "event: error\ndata: {\"type\":\"error\",\"error\":{\"type\":\""
                     + error.code() + "\",\"message\":\"" + message + "\"}}\n\n";
+            case GEMINI -> "data: {\"error\":{\"code\":" + (error.retryable() ? 503 : 500)
+                    + ",\"message\":\"" + message + "\",\"status\":\""
+                    + (error.retryable() ? "UNAVAILABLE" : "INTERNAL") + "\"}}\n\n";
             default -> "data: {\"error\":{\"code\":\"" + error.code() + "\",\"message\":\""
                     + message + "\",\"retryable\":" + error.retryable() + "}}\n\n";
         };
@@ -162,7 +243,8 @@ public class AiGatewayEndpoint implements CustomEndpoint {
             ServerRequest request,
             AiProvider.Protocol protocol,
             AiChatIr ir,
-            String userId) {
+            String userId,
+            @Nullable String callerKey) {
         var sessionKey = AiGatewayHeaders.sessionKey(request);
         var requestId = "req-" + UUID.randomUUID();
         return new AiGatewayInvocation(
@@ -177,6 +259,8 @@ public class AiGatewayEndpoint implements CustomEndpoint {
                 AiGatewayHeaders.mode(request),
                 AiGatewayHeaders.routeGroup(request),
                 AiGatewayHeaders.agentName(request),
-                AiGatewayHeaders.conversationId(request));
+                AiGatewayHeaders.conversationId(request),
+                null,
+                callerKey);
     }
 }
