@@ -16,6 +16,7 @@ import java.util.Base64;
 import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -25,6 +26,8 @@ import reactor.core.publisher.Mono;
 public class RefreshTokenService {
 
     private static final String KEY_PREFIX = "pudans:refresh:";
+
+    private static final long SCAN_BATCH_SIZE = 200;
 
     private static final long DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 1800;
 
@@ -61,6 +64,21 @@ public class RefreshTokenService {
                                         newRefreshToken,
                                         settings.accessTokenTtl().toSeconds(),
                                         settings.refreshTokenTtl().toSeconds())))));
+    }
+ //让指定用户的所有令牌全部失效，相当于把他从所有设备上强制退出登录，并返回删掉了多少个。
+    public Mono<Long> revokeAll(String username) {
+        var options = ScanOptions.scanOptions()
+                .match(KEY_PREFIX + "*")
+                .count(SCAN_BATCH_SIZE)
+                .build();
+        return redisTemplate
+                .scan(options)
+                .flatMap(key -> redisTemplate
+                        .opsForValue()
+                        .get(key)
+                        .filter(username::equals)
+                        .flatMap(owner -> redisTemplate.delete(key)))
+                .reduce(0L, Long::sum);
     }
 
     private Mono<String> issue(String username, Duration ttl) {

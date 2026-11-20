@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ReactiveValueOperations;
+import org.springframework.data.redis.core.ScanOptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -47,7 +50,9 @@ class RefreshTokenServiceTest {
 
     @BeforeEach
     void setUp() {
-        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        //lenient() 的作用是让这个打桩不参与严格检查：即使测试里没调用它，也不会报错。
+        // 原本（不加 lenient()）则会报错：如果 opsForValue() 一次都没被调用，Mockito 就会认为这是无用的打桩（UnnecessaryStubbingException），测试直接失败。
+        lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         service = new RefreshTokenService(
                 redisTemplate, parameterSettingGroupService, patService, userGroupService);
     }
@@ -114,6 +119,28 @@ class RefreshTokenServiceTest {
 
         StepVerifier.create(service.rotate("one-time")).expectNextCount(1).verifyComplete();
         StepVerifier.create(service.rotate("one-time")).expectError(ApiException.class).verify();
+    }
+
+    @Test
+    void revokeAllDeletesOnlyTokensOwnedByTheUser() {
+        var aliceKey = "pudans:refresh:hash-alice";
+        var bobKey = "pudans:refresh:hash-bob";
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(Flux.just(aliceKey, bobKey));
+        when(valueOperations.get(aliceKey)).thenReturn(Mono.just("alice"));
+        when(valueOperations.get(bobKey)).thenReturn(Mono.just("bob"));
+        when(redisTemplate.delete(aliceKey)).thenReturn(Mono.just(1L));
+
+        StepVerifier.create(service.revokeAll("alice")).expectNext(1L).verifyComplete();
+
+        verify(redisTemplate).delete(aliceKey);
+        verify(redisTemplate, never()).delete(bobKey);
+    }
+
+    @Test
+    void revokeAllReturnsZeroWhenTheUserHasNoRefreshToken() {
+        when(redisTemplate.scan(any(ScanOptions.class))).thenReturn(Flux.empty());
+
+        StepVerifier.create(service.revokeAll("alice")).expectNext(0L).verifyComplete();
     }
 
     private static ParameterSetting.Server server(int accessTtl, int refreshTtl) {
