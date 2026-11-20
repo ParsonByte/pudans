@@ -106,9 +106,9 @@ public class AiGatewayKeyService {
         if (limit.getTokens() != null && usage.tokens() >= limit.getTokens()) {
             return true;
         }
-        if (limit.getPoints() != null
+        if (limit.getUnits() != null
                 && usage.units() != null
-                && usage.units().compareTo(BigDecimal.valueOf(limit.getPoints())) >= 0) {
+                && usage.units().compareTo(BigDecimal.valueOf(limit.getUnits())) >= 0) {
             return true;
         }
         return limit.getRequests() != null && usage.requests() >= limit.getRequests();

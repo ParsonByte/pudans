@@ -53,8 +53,7 @@ public sealed interface AiChatStreamEvent {
 
     record Usage(
             AiTokenUsage usage,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal points,
+            BigDecimal units,
             String billingSource)
             implements AiChatStreamEvent {}
 

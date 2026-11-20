@@ -132,6 +132,25 @@ class AiGatewayKeyServiceTest {
     }
 
     @Test
+    void rejectsCallersThatExceedTheConfiguredUnitBudget() {
+        var limit = new PersonalAccessToken.Limit();
+        limit.setPeriod(PersonalAccessToken.LimitPeriod.DAY);
+        limit.setUnits(50L);
+        when(client.get(PersonalAccessToken.class, "pat-1"))
+                .thenReturn(Mono.just(pat(gateway(true, List.of(), null, List.of(limit)))));
+        when(chatRequestRepository.aggregateKeyUsage(
+                        isNull(), eq("pat-1"), any(), any(), any()))
+                .thenReturn(Mono.just(new KeyUsage(1, 0, new BigDecimal("50"))));
+
+        StepVerifier.create(service.authorize(invocation("pat-1"), model()))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOf(ApiException.class)
+                        .extracting(value -> ((ApiException) value).getCode())
+                        .isEqualTo(AiGatewayRateLimiter.CODE_KEY_LIMITED))
+                .verify();
+    }
+
+    @Test
     void budgetWindowsStartAtBeijingDayWeekAndMonthBoundaries() {
         service.setClock(Clock.fixed(Instant.parse("2026-11-19T16:00:00Z"), ZoneOffset.UTC));
         var limits = List.of(

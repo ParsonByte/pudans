@@ -4,6 +4,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import cn.tolim.pudans.contract.extension.AbstractExtension;
 import cn.tolim.pudans.contract.extension.GVK;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -120,8 +121,8 @@ public class PersonalAccessToken extends AbstractExtension {
 
         private Long tokens;
 
-        // 兼容字段名：按标准 Token 用量单位累计。
-        private Long points;
+        @JsonAlias("points")
+        private Long units;
 
         private Long requests;
 

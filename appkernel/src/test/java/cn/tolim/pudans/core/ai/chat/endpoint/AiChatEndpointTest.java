@@ -69,6 +69,8 @@ class AiChatEndpointTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.content").isEqualTo("你好，有什么可以帮你？")
+                .jsonPath("$.units").isEqualTo(1)
+                .jsonPath("$.points").doesNotExist()
                 .jsonPath("$.citations[0].index").isEqualTo(1);
     }
 
@@ -100,6 +102,8 @@ class AiChatEndpointTest {
                     org.assertj.core.api.Assertions.assertThat(body).contains("event: citation");
                     org.assertj.core.api.Assertions.assertThat(body).contains("event: tool_confirm");
                     org.assertj.core.api.Assertions.assertThat(body).contains("event: delta");
+                    org.assertj.core.api.Assertions.assertThat(body).contains("\"units\":1");
+                    org.assertj.core.api.Assertions.assertThat(body).doesNotContain("\"points\"");
                     org.assertj.core.api.Assertions.assertThat(body).contains("event: done");
                 });
     }

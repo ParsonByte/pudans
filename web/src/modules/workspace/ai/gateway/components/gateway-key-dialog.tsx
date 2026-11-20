@@ -56,17 +56,17 @@ const limitSchema = z
   .object({
     period: z.enum(["DAY", "WEEK", "MONTH", "TOTAL"]),
     tokens: numericText("Token 上限必须是非负整数。"),
-    points: numericText("积分上限必须是非负整数。"),
+    units: numericText("标准 Token 上限必须是非负整数。"),
     requests: numericText("请求数上限必须是非负整数。"),
     models: z.array(z.string()),
     account: z.string().trim(),
   })
   .superRefine((limit, context) => {
-    if (limit.tokens === "" && limit.points === "" && limit.requests === "") {
+    if (limit.tokens === "" && limit.units === "" && limit.requests === "") {
       context.addIssue({
         code: "custom",
         path: ["tokens"],
-        message: "每条限制至少填写 Token、积分或请求数之一。",
+        message: "每条限制至少填写 Token、标准 Token 或请求数之一。",
       });
     }
   });
@@ -120,7 +120,7 @@ function buildGatewaySpec(values: GatewayKeyFormValues): GatewayKeySpec {
     limits: values.limits.map((limit) => ({
       period: limit.period,
       tokens: limit.tokens === "" ? undefined : Number(limit.tokens),
-      points: limit.points === "" ? undefined : Number(limit.points),
+      units: limit.units === "" ? undefined : Number(limit.units),
       requests: limit.requests === "" ? undefined : Number(limit.requests),
       models: limit.models,
       account: limit.account.trim() || undefined,
@@ -359,7 +359,7 @@ export function GatewayKeyDialog({
                     <div className="space-y-0.5">
                       <p className="text-sm font-medium">用量限制</p>
                       <p className="text-[11px] text-muted-foreground">
-                        最多 {GATEWAY_KEY_LIMIT_MAX} 条；按指定周期聚合 Token、积分或请求数。
+                        最多 {GATEWAY_KEY_LIMIT_MAX} 条；按指定周期聚合 Token、标准 Token 或请求数。
                       </p>
                     </div>
                     <Button
@@ -370,7 +370,7 @@ export function GatewayKeyDialog({
                         limits.append({
                           period: "DAY",
                           tokens: "",
-                          points: "",
+                          units: "",
                           requests: "",
                           models: [],
                           account: "",
@@ -438,7 +438,7 @@ export function GatewayKeyDialog({
                                 htmlFor={`gateway-limit-tokens-${index}`}
                                 error={
                                   itemErrors?.tokens?.message ??
-                                  itemErrors?.points?.message ??
+                                  itemErrors?.units?.message ??
                                   itemErrors?.requests?.message
                                 }
                               >
@@ -450,13 +450,16 @@ export function GatewayKeyDialog({
                                   {...form.register(`limits.${index}.tokens`)}
                                 />
                               </FormField>
-                              <FormField label="积分" htmlFor={`gateway-limit-points-${index}`}>
+                              <FormField
+                                label="标准 Token"
+                                htmlFor={`gateway-limit-units-${index}`}
+                              >
                                 <Input
-                                  id={`gateway-limit-points-${index}`}
+                                  id={`gateway-limit-units-${index}`}
                                   type="number"
                                   min={0}
                                   placeholder="不限制"
-                                  {...form.register(`limits.${index}.points`)}
+                                  {...form.register(`limits.${index}.units`)}
                                 />
                               </FormField>
                               <FormField label="请求数" htmlFor={`gateway-limit-requests-${index}`}>

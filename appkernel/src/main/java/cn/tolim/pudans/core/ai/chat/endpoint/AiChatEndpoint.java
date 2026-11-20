@@ -570,8 +570,8 @@ public class AiChatEndpoint implements CustomEndpoint {
                 node.put("cacheWriteTokens", usage.cacheWriteTokens());
             }
         }
-        if (event.points() != null) {
-            node.put("points", event.points());
+        if (event.units() != null) {
+            node.put("units", event.units());
         }
         put(node, "billingSource", event.billingSource());
         return node;

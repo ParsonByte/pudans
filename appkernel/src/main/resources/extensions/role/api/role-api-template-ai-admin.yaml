@@ -77,6 +77,7 @@ rules:
       - "knowledgebases/querylogs"
       - "aistats/routing"
       - "aistats/points"
+      - "aistats/units"
       - "aistats/memory"
       - "aistats/kb"
       - "aistats/usage"

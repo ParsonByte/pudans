@@ -113,7 +113,7 @@ class AiStatsServiceTest {
                     assertThat(live.summary().requests()).isEqualTo(12);
                     assertThat(live.summary().failed()).isEqualTo(2);
                     assertThat(live.summary().todayRequests()).isEqualTo(5);
-                    assertThat(live.summary().todayPoints()).isEqualByComparingTo("0.18");
+                    assertThat(live.summary().todayUnits()).isEqualByComparingTo("0.18");
                     assertThat(live.daily()).hasSize(2);
                     assertThat(live.daily().getFirst().day()).isEqualTo("2026-11-19");
                     assertThat(live.requests()).hasSize(1);

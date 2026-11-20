@@ -27,7 +27,7 @@ public class AiStatsRepository {
                                COALESCE(selected_model, 'unknown') AS model,
                                status,
                                COUNT(*) AS requests,
-                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS points
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS units
                         FROM ai_chat_request
                         WHERE created_at >= now() - make_interval(days => :days)
                         GROUP BY selected_provider, selected_model, status
@@ -39,28 +39,28 @@ public class AiStatsRepository {
                         row.get("model", String.class),
                         row.get("status", String.class),
                         count(row, "requests"),
-                        decimal(row, "points")))
+                        decimal(row, "units")))
                 .all();
     }
 
-    public Flux<PointStatsRow> points(int days) {
+    public Flux<PointStatsRow> units(int days) {
         return databaseClient.sql("""
                         SELECT to_char(date_trunc('day', created_at AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD') AS day,
                                COALESCE(selected_model, 'unknown') AS model,
                                COUNT(*) AS requests,
-                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS points,
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS units,
                                COALESCE(SUM(total_tokens), 0) AS tokens
                         FROM ai_chat_request
                         WHERE created_at >= now() - make_interval(days => :days)
                         GROUP BY day, selected_model
-                        ORDER BY day DESC, points DESC
+                        ORDER BY day DESC, units DESC
                         """)
                 .bind("days", days)
                 .map((row, metadata) -> new PointStatsRow(
                         row.get("day", String.class),
                         row.get("model", String.class),
                         count(row, "requests"),
-                        decimal(row, "points"),
+                        decimal(row, "units"),
                         row.get("tokens", Long.class)))
                 .all();
     }
@@ -73,7 +73,7 @@ public class AiStatsRepository {
                                COALESCE(SUM(input_tokens), 0) AS input_tokens,
                                COALESCE(SUM(cache_tokens), 0) AS cache_tokens,
                                COALESCE(SUM(output_tokens), 0) AS output_tokens,
-                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS points,
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS units,
                                COUNT(*) FILTER (WHERE created_at >= (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai')) AT TIME ZONE 'Asia/Shanghai') AS today_requests,
                                COUNT(*) FILTER (
                                    WHERE status = 'FAILED'
@@ -84,7 +84,7 @@ public class AiStatsRepository {
                                ), 0) AS today_tokens,
                                COALESCE(SUM(COALESCE(usage_units, points, 0)) FILTER (
                                    WHERE created_at >= (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai')) AT TIME ZONE 'Asia/Shanghai'
-                               ), 0) AS today_points
+                               ), 0) AS today_units
                         FROM ai_chat_request
                         WHERE created_at >= now() - make_interval(days => :days)
                         """)
@@ -96,11 +96,11 @@ public class AiStatsRepository {
                         count(row, "input_tokens"),
                         count(row, "cache_tokens"),
                         count(row, "output_tokens"),
-                        decimal(row, "points"),
+                        decimal(row, "units"),
                         count(row, "today_requests"),
                         count(row, "today_failed"),
                         count(row, "today_tokens"),
-                        decimal(row, "today_points")))
+                        decimal(row, "today_units")))
                 .one();
     }
 
@@ -109,7 +109,7 @@ public class AiStatsRepository {
                         SELECT to_char(date_trunc('day', created_at AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD') AS day,
                                COUNT(*) AS requests,
                                COUNT(*) FILTER (WHERE status = 'FAILED') AS failed,
-                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS points
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS units
                         FROM ai_chat_request
                         WHERE created_at >= now() - make_interval(days => :days)
                         GROUP BY day
@@ -120,7 +120,7 @@ public class AiStatsRepository {
                         row.get("day", String.class),
                         count(row, "requests"),
                         count(row, "failed"),
-                        decimal(row, "points")))
+                        decimal(row, "units")))
                 .all();
     }
 
@@ -192,7 +192,7 @@ public class AiStatsRepository {
                         SELECT request_id, user_id, agent_source, route_group,
                                selected_provider, selected_account, selected_model, tier,
                                status, error_code, input_tokens, cache_tokens, output_tokens,
-                               total_tokens, COALESCE(usage_units, points)::numeric AS points,
+                               total_tokens, COALESCE(usage_units, points)::numeric AS units,
                                latency_ms, ttft_ms, tps,
                                session_key, conversation_id, created_at, completed_at
                         FROM ai_chat_request
@@ -217,7 +217,7 @@ public class AiStatsRepository {
                         row.get("cache_tokens", Integer.class),
                         row.get("output_tokens", Integer.class),
                         row.get("total_tokens", Integer.class),
-                        row.get("points", BigDecimal.class),
+                        row.get("units", BigDecimal.class),
                         row.get("latency_ms", Integer.class),
                         row.get("ttft_ms", Integer.class),
                         row.get("tps", BigDecimal.class),
@@ -400,15 +400,13 @@ public class AiStatsRepository {
             String model,
             String status,
             long requests,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal points) {}
+            BigDecimal units) {}
 
     public record PointStatsRow(
             String day,
             String model,
             long requests,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal points,
+            BigDecimal units,
             long tokens) {}
 
     public record RoutingSummaryRow(
@@ -418,20 +416,17 @@ public class AiStatsRepository {
             long inputTokens,
             long cacheTokens,
             long outputTokens,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal points,
+            BigDecimal units,
             long todayRequests,
             long todayFailed,
             long todayTokens,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal todayPoints) {}
+            BigDecimal todayUnits) {}
 
     public record DailyRoutingRow(
             String day,
             long requests,
             long failed,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal points) {}
+            BigDecimal units) {}
 
     public record RecentChatRequestRow(
             String requestId,
@@ -448,8 +443,7 @@ public class AiStatsRepository {
             @Nullable Integer cacheTokens,
             @Nullable Integer outputTokens,
             @Nullable Integer totalTokens,
-            // 兼容字段名：值为标准 Token 用量。
-            @Nullable BigDecimal points,
+            @Nullable BigDecimal units,
             @Nullable Integer latencyMs,
             @Nullable Integer ttftMs,
             @Nullable BigDecimal tps,

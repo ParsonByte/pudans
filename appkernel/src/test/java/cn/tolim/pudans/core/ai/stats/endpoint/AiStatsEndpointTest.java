@@ -24,6 +24,7 @@ import cn.tolim.pudans.core.ai.stats.AiStatsService.Summary;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver.Viewer;
 import cn.tolim.pudans.infra.config.JacksonAdapterModule;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.PointStatsRow;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -109,6 +110,32 @@ class AiStatsEndpointTest {
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.summary.requests").isEqualTo(12);
+    }
+
+    @Test
+    void returnsTheDailyUnitStatsOnTheCanonicalRoute() {
+        when(statsService.units(14)).thenReturn(Mono.just(unitStats()));
+
+        client.get()
+                .uri("/aistats/-/units")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.rows[0].day").isEqualTo("2026-11-19")
+                .jsonPath("$.rows[0].units").isEqualTo(0.18)
+                .jsonPath("$.rows[0].points").doesNotExist();
+    }
+
+    @Test
+    void keepsTheDeprecatedPointsAlias() {
+        when(statsService.units(7)).thenReturn(Mono.just(unitStats()));
+
+        client.get()
+                .uri("/aistats/-/points?days=7")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.rows[0].units").isEqualTo(0.18);
     }
 
     @Test
@@ -223,6 +250,11 @@ class AiStatsEndpointTest {
                 NOW,
                 JsonNodeFactory.instance.objectNode().put("matchedRule", "cheap"),
                 JsonNodeFactory.instance.objectNode().put("kbTokens", 120));
+    }
+
+    private static AiStatsService.PointStats unitStats() {
+        return new AiStatsService.PointStats(List.of(
+                new PointStatsRow("2026-11-19", "deepseek-chat", 5, new BigDecimal("0.18"), 1020)));
     }
 
     private static RoutingLive overview() {

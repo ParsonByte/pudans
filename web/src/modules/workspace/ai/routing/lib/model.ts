@@ -265,11 +265,11 @@ export function formatTokenCount(tokens: number | undefined): string {
   return formatNumber(tokens);
 }
 
-export function formatPoints(points: number | undefined): string | undefined {
-  if (points == null) {
+export function formatUnits(units: number | undefined): string | undefined {
+  if (units == null) {
     return undefined;
   }
-  return `${formatNumber(points, 2)} 点`;
+  return `${formatNumber(units, 2)} 标准 Token`;
 }
 
 export function cacheHitRate(inputTokens?: number, cacheTokens?: number): number | undefined {

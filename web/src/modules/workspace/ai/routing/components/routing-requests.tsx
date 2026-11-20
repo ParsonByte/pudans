@@ -31,9 +31,9 @@ import {
   cacheHitRate,
   dayKeyLabel,
   formatDuration,
-  formatPoints,
   formatRelativeTime,
   formatTokenCount,
+  formatUnits,
   providerDisplayName,
   requestStatusDotClass,
   requestStatusLabel,
@@ -201,9 +201,9 @@ function RequestRow({
   if (request.tps != null) {
     metrics.push(`${formatNumber(request.tps, 1)} token/秒`);
   }
-  const points = formatPoints(request.points);
-  if (points) {
-    metrics.push(points);
+  const units = formatUnits(request.units);
+  if (units) {
+    metrics.push(units);
   }
 
   return (

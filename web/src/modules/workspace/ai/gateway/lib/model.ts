@@ -251,8 +251,8 @@ export function gatewayKeyLimitSummary(limit: GatewayKeyLimit): string {
   if (limit.tokens != null) {
     parts.push(`${COUNT_FORMATTER.format(limit.tokens)} Token`);
   }
-  if (limit.points != null) {
-    parts.push(`${COUNT_FORMATTER.format(limit.points)} 积分`);
+  if (limit.units != null) {
+    parts.push(`${COUNT_FORMATTER.format(limit.units)} 标准 Token`);
   }
   if (limit.requests != null) {
     parts.push(`${COUNT_FORMATTER.format(limit.requests)} 请求`);

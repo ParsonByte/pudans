@@ -37,8 +37,8 @@ import { type AiRoutingRequest, fetchRoutingLive } from "../../routing/lib/api";
 import {
   agentLabel,
   formatDuration,
-  formatPoints,
   formatTokenCount,
+  formatUnits,
   providerDisplayName,
   requestStatusDotClass,
   requestStatusLabel,
@@ -76,7 +76,7 @@ type RecentCall = {
   status: string;
   errorCode: string | null;
   totalTokens: number | null;
-  points: number | null;
+  units: number | null;
   latencyMs: number | null;
   ttftMs: number | null;
   routeGroup: string | null;
@@ -103,7 +103,7 @@ function fromUsageRequest(request: UsageRequestItem): RecentCall {
     status: request.status,
     errorCode: request.errorCode,
     totalTokens: request.totalTokens,
-    points: request.units,
+    units: request.units,
     latencyMs: request.latencyMs,
     ttftMs: request.ttftMs,
     routeGroup: request.routeGroup,
@@ -122,7 +122,7 @@ function fromRoutingRequest(request: AiRoutingRequest): RecentCall {
     status: request.status,
     errorCode: request.errorCode ?? null,
     totalTokens: request.totalTokens ?? null,
-    points: request.points ?? null,
+    units: request.units ?? null,
     latencyMs: request.latencyMs ?? null,
     ttftMs: request.ttftMs ?? null,
     routeGroup: request.routeGroup ?? null,
@@ -576,7 +576,7 @@ function RecentCallRow({
       <TableCell className="text-xs whitespace-nowrap">
         <p>{item.totalTokens == null ? "—" : `${formatTokenCount(item.totalTokens)} Token`}</p>
         <p className="text-[11px] text-muted-foreground">
-          {formatPoints(item.points ?? undefined) ?? "—"}
+          {formatUnits(item.units ?? undefined) ?? "—"}
           {item.latencyMs != null ? ` · ${formatDuration(item.latencyMs)}` : ""}
         </p>
       </TableCell>

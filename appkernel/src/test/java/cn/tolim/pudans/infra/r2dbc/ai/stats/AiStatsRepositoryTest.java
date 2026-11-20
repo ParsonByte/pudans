@@ -151,7 +151,7 @@ class AiStatsRepositoryTest {
     }
 
     @Test
-    void pointsAndRoutingDaysBucketDaysInBeijingTime() {
+    void unitStatsAndRoutingDaysBucketDaysInBeijingTime() {
         @SuppressWarnings("unchecked")
         var fetchSpec = (RowsFetchSpec<PointStatsRow>) org.mockito.Mockito.mock(RowsFetchSpec.class);
         when(databaseClient.sql(anyString())).thenReturn(spec);
@@ -159,7 +159,7 @@ class AiStatsRepositoryTest {
         doReturn(fetchSpec).when(spec).map(any(BiFunction.class));
         when(fetchSpec.all()).thenReturn(Flux.empty());
 
-        StepVerifier.create(repository.points(7)).verifyComplete();
+        StepVerifier.create(repository.units(7)).verifyComplete();
         StepVerifier.create(repository.routingDays(7)).verifyComplete();
 
         var sql = ArgumentCaptor.forClass(String.class);
@@ -167,6 +167,9 @@ class AiStatsRepositoryTest {
         assertThat(sql.getAllValues())
                 .allSatisfy(statement -> assertThat(statement)
                         .contains("date_trunc('day', created_at AT TIME ZONE 'Asia/Shanghai')")
+                        .contains("COALESCE(usage_units, points, 0)")
+                        .contains("AS units")
+                        .doesNotContain("AS points")
                         .contains("GROUP BY day"));
     }
 
@@ -190,6 +193,10 @@ class AiStatsRepositoryTest {
 
         var sql = ArgumentCaptor.forClass(String.class);
         verify(databaseClient, times(2)).sql(sql.capture());
+        assertThat(sql.getAllValues().getFirst())
+                .contains("AS units")
+                .contains("AS today_units")
+                .doesNotContain("AS today_points");
         assertThat(sql.getAllValues())
                 .allSatisfy(statement -> assertThat(statement)
                         .contains("(date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai'))"

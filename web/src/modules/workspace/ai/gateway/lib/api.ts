@@ -24,7 +24,7 @@ type GatewayLimitPeriod = "DAY" | "WEEK" | "MONTH" | "TOTAL";
 export type GatewayKeyLimit = {
   period: GatewayLimitPeriod;
   tokens?: number;
-  points?: number;
+  units?: number;
   requests?: number;
   models?: string[];
   account?: string;
@@ -144,7 +144,7 @@ type NormalizedGatewaySpec = {
   limits: {
     period: GatewayLimitPeriod;
     tokens: number | null;
-    points: number | null;
+    units: number | null;
     requests: number | null;
     models: string[];
     account: string | null;
@@ -160,7 +160,7 @@ function normalizeGatewaySpec(gateway: GatewayKeySpec | undefined): NormalizedGa
     limits: (gateway?.limits ?? []).map((limit) => ({
       period: limit.period,
       tokens: limit.tokens ?? null,
-      points: limit.points ?? null,
+      units: limit.units ?? null,
       requests: limit.requests ?? null,
       models: [...(limit.models ?? [])].sort(),
       account: limit.account ?? null,

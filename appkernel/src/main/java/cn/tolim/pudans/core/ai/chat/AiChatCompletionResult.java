@@ -14,8 +14,7 @@ public record AiChatCompletionResult(
         String provider,
         String account,
         AiTokenUsage usage,
-        // 兼容字段名：值为标准 Token 用量。
-        BigDecimal points,
+        BigDecimal units,
         List<Citation> citations) {
 
     public AiChatCompletionResult {

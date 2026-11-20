@@ -11,18 +11,18 @@ type AiRoutingSummary = {
   inputTokens: number;
   cacheTokens: number;
   outputTokens: number;
-  points: number;
+  units: number;
   todayRequests: number;
   todayFailed: number;
   todayTokens: number;
-  todayPoints: number;
+  todayUnits: number;
 };
 
 type AiRoutingDaily = {
   day: string;
   requests: number;
   failed: number;
-  points: number;
+  units: number;
 };
 
 export type AiRoutingRequest = {
@@ -40,7 +40,7 @@ export type AiRoutingRequest = {
   cacheTokens?: number;
   outputTokens?: number;
   totalTokens?: number;
-  points?: number;
+  units?: number;
   latencyMs?: number;
   ttftMs?: number;
   tps?: number;

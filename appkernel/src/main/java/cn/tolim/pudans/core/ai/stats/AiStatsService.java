@@ -55,8 +55,8 @@ public class AiStatsService {
         return repository.routing(days(days)).collectList().map(RoutingStats::new);
     }
 
-    public Mono<PointStats> points(int days) {
-        return repository.points(days(days)).collectList().map(PointStats::new);
+    public Mono<PointStats> units(int days) {
+        return repository.units(days(days)).collectList().map(PointStats::new);
     }
 
     public Mono<RoutingLive> routingLive(int days, int limit) {
@@ -233,15 +233,15 @@ public class AiStatsService {
                     row.inputTokens(),
                     row.cacheTokens(),
                     row.outputTokens(),
-                    row.points(),
+                    row.units(),
                     row.todayRequests(),
                     row.todayFailed(),
                     row.todayTokens(),
-                    row.todayPoints());
+                    row.todayUnits());
         }
 
         private static DailyRouting daily(DailyRoutingRow row) {
-            return new DailyRouting(row.day(), row.requests(), row.failed(), row.points());
+            return new DailyRouting(row.day(), row.requests(), row.failed(), row.units());
         }
 
         private static RecentRequest request(RecentChatRequestRow row) {
@@ -260,7 +260,7 @@ public class AiStatsService {
                     row.cacheTokens(),
                     row.outputTokens(),
                     row.totalTokens(),
-                    row.points(),
+                    row.units(),
                     row.latencyMs(),
                     row.ttftMs(),
                     row.tps(),
@@ -283,20 +283,17 @@ public class AiStatsService {
             long inputTokens,
             long cacheTokens,
             long outputTokens,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal points,
+            BigDecimal units,
             long todayRequests,
             long todayFailed,
             long todayTokens,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal todayPoints) {}
+            BigDecimal todayUnits) {}
 
     public record DailyRouting(
             String day,
             long requests,
             long failed,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal points) {}
+            BigDecimal units) {}
 
     public record RecentRequest(
             String requestId,
@@ -313,8 +310,7 @@ public class AiStatsService {
             Integer cacheTokens,
             Integer outputTokens,
             Integer totalTokens,
-            // 兼容字段名：值为标准 Token 用量。
-            BigDecimal points,
+            BigDecimal units,
             Integer latencyMs,
             Integer ttftMs,
             BigDecimal tps,

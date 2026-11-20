@@ -229,7 +229,7 @@ type ChatStreamUsage = {
   outputTokens?: number;
   cacheReadTokens?: number;
   cacheWriteTokens?: number;
-  points?: number;
+  units?: number;
   billingSource?: string;
 };
 

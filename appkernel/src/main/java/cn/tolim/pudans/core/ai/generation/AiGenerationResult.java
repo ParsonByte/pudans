@@ -21,8 +21,7 @@ public record AiGenerationResult(
         @Nullable String model,
         List<AiModelContent> outputs,
         AiModelUsage usage,
-        // 兼容字段名：值为标准 Token 用量。
-        @Nullable BigDecimal points,
+        @Nullable BigDecimal units,
         @Nullable String billingSource,
         String billingStatus,
         @Nullable String providerTaskId,

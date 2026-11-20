@@ -74,9 +74,16 @@ public class AiStatsEndpoint implements CustomEndpoint {
                         .parameter(parameterBuilder().in(ParameterIn.PATH).name("requestId").required(true))
                         .parameter(scopeParameter())
                         .response(responseBuilder().implementation(RoutingHistoryDetail.class)))
-                .GET("/aistats/-/points", this::points, builder -> builder
-                        .operationId("getAiPointStats")
+                .GET("/aistats/-/units", this::units, builder -> builder
+                        .operationId("getAiUnitStats")
                         .description("Daily usage units by model.")
+                        .tag(TAG)
+                        .parameter(daysParameter())
+                        .response(responseBuilder().implementation(AiStatsService.PointStats.class)))
+                .GET("/aistats/-/points", this::units, builder -> builder
+                        .operationId("getAiPointStats")
+                        .description("Deprecated: use /aistats/-/units instead.")
+                        .deprecated(true)
                         .tag(TAG)
                         .parameter(daysParameter())
                         .response(responseBuilder().implementation(AiStatsService.PointStats.class)))
@@ -135,8 +142,8 @@ public class AiStatsEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
-    private Mono<ServerResponse> points(ServerRequest request) {
-        return statsService.points(days(request))
+    private Mono<ServerResponse> units(ServerRequest request) {
+        return statsService.units(days(request))
                 .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
     }
 
