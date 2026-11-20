@@ -32,6 +32,9 @@ class MasterKeyRotationScopeTest {
     RoleService roleService;
 
     @Mock
+    cn.tolim.pudans.core.rbac.service.UserGroupService userGroupService;
+
+    @Mock
     MasterKeyService masterKeyService;
 
     @Test
@@ -44,7 +47,7 @@ class MasterKeyRotationScopeTest {
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
         when(jwtDecoder.decode("rsa-jwt")).thenReturn(Mono.just(jwt));
-        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, masterKeyService);
+        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, userGroupService, masterKeyService);
 
         StepVerifier.create(manager.authenticate(new BearerTokenAuthenticationToken("rsa-jwt")))
                 .assertNext(authentication -> assertThat(authentication.getName()).isEqualTo("alice"))
@@ -54,7 +57,7 @@ class MasterKeyRotationScopeTest {
     @Test
     void legacyPatJwtsAreRejectedAfterMasterKeyRotation() {
         when(masterKeyService.currentVersion()).thenReturn(1);
-        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, masterKeyService);
+        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, userGroupService, masterKeyService);
 
         StepVerifier.create(manager.authenticate(new BearerTokenAuthenticationToken("pat_legacy.jwt")))
                 .expectError(InvalidBearerTokenException.class)
