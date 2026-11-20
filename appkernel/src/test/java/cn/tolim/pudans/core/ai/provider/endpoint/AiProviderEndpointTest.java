@@ -1,7 +1,11 @@
 package cn.tolim.pudans.core.ai.provider.endpoint;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
@@ -14,13 +18,15 @@ import cn.tolim.pudans.core.ai.embedding.EmbeddingBatch;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
-import cn.tolim.pudans.core.ai.provider.AiProviderAdapter;
-import cn.tolim.pudans.core.ai.provider.AiProviderAdapterRegistry;
 import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
+import cn.tolim.pudans.core.ai.rerank.AiRerankService;
+import cn.tolim.pudans.core.ai.rerank.RerankResult;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -36,7 +42,7 @@ class AiProviderEndpointTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiProviderAdapter adapter;
+    LangChain4jChatService chatService;
 
     @Mock
     AiEmbeddingService embeddingService;
@@ -45,16 +51,25 @@ class AiProviderEndpointTest {
     AiModelAdapterRegistry modelAdapters;
 
     @Mock
+    AiRerankService rerankService;
+
+    @Mock
     AiProviderAccountService accountService;
 
     private WebTestClient webClient;
 
     @BeforeEach
     void setUp() {
-        when(adapter.protocol()).thenReturn(AiProvider.Protocol.OPENAI_CHAT);
-        var registry = new AiProviderAdapterRegistry(List.of(adapter));
-        var endpoint =
-                new AiProviderEndpoint(client, registry, modelAdapters, embeddingService, accountService);
+        lenient().when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider()));
+        lenient().when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account()));
+        lenient()
+                .when(client.update(any(AiProvider.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        lenient()
+                .when(client.update(any(AiProviderAccount.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        var endpoint = new AiProviderEndpoint(
+                client, chatService, modelAdapters, embeddingService, rerankService, accountService);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -63,8 +78,10 @@ class AiProviderEndpointTest {
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider()));
         when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account()));
         when(client.listAll(eq(AiModel.class), any(), any())).thenReturn(Flux.just(model()));
-        when(adapter.chat(any(), any(), any(), any())).thenReturn(Mono.just(new AiChatResponse(
-                "resp-1", "gpt-test", new AiChatMessage("assistant", List.of()), null, "stop")));
+        when(chatService.chat(
+                        any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+                .thenReturn(Mono.just(new AiChatResponse(
+                        "resp-1", "gpt-test", new AiChatMessage("assistant", List.of()), null, "stop")));
 
         webClient.post()
                 .uri("/aiproviders/provider-a/test")
@@ -73,6 +90,74 @@ class AiProviderEndpointTest {
                 .expectBody()
                 .jsonPath("$.successful").isEqualTo(true)
                 .jsonPath("$.model").isEqualTo("gpt-test");
+
+        var providerCaptor = ArgumentCaptor.forClass(AiProvider.class);
+        verify(client).update(providerCaptor.capture());
+        assertThat(providerCaptor.getValue().getStatus().getHealthScore()).isEqualTo(100.0);
+        assertThat(providerCaptor.getValue().getStatus().getLastTestedAt()).isNotNull();
+        var accountCaptor = ArgumentCaptor.forClass(AiProviderAccount.class);
+        verify(client).update(accountCaptor.capture());
+        assertThat(accountCaptor.getValue().getStatus().getHealthScore()).isEqualTo(100.0);
+        assertThat(accountCaptor.getValue().getStatus().getLastUsedAt()).isNotNull();
+    }
+
+    @Test
+    void arrangesProvidersByTheGivenOrder() {
+        var providerB = provider();
+        providerB.getMetadata().setName("provider-b");
+        when(client.get(AiProvider.class, "provider-b")).thenReturn(Mono.just(providerB));
+
+        webClient.post()
+                .uri("/aiproviders/-/arrange")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"names":["provider-b","provider-a"]}
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$[0].metadata.name").isEqualTo("provider-b")
+                .jsonPath("$[0].spec.order").isEqualTo(0)
+                .jsonPath("$[1].metadata.name").isEqualTo("provider-a")
+                .jsonPath("$[1].spec.order").isEqualTo(1);
+    }
+
+    @Test
+    void duplicatesAProviderWithoutCopyingTheApiKey() {
+        var sourceAccount = account();
+        sourceAccount.getSpec().setApiKey("encrypted-key");
+        sourceAccount.getSpec().setConfigured(true);
+        when(client.get(AiProvider.class, "provider-copy")).thenReturn(Mono.empty());
+        when(client.listAll(eq(AiProviderAccount.class), any(), any()))
+                .thenReturn(Flux.just(sourceAccount));
+        when(client.listAll(eq(AiModel.class), any(), any())).thenReturn(Flux.just(model()));
+        when(client.create(any(AiProvider.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(client.create(any(AiProviderAccount.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(client.create(any(AiModel.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        webClient.post()
+                .uri("/aiproviders/provider-a/actions/duplicate")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"name":"provider-copy","displayName":"复制供应商"}
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.metadata.name").isEqualTo("provider-copy")
+                .jsonPath("$.spec.displayName").isEqualTo("复制供应商");
+
+        var accountCaptor = ArgumentCaptor.forClass(AiProviderAccount.class);
+        verify(client).create(accountCaptor.capture());
+        assertThat(accountCaptor.getValue().getSpec().getProvider()).isEqualTo("provider-copy");
+        assertThat(accountCaptor.getValue().getSpec().getApiKey()).isNull();
+        assertThat(accountCaptor.getValue().getSpec().isConfigured()).isFalse();
+        var modelCaptor = ArgumentCaptor.forClass(AiModel.class);
+        verify(client).create(modelCaptor.capture());
+        assertThat(modelCaptor.getValue().getSpec().getProvider()).isEqualTo("provider-copy");
     }
 
     @Test
@@ -110,6 +195,38 @@ class AiProviderEndpointTest {
                 .expectBody()
                 .jsonPath("$.successful").isEqualTo(true)
                 .jsonPath("$.model").isEqualTo("embed-test");
+    }
+
+    @Test
+    void testsARerankModelThroughLangChain4jScoring() {
+        var model = model();
+        model.getSpec().setModelType(AiModel.ModelType.RERANK);
+        when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model));
+        when(rerankService.rerank(
+                        any(AiProvider.class),
+                        any(AiProviderAccount.class),
+                        any(AiModel.class),
+                        eq("Reply with OK."),
+                        anyList(),
+                        eq(1)))
+                .thenReturn(Mono.just(new RerankResult(
+                        List.of(new RerankResult.ScoredIndex(0, 0.9)))));
+
+        webClient.post()
+                .uri("/aimodels/model-a/test")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.successful").isEqualTo(true)
+                .jsonPath("$.model").isEqualTo("gpt-test");
+
+        verify(rerankService).rerank(
+                any(AiProvider.class),
+                any(AiProviderAccount.class),
+                any(AiModel.class),
+                eq("Reply with OK."),
+                anyList(),
+                eq(1));
     }
 
     @Test

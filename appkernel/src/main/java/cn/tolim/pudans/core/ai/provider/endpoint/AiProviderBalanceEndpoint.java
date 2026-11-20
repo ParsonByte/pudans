@@ -3,11 +3,12 @@ package cn.tolim.pudans.core.ai.provider.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
+import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekBalanceClient;
-import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProviderAccess;
+import cn.tolim.pudans.core.ai.provider.AiProviderBalanceProbeClient.ProbeResult;
+import cn.tolim.pudans.core.ai.provider.balance.ProviderBalanceRegistry;
 import cn.tolim.pudans.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
@@ -30,19 +31,17 @@ public class AiProviderBalanceEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
-    private final DeepSeekProviderAccess access;
-
-    private final DeepSeekBalanceClient balanceClient;
+    private final ProviderBalanceRegistry balanceRegistry;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         return SpringdocRouteBuilder.route()
                 .GET("/aiprovideraccounts/{name}/balance", this::balance, builder -> builder
                         .operationId("getAiProviderAccountBalance")
-                        .description("Query the provider account balance.")
+                        .description("Query the provider account balance through the configured probe.")
                         .tag(TAG)
                         .parameter(pathParameter("name", "metadata.name of the provider account."))
-                        .response(responseBuilder().implementation(DeepSeekBalanceClient.DeepSeekBalance.class)))
+                        .response(responseBuilder().implementation(ProbeResult.class)))
                 .build();
     }
 
@@ -54,8 +53,8 @@ public class AiProviderBalanceEndpoint implements CustomEndpoint {
                         return Mono.error(new ApiException(
                                 HttpStatus.BAD_REQUEST, CODE_ACCOUNT_INVALID, "账号不存在或已禁用。"));
                     }
-                    return access.requireProviderOf(account)
-                            .flatMap(provider -> balanceClient.get(provider, account));
+                    return client.get(AiProvider.class, spec.getProvider())
+                            .flatMap(provider -> balanceRegistry.query(provider, account));
                 })
                 .flatMap(balance -> ServerResponse.ok().bodyValue(balance));
     }

@@ -18,14 +18,6 @@ public final class QianwenProtocol {
     public static final String THREE_D_PATH =
             "/api/v1/services/aigc/video-generation/3d-generation";
 
-    public static final String EMBEDDING_PATH =
-            "/api/v1/services/embeddings/multimodal-embedding/multimodal-embedding";
-
-    public static final String TEXT_EMBEDDING_PATH =
-            "/api/v1/services/embeddings/text-embedding/text-embedding";
-
-    public static final String RERANK_PATH = "/api/v1/services/rerank/text-rerank/text-rerank";
-
     public static final String SPEECH_PATH = "/api/v1/services/audio/tts/SpeechSynthesizer";
 
     public static final String ASR_PATH = "/api/v1/services/audio/asr/transcription";

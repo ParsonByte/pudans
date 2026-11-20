@@ -344,39 +344,6 @@ class QianwenModelAdapterTest {
     }
 
     @Test
-    void embedsTextWithTheDedicatedEndpoint() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
-        var adapter = adapter(json("""
-                {"output":{"embeddings":[
-                  {"text_index":1,"embedding":[3,4]},
-                  {"text_index":0,"embedding":[1,2]}
-                ]},"usage":{"total_tokens":27}}
-                """));
-
-        var response = adapter.invoke(
-                        provider(),
-                        account(),
-                        model("text-embedding-v4"),
-                        new AiModelRequest(
-                                AiModel.Capability.EMBEDDING,
-                                List.of(new AiModelContent.Text("a"), new AiModelContent.Text("b")),
-                                Map.of("dimension", mapper.getNodeFactory().numberNode(1024)),
-                                false,
-                                null))
-                .block();
-
-        assertThat(response.outputs()).hasSize(2);
-        assertThat(((AiModelContent.Vector) response.outputs().getFirst()).values())
-                .containsExactly(1f, 2f);
-        assertThat(response.usage().inputTokens()).isEqualTo(27);
-        var body = body(captured.get());
-        assertThat(captured.get().url().toString())
-                .isEqualTo("https://maas.example.com/api/v1/services/embeddings/text-embedding/text-embedding");
-        assertThat(body).contains("\"texts\":[\"a\",\"b\"]");
-        assertThat(body).doesNotContain("\"contents\"");
-    }
-
-    @Test
     void synthesizesSpeechWithTheAudioEndpoint() {
         when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
@@ -409,78 +376,6 @@ class QianwenModelAdapterTest {
                 .isEqualTo("https://maas.example.com/api/v1/services/audio/tts/SpeechSynthesizer");
         assertThat(body).contains("\"text_prompt\":\"你好\"");
         assertThat(body).contains("\"format\":\"wav\"");
-    }
-
-    @Test
-    void embedsTextImageAndVideoContents() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
-        var adapter = adapter(json("""
-                {"output":{"embeddings":[
-                  {"index":1,"embedding":[3,4]},
-                  {"index":0,"embedding":[1,2]}
-                ]},"usage":{"input_tokens":7}}
-                """));
-
-        var response = adapter.invoke(
-                        provider(),
-                        account(),
-                        model("qwen3-vl-embedding"),
-                        new AiModelRequest(
-                                AiModel.Capability.EMBEDDING,
-                                List.of(
-                                        new AiModelContent.Text("猫"),
-                                        new AiModelContent.Image("https://img.example.com/cat.png", null, null, null, null),
-                                        new AiModelContent.Video("https://cdn.example.com/cat.mp4", null, null, null, null)),
-                                Map.of("dimension", mapper.getNodeFactory().numberNode(2048)),
-                                false,
-                                null))
-                .block();
-
-        assertThat(response.outputs()).hasSize(2);
-        var first = (AiModelContent.Vector) response.outputs().get(0);
-        assertThat(first.values()).containsExactly(1f, 2f);
-        assertThat(response.usage().inputTokens()).isEqualTo(7);
-
-        var body = body(captured.get());
-        assertThat(captured.get().url().toString())
-                .isEqualTo("https://maas.example.com/api/v1/services/embeddings/multimodal-embedding/multimodal-embedding");
-        assertThat(body).contains("\"contents\":[{\"text\":\"猫\"},{\"image\":\"https://img.example.com/cat.png\"},{\"video\":\"https://cdn.example.com/cat.mp4\"}]");
-        assertThat(body).contains("\"dimension\":2048");
-    }
-
-    @Test
-    void reranksDocumentsWithMultimodalQuery() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
-        var adapter = adapter(json("""
-                {"request_id":"req-r","output":{"results":[
-                  {"index":1,"relevance_score":0.8},
-                  {"index":0,"relevance_score":0.3}
-                ]},"usage":{"total_tokens":12}}
-                """));
-
-        var response = adapter.invoke(
-                        provider(),
-                        account(),
-                        model("qwen3-vl-rerank"),
-                        new AiModelRequest(
-                                AiModel.Capability.RERANK,
-                                List.of(
-                                        new AiModelContent.Image("https://img.example.com/query.png", null, null, null, null),
-                                        new AiModelContent.Text("文档一"),
-                                        new AiModelContent.Text("文档二")),
-                                Map.of("topK", mapper.getNodeFactory().numberNode(2)),
-                                false,
-                                null))
-                .block();
-
-        assertThat(response.outputs()).hasSize(2);
-        assertThat(response.usage().inputTokens()).isEqualTo(12);
-        var body = body(captured.get());
-        assertThat(captured.get().url().toString())
-                .isEqualTo("https://maas.example.com/api/v1/services/rerank/text-rerank/text-rerank");
-        assertThat(body).contains("\"query\":{\"image\":\"https://img.example.com/query.png\"}");
-        assertThat(body).contains("\"documents\":[{\"text\":\"文档一\"},{\"text\":\"文档二\"}]");
-        assertThat(body).contains("\"top_n\":2");
     }
 
     private QianwenModelAdapter adapter(ClientResponse response) {

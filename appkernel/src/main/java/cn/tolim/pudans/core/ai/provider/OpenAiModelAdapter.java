@@ -3,15 +3,11 @@ package cn.tolim.pudans.core.ai.provider;
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.core.ai.embedding.AiEmbeddingClient;
 import cn.tolim.pudans.core.ai.model.AiModelAdapter;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelRequest;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
-import cn.tolim.pudans.core.ai.rerank.AiRerankClient;
-import cn.tolim.pudans.core.ai.rerank.RerankRequest;
-import cn.tolim.pudans.core.ai.rerank.RerankResult;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -32,26 +28,14 @@ public class OpenAiModelAdapter implements AiModelAdapter {
     private static final Set<AiModel.Capability> CAPABILITIES = Set.of(
             AiModel.Capability.IMAGE_GENERATION,
             AiModel.Capability.SPEECH_SYNTHESIS,
-            AiModel.Capability.SPEECH_RECOGNITION,
-            AiModel.Capability.EMBEDDING,
-            AiModel.Capability.RERANK);
+            AiModel.Capability.SPEECH_RECOGNITION);
 
     private final OpenAiMediaClient client;
 
-    private final AiEmbeddingClient embeddingClient;
-
-    private final AiRerankClient rerankClient;
-
     private final ObjectMapper mapper;
 
-    public OpenAiModelAdapter(
-            OpenAiMediaClient client,
-            AiEmbeddingClient embeddingClient,
-            AiRerankClient rerankClient,
-            ObjectMapper mapper) {
+    public OpenAiModelAdapter(OpenAiMediaClient client, ObjectMapper mapper) {
         this.client = client;
-        this.embeddingClient = embeddingClient;
-        this.rerankClient = rerankClient;
         this.mapper = mapper;
     }
 
@@ -75,8 +59,6 @@ public class OpenAiModelAdapter implements AiModelAdapter {
             case IMAGE_GENERATION -> image(provider, account, model, request);
             case SPEECH_SYNTHESIS -> speech(provider, account, model, request);
             case SPEECH_RECOGNITION -> transcribe(provider, account, model, request);
-            case EMBEDDING -> embed(provider, account, model, request);
-            case RERANK -> rerank(provider, account, model, request);
             default -> Mono.error(new UnsupportedOperationException(
                     "OpenAI 不支持模型能力：" + request.capability()));
         };
@@ -163,84 +145,6 @@ public class OpenAiModelAdapter implements AiModelAdapter {
                             null,
                             AiModelResponse.TaskStatus.SUCCEEDED);
                 });
-    }
-
-    private Mono<AiModelResponse> embed(
-            AiProvider provider, AiProviderAccount account, AiModel model, AiModelRequest request) {
-        var texts = new ArrayList<String>();
-        for (var input : request.inputs()) {
-            if (input instanceof AiModelContent.Text text) {
-                texts.add(text.text());
-            } else {
-                return Mono.error(new IllegalArgumentException("OpenAI 嵌入协议仅支持文本输入"));
-            }
-        }
-        var modelCode = modelCode(model);
-        return embeddingClient.embed(provider, account, modelCode, texts).map(vectors -> {
-            var outputs = new ArrayList<AiModelContent>();
-            for (var vector : vectors) {
-                outputs.add(new AiModelContent.Vector(modelCode, vector.length, vector));
-            }
-            return new AiModelResponse(
-                    null,
-                    modelCode,
-                    outputs,
-                    AiModelUsage.EMPTY,
-                    null,
-                    null,
-                    AiModelResponse.TaskStatus.SUCCEEDED);
-        });
-    }
-
-    private Mono<AiModelResponse> rerank(
-            AiProvider provider, AiProviderAccount account, AiModel model, AiModelRequest request) {
-        var texts = new ArrayList<String>();
-        for (var input : request.inputs()) {
-            if (input instanceof AiModelContent.Text text) {
-                texts.add(text.text());
-            } else {
-                return Mono.error(new IllegalArgumentException("OpenAI 重排协议仅支持文本输入"));
-            }
-        }
-        var modelCode = modelCode(model);
-        if (texts.size() < 2) {
-            return Mono.just(new AiModelResponse(
-                    null,
-                    modelCode,
-                    List.of(),
-                    AiModelUsage.EMPTY,
-                    null,
-                    null,
-                    AiModelResponse.TaskStatus.SUCCEEDED));
-        }
-        var documents = List.copyOf(texts.subList(1, texts.size()));
-        var topK = integerParam(request.params(), "topK", documents.size());
-        return rerankClient
-                .rerank(provider, account, modelCode, new RerankRequest(texts.getFirst(), documents, topK))
-                .map(result -> new AiModelResponse(
-                        null,
-                        modelCode,
-                        scoredOutputs(result),
-                        AiModelUsage.EMPTY,
-                        null,
-                        null,
-                        AiModelResponse.TaskStatus.SUCCEEDED));
-    }
-
-    private List<AiModelContent> scoredOutputs(RerankResult result) {
-        var outputs = new ArrayList<AiModelContent>();
-        for (var scored : result.results()) {
-            var node = mapper.createObjectNode();
-            node.put("index", scored.index());
-            node.put("score", scored.score());
-            outputs.add(new AiModelContent.Json(node));
-        }
-        return outputs;
-    }
-
-    private static int integerParam(Map<String, JsonNode> params, String name, int fallback) {
-        var value = params == null ? null : params.get(name);
-        return value != null && value.isIntegralNumber() ? value.asInt() : fallback;
     }
 
     private ObjectNode body(AiModel model, AiModelRequest request) {
