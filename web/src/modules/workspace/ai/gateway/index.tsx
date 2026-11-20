@@ -1,43 +1,47 @@
 import { useMemo, useState } from "react";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { Loader2, Network, RefreshCw, Settings2 } from "lucide-react";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ConsolePage, ConsoleSection } from "@/modules/workspace/console/components/console-page";
-import { useMenuPath } from "@/modules/workspace/lib/permissions";
+import { ConsolePage } from "@/modules/workspace/console/components/console-page";
+import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import {
+  fetchAiSetting,
   fetchAllProviderAccounts,
   fetchAllProviderModels,
+  fetchAllRouteGroups,
   fetchProviders,
   resolveAiProviderApiError,
 } from "../providers/lib/api";
 import { usableModels } from "../route-groups/lib/model";
 import { fetchRoutingLive } from "../routing/lib/api";
-import { CopyField } from "./components/copy-field";
 import { GatewayAccess } from "./components/gateway-access";
+import { GatewayKeys } from "./components/gateway-keys";
 import { GatewayModels } from "./components/gateway-models";
 import { GatewayRecentCalls } from "./components/gateway-recent-calls";
-import { type GatewayToken, createGatewayToken } from "./lib/api";
-
-const RECENT_LIMIT_OPTIONS = [10, 20, 50];
+import { GatewaySessions } from "./components/gateway-sessions";
+import { GatewaySettings } from "./components/gateway-settings";
+import { GatewayStatus } from "./components/gateway-status";
+import {
+  type GatewayCreatedToken,
+  type GatewayRecentError,
+  fetchGatewayStatus,
+  fetchGatewayTokens,
+  gatewaySpecObserved,
+} from "./lib/api";
 
 export function AiGatewayView() {
   const providersPath = useMenuPath("ai-providers");
   const routeGroupsPath = useMenuPath("ai-route-groups");
-  const [token, setToken] = useState<GatewayToken | null>(null);
-  const [recentLimit, setRecentLimit] = useState(20);
+  const sessionsPath = useMenuPath("ai-sessions");
+  const allowed = useAllowedOperations();
+  const canCreateKeys = allowed.has("create");
+  const canManageKeys = allowed.has("update");
+  const canEditSettings = allowed.has("settings");
+  const canManageSessions = allowed.has("sessions");
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createdToken, setCreatedToken] = useState<GatewayCreatedToken | null>(null);
+  const [gatewaySpecRejected, setGatewaySpecRejected] = useState(false);
 
   const providersQuery = useQuery({
     queryKey: ["ai-providers", "all"],
@@ -54,116 +58,128 @@ export function AiGatewayView() {
     queryFn: fetchAllProviderModels,
     retry: false,
   });
-  const liveQuery = useQuery({
-    queryKey: ["ai-gateway", "recent", recentLimit],
-    queryFn: () => fetchRoutingLive(7, recentLimit),
+  const routeGroupsQuery = useQuery({
+    queryKey: ["ai-route-groups", "all"],
+    queryFn: fetchAllRouteGroups,
     retry: false,
-    refetchInterval: 15_000,
+  });
+  const settingQuery = useQuery({
+    queryKey: ["ai-settings", "ai-setting"],
+    queryFn: fetchAiSetting,
+    retry: false,
+    enabled: canEditSettings,
+  });
+  const tokensQuery = useQuery({
+    queryKey: ["ai-gateway", "tokens"],
+    queryFn: fetchGatewayTokens,
+    retry: false,
+    enabled: canManageKeys,
+  });
+  const statusQuery = useQuery({
+    queryKey: ["ai-gateway", "status"],
+    queryFn: fetchGatewayStatus,
+    retry: false,
+  });
+  const fallbackLiveQuery = useQuery({
+    queryKey: ["ai-gateway", "status-fallback"],
+    queryFn: () => fetchRoutingLive(7, 50),
+    retry: false,
+    enabled: statusQuery.isError,
   });
 
   const providers = useMemo(() => providersQuery.data?.items ?? [], [providersQuery.data]);
   const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
   const models = useMemo(() => modelsQuery.data ?? [], [modelsQuery.data]);
+  const routeGroups = useMemo(() => routeGroupsQuery.data ?? [], [routeGroupsQuery.data]);
+  const tokens = useMemo(() => tokensQuery.data ?? [], [tokensQuery.data]);
   const usable = useMemo(
     () => usableModels(models, providers, accounts),
     [models, providers, accounts],
   );
-  const live = liveQuery.data;
-  const agents = useMemo(
-    () => new Set((live?.requests ?? []).map((request) => request.agentSource)).size,
-    [live?.requests],
+  const enabledGroups = useMemo(
+    () => routeGroups.filter((group) => group.spec.enabled !== false),
+    [routeGroups],
   );
-  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  const defaultRouteGroup = useMemo(() => {
+    const configured = settingQuery.data?.spec.defaultRouteGroup;
+    if (configured && enabledGroups.some((group) => group.metadata.name === configured)) {
+      return configured;
+    }
+    return (
+      enabledGroups.find((group) => group.spec.isDefault)?.metadata.name ??
+      enabledGroups[0]?.metadata.name
+    );
+  }, [enabledGroups, settingQuery.data]);
+  const fallbackErrors = useMemo<GatewayRecentError[]>(
+    () =>
+      (fallbackLiveQuery.data?.requests ?? [])
+        .flatMap((request) =>
+          request.status === "FAILED" && request.errorCode
+            ? [{ code: request.errorCode, at: request.createdAt }]
+            : [],
+        )
+        .slice(0, 5),
+    [fallbackLiveQuery.data],
+  );
 
-  const tokenMutation = useMutation({
-    mutationFn: createGatewayToken,
-    onSuccess: (created) => {
-      setToken(created);
-      toast.success("网关密钥已生成，请立即复制保存。");
-    },
-    onError: (error) => {
-      const message = resolveAiProviderApiError(error);
-      toast.error(
-        message.includes("没有授予") || message.includes("角色")
-          ? "当前账号没有 AI Agent 网关角色，请让管理员先授予后再生成密钥。"
-          : message,
-      );
-    },
-  });
-
-  const loading = providersQuery.isPending || accountsQuery.isPending || modelsQuery.isPending;
+  const advancedSupported =
+    !gatewaySpecRejected && (statusQuery.isSuccess || gatewaySpecObserved(tokens));
+  const configLoading =
+    providersQuery.isPending ||
+    accountsQuery.isPending ||
+    modelsQuery.isPending ||
+    routeGroupsQuery.isPending;
   const refreshing =
     providersQuery.isFetching ||
     accountsQuery.isFetching ||
     modelsQuery.isFetching ||
-    liveQuery.isFetching;
+    routeGroupsQuery.isFetching ||
+    statusQuery.isFetching ||
+    (canManageKeys && tokensQuery.isFetching) ||
+    (canEditSettings && settingQuery.isFetching) ||
+    (statusQuery.isError && fallbackLiveQuery.isFetching);
   const refresh = () => {
     void providersQuery.refetch();
     void accountsQuery.refetch();
     void modelsQuery.refetch();
-    void liveQuery.refetch();
+    void routeGroupsQuery.refetch();
+    void statusQuery.refetch();
+    if (canManageKeys) {
+      void tokensQuery.refetch();
+    }
+    if (canEditSettings) {
+      void settingQuery.refetch();
+    }
+    if (statusQuery.isError) {
+      void fallbackLiveQuery.refetch();
+    }
   };
-  const coreError = providersQuery.error ?? accountsQuery.error ?? modelsQuery.error;
+  const coreError =
+    providersQuery.error ?? accountsQuery.error ?? modelsQuery.error ?? routeGroupsQuery.error;
 
   return (
     <ConsolePage title="网关">
       <div className="flex flex-col gap-5">
-        <ConsoleSection className="overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5">
-            <div className="flex items-start gap-3">
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Network className="size-5" />
-              </span>
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-base font-semibold">网关</h2>
-                  <Badge variant={usable.length > 0 ? "secondary" : "outline"}>
-                    <span
-                      className={`size-1.5 rounded-full ${
-                        usable.length > 0 ? "bg-emerald-500" : "bg-muted-foreground"
-                      }`}
-                    />
-                    {usable.length > 0 ? "运行中" : "待配置"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {usable.length} 个可用模型 · 最近 {agents} 个 Agent · 2 种 API，一个地址
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/">聊天页面</Link>
-              </Button>
-              <Button size="sm" onClick={refresh} disabled={refreshing}>
-                {refreshing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-                刷新
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid gap-4 border-t px-5 py-4 lg:grid-cols-[1fr_auto] lg:items-end">
-            <div className="max-w-2xl">
-              <CopyField
-                label="访问地址"
-                value={origin}
-                hint="同一网络内的设备能否访问，取决于部署方式、端口和反向代理；外部设备请使用网关密钥。"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-4 text-[11px] text-muted-foreground">
-              <span>OpenAI · Anthropic</span>
-              {routeGroupsPath ? (
-                <Link
-                  to={routeGroupsPath}
-                  className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
-                >
-                  <Settings2 className="size-3" />
-                  路由组
-                </Link>
-              ) : null}
-            </div>
-          </div>
-        </ConsoleSection>
+        <GatewayStatus
+          status={statusQuery.data}
+          statusLoading={statusQuery.isPending}
+          statusError={statusQuery.error}
+          routeGroups={routeGroups}
+          fallback={{
+            usableModelCount: usable.length,
+            routeGroupCount: enabledGroups.length,
+            defaultRouteGroup,
+            rateLimitEnabled: settingQuery.data?.spec.gateway?.rateLimitEnabled,
+            recentErrors: fallbackErrors,
+            recentErrorsLoading: statusQuery.isError && fallbackLiveQuery.isPending,
+            recentErrorsUnavailable: fallbackLiveQuery.isError,
+          }}
+          loading={configLoading}
+          refreshing={refreshing}
+          providersPath={providersPath}
+          routeGroupsPath={routeGroupsPath}
+          onRefresh={refresh}
+        />
 
         {coreError ? (
           <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
@@ -174,83 +190,54 @@ export function AiGatewayView() {
         <GatewayAccess
           models={usable}
           providers={providers}
-          token={token}
-          creatingToken={tokenMutation.isPending}
-          onCreateToken={() => tokenMutation.mutate()}
+          entryUrl={statusQuery.data?.entryUrl}
+          tokens={tokens}
+          tokensLoading={canManageKeys && tokensQuery.isPending}
+          canListTokens={canManageKeys}
+          createdToken={createdToken}
+          canCreateToken={canCreateKeys}
+          onCreateToken={() => setCreateOpen(true)}
         />
 
         <GatewayModels
           models={usable}
           providers={providers}
-          loading={loading}
+          loading={configLoading}
           providersPath={providersPath}
         />
 
-        <GatewayRecentCalls
-          live={live}
-          providers={providers}
-          models={models}
-          loading={liveQuery.isPending}
-          error={liveQuery.isError}
-          limit={recentLimit}
+        <GatewayKeys
+          tokens={canManageKeys ? tokensQuery.data : undefined}
+          loading={tokensQuery.isPending}
+          error={canManageKeys ? tokensQuery.error : null}
+          canCreate={canCreateKeys}
+          canManage={canManageKeys}
+          models={usable}
+          advancedSupported={advancedSupported}
+          createdToken={createdToken}
+          onCreated={(result) => {
+            setCreatedToken(result.created);
+            if (!result.gatewayApplied) {
+              setGatewaySpecRejected(true);
+            }
+          }}
+          onDismissCreated={() => setCreatedToken(null)}
+          onRetry={() => void tokensQuery.refetch()}
+          createOpen={createOpen}
+          onCreateOpenChange={setCreateOpen}
         />
 
-        <ConsoleSection>
-          <div className="flex items-start gap-3 border-b px-5 py-4">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-muted">
-              <Settings2 className="size-4 text-muted-foreground" />
-            </span>
-            <div className="space-y-1">
-              <h2 className="text-sm font-semibold">设置</h2>
-              <p className="text-xs text-muted-foreground">网关页面的显示选项。</p>
-            </div>
-          </div>
-          <div className="divide-y">
-            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">每次显示的最近调用</p>
-                <p className="text-xs text-muted-foreground">
-                  页面显示最近 7 天内的多少条网关调用记录。
-                </p>
-              </div>
-              <Select
-                value={String(recentLimit)}
-                onValueChange={(value) => setRecentLimit(Number(value))}
-              >
-                <SelectTrigger className="w-24">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {RECENT_LIMIT_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={String(option)}>
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">协议与模型</p>
-                <p className="text-xs text-muted-foreground">
-                  网关提供 OpenAI 和 Anthropic 两种兼容 API；模型由路由组选择。
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {providersPath ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={providersPath}>管理供应商</Link>
-                  </Button>
-                ) : null}
-                {routeGroupsPath ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to={routeGroupsPath}>管理路由组</Link>
-                  </Button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        </ConsoleSection>
+        <GatewaySettings
+          setting={settingQuery.data}
+          loading={settingQuery.isPending}
+          error={canEditSettings ? settingQuery.error : null}
+          canEdit={canEditSettings}
+          onRetry={() => void settingQuery.refetch()}
+        />
+
+        <GatewayRecentCalls providers={providers} models={models} />
+
+        {canManageSessions ? <GatewaySessions canDelete sessionsPath={sessionsPath} /> : null}
       </div>
     </ConsolePage>
   );
