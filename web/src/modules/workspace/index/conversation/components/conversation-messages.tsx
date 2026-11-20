@@ -1,7 +1,16 @@
+import { useState } from "react";
+
 import { Link } from "@tanstack/react-router";
-import { Copy, FileText, Loader2 } from "lucide-react";
+import { Copy, FileText, Loader2, PencilLine, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  Attachment,
+  AttachmentContent,
+  AttachmentDescription,
+  AttachmentMedia,
+  AttachmentTitle,
+} from "@/components/ui/attachment";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import { Message, MessageContent, MessageFooter, MessageHeader } from "@/components/ui/message";
@@ -19,22 +28,34 @@ import { useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { formatClock } from "../../../ai/routing/lib/model";
 import {
+  type ChatArtifact,
   type ChatAttachmentRef,
   type ChatMessage,
   type ChatMessageAttachment,
+  type ChatStreamDraft,
+  type ChatStreamStage,
+  type ChatToolCall,
+  type ChatToolResult,
   chatAttachmentUrl,
 } from "../../lib/chat-api";
+import type { ChatGenerationProgress } from "../../lib/chat-generation";
+import { ArtifactBlock } from "./artifact-block";
+import { EditBranchDialog } from "./edit-branch-dialog";
+import { GenerationProgress } from "./generation-progress";
 import { MessageMarkdown } from "./message-markdown";
 import { ThinkingBlock } from "./thinking-block";
+import { ToolCallsBlock } from "./tool-call-block";
 
 type ConversationMessagesProps = {
   messages: ChatMessage[];
   loading: boolean;
   error: string | null;
   optimisticMessage: { content: string; attachments: ChatAttachmentRef[] } | null;
-  assistantDraft: string;
-  reasoningDraft: string;
+  draft: ChatStreamDraft;
   sending: boolean;
+  generation: ChatGenerationProgress | null;
+  onRetry: (message: ChatMessage) => void;
+  onEditBranch: (message: ChatMessage, content: string) => Promise<boolean>;
 };
 
 export function ConversationMessages({
@@ -42,14 +63,32 @@ export function ConversationMessages({
   loading,
   error,
   optimisticMessage,
-  assistantDraft,
-  reasoningDraft,
+  draft,
   sending,
+  generation,
+  onRetry,
+  onEditBranch,
 }: ConversationMessagesProps) {
+  const [editing, setEditing] = useState<ChatMessage | null>(null);
   const routeGroupsPath = useMenuPath("ai-route-groups");
-  const visibleMessages = messages.filter((message) => Boolean(message.content));
-  const empty =
-    visibleMessages.length === 0 && !optimisticMessage && !assistantDraft && !reasoningDraft;
+  const visibleMessages = messages.filter(
+    (message) =>
+      Boolean(message.content) ||
+      Boolean(message.metadata?.artifact) ||
+      Boolean(message.metadata?.toolCalls?.length),
+  );
+  const lastAssistantId = [...visibleMessages]
+    .reverse()
+    .find((message) => message.role === "assistant")?.id;
+  const draftVisible =
+    Boolean(draft.content) ||
+    Boolean(draft.reasoning) ||
+    draft.toolCalls.length > 0 ||
+    draft.artifacts.length > 0 ||
+    Boolean(draft.stage);
+  const draftPending = !draftVisible;
+  const showDraft = draftVisible || (sending && !generation);
+  const empty = visibleMessages.length === 0 && !optimisticMessage && !showDraft && !generation;
   const routeHint =
     Boolean(error) &&
     Boolean(error?.includes("路由组")) &&
@@ -76,13 +115,10 @@ export function ConversationMessages({
                   {visibleMessages.map((message) => (
                     <MessageScrollerItem key={message.id}>
                       <MessageRow
-                        role={message.role}
-                        content={message.content ?? ""}
-                        attachments={message.metadata?.attachments}
-                        reasoning={message.metadata?.reasoning}
-                        modelCode={message.modelCode}
-                        tokenCount={message.tokenCount}
-                        createdAt={message.createdAt}
+                        message={message}
+                        retryable={!sending && message.id === lastAssistantId}
+                        onRetry={onRetry}
+                        onEdit={setEditing}
                       />
                     </MessageScrollerItem>
                   ))}
@@ -100,14 +136,23 @@ export function ConversationMessages({
                       />
                     </MessageScrollerItem>
                   ) : null}
-                  {assistantDraft || sending || reasoningDraft ? (
+                  {showDraft ? (
                     <MessageScrollerItem>
                       <AssistantMessage
-                        content={assistantDraft}
-                        reasoning={reasoningDraft}
+                        content={draft.content}
+                        reasoning={draft.reasoning}
+                        toolCalls={draft.toolCalls}
+                        toolResults={draft.toolResults}
+                        artifacts={draft.artifacts}
+                        stage={draft.stage}
                         streaming
-                        pending={!assistantDraft && !reasoningDraft}
+                        pending={draftPending}
                       />
+                    </MessageScrollerItem>
+                  ) : null}
+                  {generation ? (
+                    <MessageScrollerItem>
+                      <GenerationProgress progress={generation} />
                     </MessageScrollerItem>
                   ) : null}
                 </>
@@ -131,37 +176,51 @@ export function ConversationMessages({
           <MessageScrollerButton />
         </MessageScroller>
       </div>
+      <EditBranchDialog
+        target={editing}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditing(null);
+          }
+        }}
+        onConfirm={onEditBranch}
+      />
     </MessageScrollerProvider>
   );
 }
 
 function MessageRow({
-  role,
-  content,
-  attachments,
-  reasoning,
-  modelCode,
-  tokenCount,
-  createdAt,
+  message,
+  retryable,
+  onRetry,
+  onEdit,
 }: {
-  role: string;
-  content: string;
-  attachments?: ChatMessageAttachment[];
-  reasoning?: string;
-  modelCode?: string;
-  tokenCount?: number;
-  createdAt: string;
+  message: ChatMessage;
+  retryable: boolean;
+  onRetry: (message: ChatMessage) => void;
+  onEdit: (message: ChatMessage) => void;
 }) {
-  if (role === "user") {
-    return <UserMessage content={content} attachments={attachments} createdAt={createdAt} />;
+  if (message.role === "user") {
+    return (
+      <UserMessage
+        content={message.content ?? ""}
+        attachments={message.metadata?.attachments}
+        createdAt={message.createdAt}
+        onEdit={() => onEdit(message)}
+      />
+    );
   }
   return (
     <AssistantMessage
-      content={content}
-      reasoning={reasoning}
-      modelCode={modelCode}
-      tokenCount={tokenCount}
-      createdAt={createdAt}
+      content={message.content ?? ""}
+      reasoning={message.metadata?.reasoning}
+      toolCalls={message.metadata?.toolCalls}
+      toolResults={message.metadata?.toolResults}
+      artifact={message.metadata?.artifact}
+      modelCode={message.modelCode}
+      tokenCount={message.tokenCount}
+      createdAt={message.createdAt}
+      onRetry={retryable ? () => onRetry(message) : undefined}
     />
   );
 }
@@ -170,10 +229,12 @@ function UserMessage({
   content,
   attachments,
   createdAt,
+  onEdit,
 }: {
   content: string;
   attachments?: ChatMessageAttachment[];
   createdAt?: string;
+  onEdit?: () => void;
 }) {
   const items = (attachments ?? []).filter((attachment) => attachment.fileId);
   const images = items.filter(
@@ -223,15 +284,21 @@ function UserMessage({
                 key={attachment.fileId}
                 href={chatAttachmentUrl(attachment.fileId)}
                 download
-                className="inline-flex max-w-72 items-center gap-2 rounded-lg border bg-background/60 px-3 py-2 text-xs transition-colors hover:bg-muted"
+                className="w-fit max-w-72"
               >
-                <FileText className="size-4 shrink-0 text-muted-foreground" />
-                <span className="truncate">{attachment.name || "附件"}</span>
-                {attachment.size != null ? (
-                  <span className="shrink-0 text-muted-foreground">
-                    {formatFileSize(attachment.size)}
-                  </span>
-                ) : null}
+                <Attachment size="sm" className="max-w-full transition-colors hover:bg-muted/50">
+                  <AttachmentMedia>
+                    <FileText />
+                  </AttachmentMedia>
+                  <AttachmentContent>
+                    <AttachmentTitle>{attachment.name || "附件"}</AttachmentTitle>
+                    {attachment.size != null ? (
+                      <AttachmentDescription>
+                        {formatFileSize(attachment.size)}
+                      </AttachmentDescription>
+                    ) : null}
+                  </AttachmentContent>
+                </Attachment>
               </a>
             ))}
           </div>
@@ -241,6 +308,17 @@ function UserMessage({
         </Bubble>
         <MessageFooter>
           <CopyMessageButton content={content} />
+          {onEdit ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label="编辑并分支"
+              onClick={onEdit}
+            >
+              <PencilLine />
+            </Button>
+          ) : null}
           {createdAt ? (
             <span className="text-muted-foreground">{formatClock(createdAt)}</span>
           ) : null}
@@ -253,20 +331,33 @@ function UserMessage({
 function AssistantMessage({
   content,
   reasoning,
+  toolCalls = [],
+  toolResults = [],
+  artifact,
+  artifacts = [],
+  stage,
   modelCode,
   tokenCount,
   createdAt,
   streaming = false,
   pending = false,
+  onRetry,
 }: {
   content: string;
   reasoning?: string;
+  toolCalls?: ChatToolCall[];
+  toolResults?: ChatToolResult[];
+  artifact?: ChatArtifact;
+  artifacts?: ChatArtifact[];
+  stage?: ChatStreamStage | null;
   modelCode?: string;
   tokenCount?: number;
   createdAt?: string;
   streaming?: boolean;
   pending?: boolean;
+  onRetry?: () => void;
 }) {
+  const displayedArtifacts = artifact ? [...artifacts, artifact] : artifacts;
   return (
     <Message>
       <MessageContent>
@@ -283,16 +374,46 @@ function AssistantMessage({
         {reasoning || (streaming && pending) ? (
           <ThinkingBlock reasoning={reasoning ?? ""} streaming={streaming} />
         ) : null}
-        {!pending ? (
+        {toolCalls.length > 0 || toolResults.length > 0 ? (
+          <ToolCallsBlock calls={toolCalls} results={toolResults} streaming={streaming} />
+        ) : null}
+        {streaming && stage ? (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Loader2 className="size-3 animate-spin" />
+            {stage.detail || stage.stage || "处理中"}
+          </div>
+        ) : null}
+        {!pending && content ? (
           <Bubble variant="ghost">
             <BubbleContent className="text-sm leading-7">
               <MessageMarkdown content={content} />
             </BubbleContent>
           </Bubble>
         ) : null}
+        {displayedArtifacts.length > 0 ? (
+          <div className="w-full space-y-2">
+            {displayedArtifacts.map((item, index) => (
+              <ArtifactBlock
+                key={item.fileId ?? item.url ?? `${item.kind}-${index}`}
+                artifact={item}
+              />
+            ))}
+          </div>
+        ) : null}
         {!streaming ? (
           <MessageFooter>
             <CopyMessageButton content={content} />
+            {onRetry ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                aria-label="重新生成"
+                onClick={onRetry}
+              >
+                <RotateCcw />
+              </Button>
+            ) : null}
             {createdAt ? (
               <span className="text-muted-foreground">{formatClock(createdAt)}</span>
             ) : null}
