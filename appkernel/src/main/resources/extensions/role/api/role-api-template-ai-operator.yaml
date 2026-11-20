@@ -28,3 +28,31 @@ rules:
       - "memoryrequests/reject"
     verbs:
       - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aimemoryassets"
+      - "aimemoryassets/counts"
+      - "aimemoryassets/layers"
+      - "aimemoryassets/bindings"
+      - "aimemoryassets/import"
+      - "aimemoryassets/clear"
+      - "aimemoryassets/generation-logs"
+      - "aimemorygenerationlogs"
+      - "aimemoryprompts/set"
+      - "aimemoryprompts/settings"
+      - "aimemoryprompts/log"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aisandboxproviders"
+    verbs:
+      - "get"
+      - "list"

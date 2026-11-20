@@ -18,6 +18,8 @@ rules:
       - "api.pudans.tolim.cn"
     resources:
       - "airoutegroups"
+      - "airoutegroups/actions"
+      - "airoutegroups/arrange"
     verbs:
       - "create"
 ---

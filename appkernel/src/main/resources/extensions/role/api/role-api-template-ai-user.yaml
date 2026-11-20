@@ -12,6 +12,7 @@ rules:
       - "api.pudans.tolim.cn"
     resources:
       - "aigenerations"
+      - "aigenerations/documents"
     verbs:
       - "get"
       - "list"
@@ -31,6 +32,13 @@ rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
+      - "conversations/branch"
+      - "conversations/artifacts"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "chats/attachments"
     verbs:
       - "get"
@@ -40,6 +48,8 @@ rules:
     resources:
       - "aiteams"
       - "aiagents"
+      - "aimodels"
+      - "airoutegroups"
     verbs:
       - "get"
       - "list"
@@ -63,6 +73,38 @@ rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
+      - "aimemoryassets"
+      - "aimemoryassets/counts"
+      - "aimemoryassets/layers"
+      - "aimemoryassets/generation-logs"
+      - "aimemorygenerationlogs"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aimemoryassets"
+      - "aimemoryassets/import"
+      - "aimemoryassets/bindings"
+      - "aimemoryassets/clear"
+      - "aimemoryassets/layers"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aimemoryprompts/settings"
+      - "aimemoryprompts/log"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "knowledgebases"
       - "knowledgebases/search"
     verbs:
@@ -82,6 +124,67 @@ rules:
     resources:
       - "wallet"
       - "wallet/transactions"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aimcpservers"
+      - "aimcpservers/by-agent"
+      - "aiskills"
+      - "aiskills/by-agent"
+      - "aiinstructions"
+      - "aiinstructions/by-agent"
+      - "aihooks"
+      - "aihooks/by-agent"
+      - "aienvironmentvariables"
+      - "aienvironmentvariables/by-agent"
+      - "aisubagents"
+      - "aisubagents/by-agent"
+      - "aislashcommands"
+      - "aislashcommands/by-agent"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aimcpservers/test"
+      - "aiskills/import"
+      - "aislashcommands/resolve"
+      - "aienvironmentvariables/value"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airuntimes"
+      - "airuntimes/providers"
+      - "airuntimes/files"
+      - "airuntimes/logs"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "airuntimes/start"
+      - "airuntimes/stop"
+      - "airuntimes/restart"
+      - "airuntimes/exec"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aistats/usage"
     verbs:
       - "get"
       - "list"

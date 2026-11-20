@@ -15,6 +15,16 @@ spec:
     injectionEnabled: true
     memoryBridgeEnabled: true
     streamIdleTimeoutSeconds: 120
+    rateLimitEnabled: true
+    maxRetries: 2
+    retryBackoffMs: 200
+    retryOnStatuses:
+      - 429
+      - 500
+      - 502
+      - 503
+      - 504
+    requestTimeoutSeconds: 120
     supportedProtocols:
       - OPENAI_CHAT
       - ANTHROPIC
@@ -40,6 +50,7 @@ spec:
     classifierEnabled: true
     classifierFallbackTier: HIGH
   memory:
+    enabled: true
     extractionEnabled: true
     extractionRouteGroup: null
     maxMessagesPerExtraction: 10

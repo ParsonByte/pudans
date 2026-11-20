@@ -14,6 +14,7 @@ rules:
       - "aigateway/openai"
       - "aigateway/anthropic"
       - "aigateway/gemini"
+      - "aigateway/status"
       - "memorybridge/atomic"
       - "memorybridge/conversation"
       - "memorybridge/scenario"
@@ -28,3 +29,30 @@ rules:
       - "list"
       - "create"
       - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aisettings"
+      - "aimodels"
+      - "airoutegroups"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "personalaccesstokens"
+      - "personalaccesstokens/actions"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aisettings"
+    verbs:
+      - "update"
+      - "patch"
