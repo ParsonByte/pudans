@@ -2,7 +2,9 @@ package cn.tolim.pudans.core.ai.chat;
 
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.rag.Citation;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
+import org.jspecify.annotations.Nullable;
 
 public sealed interface AiChatStreamEvent {
 
@@ -11,6 +13,24 @@ public sealed interface AiChatStreamEvent {
     record Delta(String content, String reasoning) implements AiChatStreamEvent {}
 
     record CitationEvent(Citation citation) implements AiChatStreamEvent {}
+
+    record ToolCall(String id, String name, @Nullable String server, @Nullable JsonNode arguments)
+            implements AiChatStreamEvent {}
+
+    record ToolResult(String id, String name, String output, boolean isError, long durationMs)
+            implements AiChatStreamEvent {}
+
+    record Artifact(
+            String kind,
+            String fileId,
+            String name,
+            String mimeType,
+            @Nullable Long size,
+            @Nullable String url,
+            @Nullable Integer progress)
+            implements AiChatStreamEvent {}
+
+    record Stage(String stage, String detail) implements AiChatStreamEvent {}
 
     record Usage(AiTokenUsage usage, BigDecimal points, String billingSource) implements AiChatStreamEvent {}
 

@@ -12,7 +12,7 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.gateway.ir.AiRequestParams;
-import cn.tolim.pudans.core.ai.provider.AiProviderAdapterRegistry;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
 import cn.tolim.pudans.core.ai.routing.RouteCandidateService;
 import cn.tolim.pudans.core.ai.routing.RouteEngine;
 import cn.tolim.pudans.core.ai.routing.RouteRequest;
@@ -49,7 +49,7 @@ public class AiTextGenerationService {
 
     private final RouteEngine routeEngine;
 
-    private final AiProviderAdapterRegistry adapterRegistry;
+    private final LangChain4jChatService chatService;
 
     private final ReactiveExtensionClient client;
 
@@ -96,9 +96,13 @@ public class AiTextGenerationService {
         return load(selection, ir)
                 .switchIfEmpty(Mono.error(new IllegalStateException(
                         "AI 路由资源不存在: " + selection.reference())))
-                .flatMap(resources -> adapterRegistry
-                        .require(resources.provider().getSpec().getProtocol())
-                        .chat(resources.provider(), resources.account(), resources.model(), resources.ir())
+                .flatMap(resources -> chatService
+                        .chat(
+                                resources.provider(),
+                                resources.account(),
+                                resources.model(),
+                                resources.provider().getSpec().getProtocol(),
+                                resources.ir())
                         .switchIfEmpty(Mono.error(new IllegalStateException("AI 供应商返回空响应。")))
                         .map(response -> result(response, selection, resources.model())))
                 .onErrorResume(error -> attempt(selections, index + 1, ir, error));

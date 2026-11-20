@@ -88,6 +88,37 @@ public class AiMessageRepository {
                 .all();
     }
 
+    public Mono<Message> findLatest(long conversationId) {
+        return databaseClient.sql("""
+                        SELECT id, conversation_id, space_id, user_id, team_id, agent_id, session_id,
+                               task_id, request_id, turn_index, message_index, role, content,
+                               content_type, token_count, model_code, created_at
+                        FROM ai_message
+                        WHERE conversation_id = :conversationId
+                          AND deleted_at IS NULL
+                        ORDER BY id DESC
+                        LIMIT 1
+                        """)
+                .bind("conversationId", conversationId)
+                .map((row, metadata) -> mapMessage(row))
+                .one();
+    }
+
+    public Mono<Boolean> softDelete(long conversationId, long messageId) {
+        return databaseClient.sql("""
+                        UPDATE ai_message
+                        SET deleted_at = now()
+                        WHERE id = :messageId
+                          AND conversation_id = :conversationId
+                          AND deleted_at IS NULL
+                        """)
+                .bind("messageId", messageId)
+                .bind("conversationId", conversationId)
+                .fetch()
+                .rowsUpdated()
+                .map(count -> count > 0);
+    }
+
     public Mono<Long> findLatestId(long conversationId) {
         return databaseClient.sql("""
                         SELECT MAX(id) AS id

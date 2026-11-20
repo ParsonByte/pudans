@@ -15,7 +15,15 @@ public record AiChatCompletionRequest(
         @Nullable Double temperature,
         @Nullable Double topP,
         @Nullable String idempotencyKey,
-        @Nullable List<AiChatAttachment> attachments) {
+        @Nullable List<AiChatAttachment> attachments,
+        @Nullable String command,
+        @Nullable String commandInput,
+        @Nullable String model,
+        @Nullable Boolean regenerate) {
+
+    public boolean isRegenerate() {
+        return Boolean.TRUE.equals(regenerate);
+    }
 
     public AiChatCompletionRequest {
         if (messages == null || messages.isEmpty()) {

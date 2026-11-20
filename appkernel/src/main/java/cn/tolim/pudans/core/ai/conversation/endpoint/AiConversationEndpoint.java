@@ -19,8 +19,10 @@ import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.NewConversat
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.MessageMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Instant;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -41,6 +43,10 @@ public class AiConversationEndpoint implements CustomEndpoint {
     private static final String TAG = "ConversationV1alpha1";
 
     private static final String CODE_CONVERSATION_NOT_FOUND = "ai-conversation-not-found";
+
+    private static final String CODE_ARTIFACT_INVALID = "ai-conversation-artifact-invalid";
+
+    private static final Set<String> ARTIFACT_KINDS = Set.of("IMAGE", "VIDEO", "DOCUMENT", "AUDIO");
 
     private static final String AGENT_SOURCE_CHAT = "pudans-chat";
 
@@ -64,6 +70,8 @@ public class AiConversationEndpoint implements CustomEndpoint {
     private final AiSettingService settingService;
 
     private final AiEndpointRequests requests;
+
+    private final ObjectMapper mapper;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -109,6 +117,20 @@ public class AiConversationEndpoint implements CustomEndpoint {
                         .parameter(parameterBuilder().in(ParameterIn.QUERY).name("limit").required(false)
                                 .description("Page size (1-200, default 50)."))
                         .response(responseBuilder().implementationArray(MessageView.class)))
+                .POST("/conversations/{name}/branch", this::branch, builder -> builder
+                        .operationId("branchAiConversation")
+                        .description("Copy messages before the given message into a new conversation.")
+                        .tag(TAG)
+                        .parameter(parameterBuilder().in(ParameterIn.PATH).name("name").required(true))
+                        .requestBody(requestBodyBuilder().required(true).implementation(BranchRequest.class))
+                        .response(responseBuilder().implementation(ConversationView.class)))
+                .POST("/conversations/{name}/artifacts", this::artifact, builder -> builder
+                        .operationId("appendAiConversationArtifact")
+                        .description("Append a generated artifact as a user prompt and assistant message.")
+                        .tag(TAG)
+                        .parameter(parameterBuilder().in(ParameterIn.PATH).name("name").required(true))
+                        .requestBody(requestBodyBuilder().required(true).implementation(ArtifactRequest.class))
+                        .response(responseBuilder().implementation(MessageView.class)))
                 .build();
     }
 
@@ -194,6 +216,79 @@ public class AiConversationEndpoint implements CustomEndpoint {
                 .flatMap(views -> ServerResponse.ok().bodyValue(views));
     }
 
+    private Mono<ServerResponse> branch(ServerRequest request) {
+        var conversationId = conversationId(request);
+        return requests
+                .userId(request)
+                .zipWith(request
+                        .bodyToMono(BranchRequest.class)
+                        .switchIfEmpty(Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST, CODE_ARTIFACT_INVALID, "请求体不能为空。"))))
+                .flatMap(tuple -> conversationService
+                        .requireOwned(conversationId, tuple.getT1())
+                        .flatMap(conversation -> conversationService.branch(
+                                conversation, tuple.getT2().messageId())))
+                .flatMap(conversation -> ServerResponse.ok().bodyValue(ConversationView.from(conversation)));
+    }
+
+    private Mono<ServerResponse> artifact(ServerRequest request) {
+        var conversationId = conversationId(request);
+        return requests
+                .userId(request)
+                .zipWith(request.bodyToMono(ArtifactRequest.class).flatMap(AiConversationEndpoint::validArtifact))
+                .flatMap(tuple -> conversationService
+                        .requireOwned(conversationId, tuple.getT1())
+                        .flatMap(conversation -> {
+                            var metadata = artifactMetadata(mapper, tuple.getT2());
+                            return conversationService
+                                    .appendArtifact(conversation, tuple.getT2().prompt(), metadata)
+                                    .map(message -> MessageView.from(message, metadata));
+                        }))
+                .flatMap(view -> ServerResponse.ok().bodyValue(view));
+    }
+
+    private static Mono<ArtifactRequest> validArtifact(ArtifactRequest request) {
+        if (request == null) {
+            return Mono.error(new ApiException(
+                    HttpStatus.BAD_REQUEST, CODE_ARTIFACT_INVALID, "请求体不能为空。"));
+        }
+        if (!StringUtils.hasText(request.prompt())) {
+            return Mono.error(new ApiException(
+                    HttpStatus.BAD_REQUEST, CODE_ARTIFACT_INVALID, "生成提示不能为空。"));
+        }
+        if (!StringUtils.hasText(request.kind())
+                || !ARTIFACT_KINDS.contains(request.kind().toUpperCase())) {
+            return Mono.error(new ApiException(
+                    HttpStatus.BAD_REQUEST, CODE_ARTIFACT_INVALID, "产物类型不受支持。"));
+        }
+        return Mono.just(request);
+    }
+
+    private static JsonNode artifactMetadata(ObjectMapper mapper, ArtifactRequest request) {
+        var root = mapper.createObjectNode();
+        var artifact = root.putObject("artifact");
+        artifact.put("kind", request.kind().toUpperCase());
+        if (StringUtils.hasText(request.requestId())) {
+            artifact.put("requestId", request.requestId());
+        }
+        if (StringUtils.hasText(request.fileId())) {
+            artifact.put("fileId", request.fileId());
+        }
+        if (StringUtils.hasText(request.url())) {
+            artifact.put("url", request.url());
+        }
+        if (StringUtils.hasText(request.name())) {
+            artifact.put("name", request.name());
+        }
+        if (StringUtils.hasText(request.mimeType())) {
+            artifact.put("mimeType", request.mimeType());
+        }
+        if (request.size() != null) {
+            artifact.put("size", request.size());
+        }
+        return root;
+    }
+
     private static long conversationId(ServerRequest request) {
         long parsed;
         try {
@@ -214,6 +309,18 @@ public class AiConversationEndpoint implements CustomEndpoint {
             @Nullable String modeCode,
             @Nullable String routeGroup) {
     }
+
+    public record BranchRequest(long messageId) {}
+
+    public record ArtifactRequest(
+            @Nullable String kind,
+            @Nullable String prompt,
+            @Nullable String requestId,
+            @Nullable String fileId,
+            @Nullable String url,
+            @Nullable String name,
+            @Nullable String mimeType,
+            @Nullable Long size) {}
 
     public record ConversationView(
             long id,

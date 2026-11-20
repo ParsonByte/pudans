@@ -61,7 +61,11 @@ class AiConversationEndpointTest {
     @BeforeEach
     void setUp() {
         var endpoint = new AiConversationEndpoint(
-                conversationService, teamService, settingService, new AiEndpointRequests(userService));
+                conversationService,
+                teamService,
+                settingService,
+                new AiEndpointRequests(userService),
+                new com.fasterxml.jackson.databind.ObjectMapper());
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(PRINCIPAL)).build()))

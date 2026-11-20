@@ -9,11 +9,13 @@ import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.MessageMetadata;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.NewMessage;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -30,6 +32,8 @@ public class AiConversationService {
     private static final String CODE_CONVERSATION_NOT_FOUND = "ai-conversation-not-found";
 
     private static final String CODE_CONVERSATION_FORBIDDEN = "ai-conversation-forbidden";
+
+    private static final int MAX_BRANCH_MESSAGES = 10000;
 
     private final AiConversationRepository conversationRepository;
 
@@ -156,6 +160,95 @@ public class AiConversationService {
         Assert.notNull(conversation, "会话不能为空");
         Assert.isTrue(l1Id > 0, "L1 ID 必须大于零");
         return conversationRepository.advanceL2Cursor(conversation.id(), l1Id);
+    }
+
+    public Mono<Conversation> branch(Conversation source, long messageId) {
+        Assert.notNull(source, "会话不能为空");
+        Assert.isTrue(messageId > 0, "消息 ID 必须大于零");
+        return messageRepository
+                .listMessages(source.id(), 0, MAX_BRANCH_MESSAGES)
+                .collectList()
+                .flatMap(messages -> {
+                    if (messages.stream().noneMatch(message -> message.id() == messageId)) {
+                        return Mono.error(messageNotFound());
+                    }
+                    var prefix = messages.stream()
+                            .filter(message -> message.id() < messageId)
+                            .toList();
+                    var branch = new NewConversation(
+                            source.spaceId(),
+                            source.userId(),
+                            source.teamId(),
+                            source.agentId(),
+                            source.agentSource(),
+                            UUID.randomUUID().toString(),
+                            source.taskId(),
+                            branchTitle(source.title()),
+                            source.modeCode(),
+                            source.routeGroup());
+                    return conversationRepository
+                            .create(branch)
+                            .flatMap(created -> messageRepository
+                                    .metadata(source.id())
+                                    .collectMap(MessageMetadata::messageId, MessageMetadata::metadata)
+                                    .flatMap(metadata -> Flux.fromIterable(prefix)
+                                            .concatMap(message -> messageRepository.appendMessage(new NewMessage(
+                                                    created.id(),
+                                                    created.spaceId(),
+                                                    created.userId(),
+                                                    created.teamId(),
+                                                    created.agentId(),
+                                                    created.sessionKey(),
+                                                    created.taskId(),
+                                                    message.requestId(),
+                                                    message.turnIndex(),
+                                                    message.messageIndex(),
+                                                    message.role(),
+                                                    message.content(),
+                                                    message.contentType(),
+                                                    message.tokenCount(),
+                                                    message.modelCode(),
+                                                    metadata.get(message.id()))))
+                                            .then()
+                                            .thenReturn(created))
+                                    .onErrorResume(error -> conversationRepository
+                                            .softDelete(created.id(), created.userId())
+                                            .then(Mono.<Conversation>error(error))));
+                });
+    }
+
+    public Mono<Message> appendArtifact(Conversation conversation, String prompt, JsonNode metadata) {
+        Assert.notNull(conversation, "会话不能为空");
+        Assert.hasText(prompt, "生成提示不能为空");
+        Assert.notNull(metadata, "产物元数据不能为空");
+        return messageRepository
+                .findLatest(conversation.id())
+                .map(message -> message.turnIndex() + 1)
+                .defaultIfEmpty(1)
+                .flatMap(turnIndex -> appendMessage(
+                                conversation, turnIndex, 0, ROLE_USER, prompt, null, null, null, null)
+                        .flatMap(user -> appendMessage(
+                                conversation, turnIndex, 1, ROLE_ASSISTANT, prompt, null, null, null, metadata)));
+    }
+
+    public Mono<Void> deleteLastAssistant(Conversation conversation) {
+        Assert.notNull(conversation, "会话不能为空");
+        return messageRepository
+                .findLatest(conversation.id())
+                .filter(message -> ROLE_ASSISTANT.equals(message.role()))
+                .flatMap(message -> messageRepository.softDelete(conversation.id(), message.id()))
+                .then();
+    }
+
+    private static String branchTitle(@Nullable String title) {
+        var name = StringUtils.hasText(title) ? title : "分支会话";
+        var prefix = "分支：";
+        var limit = 60;
+        return name.length() <= limit ? prefix + name : prefix + name.substring(0, limit);
+    }
+
+    private static ApiException messageNotFound() {
+        return new ApiException(HttpStatus.NOT_FOUND, "ai-conversation-message-not-found", "消息不存在。");
     }
 
     private Mono<Conversation> findBySession(NewConversation newConversation) {

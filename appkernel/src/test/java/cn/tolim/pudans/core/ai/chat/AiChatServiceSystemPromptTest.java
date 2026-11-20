@@ -70,6 +70,18 @@ class AiChatServiceSystemPromptTest {
     @Mock
     StorageService storageService;
 
+    @Mock
+    AiAgentContextService agentContextService;
+
+    @Mock
+    AiChatToolService toolService;
+
+    @Mock
+    cn.tolim.pudans.core.ai.library.command.SlashCommandService slashCommandService;
+
+    @Mock
+    cn.tolim.pudans.core.ai.library.hook.HookService hookService;
+
     private AiChatService service;
 
     @BeforeEach
@@ -86,12 +98,16 @@ class AiChatServiceSystemPromptTest {
                 memoryContextBuilder,
                 gatewayService,
                 memoryTaskScheduler,
-                storageService);
+                storageService,
+                agentContextService,
+                toolService,
+                slashCommandService,
+                hookService);
     }
 
     @Test
     void usesDefaultPromptWhenTheAgentHasNoPrompt() {
-        var system = service.systemContent("", MemoryInjection.empty(), "");
+        var system = service.systemContent("", MemoryInjection.empty());
 
         assertThat(system)
                 .contains("PUDANS AI 助手")
@@ -101,7 +117,7 @@ class AiChatServiceSystemPromptTest {
 
     @Test
     void keepsACustomAgentPrompt() {
-        var system = service.systemContent("自定义提示", MemoryInjection.empty(), "");
+        var system = service.systemContent("自定义提示", MemoryInjection.empty());
 
         assertThat(system).isEqualTo("自定义提示");
     }
