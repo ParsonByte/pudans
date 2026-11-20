@@ -1,22 +1,35 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { ChatComposer } from "../components/chat-composer";
 import {
+  type ChatArtifact,
   type ChatAttachmentRef,
+  type ChatGenerationKind,
   type ChatMessage,
   type ChatStreamDone,
+  type ChatStreamDraft,
   type ChatStreamError,
+  branchConversation,
   fetchChatConversation,
   fetchChatMessages,
   fetchChatModes,
   resolveChatError,
   streamChat,
 } from "../lib/chat-api";
-import { takePendingChat } from "../lib/pending-chat";
+import { type ChatRequestBody, parseChatCommand } from "../lib/chat-functions";
+import { type ChatGenerationProgress, createChatArtifact } from "../lib/chat-generation";
+import {
+  useChatAgentsQuery,
+  useChatCommandsQuery,
+  useChatKnowledgeBasesQuery,
+  useChatModelsQuery,
+  useChatRouteGroupsQuery,
+} from "../lib/chat-options";
+import { setPendingChat, takePendingChat } from "../lib/pending-chat";
 import { ConversationHeader } from "./components/conversation-header";
 import { ConversationMessages } from "./components/conversation-messages";
 
@@ -24,17 +37,44 @@ type ChatConversationViewProps = {
   conversationId: string;
 };
 
+type StreamRequest = ChatRequestBody & {
+  mode?: string;
+  model?: string;
+  routeGroup?: string;
+  kbCodes?: string[];
+  regenerate?: boolean;
+};
+
+const EMPTY_DRAFT: ChatStreamDraft = {
+  content: "",
+  reasoning: "",
+  toolCalls: [],
+  toolResults: [],
+  artifacts: [],
+  stage: null,
+};
+
 export function ChatConversationView({ conversationId }: ChatConversationViewProps) {
+  return <ChatConversationPane key={conversationId} conversationId={conversationId} />;
+}
+
+function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
   const id = Number(conversationId);
   const valid = Number.isInteger(id) && id > 0;
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [modeOverride, setModeOverride] = useState<string | undefined>(undefined);
+  const [modelOverride, setModelOverride] = useState<string | undefined>(undefined);
+  const [routeGroupOverride, setRouteGroupOverride] = useState<string | null | undefined>(
+    undefined,
+  );
+  const [kbCodes, setKbCodes] = useState<string[]>([]);
   const [optimisticMessage, setOptimisticMessage] = useState<{
     content: string;
     attachments: ChatAttachmentRef[];
   } | null>(null);
-  const [assistantDraft, setAssistantDraft] = useState("");
-  const [reasoningDraft, setReasoningDraft] = useState("");
+  const [draft, setDraft] = useState<ChatStreamDraft>(EMPTY_DRAFT);
+  const [generation, setGeneration] = useState<ChatGenerationProgress | null>(null);
   const [sending, setSending] = useState(false);
   const [streamError, setStreamError] = useState<string | null>(null);
   const controllerRef = useRef<AbortController | null>(null);
@@ -60,8 +100,22 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
     enabled: valid,
     retry: false,
   });
+  const agentsQuery = useChatAgentsQuery();
+  const modelsQuery = useChatModelsQuery();
+  const routeGroupsQuery = useChatRouteGroupsQuery();
+  const knowledgeQuery = useChatKnowledgeBasesQuery();
+  const commandsQuery = useChatCommandsQuery(conversationQuery.data?.agentId);
   const modes = modesQuery.data ?? [];
+  const agents = agentsQuery.data ?? [];
+  const models = modelsQuery.data ?? [];
+  const routeGroups = routeGroupsQuery.data ?? [];
+  const knowledgeBases = knowledgeQuery.data ?? [];
+  const commands = useMemo(() => commandsQuery.data ?? [], [commandsQuery.data]);
   const mode = modeOverride ?? conversationQuery.data?.modeCode ?? modes[0]?.name;
+  const routeGroup =
+    routeGroupOverride === undefined
+      ? conversationQuery.data?.routeGroup
+      : (routeGroupOverride ?? undefined);
 
   useEffect(
     () => () => {
@@ -72,7 +126,7 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
   );
 
   const sendPrompt = useCallback(
-    async (prompt: string, modeOverride?: string, attachments: ChatAttachmentRef[] = []) => {
+    async (request: StreamRequest) => {
       if (!valid || sendingRef.current) {
         return;
       }
@@ -81,13 +135,25 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
       streamIdRef.current = streamId;
       setSending(true);
       setStreamError(null);
-      setOptimisticMessage({ content: prompt, attachments });
-      setAssistantDraft("");
-      setReasoningDraft("");
+      setDraft(EMPTY_DRAFT);
+      if (!request.regenerate) {
+        setOptimisticMessage({ content: request.prompt, attachments: request.attachments });
+      }
       const cachedMessages = queryClient.getQueryData<ChatMessage[]>(["chat-messages", id]) ?? [];
       const lastAssistantId = cachedMessages
         .filter((message) => message.role === "assistant")
         .reduce((max, message) => Math.max(max, message.id), 0);
+      if (request.regenerate) {
+        const lastAssistant = [...cachedMessages]
+          .reverse()
+          .find((message) => message.role === "assistant");
+        if (lastAssistant) {
+          queryClient.setQueryData(
+            ["chat-messages", id],
+            cachedMessages.filter((message) => message.id !== lastAssistant.id),
+          );
+        }
+      }
       const controller = new AbortController();
       controllerRef.current = controller;
       let completed = false;
@@ -95,28 +161,64 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
         await streamChat(
           {
             conversationId: id,
-            mode: modeOverride ?? mode,
-            messages: [{ role: "user", content: prompt }],
-            attachments: attachments.map((attachment) => ({
+            mode: request.mode ?? mode,
+            routeGroup: request.routeGroup ?? routeGroup,
+            model: request.model ?? modelOverride,
+            kbCodes: request.kbCodes ?? (kbCodes.length > 0 ? kbCodes : undefined),
+            messages: [{ role: "user", content: request.prompt }],
+            attachments: request.attachments.map((attachment) => ({
               storageFileId: attachment.fileId,
               type: attachment.type,
               name: attachment.name,
               contentType: attachment.contentType,
               size: attachment.size,
             })),
+            command: request.command,
+            commandInput: request.commandInput,
+            regenerate: request.regenerate,
             idempotencyKey: crypto.randomUUID(),
           },
           {
             onDelta: (delta) => {
-              if (mountedRef.current && delta.content) {
-                setAssistantDraft((current) => current + delta.content);
+              if (!mountedRef.current) {
+                return;
               }
-              if (mountedRef.current && delta.reasoning) {
-                setReasoningDraft((current) => current + delta.reasoning);
+              setDraft((current) => ({
+                ...current,
+                content: current.content + (delta.content ?? ""),
+                reasoning: current.reasoning + (delta.reasoning ?? ""),
+                stage: null,
+              }));
+            },
+            onToolCall: (call) => {
+              if (mountedRef.current) {
+                setDraft((current) => ({ ...current, toolCalls: [...current.toolCalls, call] }));
+              }
+            },
+            onToolResult: (result) => {
+              if (mountedRef.current) {
+                setDraft((current) => ({
+                  ...current,
+                  toolResults: [...current.toolResults, result],
+                }));
+              }
+            },
+            onArtifact: (artifact) => {
+              if (mountedRef.current) {
+                setDraft((current) => ({
+                  ...current,
+                  artifacts: mergeArtifact(current.artifacts, artifact),
+                }));
+              }
+            },
+            onStage: (stage) => {
+              if (mountedRef.current) {
+                setDraft((current) => ({ ...current, stage }));
               }
             },
             onError: (error: ChatStreamError) => {
               completed = true;
+              void queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
               const message = error.message || "生成失败，请稍后重试。";
               if (mountedRef.current && streamIdRef.current === streamId) {
                 setStreamError(message);
@@ -132,8 +234,7 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
                 } finally {
                   if (mountedRef.current && streamIdRef.current === streamId) {
                     setOptimisticMessage(null);
-                    setAssistantDraft("");
-                    setReasoningDraft("");
+                    setDraft(EMPTY_DRAFT);
                     if (done.partial) {
                       toast.warning("回复未完整结束，已保留已生成的内容。");
                     }
@@ -158,8 +259,7 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
             await queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
             if (mountedRef.current && streamIdRef.current === streamId) {
               setOptimisticMessage(null);
-              setAssistantDraft("");
-              setReasoningDraft("");
+              setDraft(EMPTY_DRAFT);
             }
           } else {
             const message = "流式连接已中断，请重试。";
@@ -169,6 +269,7 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
         }
       } catch (error) {
         if (!controller.signal.aborted) {
+          void queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
           const message = resolveChatError(error);
           if (mountedRef.current) {
             setStreamError(message);
@@ -184,7 +285,57 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
         controllerRef.current = null;
       }
     },
-    [id, mode, queryClient, valid],
+    [id, kbCodes, mode, modelOverride, queryClient, routeGroup, valid],
+  );
+
+  const runGeneration = useCallback(
+    async (
+      kind: ChatGenerationKind,
+      prompt: string,
+      format?: "MARKDOWN" | "HTML",
+      routeGroupArgument?: string,
+    ) => {
+      if (!valid || sendingRef.current) {
+        return;
+      }
+      sendingRef.current = true;
+      setSending(true);
+      setStreamError(null);
+      setOptimisticMessage({ content: prompt, attachments: [] });
+      setGeneration({ kind, prompt, stage: "准备生成", progress: 5 });
+      try {
+        await createChatArtifact({
+          conversationId: id,
+          kind,
+          prompt,
+          format,
+          routeGroup: routeGroupArgument ?? routeGroup,
+          onProgress: (progress) => {
+            if (mountedRef.current) {
+              setGeneration(progress);
+            }
+          },
+        });
+        await queryClient.refetchQueries({ queryKey: ["chat-messages", id] });
+        await queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+        if (mountedRef.current) {
+          toast.success("生成完成，已保存到会话。");
+        }
+      } catch (error) {
+        const message = resolveChatError(error);
+        if (mountedRef.current) {
+          toast.error(message);
+        }
+      } finally {
+        sendingRef.current = false;
+        if (mountedRef.current) {
+          setSending(false);
+          setGeneration(null);
+          setOptimisticMessage(null);
+        }
+      }
+    },
+    [id, queryClient, routeGroup, valid],
   );
 
   useEffect(() => {
@@ -200,9 +351,79 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
       if (!mountedRef.current) {
         return;
       }
-      void sendPrompt(pending.prompt, pending.mode, pending.attachments).catch(() => undefined);
+      if (pending.generation) {
+        void runGeneration(
+          pending.generation.kind,
+          pending.prompt,
+          pending.generation.format,
+          pending.routeGroup,
+        ).catch(() => undefined);
+        return;
+      }
+      const parsed = parseChatCommand(pending.prompt, commands);
+      void sendPrompt({
+        prompt: pending.prompt,
+        attachments: pending.attachments,
+        mode: pending.mode,
+        model: pending.model,
+        routeGroup: pending.routeGroup,
+        kbCodes: pending.kbCodes,
+        command: pending.command ?? parsed.command,
+        commandInput: pending.commandInput ?? parsed.commandInput,
+      }).catch(() => undefined);
     });
-  }, [id, sendPrompt, valid]);
+  }, [commands, id, runGeneration, sendPrompt, valid]);
+
+  const retryMessage = useCallback(
+    (message: ChatMessage) => {
+      const history = queryClient.getQueryData<ChatMessage[]>(["chat-messages", id]) ?? [];
+      const lastUser = [...history]
+        .reverse()
+        .find((item) => item.role === "user" && item.content?.trim());
+      if (!lastUser) {
+        toast.error("没有可重试的用户消息。");
+        return;
+      }
+      const lastAssistant = [...history].reverse().find((item) => item.role === "assistant");
+      if (lastAssistant && lastAssistant.id !== message.id) {
+        toast.error("只能重试最后一条回复。");
+        return;
+      }
+      void sendPrompt({
+        prompt: lastUser.content ?? "",
+        attachments: [],
+        regenerate: true,
+      }).catch(() => undefined);
+    },
+    [id, queryClient, sendPrompt],
+  );
+
+  const editBranch = useCallback(
+    async (message: ChatMessage, content: string): Promise<boolean> => {
+      try {
+        const branch = await branchConversation(id, message.id);
+        await queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+        setPendingChat({
+          conversationId: branch.id,
+          prompt: content,
+          mode: branch.modeCode ?? mode,
+          attachments: [],
+          model: modelOverride,
+          routeGroup: routeGroupOverride ?? branch.routeGroup ?? undefined,
+          kbCodes,
+        });
+        await navigate({
+          to: "/chat/$conversationId",
+          params: { conversationId: String(branch.id) },
+        });
+        return true;
+      } catch (error) {
+        toast.error(resolveChatError(error));
+        return false;
+      }
+    },
+    [id, kbCodes, mode, modelOverride, navigate, queryClient, routeGroupOverride],
+  );
 
   if (!valid) {
     return (
@@ -242,9 +463,11 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
         loading={messagesQuery.isPending}
         error={streamError}
         optimisticMessage={optimisticMessage}
-        assistantDraft={assistantDraft}
-        reasoningDraft={reasoningDraft}
+        draft={draft}
         sending={sending}
+        generation={generation}
+        onRetry={retryMessage}
+        onEditBranch={editBranch}
       />
       <div className="shrink-0 px-6 pb-3">
         <div className="mx-auto w-full max-w-3xl space-y-2">
@@ -252,7 +475,32 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
             modes={modes}
             mode={mode}
             onModeChange={setModeOverride}
-            onSend={(prompt, attachments) => sendPrompt(prompt, undefined, attachments)}
+            agents={agents}
+            agentsLoading={agentsQuery.isPending}
+            agent={conversationQuery.data?.agentId}
+            agentLocked
+            models={models}
+            modelsLoading={modelsQuery.isPending}
+            model={modelOverride}
+            onModelChange={setModelOverride}
+            routeGroups={routeGroups}
+            routeGroupsLoading={routeGroupsQuery.isPending}
+            routeGroup={routeGroup}
+            onRouteGroupChange={(value) => setRouteGroupOverride(value ?? null)}
+            kbCodes={kbCodes}
+            knowledgeBases={knowledgeBases}
+            knowledgeLoading={knowledgeQuery.isPending}
+            knowledgeError={
+              knowledgeQuery.error ? resolveChatError(knowledgeQuery.error) : undefined
+            }
+            onRetryKnowledge={() => void knowledgeQuery.refetch()}
+            onKbCodesChange={setKbCodes}
+            commands={commands}
+            commandsLoading={commandsQuery.isFetching}
+            onSend={(request) => sendPrompt(request)}
+            onGenerate={(input) => {
+              void runGeneration(input.kind, input.prompt, input.format);
+            }}
             sending={sending}
             placeholder="继续对话，Enter 发送，Shift+Enter 换行"
           />
@@ -261,4 +509,19 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
       </div>
     </div>
   );
+}
+
+function mergeArtifact(list: ChatArtifact[], artifact: ChatArtifact): ChatArtifact[] {
+  const index = list.findIndex(
+    (item) =>
+      (artifact.fileId && item.fileId === artifact.fileId) ||
+      (artifact.url && item.url === artifact.url) ||
+      (artifact.name && item.kind === artifact.kind && item.name === artifact.name),
+  );
+  if (index < 0) {
+    return [...list, artifact];
+  }
+  const next = [...list];
+  next[index] = { ...next[index], ...artifact };
+  return next;
 }

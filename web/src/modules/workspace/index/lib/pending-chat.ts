@@ -1,10 +1,21 @@
-import type { ChatAttachmentRef } from "./chat-api";
+import type { ChatAttachmentRef, ChatGenerationKind } from "./chat-api";
+
+type PendingChatGeneration = {
+  kind: ChatGenerationKind;
+  format?: "MARKDOWN" | "HTML";
+};
 
 type PendingChat = {
   conversationId: number;
   prompt: string;
   mode: string | undefined;
   attachments: ChatAttachmentRef[];
+  model?: string;
+  routeGroup?: string;
+  kbCodes?: string[];
+  command?: string;
+  commandInput?: string;
+  generation?: PendingChatGeneration;
 };
 
 let pending: PendingChat | null = null;

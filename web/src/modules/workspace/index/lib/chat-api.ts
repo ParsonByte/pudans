@@ -1,13 +1,29 @@
 import { axiosInstance } from "@pudans-dev/api-client";
 import { isAxiosError } from "axios";
 
-import { AI_API_PREFIX } from "../../ai/providers/lib/api";
+import {
+  AI_API_PREFIX,
+  type AiModelCapability,
+  type AiModelItem,
+  type AiRouteGroupItem,
+  type AiRouteGroupParentMode,
+} from "../../ai/providers/lib/api";
+import { modelDisplayName } from "../../ai/providers/lib/model";
+import { effectiveParentMode } from "../../ai/route-groups/lib/model";
 
 const CHAT_API = `${AI_API_PREFIX}/conversations`;
 
 const CHAT_COMPLETIONS = `${AI_API_PREFIX}/chats/-/completions/stream`;
 
 const CHAT_MODES = `${AI_API_PREFIX}/chats/-/modes`;
+
+const CHAT_COMMANDS = `${AI_API_PREFIX}/aislashcommands/-/by-agent`;
+
+const CHAT_GENERATIONS = `${AI_API_PREFIX}/aigenerations`;
+
+const GENERATION_POLL_INTERVAL_MS = 2000;
+
+const GENERATION_POLL_TIMEOUT_MS = 10 * 60 * 1000;
 
 export type ChatConversation = {
   id: number;
@@ -34,9 +50,42 @@ export type ChatMessageAttachment = {
   size?: number;
 };
 
-export type ChatMessageMetadata = {
+export type ChatToolCall = {
+  id: string;
+  name: string;
+  server?: string;
+  arguments?: unknown;
+};
+
+export type ChatToolResult = {
+  id: string;
+  name: string;
+  output: string;
+  isError: boolean;
+  durationMs: number;
+};
+
+export type ChatArtifact = {
+  kind: string;
+  fileId?: string;
+  url?: string;
+  name?: string;
+  mimeType?: string;
+  size?: number;
+  progress?: number;
+};
+
+export type ChatStreamStage = {
+  stage?: string;
+  detail?: string;
+};
+
+type ChatMessageMetadata = {
   attachments?: ChatMessageAttachment[];
   reasoning?: string;
+  toolCalls?: ChatToolCall[];
+  toolResults?: ChatToolResult[];
+  artifact?: ChatArtifact;
 };
 
 export type ChatMessage = {
@@ -69,7 +118,70 @@ export type ChatMode = {
   kbCodes: string[];
 };
 
-export type ChatStreamMeta = {
+export type ChatSlashCommand = {
+  name: string;
+  description?: string;
+  argumentHint?: string;
+};
+
+export type ChatAgent = {
+  name: string;
+  displayName: string;
+};
+
+export type ChatModel = {
+  name: string;
+  label: string;
+};
+
+export type ChatRouteGroup = {
+  name: string;
+  displayName: string;
+  parentMode: AiRouteGroupParentMode;
+  isDefault: boolean;
+};
+
+type ChatGenerationCapability = Extract<AiModelCapability, "IMAGE_GENERATION" | "VIDEO_GENERATION">;
+
+export type ChatGenerationKind = "IMAGE" | "VIDEO" | "DOCUMENT";
+
+export type ChatGenerationOutput = {
+  type: string;
+  url?: string;
+  data?: string;
+  mediaType?: string;
+  fileId?: string;
+  filename?: string;
+};
+
+export type ChatGeneration = {
+  requestId: string;
+  status: string;
+  outputs?: ChatGenerationOutput[];
+  errorMessage?: string;
+};
+
+export type ChatDocumentResult = {
+  requestId: string;
+  fileId: string;
+  name: string;
+  mimeType: string;
+  size: number;
+  modelCode?: string;
+};
+
+export type ChatArtifactInput = {
+  kind: string;
+  prompt: string;
+  requestId?: string;
+  fileId?: string;
+  url?: string;
+  name?: string;
+  mimeType?: string;
+  size?: number;
+};
+
+type ChatStreamMeta = {
   requestId?: string;
   conversationId?: number;
   mode?: string;
@@ -83,7 +195,7 @@ export type ChatStreamMeta = {
   sessionKey?: string;
 };
 
-export type ChatStreamUsage = {
+type ChatStreamUsage = {
   inputTokens?: number;
   outputTokens?: number;
   cacheReadTokens?: number;
@@ -108,15 +220,30 @@ export type ChatStreamError = {
 export type ChatStreamHandlers = {
   onMeta?: (meta: ChatStreamMeta) => void;
   onDelta?: (delta: { content?: string; reasoning?: string }) => void;
+  onToolCall?: (call: ChatToolCall) => void;
+  onToolResult?: (result: ChatToolResult) => void;
+  onArtifact?: (artifact: ChatArtifact) => void;
+  onStage?: (stage: ChatStreamStage) => void;
   onUsage?: (usage: ChatStreamUsage) => void;
   onDone?: (done: ChatStreamDone) => void;
   onError?: (error: ChatStreamError) => void;
+};
+
+export type ChatStreamDraft = {
+  content: string;
+  reasoning: string;
+  toolCalls: ChatToolCall[];
+  toolResults: ChatToolResult[];
+  artifacts: ChatArtifact[];
+  stage: ChatStreamStage | null;
 };
 
 export type ChatRequest = {
   conversationId?: number;
   mode?: string;
   routeGroup?: string;
+  agentId?: string;
+  kbCodes?: string[];
   messages: { role: string; content: string }[];
   attachments?: {
     storageFileId: string;
@@ -125,6 +252,10 @@ export type ChatRequest = {
     contentType?: string;
     size?: number;
   }[];
+  command?: string;
+  commandInput?: string;
+  model?: string;
+  regenerate?: boolean;
   idempotencyKey?: string;
 };
 
@@ -133,12 +264,164 @@ export async function fetchChatModes(): Promise<ChatMode[]> {
   return response.data;
 }
 
-export async function uploadChatAttachment(file: File): Promise<ChatAttachmentRef> {
+type SlashCommandResource = {
+  metadata: { name: string };
+  spec?: {
+    name?: string;
+    description?: string;
+    argumentHint?: string;
+    enabled?: boolean;
+  };
+};
+
+export async function fetchChatCommands(agent: string): Promise<ChatSlashCommand[]> {
+  const response = await axiosInstance.get<SlashCommandResource[]>(CHAT_COMMANDS, {
+    params: { agent },
+  });
+  return (response.data ?? [])
+    .filter((command) => command.spec?.enabled !== false && command.spec?.name)
+    .map((command) => ({
+      name: command.spec?.name ?? command.metadata.name,
+      description: command.spec?.description,
+      argumentHint: command.spec?.argumentHint,
+    }));
+}
+
+export function toChatModels(models: AiModelItem[]): ChatModel[] {
+  return models
+    .filter((model) => model.spec.modelType === "CHAT" && model.spec.enabled !== false)
+    .map((model) => ({
+      name: model.metadata.name,
+      label: modelDisplayName(model),
+    }));
+}
+
+export function toChatRouteGroups(groups: AiRouteGroupItem[]): ChatRouteGroup[] {
+  return groups
+    .filter((group) => group.spec.enabled !== false)
+    .map((group) => ({
+      name: group.metadata.name,
+      displayName: group.spec.displayName || group.metadata.name,
+      parentMode: effectiveParentMode(group),
+      isDefault: Boolean(group.spec.isDefault),
+    }))
+    .sort((left, right) => {
+      const rank = { FAST: 0, PRO: 1, NONE: 2 } as const;
+      return rank[left.parentMode] - rank[right.parentMode] || left.name.localeCompare(right.name);
+    });
+}
+
+export async function branchConversation(
+  conversationId: number,
+  messageId: number,
+): Promise<ChatConversation> {
+  const response = await axiosInstance.post<ChatConversation>(
+    `${CHAT_API}/${conversationId}/branch`,
+    { messageId },
+  );
+  return response.data;
+}
+
+export async function appendConversationArtifact(
+  conversationId: number,
+  artifact: ChatArtifactInput,
+): Promise<ChatMessage> {
+  const response = await axiosInstance.post<ChatMessage>(
+    `${CHAT_API}/${conversationId}/artifacts`,
+    artifact,
+  );
+  return response.data;
+}
+
+type GenerationRequest = {
+  capability: ChatGenerationCapability;
+  routeGroup?: string;
+  inputs: { type: "text"; text: string }[];
+  params: Record<string, unknown>;
+  idempotencyKey: string;
+};
+
+async function createChatGeneration(request: GenerationRequest): Promise<ChatGeneration> {
+  const response = await axiosInstance.post<ChatGeneration>(CHAT_GENERATIONS, request);
+  return response.data;
+}
+
+export function generateImage(prompt: string, routeGroup?: string): Promise<ChatGeneration> {
+  return createChatGeneration({
+    capability: "IMAGE_GENERATION",
+    routeGroup,
+    inputs: [{ type: "text", text: prompt }],
+    params: { size: "1024x1024", n: 1 },
+    idempotencyKey: crypto.randomUUID(),
+  });
+}
+
+export function generateVideo(prompt: string, routeGroup?: string): Promise<ChatGeneration> {
+  return createChatGeneration({
+    capability: "VIDEO_GENERATION",
+    routeGroup,
+    inputs: [{ type: "text", text: prompt }],
+    params: { durationSeconds: 5 },
+    idempotencyKey: crypto.randomUUID(),
+  });
+}
+
+export async function generateDocument(input: {
+  title: string;
+  prompt: string;
+  format: "MARKDOWN" | "HTML";
+  routeGroup?: string;
+}): Promise<ChatDocumentResult> {
+  const response = await axiosInstance.post<ChatDocumentResult>(
+    `${CHAT_GENERATIONS}/-/documents`,
+    input,
+  );
+  return response.data;
+}
+
+async function fetchGeneration(requestId: string): Promise<ChatGeneration> {
+  const response = await axiosInstance.get<ChatGeneration>(
+    `${CHAT_GENERATIONS}/${encodeURIComponent(requestId)}`,
+  );
+  return response.data;
+}
+
+export async function waitForChatGeneration(
+  requestId: string,
+  onStatus?: (generation: ChatGeneration) => void,
+  signal?: AbortSignal,
+): Promise<ChatGeneration> {
+  const deadline = Date.now() + GENERATION_POLL_TIMEOUT_MS;
+  let generation = await fetchGeneration(requestId);
+  onStatus?.(generation);
+  while (generation.status === "PENDING" || generation.status === "RUNNING") {
+    if (Date.now() >= deadline) {
+      throw new Error("生成超时，请稍后重试。");
+    }
+    await new Promise((resolve) => setTimeout(resolve, GENERATION_POLL_INTERVAL_MS));
+    signal?.throwIfAborted();
+    generation = await fetchGeneration(requestId);
+    onStatus?.(generation);
+  }
+  return generation;
+}
+
+export async function uploadChatAttachment(
+  file: File,
+  onUploadProgress?: (percent: number) => void,
+): Promise<ChatAttachmentRef> {
   const form = new FormData();
   form.append("file", file, file.name);
   const response = await axiosInstance.post<ChatAttachmentRef>(
     `${AI_API_PREFIX}/chats/-/attachments`,
     form,
+    {
+      onUploadProgress: (event) => {
+        if (event.total && onUploadProgress) {
+          onUploadProgress(Math.min(100, Math.round((event.loaded / event.total) * 100)));
+        }
+      },
+    },
   );
   return response.data;
 }
@@ -160,6 +443,7 @@ export async function fetchChatConversation(id: number): Promise<ChatConversatio
 }
 
 export async function createChatConversation(input: {
+  agentName?: string;
   title?: string;
   modeCode?: string;
   routeGroup?: string;
@@ -234,11 +518,11 @@ export async function streamChat(
 }
 
 export function resolveChatError(error: unknown): string {
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
   if (isAxiosError<{ detail?: string }>(error)) {
     return error.response?.data?.detail ?? "请求失败，请稍后重试。";
+  }
+  if (error instanceof Error && error.message) {
+    return error.message;
   }
   return "请求失败，请稍后重试。";
 }
@@ -280,6 +564,18 @@ function dispatch(block: string, handlers: ChatStreamHandlers): boolean {
       break;
     case "delta":
       handlers.onDelta?.(payload as { content?: string; reasoning?: string });
+      break;
+    case "tool_call":
+      handlers.onToolCall?.(payload as ChatToolCall);
+      break;
+    case "tool_result":
+      handlers.onToolResult?.(payload as ChatToolResult);
+      break;
+    case "artifact":
+      handlers.onArtifact?.(payload as ChatArtifact);
+      break;
+    case "stage":
+      handlers.onStage?.(payload as ChatStreamStage);
       break;
     case "usage":
       handlers.onUsage?.(payload as ChatStreamUsage);

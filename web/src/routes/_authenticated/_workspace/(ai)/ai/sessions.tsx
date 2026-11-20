@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AiConsolePage } from "@/modules/workspace/ai";
+import { SessionsView } from "@/modules/workspace/ai/sessions";
 
 export const Route = createFileRoute("/_authenticated/_workspace/(ai)/ai/sessions")({
-  component: AiConsolePage,
+  component: SessionsView,
 });

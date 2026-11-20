@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 
-export type ChatMentionChip = {
+type ChatMentionChip = {
   id: string;
   name: string;
   url?: string;
