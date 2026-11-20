@@ -96,6 +96,81 @@ public class AiMemoryL2Repository {
                 .all();
     }
 
+    public Flux<L2SceneBlock> listByScope(String teamId, String agentId, long beforeId, int limit) {
+        return databaseClient.sql("""
+                        SELECT id, team_id, agent_id, scene_key, title, summary, l1_ids, heat, confidence,
+                               last_active_at
+                        FROM ai_memory_l2
+                        WHERE team_id = :teamId AND agent_id = :agentId AND id < :beforeId
+                        ORDER BY id DESC
+                        LIMIT :limit
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("beforeId", beforeId)
+                .bind("limit", limit)
+                .map((row, metadata) -> mapBlock(row))
+                .all();
+    }
+
+    public Mono<L2SceneBlock> findById(String teamId, String agentId, long id) {
+        return databaseClient.sql("""
+                        SELECT id, team_id, agent_id, scene_key, title, summary, l1_ids, heat, confidence,
+                               last_active_at
+                        FROM ai_memory_l2
+                        WHERE team_id = :teamId AND agent_id = :agentId AND id = :id
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("id", id)
+                .map((row, metadata) -> mapBlock(row))
+                .one();
+    }
+
+    public Mono<L2SceneBlock> updateContent(
+            String teamId, String agentId, long id, String title, String summary) {
+        return databaseClient.sql("""
+                        UPDATE ai_memory_l2
+                        SET title = :title, summary = :summary, updated_at = now()
+                        WHERE team_id = :teamId AND agent_id = :agentId AND id = :id
+                        RETURNING id, team_id, agent_id, scene_key, title, summary, l1_ids, heat, confidence,
+                                  last_active_at
+                        """)
+                .bind("title", title)
+                .bind("summary", summary)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("id", id)
+                .map((row, metadata) -> mapBlock(row))
+                .one();
+    }
+
+    public Mono<Long> deleteByScope(String teamId, String agentId) {
+        return databaseClient.sql("""
+                        DELETE FROM ai_memory_l2
+                        WHERE team_id = :teamId AND agent_id = :agentId
+                        RETURNING id
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .map((row, metadata) -> row.get("id", Long.class))
+                .all()
+                .count();
+    }
+
+    public Mono<Long> countByScope(String teamId, String agentId) {
+        return databaseClient.sql("""
+                        SELECT COUNT(*) AS total
+                        FROM ai_memory_l2
+                        WHERE team_id = :teamId AND agent_id = :agentId
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .map((row, metadata) -> row.get("total", Long.class))
+                .one()
+                .defaultIfEmpty(0L);
+    }
+
     static L2SceneBlock mapBlock(Row row) {
         return new L2SceneBlock(
                 row.get("id", Long.class),

@@ -71,6 +71,55 @@ public class AiMemoryL3Repository {
                 .one();
     }
 
+    public Mono<L3Persona> overwriteText(String teamId, String agentId, String text) {
+        return databaseClient.sql("""
+                        INSERT INTO ai_memory_l3 (
+                            team_id, agent_id, persona_json, persona_text, source_l1_count,
+                            source_l2_count, confidence, last_refreshed_at
+                        ) VALUES (
+                            :teamId, :agentId, '{}'::jsonb, :personaText, 0, 0, 1.0, now()
+                        )
+                        ON CONFLICT (team_id, agent_id) DO UPDATE SET
+                            persona_json = '{}'::jsonb,
+                            persona_text = EXCLUDED.persona_text,
+                            last_refreshed_at = now(),
+                            updated_at = now()
+                        RETURNING id, team_id, agent_id, persona_json::text AS persona_json, persona_text,
+                                  source_l1_count, source_l2_count, confidence, last_refreshed_at
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("personaText", text)
+                .map((row, metadata) -> mapPersona(row))
+                .one();
+    }
+
+    public Mono<Long> countByScope(String teamId, String agentId) {
+        return databaseClient.sql("""
+                        SELECT COUNT(*) AS total
+                        FROM ai_memory_l3
+                        WHERE team_id = :teamId AND agent_id = :agentId
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .map((row, metadata) -> row.get("total", Long.class))
+                .one()
+                .defaultIfEmpty(0L);
+    }
+
+    public Mono<Long> deleteByScope(String teamId, String agentId) {
+        return databaseClient.sql("""
+                        DELETE FROM ai_memory_l3
+                        WHERE team_id = :teamId AND agent_id = :agentId
+                        RETURNING id
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .map((row, metadata) -> row.get("id", Long.class))
+                .all()
+                .count();
+    }
+
     static L3Persona mapPersona(Row row) {
         return new L3Persona(
                 row.get("id", Long.class),

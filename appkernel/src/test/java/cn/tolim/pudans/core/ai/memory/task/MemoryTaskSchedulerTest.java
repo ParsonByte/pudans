@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.memory.MemoryPipelineTask;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
@@ -25,11 +26,15 @@ class MemoryTaskSchedulerTest {
     @Mock
     AiMemoryTaskRepository taskRepository;
 
+    @Mock
+    AiSettingService settingService;
+
     @InjectMocks
     MemoryTaskScheduler scheduler;
 
     @Test
     void enqueuesOneL1TaskPerConversation() {
+        when(settingService.memoryEnabled()).thenReturn(Mono.just(true));
         when(taskRepository.insertIfAbsent(any())).thenReturn(Mono.just(true));
 
         StepVerifier.create(scheduler.enqueueExtraction(conversation(), "user-1", 21L))
@@ -101,11 +106,32 @@ class MemoryTaskSchedulerTest {
 
     @Test
     void swallowsEnqueueFailures() {
+        when(settingService.memoryEnabled()).thenReturn(Mono.just(true));
         when(taskRepository.insertIfAbsent(any()))
                 .thenReturn(Mono.error(new IllegalStateException("队列不可用")));
 
         StepVerifier.create(scheduler.enqueueExtraction(conversation(), "user-1", 21L))
                 .verifyComplete();
+    }
+
+    @Test
+    void skipsExtractionWhenMemoryIsDisabled() {
+        when(settingService.memoryEnabled()).thenReturn(Mono.just(false));
+
+        StepVerifier.create(scheduler.enqueueExtraction(conversation(), "user-1", 21L))
+                .verifyComplete();
+
+        verify(taskRepository, org.mockito.Mockito.never()).insertIfAbsent(any());
+    }
+
+    @Test
+    void importExtractionIgnoresGlobalSwitch() {
+        when(taskRepository.insertIfAbsent(any())).thenReturn(Mono.just(true));
+
+        StepVerifier.create(scheduler.enqueueExtractionForImport(conversation(), "user-1", 21L))
+                .verifyComplete();
+
+        verify(taskRepository).insertIfAbsent(any());
     }
 
     private static Conversation conversation() {

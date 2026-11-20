@@ -6,6 +6,7 @@ import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryScope;
 import cn.tolim.pudans.core.ai.memory.MemoryStatus;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
+import cn.tolim.pudans.core.ai.memory.asset.MemoryL1Item;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiR2dbcBindings;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.r2dbc.spi.Row;
@@ -31,7 +32,8 @@ public class AiMemoryL1Repository {
     private static final String SELECT_COLUMNS =
             "id, record_id, team_id, agent_id, user_id, session_id, task_id, conversation_id, "
                     + "content, memory_type, priority, scene_name, source_message_ids, "
-                    + "metadata::text AS metadata, dedup_hash, scope, org_candidate, status, version, timestamps";
+                    + "metadata::text AS metadata, dedup_hash, scope, org_candidate, status, version, "
+                    + "timestamps, created_at";
 
     private final DatabaseClient databaseClient;
 
@@ -193,6 +195,135 @@ public class AiMemoryL1Repository {
                 .bind("limit", limit)
                 .map((row, metadata) -> mapRecord(row))
                 .all();
+    }
+
+    public Flux<MemoryL1Item> listByScope(
+            String teamId,
+            String agentId,
+            String userId,
+            @Nullable Instant from,
+            @Nullable Instant to,
+            @Nullable String query,
+            long beforeId,
+            int limit) {
+        var spec = databaseClient.sql("SELECT " + SELECT_COLUMNS + """
+                         FROM ai_memory_l1
+                         WHERE team_id = :teamId
+                           AND agent_id = :agentId
+                           AND user_id = :userId
+                           AND status = 'ACTIVE'
+                           AND id < :beforeId
+                           AND (:from IS NULL OR created_at >= :from)
+                           AND (:to IS NULL OR created_at < :to)
+                           AND (:pattern IS NULL OR content ILIKE :pattern ESCAPE '\\')
+                         ORDER BY id DESC
+                         LIMIT :limit
+                         """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("userId", userId)
+                .bind("beforeId", beforeId)
+                .bind("limit", limit);
+        spec = AiR2dbcBindings.bindNullable(
+                spec,
+                "from",
+                from == null ? null : OffsetDateTime.ofInstant(from, ZoneOffset.UTC),
+                OffsetDateTime.class);
+        spec = AiR2dbcBindings.bindNullable(
+                spec,
+                "to",
+                to == null ? null : OffsetDateTime.ofInstant(to, ZoneOffset.UTC),
+                OffsetDateTime.class);
+        spec = AiR2dbcBindings.bindNullable(
+                spec, "pattern", query == null ? null : AiMemorySql.likePattern(query), String.class);
+        return spec.map((row, metadata) -> mapItem(row)).all();
+    }
+
+    public Mono<MemoryL1Item> updateContent(String teamId, String agentId, String userId, long id, String content) {
+        return databaseClient.sql("UPDATE ai_memory_l1" + """
+                         SET content = :content, version = version + 1, updated_at = now()
+                         WHERE id = :id
+                           AND team_id = :teamId
+                           AND agent_id = :agentId
+                           AND user_id = :userId
+                           AND status = 'ACTIVE'
+                         RETURNING
+                         """ + SELECT_COLUMNS)
+                .bind("content", content)
+                .bind("id", id)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("userId", userId)
+                .map((row, metadata) -> mapItem(row))
+                .one();
+    }
+
+    public Mono<Long> deleteByIds(String teamId, String agentId, String userId, List<Long> ids) {
+        return databaseClient.sql("""
+                        UPDATE ai_memory_l1
+                        SET status = 'DELETED', updated_at = now()
+                        WHERE team_id = :teamId
+                          AND agent_id = :agentId
+                          AND user_id = :userId
+                          AND status = 'ACTIVE'
+                          AND id = ANY(:ids)
+                        RETURNING id
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("userId", userId)
+                .bind("ids", ids.toArray(Long[]::new))
+                .map((row, metadata) -> row.get("id", Long.class))
+                .all()
+                .count();
+    }
+
+    public Mono<Long> deleteByScope(String teamId, String agentId, String userId) {
+        return databaseClient.sql("""
+                        UPDATE ai_memory_l1
+                        SET status = 'DELETED', updated_at = now()
+                        WHERE team_id = :teamId
+                          AND agent_id = :agentId
+                          AND user_id = :userId
+                          AND status = 'ACTIVE'
+                        RETURNING id
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("userId", userId)
+                .map((row, metadata) -> row.get("id", Long.class))
+                .all()
+                .count();
+    }
+
+    public Mono<Long> countActive(String teamId, String agentId, String userId) {
+        return databaseClient.sql("""
+                        SELECT COUNT(*) AS total
+                        FROM ai_memory_l1
+                        WHERE team_id = :teamId AND agent_id = :agentId AND user_id = :userId
+                          AND status = 'ACTIVE'
+                        """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("userId", userId)
+                .map((row, metadata) -> row.get("total", Long.class))
+                .one()
+                .defaultIfEmpty(0L);
+    }
+
+    private static MemoryL1Item mapItem(Row row) {
+        return new MemoryL1Item(
+                row.get("id", Long.class),
+                row.get("record_id", String.class),
+                row.get("content", String.class),
+                MemoryType.valueOf(row.get("memory_type", String.class)),
+                MemoryScope.valueOf(row.get("scope", String.class)),
+                row.get("priority", Integer.class),
+                row.get("scene_name", String.class),
+                row.get("version", Integer.class),
+                MemoryStatus.valueOf(row.get("status", String.class)),
+                row.get("created_at", Instant.class),
+                JsonUtils.jsonToObject(row.get("metadata", String.class), JSON_MAP));
     }
 
     static L1MemoryRecord mapRecord(Row row) {

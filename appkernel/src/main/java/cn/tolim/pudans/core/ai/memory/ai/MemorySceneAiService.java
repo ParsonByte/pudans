@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.ai;
 
+import cn.tolim.pudans.core.ai.prompt.MemoryPrompts;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
 import cn.tolim.pudans.core.ai.memory.L2PipelineService;
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
@@ -24,19 +25,6 @@ public class MemorySceneAiService {
 
     private static final double DEFAULT_CONFIDENCE = 0.7;
 
-    private static final String SYSTEM_PROMPT = """
-            你是记忆场景聚合器，负责把新增 L1 记忆归并到场景块中。
-            规则：
-            1. l1Ids 只能引用输入 newL1 中的 id 或 existingScenes 中的 l1Ids。
-            2. 每个场景必须包含至少一个有效 l1Id；同一个 l1Id 不得出现在多个场景。
-            3. sceneKey 使用稳定的英文小写短横线标识；title 和 summary 使用中文简要概括。
-            4. confidence 为 0 到 1 之间的小数；没有合适场景时输出 {"scenes":[]}。
-            只输出一个 JSON 对象，不要输出解释、Markdown 代码块或任何多余文本。
-            JSON 结构：
-            {"scenes":[{"sceneKey":"release-process","title":"发布流程",
-              "summary":"关于发布节奏与注意事项的汇总","l1Ids":[1,2],"confidence":0.8}]}
-            """;
-
     private final MemoryAiSupport support;
 
     public Mono<List<L2PipelineService.ExtractedScene>> extract(
@@ -51,7 +39,7 @@ public class MemorySceneAiService {
                 ? List.<L2SceneBlock>of()
                 : existingScenes.stream().filter(Objects::nonNull).toList();
         return support.generate(
-                        MemoryAiSupport.combine(systemPrompt, SYSTEM_PROMPT),
+                        MemoryAiSupport.combine(systemPrompt, MemoryPrompts.SCENE),
                         userPrompt(pending, scenes),
                         MAX_OUTPUT_TOKENS)
                 .map(result -> extracted(result.content(), pending, scenes));

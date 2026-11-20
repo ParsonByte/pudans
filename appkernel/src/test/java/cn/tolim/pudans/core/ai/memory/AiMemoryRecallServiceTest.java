@@ -181,6 +181,54 @@ class AiMemoryRecallServiceTest {
     }
 
     @Test
+    void mergesBorrowedAssetScopesAndDeduplicatesFacts() {
+        var borrowed = new MemoryContext("team-2", "user-2", "agent-2", "session-1", null);
+        when(recallRepository.searchL1("team-1", "agent-1", "user-1", "发布流程", 5))
+                .thenReturn(Flux.just(fact("自有记忆")));
+        when(recallRepository.searchL1("team-2", "agent-2", "user-2", "发布流程", 5))
+                .thenReturn(Flux.just(
+                        fact("重复记录"),
+                        new RecalledMemory(
+                                12L, "record-2", "借入记忆", MemoryType.WORK_FACT, "shared", 60, 1, NOW, 0.52)));
+        when(recallRepository.findScenes("team-1", "agent-1", 3)).thenReturn(Flux.empty());
+        when(recallRepository.findScenes("team-2", "agent-2", 3)).thenReturn(Flux.empty());
+        when(personaRepository.findByScope("team-1", "agent-1"))
+                .thenReturn(Mono.just(persona("自有画像")));
+        when(personaRepository.findByScope("team-2", "agent-2"))
+                .thenReturn(Mono.just(new L3Persona(
+                        10L, "team-2", "agent-2", Map.of(), "借入画像", 1, 1, BigDecimal.ONE, NOW)));
+
+        StepVerifier.create(service.build(CONTEXT, "发布流程", 5, 3, null, List.of(borrowed)))
+                .assertNext(injection -> {
+                    assertThat(injection.refs()).hasSize(2);
+                    assertThat(injection.refs().getFirst().content()).isEqualTo("自有记忆");
+                    assertThat(injection.refs().get(1).content()).isEqualTo("借入记忆");
+                    assertThat(injection.appendSystemContext())
+                            .contains("自有画像")
+                            .contains("借入画像")
+                            .contains("team-2 / user-2 / agent-2");
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void deduplicatesScenesAndPersonasSharingTeamAndAgent() {
+        var borrowed = new MemoryContext("team-1", "user-3", "agent-1", "session-1", null);
+        when(recallRepository.searchL1("team-1", "agent-1", "user-1", "发布流程", 5))
+                .thenReturn(Flux.empty());
+        when(recallRepository.searchL1("team-1", "agent-1", "user-3", "发布流程", 5))
+                .thenReturn(Flux.empty());
+        when(recallRepository.findScenes("team-1", "agent-1", 3)).thenReturn(Flux.just(scene()));
+        when(personaRepository.findByScope("team-1", "agent-1")).thenReturn(Mono.just(persona("共享画像")));
+
+        StepVerifier.create(service.build(CONTEXT, "发布流程", 5, 3, null, List.of(borrowed)))
+                .assertNext(injection -> assertThat(injection.appendSystemContext())
+                        .containsOnlyOnce("共享画像")
+                        .containsOnlyOnce("[release]"))
+                .verifyComplete();
+    }
+
+    @Test
     void appendsResolvedCustomMemoryPrompt() {
         when(recallRepository.searchL1(anyString(), anyString(), anyString(), anyString(), anyInt()))
                 .thenReturn(Flux.empty());

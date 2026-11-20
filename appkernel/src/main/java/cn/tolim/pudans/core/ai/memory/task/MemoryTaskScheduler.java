@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.task;
 
+import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryPipelineTask;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
@@ -21,8 +22,24 @@ public class MemoryTaskScheduler {
 
     private final AiMemoryTaskRepository taskRepository;
 
+    private final AiSettingService settingService;
+
     public Mono<Void> enqueueExtraction(Conversation conversation, String userId, long lastMessageId) {
-        var task = new MemoryPipelineTask(
+        return settingService
+                .memoryEnabled()
+                .flatMap(enabled -> Boolean.TRUE.equals(enabled)
+                        ? enqueue(extractionTask(conversation, userId, lastMessageId))
+                        : Mono.empty());
+    }
+
+    public Mono<Void> enqueueExtractionForImport(
+            Conversation conversation, String userId, long lastMessageId) {
+        return enqueue(extractionTask(conversation, userId, lastMessageId));
+    }
+
+    private static MemoryPipelineTask extractionTask(
+            Conversation conversation, String userId, long lastMessageId) {
+        return new MemoryPipelineTask(
                 PipelineTaskType.L1_EXTRACT,
                 "l1:" + conversation.id(),
                 new MemoryContext(
@@ -34,7 +51,6 @@ public class MemoryTaskScheduler {
                 Map.<String, Object>of(
                         "conversationId", conversation.id(), "lastMessageId", lastMessageId),
                 new MemoryPipelineTask.Schedule(conversation.id(), 0, Instant.now()));
-        return enqueue(task);
     }
 
     public Mono<Void> enqueueL2(
