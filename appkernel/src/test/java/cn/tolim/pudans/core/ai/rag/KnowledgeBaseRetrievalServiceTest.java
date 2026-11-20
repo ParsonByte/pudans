@@ -6,12 +6,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
 import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.core.ai.rag.connector.ExternalRagRetriever;
 import cn.tolim.pudans.core.ai.rerank.AiRerankService;
 import cn.tolim.pudans.core.ai.rerank.RerankResult;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -47,6 +49,9 @@ class KnowledgeBaseRetrievalServiceTest {
     @Mock
     AiRerankService rerankService;
 
+    @Mock
+    ExternalRagRetriever externalRagRetriever;
+
     private KnowledgeBaseRetrievalService service;
 
     @BeforeEach
@@ -58,7 +63,8 @@ class KnowledgeBaseRetrievalServiceTest {
                 new HybridRetrievalService(),
                 new KnowledgeBaseAcl(),
                 new CitationAssembler(),
-                rerankService);
+                rerankService,
+                externalRagRetriever);
     }
 
     @Test
@@ -132,6 +138,59 @@ class KnowledgeBaseRetrievalServiceTest {
         verify(queryLogRepository).insert(queryLogCaptor.capture());
         assertThat(queryLogCaptor.getValue().getHitCount()).isEqualTo(2);
         assertThat(queryLogCaptor.getValue().getTopScore()).isEqualByComparingTo("0.5000");
+    }
+
+    @Test
+    void usesExternalConnectorForConfiguredKnowledgeBase() {
+        var readable = knowledgeBase("kb-ext", KnowledgeBase.Visibility.COMPANY, "owner", "dept-a");
+        var external = new KnowledgeBase.External();
+        external.setProvider(KnowledgeBase.ExternalProvider.DIFY);
+        external.setEndpoint("https://dify.local");
+        readable.getSpec().setExternal(external);
+        var chunk = new RetrievedChunk(
+                new RetrievalCandidate(11, 12, "kb-ext", "external.pdf", "外部片段", null, null, 0.9), 0.9);
+        when(externalRagRetriever.retrieve(eq(readable), eq("安装"), any(RetrievalOptions.class)))
+                .thenReturn(Mono.just(List.of(chunk)));
+        when(queryLogRepository.insert(any())).thenReturn(Mono.just(1L));
+
+        StepVerifier.create(service.retrieve(request(List.of(readable), new float[] {0.1f})))
+                .assertNext(result -> {
+                    assertThat(result.citations()).hasSize(1);
+                    assertThat(result.citations().get(0).fileName()).isEqualTo("external.pdf");
+                    assertThat(result.prompt()).contains("[1]《external.pdf》").contains("外部片段");
+                })
+                .verifyComplete();
+
+        verifyNoInteractions(chunkRepository, embeddingStore, rerankService);
+        var queryLogCaptor = ArgumentCaptor.forClass(KnowledgeBaseQueryLog.class);
+        verify(queryLogRepository).insert(queryLogCaptor.capture());
+        assertThat(queryLogCaptor.getValue().getKbNames()).containsExactly("kb-ext");
+        assertThat(queryLogCaptor.getValue().getHitChunkIds()).containsExactly(11L);
+    }
+
+    @Test
+    void placesExternalChunksBeforeLocalChunks() {
+        var externalKnowledgeBase = knowledgeBase("kb-ext", KnowledgeBase.Visibility.COMPANY, "owner", "dept-a");
+        var external = new KnowledgeBase.External();
+        external.setProvider(KnowledgeBase.ExternalProvider.DIFY);
+        external.setEndpoint("https://dify.local");
+        externalKnowledgeBase.getSpec().setExternal(external);
+        var localKnowledgeBase = knowledgeBase("kb-a", KnowledgeBase.Visibility.COMPANY, "owner", "dept-a");
+        var externalChunk = new RetrievedChunk(
+                new RetrievalCandidate(11, 12, "kb-ext", "external.pdf", "外部片段", null, null, 0.5), 0.5);
+        when(externalRagRetriever.retrieve(eq(externalKnowledgeBase), eq("安装"), any(RetrievalOptions.class)))
+                .thenReturn(Mono.just(List.of(externalChunk)));
+        when(chunkRepository.searchKeyword(List.of("kb-a"), "安装", 50))
+                .thenReturn(Flux.just(candidate(1, 0.9, "本地片段")));
+        when(queryLogRepository.insert(any())).thenReturn(Mono.just(1L));
+
+        StepVerifier.create(service.retrieve(request(List.of(externalKnowledgeBase, localKnowledgeBase), null)))
+                .assertNext(result -> assertThat(result.citations())
+                        .extracting(Citation::fileName)
+                        .containsExactly("external.pdf", "manual.pdf"))
+                .verifyComplete();
+
+        verifyNoInteractions(embeddingStore, rerankService);
     }
 
     @Test

@@ -66,7 +66,7 @@ public class HybridRetrievalService {
         lists.add(ranked);
     }
 
-    private static List<RetrievedChunk> applyCharBudget(List<RetrievedChunk> ranked, int charBudget) {
+    static List<RetrievedChunk> applyCharBudget(List<RetrievedChunk> ranked, int charBudget) {
         var results = new ArrayList<RetrievedChunk>();
         var used = 0;
         for (var result : ranked) {

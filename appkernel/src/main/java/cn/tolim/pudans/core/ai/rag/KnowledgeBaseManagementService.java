@@ -11,6 +11,7 @@ import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.storage.StorageService;
 import cn.tolim.pudans.core.storage.driver.StorageReadOptions;
 import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
+import cn.tolim.pudans.core.ai.rag.connector.ExternalRagRetriever;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbChunkRepository;
@@ -102,7 +103,7 @@ public class KnowledgeBaseManagementService {
                 .filter(knowledgeBase -> kbCodes.isEmpty()
                         || kbCodes.contains(KnowledgeBaseCodes.codeOf(knowledgeBase)))
                 .collectList()
-                .flatMap(knowledgeBases -> queryEmbedding(query)
+                .flatMap(knowledgeBases -> queryEmbedding(knowledgeBases, query)
                         .flatMap(queryEmbedding -> retrievalService.retrieve(new KnowledgeBaseRetrievalRequest(
                                 userId,
                                 null,
@@ -116,7 +117,10 @@ public class KnowledgeBaseManagementService {
                                 .defaultIfEmpty(new KnowledgeBaseRetrievalResult("", List.of()))));
     }
 
-    private Mono<float[]> queryEmbedding(String query) {
+    private Mono<float[]> queryEmbedding(List<KnowledgeBase> knowledgeBases, String query) {
+        if (knowledgeBases.stream().allMatch(ExternalRagRetriever::isExternal)) {
+            return Mono.just(new float[0]);
+        }
         return embeddingService.embedOne(query).onErrorResume(error -> {
             log.warn("知识库查询向量生成失败，降级为关键词检索。", error);
             return Mono.just(new float[0]);

@@ -6,7 +6,9 @@ import cn.tolim.pudans.contract.extension.AbstractExtension;
 import cn.tolim.pudans.contract.extension.GVK;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -57,6 +59,13 @@ public class KnowledgeBase extends AbstractExtension {
         DISABLED
     }
 
+    public enum ExternalProvider {
+        DIFY,
+        RAGFLOW,
+        HAYSTACK,
+        BAILIAN
+    }
+
     @Data
     public static class Spec {
 
@@ -93,6 +102,34 @@ public class KnowledgeBase extends AbstractExtension {
         private String rerankModel;
 
         private BaseStatus status = BaseStatus.ENABLED;
+
+        private External external;
+    }
+
+    @Data
+    public static class External {
+
+        @Schema(requiredMode = REQUIRED)
+        private ExternalProvider provider;
+
+        @Schema(requiredMode = REQUIRED)
+        private String endpoint;
+
+        private String dataset;
+
+        private String knowledgeBaseId;
+
+        // 指向已加密保存凭证的 AiProviderAccount 名称，避免知识库配置中出现明文密钥
+        private String credentialRef;
+
+        private Integer topK;
+
+        private Double scoreThreshold;
+
+        // 百炼检索路径，支持 {knowledgeBaseId} 占位符，留空时使用默认路径
+        private String retrievePath;
+
+        private Map<String, Object> filters = new LinkedHashMap<>();
     }
 
     @Data

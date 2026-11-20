@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
@@ -141,6 +142,30 @@ class KnowledgeBaseManagementServiceTest {
         assertThat(request.getValue().roleNames()).containsExactly("role-a");
         assertThat(request.getValue().queryEmbedding()).containsExactly(0.1f, 0.2f);
         assertThat(request.getValue().candidateLimit()).isEqualTo(24);
+    }
+
+    @Test
+    void skipsQueryEmbeddingWhenEveryKnowledgeBaseUsesExternalRetrieval() {
+        var knowledgeBase = knowledgeBase("kb-ext", KnowledgeBase.Visibility.COMPANY, "uid-bob");
+        var external = new KnowledgeBase.External();
+        external.setProvider(KnowledgeBase.ExternalProvider.DIFY);
+        external.setEndpoint("https://dify.local");
+        knowledgeBase.getSpec().setExternal(external);
+        when(client.listAll(eq(KnowledgeBase.class), any(ListOptions.class), any(Sort.class)))
+                .thenReturn(Flux.just(knowledgeBase));
+        var result = new KnowledgeBaseRetrievalResult("prompt", List.of());
+        when(retrievalService.retrieve(any(KnowledgeBaseRetrievalRequest.class)))
+                .thenReturn(Mono.just(result));
+        var options = new RetrievalOptions(60, 0.3, 8, 4000);
+
+        StepVerifier.create(service.search("uid-alice", Set.of(), null, "hello", List.of("kb-ext"), options))
+                .expectNext(result)
+                .verifyComplete();
+
+        var request = ArgumentCaptor.forClass(KnowledgeBaseRetrievalRequest.class);
+        verify(retrievalService).retrieve(request.capture());
+        assertThat(request.getValue().queryEmbedding()).isEmpty();
+        verifyNoInteractions(embeddingService);
     }
 
     @Test

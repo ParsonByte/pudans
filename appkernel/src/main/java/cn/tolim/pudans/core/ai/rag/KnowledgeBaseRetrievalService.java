@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.ai.rag;
 
 import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
+import cn.tolim.pudans.core.ai.rag.connector.ExternalRagRetriever;
 import cn.tolim.pudans.core.ai.rerank.AiRerankService;
 import cn.tolim.pudans.core.ai.rerank.RerankResult;
 import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbChunkRepository;
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -43,6 +45,8 @@ public class KnowledgeBaseRetrievalService {
 
     private final AiRerankService rerankService;
 
+    private final ExternalRagRetriever externalRagRetriever;
+
     public Mono<KnowledgeBaseRetrievalResult> retrieve(KnowledgeBaseRetrievalRequest request) {
         if (request == null) {
             return Mono.error(new IllegalArgumentException("检索请求不能为空。"));
@@ -60,7 +64,40 @@ public class KnowledgeBaseRetrievalService {
             return writeQueryLog(request, List.of(), List.of(), false, startedAt)
                     .thenReturn(new KnowledgeBaseRetrievalResult("", List.of()));
         }
-        var keywordCandidates = chunkRepository.searchKeyword(kbNames, request.query(), request.candidateLimit());
+        var externalKnowledgeBases = readableKnowledgeBases.stream()
+                .filter(ExternalRagRetriever::isExternal)
+                .toList();
+        var localKnowledgeBases = readableKnowledgeBases.stream()
+                .filter(knowledgeBase -> !ExternalRagRetriever.isExternal(knowledgeBase))
+                .toList();
+        var externalChunks = Flux.fromIterable(externalKnowledgeBases)
+                .concatMap(knowledgeBase -> externalRagRetriever.retrieve(
+                        knowledgeBase, request.query(), request.options()))
+                .collectList()
+                .map(lists -> lists.stream().flatMap(List::stream).toList());
+        return Mono.zip(externalChunks, retrieveLocal(localKnowledgeBases, request))
+                .map(tuple -> {
+                    var chunks = mergeChunks(tuple.getT1(), tuple.getT2().chunks(), request.options());
+                    return new FusedResult(
+                            citationAssembler.assemble(chunks), chunks, tuple.getT2().reranked());
+                })
+                .flatMap(fused -> writeQueryLog(
+                                request, kbNames, fused.chunks(), fused.reranked(), startedAt)
+                        .thenReturn(new KnowledgeBaseRetrievalResult(
+                                fused.prompt().prompt(), fused.prompt().citations())));
+    }
+
+    private Mono<RerankOutcome> retrieveLocal(
+            List<KnowledgeBase> knowledgeBases, KnowledgeBaseRetrievalRequest request) {
+        if (knowledgeBases.isEmpty()) {
+            return Mono.just(new RerankOutcome(List.of(), false));
+        }
+        var kbNames = knowledgeBases.stream()
+                .map(KnowledgeBaseCodes::codeOf)
+                .distinct()
+                .toList();
+        var keywordCandidates = chunkRepository.searchKeyword(
+                kbNames, request.query(), request.candidateLimit());
         Mono<List<RetrievalCandidate>> vectorCandidates =
                 request.queryEmbedding() == null || request.queryEmbedding().length == 0
                         ? Mono.just(List.of())
@@ -68,13 +105,16 @@ public class KnowledgeBaseRetrievalService {
                                 kbNames, request.queryEmbedding(), request.candidateLimit()));
         return Mono.zip(keywordCandidates.collectList(), vectorCandidates)
                 .flatMap(candidates -> retrieveChunks(
-                        candidates.getT1(), candidates.getT2(), readableKnowledgeBases, request))
-                .map(outcome -> new FusedResult(
-                        citationAssembler.assemble(outcome.chunks()), outcome.chunks(), outcome.reranked()))
-                .flatMap(fused -> writeQueryLog(
-                                request, kbNames, fused.chunks(), fused.reranked(), startedAt)
-                        .thenReturn(new KnowledgeBaseRetrievalResult(
-                                fused.prompt().prompt(), fused.prompt().citations())));
+                        candidates.getT1(), candidates.getT2(), knowledgeBases, request));
+    }
+
+    private static List<RetrievedChunk> mergeChunks(
+            List<RetrievedChunk> externalChunks, List<RetrievedChunk> localChunks, RetrievalOptions options) {
+        var merged = new ArrayList<RetrievedChunk>(externalChunks.size() + localChunks.size());
+        merged.addAll(externalChunks);
+        merged.addAll(localChunks);
+        var limited = merged.stream().limit(options.topK()).toList();
+        return HybridRetrievalService.applyCharBudget(limited, options.charBudget());
     }
 
     private static EmbeddingSearchRequest vectorSearchRequest(
