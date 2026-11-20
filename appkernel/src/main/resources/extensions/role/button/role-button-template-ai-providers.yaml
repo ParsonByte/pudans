@@ -25,6 +25,13 @@ rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
+      - "aiproviders/actions"
+      - "aiproviders/arrange"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "aiproviders/models"
       - "aiproviders/minimax"
       - "aiproviders/qianwen"

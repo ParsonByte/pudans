@@ -12,13 +12,22 @@ import cn.tolim.pudans.contract.core.extension.Setting;
 import cn.tolim.pudans.contract.core.extension.Webhook;
 import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
 import cn.tolim.pudans.contract.core.extension.ai.AiChatMode;
+import cn.tolim.pudans.contract.core.extension.ai.AiEnvironmentVariable;
+import cn.tolim.pudans.contract.core.extension.ai.AiHook;
+import cn.tolim.pudans.contract.core.extension.ai.AiInstruction;
+import cn.tolim.pudans.contract.core.extension.ai.AiMcpServer;
+import cn.tolim.pudans.contract.core.extension.ai.AiMemoryAsset;
 import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
 import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPromptBinding;
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
+import cn.tolim.pudans.contract.core.extension.ai.AiSandboxProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
+import cn.tolim.pudans.contract.core.extension.ai.AiSkill;
+import cn.tolim.pudans.contract.core.extension.ai.AiSlashCommand;
+import cn.tolim.pudans.contract.core.extension.ai.AiSubagent;
 import cn.tolim.pudans.contract.core.extension.ai.AiTeam;
 import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
@@ -38,6 +47,7 @@ import cn.tolim.pudans.contract.extension.Secret;
 import cn.tolim.pudans.contract.extension.index.IndexSpecs;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -194,8 +204,8 @@ class SchemeInitializer implements SmartLifecycle {
         });
 
         schemeManager.register(AiProvider.class, is -> {
-            is.add(IndexSpecs.<AiProvider, AiProvider.Protocol>single("spec.protocol", AiProvider.Protocol.class)
-                    .indexFunc(provider -> provider.getSpec().getProtocol()));
+            is.add(IndexSpecs.<AiProvider, AiProvider.Vendor>single("spec.vendor", AiProvider.Vendor.class)
+                    .indexFunc(provider -> provider.getSpec().getVendor()));
             is.add(IndexSpecs.<AiProvider, Boolean>single("spec.enabled", Boolean.class)
                     .indexFunc(provider -> provider.getSpec().isEnabled()));
             is.add(IndexSpecs.<AiProvider, Boolean>single("spec.free", Boolean.class)
@@ -204,6 +214,15 @@ class SchemeInitializer implements SmartLifecycle {
                     .indexFunc(provider -> provider.getSpec().getRouting()));
             is.add(IndexSpecs.<AiProvider, AiProvider.Affinity>single("spec.affinity", AiProvider.Affinity.class)
                     .indexFunc(provider -> provider.getSpec().getAffinity()));
+        });
+
+        schemeManager.register(AiSandboxProvider.class, is -> {
+            is.add(IndexSpecs.<AiSandboxProvider, String>single("spec.provider", String.class)
+                    .indexFunc(provider -> provider.getSpec().getProvider() == null
+                            ? null
+                            : provider.getSpec().getProvider().name()));
+            is.add(IndexSpecs.<AiSandboxProvider, Boolean>single("spec.enabled", Boolean.class)
+                    .indexFunc(provider -> provider.getSpec() != null && provider.getSpec().isEnabled()));
         });
 
         schemeManager.register(AiProviderAccount.class, is -> {
@@ -288,6 +307,29 @@ class SchemeInitializer implements SmartLifecycle {
                     .indexFunc(agent -> agent.getSpec().getDefaultRouteGroup()));
         });
 
+        schemeManager.register(AiMcpServer.class, is -> {
+            is.add(IndexSpecs.<AiMcpServer, Boolean>single("spec.enabled", Boolean.class)
+                    .indexFunc(server -> server.getSpec().isEnabled()));
+            is.add(IndexSpecs.<AiMcpServer, AiMcpServer.Transport>single(
+                            "spec.transport", AiMcpServer.Transport.class)
+                    .indexFunc(server -> server.getSpec().getTransport()));
+        });
+
+        schemeManager.register(AiSkill.class, is -> {
+            is.add(IndexSpecs.<AiSkill, Boolean>single("spec.enabled", Boolean.class)
+                    .indexFunc(skill -> skill.getSpec().isEnabled()));
+            is.add(IndexSpecs.<AiSkill, AiSkill.Source>single("spec.source", AiSkill.Source.class)
+                    .indexFunc(skill -> skill.getSpec().getSource()));
+        });
+
+        schemeManager.register(AiInstruction.class, is -> {
+            is.add(IndexSpecs.<AiInstruction, Boolean>single("spec.enabled", Boolean.class)
+                    .indexFunc(instruction -> instruction.getSpec().isEnabled()));
+            is.add(IndexSpecs.<AiInstruction, AiInstruction.Scope>single(
+                            "spec.scope", AiInstruction.Scope.class)
+                    .indexFunc(instruction -> instruction.getSpec().getScope()));
+        });
+
         schemeManager.register(AiMemoryPrompt.class, is -> {
             is.add(IndexSpecs.<AiMemoryPrompt, AiMemoryPrompt.Layer>single(
                             "spec.layer", AiMemoryPrompt.Layer.class)
@@ -312,6 +354,59 @@ class SchemeInitializer implements SmartLifecycle {
                     .indexFunc(binding -> binding.getSpec().getLayer()));
         });
 
+        schemeManager.register(AiMemoryAsset.class, is -> {
+            is.add(IndexSpecs.<AiMemoryAsset, String>single("spec.team", String.class)
+                    .indexFunc(asset -> asset.getSpec().getTeam()));
+            is.add(IndexSpecs.<AiMemoryAsset, String>single("spec.ownerUserId", String.class)
+                    .indexFunc(asset -> asset.getSpec().getOwnerUserId()));
+            is.add(IndexSpecs.<AiMemoryAsset, String>single("spec.sourceUserId", String.class)
+                    .indexFunc(asset -> asset.getSpec().getSourceUserId()));
+            is.add(IndexSpecs.<AiMemoryAsset, String>single("spec.sourceAgentId", String.class)
+                    .indexFunc(asset -> asset.getSpec().getSourceAgentId()));
+            is.add(IndexSpecs.<AiMemoryAsset, AiMemoryAsset.Visibility>single(
+                            "spec.visibility", AiMemoryAsset.Visibility.class)
+                    .indexFunc(asset -> asset.getSpec().getVisibility()));
+            is.add(IndexSpecs.<AiMemoryAsset, AiMemoryAsset.Status>single(
+                            "spec.status", AiMemoryAsset.Status.class)
+                    .indexFunc(asset -> asset.getSpec().getStatus()));
+            is.add(IndexSpecs.<AiMemoryAsset, String>multi("spec.agents", String.class)
+                    .indexFunc(asset -> agentNames(asset.getSpec().getAgents())));
+        });
+
+        schemeManager.register(AiHook.class, is -> {
+            is.add(IndexSpecs.<AiHook, Boolean>single("spec.enabled", Boolean.class)
+                    .indexFunc(hook -> hook.getSpec().isEnabled()));
+            is.add(IndexSpecs.<AiHook, AiHook.Event>single("spec.event", AiHook.Event.class)
+                    .indexFunc(hook -> hook.getSpec().getEvent()));
+            is.add(IndexSpecs.<AiHook, String>multi("spec.agents", String.class)
+                    .indexFunc(hook -> agentNames(hook.getSpec().getAgents())));
+        });
+
+        schemeManager.register(AiEnvironmentVariable.class, is -> {
+            is.add(IndexSpecs.<AiEnvironmentVariable, Boolean>single("spec.enabled", Boolean.class)
+                    .indexFunc(variable -> variable.getSpec().isEnabled()));
+            is.add(IndexSpecs.<AiEnvironmentVariable, String>single("spec.name", String.class)
+                    .indexFunc(variable -> variable.getSpec().getName()));
+            is.add(IndexSpecs.<AiEnvironmentVariable, String>multi("spec.agents", String.class)
+                    .indexFunc(variable -> agentNames(variable.getSpec().getAgents())));
+        });
+
+        schemeManager.register(AiSubagent.class, is -> {
+            is.add(IndexSpecs.<AiSubagent, Boolean>single("spec.enabled", Boolean.class)
+                    .indexFunc(subagent -> subagent.getSpec().isEnabled()));
+            is.add(IndexSpecs.<AiSubagent, String>multi("spec.agents", String.class)
+                    .indexFunc(subagent -> agentNames(subagent.getSpec().getAgents())));
+        });
+
+        schemeManager.register(AiSlashCommand.class, is -> {
+            is.add(IndexSpecs.<AiSlashCommand, Boolean>single("spec.enabled", Boolean.class)
+                    .indexFunc(command -> command.getSpec().isEnabled()));
+            is.add(IndexSpecs.<AiSlashCommand, String>single("spec.name", String.class)
+                    .indexFunc(command -> command.getSpec().getName()));
+            is.add(IndexSpecs.<AiSlashCommand, String>multi("spec.agents", String.class)
+                    .indexFunc(command -> agentNames(command.getSpec().getAgents())));
+        });
+
         schemeManager.register(KnowledgeBase.class, is -> {
             is.add(IndexSpecs.<KnowledgeBase, KnowledgeBase.Visibility>single(
                             "spec.visibility", KnowledgeBase.Visibility.class)
@@ -332,6 +427,14 @@ class SchemeInitializer implements SmartLifecycle {
                             .map(acl -> acl.getSubjectType() + ":" + acl.getSubjectId())
                             .collect(Collectors.toSet())));
         });
+    }
+
+    private static Set<String> agentNames(List<String> agents) {
+        return agents == null
+                ? Set.of()
+                : agents.stream()
+                        .filter(StringUtils::isNotBlank)
+                        .collect(Collectors.toSet());
     }
 
     @Override
