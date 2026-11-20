@@ -14,6 +14,7 @@ javaPlatform {
 
 dependencies {
     api platform(SpringBootPlugin.BOM_COORDINATES)
+    api platform(libs.langchain4j.bom)
 
     constraints {
         api libs.bundles.apache
