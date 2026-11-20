@@ -10,6 +10,16 @@ export type ApiErrorMessages = {
   conflict: string;
 };
 
+export function resolveApiErrorWithDetail(error: unknown, messages: ApiErrorMessages): string {
+  if (isAxiosError<ProblemDetail>(error)) {
+    const detail = error.response?.data?.detail;
+    if (detail) {
+      return detail;
+    }
+  }
+  return resolveApiError(error, messages);
+}
+
 export function resolveApiError(error: unknown, messages: ApiErrorMessages): string {
   if (isAxiosError<ProblemDetail>(error)) {
     const status = error.response?.status;

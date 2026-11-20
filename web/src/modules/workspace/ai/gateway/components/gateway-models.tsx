@@ -19,7 +19,7 @@ type GatewayModelsProps = {
 };
 
 export function GatewayModels({ models, providers, loading, providersPath }: GatewayModelsProps) {
-  const ids = models.map((model) => `${model.spec.provider}/${model.spec.modelCode}`);
+  const ids = models.map((model) => model.metadata.name);
 
   return (
     <ConsoleSection>
@@ -29,7 +29,7 @@ export function GatewayModels({ models, providers, loading, providersPath }: Gat
             模型 <span className="text-muted-foreground">{models.length}</span>
           </h2>
           <p className="text-xs text-muted-foreground">
-            网关可以路由到的模型；ID 格式为供应商/模型。
+            网关可以路由到的模型；请求时传入模型资源名，也可使用供应商/模型资源名。
           </p>
         </div>
         {models.length > 0 ? (
@@ -57,7 +57,7 @@ export function GatewayModels({ models, providers, loading, providersPath }: Gat
         <div className="divide-y">
           {models.map((model) => {
             const provider = providers.find((item) => item.metadata.name === model.spec.provider);
-            const id = `${model.spec.provider}/${model.spec.modelCode}`;
+            const id = model.metadata.name;
             return (
               <div
                 key={model.metadata.name}
