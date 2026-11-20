@@ -672,23 +672,24 @@ public class UserEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> changeOwnPassword(ServerRequest request) {
-        return changePassword(request, true);
+        return currentUsername().flatMap(username -> changePassword(request, username, true));
     }
 
     private Mono<ServerResponse> changePasswordForUser(ServerRequest request) {
-        return changePassword(request, false);
+        return resolveName(request).flatMap(username -> changePassword(request, username, false));
     }
 
-    private Mono<ServerResponse> changePassword(ServerRequest request, boolean verifyOldPassword) {
-        return resolveName(request)
-                .flatMap(username -> request.bodyToMono(PasswordRequest.class)
-                        .flatMap(password -> verifyOldPassword
-                                ? userService
-                                        .confirmPassword(username, password.oldPassword())
-                                        .flatMap(confirmed -> Boolean.TRUE.equals(confirmed)
-                                                ? userService.updateWithRawPassword(username, password.password())
-                                                : Mono.error(new UnsatisfiedAttributeValueException("旧密码不匹配。")))
-                                : userService.updateWithRawPassword(username, password.password())))
+    private Mono<ServerResponse> changePassword(ServerRequest request, String username, boolean verifyOldPassword) {
+        return request
+                .bodyToMono(PasswordRequest.class)
+                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为空")))
+                .flatMap(password -> verifyOldPassword
+                        ? userService
+                                .confirmPassword(username, password.oldPassword())
+                                .flatMap(confirmed -> Boolean.TRUE.equals(confirmed)
+                                        ? userService.updateWithRawPassword(username, password.password())
+                                        : Mono.error(new UnsatisfiedAttributeValueException("旧密码不匹配。")))
+                        : userService.updateWithRawPassword(username, password.password()))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
