@@ -1504,6 +1504,719 @@
         ]
       }
     },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplan/-/usage": {
+      "get": {
+        "description": "Get the current user's plan windows and reset voucher totals.",
+        "operationId": "getAiPlanUsage",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanUsageView"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplan/-/usage/{uid}": {
+      "get": {
+        "description": "Get a specific user's plan windows and reset voucher totals.",
+        "operationId": "getAiPlanUsageByUser",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanUsageView"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplan/-/vouchers": {
+      "get": {
+        "description": "Get the current user's reset voucher balance.",
+        "operationId": "getAiPlanVouchers",
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanVoucherBalance"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplan/-/vouchers/-/history": {
+      "get": {
+        "description": "List the current user's reset voucher usage history.",
+        "operationId": "listAiPlanVoucherHistory",
+        "parameters": [
+          {
+            "description": "Page size (1-100, default 20).",
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Return records whose id is lower than this cursor.",
+            "in": "query",
+            "name": "beforeId",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AiPlanVoucherUseRecord"
+                  }
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplan/-/vouchers/grant": {
+      "post": {
+        "description": "Grant reset vouchers to users or user groups.",
+        "operationId": "grantAiPlanVouchers",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/AiPlanVoucherGrantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanVoucherGrantResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplan/-/vouchers/use": {
+      "post": {
+        "description": "Consume a reset voucher and reset the target window.",
+        "operationId": "useAiPlanVoucher",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/AiPlanVoucherUseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanVoucherUseResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplanbindings": {
+      "get": {
+        "description": "List AiPlanBinding",
+        "operationId": "listAiPlanBinding",
+        "parameters": [
+          {
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Size number. Default is 0.",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Label selector. e.g.: hidden!=true",
+            "in": "query",
+            "name": "labelSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Field selector. e.g.: metadata.name==pudans",
+            "in": "query",
+            "name": "fieldSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanBindingList"
+                }
+              }
+            },
+            "description": "Response aiplanbindings"
+          }
+        },
+        "tags": [
+          "AiPlanBindingV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create AiPlanBinding",
+        "operationId": "createAiPlanBinding",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/AiPlanBinding"
+              }
+            }
+          },
+          "description": "Fresh aiplanbinding"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanBinding"
+                }
+              }
+            },
+            "description": "Response aiplanbindings created just now"
+          }
+        },
+        "tags": [
+          "AiPlanBindingV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplanbindings/-/bulk": {
+      "post": {
+        "description": "Assign a plan to users or user groups, replacing existing bindings by default.",
+        "operationId": "bulkBindAiPlanBindings",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/AiPlanBindingBulkRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanBindingBulkResult"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPlanBindingV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplanbindings/-/resolve/{uid}": {
+      "get": {
+        "description": "Preview the plan that a user currently resolves to.",
+        "operationId": "resolveAiPlanBinding",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "uid",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanResolvedView"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AiPlanBindingV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplanbindings/{name}": {
+      "delete": {
+        "description": "Delete AiPlanBinding",
+        "operationId": "deleteAiPlanBinding",
+        "parameters": [
+          {
+            "description": "Name of aiplanbinding",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response aiplanbinding deleted just now"
+          }
+        },
+        "tags": [
+          "AiPlanBindingV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get AiPlanBinding",
+        "operationId": "getAiPlanBinding",
+        "parameters": [
+          {
+            "description": "Name of aiplanbinding",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanBinding"
+                }
+              }
+            },
+            "description": "Response single aiplanbinding"
+          }
+        },
+        "tags": [
+          "AiPlanBindingV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Patch AiPlanBinding",
+        "operationId": "patchAiPlanBinding",
+        "parameters": [
+          {
+            "description": "Name of aiplanbinding",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanBinding"
+                }
+              }
+            },
+            "description": "Response aiplanbinding patched just now"
+          }
+        },
+        "tags": [
+          "AiPlanBindingV1alpha1"
+        ]
+      },
+      "put": {
+        "description": "Update AiPlanBinding",
+        "operationId": "updateAiPlanBinding",
+        "parameters": [
+          {
+            "description": "Name of aiplanbinding",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/AiPlanBinding"
+              }
+            }
+          },
+          "description": "Updated aiplanbinding"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanBinding"
+                }
+              }
+            },
+            "description": "Response aiplanbindings updated just now"
+          }
+        },
+        "tags": [
+          "AiPlanBindingV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplans": {
+      "get": {
+        "description": "List AiPlan",
+        "operationId": "listAiPlan",
+        "parameters": [
+          {
+            "description": "Page number, starts from 1. Values below 1 are treated as 1.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Size number. Default is 0.",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Label selector. e.g.: hidden!=true",
+            "in": "query",
+            "name": "labelSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Field selector. e.g.: metadata.name==pudans",
+            "in": "query",
+            "name": "fieldSelector",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "description": "Sorting criteria in the format: property,(asc|desc). Default sort order is ascending. Multiple sort criteria are supported.",
+            "in": "query",
+            "name": "sort",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlanList"
+                }
+              }
+            },
+            "description": "Response aiplans"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      },
+      "post": {
+        "description": "Create AiPlan",
+        "operationId": "createAiPlan",
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/AiPlan"
+              }
+            }
+          },
+          "description": "Fresh aiplan"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlan"
+                }
+              }
+            },
+            "description": "Response aiplans created just now"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/aiplans/{name}": {
+      "delete": {
+        "description": "Delete AiPlan",
+        "operationId": "deleteAiPlan",
+        "parameters": [
+          {
+            "description": "Name of aiplan",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response aiplan deleted just now"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      },
+      "get": {
+        "description": "Get AiPlan",
+        "operationId": "getAiPlan",
+        "parameters": [
+          {
+            "description": "Name of aiplan",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlan"
+                }
+              }
+            },
+            "description": "Response single aiplan"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      },
+      "patch": {
+        "description": "Patch AiPlan",
+        "operationId": "patchAiPlan",
+        "parameters": [
+          {
+            "description": "Name of aiplan",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json-patch+json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlan"
+                }
+              }
+            },
+            "description": "Response aiplan patched just now"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      },
+      "put": {
+        "description": "Update AiPlan",
+        "operationId": "updateAiPlan",
+        "parameters": [
+          {
+            "description": "Name of aiplan",
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "*/*": {
+              "schema": {
+                "$ref": "#/components/schemas/AiPlan"
+              }
+            }
+          },
+          "description": "Updated aiplan"
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AiPlan"
+                }
+              }
+            },
+            "description": "Response aiplans updated just now"
+          }
+        },
+        "tags": [
+          "AiPlanV1alpha1"
+        ]
+      }
+    },
     "/apis/api.pudans.tolim.cn/v1alpha1/aiprovideraccounts": {
       "get": {
         "description": "List AiProviderAccount",
@@ -4591,7 +5304,7 @@
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/aistats/-/models": {
       "get": {
-        "description": "Model request counts, points and media units by model and capability.",
+        "description": "Model request counts, standard-token units and media units by model and capability.",
         "operationId": "getAiModelStats",
         "parameters": [
           {
@@ -4622,7 +5335,7 @@
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/aistats/-/points": {
       "get": {
-        "description": "Daily point consumption by model.",
+        "description": "Daily standard-token unit consumption by model.",
         "operationId": "getAiPointStats",
         "parameters": [
           {
@@ -9538,91 +10251,6 @@
         ]
       }
     },
-    "/apis/api.pudans.tolim.cn/v1alpha1/pointtransactions": {
-      "get": {
-        "description": "List all point transactions.",
-        "operationId": "listAllPointTransactions",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "beforeId",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WalletAdminTxnRecord"
-                  }
-                }
-              }
-            },
-            "description": "default response"
-          }
-        },
-        "tags": [
-          "WalletAdminV1alpha1"
-        ]
-      }
-    },
-    "/apis/api.pudans.tolim.cn/v1alpha1/pointtransactions/-/export": {
-      "get": {
-        "description": "Export point transactions as CSV.",
-        "operationId": "exportPointTransactions",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "userId",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "from",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "to",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "Maximum rows (1-10000, default 5000).",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Point transaction CSV export."
-          }
-        },
-        "tags": [
-          "WalletAdminV1alpha1"
-        ]
-      }
-    },
     "/apis/api.pudans.tolim.cn/v1alpha1/recovery/reset-password": {
       "post": {
         "operationId": "ResetPasswordWithRecoveryCode",
@@ -13507,267 +14135,6 @@
         ]
       }
     },
-    "/apis/api.pudans.tolim.cn/v1alpha1/wallet": {
-      "get": {
-        "description": "Get the current user's AI wallet, creating it lazily when missing.",
-        "operationId": "getAiWallet",
-        "responses": {
-          "default": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletDetail"
-                }
-              }
-            },
-            "description": "default response"
-          }
-        },
-        "tags": [
-          "WalletV1alpha1"
-        ]
-      }
-    },
-    "/apis/api.pudans.tolim.cn/v1alpha1/wallet/-/transactions": {
-      "get": {
-        "description": "List the current user's AI wallet transactions, newest first.",
-        "operationId": "listAiWalletTransactions",
-        "parameters": [
-          {
-            "description": "Page size (1-100, default 20).",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "description": "Return transactions whose id is lower than this cursor.",
-            "in": "query",
-            "name": "beforeId",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WalletTxnRecord"
-                  }
-                }
-              }
-            },
-            "description": "default response"
-          }
-        },
-        "tags": [
-          "WalletV1alpha1"
-        ]
-      }
-    },
-    "/apis/api.pudans.tolim.cn/v1alpha1/wallets": {
-      "get": {
-        "description": "List all AI wallets.",
-        "operationId": "listAiWallets",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "beforeId",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/WalletAdminRecord"
-                  }
-                }
-              }
-            },
-            "description": "default response"
-          }
-        },
-        "tags": [
-          "WalletAdminV1alpha1"
-        ]
-      }
-    },
-    "/apis/api.pudans.tolim.cn/v1alpha1/wallets/-/batch-adjust": {
-      "post": {
-        "description": "Adjust multiple user wallets from a CSV body.",
-        "operationId": "batchAdjustAiWallets",
-        "requestBody": {
-          "content": {
-            "text/csv": {
-              "schema": {
-                "type": "string"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "default": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/BatchAdjustResult"
-                }
-              }
-            },
-            "description": "default response"
-          }
-        },
-        "tags": [
-          "WalletAdminV1alpha1"
-        ]
-      }
-    },
-    "/apis/api.pudans.tolim.cn/v1alpha1/wallets/export": {
-      "get": {
-        "description": "Export AI wallets as CSV.",
-        "operationId": "exportAiWallets",
-        "parameters": [
-          {
-            "description": "Maximum rows (1-10000, default 5000).",
-            "in": "query",
-            "name": "limit",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "description": "Wallet CSV export."
-          }
-        },
-        "tags": [
-          "WalletAdminV1alpha1"
-        ]
-      }
-    },
-    "/apis/api.pudans.tolim.cn/v1alpha1/wallets/{userId}/adjust": {
-      "post": {
-        "description": "Grant or deduct points for a user wallet.",
-        "operationId": "adjustAiWallet",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "userId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/AdjustRequest"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "default": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletDetail"
-                }
-              }
-            },
-            "description": "default response"
-          }
-        },
-        "tags": [
-          "WalletAdminV1alpha1"
-        ]
-      }
-    },
-    "/apis/api.pudans.tolim.cn/v1alpha1/wallets/{userId}/freeze": {
-      "post": {
-        "description": "Freeze a user wallet.",
-        "operationId": "freezeAiWallet",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "userId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletDetail"
-                }
-              }
-            },
-            "description": "default response"
-          }
-        },
-        "tags": [
-          "WalletAdminV1alpha1"
-        ]
-      }
-    },
-    "/apis/api.pudans.tolim.cn/v1alpha1/wallets/{userId}/unfreeze": {
-      "post": {
-        "description": "Unfreeze a user wallet.",
-        "operationId": "unfreezeAiWallet",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "userId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "default": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/WalletDetail"
-                }
-              }
-            },
-            "description": "default response"
-          }
-        },
-        "tags": [
-          "WalletAdminV1alpha1"
-        ]
-      }
-    },
     "/apis/api.pudans.tolim.cn/v1alpha1/webhooks": {
       "get": {
         "description": "List Webhook",
@@ -14100,17 +14467,6 @@
           "value"
         ]
       },
-      "AdjustRequest": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number"
-          },
-          "requestId": {
-            "type": "string"
-          }
-        }
-      },
       "AiAgent": {
         "type": "object",
         "properties": {
@@ -14283,7 +14639,8 @@
             "type": "string"
           },
           "points": {
-            "type": "number"
+            "type": "number",
+            "description": "Standard-token units consumed by the request. The field name is kept for compatibility."
           },
           "provider": {
             "type": "string"
@@ -14465,7 +14822,8 @@
             }
           },
           "points": {
-            "type": "number"
+            "type": "number",
+            "description": "Standard-token units consumed by the request. The field name is kept for compatibility."
           },
           "provider": {
             "type": "string"
@@ -14785,6 +15143,682 @@
           "videoSeconds": {
             "type": "integer",
             "format": "int32"
+          }
+        }
+      },
+      "AiPlan": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/AiPlanSpec"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "kind",
+          "metadata"
+        ]
+      },
+      "AiPlanBinding": {
+        "type": "object",
+        "properties": {
+          "apiVersion": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/Metadata"
+          },
+          "spec": {
+            "$ref": "#/components/schemas/AiPlanBindingSpec"
+          }
+        },
+        "required": [
+          "apiVersion",
+          "kind",
+          "metadata"
+        ]
+      },
+      "AiPlanBindingBulkRequest": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "replaceExisting": {
+            "type": "boolean"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiPlanBindingSubject"
+            }
+          }
+        }
+      },
+      "AiPlanBindingBulkResult": {
+        "type": "object",
+        "properties": {
+          "bindings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiPlanBindingSummary"
+            }
+          },
+          "plan": {
+            "type": "string"
+          }
+        }
+      },
+      "AiPlanBindingList": {
+        "type": "object",
+        "properties": {
+          "first": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the first page."
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "Indicates whether current page has next page."
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "Indicates whether current page has previous page."
+          },
+          "items": {
+            "type": "array",
+            "description": "A chunk of items.",
+            "items": {
+              "$ref": "#/components/schemas/AiPlanBinding"
+            }
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the last page."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Page number, starts from 1. Empty results may report 0."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Size of each page. If not set or equal to 0, it means no pagination."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total elements."
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Indicates total pages."
+          }
+        },
+        "required": [
+          "first",
+          "hasNext",
+          "hasPrevious",
+          "items",
+          "last",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ]
+      },
+      "AiPlanBindingSpec": {
+        "type": "object",
+        "properties": {
+          "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "effectiveTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "plan": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subject": {
+            "$ref": "#/components/schemas/AiPlanBindingSubject"
+          }
+        },
+        "required": [
+          "plan",
+          "subject"
+        ]
+      },
+      "AiPlanBindingSubject": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "User",
+              "UserGroup"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "User uid for User subjects, or UserGroup metadata.name for UserGroup subjects."
+          }
+        },
+        "required": [
+          "kind",
+          "name"
+        ]
+      },
+      "AiPlanBindingSummary": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "User",
+              "UserGroup"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "plan": {
+            "type": "string"
+          },
+          "priority": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "subject": {
+            "type": "string"
+          }
+        }
+      },
+      "AiPlanList": {
+        "type": "object",
+        "properties": {
+          "first": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the first page."
+          },
+          "hasNext": {
+            "type": "boolean",
+            "description": "Indicates whether current page has next page."
+          },
+          "hasPrevious": {
+            "type": "boolean",
+            "description": "Indicates whether current page has previous page."
+          },
+          "items": {
+            "type": "array",
+            "description": "A chunk of items.",
+            "items": {
+              "$ref": "#/components/schemas/AiPlan"
+            }
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Indicates whether current page is the last page."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Page number, starts from 1. Empty results may report 0."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Size of each page. If not set or equal to 0, it means no pagination."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total elements."
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Indicates total pages."
+          }
+        },
+        "required": [
+          "first",
+          "hasNext",
+          "hasPrevious",
+          "items",
+          "last",
+          "page",
+          "size",
+          "total",
+          "totalPages"
+        ]
+      },
+      "AiPlanResolvedView": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "matchedBy": {
+            "type": "string",
+            "description": "Binding that matched, for example UserGroup/normal-users."
+          },
+          "plan": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "AiPlanSpec": {
+        "type": "object",
+        "properties": {
+          "access": {
+            "type": "object",
+            "properties": {
+              "features": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "CHAT",
+                    "KNOWLEDGE",
+                    "AGENT",
+                    "SUBAGENT"
+                  ]
+                }
+              },
+              "models": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "routeGroups": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "description": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "fallback": {
+            "type": "object",
+            "properties": {
+              "downgradeRouteGroup": {
+                "type": "string"
+              },
+              "onFiveHourExhausted": {
+                "type": "string",
+                "enum": [
+                  "DENY",
+                  "DOWNGRADE"
+                ]
+              }
+            }
+          },
+          "quota": {
+            "type": "object",
+            "properties": {
+              "fiveHour": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "description": "Standard-token units allowed per rolling 5-hour window."
+                  }
+                },
+                "required": [
+                  "limit"
+                ]
+              },
+              "weekly": {
+                "type": "object",
+                "properties": {
+                  "limit": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 1,
+                    "description": "Standard-token units allowed per weekly window."
+                  },
+                  "resetDayOfWeek": {
+                    "type": "string",
+                    "enum": [
+                      "MONDAY",
+                      "TUESDAY",
+                      "WEDNESDAY",
+                      "THURSDAY",
+                      "FRIDAY",
+                      "SATURDAY",
+                      "SUNDAY"
+                    ]
+                  },
+                  "resetHour": {
+                    "type": "integer",
+                    "format": "int32",
+                    "minimum": 0,
+                    "maximum": 23
+                  }
+                },
+                "required": [
+                  "limit"
+                ]
+              }
+            }
+          },
+          "rateLimit": {
+            "type": "object",
+            "properties": {
+              "maxConcurrency": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0
+              },
+              "maxRpm": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0
+              }
+            }
+          },
+          "toleranceUnits": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Standard-token units tolerated beyond the reserved amount at settlement."
+          },
+          "vouchers": {
+            "type": "object",
+            "properties": {
+              "fiveHour": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0,
+                "description": "5-hour reset vouchers granted per voucher period."
+              },
+              "period": {
+                "type": "string",
+                "enum": [
+                  "WEEKLY",
+                  "MONTHLY"
+                ]
+              },
+              "weekly": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0,
+                "description": "Weekly reset vouchers granted per voucher period."
+              }
+            }
+          }
+        },
+        "required": [
+          "displayName"
+        ]
+      },
+      "AiPlanSummary": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "matchedBy": {
+            "type": "string",
+            "description": "Binding that matched, for example UserGroup/normal-users."
+          },
+          "name": {
+            "type": "string"
+          }
+        }
+      },
+      "AiPlanUsageView": {
+        "type": "object",
+        "properties": {
+          "fiveHour": {
+            "$ref": "#/components/schemas/AiPlanWindowUsage"
+          },
+          "plan": {
+            "$ref": "#/components/schemas/AiPlanSummary"
+          },
+          "rateLimit": {
+            "type": "object",
+            "properties": {
+              "maxConcurrency": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0
+              },
+              "maxRpm": {
+                "type": "integer",
+                "format": "int32",
+                "minimum": 0
+              }
+            }
+          },
+          "vouchers": {
+            "$ref": "#/components/schemas/AiPlanVoucherBalance"
+          },
+          "weekly": {
+            "$ref": "#/components/schemas/AiPlanWindowUsage"
+          }
+        }
+      },
+      "AiPlanVoucherBalance": {
+        "type": "object",
+        "properties": {
+          "fiveHour": {
+            "$ref": "#/components/schemas/AiPlanVoucherCount"
+          },
+          "weekly": {
+            "$ref": "#/components/schemas/AiPlanVoucherCount"
+          }
+        }
+      },
+      "AiPlanVoucherCount": {
+        "type": "object",
+        "properties": {
+          "remaining": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "used": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AiPlanVoucherGrantRequest": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "groupNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FIVE_HOUR_RESET",
+              "WEEKLY_RESET"
+            ]
+          },
+          "userIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AiPlanVoucherGrantResult": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FIVE_HOUR_RESET",
+              "WEEKLY_RESET"
+            ]
+          },
+          "userIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "AiPlanVoucherUseRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "kind": {
+            "type": "string",
+            "description": "FIVE_HOUR_RESET or WEEKLY_RESET."
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "targetWindowKey": {
+            "type": "string"
+          },
+          "usedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "windowKeyAfter": {
+            "type": "string"
+          }
+        }
+      },
+      "AiPlanVoucherUseRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FIVE_HOUR_RESET",
+              "WEEKLY_RESET"
+            ]
+          },
+          "requestId": {
+            "type": "string"
+          }
+        }
+      },
+      "AiPlanVoucherUseResult": {
+        "type": "object",
+        "properties": {
+          "duplicate": {
+            "type": "boolean"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FIVE_HOUR_RESET",
+              "WEEKLY_RESET"
+            ]
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "targetWindowKey": {
+            "type": "string"
+          },
+          "usedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "windowKeyAfter": {
+            "type": "string"
+          }
+        }
+      },
+      "AiPlanWindowUsage": {
+        "type": "object",
+        "properties": {
+          "endsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Standard-token units allowed in the window."
+          },
+          "remaining": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Standard-token units still available in the window."
+          },
+          "reserved": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Standard-token units reserved by in-flight requests."
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "description": "ACTIVE when the window has started, IDLE when no usage is recorded."
+          },
+          "used": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Standard-token units consumed in the window."
           }
         }
       },
@@ -16146,32 +17180,6 @@
           },
           "totalBalance": {
             "type": "string"
-          }
-        }
-      },
-      "BatchAdjustResult": {
-        "type": "object",
-        "properties": {
-          "batchId": {
-            "type": "string"
-          },
-          "failed": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "rows": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/RowResult"
-            }
-          },
-          "succeeded": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
           }
         }
       },
@@ -18229,7 +19237,8 @@
             "type": "string"
           },
           "points": {
-            "type": "number"
+            "type": "number",
+            "description": "Standard-token units consumed."
           },
           "requests": {
             "type": "integer",
@@ -18858,7 +19867,8 @@
             "type": "string"
           },
           "points": {
-            "type": "number"
+            "type": "number",
+            "description": "Standard-token units consumed."
           },
           "requests": {
             "type": "integer",
@@ -19719,7 +20729,8 @@
             "type": "string"
           },
           "points": {
-            "type": "number"
+            "type": "number",
+            "description": "Standard-token units consumed."
           },
           "provider": {
             "type": "string"
@@ -19729,33 +20740,6 @@
             "format": "int64"
           },
           "status": {
-            "type": "string"
-          }
-        }
-      },
-      "RowResult": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number"
-          },
-          "balance": {
-            "type": "number"
-          },
-          "errorCode": {
-            "type": "string"
-          },
-          "errorMessage": {
-            "type": "string"
-          },
-          "row": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "status": {
-            "type": "string"
-          },
-          "userId": {
             "type": "string"
           }
         }
@@ -21127,174 +22111,6 @@
             }
           }
         ]
-      },
-      "WalletAdminRecord": {
-        "type": "object",
-        "properties": {
-          "balance": {
-            "type": "number"
-          },
-          "dailyLimit": {
-            "type": "number"
-          },
-          "frozen": {
-            "type": "number"
-          },
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "status": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalConsumed": {
-            "type": "number"
-          },
-          "totalGranted": {
-            "type": "number"
-          },
-          "userId": {
-            "type": "string"
-          }
-        }
-      },
-      "WalletAdminTxnRecord": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number"
-          },
-          "balanceAfter": {
-            "type": "number"
-          },
-          "billingSource": {
-            "type": "string"
-          },
-          "cacheTokens": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "idempotencyKey": {
-            "type": "string"
-          },
-          "inputTokens": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelCode": {
-            "type": "string"
-          },
-          "outputTokens": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "providerAccount": {
-            "type": "string"
-          },
-          "requestId": {
-            "type": "string"
-          },
-          "tier": {
-            "type": "string"
-          },
-          "traceId": {
-            "type": "string"
-          },
-          "txnType": {
-            "type": "string"
-          },
-          "userId": {
-            "type": "string"
-          }
-        }
-      },
-      "WalletDetail": {
-        "type": "object",
-        "properties": {
-          "available": {
-            "type": "number"
-          },
-          "balance": {
-            "type": "number"
-          },
-          "dailyLimit": {
-            "type": "number"
-          },
-          "frozen": {
-            "type": "number"
-          },
-          "status": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalConsumed": {
-            "type": "number"
-          },
-          "totalGranted": {
-            "type": "number"
-          }
-        }
-      },
-      "WalletTxnRecord": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number"
-          },
-          "balanceAfter": {
-            "type": "number"
-          },
-          "billingSource": {
-            "type": "string"
-          },
-          "cacheTokens": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "inputTokens": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "modelCode": {
-            "type": "string"
-          },
-          "outputTokens": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "providerAccount": {
-            "type": "string"
-          },
-          "requestId": {
-            "type": "string"
-          },
-          "tier": {
-            "type": "string"
-          },
-          "traceId": {
-            "type": "string"
-          },
-          "txnType": {
-            "type": "string"
-          }
-        }
       },
       "Webhook": {
         "type": "object",
