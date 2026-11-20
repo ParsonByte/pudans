@@ -15,7 +15,7 @@ import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
 import cn.tolim.pudans.core.ai.embedding.EmbeddingBatch;
 import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbChunkRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbEmbeddingStore;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,7 +36,7 @@ class AiChunkEmbeddingServiceTest {
     AiEmbeddingService embeddingService;
 
     @Mock
-    AiKbChunkRepository chunkRepository;
+    AiKbEmbeddingStore embeddingStore;
 
     @InjectMocks
     AiChunkEmbeddingService service;
@@ -50,14 +50,14 @@ class AiChunkEmbeddingServiceTest {
         when(embeddingService.embed(List.of("first", "second"), "kb-model"))
                 .thenReturn(Mono.just(new EmbeddingBatch(
                         "text-embedding-3-small", 2, List.of(firstVector, secondVector))));
-        when(chunkRepository.updateEmbedding(1L, firstVector)).thenReturn(Mono.just(true));
-        when(chunkRepository.updateEmbedding(2L, secondVector)).thenReturn(Mono.just(true));
+        when(embeddingStore.updateEmbedding(1L, firstVector)).thenReturn(Mono.empty());
+        when(embeddingStore.updateEmbedding(2L, secondVector)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.embed(List.of(first, second), "kb-model")).verifyComplete();
 
-        var inOrder = inOrder(chunkRepository);
-        inOrder.verify(chunkRepository).updateEmbedding(1L, firstVector);
-        inOrder.verify(chunkRepository).updateEmbedding(2L, secondVector);
+        var inOrder = inOrder(embeddingStore);
+        inOrder.verify(embeddingStore).updateEmbedding(1L, firstVector);
+        inOrder.verify(embeddingStore).updateEmbedding(2L, secondVector);
     }
 
     @Test
@@ -66,7 +66,7 @@ class AiChunkEmbeddingServiceTest {
         when(settingService.spec()).thenReturn(Mono.just(setting("setting-model")));
         when(embeddingService.embed(List.of("hello"), "setting-model"))
                 .thenReturn(Mono.just(new EmbeddingBatch("text-embedding-3-small", 2, List.of(vector))));
-        when(chunkRepository.updateEmbedding(1L, vector)).thenReturn(Mono.just(true));
+        when(embeddingStore.updateEmbedding(1L, vector)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.embed(List.of(chunk(1L, "hello")), " ")).verifyComplete();
 
@@ -81,7 +81,7 @@ class AiChunkEmbeddingServiceTest {
 
         StepVerifier.create(service.embed(List.of(chunk(1L, "hello")), "kb-model")).verifyComplete();
 
-        verifyNoInteractions(chunkRepository);
+        verifyNoInteractions(embeddingStore);
     }
 
     @Test
@@ -90,7 +90,7 @@ class AiChunkEmbeddingServiceTest {
 
         StepVerifier.create(service.embed(List.of(chunk(1L, "hello")), null)).verifyComplete();
 
-        verifyNoInteractions(embeddingService, chunkRepository);
+        verifyNoInteractions(embeddingService, embeddingStore);
     }
 
     @Test
@@ -99,7 +99,7 @@ class AiChunkEmbeddingServiceTest {
 
         StepVerifier.create(service.embed(List.of(chunk(1L, "hello")), null)).verifyComplete();
 
-        verifyNoInteractions(embeddingService, chunkRepository);
+        verifyNoInteractions(embeddingService, embeddingStore);
     }
 
     @Test
@@ -115,7 +115,7 @@ class AiChunkEmbeddingServiceTest {
                 })
                 .verify();
 
-        verifyNoInteractions(chunkRepository);
+        verifyNoInteractions(embeddingStore);
     }
 
     @Test
@@ -127,7 +127,7 @@ class AiChunkEmbeddingServiceTest {
                 })
                 .verify();
 
-        verifyNoInteractions(embeddingService, chunkRepository);
+        verifyNoInteractions(embeddingService, embeddingStore);
     }
 
     @Test
@@ -137,12 +137,12 @@ class AiChunkEmbeddingServiceTest {
         var vector = new float[] {1f, 2f};
         when(embeddingService.embed(List.of("hello"), "kb-model"))
                 .thenReturn(Mono.just(new EmbeddingBatch("text-embedding-3-small", 2, List.of(vector))));
-        when(chunkRepository.updateEmbedding(2L, vector)).thenReturn(Mono.just(true));
+        when(embeddingStore.updateEmbedding(2L, vector)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.embed(List.of(blank, content), "kb-model")).verifyComplete();
 
-        verify(chunkRepository, never()).updateEmbedding(eq(1L), any());
-        verify(chunkRepository).updateEmbedding(2L, vector);
+        verify(embeddingStore, never()).updateEmbedding(eq(1L), any());
+        verify(embeddingStore).updateEmbedding(2L, vector);
     }
 
     @Test
@@ -158,14 +158,14 @@ class AiChunkEmbeddingServiceTest {
                 })
                 .verify();
 
-        verifyNoInteractions(chunkRepository);
+        verifyNoInteractions(embeddingStore);
     }
 
     @Test
     void ignoresEmptyChunkLists() {
         StepVerifier.create(service.embed(List.of(), "kb-model")).verifyComplete();
 
-        verifyNoInteractions(embeddingService, chunkRepository);
+        verifyNoInteractions(embeddingService, embeddingStore);
     }
 
     private static KnowledgeBaseChunk chunk(Long id, String content) {

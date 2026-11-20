@@ -59,11 +59,12 @@ public class AiKbChunkRepository {
                 .all();
     }
 
-    public Flux<RetrievalCandidate> searchVector(List<String> kbNames, float[] queryVector, int limit) {
+    public Flux<VectorCandidate> searchVectorCandidates(List<String> kbNames, float[] queryVector, int limit) {
         return databaseClient.sql("""
                         WITH query_vector AS (SELECT CAST(:queryVector AS vector) AS embedding)
                         SELECT c.id, c.document_id, c.kb_name, d.file_name, c.content, c.page_no, c.heading_path,
-                               1 - (c.embedding <=> query_vector.embedding) AS score
+                               1 - (c.embedding <=> query_vector.embedding) AS score,
+                               CAST(c.embedding AS text) AS embedding
                         FROM ai_kb_chunk c
                         JOIN ai_kb_document d ON d.id = c.document_id
                         CROSS JOIN query_vector
@@ -76,7 +77,8 @@ public class AiKbChunkRepository {
                 .bind("kbNames", kbNames.toArray(String[]::new))
                 .bind("queryVector", VectorCodec.format(queryVector))
                 .bind("limit", limit)
-                .map((row, metadata) -> candidate(row))
+                .map((row, metadata) -> new VectorCandidate(
+                        candidate(row), VectorCodec.parse(row.get("embedding", String.class))))
                 .all();
     }
 
@@ -115,6 +117,8 @@ public class AiKbChunkRepository {
                 })
                 .one();
     }
+
+    public record VectorCandidate(RetrievalCandidate candidate, float[] embedding) {}
 
     private static long requiredLong(Row row, String column) {
         var value = row.get(column, Long.class);

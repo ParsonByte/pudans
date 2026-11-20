@@ -6,8 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -18,7 +16,9 @@ import cn.tolim.pudans.core.ai.rerank.AiRerankService;
 import cn.tolim.pudans.core.ai.rerank.RerankResult;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbChunkRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbEmbeddingStore;
 import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbQueryLogRepository;
+import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
 import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +39,9 @@ class KnowledgeBaseRetrievalServiceTest {
     AiKbChunkRepository chunkRepository;
 
     @Mock
+    AiKbEmbeddingStore embeddingStore;
+
+    @Mock
     AiKbQueryLogRepository queryLogRepository;
 
     @Mock
@@ -50,6 +53,7 @@ class KnowledgeBaseRetrievalServiceTest {
     void setUp() {
         service = new KnowledgeBaseRetrievalService(
                 chunkRepository,
+                embeddingStore,
                 queryLogRepository,
                 new HybridRetrievalService(),
                 new KnowledgeBaseAcl(),
@@ -73,7 +77,7 @@ class KnowledgeBaseRetrievalServiceTest {
                 })
                 .verifyComplete();
 
-        verify(chunkRepository, never()).searchVector(anyList(), any(float[].class), anyInt());
+        verifyNoInteractions(embeddingStore);
         verifyNoInteractions(rerankService);
         var queryLogCaptor = ArgumentCaptor.forClass(KnowledgeBaseQueryLog.class);
         verify(queryLogRepository).insert(queryLogCaptor.capture());
@@ -111,8 +115,8 @@ class KnowledgeBaseRetrievalServiceTest {
         var readable = knowledgeBase("kb-a", KnowledgeBase.Visibility.COMPANY, "owner", "dept-a");
         when(chunkRepository.searchKeyword(List.of("kb-a"), "安装", 50))
                 .thenReturn(Flux.just(candidate(1, 0.9, "关键词命中")));
-        when(chunkRepository.searchVector(eq(List.of("kb-a")), any(float[].class), eq(50)))
-                .thenReturn(Flux.just(candidate(2, 0.8, "向量命中")));
+        when(embeddingStore.searchCandidates(any(EmbeddingSearchRequest.class)))
+                .thenReturn(Mono.just(List.of(candidate(2, 0.8, "向量命中"))));
         when(queryLogRepository.insert(any())).thenReturn(Mono.just(1L));
 
         StepVerifier.create(service.retrieve(request(List.of(readable), new float[] {0.1f, 0.2f})))

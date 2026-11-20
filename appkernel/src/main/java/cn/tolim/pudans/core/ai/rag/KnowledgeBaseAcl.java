@@ -12,10 +12,16 @@ public class KnowledgeBaseAcl {
         if (knowledgeBase == null || knowledgeBase.getSpec() == null) {
             return false;
         }
-        var spec = knowledgeBase.getSpec();
-        if (spec.getStatus() == KnowledgeBase.BaseStatus.DISABLED) {
+        return knowledgeBase.getSpec().getStatus() != KnowledgeBase.BaseStatus.DISABLED
+                && canView(knowledgeBase, userId, roleNames, deptId);
+    }
+
+    // 管理界面需要看到已停用的知识库，以便重新启用。
+    public boolean canView(KnowledgeBase knowledgeBase, String userId, Set<String> roleNames, String deptId) {
+        if (knowledgeBase == null || knowledgeBase.getSpec() == null) {
             return false;
         }
+        var spec = knowledgeBase.getSpec();
         if (spec.getVisibility() == KnowledgeBase.Visibility.COMPANY) {
             return true;
         }

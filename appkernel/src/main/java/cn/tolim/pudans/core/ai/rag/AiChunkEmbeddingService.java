@@ -4,7 +4,7 @@ import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
 import cn.tolim.pudans.core.ai.embedding.EmbeddingBatch;
 import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbChunkRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbEmbeddingStore;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ public class AiChunkEmbeddingService implements ChunkEmbeddingService {
 
     private final AiEmbeddingService embeddingService;
 
-    private final AiKbChunkRepository chunkRepository;
+    private final AiKbEmbeddingStore embeddingStore;
 
     @Override
     public Mono<Void> embed(List<KnowledgeBaseChunk> chunks, String embeddingModel) {
@@ -79,7 +79,7 @@ public class AiChunkEmbeddingService implements ChunkEmbeddingService {
             return Mono.error(new IllegalStateException("嵌入向量数量与分块数量不一致。"));
         }
         return Flux.range(0, chunks.size())
-                .concatMap(index -> chunkRepository.updateEmbedding(
+                .concatMap(index -> embeddingStore.updateEmbedding(
                         chunks.get(index).getId(), batch.vectors().get(index)))
                 .then();
     }

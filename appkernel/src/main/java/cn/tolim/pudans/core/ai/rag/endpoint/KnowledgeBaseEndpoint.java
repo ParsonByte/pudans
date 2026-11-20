@@ -195,14 +195,14 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> list(ServerRequest request) {
         return context().flatMap(context -> managementService
-                .listReadable(context.uid(), context.roles(), null)
+                .listVisible(context.uid(), context.roles(), null)
                 .collectList()
                 .flatMap(items -> ServerResponse.ok().bodyValue(new ListResult<KnowledgeBase>(items))));
     }
 
     private Mono<ServerResponse> detail(ServerRequest request) {
         return context().flatMap(context -> managementService
-                .findReadable(request.pathVariable("name"), context.uid(), context.roles(), null)
+                .findVisible(request.pathVariable("name"), context.uid(), context.roles(), null)
                 .flatMap(knowledgeBase -> ServerResponse.ok().bodyValue(knowledgeBase)));
     }
 
