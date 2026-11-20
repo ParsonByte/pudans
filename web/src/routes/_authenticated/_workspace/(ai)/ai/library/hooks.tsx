@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AiConsolePage } from "@/modules/workspace/ai";
+import { AiHooksView } from "@/modules/workspace/ai/library/hooks";
 
 export const Route = createFileRoute("/_authenticated/_workspace/(ai)/ai/library/hooks")({
-  component: AiConsolePage,
+  component: AiHooksView,
 });

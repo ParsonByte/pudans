@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AiConsolePage } from "@/modules/workspace/ai";
+import { AiEnvironmentVariablesView } from "@/modules/workspace/ai/library/environment-variables";
 
 export const Route = createFileRoute(
   "/_authenticated/_workspace/(ai)/ai/library/environment-variables",
 )({
-  component: AiConsolePage,
+  component: AiEnvironmentVariablesView,
 });
