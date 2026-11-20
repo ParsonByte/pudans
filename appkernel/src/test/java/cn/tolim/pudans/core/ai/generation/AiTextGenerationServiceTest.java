@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.ai.generation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -17,8 +18,7 @@ import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
-import cn.tolim.pudans.core.ai.provider.AiProviderAdapter;
-import cn.tolim.pudans.core.ai.provider.AiProviderAdapterRegistry;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
 import cn.tolim.pudans.core.ai.routing.RouteCandidateService;
 import cn.tolim.pudans.core.ai.routing.RouteEngine;
 import cn.tolim.pudans.core.ai.routing.RouteOutcome;
@@ -55,16 +55,14 @@ class AiTextGenerationServiceTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiProviderAdapter adapter;
+    LangChain4jChatService chatService;
 
     private AiTextGenerationService service;
 
     @BeforeEach
     void setUp() {
-        when(adapter.protocol()).thenReturn(AiProvider.Protocol.OPENAI_CHAT);
-        var adapterRegistry = new AiProviderAdapterRegistry(List.of(adapter));
         service = new AiTextGenerationService(
-                routeGroupService, candidateService, routeEngine, adapterRegistry, client, new AiProperties());
+                routeGroupService, candidateService, routeEngine, chatService, client, new AiProperties());
     }
 
     @Test
@@ -76,7 +74,7 @@ class AiTextGenerationServiceTest {
         when(candidateService.expand(group)).thenReturn(Mono.just(List.of(seat)));
         when(routeEngine.route(any(), anyList())).thenReturn(plan(selection, List.of()));
         stubResources("provider-a", "account-a", "model-a", "gpt-x");
-        when(adapter.chat(any(), any(), any(), any())).thenReturn(Mono.just(response("hello")));
+        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.just(response("hello")));
 
         StepVerifier.create(service.generate(new GenerationRequest("group-a", "system", "user", 0, 0.2)))
                 .assertNext(result -> {
@@ -88,7 +86,7 @@ class AiTextGenerationServiceTest {
                 .verifyComplete();
 
         var irCaptor = ArgumentCaptor.forClass(AiChatIr.class);
-        verify(adapter).chat(any(), any(), any(), irCaptor.capture());
+        verify(chatService).chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), irCaptor.capture());
         var ir = irCaptor.getValue();
         assertThat(ir.stream()).isFalse();
         assertThat(ir.requestParams().maxTokens()).isEqualTo(1024);
@@ -117,7 +115,7 @@ class AiTextGenerationServiceTest {
                 .thenReturn(plan(firstSelection, List.of(RouteSelection.of(second))));
         stubResources("provider-a", "account-a", "model-a", "gpt-a");
         stubResources("provider-b", "account-b", "model-b", "gpt-b");
-        when(adapter.chat(any(), any(), any(), any()))
+        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(new IllegalStateException("boom")), Mono.just(response("fallback")));
 
         StepVerifier.create(service.generate(new GenerationRequest("group-a", "system", "user", 256, 0.1)))
@@ -139,7 +137,7 @@ class AiTextGenerationServiceTest {
         when(candidateService.expand(group)).thenReturn(Mono.just(List.of(seat)));
         when(routeEngine.route(any(), anyList())).thenReturn(plan(selection, List.of()));
         stubResources("provider-a", "account-a", "model-a", "gpt-a");
-        when(adapter.chat(any(), any(), any(), any())).thenReturn(Mono.error(new IllegalStateException("boom")));
+        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.error(new IllegalStateException("boom")));
 
         StepVerifier.create(service.generate(new GenerationRequest("group-a", "system", "user", 128, 0.1)))
                 .expectErrorSatisfies(error -> {

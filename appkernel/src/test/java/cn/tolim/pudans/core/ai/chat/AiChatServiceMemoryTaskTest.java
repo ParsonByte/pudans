@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -15,15 +17,20 @@ import cn.tolim.pudans.contract.core.extension.ai.AiModel;
 import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.contract.core.extension.ai.AiHook;
 import cn.tolim.pudans.core.ai.config.AiChatModeService;
 import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.conversation.AiConversationService;
+import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
+import cn.tolim.pudans.core.ai.library.hook.HookService;
 import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayEvent;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayMeta;
+import cn.tolim.pudans.core.ai.gateway.AiGatewayInvocation;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayResult;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
+import cn.tolim.pudans.core.ai.gateway.AiStreamEvent;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
@@ -35,6 +42,7 @@ import cn.tolim.pudans.core.storage.StorageService;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -43,6 +51,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
@@ -90,6 +99,18 @@ class AiChatServiceMemoryTaskTest {
     @Mock
     StorageService storageService;
 
+    @Mock
+    AiAgentContextService agentContextService;
+
+    @Mock
+    AiChatToolService toolService;
+
+    @Mock
+    SlashCommandService slashCommandService;
+
+    @Mock
+    HookService hookService;
+
     private AiChatService service;
 
     @BeforeEach
@@ -106,7 +127,11 @@ class AiChatServiceMemoryTaskTest {
                 memoryContextBuilder,
                 gatewayService,
                 memoryTaskScheduler,
-                storageService);
+                storageService,
+                agentContextService,
+                toolService,
+                slashCommandService,
+                hookService);
     }
 
     @Test
@@ -114,7 +139,7 @@ class AiChatServiceMemoryTaskTest {
         stubPrepare(true);
         when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
         when(conversationService.appendAssistantMessage(
-                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any()))
+                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
 
@@ -152,7 +177,7 @@ class AiChatServiceMemoryTaskTest {
         stubPrepare(false);
         when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
         when(conversationService.appendAssistantMessage(
-                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any()))
+                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
 
         StepVerifier.create(service.complete(command()))
@@ -167,7 +192,7 @@ class AiChatServiceMemoryTaskTest {
         stubPrepare(true);
         when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
         when(conversationService.appendAssistantMessage(
-                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any()))
+                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong()))
                 .thenReturn(Mono.error(new IllegalStateException("队列不可用")));
@@ -177,6 +202,121 @@ class AiChatServiceMemoryTaskTest {
                 .verifyComplete();
 
         verify(memoryTaskScheduler).enqueueExtraction(any(), anyString(), anyLong());
+    }
+
+    @Test
+    void expandsSlashCommandsBeforeCallingTheGateway() {
+        stubPrepare(true);
+        when(slashCommandService.resolve("agent-a", "/review 重点"))
+                .thenReturn(Mono.just(new SlashCommandService.ResolvedSlashCommand("review", "评审这段内容")));
+        when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
+        when(conversationService.appendAssistantMessage(
+                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
+                .thenReturn(Mono.just(assistantMessage()));
+        when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
+
+        var invocationCaptor = ArgumentCaptor.forClass(AiGatewayInvocation.class);
+        var contentCaptor = ArgumentCaptor.forClass(String.class);
+
+        StepVerifier.create(service.complete(commandWith("review", "重点")))
+                .expectNextCount(1)
+                .verifyComplete();
+
+        verify(gatewayService).complete(invocationCaptor.capture());
+        var last = invocationCaptor.getValue().ir().messages().getLast();
+        assertThat(last.parts())
+                .anySatisfy(part -> assertThat(((AiContentPart.Text) part).text()).isEqualTo("评审这段内容"));
+        verify(conversationService)
+                .appendUserMessage(any(), anyInt(), anyInt(), contentCaptor.capture(), anyString(), any());
+        assertThat(contentCaptor.getValue()).isEqualTo("评审这段内容");
+    }
+
+    @Test
+    void executesToolCallsAndRepeatsTheGatewayRound() {
+        stubPrepare(true);
+        when(gatewayService.complete(any()))
+                .thenReturn(Mono.just(gatewayResultWithToolCall()))
+                .thenReturn(Mono.just(gatewayResult()));
+        when(toolService.execute(anyString(), any(), any())).thenReturn(Mono.just(toolOutcome()));
+        when(conversationService.appendAssistantMessage(
+                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
+                .thenReturn(Mono.just(assistantMessage()));
+        when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
+        var metadataCaptor = ArgumentCaptor.forClass(JsonNode.class);
+
+        StepVerifier.create(service.complete(command()))
+                .assertNext(result -> assertThat(result.content()).isEqualTo("先查一下\n\n回答"))
+                .verifyComplete();
+
+        verify(gatewayService, times(2)).complete(any());
+        verify(conversationService).appendAssistantMessage(
+                any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), metadataCaptor.capture());
+        var metadata = metadataCaptor.getValue();
+        assertThat(metadata.path("toolCalls").get(0).path("name").asText()).isEqualTo("skill");
+        assertThat(metadata.path("toolResults").get(0).path("output").asText()).isEqualTo("技能内容");
+    }
+
+    @Test
+    void streamEmitsToolCallAndToolResultBeforeTheFinalAnswer() {
+        stubPrepare(true);
+        when(gatewayService.stream(any()))
+                .thenReturn(
+                        Flux.just(
+                                new AiGatewayEvent.Meta(gatewayMeta()),
+                                new AiGatewayEvent.Delta(new AiStreamEvent(
+                                        null,
+                                        null,
+                                        new AiStreamEvent.ToolCallDelta(0, "c1", "skill", "{\"name\":\"s1\"}"),
+                                        null,
+                                        null)),
+                                new AiGatewayEvent.Done("", "tool_calls", false)),
+                        Flux.just(
+                                new AiGatewayEvent.Meta(gatewayMeta()),
+                                new AiGatewayEvent.Delta(new AiStreamEvent("最终答案", null, null, null, null)),
+                                new AiGatewayEvent.Done("21", "stop", false)));
+        when(toolService.execute(anyString(), any(), any())).thenReturn(Mono.just(toolOutcome()));
+        when(conversationService.appendAssistantMessage(
+                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
+                .thenReturn(Mono.just(assistantMessage()));
+        when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
+
+        StepVerifier.create(service.stream(command()).collectList())
+                .assertNext(events -> {
+                    assertThat(events).anyMatch(AiChatStreamEvent.ToolCall.class::isInstance);
+                    assertThat(events).anyMatch(AiChatStreamEvent.ToolResult.class::isInstance);
+                    assertThat(events).anyMatch(AiChatStreamEvent.Done.class::isInstance);
+                })
+                .verifyComplete();
+
+        verify(gatewayService, times(2)).stream(any());
+    }
+
+    @Test
+    void regenerateDeletesTheLastAssistantMessageWithoutAppendingAUserMessage() {
+        when(settingService.spec()).thenReturn(Mono.just(setting(true)));
+        when(chatModeService.get("fast")).thenReturn(Mono.just(mode()));
+        when(conversationService.requireOwned(7L, "user-1")).thenReturn(Mono.just(conversation()));
+        when(teamService.requireAgent("agent-a", "user-1")).thenReturn(Mono.just(agent()));
+        when(conversationService.deleteLastAssistant(any())).thenReturn(Mono.empty());
+        when(conversationService.history(any(), anyInt())).thenReturn(Flux.just(userMessage()));
+        when(memoryContextBuilder.build(any(), anyString(), anyInt(), anyInt())).thenReturn(Mono.empty());
+        when(agentContextService.build(any())).thenReturn(Mono.just(new AiAgentContextService.AgentContext(
+                "", List.of(), List.of(), List.of(), List.of(), Map.of())));
+        when(hookService.dispatch(anyString(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
+        when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
+        when(conversationService.appendAssistantMessage(
+                        any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
+                .thenReturn(Mono.just(assistantMessage()));
+        when(conversationService.markPending(any(), anyInt())).thenReturn(Mono.just(2));
+        when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
+
+        StepVerifier.create(service.complete(regenerateCommand()))
+                .expectNextCount(1)
+                .verifyComplete();
+
+        verify(conversationService).deleteLastAssistant(any());
+        verify(conversationService, never())
+                .appendUserMessage(any(), anyInt(), anyInt(), anyString(), anyString(), any());
     }
 
     private void stubPrepare(boolean extractionEnabled) {
@@ -189,6 +329,9 @@ class AiChatServiceMemoryTaskTest {
                         any(), anyInt(), anyInt(), anyString(), anyString(), any()))
                 .thenReturn(Mono.just(userMessage()));
         when(conversationService.markPending(any(), anyInt())).thenReturn(Mono.just(2));
+        when(agentContextService.build(any())).thenReturn(Mono.just(new AiAgentContextService.AgentContext(
+                "", List.of(), List.of(), List.of(), List.of(), Map.of())));
+        when(hookService.dispatch(anyString(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
     }
 
     private static AiChatCommand command() {
@@ -208,7 +351,93 @@ class AiChatServiceMemoryTaskTest {
                         null,
                         null,
                         null,
-                        null));
+                        null,
+                        null,
+                        null,
+                        null,
+                        false));
+    }
+
+    private static AiChatCommand commandWith(String command, String input) {
+        return new AiChatCommand(
+                "user-1",
+                Set.of("user"),
+                null,
+                new AiChatCompletionRequest(
+                        null,
+                        "fast",
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of(new AiChatCompletionRequest.Message("user", "原始内容")),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        command,
+                        input,
+                        null,
+                        false));
+    }
+
+    private static AiChatCommand regenerateCommand() {
+        return new AiChatCommand(
+                "user-1",
+                Set.of("user"),
+                null,
+                new AiChatCompletionRequest(
+                        7L,
+                        "fast",
+                        null,
+                        null,
+                        null,
+                        null,
+                        List.of(new AiChatCompletionRequest.Message("user", "你好")),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        true));
+    }
+
+    private static AiGatewayResult gatewayResultWithToolCall() {
+        var arguments = cn.tolim.pudans.contract.infra.utils.JsonUtils.mapper()
+                .createObjectNode()
+                .put("name", "s1");
+        return new AiGatewayResult(
+                new AiChatResponse(
+                        "resp-1",
+                        "gpt-test",
+                        new AiChatMessage(
+                                "assistant",
+                                List.of(
+                                        new AiContentPart.Text("先查一下", null),
+                                        new AiContentPart.ToolCall("c1", "skill", arguments, null))),
+                        new AiTokenUsage(1, 2, null, null),
+                        "tool_calls"),
+                gatewayMeta(),
+                new AiTokenUsage(1, 2, null, null),
+                BigDecimal.ONE,
+                "PROVIDER");
+    }
+
+    private static AiChatToolService.ToolOutcome toolOutcome() {
+        return new AiChatToolService.ToolOutcome(
+                "c1",
+                "skill",
+                null,
+                cn.tolim.pudans.contract.infra.utils.JsonUtils.mapper()
+                        .createObjectNode()
+                        .put("name", "s1"),
+                "技能内容",
+                false,
+                5L);
     }
 
     private static AiSetting.Spec setting(boolean extractionEnabled) {

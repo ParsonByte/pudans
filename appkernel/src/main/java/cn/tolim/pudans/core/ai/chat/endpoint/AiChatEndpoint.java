@@ -276,6 +276,10 @@ public class AiChatEndpoint implements CustomEndpoint {
                 .onErrorMap(
                         org.springframework.core.codec.DecodingException.class,
                         error -> new ApiException(
+                                HttpStatus.BAD_REQUEST, CODE_BODY_INVALID, "请求体格式不正确。"))
+                .onErrorMap(
+                        org.springframework.web.server.ServerWebInputException.class,
+                        error -> new ApiException(
                                 HttpStatus.BAD_REQUEST, CODE_BODY_INVALID, "请求体格式不正确。"));
     }
 
@@ -291,6 +295,10 @@ public class AiChatEndpoint implements CustomEndpoint {
             case AiChatStreamEvent.Meta meta -> event("meta", metaJson(meta));
             case AiChatStreamEvent.Delta delta -> event("delta", deltaJson(delta));
             case AiChatStreamEvent.CitationEvent citation -> event("citation", citationJson(citation));
+            case AiChatStreamEvent.ToolCall toolCall -> event("tool_call", toolCallJson(toolCall));
+            case AiChatStreamEvent.ToolResult toolResult -> event("tool_result", toolResultJson(toolResult));
+            case AiChatStreamEvent.Artifact artifact -> event("artifact", artifactJson(artifact));
+            case AiChatStreamEvent.Stage stage -> event("stage", stageJson(stage));
             case AiChatStreamEvent.Usage usage -> event("usage", usageJson(usage));
             case AiChatStreamEvent.Done done -> event("done", doneJson(done));
             case AiChatStreamEvent.Error error -> event("error", errorJson(error));
@@ -334,6 +342,50 @@ public class AiChatEndpoint implements CustomEndpoint {
         put(node, "headingPath", citation.headingPath());
         node.put("score", citation.score());
         put(node, "snippet", citation.snippet());
+        return node;
+    }
+
+    private ObjectNode toolCallJson(AiChatStreamEvent.ToolCall event) {
+        var node = mapper.createObjectNode();
+        put(node, "id", event.id());
+        put(node, "name", event.name());
+        put(node, "server", event.server());
+        if (event.arguments() != null) {
+            node.set("arguments", event.arguments());
+        }
+        return node;
+    }
+
+    private ObjectNode toolResultJson(AiChatStreamEvent.ToolResult event) {
+        var node = mapper.createObjectNode();
+        put(node, "id", event.id());
+        put(node, "name", event.name());
+        put(node, "output", event.output());
+        node.put("isError", event.isError());
+        node.put("durationMs", event.durationMs());
+        return node;
+    }
+
+    private ObjectNode artifactJson(AiChatStreamEvent.Artifact event) {
+        var node = mapper.createObjectNode();
+        put(node, "kind", event.kind());
+        put(node, "fileId", event.fileId());
+        put(node, "name", event.name());
+        put(node, "mimeType", event.mimeType());
+        if (event.size() != null) {
+            node.put("size", event.size());
+        }
+        put(node, "url", event.url());
+        if (event.progress() != null) {
+            node.put("progress", event.progress());
+        }
+        return node;
+    }
+
+    private ObjectNode stageJson(AiChatStreamEvent.Stage event) {
+        var node = mapper.createObjectNode();
+        put(node, "stage", event.stage());
+        put(node, "detail", event.detail());
         return node;
     }
 
