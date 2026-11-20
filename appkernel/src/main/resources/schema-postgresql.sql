@@ -559,6 +559,24 @@ CREATE INDEX IF NOT EXISTS idx_ai_memory_gen_log_memory ON ai_memory_generation_
 @
 CREATE INDEX IF NOT EXISTS idx_ai_memory_gen_log_scope ON ai_memory_generation_log (team_id, agent_id, created_at DESC);
 @
+-- 记忆 Prompt 操作日志
+CREATE TABLE IF NOT EXISTS ai_memory_prompt_log (
+    id BIGSERIAL PRIMARY KEY,
+    prompt_id VARCHAR(128) NOT NULL,
+    version INT,
+    action VARCHAR(16) NOT NULL,
+    target_type VARCHAR(16),
+    team VARCHAR(128),
+    agent VARCHAR(128),
+    layer VARCHAR(8),
+    actor VARCHAR(128),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_memory_prompt_log_prompt ON ai_memory_prompt_log (prompt_id, id DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_memory_prompt_log_created ON ai_memory_prompt_log (created_at DESC, id DESC);
+@
 -- 用户更正/删除申请
 CREATE TABLE IF NOT EXISTS ai_memory_request (
     id BIGSERIAL PRIMARY KEY,
@@ -750,4 +768,42 @@ LEFT JOIN LATERAL jsonb_array_elements(
     COALESCE(convert_from(e.data, 'UTF8')::jsonb -> 'spec' -> 'acl', '[]'::jsonb)
 ) AS a ON TRUE
 WHERE e.name LIKE '/registry/pudans.tolim.cn/knowledgebases/%';
+@
+-- Agent 运行时实例
+CREATE TABLE IF NOT EXISTS ai_agent_runtime (
+    agent_name VARCHAR(255) PRIMARY KEY,
+    provider VARCHAR(32) NOT NULL,
+    sandbox_id VARCHAR(255),
+    state VARCHAR(32) NOT NULL,
+    image VARCHAR(512),
+    entrypoint TEXT,
+    cpu DOUBLE PRECISION,
+    memory_mb INTEGER,
+    timeout_seconds INTEGER,
+    endpoint VARCHAR(1024),
+    last_error TEXT,
+    config JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_active_at TIMESTAMPTZ
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_agent_runtime_state ON ai_agent_runtime (state);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_agent_runtime_updated ON ai_agent_runtime (updated_at DESC, agent_name);
+@
+-- 网关尝试轨迹与调用密钥归因
+ALTER TABLE ai_chat_request ADD COLUMN IF NOT EXISTS attempts JSONB;
+@
+ALTER TABLE ai_chat_request ADD COLUMN IF NOT EXISTS caller_key VARCHAR(128);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_chat_request_caller_key ON ai_chat_request (caller_key, created_at DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_chat_request_created ON ai_chat_request (created_at DESC, id DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_chat_request_conversation ON ai_chat_request (conversation_id, created_at DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_model_request_created ON ai_model_request (created_at DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_conversation_activity ON ai_conversation (last_activity_at DESC, id DESC);
 @
