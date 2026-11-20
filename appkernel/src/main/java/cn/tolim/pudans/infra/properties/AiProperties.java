@@ -21,6 +21,8 @@ public class AiProperties {
 
     private Embedding embedding = new Embedding();
 
+    private Runtime runtime = new Runtime();
+
     @Data
     public static class Worker {
 
@@ -77,5 +79,25 @@ public class AiProperties {
     public static class Embedding {
 
         private int dimension = 1536;
+    }
+
+    @Data
+    public static class Runtime {
+
+        private String gatewayUrl = "http://127.0.0.1:8090/apis/api.pudans.tolim.cn/v1alpha1/aigateway";
+
+        private int logBufferSize = 500;
+
+        private int lockSeconds = 60;
+
+        private int requestTimeoutSeconds = 60;
+
+        private int logPollSeconds = 2;
+
+        private String logFile = "/tmp/pudans-agent.log";
+
+        private String tencentDataPlaneTemplate = "https://49983-%s.%s.tencentags.com";
+
+        private String tencentApiVersion = "2025-09-20";
     }
 }
