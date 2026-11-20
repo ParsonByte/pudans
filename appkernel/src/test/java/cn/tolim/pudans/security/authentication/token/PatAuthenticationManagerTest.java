@@ -14,6 +14,7 @@ import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.setting.MasterKeyService;
 import java.util.Base64;
 import java.util.List;
@@ -24,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,13 +44,16 @@ class PatAuthenticationManagerTest {
     RoleService roleService;
 
     @Mock
+    UserGroupService userGroupService;
+
+    @Mock
     MasterKeyService masterKeyService;
 
     private PatAuthenticationManager manager;
 
     @BeforeEach
     void setUp() {
-        manager = new PatAuthenticationManager(client, delegate, roleService, masterKeyService);
+        manager = new PatAuthenticationManager(client, delegate, roleService, userGroupService, masterKeyService);
     }
 
     private static User user(String username) {
@@ -78,6 +83,7 @@ class PatAuthenticationManagerTest {
         when(client.fetch(User.class, "alice")).thenReturn(Mono.just(user("alice")));
         when(client.fetch(User.class, "bob")).thenReturn(Mono.just(user("bob")));
         when(roleService.getRolesByUsername("alice")).thenReturn(Flux.just("normal-role"));
+        when(userGroupService.getRoleNamesByUsername(anyString())).thenReturn(Flux.empty());
         when(roleService.getRolesByUsername("bob"))
                 .thenReturn(Flux.just("normal-role", "system-admin-role"));
         when(roleService.contains(anyCollection(), anyList())).thenReturn(Mono.just(true));
@@ -100,6 +106,40 @@ class PatAuthenticationManagerTest {
                             .contains("ROLE_normal-role")
                             .doesNotContain("ROLE_system-admin-role");
                 })
+                .verifyComplete();
+    }
+
+    @Test
+    void patRolesMayBeInheritedFromUserGroups() {
+        var pat = new PersonalAccessToken();
+        var metadata = new Metadata();
+        metadata.setName("pat-2");
+        pat.setMetadata(metadata);
+        var spec = new PersonalAccessToken.Spec();
+        spec.setUsername("carol");
+        spec.setRoles(List.of("gateway-role"));
+        spec.setTokenId("token-2");
+        pat.setSpec(spec);
+
+        when(masterKeyService.matches(eq("token-2"), eq("secret"), any())).thenReturn(true);
+        when(client.fetch(PersonalAccessToken.class, "pat-2")).thenReturn(Mono.just(pat));
+        when(client.fetch(User.class, "carol")).thenReturn(Mono.just(user("carol")));
+        when(roleService.getRolesByUsername("carol")).thenReturn(Flux.empty());
+        when(userGroupService.getRoleNamesByUsername("carol")).thenReturn(Flux.just("gateway-role"));
+        when(roleService.contains(anyCollection(), anyList()))
+                .thenAnswer(invocation -> Mono.just(invocation.<java.util.Collection<String>>getArgument(0)
+                        .contains("gateway-role")));
+        when(client.update(pat)).thenReturn(Mono.just(pat));
+
+        var token = PersonalAccessToken.PAT_TOKEN_PREFIX + Base64.getUrlEncoder()
+                .withoutPadding()
+                .encodeToString("pat-2:secret".getBytes(UTF_8));
+
+        StepVerifier.create(manager.authenticate(new BearerTokenAuthenticationToken(token)))
+                .assertNext(authentication -> assertThat(authentication.getAuthorities().stream()
+                                .map(GrantedAuthority::getAuthority)
+                                .toList())
+                        .contains("ROLE_gateway-role"))
                 .verifyComplete();
     }
 }

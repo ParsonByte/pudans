@@ -11,6 +11,7 @@ import cn.tolim.pudans.contract.core.user.service.RoleService;
 import cn.tolim.pudans.contract.extension.ExtensionUtil;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.setting.MasterKeyService;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import com.nimbusds.jwt.JWTClaimNames;
@@ -34,6 +35,7 @@ import org.springframework.security.oauth2.server.resource.authentication.Bearer
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
@@ -48,6 +50,8 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
 
     private final RoleService roleService;
 
+    private final UserGroupService userGroupService;
+
     private final MasterKeyService masterKeyService;
 
     private Clock clock;
@@ -56,10 +60,12 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
             ReactiveExtensionClient client,
             ReactiveAuthenticationManager delegate,
             RoleService roleService,
+            UserGroupService userGroupService,
             MasterKeyService masterKeyService) {
         this.client = client;
         this.delegate = delegate;
         this.roleService = roleService;
+        this.userGroupService = userGroupService;
         this.masterKeyService = masterKeyService;
         this.clock = Clock.systemDefaultZone();
     }
@@ -197,8 +203,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
         if (!StringUtils.hasText(sudoUsername)) {
             return Mono.just(patRoles == null ? List.of() : patRoles);
         }
-        return roleService
-                .getRolesByUsername(sudoUsername)
+        return rolesOf(sudoUsername)
                 .collectList()
                 .map(targetRoles -> {
                     if (CollectionUtils.isEmpty(patRoles)) {
@@ -206,6 +211,13 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                     }
                     return targetRoles.stream().filter(patRoles::contains).toList();
                 });
+    }
+
+    private Flux<String> rolesOf(String username) {
+        return Flux.concat(
+                        roleService.getRolesByUsername(username),
+                        userGroupService.getRoleNamesByUsername(username))
+                .distinct();
     }
 
     private Mono<Void> checkSudo(PersonalAccessToken pat, @Nullable String sudoUsername) {
@@ -264,8 +276,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                     if (CollectionUtils.isEmpty(patRoles)) {
                         return Mono.empty();
                     }
-                    return roleService
-                            .getRolesByUsername(username)
+                    return rolesOf(username)
                             .concatWithValues(AUTHENTICATED_ROLE_NAME, ANONYMOUS_ROLE_NAME)
                             .collectList()
                             .flatMap(roles -> roleService.contains(roles, patRoles))
