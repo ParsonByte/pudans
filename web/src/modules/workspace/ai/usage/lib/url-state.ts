@@ -1,0 +1,85 @@
+import { useCallback } from "react";
+
+import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
+
+import type { UsageScope } from "./api";
+import {
+  USAGE_RANGE_OPTIONS,
+  type UsageDateRangeValue,
+  type UsageRangePreset,
+  usageDateRange,
+  validateUsageDateRange,
+} from "./model";
+
+export type UsageUrlSearch = Record<string, unknown>;
+
+export type UsageSearchPatch = Record<string, string | undefined>;
+
+const PRESET_VALUES = new Set<string>(
+  USAGE_RANGE_OPTIONS.filter((option) => option.value !== "all").map((option) => option.value),
+);
+
+function textOf(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+export function usageTextParam(search: UsageUrlSearch, key: string): string {
+  return textOf(search[key]);
+}
+
+export function usageScopeFromSearch(search: UsageUrlSearch): UsageScope {
+  return search.scope === "all" ? "all" : "self";
+}
+
+export function usageRangeFromSearch(search: UsageUrlSearch): UsageDateRangeValue {
+  const presetValue = textOf(search.range);
+  const from = textOf(search.from);
+  const to = textOf(search.to);
+  if (presetValue === "custom" || (!presetValue && from && to)) {
+    if (!validateUsageDateRange(from, to)) {
+      return { preset: "custom", from, to };
+    }
+    return usageDateRange("7d");
+  }
+  if (PRESET_VALUES.has(presetValue) && presetValue !== "custom") {
+    return usageDateRange(presetValue as Exclude<UsageRangePreset, "custom">);
+  }
+  return usageDateRange("7d");
+}
+
+export function usageRangeSearch(range: UsageDateRangeValue): UsageSearchPatch {
+  if (range.preset === "custom") {
+    return { range: "custom", from: range.from, to: range.to };
+  }
+  return { range: range.preset, from: undefined, to: undefined };
+}
+
+export function useUsageUrlSearch() {
+  const search = useSearch({ strict: false }) as UsageUrlSearch;
+  const navigate = useNavigate();
+  const pathname = useLocation({ select: (location) => location.pathname });
+
+  const update = useCallback(
+    (patch: UsageSearchPatch) => {
+      const params = new URLSearchParams();
+      for (const [key, value] of Object.entries(search)) {
+        if (typeof value === "string" && value !== "") {
+          params.set(key, value);
+        }
+      }
+      for (const [key, value] of Object.entries(patch)) {
+        if (value == null || value === "") {
+          params.delete(key);
+        } else {
+          params.set(key, value);
+        }
+      }
+      const query = params.toString();
+      const href = query ? `${pathname}?${query}` : pathname;
+      void navigate({ href } as Parameters<typeof navigate>[0]);
+    },
+    [navigate, pathname, search],
+  );
+
+  return { search, update };
+}

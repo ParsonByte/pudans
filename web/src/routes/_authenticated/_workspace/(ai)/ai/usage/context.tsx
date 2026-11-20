@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { AiConsolePage } from "@/modules/workspace/ai";
+import { AiUsageContextView } from "@/modules/workspace/ai/usage/context";
 
 export const Route = createFileRoute("/_authenticated/_workspace/(ai)/ai/usage/context")({
-  component: AiConsolePage,
+  component: AiUsageContextView,
 });
