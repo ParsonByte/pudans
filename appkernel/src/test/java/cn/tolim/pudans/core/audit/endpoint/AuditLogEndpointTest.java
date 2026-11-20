@@ -3,6 +3,8 @@ package cn.tolim.pudans.core.audit.endpoint;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +68,20 @@ class AuditLogEndpointTest {
 
     private static AuditRecord page(String id, String uid, Instant timestamp, String path) {
         return record(id, uid, "NAVIGATION", "Page", path, path, timestamp, 5);
+    }
+
+    // 每两条记录一条页面、一条动作，页面路径各不相同以免被同页去重合并。
+    private static List<AuditRecord> journeyScanRecords(int count) {
+        var start = Instant.parse("2026-11-16T01:00:00Z");
+        var records = new java.util.ArrayList<AuditRecord>(count);
+        for (var index = 0; index < count; index++) {
+            var uid = index % 2 == 0 ? "u1" : "u2";
+            var timestamp = start.plusSeconds(index);
+            records.add(index % 2 == 0
+                    ? page("page-" + index, uid, timestamp, "/p/" + index)
+                    : record("action-" + index, uid, "READ", "User", "u-" + index, "/p/" + index, timestamp, 5));
+        }
+        return records;
     }
 
     @Test
@@ -219,36 +236,52 @@ class AuditLogEndpointTest {
     @Test
     void journeyPagePaginatesUsersAndReturnsAggregateCounts() {
         var base = Instant.parse("2026-11-18T01:00:00Z");
-        var records = List.of(
-                page("page-a", "u1", base.plusSeconds(1), "/console/roles"),
-                record(
-                        "read-a",
-                        "u1",
-                        "READ",
-                        "User",
-                        "alice",
-                        "/apis/api.pudans.tolim.cn/v1alpha1/users/alice",
-                        base.plusSeconds(2),
-                        0),
-                page("page-b", "u2", base.plusSeconds(10), "/console/users"),
-                record(
-                        "read-b",
-                        "u2",
-                        "READ",
-                        "Role",
-                        "admin",
-                        "/apis/api.pudans.tolim.cn/v1alpha1/roles/admin",
-                        base.plusSeconds(11),
-                        0));
+        when(auditService.query(any()))
+                .thenReturn(Flux.just(
+                        page("page-a", "u1", base.plusSeconds(1), "/console/roles"),
+                        record(
+                                "read-a",
+                                "u1",
+                                "READ",
+                                "User",
+                                "alice",
+                                "/apis/api.pudans.tolim.cn/v1alpha1/users/alice",
+                                base.plusSeconds(2),
+                                0),
+                        page("page-b", "u2", base.plusSeconds(10), "/console/users"),
+                        record(
+                                "read-b",
+                                "u2",
+                                "READ",
+                                "Role",
+                                "admin",
+                                "/apis/api.pudans.tolim.cn/v1alpha1/roles/admin",
+                                base.plusSeconds(11),
+                                0)));
 
-        var result = AuditLogEndpoint.toJourneyPage(records, 1, 1);
+        webTestClient
+                .get()
+                .uri("/auditlogs/journeys?page=1&size=1")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.total")
+                .isEqualTo(2)
+                .jsonPath("$.items.length()")
+                .isEqualTo(1)
+                .jsonPath("$.items[0].uid")
+                .isEqualTo("u2")
+                .jsonPath("$.items[0].steps.length()")
+                .isEqualTo(1)
+                .jsonPath("$.pageViews")
+                .isEqualTo(2)
+                .jsonPath("$.actionCount")
+                .isEqualTo(2)
+                .jsonPath("$.truncated")
+                .isEqualTo(false);
 
-        assertThat(result.total()).isEqualTo(2);
-        assertThat(result.items()).hasSize(1);
-        assertThat(result.items().get(0).uid()).isEqualTo("u2");
-        assertThat(result.pageViews()).isEqualTo(2);
-        assertThat(result.actionCount()).isEqualTo(2);
-        assertThat(result.truncated()).isFalse();
+        verify(auditService, times(2)).query(any());
     }
 
     @Test
@@ -282,25 +315,81 @@ class AuditLogEndpointTest {
     @Test
     void summaryJourneyPageOmitsStepsButKeepsAggregateCounts() {
         var base = Instant.parse("2026-11-18T01:00:00Z");
-        var records = List.of(
-                page("page-a", "u1", base.plusSeconds(1), "/console/roles"),
-                record(
-                        "read-a",
-                        "u1",
-                        "READ",
-                        "User",
-                        "alice",
-                        "/apis/api.pudans.tolim.cn/v1alpha1/users/alice",
-                        base.plusSeconds(2),
-                        0));
+        when(auditService.query(any()))
+                .thenReturn(Flux.just(
+                        page("page-a", "u1", base.plusSeconds(1), "/console/roles"),
+                        record(
+                                "read-a",
+                                "u1",
+                                "READ",
+                                "User",
+                                "alice",
+                                "/apis/api.pudans.tolim.cn/v1alpha1/users/alice",
+                                base.plusSeconds(2),
+                                0)));
 
-        var result = AuditLogEndpoint.toJourneyPage(records, 1, 10, false);
+        webTestClient
+                .get()
+                .uri("/auditlogs/journeys?page=1&size=10&summary=true")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.items.length()")
+                .isEqualTo(1)
+                .jsonPath("$.items[0].steps.length()")
+                .isEqualTo(0)
+                .jsonPath("$.items[0].pageCount")
+                .isEqualTo(1)
+                .jsonPath("$.items[0].actionCount")
+                .isEqualTo(1)
+                .jsonPath("$.pageViews")
+                .isEqualTo(1)
+                .jsonPath("$.actionCount")
+                .isEqualTo(1);
 
-        assertThat(result.items()).hasSize(1);
-        assertThat(result.items().get(0).steps()).isEmpty();
-        assertThat(result.items().get(0).pageCount()).isEqualTo(1);
-        assertThat(result.items().get(0).actionCount()).isEqualTo(1);
-        assertThat(result.pageViews()).isEqualTo(1);
-        assertThat(result.actionCount()).isEqualTo(1);
+        verify(auditService, times(1)).query(any());
+    }
+
+    @Test
+    void journeysStreamsTheWholeScanLimitWithoutReportingTruncation() {
+        when(auditService.query(any())).thenReturn(Flux.fromIterable(journeyScanRecords(20_000)));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/journeys?page=1&size=1&summary=true")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.total")
+                .isEqualTo(2)
+                .jsonPath("$.truncated")
+                .isEqualTo(false)
+                .jsonPath("$.pageViews")
+                .isEqualTo(10_000)
+                .jsonPath("$.actionCount")
+                .isEqualTo(10_000)
+                .jsonPath("$.items.length()")
+                .isEqualTo(1);
+    }
+
+    @Test
+    void journeysReportsTruncationWhenTheScanLimitIsExceeded() {
+        when(auditService.query(any())).thenReturn(Flux.fromIterable(journeyScanRecords(20_001)));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/journeys?page=1&size=1&summary=true")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.truncated")
+                .isEqualTo(true)
+                .jsonPath("$.pageViews")
+                .isEqualTo(10_000)
+                .jsonPath("$.actionCount")
+                .isEqualTo(10_000);
     }
 }
