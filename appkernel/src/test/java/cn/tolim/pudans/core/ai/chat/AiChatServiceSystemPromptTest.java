@@ -11,6 +11,7 @@ import cn.tolim.pudans.core.ai.config.AiChatModeService;
 import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.conversation.AiConversationService;
 import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkitFactory;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
@@ -88,6 +89,18 @@ class AiChatServiceSystemPromptTest {
     @Mock
     cn.tolim.pudans.core.ai.harness.agent.AgentStateStore stateStore;
 
+    @Mock
+    SubagentToolFactory subagentToolFactory;
+
+    @Mock
+    HarnessToolkitFactory harnessToolkitFactory;
+
+    @Mock
+    cn.tolim.pudans.core.ai.library.mcp.McpServerService mcpServerService;
+
+    @Mock
+    cn.tolim.pudans.core.ai.harness.observability.HarnessObservability harnessObservability;
+
     private AiChatService service;
 
     @BeforeEach
@@ -113,7 +126,11 @@ class AiChatServiceSystemPromptTest {
                 slashCommandService,
                 hookService,
                 journalStore,
-                stateStore);
+                stateStore,
+                subagentToolFactory,
+                harnessToolkitFactory,
+                mcpServerService,
+                harnessObservability);
     }
 
     @Test

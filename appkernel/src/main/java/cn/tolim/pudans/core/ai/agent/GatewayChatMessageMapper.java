@@ -6,6 +6,7 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jToolMapper;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.AudioContent;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.ImageContent;
@@ -14,6 +15,7 @@ import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.VideoContent;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.util.StringUtils;
@@ -143,6 +145,22 @@ public final class GatewayChatMessageMapper {
                         null,
                         null,
                         null));
+            } else if (content instanceof AudioContent audio) {
+                var source = audio.audio();
+                parts.add(new AiContentPart.Audio(
+                        source.mimeType(),
+                        source.base64Data(),
+                        source.url() == null ? null : source.url().toString(),
+                        null,
+                        null));
+            } else if (content instanceof VideoContent video) {
+                var source = video.video();
+                parts.add(new AiContentPart.Video(
+                        source.mimeType(),
+                        source.base64Data(),
+                        source.url() == null ? null : source.url().toString(),
+                        null,
+                        null));
             } else {
                 throw new IllegalArgumentException("AI Service 不支持的消息内容：" + content.type());
             }
@@ -164,6 +182,16 @@ public final class GatewayChatMessageMapper {
             return StringUtils.hasText(file.data())
                     ? PdfFileContent.from(file.data(), file.mediaType())
                     : PdfFileContent.from(file.url());
+        }
+        if (part instanceof AiContentPart.Audio audio) {
+            return StringUtils.hasText(audio.data())
+                    ? AudioContent.from(audio.data(), mediaType(audio.mediaType(), "audio/mpeg"))
+                    : AudioContent.from(audio.url());
+        }
+        if (part instanceof AiContentPart.Video video) {
+            return StringUtils.hasText(video.data())
+                    ? VideoContent.from(video.data(), mediaType(video.mediaType(), "video/mp4"))
+                    : VideoContent.from(video.url());
         }
         throw new IllegalArgumentException("AI Service 不支持的消息内容：" + part);
     }

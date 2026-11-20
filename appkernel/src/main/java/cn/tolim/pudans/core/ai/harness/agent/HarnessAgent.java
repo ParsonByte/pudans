@@ -142,6 +142,16 @@ public final class HarnessAgent implements Agent {
             return this;
         }
 
+        public Builder toolSearchEnabled(boolean toolSearchEnabled) {
+            delegate.toolSearchEnabled(toolSearchEnabled);
+            return this;
+        }
+
+        public Builder externalToolPatterns(List<String> externalToolPatterns) {
+            delegate.externalToolPatterns(externalToolPatterns);
+            return this;
+        }
+
         public Builder compaction(CompactionConfig compaction) {
             delegate.compaction(compaction);
             return this;

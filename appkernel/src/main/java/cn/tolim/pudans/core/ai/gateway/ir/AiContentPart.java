@@ -20,6 +20,22 @@ public sealed interface AiContentPart {
     record File(String mediaType, String data, String url, String filename, String fileId, JsonNode cacheControl)
             implements AiContentPart {}
 
+    record Audio(
+            String mediaType,
+            String data,
+            String url,
+            Integer durationSeconds,
+            JsonNode cacheControl)
+            implements AiContentPart {}
+
+    record Video(
+            String mediaType,
+            String data,
+            String url,
+            Integer durationSeconds,
+            JsonNode cacheControl)
+            implements AiContentPart {}
+
     record ToolCall(String id, String name, JsonNode arguments, JsonNode cacheControl) implements AiContentPart {}
 
     record ToolResult(String toolCallId, JsonNode content, Boolean error, JsonNode cacheControl)

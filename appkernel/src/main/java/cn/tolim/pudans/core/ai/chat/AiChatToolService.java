@@ -11,24 +11,39 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.harness.agent.HarnessAgent;
 import cn.tolim.pudans.core.ai.harness.agent.InMemoryAgentStateStore;
 import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
+import cn.tolim.pudans.core.ai.harness.workspace.WorkspaceManager;
+import cn.tolim.pudans.core.ai.harness.workspace.WorkspaceService;
+import cn.tolim.pudans.core.ai.harness.workspace.WorkspaceTools;
 import cn.tolim.pudans.core.ai.library.LibraryView;
 import cn.tolim.pudans.core.ai.library.hook.HookService;
 import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
 import cn.tolim.pudans.core.ai.library.skill.SkillService;
 import cn.tolim.pudans.core.ai.library.subagent.SubagentService;
+import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
+import cn.tolim.pudans.core.ai.memory.MemoryContext;
+import cn.tolim.pudans.core.ai.memory.MemoryHashes;
+import cn.tolim.pudans.core.ai.memory.MemoryScope;
+import cn.tolim.pudans.core.ai.memory.MemoryTools;
+import cn.tolim.pudans.core.ai.memory.MemoryType;
+import cn.tolim.pudans.core.ai.memory.endpoint.AiMemoryViewService;
 import cn.tolim.pudans.core.ai.prompt.ChatPrompts;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService;
+import cn.tolim.pudans.core.ai.runtime.RuntimeTools;
 import com.fasterxml.jackson.databind.JsonNode;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 // 执行模型发起的工具调用，并把生命周期事件交给 Hook。
 @Component
@@ -38,8 +53,6 @@ public class AiChatToolService {
     private static final String TOOL_SKILL = "skill";
 
     private static final String TOOL_SUBAGENT = "subagent";
-
-    private static final String TOOL_RUNTIME_EXEC = "runtime_exec";
 
     private static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(60);
 
@@ -60,6 +73,12 @@ public class AiChatToolService {
     private final AiGatewayService gatewayService;
 
     private final AgentRuntimeService runtimeService;
+
+    private final WorkspaceService workspaceService;
+
+    private final AiMemoryViewService memoryViewService;
+
+    private final AiMemoryL1Repository memoryL1Repository;
 
     public Mono<ToolOutcome> execute(String userId, AiAgent agent, AiContentPart.ToolCall call) {
         var agentName = agent.getMetadata().getName();
@@ -95,7 +114,21 @@ public class AiChatToolService {
         return switch (toolName) {
             case TOOL_SKILL -> skill(agent, arguments);
             case TOOL_SUBAGENT -> subagent(userId, agent, arguments);
-            case TOOL_RUNTIME_EXEC -> runtimeExec(userId, agent, arguments);
+            case RuntimeTools.EXEC -> runtimeExec(userId, agent, arguments);
+            case RuntimeTools.READ -> runtimeRead(userId, agent, arguments);
+            case RuntimeTools.WRITE -> runtimeWrite(userId, agent, arguments);
+            case RuntimeTools.LOGS -> runtimeLogs(userId, agent, arguments);
+            case RuntimeTools.STATUS -> runtimeStatus(userId, agent);
+            case RuntimeTools.START -> runtimeStart(userId, agent);
+            case RuntimeTools.STOP -> runtimeStop(userId, agent);
+            case WorkspaceTools.LIST -> workspaceList(userId, agent, arguments);
+            case WorkspaceTools.READ -> workspaceRead(userId, agent, arguments);
+            case WorkspaceTools.WRITE -> workspaceWrite(userId, agent, arguments);
+            case WorkspaceTools.DELETE -> workspaceDelete(userId, agent, arguments);
+            case WorkspaceTools.MOVE -> workspaceMove(userId, agent, arguments);
+            case WorkspaceTools.SNAPSHOT -> workspaceSnapshot(userId, agent, arguments);
+            case MemoryTools.SEARCH -> memorySearch(userId, agent, arguments);
+            case MemoryTools.ADD -> memoryAdd(userId, agent, arguments);
             default -> Mono.just(new RawOutcome("未知工具：" + toolName, true));
         };
     }
@@ -122,6 +155,214 @@ public class AiChatToolService {
                         "exitCode: " + result.exitCode() + "\nstdout:\n" + result.stdout()
                                 + "\nstderr:\n" + result.stderr(),
                         result.exitCode() != 0));
+    }
+
+    private Mono<RawOutcome> runtimeRead(String userId, AiAgent agent, JsonNode arguments) {
+        var path = text(arguments, "path");
+        if (!StringUtils.hasText(path)) {
+            return Mono.just(new RawOutcome("缺少 path。", true));
+        }
+        return runtimeService
+                .readFile(agent.getMetadata().getName(), userId, path)
+                .map(file -> new RawOutcome(
+                        "encoding: " + file.encoding() + "\ncontent:\n" + file.content(), false));
+    }
+
+    private Mono<RawOutcome> runtimeWrite(String userId, AiAgent agent, JsonNode arguments) {
+        var path = text(arguments, "path");
+        if (!StringUtils.hasText(path)) {
+            return Mono.just(new RawOutcome("缺少 path。", true));
+        }
+        var encoding = text(arguments, "encoding");
+        return runtimeService
+                .writeFile(
+                        agent.getMetadata().getName(),
+                        userId,
+                        path,
+                        StringUtils.hasText(encoding) ? encoding : "utf-8",
+                        text(arguments, "content"))
+                .thenReturn(new RawOutcome("写入成功。", false));
+    }
+
+    private Mono<RawOutcome> runtimeLogs(String userId, AiAgent agent, JsonNode arguments) {
+        var limit = Math.clamp(intValue(arguments, "limit", 100), 1, 500);
+        return runtimeService
+                .logs(agent.getMetadata().getName(), userId, false, null)
+                .take(limit)
+                .map(event -> event.timestamp() + " [" + event.stream() + "] " + event.line())
+                .collectList()
+                .map(lines -> new RawOutcome(
+                        lines.isEmpty() ? "无日志。" : String.join("\n", lines), false));
+    }
+
+    private Mono<RawOutcome> runtimeStatus(String userId, AiAgent agent) {
+        return runtimeService
+                .status(agent.getMetadata().getName(), userId)
+                .map(status -> new RawOutcome(
+                        "state: " + status.state()
+                                + (StringUtils.hasText(status.message())
+                                        ? "\nmessage: " + status.message()
+                                        : ""),
+                        false));
+    }
+
+    private Mono<RawOutcome> runtimeStart(String userId, AiAgent agent) {
+        return runtimeService
+                .start(agent.getMetadata().getName(), userId)
+                .map(view -> new RawOutcome("state: " + view.state(), false));
+    }
+
+    private Mono<RawOutcome> runtimeStop(String userId, AiAgent agent) {
+        return runtimeService
+                .stop(agent.getMetadata().getName(), userId)
+                .map(view -> new RawOutcome("state: " + view.state(), false));
+    }
+
+    private Mono<RawOutcome> workspaceList(String userId, AiAgent agent, JsonNode arguments) {
+        return workspace(userId, agent, manager -> {
+            var path = text(arguments, "path");
+            var entries = manager.list(StringUtils.hasText(path) ? path : ".");
+            var array = JsonUtils.mapper().createArrayNode();
+            for (var entry : entries) {
+                var node = array.addObject();
+                node.put("name", entry.name());
+                node.put("directory", entry.directory());
+                node.put("size", entry.size());
+            }
+            return new RawOutcome(array.toString(), false);
+        });
+    }
+
+    private Mono<RawOutcome> workspaceRead(String userId, AiAgent agent, JsonNode arguments) {
+        var path = text(arguments, "path");
+        if (!StringUtils.hasText(path)) {
+            return Mono.just(new RawOutcome("缺少 path。", true));
+        }
+        return workspace(userId, agent, manager -> new RawOutcome(
+                manager.readText(path)
+                        .orElseThrow(() -> new IllegalArgumentException("工作区文件不存在：" + path)),
+                false));
+    }
+
+    private Mono<RawOutcome> workspaceWrite(String userId, AiAgent agent, JsonNode arguments) {
+        var path = text(arguments, "path");
+        if (!StringUtils.hasText(path)) {
+            return Mono.just(new RawOutcome("缺少 path。", true));
+        }
+        return workspace(userId, agent, manager -> {
+            manager.writeText(path, text(arguments, "content"));
+            return new RawOutcome("写入成功。", false);
+        });
+    }
+
+    private Mono<RawOutcome> workspaceDelete(String userId, AiAgent agent, JsonNode arguments) {
+        var path = text(arguments, "path");
+        if (!StringUtils.hasText(path)) {
+            return Mono.just(new RawOutcome("缺少 path。", true));
+        }
+        return workspace(userId, agent, manager -> {
+            manager.delete(path);
+            return new RawOutcome("已删除：" + path, false);
+        });
+    }
+
+    private Mono<RawOutcome> workspaceMove(String userId, AiAgent agent, JsonNode arguments) {
+        var from = text(arguments, "from");
+        var to = text(arguments, "to");
+        if (!StringUtils.hasText(from) || !StringUtils.hasText(to)) {
+            return Mono.just(new RawOutcome("缺少 from 或 to。", true));
+        }
+        return workspace(userId, agent, manager -> {
+            manager.move(from, to);
+            return new RawOutcome("已移动：" + from + " -> " + to, false);
+        });
+    }
+
+    private Mono<RawOutcome> workspaceSnapshot(String userId, AiAgent agent, JsonNode arguments) {
+        var action = text(arguments, "action");
+        return workspace(userId, agent, manager -> {
+            if (!StringUtils.hasText(action) || "create".equalsIgnoreCase(action)) {
+                return new RawOutcome(manager.snapshot(), false);
+            }
+            if ("list".equalsIgnoreCase(action)) {
+                return new RawOutcome(
+                        JsonUtils.objectToJson(manager.snapshots()), false);
+            }
+            if ("restore".equalsIgnoreCase(action)) {
+                var id = text(arguments, "id");
+                if (!StringUtils.hasText(id)) {
+                    throw new IllegalArgumentException("恢复快照时 id 不能为空。");
+                }
+                manager.restore(id);
+                return new RawOutcome("已恢复快照：" + id, false);
+            }
+            throw new IllegalArgumentException("未知快照操作：" + action);
+        });
+    }
+
+    private Mono<RawOutcome> memorySearch(String userId, AiAgent agent, JsonNode arguments) {
+        var query = text(arguments, "query");
+        if (!StringUtils.hasText(query)) {
+            return Mono.just(new RawOutcome("缺少 query。", true));
+        }
+        var team = teamOf(agent);
+        if (team == null) {
+            return Mono.just(new RawOutcome("Agent 未绑定团队，无法检索记忆。", true));
+        }
+        var limit = Math.clamp(intValue(arguments, "limit", 5), 1, 20);
+        return memoryViewService
+                .search(userId, team, agent.getMetadata().getName(), query, limit)
+                .map(refs -> new RawOutcome(JsonUtils.objectToJson(refs), false));
+    }
+
+    private Mono<RawOutcome> memoryAdd(String userId, AiAgent agent, JsonNode arguments) {
+        var content = text(arguments, "content");
+        if (!StringUtils.hasText(content)) {
+            return Mono.just(new RawOutcome("缺少 content。", true));
+        }
+        var team = teamOf(agent);
+        if (team == null) {
+            return Mono.just(new RawOutcome("Agent 未绑定团队，无法写入记忆。", true));
+        }
+        var record = L1MemoryRecord.newRecord(
+                UUID.randomUUID().toString(),
+                new MemoryContext(team, userId, agent.getMetadata().getName(), "chat-tool", null),
+                null,
+                content.strip(),
+                MemoryType.WORK_FACT,
+                50,
+                "手动记忆",
+                List.of(),
+                Map.of("source", MemoryTools.ADD),
+                MemoryHashes.sha256Hex(content.strip()),
+                MemoryScope.PRIVATE,
+                false,
+                1,
+                List.of(Instant.now()));
+        return memoryL1Repository
+                .insert(record)
+                .map(saved -> new RawOutcome(
+                        JsonUtils.objectToJson(Map.of(
+                                "id", saved.id() == null ? 0 : saved.id(),
+                                "recordId", saved.recordId())),
+                        false));
+    }
+
+    private static String teamOf(AiAgent agent) {
+        var spec = agent == null ? null : agent.getSpec();
+        return spec == null || !StringUtils.hasText(spec.getTeam()) ? null : spec.getTeam();
+    }
+
+    private Mono<RawOutcome> workspace(
+            String userId, AiAgent agent, Function<WorkspaceManager, RawOutcome> call) {
+        return Mono.fromCallable(() -> call.apply(
+                        workspaceService.manager(agent.getMetadata().getName(), userId)))
+                .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    private static int intValue(JsonNode node, String name, int fallback) {
+        var value = node == null ? null : node.get(name);
+        return value == null || !value.canConvertToInt() ? fallback : value.asInt();
     }
 
     private static List<String> stringArray(JsonNode node, String name) {

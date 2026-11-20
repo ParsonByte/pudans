@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.ai.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
@@ -243,6 +244,8 @@ class AiGatewayServiceRetryTest {
                 when(rateLimiter.acquire(same(providerA), same(accountA)))
                 .thenReturn(Mono.error(rateLimited()));
         when(rateLimiter.acquire(same(providerB), same(accountB)))
+                .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
+        when(rateLimiter.acquireUser(anyString(), anyInt()))
                 .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
         when(rateLimiter.release(any())).thenReturn(Mono.empty());
         when(chatService.chat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any()))

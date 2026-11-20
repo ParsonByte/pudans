@@ -12,6 +12,7 @@ import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxFiles;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxLogEvent;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxProviderAdapter;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxState;
+import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxStatus;
 import cn.tolim.pudans.core.ai.team.AiTeamService;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -114,6 +115,16 @@ public class AgentRuntimeService {
                 .map(AgentRuntimeService::view);
     }
 
+    public Mono<SandboxStatus> status(String agentName, String userId) {
+        return teamService
+                .requireAgent(agentName, userId)
+                .then(repository.find(agentName)
+                        .switchIfEmpty(Mono.error(SandboxErrors.notFound(agentName))))
+                .flatMap(record -> StringUtils.hasText(record.sandboxId())
+                        ? adapter(record).flatMap(sandbox -> sandbox.status(record.sandboxId()))
+                        : Mono.just(new SandboxStatus(record.state(), record.lastError())));
+    }
+
     public Mono<RuntimeView> start(String agentName, String userId) {
         return teamService.requireAgent(agentName, userId).flatMap(agent -> {
             var runtime = runtimeSpec(agentName, agent);
@@ -165,23 +176,31 @@ public class AgentRuntimeService {
             var arguments = args == null
                     ? List.<String>of()
                     : args.stream().filter(Objects::nonNull).toList();
-            return teamService.requireAgent(agentName, userId).flatMap(agent -> requireRunning(agentName)
-                    .flatMap(record -> {
-                        var effectiveWorkdir = StringUtils.hasText(workdir)
-                                ? workdir
-                                : runtimeWorkdir(agent);
-                        var timeout = effectiveTimeout(record, timeoutSeconds);
-                        return environment(agentName)
-                                .flatMap(environment -> adapter(record).flatMap(sandbox -> sandbox.exec(
-                                        record.sandboxId(),
-                                        new SandboxExecSpec(command, arguments, effectiveWorkdir, environment, timeout))))
-                                .flatMap(result -> {
-                                    logBuffer.appendOutput(agentName, "stdout", result.stdout());
-                                    logBuffer.appendOutput(agentName, "stderr", result.stderr());
-                                    return repository.markActive(agentName).thenReturn(result);
-                                })
-                                .onErrorMap(error -> SandboxErrors.execFailed(agentName, error));
-                    }));
+            return teamService.requireAgent(agentName, userId).flatMap(agent -> {
+                var runtime = runtimeSpec(agentName, agent);
+                return ensureRunning(agentName, agent, runtime)
+                        .flatMap(record -> {
+                            var effectiveWorkdir = StringUtils.hasText(workdir)
+                                    ? workdir
+                                    : runtimeWorkdir(agent);
+                            var timeout = effectiveTimeout(record, timeoutSeconds);
+                            return environment(agentName)
+                                    .flatMap(environment -> adapter(record).flatMap(sandbox -> sandbox.exec(
+                                            record.sandboxId(),
+                                            new SandboxExecSpec(
+                                                    command,
+                                                    arguments,
+                                                    effectiveWorkdir,
+                                                    environment,
+                                                    timeout))))
+                                    .flatMap(result -> {
+                                        logBuffer.appendOutput(agentName, "stdout", result.stdout());
+                                        logBuffer.appendOutput(agentName, "stderr", result.stderr());
+                                        return repository.markActive(agentName).thenReturn(result);
+                                    })
+                                    .onErrorMap(error -> SandboxErrors.execFailed(agentName, error));
+                        });
+            });
         });
     }
 
@@ -214,7 +233,7 @@ public class AgentRuntimeService {
                 return Mono.error(SandboxErrors.configInvalid("path 不能为空。"));
             }
             return teamService.requireAgent(agentName, userId)
-                    .then(requireRunning(agentName))
+                    .flatMap(agent -> ensureRunning(agentName, agent, runtimeSpec(agentName, agent)))
                     .flatMap(record -> adapter(record)
                             .flatMap(sandbox -> sandbox.readFile(record.sandboxId(), path)))
                     .flatMap(file -> repository.markActive(agentName).thenReturn(file))
@@ -233,7 +252,7 @@ public class AgentRuntimeService {
                 return Mono.error(SandboxErrors.fileTooLarge(bytes.length, MAX_FILE_BYTES));
             }
             return teamService.requireAgent(agentName, userId)
-                    .then(requireRunning(agentName))
+                    .flatMap(agent -> ensureRunning(agentName, agent, runtimeSpec(agentName, agent)))
                     .flatMap(record -> adapter(record)
                             .flatMap(sandbox -> sandbox.writeFile(record.sandboxId(), path, bytes)))
                     .then(repository.markActive(agentName))
@@ -385,6 +404,32 @@ public class AgentRuntimeService {
                 .onErrorMap(error -> SandboxErrors.destroyFailed(agentName, error));
     }
 
+    private Mono<RuntimeRecord> ensureRunning(
+            String agentName, AiAgent agent, RuntimeSpec runtime) {
+        return repository.find(agentName)
+                .flatMap(record -> {
+                    if (record.state() == SandboxState.RUNNING
+                            && StringUtils.hasText(record.sandboxId())) {
+                        return Mono.just(record);
+                    }
+                    if (!runtime.autoStart()) {
+                        return Mono.error(SandboxErrors.notRunning(agentName));
+                    }
+                    return autoStart(agentName, agent, runtime);
+                })
+                .switchIfEmpty(Mono.defer(() -> runtime.autoStart()
+                        ? autoStart(agentName, agent, runtime)
+                        : Mono.error(SandboxErrors.notRunning(agentName))));
+    }
+
+    private Mono<RuntimeRecord> autoStart(
+            String agentName, AiAgent agent, RuntimeSpec runtime) {
+        return Mono.usingWhen(
+                acquireLock(agentName),
+                token -> doStart(agentName, agent, runtime),
+                token -> releaseLock(agentName, token));
+    }
+
     private Mono<RuntimeRecord> requireRunning(String agentName) {
         return repository.find(agentName)
                 .switchIfEmpty(Mono.error(SandboxErrors.notFound(agentName)))
@@ -494,6 +539,7 @@ public class AgentRuntimeService {
         config.put("memoryMb", memoryMb);
         config.put("timeoutSeconds", timeout);
         config.put("networkEnabled", runtime.isNetworkEnabled());
+        config.put("autoStart", runtime.isAutoStart());
         config.put("workdir", workdir);
         if (agent.getSpec() != null && agent.getSpec().getEnvironmentVariables() != null) {
             config.put("environmentVariables", agent.getSpec().getEnvironmentVariables());
@@ -506,6 +552,7 @@ public class AgentRuntimeService {
                 memoryMb,
                 timeout,
                 runtime.isNetworkEnabled(),
+                runtime.isAutoStart(),
                 workdir,
                 writeConfig(config));
     }
@@ -587,6 +634,7 @@ public class AgentRuntimeService {
             int memoryMb,
             int timeoutSeconds,
             boolean networkEnabled,
+            boolean autoStart,
             String workdir,
             String configJson) {}
 

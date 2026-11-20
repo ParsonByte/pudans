@@ -102,26 +102,28 @@ public class AgentProtocolEndpoint implements CustomEndpoint {
                 inputMessage(body.input()),
                 Boolean.TRUE.equals(body.stream()),
                 Map.of());
-        return runtime.start(protocolRequest).flatMap(run -> {
-            var record = store.create(userId, runId, threadId, body.agentId(), run);
-            if (Boolean.TRUE.equals(body.stream())) {
-                record.markRunning();
-                return ServerResponse.ok()
-                        .contentType(MediaType.TEXT_EVENT_STREAM)
-                        .header(HttpHeaders.CACHE_CONTROL, "no-cache")
-                        .header("X-Accel-Buffering", "no")
-                        .body(stream(record), String.class);
-            }
-            drive(record);
-            return ServerResponse.ok().bodyValue(RunView.from(record.snapshot()));
-        });
+        return runtime.start(protocolRequest).flatMap(run -> store
+                .create(userId, runId, threadId, body.agentId(), run)
+                .flatMap(record -> {
+                    if (Boolean.TRUE.equals(body.stream())) {
+                        record.markRunning();
+                        return ServerResponse.ok()
+                                .contentType(MediaType.TEXT_EVENT_STREAM)
+                                .header(HttpHeaders.CACHE_CONTROL, "no-cache")
+                                .header("X-Accel-Buffering", "no")
+                                .body(stream(record), String.class);
+                    }
+                    drive(record);
+                    return ServerResponse.ok().bodyValue(RunView.from(record.snapshot()));
+                }));
     }
 
     private Mono<ServerResponse> get(ServerRequest request) {
         var runId = request.pathVariable("runId");
         return requests
                 .userId(request)
-                .flatMap(userId -> Mono.justOrEmpty(store.find(userId, runId))
+                .flatMap(userId -> store
+                        .find(userId, runId)
                         .switchIfEmpty(Mono.error(notFound()))
                         .flatMap(snapshot -> ServerResponse.ok().bodyValue(RunStateView.from(snapshot))));
     }
@@ -130,7 +132,8 @@ public class AgentProtocolEndpoint implements CustomEndpoint {
         var runId = request.pathVariable("runId");
         return requests
                 .userId(request)
-                .flatMap(userId -> Mono.justOrEmpty(store.cancel(userId, runId))
+                .flatMap(userId -> store
+                        .cancel(userId, runId)
                         .switchIfEmpty(Mono.error(notFound()))
                         .flatMap(snapshot -> ServerResponse.ok().bodyValue(RunView.from(snapshot))));
     }
@@ -139,7 +142,8 @@ public class AgentProtocolEndpoint implements CustomEndpoint {
         var threadId = request.pathVariable("threadId");
         return requests
                 .userId(request)
-                .flatMap(userId -> Mono.justOrEmpty(store.latestByThread(userId, threadId))
+                .flatMap(userId -> store
+                        .latestByThread(userId, threadId)
                         .switchIfEmpty(Mono.error(notFound()))
                         .flatMap(snapshot -> ServerResponse.ok().bodyValue(RunStateView.from(snapshot))));
     }
@@ -150,8 +154,8 @@ public class AgentProtocolEndpoint implements CustomEndpoint {
                 .run()
                 .result()
                 .subscribe(
-                        result -> store.complete(record.runId(), result.content()),
-                        error -> store.fail(record.runId(), errorMessage(error)));
+                        result -> store.complete(record.runId(), result.content()).subscribe(),
+                        error -> store.fail(record.runId(), errorMessage(error)).subscribe());
     }
 
     private Flux<String> stream(RunRecord record) {
@@ -172,7 +176,7 @@ public class AgentProtocolEndpoint implements CustomEndpoint {
                             .result()
                             .subscribe(
                                     result -> {
-                                        store.complete(record.runId(), result.content());
+                                        store.complete(record.runId(), result.content()).subscribe();
                                         sink.next(eventMapper.end(
                                                 record.runId(),
                                                 record.threadId(),
@@ -181,7 +185,7 @@ public class AgentProtocolEndpoint implements CustomEndpoint {
                                         sink.complete();
                                     },
                                     error -> {
-                                        store.fail(record.runId(), errorMessage(error));
+                                        store.fail(record.runId(), errorMessage(error)).subscribe();
                                         sink.next(eventMapper.error(
                                                 record.runId(),
                                                 record.threadId(),

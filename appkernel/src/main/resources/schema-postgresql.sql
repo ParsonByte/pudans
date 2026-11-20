@@ -425,6 +425,37 @@ CREATE TABLE IF NOT EXISTS ai_harness_journal_event (
     UNIQUE (user_id, session_id, event_id)
 );
 @
+-- A2A 任务快照
+CREATE TABLE IF NOT EXISTS ai_a2a_task (
+    user_id VARCHAR(128) NOT NULL,
+    task_id VARCHAR(128) NOT NULL,
+    context_id VARCHAR(128) NOT NULL,
+    status VARCHAR(32) NOT NULL,
+    artifact JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, task_id)
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_a2a_task_updated ON ai_a2a_task (updated_at DESC);
+@
+-- Agent Protocol 运行快照
+CREATE TABLE IF NOT EXISTS ai_agent_protocol_run (
+    user_id VARCHAR(128) NOT NULL,
+    run_id VARCHAR(128) NOT NULL,
+    thread_id VARCHAR(128) NOT NULL,
+    agent_id VARCHAR(128),
+    status VARCHAR(32) NOT NULL,
+    content TEXT,
+    error TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, run_id)
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_agent_protocol_thread
+    ON ai_agent_protocol_run (user_id, thread_id, updated_at DESC);
+@
 -- 钱包
 CREATE TABLE IF NOT EXISTS ai_wallet (
     id BIGSERIAL PRIMARY KEY,

@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
@@ -47,6 +48,8 @@ public class AiWalletService {
     private static final String CODE_SETTLE_CONFLICT = "ai-wallet-settle-conflict";
 
     private static final String CODE_RELEASE_CONFLICT = "ai-wallet-release-conflict";
+
+    private static final String CODE_DAILY_LIMIT = "ai-wallet-daily-limit";
 
     private static final String CODE_ADJUST_CONFLICT = "ai-wallet-adjust-conflict";
 
@@ -172,11 +175,38 @@ public class AiWalletService {
                     HttpStatus.BAD_REQUEST, CODE_EXPIRY_INVALID, "冻结有效期必须大于零。"));
         }
         var expiresAt = clock.instant().plus(expiry);
-        return holdRepository
-                .insertIfAbsent(requestId, userId, freezeAmount, expiresAt)
+        return ensureWallet(userId)
+                .then(checkDailyLimit(userId, freezeAmount))
+                .then(Mono.defer(() ->
+                        holdRepository.insertIfAbsent(requestId, userId, freezeAmount, expiresAt)))
                 .flatMap(inserted -> Boolean.TRUE.equals(inserted)
                         ? freezeNewHold(requestId, userId, freezeAmount)
                         : replayFreeze(requestId, userId));
+    }
+
+    private Mono<Void> checkDailyLimit(String userId, BigDecimal amount) {
+        return walletRepository
+                .findDetailByUserId(userId)
+                .flatMap(wallet -> {
+                    var limit = wallet.dailyLimit();
+                    if (limit == null || limit.signum() <= 0) {
+                        return Mono.<Void>empty();
+                    }
+                    var now = clock.instant();
+                    var since = LocalDate.ofInstant(now, clock.getZone())
+                            .atStartOfDay(clock.getZone())
+                            .toInstant();
+                    return txnRepository.chargedSince(userId, since).flatMap(consumed -> {
+                        if (consumed.add(amount).compareTo(limit) > 0) {
+                            return Mono.error(new ApiException(
+                                    HttpStatus.PAYMENT_REQUIRED,
+                                    CODE_DAILY_LIMIT,
+                                    "已达到今日积分限额。"));
+                        }
+                        return Mono.empty();
+                    });
+                })
+                .switchIfEmpty(Mono.empty());
     }
 
     public Mono<SettleResult> settle(

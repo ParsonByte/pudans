@@ -16,6 +16,8 @@ import cn.tolim.pudans.core.ai.harness.journal.JournalEvent;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEventType;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionEngine;
+import cn.tolim.pudans.core.ai.harness.subagent.SubagentRuntime;
+import cn.tolim.pudans.core.ai.harness.subagent.SubagentTools;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import cn.tolim.pudans.core.ai.harness.tool.ToolResultEvictionConfig;
 import cn.tolim.pudans.core.ai.harness.tool.ToolResultStore;
@@ -32,6 +34,7 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import java.time.Duration;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -427,6 +430,120 @@ class ReActAgentTest {
     }
 
     @Test
+    void executesToolsExternallyWhenConfigured() {
+        when(chatModel.chat(any(ChatRequest.class)))
+                .thenReturn(response(toolCall("1", "echo", "{\"text\":\"hello\"}")))
+                .thenReturn(response(AiMessage.from("done")));
+        var agent = ReActAgent.builder()
+                .name("test-agent")
+                .chatModel(chatModel)
+                .toolkit(new HarnessToolkit().register(new EchoTools()))
+                .permissionEngine(new PermissionEngine(PermissionContext.bypass()))
+                .externalToolPatterns(List.of("echo"))
+                .build();
+        var run = agent.start("run", RuntimeContext.of("user-1", "session-external"));
+        run.submitExternalResult("1", "external-output", false);
+
+        assertThat(run.result().block(Duration.ofSeconds(3)).content()).isEqualTo("done");
+        var requests = ArgumentCaptor.forClass(ChatRequest.class);
+        verify(chatModel, org.mockito.Mockito.times(2)).chat(requests.capture());
+        assertThat(requests.getAllValues().get(1).messages())
+                .anyMatch(message -> message instanceof ToolExecutionResultMessage result
+                        && result.id().equals("1")
+                        && result.text().equals("external-output")
+                        && !result.isError());
+        var events = run.events()
+                .takeUntil(event -> event.type() == AgentEventType.AGENT_END)
+                .collectList()
+                .block(Duration.ofSeconds(3));
+        assertThat(events).anyMatch(AgentEvent.RequireExternalExecution.class::isInstance);
+        assertThat(events).anyMatch(AgentEvent.ExternalExecutionResult.class::isInstance);
+    }
+
+    @Test
+    void timesOutExternalExecution() {
+        when(chatModel.chat(any(ChatRequest.class)))
+                .thenReturn(response(toolCall("1", "echo", "{\"text\":\"hello\"}")))
+                .thenReturn(response(AiMessage.from("done")));
+        var agent = ReActAgent.builder()
+                .name("test-agent")
+                .chatModel(chatModel)
+                .toolkit(new HarnessToolkit().register(new EchoTools()))
+                .permissionEngine(new PermissionEngine(PermissionContext.bypass()))
+                .externalToolPatterns(List.of("echo"))
+                .confirmationTimeout(Duration.ofMillis(50))
+                .build();
+
+        StepVerifier.create(agent.call("run", RuntimeContext.of("user-1", "session-external-timeout")))
+                .assertNext(result -> assertThat(result.content()).isEqualTo("done"))
+                .verifyComplete();
+
+        var requests = ArgumentCaptor.forClass(ChatRequest.class);
+        verify(chatModel, org.mockito.Mockito.times(2)).chat(requests.capture());
+        assertThat(requests.getAllValues().get(1).messages())
+                .anyMatch(message -> message instanceof ToolExecutionResultMessage result
+                        && result.isError()
+                        && result.text().contains("超时"));
+    }
+
+    @Test
+    void searchesToolsThroughTheMetaTool() {
+        when(chatModel.chat(any(ChatRequest.class)))
+                .thenReturn(response(toolCall("1", "tool_search", "{\"query\":\"echo\"}")))
+                .thenReturn(response(AiMessage.from("done")));
+        var stateStore = new InMemoryAgentStateStore();
+        var agent = ReActAgent.builder()
+                .name("test-agent")
+                .chatModel(chatModel)
+                .toolkit(new HarnessToolkit().register(new EchoTools()))
+                .stateStore(stateStore)
+                .permissionEngine(new PermissionEngine(PermissionContext.bypass()))
+                .build();
+
+        StepVerifier.create(agent.call("run", RuntimeContext.of("user-1", "session-tool-search")))
+                .assertNext(result -> assertThat(result.content()).isEqualTo("done"))
+                .verifyComplete();
+
+        var state = stateStore.load("user-1", "session-tool-search").block();
+        assertThat(state).isNotNull();
+        assertThat(state.messages())
+                .filteredOn(ToolExecutionResultMessage.class::isInstance)
+                .map(ToolExecutionResultMessage.class::cast)
+                .anySatisfy(message -> {
+                    assertThat(message.id()).isEqualTo("1");
+                    assertThat(message.text()).contains("echo");
+                });
+    }
+
+    @Test
+    void emitsSubagentExposedWhenDelegating() {
+        var runtime = new SubagentRuntime()
+                .register("helper", parent -> new EchoSubagent("helper"));
+        when(chatModel.chat(any(ChatRequest.class)))
+                .thenReturn(response(toolCall(
+                        "1", "agent_spawn", "{\"agent_id\":\"helper\",\"task\":\"hi\"}")))
+                .thenReturn(response(AiMessage.from("done")));
+        var agent = ReActAgent.builder()
+                .name("test-agent")
+                .chatModel(chatModel)
+                .subagentTools(new SubagentTools(runtime))
+                .permissionEngine(new PermissionEngine(PermissionContext.bypass()))
+                .build();
+        var run = agent.start("run", RuntimeContext.of("user-1", "session-subagent"));
+
+        assertThat(run.result().block(Duration.ofSeconds(3)).content()).isEqualTo("done");
+        var events = run.events()
+                .takeUntil(event -> event.type() == AgentEventType.AGENT_END)
+                .collectList()
+                .block(Duration.ofSeconds(3));
+        assertThat(events)
+                .filteredOn(AgentEvent.SubagentExposed.class::isInstance)
+                .map(AgentEvent.SubagentExposed.class::cast)
+                .extracting(AgentEvent.SubagentExposed::subagentName)
+                .contains("helper");
+    }
+
+    @Test
     void closesDanglingToolCallsBeforeResuming() {
         var seeded = new AgentState();
         seeded.addMessage(UserMessage.from("old request"));
@@ -588,6 +705,35 @@ class ReActAgentTest {
         @Tool(name = "echo", value = "Echo text")
         String echo(@P("text") String text) {
             return "echo:" + text;
+        }
+    }
+
+    private static final class EchoSubagent implements Agent {
+
+        private final String name;
+
+        private EchoSubagent(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String name() {
+            return name;
+        }
+
+        @Override
+        public Mono<AgentResult> call(String input, RuntimeContext context) {
+            return start(input, context).result();
+        }
+
+        @Override
+        public AgentRun start(String input, RuntimeContext context) {
+            var run = new AgentRun("run-" + UUID.randomUUID());
+            run.attach(Mono.fromSupplier(() -> new AgentResult(name + ":" + input, null))
+                    .doOnSubscribe(subscription ->
+                            run.emit(new AgentEvent.AgentStart(run.id(), name)))
+                    .doFinally(signal -> run.emit(new AgentEvent.AgentEnd(run.id(), name))));
+            return run;
         }
     }
 }

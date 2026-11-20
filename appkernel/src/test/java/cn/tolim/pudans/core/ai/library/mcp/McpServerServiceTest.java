@@ -11,7 +11,12 @@ import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import cn.tolim.pudans.infra.exception.ApiException;
+import dev.langchain4j.agent.tool.ToolExecutionRequest;
+import dev.langchain4j.mcp.client.McpClient;
+import dev.langchain4j.mcp.client.McpPrompt;
+import dev.langchain4j.mcp.client.McpPromptArgument;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -209,6 +214,105 @@ class McpServerServiceTest {
                     assertThat(result.isError()).isFalse();
                 })
                 .verifyComplete();
+    }
+
+    @Test
+    void buildsAToolCatalogForExplicitServers() {
+        var first = server(AiMcpServer.Transport.HTTP, "mcp-a", true, "agent-a");
+        var second = server(AiMcpServer.Transport.HTTP, "mcp-b", true, "agent-b");
+        when(client.get(AiMcpServer.class, "mcp-a")).thenReturn(Mono.just(first));
+        when(client.get(AiMcpServer.class, "mcp-b")).thenReturn(Mono.just(second));
+        when(mcpClient.listTools(first)).thenReturn(Mono.just(List.of(tool("search"))));
+        when(mcpClient.listTools(second)).thenReturn(Mono.just(List.of(tool("write"))));
+
+        StepVerifier.create(service.toolCatalogFor(List.of("mcp-a", "mcp-b")))
+                .assertNext(catalog -> assertThat(catalog.tools())
+                        .extracting(McpServerService.McpToolDefinition::name)
+                        .containsExactlyInAnyOrder("mcp.mcp-a.search", "mcp.mcp-b.write"))
+                .verifyComplete();
+    }
+
+    @Test
+    void delegatesExplicitServerToolCalls() {
+        var bound = server(AiMcpServer.Transport.HTTP, "mcp-a", true, "agent-a");
+        when(client.get(AiMcpServer.class, "mcp-a")).thenReturn(Mono.just(bound));
+        when(mcpClient.callTool(bound, "search", null))
+                .thenReturn(Mono.just(new McpClientService.McpToolCallResult("ok", false)));
+
+        StepVerifier.create(service.callToolFor(List.of("mcp-a"), "mcp.mcp-a.search", null))
+                .assertNext(result -> {
+                    assertThat(result.output()).isEqualTo("ok");
+                    assertThat(result.isError()).isFalse();
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void buildsStaticToolsWhenTheServerIsUnreachable() {
+        var bound = server(AiMcpServer.Transport.HTTP, "mcp-a", true, "agent-a");
+        bound.getSpec().setToolsJson("""
+                [{"name":"search","description":"Static search","inputSchema":{"type":"object"}}]
+                """);
+        when(client.listAll(eq(AiMcpServer.class), any(ListOptions.class), any(Sort.class)))
+                .thenReturn(Flux.just(bound));
+        when(mcpClient.listTools(bound))
+                .thenReturn(Mono.error(new ApiException(
+                        HttpStatus.BAD_GATEWAY, McpClientService.CODE_REQUEST_FAILED, "失败。")));
+
+        StepVerifier.create(service.toolCatalog("agent-a"))
+                .assertNext(catalog -> {
+                    assertThat(catalog.tools()).singleElement().satisfies(definition -> {
+                        assertThat(definition.name()).isEqualTo("mcp.mcp-a.search");
+                        assertThat(definition.description()).isEqualTo("Static search");
+                        assertThat(definition.inputSchema().path("type").asText())
+                                .isEqualTo("object");
+                    });
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void rejectsInvalidStaticToolJson() {
+        var bound = server(AiMcpServer.Transport.HTTP, "mcp-a", true, "agent-a");
+        bound.getSpec().setToolsJson("{}");
+
+        assertInvalid(bound, "toolsJson");
+    }
+
+    @Test
+    void acceptsWebSocketTransport() {
+        var bound = server(AiMcpServer.Transport.WEBSOCKET, "mcp-a", true, "agent-a");
+        bound.getSpec().setUrl("wss://mcp.example.com/mcp");
+
+        StepVerifier.create(McpServerService.validate(bound)).verifyComplete();
+    }
+
+    @Test
+    void decoratesToolkitsWithResourceAndPromptTools() {
+        var bound = server(AiMcpServer.Transport.HTTP, "mcp-a", true, "agent-a");
+        var clientMock = org.mockito.Mockito.mock(McpClient.class);
+        when(client.listAll(eq(AiMcpServer.class), any(ListOptions.class), any(Sort.class)))
+                .thenReturn(Flux.just(bound));
+        when(mcpClient.clients(List.of(bound))).thenReturn(Mono.just(List.of(clientMock)));
+        when(mcpClient.listPrompts(bound)).thenReturn(Mono.just(List.of(
+                new McpPrompt("review", "Review prompt",
+                        List.of(new McpPromptArgument("topic", "Topic", true))))));
+
+        var toolkit = service.decorateToolkit(new HarnessToolkit(), "agent-a").block();
+
+        assertThat(toolkit).isNotNull();
+        assertThat(toolkit.specifications()).extracting(specification -> specification.name())
+                .contains(
+                        "mcp_list_resources",
+                        "mcp_get_resource",
+                        "mcp_prompt_list",
+                        "mcp_prompt_get");
+        var prompts = toolkit.execute(ToolExecutionRequest.builder()
+                .name("mcp_prompt_list")
+                .arguments("{\"server\":\"mcp-a\"}")
+                .build());
+        assertThat(prompts.error()).isFalse();
+        assertThat(prompts.output()).contains("review").contains("topic");
     }
 
     @Test

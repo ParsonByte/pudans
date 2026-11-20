@@ -94,7 +94,7 @@ class AgentProtocolEndpointTest {
         when(runtime.start(any())).thenReturn(Mono.just(pendingRun()));
         createRun("thread-1");
 
-        var runId = store.latestByThread("user-1", "thread-1").orElseThrow().runId();
+        var runId = store.latestByThread("user-1", "thread-1").block().runId();
         client.get()
                 .uri("/aiagentprotocol/-/runs/" + runId)
                 .exchange()
@@ -112,7 +112,7 @@ class AgentProtocolEndpointTest {
         when(runtime.start(any())).thenReturn(Mono.just(run));
         createRun("thread-1");
 
-        var runId = store.latestByThread("user-1", "thread-1").orElseThrow().runId();
+        var runId = store.latestByThread("user-1", "thread-1").block().runId();
         client.post()
                 .uri("/aiagentprotocol/-/runs/" + runId + "/cancel")
                 .exchange()
@@ -121,7 +121,7 @@ class AgentProtocolEndpointTest {
                 .jsonPath("$.status").isEqualTo("cancelled");
 
         assertThat(run.cancelled()).isTrue();
-        assertThat(store.find("user-1", runId).orElseThrow().status())
+        assertThat(store.find("user-1", runId).block().status())
                 .isEqualTo(AgentProtocolRunStatus.CANCELLED);
     }
 
@@ -130,7 +130,7 @@ class AgentProtocolEndpointTest {
         when(runtime.start(any())).thenReturn(Mono.just(pendingRun()));
         createRun("thread-1");
 
-        var snapshot = store.latestByThread("user-1", "thread-1").orElseThrow();
+        var snapshot = store.latestByThread("user-1", "thread-1").block();
         client.get()
                 .uri("/aiagentprotocol/-/threads/thread-1/state")
                 .exchange()
@@ -179,7 +179,7 @@ class AgentProtocolEndpointTest {
                     assertThat(body.indexOf("event: updates")).isLessThan(body.indexOf("event: end"));
                 });
 
-        assertThat(store.latestByThread("user-1", "thread-1").orElseThrow().status())
+        assertThat(store.latestByThread("user-1", "thread-1").block().status())
                 .isEqualTo(AgentProtocolRunStatus.COMPLETED);
     }
 
@@ -204,7 +204,7 @@ class AgentProtocolEndpointTest {
                     assertThat(body).contains("\"error\":\"模型失败\"");
                 });
 
-        var snapshot = store.latestByThread("user-1", "thread-1").orElseThrow();
+        var snapshot = store.latestByThread("user-1", "thread-1").block();
         assertThat(snapshot.status()).isEqualTo(AgentProtocolRunStatus.FAILED);
         assertThat(snapshot.error()).isEqualTo("模型失败");
     }

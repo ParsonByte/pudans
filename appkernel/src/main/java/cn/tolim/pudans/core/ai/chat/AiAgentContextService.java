@@ -10,20 +10,27 @@ import cn.tolim.pudans.core.ai.harness.permission.PermissionBehavior;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionMode;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionRule;
+import cn.tolim.pudans.core.ai.harness.skill.ResourceSkillRepository;
+import cn.tolim.pudans.core.ai.harness.skill.SkillRuntime;
+import cn.tolim.pudans.core.ai.harness.team.TeamRuntimeRegistry;
+import cn.tolim.pudans.core.ai.harness.team.TeamTools;
 import cn.tolim.pudans.core.ai.harness.tool.ToolResultEvictionConfig;
+import cn.tolim.pudans.core.ai.harness.workspace.WorkspaceTools;
 import cn.tolim.pudans.core.ai.library.LibraryView;
 import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
 import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariableService;
 import cn.tolim.pudans.core.ai.library.skill.SkillService;
 import cn.tolim.pudans.core.ai.library.subagent.SubagentService;
+import cn.tolim.pudans.core.ai.memory.MemoryTools;
 import cn.tolim.pudans.core.ai.prompt.ChatPrompts;
+import cn.tolim.pudans.core.ai.runtime.RuntimeTools;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
@@ -33,12 +40,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AiAgentContextService {
 
-    private static final String TOOL_SKILL = "skill";
-
-    private static final String TOOL_SUBAGENT = "subagent";
-
-    private static final String TOOL_RUNTIME_EXEC = "runtime_exec";
-
     private final LibraryView libraryView;
 
     private final SubagentService subagentService;
@@ -47,21 +48,39 @@ public class AiAgentContextService {
 
     private final EnvironmentVariableService environmentVariableService;
 
+    private final SkillService skillService;
+
+    private final TeamRuntimeRegistry teamRuntimeRegistry;
+
     public Mono<AgentContext> build(AiAgent agent) {
         var agentName = agent.getMetadata().getName();
         return Mono.zip(
                         libraryView.snapshot(agentName),
                         subagentService.byAgent(agentName).collectList(),
                         slashCommandService.byAgent(agentName).collectList(),
-                        environmentVariableService.resolveValues(agentName))
-                .map(tuple -> new AgentContext(
-                        systemAdditions(tuple.getT1(), tuple.getT2()),
-                        tools(agent, tuple.getT1(), tuple.getT2()),
-                        tuple.getT1().skills(),
-                        tuple.getT2(),
-                        tuple.getT3(),
-                        tuple.getT4(),
-                        harness(agent)));
+                        environmentVariableService.resolveValues(agentName),
+                        skillService.byAgent(agentName).collectList())
+                .map(tuple -> {
+                    var settings = harness(agent);
+                    return new AgentContext(
+                            systemAdditions(tuple.getT1(), tuple.getT2()),
+                            tools(agent, tuple.getT1(), settings),
+                            tuple.getT1().skills(),
+                            tuple.getT2(),
+                            tuple.getT3(),
+                            tuple.getT4(),
+                            settings,
+                            new SkillRuntime(List.of(new ResourceSkillRepository(tuple.getT5()))),
+                            teamTools(agent));
+                });
+    }
+
+    private TeamTools teamTools(AiAgent agent) {
+        var spec = agent == null ? null : agent.getSpec();
+        if (spec == null || !StringUtils.hasText(spec.getTeam())) {
+            return null;
+        }
+        return new TeamTools(teamRuntimeRegistry.runtime(spec.getTeam()));
     }
 
     private static HarnessSettings harness(AiAgent agent) {
@@ -94,6 +113,12 @@ public class AiAgentContextService {
                         harness.getCompactionTriggerMessages(), harness.getCompactionKeepMessages()),
                 new ToolResultEvictionConfig(harness.getToolResultEvictionMaxChars()),
                 Duration.ofSeconds(Math.max(1, harness.getConfirmationTimeoutSeconds())),
+                harness.isToolSearchEnabled(),
+                harness.isToolGroupsEnabled(),
+                harness.getAsyncToolPatterns(),
+                harness.getExternalToolPatterns(),
+                harness.isWorkspaceEnabled(),
+                harness.isMemoryToolsEnabled(),
                 permissions.build());
     }
 
@@ -128,7 +153,7 @@ public class AiAgentContextService {
     }
 
     private static List<AiTool> tools(
-            AiAgent agent, LibraryView.Snapshot snapshot, List<AiSubagent> subagents) {
+            AiAgent agent, LibraryView.Snapshot snapshot, HarnessSettings settings) {
         var tools = new ArrayList<AiTool>();
         for (var tool : snapshot.mcpTools().tools()) {
             tools.add(new AiTool(
@@ -137,28 +162,14 @@ public class AiAgentContextService {
                     tool.inputSchema() == null ? emptySchema() : tool.inputSchema(),
                     null));
         }
-        if (!snapshot.skills().isEmpty()) {
-            tools.add(new AiTool(
-                    TOOL_SKILL,
-                    "读取指定技能的完整内容。",
-                    objectSchema(Map.of("name", "技能名称"), List.of("name")),
-                    null));
-        }
-        if (!subagents.isEmpty()) {
-            tools.add(new AiTool(
-                    TOOL_SUBAGENT,
-                    "将任务委派给指定子代理并返回其回答。",
-                    objectSchema(
-                            Map.of("name", "子代理名称", "prompt", "委派给子代理的任务描述"),
-                            List.of("name", "prompt")),
-                    null));
-        }
         if (hasRuntime(agent)) {
-            tools.add(new AiTool(
-                    TOOL_RUNTIME_EXEC,
-                    "在 Agent 沙箱中执行命令并返回退出码与输出。",
-                    runtimeSchema(),
-                    null));
+            tools.addAll(RuntimeTools.definitions());
+        }
+        if (settings.workspaceEnabled()) {
+            tools.addAll(WorkspaceTools.definitions());
+        }
+        if (settings.memoryToolsEnabled()) {
+            tools.addAll(MemoryTools.definitions());
         }
         return List.copyOf(tools);
     }
@@ -169,46 +180,10 @@ public class AiAgentContextService {
                 && agent.getSpec().getRuntime().getProvider() != AiAgent.RuntimeProvider.NONE;
     }
 
-    private static JsonNode runtimeSchema() {
-        var node = JsonUtils.mapper().createObjectNode();
-        node.put("type", "object");
-        var properties = node.putObject("properties");
-        var command = properties.putObject("command");
-        command.put("type", "string");
-        command.put("description", "要执行的命令");
-        var args = properties.putObject("args");
-        args.put("type", "array");
-        args.putObject("items").put("type", "string");
-        args.put("description", "命令参数");
-        var workdir = properties.putObject("workdir");
-        workdir.put("type", "string");
-        workdir.put("description", "工作目录");
-        var timeout = properties.putObject("timeoutSeconds");
-        timeout.put("type", "integer");
-        timeout.put("description", "超时秒数");
-        var required = node.putArray("required");
-        required.add("command");
-        return node;
-    }
-
     private static JsonNode emptySchema() {
         var node = JsonUtils.mapper().createObjectNode();
         node.put("type", "object");
         node.putObject("properties");
-        return node;
-    }
-
-    private static JsonNode objectSchema(Map<String, String> properties, List<String> required) {
-        var node = JsonUtils.mapper().createObjectNode();
-        node.put("type", "object");
-        ObjectNode propertyNode = node.putObject("properties");
-        properties.forEach((name, description) -> {
-            var property = propertyNode.putObject(name);
-            property.put("type", "string");
-            property.put("description", description);
-        });
-        var requiredNode = node.putArray("required");
-        required.forEach(requiredNode::add);
         return node;
     }
 
@@ -227,7 +202,9 @@ public class AiAgentContextService {
             List<AiSubagent> subagents,
             List<AiSlashCommand> commands,
             Map<String, String> environment,
-            HarnessSettings harness) {
+            HarnessSettings harness,
+            SkillRuntime skillRuntime,
+            @Nullable TeamTools teamTools) {
 
         public AgentContext {
             systemAdditions = systemAdditions == null ? "" : systemAdditions;
@@ -237,6 +214,7 @@ public class AiAgentContextService {
             commands = commands == null ? List.of() : List.copyOf(commands);
             environment = environment == null ? Map.of() : Map.copyOf(environment);
             harness = harness == null ? HarnessSettings.DEFAULT : harness;
+            skillRuntime = skillRuntime == null ? new SkillRuntime(List.of()) : skillRuntime;
         }
 
         public AgentContext(
@@ -246,7 +224,16 @@ public class AiAgentContextService {
                 List<AiSubagent> subagents,
                 List<AiSlashCommand> commands,
                 Map<String, String> environment) {
-            this(systemAdditions, tools, skills, subagents, commands, environment, HarnessSettings.DEFAULT);
+            this(
+                    systemAdditions,
+                    tools,
+                    skills,
+                    subagents,
+                    commands,
+                    environment,
+                    HarnessSettings.DEFAULT,
+                    new SkillRuntime(List.of()),
+                    null);
         }
     }
 
@@ -256,6 +243,12 @@ public class AiAgentContextService {
             CompactionConfig compaction,
             ToolResultEvictionConfig eviction,
             Duration confirmationTimeout,
+            boolean toolSearchEnabled,
+            boolean toolGroupsEnabled,
+            List<String> asyncToolPatterns,
+            List<String> externalToolPatterns,
+            boolean workspaceEnabled,
+            boolean memoryToolsEnabled,
             PermissionContext permission) {
 
         public static final HarnessSettings DEFAULT = new HarnessSettings(
@@ -267,6 +260,12 @@ public class AiAgentContextService {
                 new ToolResultEvictionConfig(
                         AiAgent.Harness.DEFAULT_TOOL_RESULT_EVICTION_MAX_CHARS),
                 Duration.ofSeconds(AiAgent.Harness.DEFAULT_CONFIRMATION_TIMEOUT_SECONDS),
+                true,
+                true,
+                List.of(),
+                List.of(),
+                true,
+                true,
                 PermissionContext.bypass());
 
         public HarnessSettings {
@@ -275,6 +274,10 @@ public class AiAgentContextService {
             confirmationTimeout = confirmationTimeout == null
                     ? Duration.ofSeconds(AiAgent.Harness.DEFAULT_CONFIRMATION_TIMEOUT_SECONDS)
                     : confirmationTimeout;
+            asyncToolPatterns = asyncToolPatterns == null ? List.of() : List.copyOf(asyncToolPatterns);
+            externalToolPatterns = externalToolPatterns == null
+                    ? List.of()
+                    : List.copyOf(externalToolPatterns);
             permission = permission == null ? PermissionContext.bypass() : permission;
         }
     }

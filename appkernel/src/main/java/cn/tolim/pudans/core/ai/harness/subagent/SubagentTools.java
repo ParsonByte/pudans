@@ -23,12 +23,14 @@ public final class SubagentTools {
 
     public static final String AGENT_RELEASE = "agent_release";
 
+    public static final String AGENT_TASK = "agent_task";
+
     private static final int DEFAULT_TIMEOUT_SECONDS = 30;
 
     private static final int MAX_TIMEOUT_SECONDS = 600;
 
     private static final List<AiTool> DEFINITIONS =
-            List.of(spawnTool(), sendTool(), listTool(), releaseTool());
+            List.of(spawnTool(), sendTool(), listTool(), releaseTool(), taskTool());
 
     private final SubagentRuntime runtime;
 
@@ -48,6 +50,7 @@ public final class SubagentTools {
             case AGENT_SEND -> send(args, context);
             case AGENT_LIST -> list(context);
             case AGENT_RELEASE -> release(args, context);
+            case AGENT_TASK -> task(args, context);
             default -> Mono.just(new HarnessToolkit.ToolResult("未知工具：" + toolName, true));
         };
         return execution.onErrorResume(error -> Mono.just(
@@ -96,6 +99,24 @@ public final class SubagentTools {
     private Mono<HarnessToolkit.ToolResult> release(JsonNode args, RuntimeContext context) {
         return runtime.release(nullableText(args, "agent_key"), nullableText(args, "label"), context)
                 .thenReturn(new HarnessToolkit.ToolResult("{\"status\":\"released\"}", false));
+    }
+
+    private Mono<HarnessToolkit.ToolResult> task(JsonNode args, RuntimeContext context) {
+        var taskId = text(args, "task_id");
+        if (taskId.isBlank()) {
+            return Mono.just(new HarnessToolkit.ToolResult("task_id 不能为空。", true));
+        }
+        if (!bool(args, "wait")) {
+            return runtime.task(taskId, context)
+                    .map(task -> new HarnessToolkit.ToolResult(taskJson(task), false));
+        }
+        var seconds = timeoutSeconds(args);
+        var effective = seconds == 0 ? DEFAULT_TIMEOUT_SECONDS : seconds;
+        return runtime.awaitTask(taskId, context)
+                .timeout(Duration.ofSeconds(effective))
+                .map(task -> new HarnessToolkit.ToolResult(taskJson(task), false))
+                .onErrorResume(error -> Mono.just(new HarnessToolkit.ToolResult(
+                        errorMessage(error), true)));
     }
 
     private static String taskJson(SubagentTask task) {
@@ -194,6 +215,23 @@ public final class SubagentTools {
         return new AiTool(
                 AGENT_RELEASE,
                 "释放空闲子代理并使其句柄失效；运行中的子代理不能释放。",
+                schema,
+                null);
+    }
+
+    private static AiTool taskTool() {
+        var schema = schema();
+        property(schema, "task_id", "string", "后台子代理任务标识", true);
+        property(schema, "wait", "boolean", "是否等待任务完成，默认 false", false);
+        property(
+                schema,
+                "timeout_seconds",
+                "integer",
+                "等待秒数，默认 30，最大 600",
+                false);
+        return new AiTool(
+                AGENT_TASK,
+                "查询后台子代理任务状态；wait=true 时等待任务完成并返回结果。",
                 schema,
                 null);
     }

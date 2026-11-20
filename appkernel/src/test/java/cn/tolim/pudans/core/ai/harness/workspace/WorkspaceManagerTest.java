@@ -40,6 +40,37 @@ class WorkspaceManagerTest {
     }
 
     @Test
+    void listsMovesDeletesAndRestoresSnapshots() {
+        var manager = workspace(tempDir.resolve("workspace"));
+        manager.writeText("a.txt", "one");
+        manager.writeText("dir/b.md", "two");
+
+        assertThat(manager.list(".")).extracting(WorkspaceManager.WorkspaceEntry::name)
+                .containsExactly("a.txt", "dir", "skills");
+        assertThat(manager.list("dir")).singleElement().satisfies(entry -> {
+            assertThat(entry.name()).isEqualTo("b.md");
+            assertThat(entry.directory()).isFalse();
+        });
+
+        manager.move("a.txt", "dir/a.txt");
+        assertThat(manager.exists("a.txt")).isFalse();
+        assertThat(manager.readText("dir/a.txt")).contains("one");
+
+        var snapshot = manager.snapshot();
+        assertThat(manager.snapshots()).contains(snapshot);
+        manager.writeText("dir/a.txt", "changed");
+        manager.delete("dir/a.txt");
+        manager.restore(snapshot);
+
+        assertThat(manager.readText("dir/a.txt")).contains("one");
+        assertThat(manager.readText("dir/b.md")).contains("two");
+        manager.delete("dir");
+        assertThat(manager.exists("dir")).isFalse();
+        assertThatThrownBy(() -> manager.delete("."))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void rejectsSymlinksThatEscapeTheWorkspace() throws IOException {
         var manager = workspace(tempDir.resolve("workspace"));
         var outside = tempDir.resolve("outside");

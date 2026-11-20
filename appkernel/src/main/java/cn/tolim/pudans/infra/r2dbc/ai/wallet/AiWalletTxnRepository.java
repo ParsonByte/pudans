@@ -106,6 +106,21 @@ public class AiWalletTxnRepository {
                 .all();
     }
 
+    public Mono<BigDecimal> chargedSince(String userId, Instant since) {
+        return databaseClient.sql("""
+                        SELECT COALESCE(SUM(-amount), 0) AS total
+                        FROM ai_wallet_txn
+                        WHERE user_id = :userId
+                          AND txn_type = 'CHARGE'
+                          AND created_at >= :since
+                        """)
+                .bind("userId", userId)
+                .bind("since", since)
+                .map((row, metadata) -> row.get("total", BigDecimal.class))
+                .one()
+                .defaultIfEmpty(BigDecimal.ZERO);
+    }
+
     public Flux<WalletTxnRecord> listByUser(String userId, long beforeId, int limit) {
         return databaseClient.sql("""
                         SELECT id, txn_type, amount, balance_after, request_id, provider_account,

@@ -26,6 +26,11 @@ public final class AgentRun {
 
     private final Map<String, Boolean> confirmations = new ConcurrentHashMap<>();
 
+    private final Map<String, Sinks.One<ExternalResult>> pendingExternalResults =
+            new ConcurrentHashMap<>();
+
+    private final Map<String, ExternalResult> externalResults = new ConcurrentHashMap<>();
+
     private volatile Consumer<AgentEvent> eventListener = event -> {};
 
     private Mono<AgentResult> result;
@@ -98,6 +103,37 @@ public final class AgentRun {
                 .doFinally(signal -> pendingConfirmations.remove(toolCallId));
     }
 
+    public Mono<ExternalResult> awaitExternalResult(String toolCallId) {
+        var decided = externalResults.remove(toolCallId);
+        if (decided != null) {
+            emit(new AgentEvent.ExternalExecutionResult(
+                    id, toolCallId, decided.output(), decided.error()));
+            return Mono.just(decided);
+        }
+        Sinks.One<ExternalResult> sink = Sinks.one();
+        pendingExternalResults.put(toolCallId, sink);
+        status.set(AgentRunStatus.SUSPENDED);
+        return sink.asMono()
+                .doOnNext(value -> {
+                    if (!cancelled.get()) {
+                        status.set(AgentRunStatus.RUNNING);
+                    }
+                })
+                .doFinally(signal -> pendingExternalResults.remove(toolCallId));
+    }
+
+    public boolean submitExternalResult(String toolCallId, String output, boolean error) {
+        var result = new ExternalResult(output, error);
+        var sink = pendingExternalResults.remove(toolCallId);
+        if (sink != null) {
+            emit(new AgentEvent.ExternalExecutionResult(
+                    id, toolCallId, result.output(), result.error()));
+            return sink.tryEmitValue(result).isSuccess();
+        }
+        externalResults.put(toolCallId, result);
+        return true;
+    }
+
     public boolean confirm(String toolCallId, boolean approved) {
         var sink = pendingConfirmations.remove(toolCallId);
         if (sink != null) {
@@ -121,9 +157,24 @@ public final class AgentRun {
         pendingConfirmations.values().forEach(sink -> sink.tryEmitValue(false));
         pendingConfirmations.clear();
         confirmations.clear();
+        pendingExternalResults.forEach((toolCallId, sink) -> {
+            var result = new ExternalResult("运行已取消，外部执行未完成。", true);
+            emit(new AgentEvent.ExternalExecutionResult(
+                    id, toolCallId, result.output(), result.error()));
+            sink.tryEmitValue(result);
+        });
+        pendingExternalResults.clear();
+        externalResults.clear();
     }
 
     public void interrupt() {
         cancel();
+    }
+
+    public record ExternalResult(String output, boolean error) {
+
+        public ExternalResult {
+            output = output == null ? "" : output;
+        }
     }
 }

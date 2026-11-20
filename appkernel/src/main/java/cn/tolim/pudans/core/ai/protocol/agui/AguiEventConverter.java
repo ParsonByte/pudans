@@ -42,6 +42,10 @@ public final class AguiEventConverter {
         }
         return switch (event) {
             case AgentEvent.AgentStart ignored -> start();
+            case AgentEvent.ModelCallStart start ->
+                    List.of(new AguiEvent.StepStarted(threadId, runId, step(start.iteration())));
+            case AgentEvent.ModelCallEnd end ->
+                    List.of(new AguiEvent.StepFinished(threadId, runId, step(end.iteration())));
             case AgentEvent.TextBlockDelta delta -> append(text, delta.delta());
             case AgentEvent.TextBlockEnd end -> close(text, end.text());
             case AgentEvent.ThinkingBlockDelta delta -> append(thinking, delta.delta());
@@ -50,10 +54,43 @@ public final class AguiEventConverter {
             case AgentEvent.ToolCallDelta delta -> toolCallArgs(delta.id(), delta.partialArguments());
             case AgentEvent.ToolCallEnd end -> toolCallEnd(end);
             case AgentEvent.ToolResultEnd end -> List.of(toolCallResult(end));
+            case AgentEvent.DataBlockDelta delta -> List.of(new AguiEvent.Raw(
+                    threadId, runId, delta.data()));
+            case AgentEvent.HintBlock hint -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "hint", hint.hint()));
+            case AgentEvent.RequireUserConfirm confirm -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "require_user_confirm", confirm.message()));
+            case AgentEvent.UserConfirmResult result -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "user_confirm_result", Boolean.toString(result.approved())));
+            case AgentEvent.RequireExternalExecution external -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "require_external_execution", external.arguments()));
+            case AgentEvent.ExternalExecutionResult result -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "external_execution_result", result.output()));
+            case AgentEvent.SubagentExposed exposed -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "subagent_exposed", exposed.subagentName()));
+            case AgentEvent.ToolResultProgress progress -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "tool_result_progress", progress.message()));
+            case AgentEvent.ToolResultTextDelta delta -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "tool_result_delta", delta.delta()));
+            case AgentEvent.ToolCompensated compensated -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "tool_compensated", compensated.message()));
+            case AgentEvent.AllToolsDenied ignored -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "all_tools_denied", ""));
+            case AgentEvent.ExceedMaxIters exceeded -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "exceed_max_iters",
+                    Integer.toString(exceeded.maxIters())));
+            case AgentEvent.RequestStop ignored -> List.of(new AguiEvent.Custom(
+                    threadId, runId, "request_stop", ""));
+            case AgentEvent.Custom custom -> List.of(new AguiEvent.Custom(
+                    threadId, runId, custom.name(), custom.payload()));
             case AgentEvent.AgentResult result -> finish(result.content());
             case AgentEvent.AgentEnd ignored -> finish(null);
             default -> List.of();
         };
+    }
+
+    private static String step(int iteration) {
+        return "model:" + iteration;
     }
 
     public synchronized List<AguiEvent> finish(@Nullable String result) {

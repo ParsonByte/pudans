@@ -51,6 +51,9 @@ class AiGenerationRecorderTest {
     @Mock
     AiMetrics metrics;
 
+    @Mock
+    cn.tolim.pudans.core.storage.StorageService storageService;
+
     @InjectMocks
     AiGenerationRecorder recorder;
 

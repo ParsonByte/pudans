@@ -19,11 +19,22 @@ import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
+import cn.tolim.pudans.core.ai.harness.workspace.WorkspaceManager;
+import cn.tolim.pudans.core.ai.harness.workspace.WorkspaceSpec;
+import cn.tolim.pudans.core.ai.harness.workspace.WorkspaceTools;
 import cn.tolim.pudans.core.ai.library.LibraryView;
 import cn.tolim.pudans.core.ai.library.hook.HookService;
 import cn.tolim.pudans.core.ai.library.skill.SkillService;
 import cn.tolim.pudans.core.ai.library.subagent.SubagentService;
+import cn.tolim.pudans.core.ai.memory.MemoryInjection;
+import cn.tolim.pudans.core.ai.memory.MemoryTools;
+import cn.tolim.pudans.core.ai.memory.MemoryType;
+import cn.tolim.pudans.core.ai.memory.endpoint.AiMemoryViewService;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService;
+import cn.tolim.pudans.core.ai.runtime.RuntimeTools;
+import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxFile;
+import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxState;
+import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxStatus;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -44,8 +55,155 @@ class AiChatToolServiceSubagentTest {
 
     private final AgentRuntimeService runtimeService = mock(AgentRuntimeService.class);
 
+    private final cn.tolim.pudans.core.ai.harness.workspace.WorkspaceService workspaceService =
+            mock(cn.tolim.pudans.core.ai.harness.workspace.WorkspaceService.class);
+
+    private final AiMemoryViewService memoryViewService = mock(AiMemoryViewService.class);
+
+    private final cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository memoryRepository =
+            mock(cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository.class);
+
     private final AiChatToolService service = new AiChatToolService(
-            libraryView, skillService, subagentService, hookService, gatewayService, runtimeService);
+            libraryView,
+            skillService,
+            subagentService,
+            hookService,
+            gatewayService,
+            runtimeService,
+            workspaceService,
+            memoryViewService,
+            memoryRepository);
+
+    @org.junit.jupiter.api.io.TempDir
+    java.nio.file.Path tempDir;
+
+    @Test
+    void readsAndWritesWorkspaceFilesThroughTools() {
+        when(hookService.dispatch(any(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
+        var manager = new WorkspaceManager(
+                WorkspaceSpec.defaults(tempDir.resolve("workspace")));
+        when(workspaceService.manager("agent-a", "user-1")).thenReturn(manager);
+
+        var write = service
+                .execute(
+                        "user-1",
+                        agent(),
+                        new AiContentPart.ToolCall(
+                                "call-1",
+                                WorkspaceTools.WRITE,
+                                JsonUtils.mapper().createObjectNode()
+                                        .put("path", "notes/a.md")
+                                        .put("content", "hello"),
+                                null))
+                .block();
+        var read = service
+                .execute(
+                        "user-1",
+                        agent(),
+                        new AiContentPart.ToolCall(
+                                "call-2",
+                                WorkspaceTools.READ,
+                                JsonUtils.mapper().createObjectNode().put("path", "notes/a.md"),
+                                null))
+                .block();
+
+        assertThat(write).isNotNull();
+        assertThat(write.isError()).isFalse();
+        assertThat(read).isNotNull();
+        assertThat(read.isError()).isFalse();
+        assertThat(read.output()).contains("hello");
+    }
+
+    @Test
+    void readsWritesAndReportsRuntimeFilesThroughTools() {
+        when(hookService.dispatch(any(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
+        when(runtimeService.readFile("agent-a", "user-1", "/tmp/a"))
+                .thenReturn(Mono.just(new SandboxFile("/tmp/a", "utf-8", "hi", 2)));
+        when(runtimeService.writeFile("agent-a", "user-1", "/tmp/a", "utf-8", "next"))
+                .thenReturn(Mono.empty());
+        when(runtimeService.status("agent-a", "user-1"))
+                .thenReturn(Mono.just(new SandboxStatus(SandboxState.RUNNING, "ok")));
+
+        var read = service
+                .execute(
+                        "user-1",
+                        agent(),
+                        new AiContentPart.ToolCall(
+                                "call-1",
+                                RuntimeTools.READ,
+                                JsonUtils.mapper().createObjectNode().put("path", "/tmp/a"),
+                                null))
+                .block();
+        var write = service
+                .execute(
+                        "user-1",
+                        agent(),
+                        new AiContentPart.ToolCall(
+                                "call-2",
+                                RuntimeTools.WRITE,
+                                JsonUtils.mapper().createObjectNode()
+                                        .put("path", "/tmp/a")
+                                        .put("content", "next")
+                                        .put("encoding", "utf-8"),
+                                null))
+                .block();
+        var status = service
+                .execute(
+                        "user-1",
+                        agent(),
+                        new AiContentPart.ToolCall(
+                                "call-3",
+                                RuntimeTools.STATUS,
+                                JsonUtils.mapper().createObjectNode(),
+                                null))
+                .block();
+
+        assertThat(read).isNotNull();
+        assertThat(read.output()).contains("hi");
+        assertThat(write).isNotNull();
+        assertThat(write.isError()).isFalse();
+        assertThat(status).isNotNull();
+        assertThat(status.output()).contains("RUNNING").contains("ok");
+    }
+
+    @Test
+    void searchesAndAddsLongTermMemory() {
+        when(hookService.dispatch(any(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
+        when(memoryViewService.search("user-1", "team-a", "agent-a", "部署", 5))
+                .thenReturn(Mono.just(List.of(new MemoryInjection.Ref(
+                        1L, "record-1", "生产环境部署在东京", MemoryType.WORK_FACT, "部署", 0.9))));
+        var search = service
+                .execute(
+                        "user-1",
+                        agent(),
+                        new AiContentPart.ToolCall(
+                                "call-1",
+                                MemoryTools.SEARCH,
+                                JsonUtils.mapper().createObjectNode().put("query", "部署"),
+                                null))
+                .block();
+
+        assertThat(search).isNotNull();
+        assertThat(search.output()).contains("生产环境部署在东京");
+
+        when(memoryRepository.insert(any())).thenAnswer(invocation -> {
+            var record = invocation.getArgument(0, cn.tolim.pudans.core.ai.memory.L1MemoryRecord.class);
+            return Mono.just(record.withId(9L));
+        });
+        var add = service
+                .execute(
+                        "user-1",
+                        agent(),
+                        new AiContentPart.ToolCall(
+                                "call-2",
+                                MemoryTools.ADD,
+                                JsonUtils.mapper().createObjectNode().put("content", "记住东京"),
+                                null))
+                .block();
+
+        assertThat(add).isNotNull();
+        assertThat(add.output()).contains("\"id\":9");
+    }
 
     @Test
     void runsSubagentsThroughHarnessAgent() {
@@ -84,6 +242,7 @@ class AiChatToolServiceSubagentTest {
         var metadata = new Metadata();
         metadata.setName("agent-a");
         agent.setMetadata(metadata);
+        agent.getSpec().setTeam("team-a");
         return agent;
     }
 

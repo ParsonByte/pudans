@@ -260,7 +260,9 @@ public class AiGatewayEndpoint implements CustomEndpoint {
                 AiGatewayHeaders.routeGroup(request),
                 AiGatewayHeaders.agentName(request),
                 AiGatewayHeaders.conversationId(request),
-                null,
+                StringUtils.hasText(ir.requestParams().model())
+                        ? ir.requestParams().model().strip()
+                        : null,
                 callerKey);
     }
 }

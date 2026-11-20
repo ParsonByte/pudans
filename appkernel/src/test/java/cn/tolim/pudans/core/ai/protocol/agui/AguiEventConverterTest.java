@@ -35,6 +35,23 @@ class AguiEventConverterTest {
     }
 
     @Test
+    void mapsModelStepsAndHarnessSpecificEvents() {
+        assertThat(converter.convert(new AgentEvent.ModelCallStart(RUN_ID, 0)))
+                .containsExactly(new AguiEvent.StepStarted(THREAD_ID, RUN_ID, "model:0"));
+        assertThat(converter.convert(new AgentEvent.ModelCallEnd(RUN_ID, 0, "STOP")))
+                .containsExactly(new AguiEvent.StepFinished(THREAD_ID, RUN_ID, "model:0"));
+        assertThat(converter.convert(new AgentEvent.HintBlock(RUN_ID, "已压缩")))
+                .containsExactly(new AguiEvent.Custom(THREAD_ID, RUN_ID, "hint", "已压缩"));
+        assertThat(converter.convert(new AgentEvent.RequireUserConfirm(
+                        RUN_ID, "call-1", "echo", "需要确认")))
+                .containsExactly(new AguiEvent.Custom(
+                        THREAD_ID, RUN_ID, "require_user_confirm", "需要确认"));
+        assertThat(converter.convert(new AgentEvent.SubagentExposed(RUN_ID, "helper")))
+                .containsExactly(new AguiEvent.Custom(
+                        THREAD_ID, RUN_ID, "subagent_exposed", "helper"));
+    }
+
+    @Test
     void mapsThinkingDeltasToTheirOwnTextMessage() {
         var first = converter.convert(new AgentEvent.ThinkingBlockDelta(RUN_ID, "思考"));
         var messageId = messageId(first.get(0));

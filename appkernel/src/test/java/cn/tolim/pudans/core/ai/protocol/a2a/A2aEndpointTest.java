@@ -156,7 +156,7 @@ class A2aEndpointTest {
         assertThat(response.path("error").path("code").asInt())
                 .isEqualTo(A2aRpcException.INTERNAL_ERROR);
         assertThat(response.path("error").path("message").asText()).contains("模型调用失败。");
-        assertThat(store.find(USER, "task-fail").orElseThrow().status().state())
+        assertThat(store.find(USER, "task-fail").block().status().state())
                 .isEqualTo(A2aTaskStatus.FAILED);
     }
 
@@ -172,7 +172,7 @@ class A2aEndpointTest {
 
         assertThat(response.path("error").path("code").asInt())
                 .isEqualTo(A2aRpcException.INTERNAL_ERROR);
-        assertThat(store.find(USER, "task-start-fail")).isEmpty();
+        assertThat(store.find(USER, "task-start-fail").block()).isNull();
     }
 
     @Test
@@ -288,7 +288,7 @@ class A2aEndpointTest {
         assertThat(events.get(2).path("result").path("status").path("state").asText())
                 .isEqualTo(A2aTaskStatus.FAILED);
         assertThat(events.get(2).path("result").path("final").asBoolean()).isTrue();
-        assertThat(store.find(USER, "task-stream-fail").orElseThrow().status().state())
+        assertThat(store.find(USER, "task-stream-fail").block().status().state())
                 .isEqualTo(A2aTaskStatus.FAILED);
     }
 

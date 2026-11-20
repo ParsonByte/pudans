@@ -6,6 +6,8 @@ import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.conversation.AiConversationService;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayEvent.Delta;
@@ -503,9 +505,16 @@ public class AiGatewayService {
         if (!rateLimitEnabled(prepared.setting())) {
             return call;
         }
+        var userLimit = concurrentLimit(prepared);
         return Mono.usingWhen(
                 rateLimiter.acquire(resources.provider(), resources.account()),
-                permit -> call,
+                permit -> userLimit > 0
+                        ? Mono.usingWhen(
+                                rateLimiter.acquireUser(
+                                        prepared.invocation().userId(), userLimit),
+                                userPermit -> call,
+                                rateLimiter::release)
+                        : call,
                 rateLimiter::release);
     }
 
@@ -514,10 +523,25 @@ public class AiGatewayService {
         if (!rateLimitEnabled(prepared.setting())) {
             return stream;
         }
+        var userLimit = concurrentLimit(prepared);
         return Flux.usingWhen(
                 rateLimiter.acquire(resources.provider(), resources.account()),
-                permit -> stream,
+                permit -> userLimit > 0
+                        ? Flux.usingWhen(
+                                rateLimiter.acquireUser(
+                                        prepared.invocation().userId(), userLimit),
+                                userPermit -> stream,
+                                rateLimiter::release)
+                        : stream,
                 rateLimiter::release);
+    }
+
+    private static int concurrentLimit(Prepared prepared) {
+        var setting = prepared.setting();
+        var billing = setting == null || setting.getBilling() == null
+                ? null
+                : setting.getBilling();
+        return billing == null ? 0 : Math.max(0, billing.getConcurrentLimit());
     }
 
     private static Duration attemptTimeout(Prepared prepared) {
@@ -799,9 +823,17 @@ public class AiGatewayService {
     }
 
     // 用途按调用来源区分，入口按网关协议固定，便于用量页按 purpose/via 筛选。
-    private static RouteTrace gatewayTrace(RouteTrace trace, AiGatewayInvocation invocation) {
-        return trace.withCallerKey(invocation.callerKey())
-                .withGatewayContext(purpose(invocation), via(invocation));
+    private static JsonNode gatewayTrace(RouteTrace trace, AiGatewayInvocation invocation) {
+        var node = JsonUtils.mapper()
+                .valueToTree(trace.withCallerKey(invocation.callerKey())
+                        .withGatewayContext(purpose(invocation), via(invocation)));
+        if (node instanceof ObjectNode object) {
+            object.put("tries", trace.attempts().size());
+            if (trace.selected() != null && trace.selected().tier() != null) {
+                object.put("servedEffort", trace.selected().tier().name());
+            }
+        }
+        return node;
     }
 
     private static String purpose(AiGatewayInvocation invocation) {

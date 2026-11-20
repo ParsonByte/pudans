@@ -109,6 +109,18 @@ public class AiAgent extends AbstractExtension {
 
         private int confirmationTimeoutSeconds = DEFAULT_CONFIRMATION_TIMEOUT_SECONDS;
 
+        private boolean toolSearchEnabled = true;
+
+        private boolean toolGroupsEnabled = true;
+
+        private List<String> asyncToolPatterns = new ArrayList<>();
+
+        private List<String> externalToolPatterns = new ArrayList<>();
+
+        private boolean workspaceEnabled = true;
+
+        private boolean memoryToolsEnabled = true;
+
         private PermissionMode permissionMode = PermissionMode.BYPASS;
 
         private List<PermissionRule> permissionRules = new ArrayList<>();

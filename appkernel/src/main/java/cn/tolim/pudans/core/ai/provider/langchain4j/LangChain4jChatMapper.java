@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.AudioContent;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.ImageContent;
@@ -24,6 +25,7 @@ import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.VideoContent;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ChatRequestParameters;
 import dev.langchain4j.model.chat.request.DefaultChatRequestParameters;
@@ -272,6 +274,10 @@ public abstract class LangChain4jChatMapper {
                 contents.add(image(image));
             } else if (part instanceof AiContentPart.File file) {
                 contents.add(file(file));
+            } else if (part instanceof AiContentPart.Audio audio) {
+                contents.add(audio(audio));
+            } else if (part instanceof AiContentPart.Video video) {
+                contents.add(video(video));
             } else if (part instanceof AiContentPart.ToolResult result) {
                 flushUser(messages, contents);
                 messages.add(toolResult(result, toolNames));
@@ -287,6 +293,26 @@ public abstract class LangChain4jChatMapper {
             messages.add(UserMessage.from(contents));
             contents.clear();
         }
+    }
+
+    protected Content audio(AiContentPart.Audio audio) {
+        if (StringUtils.hasText(audio.data())) {
+            return AudioContent.from(audio.data(), mediaType(audio.mediaType(), "audio/mpeg"));
+        }
+        if (StringUtils.hasText(audio.url())) {
+            return AudioContent.from(audio.url());
+        }
+        throw new AiProtocolException("音频缺少 data 或 url");
+    }
+
+    protected Content video(AiContentPart.Video video) {
+        if (StringUtils.hasText(video.data())) {
+            return VideoContent.from(video.data(), mediaType(video.mediaType(), "video/mp4"));
+        }
+        if (StringUtils.hasText(video.url())) {
+            return VideoContent.from(video.url());
+        }
+        throw new AiProtocolException("视频缺少 data 或 url");
     }
 
     protected Content image(AiContentPart.Image image) {

@@ -74,6 +74,37 @@ public class AiMemoryL1Repository {
         return spec.map((row, metadata) -> record.withId(row.get("id", Long.class))).one();
     }
 
+    public Mono<Long> applyDecay(int amount, int minScore, int staleDays) {
+        return databaseClient.sql("""
+                        UPDATE ai_memory_l1
+                        SET decay_score = GREATEST(decay_score - :amount, :minScore),
+                            updated_at = now()
+                        WHERE status = 'ACTIVE'
+                          AND decay_score > :minScore
+                          AND updated_at < now() - make_interval(days => :days)
+                        """)
+                .bind("amount", amount)
+                .bind("minScore", minScore)
+                .bind("days", staleDays)
+                .fetch()
+                .rowsUpdated();
+    }
+
+    public Mono<Long> boostDecay(List<Long> ids, int amount) {
+        if (ids == null || ids.isEmpty()) {
+            return Mono.just(0L);
+        }
+        return databaseClient.sql("""
+                        UPDATE ai_memory_l1
+                        SET decay_score = LEAST(decay_score + :amount, 100)
+                        WHERE id = ANY(:ids)
+                        """)
+                .bind("amount", amount)
+                .bind("ids", ids.toArray(Long[]::new))
+                .fetch()
+                .rowsUpdated();
+    }
+
     public Mono<L1MemoryRecord> updateExisting(L1MemoryRecord record) {
         var spec = databaseClient.sql("""
                         UPDATE ai_memory_l1

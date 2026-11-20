@@ -91,6 +91,18 @@ public class AiChatEndpoint implements CustomEndpoint {
                         .tag(TAG)
                         .requestBody(requestBodyBuilder().required(true).implementation(ToolConfirmation.class))
                         .response(responseBuilder()))
+                .POST("/chats/-/tool-external-results", this::submitExternalResult, builder -> builder
+                        .operationId("submitChatToolExternalResult")
+                        .description("Submit the result of an externally executed tool call.")
+                        .tag(TAG)
+                        .requestBody(requestBodyBuilder().required(true)
+                                .implementation(ToolExternalResultRequest.class))
+                        .response(responseBuilder()))
+                .POST("/chats/-/runs/{runId}/interrupt", this::interruptRun, builder -> builder
+                        .operationId("interruptChatRun")
+                        .description("Interrupt an active chat agent run.")
+                        .tag(TAG)
+                        .response(responseBuilder()))
                 .POST("/chats/-/attachments", this::uploadAttachment, builder -> builder
                         .operationId("uploadChatAttachment")
                         .description("Upload a multimodal attachment for a chat message.")
@@ -139,13 +151,48 @@ public class AiChatEndpoint implements CustomEndpoint {
                                     confirmation.toolCallId(),
                                     confirmation.approved())
                             ? ServerResponse.accepted().build()
-                            : ServerResponse.status(HttpStatus.NOT_FOUND)
-                                    .bodyValue(Map.of(
-                                            "code",
-                                            "ai-chat-run-not-found",
-                                            "detail",
-                                            "工具确认请求不存在或已过期。"));
+                            : runNotFound();
                 });
+    }
+
+    private Mono<ServerResponse> submitExternalResult(ServerRequest request) {
+        return requests
+                .userId(request, "ai-chat-unauthenticated", "未认证。")
+                .zipWith(body(request, ToolExternalResultRequest.class))
+                .flatMap(tuple -> {
+                    var result = tuple.getT2();
+                    if (!StringUtils.hasText(result.runId())
+                            || !StringUtils.hasText(result.toolCallId())) {
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_REQUEST,
+                                CODE_BODY_INVALID,
+                                "runId 与 toolCallId 不能为空。"));
+                    }
+                    return chatService.submitExternalResult(
+                                    tuple.getT1(),
+                                    result.runId(),
+                                    result.toolCallId(),
+                                    result.output(),
+                                    result.error())
+                            ? ServerResponse.accepted().build()
+                            : runNotFound();
+                });
+    }
+
+    private Mono<ServerResponse> interruptRun(ServerRequest request) {
+        var runId = request.pathVariable("runId");
+        return requests
+                .userId(request, "ai-chat-unauthenticated", "未认证。")
+                .flatMap(userId -> chatService.interrupt(userId, runId)
+                        ? ServerResponse.accepted().build()
+                        : runNotFound());
+    }
+
+    private static Mono<ServerResponse> runNotFound() {
+        return ServerResponse.status(HttpStatus.NOT_FOUND)
+                .bodyValue(Map.of(
+                        "code", "ai-chat-run-not-found",
+                        "detail", "运行不存在或已结束。"));
     }
 
     private Mono<ServerResponse> uploadAttachment(ServerRequest request) {
@@ -297,6 +344,9 @@ public class AiChatEndpoint implements CustomEndpoint {
 
     public record ToolConfirmation(String runId, String toolCallId, boolean approved) {}
 
+    public record ToolExternalResultRequest(
+            String runId, String toolCallId, String output, boolean error) {}
+
     private Mono<AiChatCommand> command(ServerRequest request) {
         return requests
                 .userId(request, "ai-chat-unauthenticated", "未认证。")
@@ -333,11 +383,15 @@ public class AiChatEndpoint implements CustomEndpoint {
     private String encode(AiChatStreamEvent event) {
         return switch (event) {
             case AiChatStreamEvent.Meta meta -> event("meta", metaJson(meta));
+            case AiChatStreamEvent.RunStarted started -> event("run_started", runStartedJson(started));
             case AiChatStreamEvent.Delta delta -> event("delta", deltaJson(delta));
             case AiChatStreamEvent.CitationEvent citation -> event("citation", citationJson(citation));
             case AiChatStreamEvent.ToolCall toolCall -> event("tool_call", toolCallJson(toolCall));
             case AiChatStreamEvent.ToolResult toolResult -> event("tool_result", toolResultJson(toolResult));
             case AiChatStreamEvent.ToolConfirm toolConfirm -> event("tool_confirm", toolConfirmJson(toolConfirm));
+            case AiChatStreamEvent.ToolExternal external -> event("tool_external", toolExternalJson(external));
+            case AiChatStreamEvent.ToolExternalResult externalResult ->
+                    event("tool_external_result", toolExternalResultJson(externalResult));
             case AiChatStreamEvent.Artifact artifact -> event("artifact", artifactJson(artifact));
             case AiChatStreamEvent.Stage stage -> event("stage", stageJson(stage));
             case AiChatStreamEvent.Usage usage -> event("usage", usageJson(usage));
@@ -404,6 +458,30 @@ public class AiChatEndpoint implements CustomEndpoint {
         put(node, "output", event.output());
         node.put("isError", event.isError());
         node.put("durationMs", event.durationMs());
+        return node;
+    }
+
+    private ObjectNode runStartedJson(AiChatStreamEvent.RunStarted event) {
+        var node = mapper.createObjectNode();
+        put(node, "runId", event.runId());
+        return node;
+    }
+
+    private ObjectNode toolExternalJson(AiChatStreamEvent.ToolExternal event) {
+        var node = mapper.createObjectNode();
+        put(node, "runId", event.runId());
+        put(node, "toolCallId", event.toolCallId());
+        put(node, "name", event.name());
+        put(node, "arguments", event.arguments());
+        return node;
+    }
+
+    private ObjectNode toolExternalResultJson(AiChatStreamEvent.ToolExternalResult event) {
+        var node = mapper.createObjectNode();
+        put(node, "runId", event.runId());
+        put(node, "toolCallId", event.toolCallId());
+        put(node, "output", event.output());
+        node.put("isError", event.error());
         return node;
     }
 

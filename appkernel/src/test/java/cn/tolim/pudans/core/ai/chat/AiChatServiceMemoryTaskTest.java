@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.ai.chat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -23,6 +24,7 @@ import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.conversation.AiConversationService;
 import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
 import cn.tolim.pudans.core.ai.library.hook.HookService;
+import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
 import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayEvent;
@@ -35,6 +37,11 @@ import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.harness.agent.AgentState;
+import cn.tolim.pudans.core.ai.harness.observability.HarnessObservability;
+import cn.tolim.pudans.core.ai.harness.subagent.SubagentRuntime;
+import cn.tolim.pudans.core.ai.harness.subagent.SubagentTools;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkitFactory;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.UserMessage;
 import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
@@ -120,6 +127,18 @@ class AiChatServiceMemoryTaskTest {
     @Mock
     cn.tolim.pudans.core.ai.harness.agent.AgentStateStore stateStore;
 
+    @Mock
+    SubagentToolFactory subagentToolFactory;
+
+    @Mock
+    HarnessToolkitFactory harnessToolkitFactory;
+
+    @Mock
+    McpServerService mcpServerService;
+
+    @Mock
+    HarnessObservability harnessObservability;
+
     private AiChatService service;
 
     @BeforeEach
@@ -133,6 +152,16 @@ class AiChatServiceMemoryTaskTest {
         org.mockito.Mockito.lenient()
                 .when(stateStore.save(anyString(), anyString(), any()))
                 .thenReturn(Mono.empty());
+        org.mockito.Mockito.lenient()
+                .when(subagentToolFactory.create(any(), any()))
+                .thenReturn(Mono.just(new SubagentTools(new SubagentRuntime())));
+        org.mockito.Mockito.lenient()
+                .when(harnessToolkitFactory.create(any(), any(), anyBoolean(), any()))
+                .thenAnswer(invocation -> new HarnessToolkit().fallbackHandler(
+                        invocation.getArgument(1, HarnessToolkit.ToolHandler.class)));
+        org.mockito.Mockito.lenient()
+                .when(mcpServerService.decorateToolkit(any(), any()))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         service = new AiChatService(
                 settingService,
                 chatModeService,
@@ -151,7 +180,11 @@ class AiChatServiceMemoryTaskTest {
                 slashCommandService,
                 hookService,
                 journalStore,
-                stateStore);
+                stateStore,
+                subagentToolFactory,
+                harnessToolkitFactory,
+                mcpServerService,
+                harnessObservability);
     }
 
     @Test

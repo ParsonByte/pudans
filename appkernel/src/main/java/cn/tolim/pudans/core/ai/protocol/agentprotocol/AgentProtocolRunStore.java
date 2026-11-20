@@ -1,11 +1,15 @@
 package cn.tolim.pudans.core.ai.protocol.agentprotocol;
 
 import cn.tolim.pudans.core.ai.harness.agent.AgentRun;
+import cn.tolim.pudans.infra.r2dbc.ai.protocol.AiAgentProtocolRunRepository;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import reactor.core.publisher.Mono;
 
 @Component
 public class AgentProtocolRunStore {
@@ -14,41 +18,126 @@ public class AgentProtocolRunStore {
 
     private final ConcurrentHashMap<ThreadKey, String> latestRuns = new ConcurrentHashMap<>();
 
-    RunRecord create(String userId, String runId, String threadId, @Nullable String agentId, AgentRun run) {
+    private final AiAgentProtocolRunRepository repository;
+
+    @Autowired
+    public AgentProtocolRunStore(AiAgentProtocolRunRepository repository) {
+        this.repository = repository;
+    }
+
+    AgentProtocolRunStore() {
+        this.repository = null;
+    }
+
+    Mono<RunRecord> create(
+            String userId, String runId, String threadId, @Nullable String agentId, AgentRun run) {
         var record = new RunRecord(userId, runId, threadId, agentId, run);
         runs.put(runId, record);
         latestRuns.put(new ThreadKey(userId, threadId), runId);
-        return record;
+        return persist(record).thenReturn(record);
     }
 
-    public Optional<RunSnapshot> find(String userId, String runId) {
-        return owned(userId, runId).map(RunRecord::snapshot);
+    public Mono<RunSnapshot> find(String userId, String runId) {
+        var cached = owned(userId, runId);
+        if (cached.isPresent()) {
+            return Mono.just(cached.get().snapshot());
+        }
+        return findPersisted(userId, runId);
     }
 
-    public Optional<RunSnapshot> latestByThread(String userId, String threadId) {
+    public Mono<RunSnapshot> latestByThread(String userId, String threadId) {
         var runId = latestRuns.get(new ThreadKey(userId, threadId));
-        return runId == null ? Optional.empty() : find(userId, runId);
+        if (runId != null) {
+            var cached = owned(userId, runId);
+            if (cached.isPresent()) {
+                return Mono.just(cached.get().snapshot());
+            }
+        }
+        return repository == null
+                ? Mono.empty()
+                : repository.latestByThread(userId, threadId).map(AgentProtocolRunStore::snapshot);
     }
 
-    public Optional<RunSnapshot> cancel(String userId, String runId) {
-        return owned(userId, runId).map(record -> {
+    public Mono<RunSnapshot> cancel(String userId, String runId) {
+        var cached = owned(userId, runId);
+        if (cached.isPresent()) {
+            var record = cached.get();
             record.cancel();
-            return record.snapshot();
+            return persist(record).thenReturn(record.snapshot());
+        }
+        return findPersisted(userId, runId).flatMap(snapshot -> {
+            if (snapshot.status().isTerminal()) {
+                return Mono.just(snapshot);
+            }
+            var cancelled = new RunSnapshot(
+                    snapshot.runId(),
+                    snapshot.threadId(),
+                    snapshot.agentId(),
+                    AgentProtocolRunStatus.CANCELLED,
+                    snapshot.content(),
+                    snapshot.error());
+            return repository == null
+                    ? Mono.just(cancelled)
+                    : repository
+                            .upsert(
+                                    userId,
+                                    runId,
+                                    snapshot.threadId(),
+                                    snapshot.agentId(),
+                                    cancelled.status().name(),
+                                    cancelled.content(),
+                                    cancelled.error())
+                            .thenReturn(cancelled);
         });
     }
 
-    void complete(String runId, String content) {
+    Mono<Void> complete(String runId, String content) {
         var record = runs.get(runId);
-        if (record != null) {
-            record.complete(content);
+        if (record == null) {
+            return Mono.empty();
         }
+        record.complete(content);
+        return persist(record);
     }
 
-    void fail(String runId, String error) {
+    Mono<Void> fail(String runId, String error) {
         var record = runs.get(runId);
-        if (record != null) {
-            record.fail(error);
+        if (record == null) {
+            return Mono.empty();
         }
+        record.fail(error);
+        return persist(record);
+    }
+
+    private Mono<Void> persist(RunRecord record) {
+        if (repository == null) {
+            return Mono.empty();
+        }
+        var snapshot = record.snapshot();
+        return repository.upsert(
+                record.userId(),
+                record.runId(),
+                record.threadId(),
+                record.agentId(),
+                snapshot.status().name(),
+                snapshot.content(),
+                snapshot.error());
+    }
+
+    private Mono<RunSnapshot> findPersisted(String userId, String runId) {
+        return repository == null
+                ? Mono.empty()
+                : repository.find(userId, runId).map(AgentProtocolRunStore::snapshot);
+    }
+
+    private static RunSnapshot snapshot(AiAgentProtocolRunRepository.RunRow row) {
+        return new RunSnapshot(
+                row.runId(),
+                row.threadId(),
+                StringUtils.hasText(row.agentId()) ? row.agentId() : null,
+                AgentProtocolRunStatus.valueOf(row.status()),
+                StringUtils.hasText(row.content()) ? row.content() : null,
+                StringUtils.hasText(row.error()) ? row.error() : null);
     }
 
     private Optional<RunRecord> owned(String userId, String runId) {
