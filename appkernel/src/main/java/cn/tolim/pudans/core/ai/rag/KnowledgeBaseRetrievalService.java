@@ -4,9 +4,13 @@ import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
 import cn.tolim.pudans.core.ai.rerank.AiRerankService;
 import cn.tolim.pudans.core.ai.rerank.RerankResult;
 import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbChunkRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbEmbeddingStore;
 import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbQueryLogRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import dev.langchain4j.data.embedding.Embedding;
+import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
+import dev.langchain4j.store.embedding.filter.MetadataFilterBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -15,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -27,6 +30,8 @@ public class KnowledgeBaseRetrievalService {
     private static final int SCORE_SCALE = 4;
 
     private final AiKbChunkRepository chunkRepository;
+
+    private final AiKbEmbeddingStore embeddingStore;
 
     private final AiKbQueryLogRepository queryLogRepository;
 
@@ -56,10 +61,12 @@ public class KnowledgeBaseRetrievalService {
                     .thenReturn(new KnowledgeBaseRetrievalResult("", List.of()));
         }
         var keywordCandidates = chunkRepository.searchKeyword(kbNames, request.query(), request.candidateLimit());
-        var vectorCandidates = request.queryEmbedding() == null || request.queryEmbedding().length == 0
-                ? Flux.<RetrievalCandidate>empty()
-                : chunkRepository.searchVector(kbNames, request.queryEmbedding(), request.candidateLimit());
-        return Mono.zip(keywordCandidates.collectList(), vectorCandidates.collectList())
+        Mono<List<RetrievalCandidate>> vectorCandidates =
+                request.queryEmbedding() == null || request.queryEmbedding().length == 0
+                        ? Mono.just(List.of())
+                        : embeddingStore.searchCandidates(vectorSearchRequest(
+                                kbNames, request.queryEmbedding(), request.candidateLimit()));
+        return Mono.zip(keywordCandidates.collectList(), vectorCandidates)
                 .flatMap(candidates -> retrieveChunks(
                         candidates.getT1(), candidates.getT2(), readableKnowledgeBases, request))
                 .map(outcome -> new FusedResult(
@@ -68,6 +75,15 @@ public class KnowledgeBaseRetrievalService {
                                 request, kbNames, fused.chunks(), fused.reranked(), startedAt)
                         .thenReturn(new KnowledgeBaseRetrievalResult(
                                 fused.prompt().prompt(), fused.prompt().citations())));
+    }
+
+    private static EmbeddingSearchRequest vectorSearchRequest(
+            List<String> kbNames, float[] queryVector, int candidateLimit) {
+        return EmbeddingSearchRequest.builder()
+                .queryEmbedding(Embedding.from(queryVector))
+                .maxResults(candidateLimit)
+                .filter(MetadataFilterBuilder.metadataKey("kb_name").isIn(kbNames))
+                .build();
     }
 
     private Mono<RerankOutcome> retrieveChunks(

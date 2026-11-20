@@ -11,6 +11,15 @@ class KnowledgeBaseAclTest {
     private final KnowledgeBaseAcl acl = new KnowledgeBaseAcl();
 
     @Test
+    void disabledKnowledgeBasesRemainVisibleButUnreadable() {
+        var knowledgeBase = knowledgeBase(KnowledgeBase.Visibility.COMPANY, "owner", "dept-a");
+        knowledgeBase.getSpec().setStatus(KnowledgeBase.BaseStatus.DISABLED);
+
+        assertThat(acl.canRead(knowledgeBase, "alice", Set.of(), "dept-b")).isFalse();
+        assertThat(acl.canView(knowledgeBase, "alice", Set.of(), "dept-b")).isTrue();
+    }
+
+    @Test
     void allowsEveryUserToReadACompanyKnowledgeBase() {
         var knowledgeBase = knowledgeBase(KnowledgeBase.Visibility.COMPANY, "owner", "dept-a");
 

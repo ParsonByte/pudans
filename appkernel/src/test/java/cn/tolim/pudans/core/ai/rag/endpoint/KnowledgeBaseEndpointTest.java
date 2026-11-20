@@ -63,7 +63,7 @@ class KnowledgeBaseEndpointTest {
     @Test
     void listsReadableKnowledgeBases() {
         authenticatedUser();
-        when(managementService.listReadable(UID, Set.of(AI_USER_ROLE), null))
+        when(managementService.listVisible(UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Flux.just(knowledgeBase("kb-a")));
 
         client.get()
@@ -81,7 +81,7 @@ class KnowledgeBaseEndpointTest {
     @Test
     void returnsKnowledgeBaseDetail() {
         authenticatedUser();
-        when(managementService.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(managementService.findVisible("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase("kb-a")));
 
         client.get()
@@ -97,7 +97,7 @@ class KnowledgeBaseEndpointTest {
     @Test
     void hidesUnreadableKnowledgeBaseDetail() {
         authenticatedUser();
-        when(managementService.findReadable("kb-private", UID, Set.of(AI_USER_ROLE), null))
+        when(managementService.findVisible("kb-private", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.NOT_FOUND,
                         KnowledgeBaseManagementService.CODE_KB_NOT_FOUND,

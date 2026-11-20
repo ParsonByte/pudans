@@ -72,10 +72,22 @@ public class KnowledgeBaseManagementService {
                 .filter(knowledgeBase -> knowledgeBaseAcl.canRead(knowledgeBase, userId, roleNames, deptId));
     }
 
+    public Flux<KnowledgeBase> listVisible(String userId, Set<String> roleNames, @Nullable String deptId) {
+        return client.listAll(KnowledgeBase.class, ListOptions.builder().build(), defaultSort())
+                .filter(knowledgeBase -> knowledgeBaseAcl.canView(knowledgeBase, userId, roleNames, deptId));
+    }
+
     public Mono<KnowledgeBase> findReadable(
             String name, String userId, Set<String> roleNames, @Nullable String deptId) {
         return client.fetch(KnowledgeBase.class, name)
                 .filter(knowledgeBase -> knowledgeBaseAcl.canRead(knowledgeBase, userId, roleNames, deptId))
+                .switchIfEmpty(Mono.error(notFound()));
+    }
+
+    public Mono<KnowledgeBase> findVisible(
+            String name, String userId, Set<String> roleNames, @Nullable String deptId) {
+        return client.fetch(KnowledgeBase.class, name)
+                .filter(knowledgeBase -> knowledgeBaseAcl.canView(knowledgeBase, userId, roleNames, deptId))
                 .switchIfEmpty(Mono.error(notFound()));
     }
 
