@@ -5,6 +5,7 @@ import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.conversation.AiConversationService;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayEvent.Delta;
@@ -23,12 +24,13 @@ import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
-import cn.tolim.pudans.core.ai.provider.AiProviderAdapterRegistry;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
 import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
-import cn.tolim.pudans.core.ai.routing.RoutePlan;
 import cn.tolim.pudans.core.ai.routing.RouteRequest;
 import cn.tolim.pudans.core.ai.routing.RouteSeat;
 import cn.tolim.pudans.core.ai.routing.RouteSelection;
+import cn.tolim.pudans.core.ai.routing.RouteTrace;
+import cn.tolim.pudans.core.ai.routing.SunkRouteRegistry;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitFailure;
 import cn.tolim.pudans.core.ai.wallet.AiPointsCalculator;
@@ -48,7 +50,9 @@ import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -89,7 +93,7 @@ public class AiGatewayService {
 
     private final ReactiveExtensionClient client;
 
-    private final AiProviderAdapterRegistry adapterRegistry;
+    private final LangChain4jChatService chatService;
 
     private final AiRouteResolutionService routeResolutionService;
 
@@ -111,15 +115,28 @@ public class AiGatewayService {
 
     private final CircuitBreaker circuitBreaker;
 
+    private final AiGatewayRateLimiter rateLimiter;
+
+    private final AiGatewayKeyService keyService;
+
+    private final SunkRouteRegistry sunkRouteRegistry;
+
     private final AiProperties properties;
 
     private final AiMetrics metrics;
 
     public Mono<AiGatewayResult> complete(AiGatewayInvocation invocation) {
         return prepare(invocation)
-                .flatMap(prepared -> chat(prepared, candidates(prepared.resolution().plan()), 0, null)
+                .flatMap(prepared -> keyService
+                        .acquire(prepared.access())
                         .onErrorResume(error -> fail(prepared, error).then(Mono.error(upstreamError(error))))
-                        .flatMap(attempt -> succeed(prepared, attempt)));
+                        .flatMap(permit -> Mono.usingWhen(
+                                Mono.just(permit),
+                                ignored -> chat(prepared, prepared.candidates(), 0, 0, null)
+                                        .onErrorResume(error ->
+                                                fail(prepared, error).then(Mono.error(upstreamError(error))))
+                                        .flatMap(attempt -> succeed(prepared, attempt)),
+                                keyService::release)));
     }
 
     public Flux<AiGatewayEvent> stream(AiGatewayInvocation invocation) {
@@ -146,7 +163,8 @@ public class AiGatewayService {
             var content = new StringBuilder();
             var deltas = streamChat(
                             prepared,
-                            candidates(prepared.resolution().plan()),
+                            prepared.candidates(),
+                            0,
                             0,
                             emitted,
                             actual)
@@ -169,7 +187,7 @@ public class AiGatewayService {
                             finishReason.get(),
                             content.toString())
                     .doOnNext(event -> finished.set(true)));
-            return Flux.concat(Mono.just(new Meta(meta)), deltas, tail)
+            var events = Flux.concat(Mono.just(new Meta(meta)), deltas, tail)
                     .onErrorResume(error -> finished.get()
                             ? Flux.empty()
                             : streamFail(prepared, actual.get(), content.toString(), error)
@@ -179,6 +197,12 @@ public class AiGatewayService {
                             streamCancel(prepared, content.toString()).subscribe();
                         }
                     });
+            return keyService
+                    .acquire(prepared.access())
+                    .flatMapMany(permit -> Flux.usingWhen(
+                            Mono.just(permit), ignored -> events, keyService::release))
+                    .onErrorResume(error ->
+                            streamFail(prepared, actual.get(), content.toString(), error));
         }));
     }
 
@@ -199,7 +223,9 @@ public class AiGatewayService {
                                 null,
                                 injected.ir(),
                                 setting,
-                                null))
+                                null,
+                                injected.modelOverride(),
+                                injected.agentName()))
                         .doOnNext(this::recordRoutingDecision)
                         .doOnError(error -> recordRouteExhausted(invocation, error))
                         .flatMap(resolution -> prepare(injected, setting, session, resolution)
@@ -261,7 +287,9 @@ public class AiGatewayService {
                 invocation.modeCode(),
                 invocation.routeGroupCode(),
                 invocation.agentName(),
-                invocation.conversationId());
+                invocation.conversationId(),
+                invocation.modelOverride(),
+                invocation.callerKey());
     }
 
     private Mono<Prepared> prepare(
@@ -269,20 +297,26 @@ public class AiGatewayService {
             AiSetting.Spec setting,
             GatewaySession session,
             AiRouteResolutionService.Resolution resolution) {
-        return load(resolution.selection()).flatMap(resources -> conversation(invocation, resolution, session)
-                .flatMap(conversation -> bind(invocation, conversation.id())
-                        .flatMap(bound -> hold(invocation, setting, resolution, resources)
-                                .flatMap(hold -> createChatRequest(invocation, resolution, bound, conversation)
-                                        .onErrorResume(error -> release(hold).then(Mono.error(error)))
-                                        .thenReturn(new Prepared(
-                                                invocation,
-                                                setting,
-                                                bound,
-                                                resolution,
-                                                resources,
-                                                conversation,
-                                                hold,
-                                                Instant.now()))))));
+        return load(resolution.selection())
+                .flatMap(resources -> keyService.authorize(invocation, resources.model())
+                        .flatMap(access -> conversation(invocation, resolution, session)
+                                .flatMap(conversation -> bind(invocation, conversation.id())
+                                        .flatMap(bound -> hold(invocation, setting, resolution, resources)
+                                                .flatMap(hold -> createChatRequest(
+                                                                invocation, resolution, bound, conversation)
+                                                        .onErrorResume(error -> release(hold).then(Mono.error(error)))
+                                                        .thenReturn(new Prepared(
+                                                                invocation,
+                                                                setting,
+                                                                bound,
+                                                                resolution,
+                                                                resources,
+                                                                conversation,
+                                                                hold,
+                                                                Instant.now(),
+                                                                access,
+                                                                candidates(resolution, access),
+                                                                new ArrayList<>())))))));
     }
 
     private Mono<GatewaySession> bind(AiGatewayInvocation invocation, @Nullable Long conversationId) {
@@ -364,14 +398,17 @@ public class AiGatewayService {
                         selection.provider(),
                         selection.account(),
                         selection.model(),
-                        selection.tier() == null ? null : selection.tier().name()))
+                        selection.tier() == null ? null : selection.tier().name(),
+                        json(gatewayTrace(resolution.plan().trace(), invocation)),
+                        invocation.callerKey()))
                 .then();
     }
 
     private Mono<Attempted> chat(
             Prepared prepared,
-            List<RouteSelection> candidates,
+            List<Candidate> candidates,
             int index,
+            int retriesUsed,
             @Nullable Throwable lastError) {
         if (index >= candidates.size()) {
             metrics.providerExhausted(prepared.resolution().routeGroup().getMetadata().getName());
@@ -379,54 +416,136 @@ public class AiGatewayService {
                     ? upstreamError(new IllegalStateException("没有可用候选"))
                     : lastError);
         }
-        var selection = candidates.get(index);
+        var candidate = candidates.get(index);
+        var selection = candidate.selection();
+        var startedAt = Instant.now();
         return load(selection)
-                .flatMap(resources -> adapterRegistry
-                        .require(resources.provider().getSpec().getProtocol())
-                        .chat(resources.provider(), resources.account(), resources.model(), prepared.invocation().ir())
-                        .doOnSuccess(response -> recordSuccess(resources))
-                        .map(response -> new Attempted(response, resources)))
+                .flatMap(resources -> chatOnce(prepared, resources))
+                .doOnSuccess(attempt -> recordAttempt(
+                        prepared, candidate, true, HttpStatus.OK.value(), null, startedAt))
                 .onErrorResume(error -> {
-                    if (!(error instanceof ExtensionNotFoundException)) {
-                        recordFailure(selection, error);
+                    recordAttempt(prepared, candidate, false, statusOf(error), errorCodeOf(error), startedAt);
+                    recordAttemptFailure(selection, error);
+                    var policy = retryPolicy(prepared);
+                    if (policy.canRetry(retriesUsed) && policy.retryable(error)) {
+                        return Mono.delay(policy.delay(retriesUsed))
+                                .then(chat(prepared, candidates, index, retriesUsed + 1, error));
                     }
-                    return chat(prepared, candidates, index + 1, error);
+                    return chat(prepared, candidates, index + 1, 0, error);
                 });
+    }
+
+    private Mono<Attempted> chatOnce(Prepared prepared, Resources resources) {
+        var call = chatService
+                .chat(
+                        resources.provider(),
+                        resources.account(),
+                        resources.model(),
+                        protocolOf(resources),
+                        prepared.invocation().ir())
+                .timeout(attemptTimeout(prepared))
+                .doOnSuccess(response -> recordSuccess(resources))
+                .map(response -> new Attempted(response, resources));
+        return withRateLimit(prepared, resources, call);
     }
 
     private Flux<AiStreamEvent> streamChat(
             Prepared prepared,
-            List<RouteSelection> candidates,
+            List<Candidate> candidates,
             int index,
+            int retriesUsed,
             AtomicBoolean emitted,
             AtomicReference<Resources> actual) {
         if (index >= candidates.size()) {
             metrics.providerExhausted(prepared.resolution().routeGroup().getMetadata().getName());
             return Flux.error(upstreamError(new IllegalStateException("没有可用候选")));
         }
-        var selection = candidates.get(index);
+        var candidate = candidates.get(index);
+        var selection = candidate.selection();
+        var startedAt = Instant.now();
         return load(selection)
                 .flatMapMany(resources -> {
                     actual.set(resources);
-                    return adapterRegistry
-                            .require(resources.provider().getSpec().getProtocol())
+                    Flux<AiStreamEvent> stream = chatService
                             .streamChat(
                                     resources.provider(),
                                     resources.account(),
                                     resources.model(),
+                                    protocolOf(resources),
                                     prepared.invocation().ir())
                             .doOnNext(event -> emitted.set(true))
-                            .doOnComplete(() -> recordSuccess(resources));
+                            .doOnComplete(() -> {
+                                recordAttempt(prepared, candidate, true, HttpStatus.OK.value(), null, startedAt);
+                                recordSuccess(resources);
+                            });
+                    var firstToken = firstTokenTimeout(prepared);
+                    if (firstToken != null) {
+                        stream = stream.timeout(Mono.delay(firstToken), event -> Mono.never());
+                    }
+                    return withRateLimit(prepared, resources, stream);
                 })
                 .onErrorResume(error -> {
-                    if (!(error instanceof ExtensionNotFoundException)) {
-                        recordFailure(selection, error);
+                    recordAttempt(prepared, candidate, false, statusOf(error), errorCodeOf(error), startedAt);
+                    recordAttemptFailure(selection, error);
+                    if (emitted.get()) {
+                        return Flux.error(error);
                     }
-                    if (!emitted.get()) {
-                        return streamChat(prepared, candidates, index + 1, emitted, actual);
+                    var policy = retryPolicy(prepared);
+                    if (policy.canRetry(retriesUsed) && policy.retryable(error)) {
+                        return streamChat(prepared, candidates, index, retriesUsed + 1, emitted, actual)
+                                .delaySubscription(policy.delay(retriesUsed));
                     }
-                    return Flux.error(error);
+                    return streamChat(prepared, candidates, index + 1, 0, emitted, actual);
                 });
+    }
+
+    private <T> Mono<T> withRateLimit(Prepared prepared, Resources resources, Mono<T> call) {
+        if (!rateLimitEnabled(prepared.setting())) {
+            return call;
+        }
+        return Mono.usingWhen(
+                rateLimiter.acquire(resources.provider(), resources.account()),
+                permit -> call,
+                rateLimiter::release);
+    }
+
+    private Flux<AiStreamEvent> withRateLimit(
+            Prepared prepared, Resources resources, Flux<AiStreamEvent> stream) {
+        if (!rateLimitEnabled(prepared.setting())) {
+            return stream;
+        }
+        return Flux.usingWhen(
+                rateLimiter.acquire(resources.provider(), resources.account()),
+                permit -> stream,
+                rateLimiter::release);
+    }
+
+    private static Duration attemptTimeout(Prepared prepared) {
+        var gateway = gatewayOf(prepared.setting());
+        var requestTimeout = Math.max(1, gateway.getRequestTimeoutSeconds());
+        var patience = prepared.resolution().request().getPatienceSeconds();
+        var seconds = patience > 0 ? Math.min(patience, requestTimeout) : requestTimeout;
+        return Duration.ofSeconds(seconds);
+    }
+
+    private static @Nullable Duration firstTokenTimeout(Prepared prepared) {
+        var request = prepared.resolution().request();
+        var seconds = request.getFirstTokenSeconds() > 0
+                ? request.getFirstTokenSeconds()
+                : request.getPatienceSeconds();
+        return seconds > 0 ? Duration.ofSeconds(seconds) : null;
+    }
+
+    private static AiSetting.Gateway gatewayOf(AiSetting.Spec setting) {
+        return setting == null || setting.getGateway() == null ? new AiSetting.Gateway() : setting.getGateway();
+    }
+
+    private static boolean rateLimitEnabled(AiSetting.Spec setting) {
+        return setting == null || setting.getGateway() == null || setting.getGateway().isRateLimitEnabled();
+    }
+
+    private static AiGatewayRetryPolicy retryPolicy(Prepared prepared) {
+        return new AiGatewayRetryPolicy(prepared.setting().getGateway());
     }
 
     private Mono<AiGatewayResult> succeed(Prepared prepared, Attempted attempt) {
@@ -667,8 +786,49 @@ public class AiGatewayService {
                         ttftMillis,
                         tps,
                         billingSource,
-                        upstreamRequestId))
+                        upstreamRequestId,
+                        finalTrace(prepared),
+                        json(List.copyOf(prepared.attempts()))))
                 .then();
+    }
+
+    private static String finalTrace(Prepared prepared) {
+        var trace = prepared.resolution().plan().trace()
+                .withAttempts(List.copyOf(prepared.attempts()));
+        return json(gatewayTrace(trace, prepared.invocation()));
+    }
+
+    // 用途按调用来源区分，入口按网关协议固定，便于用量页按 purpose/via 筛选。
+    private static RouteTrace gatewayTrace(RouteTrace trace, AiGatewayInvocation invocation) {
+        return trace.withCallerKey(invocation.callerKey())
+                .withGatewayContext(purpose(invocation), via(invocation));
+    }
+
+    private static String purpose(AiGatewayInvocation invocation) {
+        var source = invocation.agentSource();
+        if (AGENT_SOURCE_CHAT.equals(source)) {
+            return "chat";
+        }
+        if (source != null && source.toLowerCase(Locale.ROOT).contains("generation")) {
+            return "generation";
+        }
+        return "gateway";
+    }
+
+    private static String via(AiGatewayInvocation invocation) {
+        return invocation.protocol().name().toLowerCase(Locale.ROOT).replace('_', '-');
+    }
+
+    private static @Nullable String json(@Nullable Object value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return JsonUtils.objectToJson(value);
+        } catch (RuntimeException error) {
+            log.warn("AI 网关轨迹序列化失败。", error);
+            return null;
+        }
     }
 
     private Mono<Resources> load(RouteSelection selection) {
@@ -687,7 +847,18 @@ public class AiGatewayService {
         }
     }
 
-    private void recordFailure(RouteSelection selection, Throwable error) {
+    private void recordAttemptFailure(RouteSelection selection, Throwable error) {
+        if (error instanceof ExtensionNotFoundException) {
+            return;
+        }
+        var status = AiGatewayRetryPolicy.statusOf(error);
+        if (status != null && status == HttpStatus.TOO_MANY_REQUESTS.value()) {
+            sunkRouteRegistry.markSunk(selection.provider(), selection.account());
+        }
+        if (error instanceof ApiException api && AiGatewayRateLimiter.CODE_RATE_LIMITED.equals(api.getCode())) {
+            // 本地限流不是供应商故障，不触发熔断
+            return;
+        }
         log.warn("AI 供应商调用失败：{}/{}", selection.provider(), selection.account(), error);
         circuitBreaker.recordFailure(selection.provider(), CircuitFailure.defaultFailure());
         circuitBreaker.recordFailure(selection.account(), CircuitFailure.defaultFailure());
@@ -736,13 +907,85 @@ public class AiGatewayService {
         return invocation.protocol() == null ? null : invocation.protocol().name();
     }
 
-    private static List<RouteSelection> candidates(RoutePlan plan) {
-        var candidates = new ArrayList<RouteSelection>();
-        if (plan.selected() != null) {
-            candidates.add(plan.selected());
+    // 主组候选排在组间 fallback 之前，去重后保持低优先
+    private static List<Candidate> candidates(
+            AiRouteResolutionService.Resolution resolution, AiGatewayKeyService.Access access) {
+        var candidates = new ArrayList<Candidate>();
+        var seen = new LinkedHashSet<String>();
+        var current = resolution;
+        while (current != null) {
+            var group = current.routeGroup() == null || current.routeGroup().getMetadata() == null
+                    ? null
+                    : current.routeGroup().getMetadata().getName();
+            addCandidate(candidates, seen, current, group, current.plan().selected(), access);
+            for (var fallback : current.plan().fallbackSeats()) {
+                addCandidate(candidates, seen, current, group, fallback, access);
+            }
+            current = current.fallbackGroup();
         }
-        candidates.addAll(plan.fallbackSeats());
-        return candidates;
+        return List.copyOf(candidates);
+    }
+
+    private static void addCandidate(
+            List<Candidate> candidates,
+            LinkedHashSet<String> seen,
+            AiRouteResolutionService.Resolution resolution,
+            @Nullable String group,
+            @Nullable RouteSelection selection,
+            AiGatewayKeyService.Access access) {
+        if (selection == null || !access.allows(selection.model())) {
+            return;
+        }
+        var key = selection.provider() + "|" + selection.account() + "|" + selection.model();
+        if (!seen.add(key)) {
+            return;
+        }
+        var seat = seatOf(resolution, selection);
+        candidates.add(new Candidate(selection, group, seat == null ? null : seat.getFallbackSource()));
+    }
+
+    private static void recordAttempt(
+            Prepared prepared,
+            Candidate candidate,
+            boolean success,
+            @Nullable Integer status,
+            @Nullable String errorCode,
+            Instant startedAt) {
+        var selection = candidate.selection();
+        var latency = Math.max(0, Duration.between(startedAt, Instant.now()).toMillis());
+        var attempts = prepared.attempts();
+        synchronized (attempts) {
+            attempts.add(new RouteTrace.Attempt(
+                    candidate.group(),
+                    selection.provider(),
+                    selection.account(),
+                    selection.model(),
+                    selection.tier(),
+                    candidate.source(),
+                    attempts.size() + 1,
+                    success,
+                    status,
+                    errorCode,
+                    latency,
+                    Instant.now()));
+        }
+    }
+
+    private static @Nullable Integer statusOf(Throwable error) {
+        if (error instanceof ApiException api) {
+            return api.getStatusCode().value();
+        }
+        return AiGatewayRetryPolicy.statusOf(error);
+    }
+
+    private static @Nullable String errorCodeOf(Throwable error) {
+        return error instanceof ApiException api ? api.getCode() : null;
+    }
+
+    private static AiProvider.Protocol protocolOf(Resources resources) {
+        var account = resources.account() == null ? null : resources.account().getSpec();
+        var override = account == null ? null : account.getProtocolOverride();
+        return override == null ? resources.provider().getSpec().getProtocol() : override;
     }
 
     private static RouteSeat seatOf(AiRouteResolutionService.Resolution resolution, RouteSelection selection) {
@@ -871,6 +1114,8 @@ public class AiGatewayService {
 
     private record Attempted(AiChatResponse response, Resources resources) {}
 
+    private record Candidate(RouteSelection selection, @Nullable String group, @Nullable String source) {}
+
     private record Prepared(
             AiGatewayInvocation invocation,
             AiSetting.Spec setting,
@@ -879,7 +1124,10 @@ public class AiGatewayService {
             Resources resources,
             Conversation conversation,
             Hold hold,
-            Instant startedAt) {
+            Instant startedAt,
+            AiGatewayKeyService.Access access,
+            List<Candidate> candidates,
+            List<RouteTrace.Attempt> attempts) {
 
         private RouteSelection selection() {
             return resolution.selection();

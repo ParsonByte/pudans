@@ -87,4 +87,50 @@ class PatServiceImplTest {
                 .assertNext(pat -> assertThat(pat.getSpec().isSudo()).isTrue())
                 .verifyComplete();
     }
+
+    @Test
+    void copiesTheGatewaySpecIntoTheStoredToken() {
+        when(userDetailsService.findByUsername("alice"))
+                .thenReturn(Mono.just(user(BuiltinEntities.SYSTEM_ADMIN_ROLE)));
+        when(client.create(any(PersonalAccessToken.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        var request = request(false);
+        var gateway = new PersonalAccessToken.Gateway();
+        gateway.setMaxConcurrency(3);
+        gateway.setModels(List.of("model-a"));
+        var limit = new PersonalAccessToken.Limit();
+        limit.setPeriod(PersonalAccessToken.LimitPeriod.DAY);
+        limit.setTokens(1000L);
+        gateway.setLimits(List.of(limit));
+        request.getSpec().setGateway(gateway);
+
+        StepVerifier.create(service.create(request, "alice"))
+                .assertNext(pat -> {
+                    assertThat(pat.getSpec().getGateway()).isNotSameAs(gateway);
+                    assertThat(pat.getSpec().getGateway().getMaxConcurrency()).isEqualTo(3);
+                    assertThat(pat.getSpec().getGateway().getModels()).containsExactly("model-a");
+                    assertThat(pat.getSpec().getGateway().getLimits()).hasSize(1);
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void rejectsMoreThanFiveGatewayLimits() {
+        when(userDetailsService.findByUsername("alice"))
+                .thenReturn(Mono.just(user(BuiltinEntities.SYSTEM_ADMIN_ROLE)));
+        var request = request(false);
+        var gateway = new PersonalAccessToken.Gateway();
+        gateway.setLimits(List.of(
+                new PersonalAccessToken.Limit(),
+                new PersonalAccessToken.Limit(),
+                new PersonalAccessToken.Limit(),
+                new PersonalAccessToken.Limit(),
+                new PersonalAccessToken.Limit(),
+                new PersonalAccessToken.Limit()));
+        request.getSpec().setGateway(gateway);
+
+        StepVerifier.create(service.create(request, "alice"))
+                .expectError(UnsatisfiedAttributeValueException.class)
+                .verify();
+    }
 }

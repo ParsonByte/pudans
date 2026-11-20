@@ -3,6 +3,8 @@ package cn.tolim.pudans.core.ai.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
@@ -23,14 +25,14 @@ import cn.tolim.pudans.core.ai.gateway.session.AiGatewaySessionService;
 import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
-import cn.tolim.pudans.core.ai.provider.AiProviderAdapter;
-import cn.tolim.pudans.core.ai.provider.AiProviderAdapterRegistry;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
 import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
 import cn.tolim.pudans.core.ai.routing.RouteOutcome;
 import cn.tolim.pudans.core.ai.routing.RoutePlan;
 import cn.tolim.pudans.core.ai.routing.RouteRequest;
 import cn.tolim.pudans.core.ai.routing.RouteSelection;
 import cn.tolim.pudans.core.ai.routing.RouteTrace;
+import cn.tolim.pudans.core.ai.routing.SunkRouteRegistry;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
 import cn.tolim.pudans.core.ai.wallet.AiWalletService;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -59,7 +61,7 @@ class AiGatewayServiceMetricsTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiProviderAdapterRegistry adapterRegistry;
+    LangChain4jChatService chatService;
 
     @Mock
     AiRouteResolutionService routeResolutionService;
@@ -92,7 +94,7 @@ class AiGatewayServiceMetricsTest {
     CircuitBreaker circuitBreaker;
 
     @Mock
-    AiProviderAdapter adapter;
+    AiGatewayKeyService keyService;
 
     private SimpleMeterRegistry registry;
 
@@ -103,9 +105,14 @@ class AiGatewayServiceMetricsTest {
         registry = new SimpleMeterRegistry();
         var properties = new AiProperties();
         properties.getGateway().setInjectionEnabled(false);
+        lenient().when(keyService.authorize(any(), any()))
+                .thenReturn(Mono.just(AiGatewayKeyService.Access.unrestricted()));
+        lenient().when(keyService.acquire(any()))
+                .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
+        lenient().when(keyService.release(any())).thenReturn(Mono.empty());
         service = new AiGatewayService(
                 client,
-                adapterRegistry,
+                chatService,
                 routeResolutionService,
                 settingService,
                 sessionService,
@@ -116,6 +123,9 @@ class AiGatewayServiceMetricsTest {
                 chatRequestRepository,
                 memoryTaskScheduler,
                 circuitBreaker,
+                new AiGatewayRateLimiter(null),
+                keyService,
+                new SunkRouteRegistry(),
                 properties,
                 new AiMetrics(registry));
     }
@@ -123,8 +133,7 @@ class AiGatewayServiceMetricsTest {
     @Test
     void recordsSuccessMetricsAfterACompletedChat() {
         stubPreparedGateway();
-        when(adapterRegistry.require(AiProvider.Protocol.OPENAI_CHAT)).thenReturn(adapter);
-        when(adapter.chat(any(), any(), any(), any())).thenReturn(Mono.just(response()));
+                when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.just(response()));
         when(walletService.settle(anyString(), anyString(), any(BigDecimal.class), any(BigDecimal.class), any()))
                 .thenReturn(Mono.just(settleResult()));
         when(chatRequestRepository.completeChatRequest(any())).thenReturn(Mono.empty());
@@ -144,8 +153,7 @@ class AiGatewayServiceMetricsTest {
     @Test
     void recordsFailureMetricsAndProviderExhaustedAlert() {
         stubPreparedGateway();
-        when(adapterRegistry.require(AiProvider.Protocol.OPENAI_CHAT)).thenReturn(adapter);
-        when(adapter.chat(any(), any(), any(), any()))
+                when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(new IllegalStateException("upstream down")));
         when(walletService.release("req-1")).thenReturn(Mono.just(releaseResult()));
         when(chatRequestRepository.completeChatRequest(any())).thenReturn(Mono.empty());

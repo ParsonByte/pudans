@@ -183,6 +183,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                     .claim("sub", effectiveUser)
                     .claim("pat_name", pat.getMetadata().getName())
                     .claim("pat_owner", owner)
+                    .claim("tokenId", pat.getSpec().getTokenId())
                     .issuedAt(clock.instant());
             if (StringUtils.hasText(sudoUsername)) {
                 jwtBuilder.claim("sudo_user", sudoUsername);

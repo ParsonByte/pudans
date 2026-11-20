@@ -23,7 +23,7 @@ class AiResponseEncoderTest {
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
-    private final AiResponseEncoders encoders = new AiResponseEncoders(mapper);
+    private final AiResponseEncoders encoders = new AiResponseEncoders(mapper, new GeminiGatewayCodec(mapper));
 
     @Test
     void encodesOpenAiChatCompletion() throws JsonProcessingException {
@@ -305,6 +305,8 @@ class AiResponseEncoderTest {
                 .isEqualTo(AiProvider.Protocol.OPENAI_CHAT);
         assertThat(encoders.require(AiProvider.Protocol.ANTHROPIC).protocol())
                 .isEqualTo(AiProvider.Protocol.ANTHROPIC);
+        assertThat(encoders.require(AiProvider.Protocol.GEMINI).protocol())
+                .isEqualTo(AiProvider.Protocol.GEMINI);
         assertThatThrownBy(() -> encoders.require(AiProvider.Protocol.OPENAI_RESPONSES))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("OPENAI_RESPONSES");

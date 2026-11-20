@@ -25,4 +25,10 @@ public class AiSettingService {
     public Mono<AiSetting.Defaults> defaults() {
         return spec().map(spec -> spec.getDefaults() == null ? new AiSetting.Defaults() : spec.getDefaults());
     }
+
+    public Mono<Boolean> memoryEnabled() {
+        return spec()
+                .map(spec -> spec.getMemory() == null || spec.getMemory().isEnabled())
+                .defaultIfEmpty(true);
+    }
 }
