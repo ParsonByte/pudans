@@ -13,7 +13,9 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -22,6 +24,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -33,6 +36,14 @@ public class AiRouteResolutionService {
     private static final String CODE_GROUP_MISSING = "ai-route-group-missing";
 
     private static final String CODE_NO_CANDIDATE = "ai-route-no-candidate";
+
+    private static final String CODE_GROUP_MODE_MISMATCH = "ai-route-group-mode-mismatch";
+
+    private static final String MODE_FAST = "fast";
+
+    private static final String MODE_PRO = "pro";
+
+    private static final int MAX_FALLBACK_DEPTH = 3;
 
     private final AiChatModeService chatModeService;
 
@@ -47,12 +58,143 @@ public class AiRouteResolutionService {
     private final AiProperties properties;
 
     public Mono<Resolution> resolve(Input input) {
+        return modeAndGroup(input)
+                .flatMap(modeAndGroup -> resolveGroupChain(
+                        input,
+                        modeAndGroup.mode(),
+                        modeAndGroup.group(),
+                        Set.of(groupName(modeAndGroup.group())),
+                        0));
+    }
+
+    private Mono<ModeAndGroup> modeAndGroup(Input input) {
         return resolveMode(input.modeCode())
                 .flatMap(mode -> resolveGroup(input.routeGroupCode(), mode)
+                        .flatMap(group -> validateParentMode(mode, group))
                         .map(group -> new ModeAndGroup(mode, group)))
                 .switchIfEmpty(Mono.defer(() -> resolveGroup(input.routeGroupCode(), null)
-                        .map(group -> new ModeAndGroup(null, group))))
-                .flatMap(modeAndGroup -> route(input, modeAndGroup));
+                        .map(group -> new ModeAndGroup(null, group))));
+    }
+
+    private Mono<Resolution> resolveGroupChain(
+            Input input, @Nullable AiChatMode mode, AiRouteGroup group, Set<String> visited, int depth) {
+        var modeAndGroup = new ModeAndGroup(mode, group);
+        return route(input, modeAndGroup)
+                .flatMap(resolution -> resolveNextFallback(input, mode, group, visited, depth)
+                        .map(fallback -> attachFallback(resolution, fallback))
+                        .switchIfEmpty(Mono.just(resolution)))
+                .onErrorResume(error -> isNoCandidate(error)
+                        ? resolveNextFallback(input, mode, group, visited, depth)
+                                .map(fallback -> withFallbackChain(fallback, groupName(group)))
+                                .switchIfEmpty(Mono.defer(() -> Mono.error(error)))
+                        : Mono.error(error));
+    }
+
+    // 组间 fallback 最多三层并跳过已访问组，避免环路
+    private Mono<Resolution> resolveNextFallback(
+            Input input, @Nullable AiChatMode mode, AiRouteGroup group, Set<String> visited, int depth) {
+        if (depth >= MAX_FALLBACK_DEPTH) {
+            return Mono.empty();
+        }
+        var fallback = group.getSpec() == null ? null : group.getSpec().getFallback();
+        if (fallback == null || fallback.isEmpty()) {
+            return Mono.empty();
+        }
+        return Flux.fromIterable(fallback)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .filter(name -> !visited.contains(name))
+                .concatMap(name -> routeGroupService
+                        .get(name)
+                        .filter(candidate -> candidate.getSpec() != null && candidate.getSpec().isEnabled())
+                        .flatMap(candidate -> {
+                            var nextVisited = new HashSet<>(visited);
+                            nextVisited.add(name);
+                            return resolveGroupChain(input, mode, candidate, nextVisited, depth + 1)
+                                    .onErrorResume(error -> Mono.empty());
+                        })
+                        .onErrorResume(error -> Mono.empty()))
+                .next();
+    }
+
+    private static Resolution attachFallback(Resolution primary, Resolution fallback) {
+        var groups = new ArrayList<String>();
+        collectFallbackGroups(fallback, groups);
+        var trace = primary.plan().trace().withFallbackGroups(groups);
+        var plan = new RoutePlan(
+                primary.plan().selected(),
+                primary.plan().fallbackSeats(),
+                primary.plan().fallbackReferences(),
+                trace);
+        return new Resolution(
+                primary.routeGroup(),
+                primary.chatMode(),
+                primary.request(),
+                plan,
+                primary.seats(),
+                fallback);
+    }
+
+    private static void collectFallbackGroups(Resolution resolution, List<String> groups) {
+        if (resolution == null) {
+            return;
+        }
+        groups.add(groupName(resolution.routeGroup()));
+        collectFallbackGroups(resolution.fallbackGroup(), groups);
+    }
+
+    // 主组无候选时返回的解析属于 fallback 组，需要把整条链路补回 trace
+    private static Resolution withFallbackChain(Resolution resolution, String originalGroup) {
+        var groups = new ArrayList<String>();
+        groups.add(originalGroup);
+        var current = resolution;
+        while (current != null) {
+            groups.add(groupName(current.routeGroup()));
+            current = current.fallbackGroup();
+        }
+        var trace = resolution.plan().trace().withFallbackGroups(groups);
+        var plan = new RoutePlan(
+                resolution.plan().selected(),
+                resolution.plan().fallbackSeats(),
+                resolution.plan().fallbackReferences(),
+                trace);
+        return new Resolution(
+                resolution.routeGroup(),
+                resolution.chatMode(),
+                resolution.request(),
+                plan,
+                resolution.seats(),
+                resolution.fallbackGroup());
+    }
+
+    private static String groupName(AiRouteGroup group) {
+        return group.getMetadata() == null ? "" : group.getMetadata().getName();
+    }
+
+    private static boolean isNoCandidate(Throwable error) {
+        return error instanceof ApiException apiException && CODE_NO_CANDIDATE.equals(apiException.getCode());
+    }
+
+    // 固定模式只接受匹配父模式的路由组，NONE 组不得隐式选择
+    private Mono<AiRouteGroup> validateParentMode(AiChatMode mode, AiRouteGroup group) {
+        var expected = fixedParentMode(mode);
+        if (expected == null || group.effectiveParentMode() == expected) {
+            return Mono.just(group);
+        }
+        var groupName = group.getMetadata() == null ? "" : group.getMetadata().getName();
+        return Mono.error(new ApiException(
+                HttpStatus.BAD_REQUEST,
+                CODE_GROUP_MODE_MISMATCH,
+                "路由组 " + groupName + " 的父模式与对话模式 " + mode.getMetadata().getName() + " 不匹配。"));
+    }
+
+    private static AiRouteGroup.@Nullable ParentMode fixedParentMode(AiChatMode mode) {
+        var name = mode.getMetadata() == null ? null : mode.getMetadata().getName();
+        return switch (name == null ? "" : name) {
+            case MODE_FAST -> AiRouteGroup.ParentMode.FAST;
+            case MODE_PRO -> AiRouteGroup.ParentMode.PRO;
+            default -> null;
+        };
     }
 
     private Mono<Resolution> route(Input input, ModeAndGroup modeAndGroup) {
@@ -127,7 +269,7 @@ public class AiRouteResolutionService {
 
     private RouteRequest capabilityRequest(CapabilityInput input, AiRouteGroup group) {
         var spec = group.getSpec();
-        return RouteRequest.builder()
+        var builder = RouteRequest.builder()
                 .routeMode(spec.getRouteMode())
                 .requestedTier(input.requestedTier())
                 .routeGroupDefaultTier(spec.getDefaultTier())
@@ -140,8 +282,9 @@ public class AiRouteResolutionService {
                 .manualPick(spec.getManualPick())
                 .healthThreshold(properties.getRouting().getHealthThreshold())
                 .qualityThreshold(spec.getQualityThreshold() == null ? 0.6 : spec.getQualityThreshold())
-                .classifierEnabled(false)
-                .build();
+                .classifierEnabled(false);
+        applyGroupPolicy(group, builder);
+        return builder.build();
     }
 
     private Mono<AiRouteGroup> resolveGroup(@Nullable String routeGroupCode, @Nullable AiChatMode mode) {
@@ -169,13 +312,17 @@ public class AiRouteResolutionService {
                 : settings.getRouting();
         var maxOutput = params.maxTokens() == null ? 0 : Math.max(0, params.maxTokens());
         var modeTier = mode == null || mode.getSpec() == null ? null : mode.getSpec().getDefaultTier();
-        return RouteRequest.builder()
+        var builder = RouteRequest.builder()
                 .routeMode(spec.getRouteMode())
                 .requestedTier(input.requestedTier())
                 .chatModeDefaultTier(modeTier)
                 .routeGroupDefaultTier(spec.getDefaultTier())
                 .affinity(spec.getAffinity())
                 .previousSelection(input.previousSelection())
+                .agentName(input.agentName())
+                .imageCount(imageCount(input.ir()))
+                .requestedModel(input.modelOverride() == null ? params.model() : input.modelOverride())
+                .explicitModel(input.modelOverride())
                 .promptTokens(AiTokenEstimator.estimateMessages(input.ir().messages()))
                 .maxOutputTokens(maxOutput)
                 .requiredCapabilities(capabilities(input.ir()))
@@ -187,8 +334,19 @@ public class AiRouteResolutionService {
                 .qualityThreshold(spec.getQualityThreshold() == null ? 0.6 : spec.getQualityThreshold())
                 .classifierEnabled(routing.isClassifierEnabled())
                 .classifierFallbackTier(routing.getClassifierFallbackTier())
-                .lastUserMessage(lastUserText(input.ir()))
-                .build();
+                .lastUserMessage(lastUserText(input.ir()));
+        applyGroupPolicy(group, builder);
+        return builder.build();
+    }
+
+    // 路由组的规则、上下文模式、耐心与沉降开关随请求进入引擎
+    private static void applyGroupPolicy(AiRouteGroup group, RouteRequest.RouteRequestBuilder builder) {
+        var spec = group.getSpec();
+        builder.contextMode(spec.getContextMode())
+                .patienceSeconds(spec.getPatienceSeconds() == null ? 0 : spec.getPatienceSeconds())
+                .firstTokenSeconds(spec.getFirstTokenSeconds() == null ? 0 : spec.getFirstTokenSeconds())
+                .sink(spec.isSink())
+                .rules(spec.getRules() == null ? List.of() : spec.getRules());
     }
 
     private static Set<AiModel.Capability> capabilities(AiChatIr ir) {
@@ -215,9 +373,17 @@ public class AiRouteResolutionService {
     }
 
     private static boolean hasImage(AiChatIr ir) {
-        return ir.messages().stream()
+        return imageCount(ir) > 0;
+    }
+
+    private static int imageCount(AiChatIr ir) {
+        return (int) ir.messages().stream()
                 .flatMap(message -> message.parts().stream())
-                .anyMatch(AiContentPart.Image.class::isInstance);
+                .filter(part -> part instanceof AiContentPart.Image
+                        || (part instanceof AiContentPart.File file
+                                && file.mediaType() != null
+                                && file.mediaType().startsWith("image/")))
+                .count();
     }
 
     private static boolean hasMedia(AiChatIr ir, String prefix) {
@@ -275,6 +441,7 @@ public class AiRouteResolutionService {
             case CAPABILITY_MISMATCH -> "模型能力或附件类型不匹配";
             case CONTEXT_EXCEEDED -> "上下文超出模型窗口";
             case SPENT -> "额度已用尽";
+            case SUNK -> "近期被限流而沉底";
         };
     }
 
@@ -306,7 +473,29 @@ public class AiRouteResolutionService {
             AiModel.Tier requestedTier,
             AiChatIr ir,
             AiSetting.Spec setting,
-            @Nullable RouteSelection previousSelection) {}
+            @Nullable RouteSelection previousSelection,
+            @Nullable String modelOverride,
+            @Nullable String agentName) {
+
+        public Input(
+                String modeCode,
+                String routeGroupCode,
+                AiModel.Tier requestedTier,
+                AiChatIr ir,
+                AiSetting.Spec setting,
+                @Nullable RouteSelection previousSelection,
+                @Nullable String modelOverride) {
+            this(
+                    modeCode,
+                    routeGroupCode,
+                    requestedTier,
+                    ir,
+                    setting,
+                    previousSelection,
+                    modelOverride,
+                    null);
+        }
+    }
 
     public record CapabilityInput(
             @Nullable String routeGroupCode,
@@ -328,7 +517,21 @@ public class AiRouteResolutionService {
             @Nullable AiChatMode chatMode,
             RouteRequest request,
             RoutePlan plan,
-            List<RouteSeat> seats) {
+            List<RouteSeat> seats,
+            @Nullable Resolution fallbackGroup) {
+
+        public Resolution {
+            seats = seats == null ? List.of() : List.copyOf(seats);
+        }
+
+        public Resolution(
+                AiRouteGroup routeGroup,
+                @Nullable AiChatMode chatMode,
+                RouteRequest request,
+                RoutePlan plan,
+                List<RouteSeat> seats) {
+            this(routeGroup, chatMode, request, plan, seats, null);
+        }
 
         public RouteSelection selection() {
             return plan.selected();

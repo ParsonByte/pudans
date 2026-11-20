@@ -6,5 +6,6 @@ public enum RouteEliminationReason {
     UNHEALTHY,
     CAPABILITY_MISMATCH,
     CONTEXT_EXCEEDED,
-    SPENT
+    SPENT,
+    SUNK
 }

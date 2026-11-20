@@ -9,6 +9,7 @@ spec:
   displayName: 默认路由组
   routeMode: ORDER
   defaultTier: AUTO
+  parentMode: NONE
   qualityThreshold: 0.6
   affinity: AUTO
   fallback: []
