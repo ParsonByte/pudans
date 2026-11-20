@@ -15,9 +15,16 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolCodecRegistry;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiResponseEncoders;
 import cn.tolim.pudans.core.ai.gateway.protocol.GeminiGatewayCodec;
+import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService.PlanSummary;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService.UsageView;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService.WindowUsage;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.security.Principal;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -44,19 +52,24 @@ class AiGatewayEndpointTest {
     @Mock
     AiGatewayStatusService statusService;
 
+    @Mock
+    PlanUsageService planUsageService;
+
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         var mapper = new ObjectMapper();
         lenient().when(requests.userId(any(), anyString(), anyString())).thenReturn(Mono.just("user-1"));
+        lenient().when(planUsageService.usage("user-1")).thenReturn(Mono.empty());
         var endpoint = new AiGatewayEndpoint(
                 new AiProtocolCodecRegistry(mapper),
                 gatewayService,
                 new AiResponseEncoders(mapper, new GeminiGatewayCodec(mapper)),
                 new GeminiGatewayCodec(mapper),
                 statusService,
-                requests);
+                requests,
+                planUsageService);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(principal())).build()))
@@ -214,6 +227,85 @@ class AiGatewayEndpointTest {
                 .expectStatus().isBadRequest();
     }
 
+    @Test
+    void addsPlanUsageHeadersToACompletedResponse() {
+        when(gatewayService.complete(any())).thenReturn(Mono.just(result()));
+        when(planUsageService.usage("user-1")).thenReturn(Mono.just(usage()));
+
+        client.post()
+                .uri("/aigateway/-/openai/v1/chat/completions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"model":"gpt-test","messages":[{"role":"user","content":"hi"}]}
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("X-Plan-Name", "标准套餐")
+                .expectHeader().valueEquals("X-Plan-5h-Limit", "3000000")
+                .expectHeader().valueEquals("X-Plan-5h-Remaining", "2999900")
+                .expectHeader().valueEquals("X-Plan-5h-Reset", "2026-11-19T09:00:00Z")
+                .expectHeader().valueEquals("X-Plan-Weekly-Limit", "20000000")
+                .expectHeader().valueEquals("X-Plan-Weekly-Remaining", "19999900");
+    }
+
+    @Test
+    void skipsPlanUsageHeadersWithoutAPlan() {
+        when(gatewayService.complete(any())).thenReturn(Mono.just(result()));
+
+        client.post()
+                .uri("/aigateway/-/openai/v1/chat/completions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"model":"gpt-test","messages":[{"role":"user","content":"hi"}]}
+                        """)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().doesNotExist("X-Plan-Name");
+    }
+
+    @Test
+    void mapsPlanQuotaExhaustionToOpenAiInsufficientQuota() {
+        when(gatewayService.complete(any())).thenReturn(Mono.error(new ApiException(
+                HttpStatus.TOO_MANY_REQUESTS,
+                PlanQuotaService.CODE_QUOTA_EXCEEDED,
+                "5 小时窗口额度不足。")));
+
+        client.post()
+                .uri("/aigateway/-/openai/v1/chat/completions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"model":"gpt-test","messages":[{"role":"user","content":"hi"}]}
+                        """)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
+                .expectBody()
+                .jsonPath("$.error.type").isEqualTo("insufficient_quota")
+                .jsonPath("$.error.code").isEqualTo(PlanQuotaService.CODE_QUOTA_EXCEEDED);
+    }
+
+    private static UsageView usage() {
+        return new UsageView(
+                new PlanSummary("standard", "标准套餐", "DefaultPlan"),
+                new WindowUsage(
+                        3_000_000,
+                        100,
+                        0,
+                        2_999_900,
+                        Instant.parse("2026-11-19T04:00:00Z"),
+                        Instant.parse("2026-11-19T09:00:00Z"),
+                        "ACTIVE"),
+                new WindowUsage(
+                        20_000_000,
+                        100,
+                        0,
+                        19_999_900,
+                        Instant.parse("2026-11-16T16:00:00Z"),
+                        Instant.parse("2026-11-23T16:00:00Z"),
+                        "ACTIVE"),
+                new PlanUsageService.RateLimit(4, 120),
+                null);
+    }
+
     private WebTestClient clientWithPrincipal(Principal principal) {
         var mapper = new ObjectMapper();
         var endpoint = new AiGatewayEndpoint(
@@ -222,7 +314,8 @@ class AiGatewayEndpointTest {
                 new AiResponseEncoders(mapper, new GeminiGatewayCodec(mapper)),
                 new GeminiGatewayCodec(mapper),
                 statusService,
-                requests);
+                requests,
+                planUsageService);
         return WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(principal)).build()))

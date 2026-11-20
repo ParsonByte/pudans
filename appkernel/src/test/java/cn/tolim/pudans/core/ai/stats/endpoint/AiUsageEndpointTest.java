@@ -54,9 +54,13 @@ import cn.tolim.pudans.core.ai.stats.AiUsageService.TopSession;
 import cn.tolim.pudans.core.ai.stats.AiUsageService.UsageRequest;
 import cn.tolim.pudans.core.ai.stats.AiUsageService.UsageSession;
 import cn.tolim.pudans.core.ai.stats.AiUsageService.UsageTotals;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService.PlanSummary;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService.UsageView;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService.WindowUsage;
+import cn.tolim.pudans.core.ai.plan.PlanVoucherService;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver.Viewer;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService.WalletDetail;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.infra.config.JacksonAdapterModule;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -142,7 +146,8 @@ class AiUsageEndpointTest {
                 .jsonPath("$.totals.cacheHitRate").isEqualTo(0.02)
                 .jsonPath("$.series[0].day").isEqualTo("2026-11-13")
                 .jsonPath("$.rankings.agents[0].name").isEqualTo("agent-a")
-                .jsonPath("$.quotas.balance").isEqualTo(12.50);
+                .jsonPath("$.plan.plan.name").isEqualTo("standard")
+                .jsonPath("$.plan.fiveHour.remaining").isEqualTo(2999900);
 
         var query = ArgumentCaptor.forClass(OverviewQuery.class);
         var viewer = ArgumentCaptor.forClass(Viewer.class);
@@ -489,14 +494,28 @@ class AiUsageEndpointTest {
                                 "deepseek", null, 5, 1, 300, 10, 150, new BigDecimal("0.30"))),
                         List.of(new RankingEntry(
                                 "main", "deepseek", 5, 1, 300, 10, 150, new BigDecimal("0.30")))),
-                new WalletDetail(
-                        new BigDecimal("12.50"),
-                        BigDecimal.ZERO,
-                        new BigDecimal("12.50"),
-                        new BigDecimal("12.50"),
-                        BigDecimal.ZERO,
-                        1,
-                        null));
+                new UsageView(
+                        new PlanSummary("standard", "标准套餐", "DefaultPlan"),
+                        new WindowUsage(
+                                3_000_000,
+                                100,
+                                0,
+                                2_999_900,
+                                Instant.parse("2026-11-19T04:00:00Z"),
+                                Instant.parse("2026-11-19T09:00:00Z"),
+                                "ACTIVE"),
+                        new WindowUsage(
+                                20_000_000,
+                                100,
+                                0,
+                                19_999_900,
+                                Instant.parse("2026-11-16T16:00:00Z"),
+                                Instant.parse("2026-11-23T16:00:00Z"),
+                                "ACTIVE"),
+                        new PlanUsageService.RateLimit(4, 120),
+                        new PlanVoucherService.VoucherBalance(
+                                new PlanVoucherService.Balance(2, 1, 1),
+                                new PlanVoucherService.Balance(1, 0, 1))));
     }
 
     private static UsageTotals totals() {
@@ -543,7 +562,7 @@ class AiUsageEndpointTest {
                 700,
                 120,
                 1020,
-                new BigDecimal("0.03"),
+                3L,
                 3200,
                 500,
                 new BigDecimal("37.50"),
@@ -575,8 +594,8 @@ class AiUsageEndpointTest {
                 700,
                 120,
                 1020,
-                new BigDecimal("0.03"),
-                new Billing("WALLET", "SETTLED", BigDecimal.ZERO, "PROVIDER", "upstream-1"),
+                3L,
+                new Billing("PROVIDER", "SETTLED", "PROVIDER", "upstream-1"),
                 3200,
                 500,
                 new BigDecimal("37.50"),

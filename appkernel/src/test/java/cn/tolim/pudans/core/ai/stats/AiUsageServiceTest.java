@@ -26,8 +26,11 @@ import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionQuery;
 import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionStatsQuery;
 import cn.tolim.pudans.core.ai.stats.AiUsageService.SpeedQuery;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver.Viewer;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService.WalletDetail;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService.PlanSummary;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService.UsageView;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService.WindowUsage;
+import cn.tolim.pudans.core.ai.plan.PlanVoucherService;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
@@ -86,7 +89,7 @@ class AiUsageServiceTest {
     AiConversationRepository conversationRepository;
 
     @Mock
-    AiWalletService walletService;
+    PlanUsageService planUsageService;
 
     @Mock
     ReactiveExtensionClient extensionClient;
@@ -95,7 +98,7 @@ class AiUsageServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new AiUsageService(repository, conversationRepository, walletService, extensionClient);
+        service = new AiUsageService(repository, conversationRepository, planUsageService, extensionClient);
         service.setClock(Clock.fixed(Instant.parse("2026-11-19T04:00:00Z"), ZoneOffset.UTC));
     }
 
@@ -109,7 +112,7 @@ class AiUsageServiceTest {
                 .thenReturn(Flux.just(
                         ranking("agent-a", "deepseek-chat", "deepseek", "main", 2, 1, 1, "0.10"),
                         ranking("agent-b", "qwen-max", "qwen", "main", 3, 3, 0, "0.20")));
-        when(walletService.wallet(USER_ID)).thenReturn(Mono.just(wallet()));
+        when(planUsageService.usage(USER_ID)).thenReturn(Mono.just(planUsage()));
 
         StepVerifier.create(service.overview(
                         new OverviewQuery(null, null, null, null, null, null, null), SELF))
@@ -118,7 +121,7 @@ class AiUsageServiceTest {
                     assertThat(overview.totals().succeeded()).isEqualTo(4);
                     assertThat(overview.totals().failed()).isEqualTo(1);
                     assertThat(overview.totals().running()).isZero();
-                    assertThat(overview.totals().points()).isEqualByComparingTo("0.30");
+                    assertThat(overview.totals().units()).isEqualByComparingTo("0.30");
                     assertThat(overview.totals().latencyMs()).isEqualTo(500);
                     assertThat(overview.totals().ttftMs()).isEqualTo(200);
                     assertThat(overview.totals().tps()).isEqualByComparingTo("20.00");
@@ -143,8 +146,23 @@ class AiUsageServiceTest {
                             .containsExactly("qwen", "deepseek");
                     assertThat(overview.rankings().accounts()).hasSize(2);
                     assertThat(overview.rankings().accounts().getFirst().provider()).isEqualTo("qwen");
-                    assertThat(overview.quotas().balance()).isEqualByComparingTo("12.50");
+                    assertThat(overview.plan().plan().name()).isEqualTo("standard");
+                    assertThat(overview.plan().fiveHour().remaining()).isEqualTo(2_999_900);
                 })
+                .verifyComplete();
+    }
+
+    @Test
+    void overviewWithoutPlanUsageStillCompletes() {
+        when(repository.overviewSeries(any(), any(), anyString(), anyString(), anyString(), anyString(), anyString(), anyBoolean(), anyString()))
+                .thenReturn(Flux.empty());
+        when(repository.overviewRankings(any(), any(), anyString(), anyString(), anyString(), anyString(), anyBoolean(), anyString()))
+                .thenReturn(Flux.empty());
+        when(planUsageService.usage(USER_ID)).thenReturn(Mono.empty());
+
+        StepVerifier.create(service.overview(
+                        new OverviewQuery(null, null, null, null, null, null, null), SELF))
+                .assertNext(overview -> assertThat(overview.plan()).isNull())
                 .verifyComplete();
     }
 
@@ -154,7 +172,7 @@ class AiUsageServiceTest {
                 .thenReturn(Flux.empty());
         when(repository.overviewRankings(FROM_AT, TO_AT, "", "", "", "", true, USER_ID))
                 .thenReturn(Flux.empty());
-        when(walletService.wallet(USER_ID)).thenReturn(Mono.just(wallet()));
+        when(planUsageService.usage(USER_ID)).thenReturn(Mono.just(planUsage()));
 
         StepVerifier.create(service.overview(
                         new OverviewQuery(null, null, null, null, null, null, "week"), ADMIN_ALL))
@@ -329,7 +347,7 @@ class AiUsageServiceTest {
                     assertThat(lines.getFirst()).isEqualTo(UsageCsvExporter.HEADER);
                     assertThat(lines.get(1))
                             .isEqualTo("2026-11-19T08:00:00Z,req-5,agent-a,deepseek,\"deepseek,chat\",main,"
-                                    + "chat,default,SUCCEEDED,900,120,700,1020,0.03,3200,500,0.4375,false,high\n");
+                                    + "chat,default,SUCCEEDED,900,120,700,1020,3,3200,500,0.4375,false,high\n");
                 })
                 .verifyComplete();
     }
@@ -343,7 +361,7 @@ class AiUsageServiceTest {
                 .assertNext(detail -> {
                     assertThat(detail.requestId()).isEqualTo("req-5");
                     assertThat(detail.billing().status()).isEqualTo("SETTLED");
-                    assertThat(detail.billing().overdraft()).isEqualByComparingTo("0.10");
+                    assertThat(detail.billing().usageSource()).isEqualTo("PROVIDER");
                     assertThat(detail.routeTrace().get("attempts").asInt()).isEqualTo(2);
                     assertThat(detail.retrievalTrace().get("kbTokens").asLong()).isEqualTo(120L);
                     assertThat(detail.ttftMs()).isEqualTo(500);
@@ -377,10 +395,9 @@ class AiUsageServiceTest {
                 other.cacheTokens(),
                 other.outputTokens(),
                 other.totalTokens(),
-                other.points(),
+                other.units(),
                 other.billingSource(),
                 other.billingStatus(),
-                other.overdraft(),
                 other.usageSource(),
                 other.upstreamRequestId(),
                 other.latencyMs(),
@@ -677,7 +694,7 @@ class AiUsageServiceTest {
             long requests,
             long succeeded,
             long failed,
-            String points) {
+            String units) {
         return new OverviewRankingRow(
                 agent,
                 model,
@@ -694,7 +711,7 @@ class AiUsageServiceTest {
                 10 * requests,
                 50 * requests,
                 160 * requests,
-                new BigDecimal(points),
+                new BigDecimal(units),
                 1000 * requests / 2,
                 requests,
                 400 * requests / 2,
@@ -732,7 +749,7 @@ class AiUsageServiceTest {
                 700,
                 120,
                 1020,
-                new BigDecimal("0.03"),
+                3L,
                 3200,
                 500,
                 new BigDecimal("37.50"),
@@ -764,7 +781,7 @@ class AiUsageServiceTest {
                 700,
                 120,
                 1020,
-                new BigDecimal("0.03"),
+                3L,
                 3200,
                 500,
                 new BigDecimal("37.50"),
@@ -795,10 +812,9 @@ class AiUsageServiceTest {
                 700,
                 120,
                 1020,
-                new BigDecimal("0.03"),
-                "WALLET",
+                3L,
+                "PROVIDER",
                 "SETTLED",
-                new BigDecimal("0.10"),
                 "PROVIDER",
                 "upstream-1",
                 3200,
@@ -889,15 +905,29 @@ class AiUsageServiceTest {
                 NOW);
     }
 
-    private static WalletDetail wallet() {
-        return new WalletDetail(
-                new BigDecimal("12.50"),
-                new BigDecimal("1.00"),
-                new BigDecimal("11.50"),
-                new BigDecimal("20.00"),
-                new BigDecimal("7.50"),
-                1,
-                new BigDecimal("5.00"));
+    private static UsageView planUsage() {
+        return new UsageView(
+                new PlanSummary("standard", "标准套餐", "DefaultPlan"),
+                new WindowUsage(
+                        3_000_000,
+                        100,
+                        0,
+                        2_999_900,
+                        Instant.parse("2026-11-19T04:00:00Z"),
+                        Instant.parse("2026-11-19T09:00:00Z"),
+                        "ACTIVE"),
+                new WindowUsage(
+                        20_000_000,
+                        100,
+                        0,
+                        19_999_900,
+                        Instant.parse("2026-11-16T16:00:00Z"),
+                        Instant.parse("2026-11-23T16:00:00Z"),
+                        "ACTIVE"),
+                new PlanUsageService.RateLimit(4, 120),
+                new PlanVoucherService.VoucherBalance(
+                        new PlanVoucherService.Balance(2, 1, 1),
+                        new PlanVoucherService.Balance(1, 0, 1)));
     }
 
     private static AiModel model() {

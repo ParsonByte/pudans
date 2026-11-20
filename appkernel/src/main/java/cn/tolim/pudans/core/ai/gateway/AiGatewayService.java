@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.ai.gateway;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
@@ -26,6 +27,14 @@ import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
+import cn.tolim.pudans.core.ai.model.AiModelUsage;
+import cn.tolim.pudans.core.ai.plan.PlanCatalogService;
+import cn.tolim.pudans.core.ai.plan.PlanQuotaExceededException;
+import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanResolutionService;
+import cn.tolim.pudans.core.ai.plan.PlanUsageSnapshot;
+import cn.tolim.pudans.core.ai.plan.PlanWindowKind;
+import cn.tolim.pudans.core.ai.plan.UsageUnitCalculator;
 import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
 import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
@@ -37,9 +46,6 @@ import cn.tolim.pudans.core.ai.routing.SunkRouteRegistry;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitFailure;
 import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
-import cn.tolim.pudans.core.ai.wallet.AiPointsCalculator;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService;
-import cn.tolim.pudans.core.ai.wallet.AiWalletUsage;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
@@ -57,6 +63,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -111,7 +118,9 @@ public class AiGatewayService {
 
     private final AiMemoryContextBuilder memoryContextBuilder;
 
-    private final AiWalletService walletService;
+    private final PlanResolutionService planResolutionService;
+
+    private final PlanQuotaService planQuotaService;
 
     private final AiChatRequestRepository chatRequestRepository;
 
@@ -224,20 +233,128 @@ public class AiGatewayService {
 
     private Mono<Prepared> prepare(AiGatewayInvocation invocation, AiSetting.Spec setting) {
         return bind(invocation, null).flatMap(session -> inject(invocation, setting, session)
-                .flatMap(injected -> routeResolutionService
-                        .resolve(new AiRouteResolutionService.Input(
-                                injected.modeCode(),
-                                injected.routeGroupCode(),
-                                null,
-                                injected.ir(),
-                                setting,
-                                null,
-                                injected.modelOverride(),
-                                injected.agentName()))
-                        .doOnNext(this::recordRoutingDecision)
-                        .doOnError(error -> recordRouteExhausted(invocation, error))
-                        .flatMap(resolution -> prepare(injected, setting, session, resolution)
-                                .doOnError(this::recordWalletInsufficient))));
+                .flatMap(injected -> plan(injected).flatMap(plan -> prepare(injected, setting, session, plan))));
+    }
+
+    // SYSTEM 调用不解析套餐，也不占用用户窗口和团队配额
+    private Mono<PlanContext> plan(AiGatewayInvocation invocation) {
+        if (invocation.usageScope() == AiPlan.BillingScope.SYSTEM) {
+            return Mono.just(PlanContext.SYSTEM);
+        }
+        return planResolutionService.resolve(invocation.userId()).map(PlanContext::new);
+    }
+
+    private Mono<Prepared> prepare(
+            AiGatewayInvocation invocation,
+            AiSetting.Spec setting,
+            GatewaySession session,
+            PlanContext plan) {
+        return route(invocation, setting, invocation.modeCode(), invocation.routeGroupCode())
+                .flatMap(resolution -> attempt(invocation, setting, session, resolution, plan))
+                // 5 小时窗口耗尽时允许按套餐配置降级一次，周窗口耗尽保持拒绝
+                .onErrorResume(error -> canDowngrade(plan, error)
+                        ? route(invocation, setting, null, downgradeGroup(plan))
+                                .flatMap(resolution -> attempt(invocation, setting, session, resolution, plan))
+                        : Mono.error(error));
+    }
+
+    private Mono<AiRouteResolutionService.Resolution> route(
+            AiGatewayInvocation invocation,
+            AiSetting.Spec setting,
+            @Nullable String modeCode,
+            @Nullable String routeGroupCode) {
+        return routeResolutionService
+                .resolve(new AiRouteResolutionService.Input(
+                        modeCode,
+                        routeGroupCode,
+                        null,
+                        invocation.ir(),
+                        setting,
+                        null,
+                        invocation.modelOverride(),
+                        invocation.agentName()))
+                .doOnNext(this::recordRoutingDecision)
+                .doOnError(error -> recordRouteExhausted(invocation, error));
+    }
+
+    private static boolean canDowngrade(PlanContext plan, Throwable error) {
+        if (!(error instanceof PlanQuotaExceededException quota)
+                || quota.windowKind() != PlanWindowKind.FIVE_HOUR) {
+            return false;
+        }
+        var config = plan.plan();
+        return config != null
+                && config.getSpec() != null
+                && config.getSpec().getFallback() != null
+                && config.getSpec().getFallback().downgrades();
+    }
+
+    private static @Nullable String downgradeGroup(PlanContext plan) {
+        var config = plan.plan();
+        return config == null || config.getSpec() == null || config.getSpec().getFallback() == null
+                ? null
+                : config.getSpec().getFallback().getDowngradeRouteGroup();
+    }
+
+    private Mono<Prepared> attempt(
+            AiGatewayInvocation invocation,
+            AiSetting.Spec setting,
+            GatewaySession session,
+            AiRouteResolutionService.Resolution resolution,
+            PlanContext plan) {
+        return requireAccess(invocation, resolution, plan)
+                .then(load(resolution.selection()))
+                .flatMap(resources -> keyService.authorize(invocation, resources.model())
+                        .flatMap(access -> {
+                            var candidates = candidates(resolution, access, plan);
+                            if (candidates.isEmpty()) {
+                                return Mono.error(planDenied(
+                                        "当前套餐不允许使用模型 " + resolution.selection().model() + "。"));
+                            }
+                            return hold(invocation, setting, session, resolution, resources, plan)
+                                    .flatMap(hold -> conversation(invocation, resolution, session)
+                                            .flatMap(conversation -> bind(invocation, conversation.id())
+                                                    .flatMap(bound -> createChatRequest(
+                                                                    invocation, resolution, bound, conversation, plan, hold)
+                                                            .onErrorResume(error -> release(hold)
+                                                                    .then(Mono.error(error)))
+                                                            .thenReturn(new Prepared(
+                                                                    invocation,
+                                                                    setting,
+                                                                    bound,
+                                                                    resolution,
+                                                                    resources,
+                                                                    conversation,
+                                                                    plan,
+                                                                    hold,
+                                                                    Instant.now(),
+                                                                    access,
+                                                                    candidates,
+                                                                    new ArrayList<>())))));
+                        }));
+    }
+
+    private static Mono<Void> requireAccess(
+            AiGatewayInvocation invocation,
+            AiRouteResolutionService.Resolution resolution,
+            PlanContext plan) {
+        var config = plan.plan();
+        if (config == null || config.getSpec() == null) {
+            return Mono.empty();
+        }
+        var access = config.getSpec().getAccess() == null
+                ? new AiPlan.Access()
+                : config.getSpec().getAccess();
+        if (!access.allowsFeature(featureOf(invocation))) {
+            return Mono.error(planDenied("当前套餐不允许使用 " + featureOf(invocation) + " 功能。"));
+        }
+        var group = resolution.routeGroup() == null || resolution.routeGroup().getMetadata() == null
+                ? null
+                : resolution.routeGroup().getMetadata().getName();
+        if (!access.allowsRouteGroup(group)) {
+            return Mono.error(planDenied("当前套餐不允许使用路由组 " + group + "。"));
+        }
+        return Mono.empty();
     }
 
     private Mono<AiGatewayInvocation> inject(
@@ -297,34 +414,8 @@ public class AiGatewayService {
                 invocation.agentName(),
                 invocation.conversationId(),
                 invocation.modelOverride(),
-                invocation.callerKey());
-    }
-
-    private Mono<Prepared> prepare(
-            AiGatewayInvocation invocation,
-            AiSetting.Spec setting,
-            GatewaySession session,
-            AiRouteResolutionService.Resolution resolution) {
-        return load(resolution.selection())
-                .flatMap(resources -> keyService.authorize(invocation, resources.model())
-                        .flatMap(access -> conversation(invocation, resolution, session)
-                                .flatMap(conversation -> bind(invocation, conversation.id())
-                                        .flatMap(bound -> hold(invocation, setting, session, resolution, resources)
-                                                .flatMap(hold -> createChatRequest(
-                                                                invocation, resolution, bound, conversation)
-                                                        .onErrorResume(error -> release(hold).then(Mono.error(error)))
-                                                        .thenReturn(new Prepared(
-                                                                invocation,
-                                                                setting,
-                                                                bound,
-                                                                resolution,
-                                                                resources,
-                                                                conversation,
-                                                                hold,
-                                                                Instant.now(),
-                                                                access,
-                                                                candidates(resolution, access),
-                                                                new ArrayList<>())))))));
+                invocation.callerKey(),
+                invocation.usageScope());
     }
 
     private Mono<GatewaySession> bind(AiGatewayInvocation invocation, @Nullable Long conversationId) {
@@ -363,40 +454,56 @@ public class AiGatewayService {
             AiSetting.Spec setting,
             GatewaySession session,
             AiRouteResolutionService.Resolution resolution,
-            Resources resources) {
+            Resources resources,
+            PlanContext plan) {
         var request = resolution.request();
         var seat = seatOf(resolution, resolution.selection());
-        var free = seat != null && (seat.isFree() || seat.isFreePlan());
+        var free = (seat != null && (seat.isFree() || seat.isFreePlan())) || freeProvider(resources);
         var maxOutput = request.getMaxOutputTokens() > 0
                 ? request.getMaxOutputTokens()
                 : defaultMaxOutput(resources.model());
-        var amount = AiPointsCalculator.estimate(resources.model(), free, request.getPromptTokens(), maxOutput);
-        return providerSpendGuard
+        var units = new UsageUnitCalculator(billing(setting), free)
+                .estimate(
+                        request.getPromptTokens(),
+                        maxOutput,
+                        resolution.selection().tier(),
+                        resources.model().getSpec().getModelCode())
+                .longValue();
+        var amount = BigDecimal.valueOf(units);
+        var config = plan.plan();
+        var guard = providerSpendGuard
                 .check(resources.provider(), resources.account(), amount)
-                .then(teamQuotaService.check(session.teamId(), amount))
-                .then(Mono.defer(() -> {
-                    if (amount.signum() <= 0) {
-                        return Mono.just(new Hold(null, ZERO, free));
-                    }
-                    var billing = setting.getBilling() == null
-                            ? new AiSetting.Billing()
-                            : setting.getBilling();
-                    return walletService
-                            .ensureWallet(invocation.userId())
-                            .then(walletService.freeze(
-                                    invocation.requestId(),
-                                    invocation.userId(),
-                                    amount,
-                                    Duration.ofSeconds(Math.max(1, billing.getFreezeExpirySeconds()))))
-                            .map(freeze -> new Hold(freeze, amount, free));
-                }));
+                .then(config == null ? Mono.empty() : teamQuotaService.check(session.teamId(), amount));
+        return guard.then(Mono.defer(() -> {
+            if (config == null || free) {
+                return Mono.just(new Hold(null, free));
+            }
+            return planQuotaService
+                    .reserve(
+                            invocation.requestId(),
+                            invocation.userId(),
+                            config,
+                            units,
+                            featureOf(invocation).name(),
+                            session.teamId(),
+                            invocation.requestId())
+                    .map(reservation -> new Hold(reservation, false));
+        }));
+    }
+
+    private static AiSetting.Billing billing(AiSetting.@Nullable Spec setting) {
+        return setting == null || setting.getBilling() == null
+                ? new AiSetting.Billing()
+                : setting.getBilling();
     }
 
     private Mono<Void> createChatRequest(
             AiGatewayInvocation invocation,
             AiRouteResolutionService.Resolution resolution,
             GatewaySession session,
-            Conversation conversation) {
+            Conversation conversation,
+            PlanContext plan,
+            Hold hold) {
         var selection = resolution.selection();
         return chatRequestRepository
                 .createChatRequest(new NewChatRequest(
@@ -415,8 +522,11 @@ public class AiGatewayService {
                         selection.account(),
                         selection.model(),
                         selection.tier() == null ? null : selection.tier().name(),
-                        json(gatewayTrace(resolution.plan().trace(), invocation)),
-                        invocation.callerKey()))
+                        json(gatewayTrace(resolution.plan().trace(), invocation, plan)),
+                        invocation.callerKey(),
+                        // 仅实际预留额度时写入套餐名，结算与用量归属据此判断是否存在预留
+                        hold.reservation() == null ? null : hold.reservation().planId(),
+                        invocation.usageScope().name()))
                 .then();
     }
 
@@ -520,12 +630,13 @@ public class AiGatewayService {
             return call;
         }
         var userLimit = concurrentLimit(prepared);
+        var userRpm = rpmLimit(prepared);
         return Mono.usingWhen(
                 rateLimiter.acquire(resources.provider(), resources.account()),
-                permit -> userLimit > 0
+                permit -> userLimit > 0 || userRpm > 0
                         ? Mono.usingWhen(
                                 rateLimiter.acquireUser(
-                                        prepared.invocation().userId(), userLimit),
+                                        prepared.invocation().userId(), userLimit, userRpm),
                                 userPermit -> call,
                                 rateLimiter::release)
                         : call,
@@ -538,24 +649,33 @@ public class AiGatewayService {
             return stream;
         }
         var userLimit = concurrentLimit(prepared);
+        var userRpm = rpmLimit(prepared);
         return Flux.usingWhen(
                 rateLimiter.acquire(resources.provider(), resources.account()),
-                permit -> userLimit > 0
+                permit -> userLimit > 0 || userRpm > 0
                         ? Flux.usingWhen(
                                 rateLimiter.acquireUser(
-                                        prepared.invocation().userId(), userLimit),
+                                        prepared.invocation().userId(), userLimit, userRpm),
                                 userPermit -> stream,
                                 rateLimiter::release)
                         : stream,
                 rateLimiter::release);
     }
 
+    // 用户并发与速率只取套餐配置，未分配套餐的请求在解析阶段已拒绝
     private static int concurrentLimit(Prepared prepared) {
-        var setting = prepared.setting();
-        var billing = setting == null || setting.getBilling() == null
-                ? null
-                : setting.getBilling();
-        return billing == null ? 0 : Math.max(0, billing.getConcurrentLimit());
+        var limits = rateLimits(prepared);
+        return limits == null ? 0 : Math.max(0, limits.getMaxConcurrency());
+    }
+
+    private static int rpmLimit(Prepared prepared) {
+        var limits = rateLimits(prepared);
+        return limits == null ? 0 : Math.max(0, limits.getMaxRpm());
+    }
+
+    private static AiPlan.@Nullable RateLimit rateLimits(Prepared prepared) {
+        var config = prepared.plan().plan();
+        return config == null || config.getSpec() == null ? null : config.getSpec().getRateLimit();
     }
 
     private static Duration attemptTimeout(Prepared prepared) {
@@ -588,23 +708,13 @@ public class AiGatewayService {
 
     private Mono<AiGatewayResult> succeed(Prepared prepared, Attempted attempt) {
         var usage = resolveUsage(prepared, attempt.response().usage(), textOf(attempt.response().message()));
-        var points = charge(attempt.resources(), prepared.hold(), usage);
+        var units = charge(prepared, attempt.resources(), usage);
         var billingSource = billingSource(attempt.response().usage());
-        var walletUsage = walletUsage(attempt.resources(), prepared.selection(), usage, billingSource);
-        var settle = prepared.hold().freeze() == null
-                ? Mono.empty()
-                : walletService
-                        .settle(
-                                prepared.invocation().requestId(),
-                                prepared.invocation().userId(),
-                                prepared.hold().amount(),
-                                points,
-                                walletUsage)
-                        .then();
+        var settle = settle(prepared, attempt.resources(), usage);
         var latencyDuration = Duration.between(prepared.startedAt(), Instant.now());
         var latency = (int) latencyDuration.toMillis();
-        recordSuccessMetrics(prepared, attempt.resources(), usage, points, latencyDuration);
-        return settle.then(complete(prepared, usage, points, billingSource, STATUS_SUCCEEDED, null,
+        recordSuccessMetrics(prepared, attempt.resources(), usage, units, latencyDuration);
+        return settle.then(complete(prepared, usage, units, billingSource, STATUS_SUCCEEDED, null,
                         BILLING_SETTLED, attempt.response().id(), latency, latency))
                 .then(captureExternal(
                         prepared,
@@ -615,7 +725,7 @@ public class AiGatewayService {
                         attempt.response(),
                         meta(prepared, attempt.resources()),
                         usage,
-                        points,
+                        units,
                         billingSource));
     }
 
@@ -692,9 +802,7 @@ public class AiGatewayService {
     }
 
     private Mono<Void> fail(Prepared prepared, Throwable error) {
-        var release = prepared.hold().freeze() == null
-                ? Mono.empty()
-                : walletService.release(prepared.invocation().requestId()).then();
+        var release = release(prepared.hold());
         var latencyDuration = Duration.between(prepared.startedAt(), Instant.now());
         var latency = (int) latencyDuration.toMillis();
         recordFailureMetrics(prepared, latencyDuration);
@@ -712,28 +820,18 @@ public class AiGatewayService {
             String content) {
         var resources = actual == null ? prepared.resources() : actual;
         var usage = resolveUsage(prepared, reported, content);
-        var points = charge(resources, prepared.hold(), usage);
+        var units = charge(prepared, resources, usage);
         var billingSource = billingSource(reported);
-        var walletUsage = walletUsage(resources, prepared.selection(), usage, billingSource);
-        var settle = prepared.hold().freeze() == null
-                ? Mono.empty()
-                : walletService
-                        .settle(
-                                prepared.invocation().requestId(),
-                                prepared.invocation().userId(),
-                                prepared.hold().amount(),
-                                points,
-                                walletUsage)
-                        .then();
+        var settle = settle(prepared, resources, usage);
         var latencyDuration = Duration.between(prepared.startedAt(), Instant.now());
         var latency = (int) latencyDuration.toMillis();
-        recordSuccessMetrics(prepared, resources, usage, points, latencyDuration);
+        recordSuccessMetrics(prepared, resources, usage, units, latencyDuration);
         return settle.thenMany(complete(
-                        prepared, usage, points, billingSource, STATUS_SUCCEEDED, null, BILLING_SETTLED,
+                        prepared, usage, units, billingSource, STATUS_SUCCEEDED, null, BILLING_SETTLED,
                         null, latency, null)
                 .thenMany(captureExternal(prepared, content, resources, usage))
                 .thenMany(Flux.just(
-                        new Usage(usage, points, billingSource),
+                        new Usage(usage, units, billingSource),
                         new Done("msg-" + prepared.invocation().requestId(), finishReason, false))));
     }
 
@@ -742,27 +840,16 @@ public class AiGatewayService {
         var resources = actual == null ? prepared.resources() : actual;
         var partial = !content.isEmpty();
         var usage = resolveUsage(prepared, null, content);
-        var points = partial ? charge(resources, prepared.hold(), usage) : ZERO;
+        var units = partial ? charge(prepared, resources, usage) : ZERO;
         var billingStatus = partial ? BILLING_SETTLED : BILLING_RELEASED;
         var billingSource = partial ? SOURCE_ESTIMATED : null;
-        var action = prepared.hold().freeze() == null
-                ? Mono.empty()
-                : partial
-                        ? walletService
-                                .settle(
-                                        prepared.invocation().requestId(),
-                                        prepared.invocation().userId(),
-                                        prepared.hold().amount(),
-                                        points,
-                                        walletUsage(resources, prepared.selection(), usage, billingSource))
-                                .then()
-                        : walletService.release(prepared.invocation().requestId()).then();
+        var action = partial ? settle(prepared, resources, usage) : release(prepared.hold());
         var mapped = upstreamError(error);
         var latencyDuration = Duration.between(prepared.startedAt(), Instant.now());
         var latency = (int) latencyDuration.toMillis();
         recordFailureMetrics(prepared, latencyDuration);
         return action.thenMany(complete(
-                        prepared, usage, points, billingSource, STATUS_FAILED, codeOf(mapped),
+                        prepared, usage, units, billingSource, STATUS_FAILED, codeOf(mapped),
                         billingStatus, null, latency, null)
                 .thenMany(Flux.just(new Error(
                         codeOf(mapped), reasonOf(mapped), mapped.getStatusCode().is5xxServerError(), partial))));
@@ -770,29 +857,16 @@ public class AiGatewayService {
 
     private Mono<Void> streamCancel(Prepared prepared, String content) {
         if (content.isEmpty()) {
-            return prepared.hold().freeze() == null
-                    ? Mono.empty()
-                    : walletService.release(prepared.invocation().requestId()).then();
+            return release(prepared.hold());
         }
         var usage = resolveUsage(prepared, null, content);
-        var points = charge(prepared.resources(), prepared.hold(), usage);
-        Mono<Void> settle = prepared.hold().freeze() == null
-                ? Mono.empty()
-                : walletService
-                        .settle(
-                                prepared.invocation().requestId(),
-                                prepared.invocation().userId(),
-                                prepared.hold().amount(),
-                                points,
-                                walletUsage(prepared.resources(), prepared.selection(), usage, SOURCE_ESTIMATED))
-                        .then();
-        return settle;
+        return settle(prepared, prepared.resources(), usage);
     }
 
     private Mono<Void> complete(
             Prepared prepared,
             @Nullable AiTokenUsage usage,
-            @Nullable BigDecimal points,
+            @Nullable BigDecimal units,
             @Nullable String billingSource,
             String status,
             @Nullable String errorCode,
@@ -817,7 +891,7 @@ public class AiGatewayService {
                         cacheTokens(usage),
                         output,
                         total,
-                        points,
+                        units == null ? null : units.longValue(),
                         billingSource,
                         billingStatus,
                         latencyMillis,
@@ -833,16 +907,21 @@ public class AiGatewayService {
     private static String finalTrace(Prepared prepared) {
         var trace = prepared.resolution().plan().trace()
                 .withAttempts(List.copyOf(prepared.attempts()));
-        return json(gatewayTrace(trace, prepared.invocation()));
+        return json(gatewayTrace(trace, prepared.invocation(), prepared.plan()));
     }
 
     // 用途按调用来源区分，入口按网关协议固定，便于用量页按 purpose/via 筛选。
-    private static JsonNode gatewayTrace(RouteTrace trace, AiGatewayInvocation invocation) {
+    private static JsonNode gatewayTrace(
+            RouteTrace trace, AiGatewayInvocation invocation, PlanContext plan) {
         var node = JsonUtils.mapper()
                 .valueToTree(trace.withCallerKey(invocation.callerKey())
                         .withGatewayContext(purpose(invocation), via(invocation)));
         if (node instanceof ObjectNode object) {
             object.put("tries", trace.attempts().size());
+            object.put("billingScope", invocation.usageScope().name());
+            if (plan.resolved() != null && plan.resolved().planName() != null) {
+                object.put("planId", plan.resolved().planName());
+            }
             if (trace.selected() != null && trace.selected().tier() != null) {
                 object.put("servedEffort", trace.selected().tier().name());
             }
@@ -911,14 +990,14 @@ public class AiGatewayService {
     }
 
     private void recordSuccessMetrics(
-            Prepared prepared, Resources resources, AiTokenUsage usage, BigDecimal points, Duration latency) {
+            Prepared prepared, Resources resources, AiTokenUsage usage, BigDecimal units, Duration latency) {
         var protocol = protocolOf(prepared.invocation());
         var provider = resources.provider().getMetadata().getName();
         var model = resources.model().getSpec().getModelCode();
         metrics.gatewayRequest(protocol, prepared.invocation().agentSource(), AiMetrics.STATUS_SUCCESS);
         metrics.gatewayLatency(protocol, AiMetrics.STATUS_SUCCESS, latency);
         metrics.gatewayTokens(provider, model, usage.inputTokens(), usage.outputTokens(), cacheTokens(usage));
-        metrics.gatewayPoints(points, provider, model);
+        metrics.gatewayUnits(units, provider, model);
     }
 
     private void recordFailureMetrics(Prepared prepared, Duration latency) {
@@ -942,20 +1021,15 @@ public class AiGatewayService {
         }
     }
 
-    private void recordWalletInsufficient(Throwable error) {
-        if (error instanceof ApiException apiException
-                && apiException.getStatusCode().value() == HttpStatus.PAYMENT_REQUIRED.value()) {
-            metrics.walletInsufficient();
-        }
-    }
-
     private static String protocolOf(AiGatewayInvocation invocation) {
         return invocation.protocol() == null ? null : invocation.protocol().name();
     }
 
     // 主组候选排在组间 fallback 之前，去重后保持低优先
     private static List<Candidate> candidates(
-            AiRouteResolutionService.Resolution resolution, AiGatewayKeyService.Access access) {
+            AiRouteResolutionService.Resolution resolution,
+            AiGatewayKeyService.Access access,
+            PlanContext plan) {
         var candidates = new ArrayList<Candidate>();
         var seen = new LinkedHashSet<String>();
         var current = resolution;
@@ -963,9 +1037,9 @@ public class AiGatewayService {
             var group = current.routeGroup() == null || current.routeGroup().getMetadata() == null
                     ? null
                     : current.routeGroup().getMetadata().getName();
-            addCandidate(candidates, seen, current, group, current.plan().selected(), access);
+            addCandidate(candidates, seen, current, group, current.plan().selected(), access, plan);
             for (var fallback : current.plan().fallbackSeats()) {
-                addCandidate(candidates, seen, current, group, fallback, access);
+                addCandidate(candidates, seen, current, group, fallback, access, plan);
             }
             current = current.fallbackGroup();
         }
@@ -978,8 +1052,9 @@ public class AiGatewayService {
             AiRouteResolutionService.Resolution resolution,
             @Nullable String group,
             @Nullable RouteSelection selection,
-            AiGatewayKeyService.Access access) {
-        if (selection == null || !access.allows(selection.model())) {
+            AiGatewayKeyService.Access access,
+            PlanContext plan) {
+        if (selection == null || !access.allows(selection.model()) || !planAllows(plan, group, selection)) {
             return;
         }
         var key = selection.provider() + "|" + selection.account() + "|" + selection.model();
@@ -988,6 +1063,17 @@ public class AiGatewayService {
         }
         var seat = seatOf(resolution, selection);
         candidates.add(new Candidate(selection, group, seat == null ? null : seat.getFallbackSource()));
+    }
+
+    private static boolean planAllows(PlanContext plan, @Nullable String group, RouteSelection selection) {
+        var config = plan.plan();
+        if (config == null || config.getSpec() == null) {
+            return true;
+        }
+        var access = config.getSpec().getAccess() == null
+                ? new AiPlan.Access()
+                : config.getSpec().getAccess();
+        return access.allowsRouteGroup(group) && access.allowsModel(selection.model());
     }
 
     private static void recordAttempt(
@@ -1059,13 +1145,40 @@ public class AiGatewayService {
         return new AiTokenUsage(input, output, cacheRead, cacheWrite);
     }
 
-    private static BigDecimal charge(Resources resources, Hold hold, AiTokenUsage usage) {
-        return AiPointsCalculator.charge(
-                resources.model(),
-                hold.free() || freeProvider(resources),
-                nullSafe(usage.inputTokens()),
-                nullSafe(usage.cacheReadTokens()) + nullSafe(usage.cacheWriteTokens()),
-                nullSafe(usage.outputTokens()));
+    private static BigDecimal charge(Prepared prepared, Resources resources, AiTokenUsage usage) {
+        var calculator = new UsageUnitCalculator(
+                billing(prepared.setting()), prepared.hold().free() || freeProvider(resources));
+        var modelUsage = new AiModelUsage(
+                usage.inputTokens(),
+                usage.outputTokens(),
+                usage.cacheReadTokens(),
+                usage.cacheWriteTokens(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                Map.of());
+        return calculator.charge(modelUsage, prepared.selection().tier(), resources.model().getSpec().getModelCode());
+    }
+
+    private Mono<Void> settle(Prepared prepared, Resources resources, AiTokenUsage usage) {
+        var reservation = prepared.hold().reservation();
+        if (reservation == null) {
+            return Mono.empty();
+        }
+        var snapshot = new PlanUsageSnapshot(
+                resources.provider().getMetadata().getName(),
+                resources.account().getMetadata().getName(),
+                resources.model().getSpec().getModelCode(),
+                prepared.selection().tier(),
+                usage.inputTokens(),
+                cacheTokens(usage),
+                usage.outputTokens(),
+                prepared.invocation().requestId());
+        return planQuotaService
+                .settle(prepared.invocation().requestId(), charge(prepared, resources, usage).longValue(), snapshot)
+                .then();
     }
 
     private static boolean freeProvider(Resources resources) {
@@ -1073,17 +1186,25 @@ public class AiGatewayService {
                 || (resources.account().getSpec() != null && resources.account().getSpec().isFreePlan());
     }
 
-    private static AiWalletUsage walletUsage(
-            Resources resources, RouteSelection selection, AiTokenUsage usage, @Nullable String billingSource) {
-        return new AiWalletUsage(
-                selection.account(),
-                resources.model().getSpec().getModelCode(),
-                selection.tier() == null ? null : selection.tier().name(),
-                usage.inputTokens(),
-                nullSafe(usage.cacheReadTokens()) + nullSafe(usage.cacheWriteTokens()),
-                usage.outputTokens(),
-                null,
-                billingSource);
+    private static AiPlan.Feature featureOf(AiGatewayInvocation invocation) {
+        var source = invocation.agentSource();
+        if (AGENT_SOURCE_CHAT.equals(source)) {
+            return AiPlan.Feature.CHAT;
+        }
+        if (source != null) {
+            var normalized = source.toLowerCase(Locale.ROOT);
+            if (normalized.contains("subagent")) {
+                return AiPlan.Feature.SUBAGENT;
+            }
+            if (normalized.contains("knowledge")) {
+                return AiPlan.Feature.KNOWLEDGE;
+            }
+        }
+        return AiPlan.Feature.AGENT;
+    }
+
+    private static ApiException planDenied(String reason) {
+        return new ApiException(HttpStatus.FORBIDDEN, AiPlan.CODE_MODEL_DENIED, reason);
     }
 
     private static String billingSource(@Nullable AiTokenUsage usage) {
@@ -1135,7 +1256,9 @@ public class AiGatewayService {
     }
 
     private Mono<Void> release(Hold hold) {
-        return hold.freeze() == null ? Mono.empty() : walletService.release(hold.freeze().requestId()).then();
+        return hold.reservation() == null
+                ? Mono.empty()
+                : planQuotaService.release(hold.reservation().requestId()).then();
     }
 
     private static ApiException upstreamError(Throwable error) {
@@ -1156,11 +1279,20 @@ public class AiGatewayService {
 
     private record Resources(AiProvider provider, AiProviderAccount account, AiModel model) {}
 
-    private record Hold(AiWalletService.FreezeResult freeze, BigDecimal amount, boolean free) {}
+    private record Hold(PlanQuotaService.@Nullable ReserveResult reservation, boolean free) {}
 
     private record Attempted(AiChatResponse response, Resources resources) {}
 
     private record Candidate(RouteSelection selection, @Nullable String group, @Nullable String source) {}
+
+    private record PlanContext(PlanResolutionService.@Nullable ResolvedPlan resolved) {
+
+        private static final PlanContext SYSTEM = new PlanContext(null);
+
+        private @Nullable AiPlan plan() {
+            return resolved == null ? null : resolved.plan();
+        }
+    }
 
     private record Prepared(
             AiGatewayInvocation invocation,
@@ -1169,6 +1301,7 @@ public class AiGatewayService {
             AiRouteResolutionService.Resolution resolution,
             Resources resources,
             Conversation conversation,
+            PlanContext plan,
             Hold hold,
             Instant startedAt,
             AiGatewayKeyService.Access access,

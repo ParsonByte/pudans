@@ -7,12 +7,14 @@ import cn.tolim.pudans.contract.core.extension.ai.AiModel;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
+import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.core.ai.model.AiModelUsage;
+import cn.tolim.pudans.core.ai.plan.UsageUnitCalculator;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.RoutePerformanceRow;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -230,11 +232,12 @@ public class RouteCandidateService {
                 provider.getMetadata().getName() + "|"
                         + account.getMetadata().getName() + "|"
                         + model.getMetadata().getName());
+        var tier = resolveTier(member, modelSpec);
         return RouteSeat.builder()
                 .provider(provider.getMetadata().getName())
                 .account(account.getMetadata().getName())
                 .model(model.getMetadata().getName())
-                .tier(resolveTier(member, modelSpec))
+                .tier(tier)
                 .providerOrder(provider.getSpec().getOrder())
                 .fallbackSource(fallbackSource)
                 .weight(Math.max(1, member.getWeight()) * Math.max(1, accountSpec.getWeight()))
@@ -249,7 +252,7 @@ public class RouteCandidateService {
                         : stats.avgTtftMillis().max(BigDecimal.ZERO).longValue())
                 .tps(stats == null || stats.avgTps() == null ? 0 : stats.avgTps().doubleValue())
                 .tokensUsed(stats == null ? 0 : Math.max(0, stats.tokens()))
-                .cost(cost(modelSpec))
+                .cost(cost(modelSpec, tier))
                 .spent(isSpent(quotaLimit, quotaUsed, accountSpec))
                 .sunk(sunkRegistry.isSunk(provider.getMetadata().getName(), account.getMetadata().getName()))
                 .enabled(true)
@@ -341,11 +344,10 @@ public class RouteCandidateService {
 
     private record PerformanceCache(Map<String, RoutePerformanceRow> rows, Instant loadedAt) {}
 
-    private static BigDecimal cost(AiModel.Spec modelSpec) {
-        var input = BigDecimal.ONE.divide(
-                BigDecimal.valueOf(Math.max(1, modelSpec.getInputTokensPerPoint())), 8, RoundingMode.HALF_UP);
-        var output = BigDecimal.ONE.divide(
-                BigDecimal.valueOf(Math.max(1, modelSpec.getOutputTokensPerPoint())), 8, RoundingMode.HALF_UP);
-        return input.add(output);
+    // 路由成本按默认计费权重与档位倍率折算，仅用于候选排序
+    private static BigDecimal cost(AiModel.Spec modelSpec, AiModel.@Nullable Tier tier) {
+        var usage = new AiModelUsage(1, 1, 0, 0, 0, 0, 0, 0, 0, Map.of());
+        return new UsageUnitCalculator(new AiSetting.Billing(), false)
+                .charge(usage, tier, modelSpec.getModelCode());
     }
 }

@@ -2,12 +2,14 @@ package cn.tolim.pudans.core.ai.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
@@ -25,6 +27,8 @@ import cn.tolim.pudans.core.ai.gateway.session.AiGatewaySessionService;
 import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
+import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanResolutionService;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
 import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
 import cn.tolim.pudans.core.ai.routing.RouteOutcome;
@@ -36,15 +40,12 @@ import cn.tolim.pudans.core.ai.routing.SunkRouteRegistry;
 import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
 import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiChatRequestRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
 import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.GatewaySession;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -84,7 +85,10 @@ class AiGatewayServiceMetricsTest {
     AiMemoryContextBuilder memoryContextBuilder;
 
     @Mock
-    AiWalletService walletService;
+    PlanResolutionService planResolutionService;
+
+    @Mock
+    PlanQuotaService planQuotaService;
 
     @Mock
     AiChatRequestRepository chatRequestRepository;
@@ -120,6 +124,12 @@ class AiGatewayServiceMetricsTest {
         lenient().when(keyService.release(any())).thenReturn(Mono.empty());
         lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
         lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
+        lenient().when(planResolutionService.resolve("user-1")).thenReturn(Mono.just(resolved()));
+        lenient()
+                .when(planQuotaService.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
+                .thenReturn(Mono.just(reserveResult()));
+        lenient().when(planQuotaService.settle(anyString(), anyLong(), any())).thenReturn(Mono.just(settleResult()));
+        lenient().when(planQuotaService.release(anyString())).thenReturn(Mono.just(releaseResult()));
         service = new AiGatewayService(
                 client,
                 chatService,
@@ -129,7 +139,8 @@ class AiGatewayServiceMetricsTest {
                 conversationService,
                 agentAdapterRegistry,
                 memoryContextBuilder,
-                walletService,
+                planResolutionService,
+                planQuotaService,
                 chatRequestRepository,
                 memoryTaskScheduler,
                 circuitBreaker,
@@ -146,8 +157,6 @@ class AiGatewayServiceMetricsTest {
     void recordsSuccessMetricsAfterACompletedChat() {
         stubPreparedGateway();
                 when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.just(response()));
-        when(walletService.settle(anyString(), anyString(), any(BigDecimal.class), any(BigDecimal.class), any()))
-                .thenReturn(Mono.just(settleResult()));
         when(chatRequestRepository.completeChatRequest(any())).thenReturn(Mono.empty());
 
         StepVerifier.create(service.complete(invocation())).expectNextCount(1).verifyComplete();
@@ -157,7 +166,7 @@ class AiGatewayServiceMetricsTest {
         assertThat(tokenCount("input")).isEqualTo(1000.0);
         assertThat(tokenCount("output")).isEqualTo(1000.0);
         assertThat(registry.find("ai.gateway.tokens").tag("direction", "cache").counter()).isNull();
-        assertThat(pointsCount()).isEqualTo(2.0);
+        assertThat(unitsCount()).isEqualTo(2500.0);
         assertThat(routingCount("group-a", "SMART", "SELECTED")).isEqualTo(1.0);
         assertThat(registry.find("ai.alerts").counter()).isNull();
     }
@@ -167,7 +176,6 @@ class AiGatewayServiceMetricsTest {
         stubPreparedGateway();
                 when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(new IllegalStateException("upstream down")));
-        when(walletService.release("req-1")).thenReturn(Mono.just(releaseResult()));
         when(chatRequestRepository.completeChatRequest(any())).thenReturn(Mono.empty());
 
         StepVerifier.create(service.complete(invocation())).expectError(ApiException.class).verify();
@@ -176,7 +184,7 @@ class AiGatewayServiceMetricsTest {
         assertThat(latencyCount("OPENAI_CHAT", "FAILED")).isEqualTo(1);
         assertThat(alertCount("provider_exhausted", "WARN")).isEqualTo(1.0);
         assertThat(registry.find("ai.gateway.tokens").counter()).isNull();
-        assertThat(registry.find("ai.gateway.points").counter()).isNull();
+        assertThat(registry.find("ai.gateway.units").counter()).isNull();
     }
 
     @Test
@@ -193,25 +201,8 @@ class AiGatewayServiceMetricsTest {
         assertThat(registry.find("ai.routing.decisions").counter()).isNull();
     }
 
-    @Test
-    void recordsWalletInsufficientAlertWhenFreezeFails() {
-        stubResolvedResources();
-        when(walletService.freeze(anyString(), anyString(), any(BigDecimal.class), any(Duration.class)))
-                .thenReturn(Mono.error(new ApiException(
-                        HttpStatus.PAYMENT_REQUIRED,
-                        "ai-wallet-insufficient",
-                        "积分余额不足，无法冻结。")));
-
-        StepVerifier.create(service.complete(invocation())).expectError(ApiException.class).verify();
-
-        assertThat(alertCount("wallet_insufficient", "WARN")).isEqualTo(1.0);
-        assertThat(registry.find("ai.gateway.requests").counter()).isNull();
-    }
-
     private void stubPreparedGateway() {
         stubResolvedResources();
-        when(walletService.freeze(anyString(), anyString(), any(BigDecimal.class), any(Duration.class)))
-                .thenReturn(Mono.just(freezeResult()));
         when(chatRequestRepository.createChatRequest(any())).thenReturn(Mono.empty());
     }
 
@@ -222,8 +213,8 @@ class AiGatewayServiceMetricsTest {
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider()));
         when(client.get(AiProviderAccount.class, "account-a")).thenReturn(Mono.just(account()));
         when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model()));
-        when(conversationService.requireOwned(11L, "user-1")).thenReturn(Mono.just(conversation()));
-        when(walletService.ensureWallet("user-1")).thenReturn(Mono.empty());
+        lenient().when(conversationService.requireOwned(11L, "user-1"))
+                .thenReturn(Mono.just(conversation()));
     }
 
     private static AiGatewayInvocation invocation() {
@@ -342,18 +333,27 @@ class AiGatewayServiceMetricsTest {
                 "stop");
     }
 
-    private static AiWalletService.FreezeResult freezeResult() {
-        return new AiWalletService.FreezeResult(
-                "req-1", "user-1", BigDecimal.valueOf(2), BigDecimal.TEN, BigDecimal.valueOf(2), false);
+    private static PlanQuotaService.ReserveResult reserveResult() {
+        return new PlanQuotaService.ReserveResult(
+                "req-1", "user-1", "standard", 2500, "five-hour-1", "weekly-1", false);
     }
 
-    private static AiWalletService.SettleResult settleResult() {
-        return new AiWalletService.SettleResult(
-                "req-1", "user-1", BigDecimal.valueOf(2), BigDecimal.valueOf(8), "settle:req-1", false);
+    private static PlanQuotaService.SettleResult settleResult() {
+        return new PlanQuotaService.SettleResult("req-1", 2500, false);
     }
 
-    private static AiWalletService.ReleaseResult releaseResult() {
-        return new AiWalletService.ReleaseResult("req-1", true, "release:req-1");
+    private static PlanQuotaService.ReleaseResult releaseResult() {
+        return new PlanQuotaService.ReleaseResult("req-1", true);
+    }
+
+    private static PlanResolutionService.ResolvedPlan resolved() {
+        var plan = new AiPlan();
+        plan.setMetadata(metadata("standard"));
+        plan.getSpec().setDisplayName("标准套餐");
+        plan.getSpec().getQuota().getFiveHour().setLimit(3_000_000);
+        plan.getSpec().getQuota().getWeekly().setLimit(20_000_000);
+        return new PlanResolutionService.ResolvedPlan(
+                "standard", "标准套餐", "User/user-1", plan);
     }
 
     private static Metadata metadata(String name) {
@@ -387,8 +387,8 @@ class AiGatewayServiceMetricsTest {
         return counter.count();
     }
 
-    private double pointsCount() {
-        var counter = registry.find("ai.gateway.points").counter();
+    private double unitsCount() {
+        var counter = registry.find("ai.gateway.units").counter();
         assertThat(counter).isNotNull();
         return counter.count();
     }

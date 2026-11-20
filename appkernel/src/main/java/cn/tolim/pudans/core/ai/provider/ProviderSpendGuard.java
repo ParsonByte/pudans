@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-// 供应商账号级花费上限与配额窗口守卫
+// 供应商账号级用量上限与配额窗口守卫
 @Service
 @RequiredArgsConstructor
 public class ProviderSpendGuard {
@@ -23,7 +23,7 @@ public class ProviderSpendGuard {
     private final AiStatsRepository statsRepository;
 
     public Mono<Void> check(
-            AiProvider provider, AiProviderAccount account, BigDecimal estimatedPoints) {
+            AiProvider provider, AiProviderAccount account, BigDecimal estimatedUnits) {
         if (provider == null || account == null || account.getSpec() == null) {
             return Mono.empty();
         }
@@ -45,7 +45,7 @@ public class ProviderSpendGuard {
         if (cap == null || cap <= 0) {
             return Mono.empty();
         }
-        var estimate = estimatedPoints == null ? BigDecimal.ZERO : estimatedPoints.max(BigDecimal.ZERO);
+        var estimate = estimatedUnits == null ? BigDecimal.ZERO : estimatedUnits.max(BigDecimal.ZERO);
         var providerName = provider.getMetadata().getName();
         var accountName = account.getMetadata().getName();
         return statsRepository.providerAccountSpent(providerName, accountName).flatMap(spent -> {

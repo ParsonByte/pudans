@@ -46,8 +46,9 @@ class AiChatRequestRepositoryTest {
         when(row.get("cache_tokens", Integer.class)).thenReturn(200);
         when(row.get("output_tokens", Integer.class)).thenReturn(300);
         when(row.get("total_tokens", Integer.class)).thenReturn(1700);
-        when(row.get("points", BigDecimal.class)).thenReturn(new BigDecimal("2.00"));
-        when(row.get("overdraft", BigDecimal.class)).thenReturn(BigDecimal.ZERO);
+        when(row.get("usage_units", Long.class)).thenReturn(2L);
+        when(row.get("plan_id", String.class)).thenReturn("standard");
+        when(row.get("billing_scope", String.class)).thenReturn("USER");
         when(row.get("billing_source", String.class)).thenReturn("PROVIDER");
         when(row.get("billing_status", String.class)).thenReturn("SETTLED");
         when(row.get("latency_ms", Integer.class)).thenReturn(1800);
@@ -82,8 +83,9 @@ class AiChatRequestRepositoryTest {
         assertThat(request.cacheTokens()).isEqualTo(200);
         assertThat(request.outputTokens()).isEqualTo(300);
         assertThat(request.totalTokens()).isEqualTo(1700);
-        assertThat(request.points()).isEqualByComparingTo("2.00");
-        assertThat(request.overdraft()).isEqualByComparingTo("0");
+        assertThat(request.units()).isEqualTo(2L);
+        assertThat(request.planId()).isEqualTo("standard");
+        assertThat(request.billingScope()).isEqualTo("USER");
         assertThat(request.billingSource()).isEqualTo("PROVIDER");
         assertThat(request.billingStatus()).isEqualTo("SETTLED");
         assertThat(request.latencyMs()).isEqualTo(1800);

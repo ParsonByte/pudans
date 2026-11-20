@@ -14,7 +14,7 @@ public final class GatewayRunState {
 
     private final AtomicReference<AiTokenUsage> usage = new AtomicReference<>();
 
-    private final AtomicReference<BigDecimal> points = new AtomicReference<>(BigDecimal.ZERO);
+    private final AtomicReference<BigDecimal> units = new AtomicReference<>(BigDecimal.ZERO);
 
     private final AtomicReference<String> billingSource = new AtomicReference<>();
 
@@ -27,16 +27,16 @@ public final class GatewayRunState {
     public void record(AiGatewayResult result) {
         meta.set(result.meta());
         accumulateUsage(result.usage());
-        recordPoints(result.points(), result.billingSource());
+        recordUnits(result.units(), result.billingSource());
     }
 
     public void recordMeta(AiGatewayMeta meta) {
         this.meta.set(meta);
     }
 
-    public void recordUsage(AiTokenUsage usage, @Nullable BigDecimal points, @Nullable String source) {
+    public void recordUsage(AiTokenUsage usage, @Nullable BigDecimal units, @Nullable String source) {
         accumulateUsage(usage);
-        recordPoints(points, source);
+        recordUnits(units, source);
     }
 
     private void accumulateUsage(@Nullable AiTokenUsage value) {
@@ -62,9 +62,9 @@ public final class GatewayRunState {
         return first + second;
     }
 
-    private void recordPoints(@Nullable BigDecimal points, @Nullable String source) {
-        if (points != null) {
-            this.points.updateAndGet(current -> current == null ? points : current.add(points));
+    private void recordUnits(@Nullable BigDecimal units, @Nullable String source) {
+        if (units != null) {
+            this.units.updateAndGet(current -> current == null ? units : current.add(units));
         }
         if (source != null) {
             billingSource.compareAndSet(null, source);
@@ -79,8 +79,8 @@ public final class GatewayRunState {
         return usage.get();
     }
 
-    public BigDecimal points() {
-        return points.get() == null ? BigDecimal.ZERO : points.get();
+    public BigDecimal units() {
+        return units.get() == null ? BigDecimal.ZERO : units.get();
     }
 
     public @Nullable String billingSource() {

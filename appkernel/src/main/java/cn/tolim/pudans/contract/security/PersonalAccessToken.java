@@ -120,6 +120,7 @@ public class PersonalAccessToken extends AbstractExtension {
 
         private Long tokens;
 
+        // 兼容字段名：按标准 Token 用量单位累计。
         private Long points;
 
         private Long requests;

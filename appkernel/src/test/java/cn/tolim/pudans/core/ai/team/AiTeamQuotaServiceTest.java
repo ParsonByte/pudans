@@ -2,6 +2,8 @@ package cn.tolim.pudans.core.ai.team;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiTeam;
@@ -29,13 +31,15 @@ class AiTeamQuotaServiceTest {
     void rejectsARequestThatExceedsTheTeamWindowQuota() {
         var team = team(new BigDecimal("100"));
         when(client.get(AiTeam.class, "team-1")).thenReturn(Mono.just(team));
-        when(statsRepository.teamPointsUsed(any(), any())).thenReturn(Mono.just(new BigDecimal("90")));
+        when(statsRepository.teamUnitsUsed(any(), any())).thenReturn(Mono.just(new BigDecimal("90")));
         var service = new AiTeamQuotaService(client, statsRepository);
 
         StepVerifier.create(service.check("team-1", new BigDecimal("20")))
                 .expectErrorSatisfies(error -> assertThat(error)
-                        .hasMessageContaining("团队积分"))
+                        .hasMessageContaining("团队额度"))
                 .verify();
+
+        verify(statsRepository).teamUnitsUsed(eq("team-1"), any());
     }
 
     @Test

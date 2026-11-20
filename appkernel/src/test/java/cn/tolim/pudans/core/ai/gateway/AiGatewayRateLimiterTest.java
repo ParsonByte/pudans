@@ -77,6 +77,38 @@ class AiGatewayRateLimiterTest {
     }
 
     @Test
+    void enforcesUserRpmAndRecoversAfterTheWindow() {
+        StepVerifier.create(limiter.acquireUserRpm("user-1", 2)).verifyComplete();
+        StepVerifier.create(limiter.acquireUserRpm("user-1", 2)).verifyComplete();
+        StepVerifier.create(limiter.acquireUserRpm("user-1", 2))
+                .expectErrorSatisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo(AiGatewayRateLimiter.CODE_USER_LIMITED))
+                .verify();
+
+        limiter.setClock(Clock.fixed(NOW.plusSeconds(61), ZoneOffset.UTC));
+
+        StepVerifier.create(limiter.acquireUserRpm("user-1", 2)).verifyComplete();
+    }
+
+    @Test
+    void combinesUserRpmAndConcurrencyLimits() {
+        var permit = limiter.acquireUser("user-1", 1, 2).block();
+        assertThat(permit).isNotNull();
+
+        StepVerifier.create(limiter.acquireUser("user-1", 1, 2))
+                .expectErrorSatisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo(AiGatewayRateLimiter.CODE_USER_LIMITED))
+                .verify();
+
+        limiter.release(permit).block();
+
+        StepVerifier.create(limiter.acquireUser("user-1", 1, 2))
+                .expectErrorSatisfies(error -> assertThat(((ApiException) error).getCode())
+                        .isEqualTo(AiGatewayRateLimiter.CODE_USER_LIMITED))
+                .verify();
+    }
+
+    @Test
     void enforcesTheRollingMinuteRpmPerAccount() {
         var provider = provider("provider-a", 0, 0);
         var account = account("account-a", 1, 0);

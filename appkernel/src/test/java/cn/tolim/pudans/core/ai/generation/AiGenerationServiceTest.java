@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.ai.generation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -10,16 +11,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
+import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.model.AiModelAdapter;
 import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
+import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanResolutionService;
 import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
 import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
@@ -29,11 +35,9 @@ import cn.tolim.pudans.core.ai.routing.RouteSelection;
 import cn.tolim.pudans.core.ai.routing.RouteTrace;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
 import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService.FreezeResult;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService.ReleaseResult;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
+import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.NewModelRequest;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -41,6 +45,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -70,7 +75,13 @@ class AiGenerationServiceTest {
     AiModelRequestRepository requestRepository;
 
     @Mock
-    AiWalletService walletService;
+    PlanResolutionService planResolutionService;
+
+    @Mock
+    PlanQuotaService planQuotaService;
+
+    @Mock
+    AiSettingService settingService;
 
     @Mock
     AiGenerationRecorder recorder;
@@ -97,11 +108,17 @@ class AiGenerationServiceTest {
     void setUpGuards() {
         lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
         lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
+        lenient().when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        lenient().when(planResolutionService.resolve(USER)).thenReturn(Mono.just(resolved()));
+        lenient()
+                .when(planQuotaService.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
+                .thenReturn(Mono.just(reserveResult()));
+        lenient().when(planQuotaService.release(anyString())).thenReturn(Mono.just(releaseResult()));
     }
 
     @Test
     void generatesWithExplicitModelAndRecordsSuccess() {
-        var model = model("model-a", "provider-a", AiModel.ModelType.IMAGE, 0);
+        var model = model("model-a", "provider-a", AiModel.ModelType.IMAGE);
         var provider = provider("provider-a", AiProvider.Protocol.OPENAI_CHAT);
         var account = account("account-a", "provider-a");
         var row = row(AiModel.Capability.IMAGE_GENERATION, "IMAGE", "provider-a", "account-a", "model-a");
@@ -121,13 +138,18 @@ class AiGenerationServiceTest {
                 .assertNext(value -> assertThat(value.status()).isEqualTo("SUCCEEDED"))
                 .verifyComplete();
 
-        verify(walletService, never()).freeze(anyString(), anyString(), any(), any());
+        verify(planQuotaService)
+                .reserve(anyString(), eq(USER), any(), anyLong(), eq("GENERATION"), any(), any());
+        var requestCaptor = ArgumentCaptor.forClass(NewModelRequest.class);
+        verify(requestRepository).create(requestCaptor.capture());
+        assertThat(requestCaptor.getValue().planId()).isEqualTo("standard");
+        assertThat(requestCaptor.getValue().billingScope()).isEqualTo("USER");
         verify(recorder).succeed(eq(row), eq(model), eq(false), eq(response), any(), any());
     }
 
     @Test
     void marksPendingProviderTasksAndSchedulesPolling() {
-        var model = model("model-v", "provider-v", AiModel.ModelType.VIDEO, 0);
+        var model = model("model-v", "provider-v", AiModel.ModelType.VIDEO);
         var provider = provider("provider-v", AiProvider.Protocol.ANTHROPIC);
         var account = account("account-v", "provider-v");
         var row = row(AiModel.Capability.VIDEO_GENERATION, "VIDEO", "provider-v", "account-v", "model-v");
@@ -155,8 +177,8 @@ class AiGenerationServiceTest {
 
     @Test
     void fallsBackToNextRoutedCandidate() {
-        var primaryModel = model("model-a", "provider-a", AiModel.ModelType.IMAGE, 0);
-        var fallbackModel = model("model-b", "provider-b", AiModel.ModelType.IMAGE, 0);
+        var primaryModel = model("model-a", "provider-a", AiModel.ModelType.IMAGE);
+        var fallbackModel = model("model-b", "provider-b", AiModel.ModelType.IMAGE);
         var primaryProvider = provider("provider-a", AiProvider.Protocol.OPENAI_CHAT);
         var fallbackProvider = provider("provider-b", AiProvider.Protocol.ANTHROPIC);
         var primarySelection = new RouteSelection(
@@ -216,24 +238,49 @@ class AiGenerationServiceTest {
     }
 
     @Test
-    void releasesTheHoldWhenTheRequestCannotBeCreated() {
-        var model = model("model-a", "provider-a", AiModel.ModelType.IMAGE, 2);
+    void skipsPlanAndTeamQuotaForSystemGeneration() {
+        var model = model("model-a", "provider-a", AiModel.ModelType.IMAGE);
+        var provider = provider("provider-a", AiProvider.Protocol.OPENAI_CHAT);
+        var account = account("account-a", "provider-a");
+        var row = row(AiModel.Capability.IMAGE_GENERATION, "IMAGE", "provider-a", "account-a", "model-a");
+        var response = response(AiModel.Capability.IMAGE_GENERATION, AiModelResponse.TaskStatus.SUCCEEDED);
+        stubExplicitTarget(model, provider, account);
+        when(adapterRegistry.supports(AiProvider.Protocol.OPENAI_CHAT, AiModel.Capability.IMAGE_GENERATION))
+                .thenReturn(true);
+        when(adapterRegistry.require(AiProvider.Protocol.OPENAI_CHAT, AiModel.Capability.IMAGE_GENERATION))
+                .thenReturn(adapter);
+        when(requestRepository.create(any())).thenReturn(Mono.just(row));
+        when(adapter.invoke(any(), any(), any(), any())).thenReturn(Mono.just(response));
+        when(recorder.succeed(any(), any(), eq(false), any(), any(), any()))
+                .thenReturn(Mono.just(result("SUCCEEDED", null)));
+
+        StepVerifier.create(service.generate(systemCommand(
+                        "model-a", AiModel.Capability.IMAGE_GENERATION)))
+                .assertNext(value -> assertThat(value.status()).isEqualTo("SUCCEEDED"))
+                .verifyComplete();
+
+        verify(planResolutionService, never()).resolve(anyString());
+        verify(planQuotaService, never())
+                .reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any());
+        verify(planQuotaService, never()).release(anyString());
+        verify(teamQuotaService, never()).check(any(), any());
+        verify(providerSpendGuard).check(any(), any(), any());
+    }
+
+    @Test
+    void releasesTheReservationWhenTheRequestCannotBeCreated() {
+        var model = model("model-a", "provider-a", AiModel.ModelType.IMAGE);
         var provider = provider("provider-a", AiProvider.Protocol.OPENAI_CHAT);
         var account = account("account-a", "provider-a");
         stubExplicitTarget(model, provider, account);
-        when(walletService.freeze(anyString(), eq(USER), eq(new BigDecimal("2")), any()))
-                .thenReturn(Mono.just(new FreezeResult(
-                        "gen-1", USER, new BigDecimal("2"), BigDecimal.TEN, BigDecimal.ZERO, false)));
         when(requestRepository.create(any())).thenReturn(Mono.error(new IllegalStateException("db down")));
-        when(walletService.release(anyString()))
-                .thenReturn(Mono.just(new ReleaseResult("gen-1", true, "release-gen-1")));
 
         StepVerifier.create(service.generate(command(
                         "model-a", AiModel.Capability.IMAGE_GENERATION)))
                 .expectError(IllegalStateException.class)
                 .verify();
 
-        verify(walletService).release(anyString());
+        verify(planQuotaService).release(anyString());
         verify(recorder, never()).fail(any(), any(), any());
     }
 
@@ -261,8 +308,24 @@ class AiGenerationServiceTest {
                 null);
     }
 
+    private static AiGenerationCommand systemCommand(
+            String model, AiModel.Capability capability) {
+        return new AiGenerationCommand(
+                USER,
+                model,
+                "default",
+                capability,
+                List.of(new AiModelContent.Text("生成一张图片")),
+                Map.of(),
+                IDEMPOTENCY_KEY,
+                null,
+                null,
+                null,
+                AiPlan.BillingScope.SYSTEM);
+    }
+
     private static AiModel model(
-            String name, String provider, AiModel.ModelType type, int imagePoints) {
+            String name, String provider, AiModel.ModelType type) {
         var model = new AiModel();
         var metadata = new Metadata();
         metadata.setName(name);
@@ -270,7 +333,6 @@ class AiGenerationServiceTest {
         model.getSpec().setProvider(provider);
         model.getSpec().setModelCode(name + "-code");
         model.getSpec().setModelType(type);
-        model.getSpec().setImagePointsPerItem(imagePoints);
         return model;
     }
 
@@ -351,6 +413,7 @@ class AiGenerationServiceTest {
                 null,
                 null,
                 null,
+                "USER",
                 null,
                 "NONE",
                 null,
@@ -394,6 +457,7 @@ class AiGenerationServiceTest {
                 null,
                 null,
                 null,
+                "USER",
                 null,
                 "NONE",
                 null,
@@ -404,6 +468,27 @@ class AiGenerationServiceTest {
                 null,
                 Instant.now(),
                 null);
+    }
+
+    private static PlanResolutionService.ResolvedPlan resolved() {
+        var plan = new AiPlan();
+        var metadata = new Metadata();
+        metadata.setName("standard");
+        plan.setMetadata(metadata);
+        plan.getSpec().setDisplayName("标准套餐");
+        plan.getSpec().getQuota().getFiveHour().setLimit(3_000_000);
+        plan.getSpec().getQuota().getWeekly().setLimit(20_000_000);
+        return new PlanResolutionService.ResolvedPlan(
+                "standard", "标准套餐", "User/user-1", plan);
+    }
+
+    private static PlanQuotaService.ReserveResult reserveResult() {
+        return new PlanQuotaService.ReserveResult(
+                "gen-1", USER, "standard", 500, "five-hour-1", "weekly-1", false);
+    }
+
+    private static PlanQuotaService.ReleaseResult releaseResult() {
+        return new PlanQuotaService.ReleaseResult("gen-1", true);
     }
 
     private static AiGenerationResult result(String status, String providerTaskId) {

@@ -78,8 +78,3 @@ spec:
     excludeSessionPrefixes:
       - internal-
       - benchmark-
-  billing:
-    freezeExpirySeconds: 600
-    dailyLimitEnabled: true
-    concurrentLimit: 4
-    chargeKnowledgeBaseIngestToUploader: true

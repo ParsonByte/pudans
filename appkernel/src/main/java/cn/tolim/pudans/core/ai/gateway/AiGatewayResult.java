@@ -6,5 +6,5 @@ public record AiGatewayResult(
         AiChatResponse response,
         AiGatewayMeta meta,
         AiTokenUsage usage,
-        BigDecimal points,
+        BigDecimal units,
         String billingSource) {}

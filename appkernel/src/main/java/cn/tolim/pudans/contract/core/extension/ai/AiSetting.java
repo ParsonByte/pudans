@@ -2,8 +2,11 @@ package cn.tolim.pudans.contract.core.extension.ai;
 
 import cn.tolim.pudans.contract.extension.AbstractExtension;
 import cn.tolim.pudans.contract.extension.GVK;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -191,15 +194,57 @@ public class AiSetting extends AbstractExtension {
                 new ArrayList<>(List.of("internal-", "benchmark-"));
     }
 
+    public enum UnassignedPolicy {
+        DEFAULT_PLAN,
+        DENY
+    }
+
     @Data
     public static class Billing {
 
-        private int freezeExpirySeconds = 600;
+        private String defaultPlan;
 
-        private boolean dailyLimitEnabled = true;
+        private UnassignedPolicy unassignedPolicy = UnassignedPolicy.DEFAULT_PLAN;
 
-        private int concurrentLimit = 4;
+        private UsageRatios ratios = new UsageRatios();
 
-        private boolean chargeKnowledgeBaseIngestToUploader = true;
+        private Map<AiModel.Tier, BigDecimal> tierMultipliers = defaultTierMultipliers();
+
+        private Map<String, BigDecimal> modelMultipliers = new LinkedHashMap<>();
+
+        private int reservationTtlSeconds = 600;
+
+        private int reservationOutputCap = 8192;
+
+        private static Map<AiModel.Tier, BigDecimal> defaultTierMultipliers() {
+            var multipliers = new LinkedHashMap<AiModel.Tier, BigDecimal>();
+            multipliers.put(AiModel.Tier.CHEAP, new BigDecimal("0.5"));
+            multipliers.put(AiModel.Tier.MEDIUM, BigDecimal.ONE);
+            multipliers.put(AiModel.Tier.HIGH, new BigDecimal("3.0"));
+            multipliers.put(AiModel.Tier.ULTRA, new BigDecimal("9.0"));
+            return multipliers;
+        }
+    }
+
+    @Data
+    public static class UsageRatios {
+
+        private BigDecimal input = BigDecimal.ONE;
+
+        private BigDecimal output = new BigDecimal("4.0");
+
+        private BigDecimal cacheRead = new BigDecimal("0.25");
+
+        private BigDecimal cacheWrite = new BigDecimal("1.25");
+
+        private BigDecimal imagePerItem = new BigDecimal("500");
+
+        private BigDecimal videoPerSecond = new BigDecimal("2000");
+
+        private BigDecimal audioPerSecond = new BigDecimal("1000");
+
+        private BigDecimal speechPerKiloChar = new BigDecimal("200");
+
+        private BigDecimal toolCall = new BigDecimal("100");
     }
 }

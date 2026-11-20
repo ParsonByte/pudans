@@ -76,6 +76,8 @@ class AiUsageRepositoryTest {
                 .contains("FROM ai_chat_request")
                 .contains("UNION ALL")
                 .contains("FROM ai_model_request")
+                .contains("COALESCE(usage_units, points) AS units")
+                .contains("COUNT(*) FILTER (WHERE units IS NULL) AS unpriced_requests")
                 .contains("GROUP BY agent_id, selected_model, selected_provider, selected_account")
                 .contains("(:all OR user_id = :userId)");
         verify(spec).bind(eq("fromAt"), any(OffsetDateTime.class));
@@ -151,6 +153,7 @@ class AiUsageRepositoryTest {
                 .contains("ORDER BY id DESC")
                 .contains("LIMIT :limit")
                 .contains("request_id ILIKE :qPattern")
+                .contains("COALESCE(usage_units, points) AS units")
                 .contains("route_trace ->> 'purpose' = :purpose")
                 .contains("route_trace ->> 'callerKey' = :callerKey")
                 .contains("agent_source = :agentSource")
@@ -215,7 +218,7 @@ class AiUsageRepositoryTest {
         when(row.get("cache_tokens", Integer.class)).thenReturn(700);
         when(row.get("output_tokens", Integer.class)).thenReturn(120);
         when(row.get("total_tokens", Integer.class)).thenReturn(1020);
-        when(row.get("points", BigDecimal.class)).thenReturn(new BigDecimal("0.03"));
+        when(row.get("usage_units", Long.class)).thenReturn(3L);
         when(row.get("latency_ms", Integer.class)).thenReturn(3200);
         when(row.get("ttft_ms", Integer.class)).thenReturn(500);
         when(row.get("tps", BigDecimal.class)).thenReturn(new BigDecimal("37.50"));
@@ -234,6 +237,7 @@ class AiUsageRepositoryTest {
         assertThat(mapped.agent()).isEqualTo("agent-a");
         assertThat(mapped.agentSource()).isEqualTo("claude-code");
         assertThat(mapped.inputTokens()).isEqualTo(900);
+        assertThat(mapped.units()).isEqualTo(3L);
         assertThat(mapped.ttftMs()).isEqualTo(500);
         assertThat(mapped.tps()).isEqualByComparingTo("37.50");
         assertThat(mapped.retried()).isTrue();
@@ -260,10 +264,9 @@ class AiUsageRepositoryTest {
         when(row.get("cache_tokens", Integer.class)).thenReturn(700);
         when(row.get("output_tokens", Integer.class)).thenReturn(120);
         when(row.get("total_tokens", Integer.class)).thenReturn(1020);
-        when(row.get("points", BigDecimal.class)).thenReturn(new BigDecimal("0.03"));
-        when(row.get("billing_source", String.class)).thenReturn("WALLET");
+        when(row.get("usage_units", Long.class)).thenReturn(3L);
+        when(row.get("billing_source", String.class)).thenReturn("PROVIDER");
         when(row.get("billing_status", String.class)).thenReturn("SETTLED");
-        when(row.get("overdraft", BigDecimal.class)).thenReturn(BigDecimal.ZERO);
         when(row.get("usage_source", String.class)).thenReturn("PROVIDER");
         when(row.get("upstream_request_id", String.class)).thenReturn("upstream-1");
         when(row.get("latency_ms", Integer.class)).thenReturn(3200);
@@ -279,7 +282,8 @@ class AiUsageRepositoryTest {
         var mapped = AiUsageRepository.mapRequestDetail(row);
 
         assertThat(mapped.requestId()).isEqualTo("req-5");
-        assertThat(mapped.billingSource()).isEqualTo("WALLET");
+        assertThat(mapped.units()).isEqualTo(3L);
+        assertThat(mapped.billingSource()).isEqualTo("PROVIDER");
         assertThat(mapped.billingStatus()).isEqualTo("SETTLED");
         assertThat(mapped.upstreamRequestId()).isEqualTo("upstream-1");
         assertThat(mapped.routeTrace().get("attempts").asInt()).isEqualTo(2);
@@ -293,7 +297,7 @@ class AiUsageRepositoryTest {
         when(row.get("cache_tokens", Long.class)).thenReturn(300L);
         when(row.get("output_tokens", Long.class)).thenReturn(800L);
         when(row.get("total_tokens", Long.class)).thenReturn(2300L);
-        when(row.get("points", BigDecimal.class)).thenReturn(new BigDecimal("0.42"));
+        when(row.get("units", BigDecimal.class)).thenReturn(new BigDecimal("0.42"));
         when(row.get("model", String.class)).thenReturn("deepseek-chat");
         when(row.get("message_count", Long.class)).thenReturn(8L);
         when(row.get("user_message_count", Long.class)).thenReturn(4L);
@@ -462,7 +466,7 @@ class AiUsageRepositoryTest {
                 700,
                 120,
                 1020,
-                new BigDecimal("0.03"),
+                3L,
                 3200,
                 500,
                 new BigDecimal("37.50"),

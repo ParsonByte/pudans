@@ -128,6 +128,24 @@ public class AiGatewayRateLimiter {
                 : Mono.error(userLimited(userId)));
     }
 
+    // 用户速率使用滑动窗口计数，和并发许可共用同一套本地/Redis 降级逻辑
+    public Mono<Void> acquireUserRpm(String userId, int maxRpm) {
+        if (userId == null || userId.isBlank() || !positive(maxRpm)) {
+            return Mono.empty();
+        }
+        var key = key("user", userId, "rpm");
+        return acquireSlot(key, maxRpm, false).flatMap(acquired -> acquired.allowed()
+                ? Mono.empty()
+                : Mono.error(userLimited(userId)));
+    }
+
+    public Mono<Permit> acquireUser(String userId, int maxConcurrency, int maxRpm) {
+        if (userId == null || userId.isBlank()) {
+            return Mono.just(Permit.empty());
+        }
+        return acquireUserRpm(userId, maxRpm).then(acquireUser(userId, maxConcurrency));
+    }
+
     public Mono<Void> release(Permit permit) {
         if (permit == null || permit.slots().isEmpty()) {
             return Mono.empty();
@@ -254,7 +272,7 @@ public class AiGatewayRateLimiter {
         return new ApiException(
                 HttpStatus.TOO_MANY_REQUESTS,
                 CODE_USER_LIMITED,
-                "用户并发请求超限：" + userId + "。");
+                "用户请求超过速率或并发限制：" + userId + "。");
     }
 
     private static ApiException keyLimited(String name) {

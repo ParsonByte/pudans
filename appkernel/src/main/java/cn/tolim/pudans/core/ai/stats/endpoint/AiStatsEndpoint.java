@@ -76,7 +76,7 @@ public class AiStatsEndpoint implements CustomEndpoint {
                         .response(responseBuilder().implementation(RoutingHistoryDetail.class)))
                 .GET("/aistats/-/points", this::points, builder -> builder
                         .operationId("getAiPointStats")
-                        .description("Daily point consumption by model.")
+                        .description("Daily usage units by model.")
                         .tag(TAG)
                         .parameter(daysParameter())
                         .response(responseBuilder().implementation(AiStatsService.PointStats.class)))
@@ -92,7 +92,7 @@ public class AiStatsEndpoint implements CustomEndpoint {
                         .response(responseBuilder().implementation(KnowledgeBaseStatsRow.class)))
                 .GET("/aistats/-/models", this::models, builder -> builder
                         .operationId("getAiModelStats")
-                        .description("Model request counts, points and media units by model and capability.")
+                        .description("Model request counts, usage units and media units by model and capability.")
                         .tag(TAG)
                         .parameter(daysParameter())
                         .response(responseBuilder().implementation(AiStatsService.ModelStats.class)))

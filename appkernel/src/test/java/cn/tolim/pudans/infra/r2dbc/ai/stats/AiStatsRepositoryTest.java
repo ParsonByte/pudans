@@ -5,10 +5,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.AccountActivityRow;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.PointStatsRow;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.RoutingHistoryRow;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.RoutingSummaryRow;
 import io.r2dbc.spi.Row;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -22,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.r2dbc.core.RowsFetchSpec;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 @ExtendWith(MockitoExtension.class)
@@ -143,5 +148,51 @@ class AiStatsRepositoryTest {
         assertThat(mapped.tries()).isEqualTo(2L);
         assertThat(mapped.latencyMs()).isEqualTo(3200);
         assertThat(mapped.createdAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void pointsAndRoutingDaysBucketDaysInBeijingTime() {
+        @SuppressWarnings("unchecked")
+        var fetchSpec = (RowsFetchSpec<PointStatsRow>) org.mockito.Mockito.mock(RowsFetchSpec.class);
+        when(databaseClient.sql(anyString())).thenReturn(spec);
+        when(spec.bind(anyString(), any())).thenReturn(spec);
+        doReturn(fetchSpec).when(spec).map(any(BiFunction.class));
+        when(fetchSpec.all()).thenReturn(Flux.empty());
+
+        StepVerifier.create(repository.points(7)).verifyComplete();
+        StepVerifier.create(repository.routingDays(7)).verifyComplete();
+
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient, times(2)).sql(sql.capture());
+        assertThat(sql.getAllValues())
+                .allSatisfy(statement -> assertThat(statement)
+                        .contains("date_trunc('day', created_at AT TIME ZONE 'Asia/Shanghai')")
+                        .contains("GROUP BY day"));
+    }
+
+    @Test
+    void routingSummaryAndAccountActivityUseTheBeijingDayBoundary() {
+        @SuppressWarnings("unchecked")
+        var summarySpec = (RowsFetchSpec<RoutingSummaryRow>) org.mockito.Mockito.mock(RowsFetchSpec.class);
+        @SuppressWarnings("unchecked")
+        var activitySpec = (RowsFetchSpec<AccountActivityRow>) org.mockito.Mockito.mock(RowsFetchSpec.class);
+        when(databaseClient.sql(anyString())).thenReturn(spec);
+        when(spec.bind(anyString(), any())).thenReturn(spec);
+        doReturn(summarySpec).when(spec).map(any(BiFunction.class));
+        when(summarySpec.one()).thenReturn(Mono.empty());
+
+        StepVerifier.create(repository.routingSummary(7)).verifyComplete();
+
+        doReturn(activitySpec).when(spec).map(any(BiFunction.class));
+        when(activitySpec.all()).thenReturn(Flux.empty());
+
+        StepVerifier.create(repository.accountActivityToday()).verifyComplete();
+
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient, times(2)).sql(sql.capture());
+        assertThat(sql.getAllValues())
+                .allSatisfy(statement -> assertThat(statement)
+                        .contains("(date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai'))"
+                                + " AT TIME ZONE 'Asia/Shanghai'"));
     }
 }

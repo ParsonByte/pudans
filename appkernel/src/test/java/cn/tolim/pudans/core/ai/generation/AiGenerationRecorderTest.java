@@ -2,21 +2,23 @@ package cn.tolim.pudans.core.ai.generation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
+import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService.ReleaseResult;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService.SettleResult;
-import cn.tolim.pudans.core.ai.wallet.AiWalletUsage;
+import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanUsageSnapshot;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelCompletion;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
@@ -46,7 +48,10 @@ class AiGenerationRecorderTest {
     AiModelRequestRepository requestRepository;
 
     @Mock
-    AiWalletService walletService;
+    PlanQuotaService planQuotaService;
+
+    @Mock
+    AiSettingService settingService;
 
     @Mock
     AiMetrics metrics;
@@ -58,13 +63,13 @@ class AiGenerationRecorderTest {
     AiGenerationRecorder recorder;
 
     @Test
-    void settlesHeldPointsAndCompletesWithMediaUsage() {
-        var row = row(new BigDecimal("10"));
-        when(walletService.settle(anyString(), anyString(), any(), any(), any()))
-                .thenReturn(Mono.just(new SettleResult(REQUEST_ID, "user-1", new BigDecimal("6"),
-                        BigDecimal.ZERO, "settle-gen-1", false)));
+    void settlesHeldUnitsAndCompletesWithMediaUsage() {
+        var row = row("standard");
+        stubBilling();
+        when(planQuotaService.settle(eq(REQUEST_ID), eq(4500L), any()))
+                .thenReturn(Mono.just(new PlanQuotaService.SettleResult(REQUEST_ID, 4500, false)));
         when(requestRepository.complete(any())).thenReturn(Mono.just(row));
-        var usageCaptor = ArgumentCaptor.forClass(AiWalletUsage.class);
+        var snapshotCaptor = ArgumentCaptor.forClass(PlanUsageSnapshot.class);
         var completionCaptor = ArgumentCaptor.forClass(ModelCompletion.class);
 
         StepVerifier.create(recorder.succeed(
@@ -72,23 +77,23 @@ class AiGenerationRecorderTest {
                 .assertNext(result -> assertThat(result.requestId()).isEqualTo(REQUEST_ID))
                 .verifyComplete();
 
-        verify(walletService).settle(
-                eq(REQUEST_ID), eq("user-1"), eq(new BigDecimal("10")), eq(new BigDecimal("6")),
-                usageCaptor.capture());
-        assertThat(usageCaptor.getValue().imageCount()).isEqualTo(3);
+        verify(planQuotaService).settle(eq(REQUEST_ID), eq(4500L), snapshotCaptor.capture());
+        assertThat(snapshotCaptor.getValue().tier()).isEqualTo(AiModel.Tier.HIGH);
+        assertThat(snapshotCaptor.getValue().provider()).isEqualTo(PROVIDER);
         verify(requestRepository).complete(completionCaptor.capture());
         var completion = completionCaptor.getValue();
         assertThat(completion.status()).isEqualTo("SUCCEEDED");
-        assertThat(completion.points()).isEqualByComparingTo(new BigDecimal("6"));
+        assertThat(completion.units()).isEqualTo(4500L);
         assertThat(completion.imageCount()).isEqualTo(3);
         assertThat(completion.billingStatus()).isEqualTo("SETTLED");
         verify(metrics).generationRequest(PROVIDER, MODEL, "IMAGE_GENERATION", "SUCCEEDED");
-        verify(metrics).generationPoints(new BigDecimal("6"), PROVIDER, MODEL);
+        verify(metrics).generationBillingUnits(new BigDecimal("4500"), PROVIDER, MODEL);
     }
 
     @Test
-    void completesWithoutSettlementWhenNoPointsWereHeld() {
+    void completesWithoutSettlementWhenNoUnitsWereHeld() {
         var row = row(null);
+        stubBilling();
         when(requestRepository.complete(any())).thenReturn(Mono.just(row));
         var completionCaptor = ArgumentCaptor.forClass(ModelCompletion.class);
 
@@ -97,29 +102,33 @@ class AiGenerationRecorderTest {
                 .expectNextCount(1)
                 .verifyComplete();
 
-        verify(walletService, never()).settle(anyString(), anyString(), any(), any(), any());
+        verify(planQuotaService, never()).settle(anyString(), anyLong(), any());
         verify(requestRepository).complete(completionCaptor.capture());
         assertThat(completionCaptor.getValue().billingStatus()).isEqualTo("NONE");
     }
 
     @Test
-    void releasesHeldPointsOnFailure() {
-        var row = row(new BigDecimal("10"));
-        when(walletService.release(REQUEST_ID))
-                .thenReturn(Mono.just(new ReleaseResult(REQUEST_ID, true, "release-gen-1")));
+    void releasesHeldUnitsOnFailure() {
+        var row = row("standard");
+        when(planQuotaService.release(REQUEST_ID))
+                .thenReturn(Mono.just(new PlanQuotaService.ReleaseResult(REQUEST_ID, true)));
         when(requestRepository.complete(any())).thenReturn(Mono.just(row));
         var completionCaptor = ArgumentCaptor.forClass(ModelCompletion.class);
 
         StepVerifier.create(recorder.fail(row, new IllegalStateException("boom"), Instant.now()))
                 .verifyComplete();
 
-        verify(walletService).release(REQUEST_ID);
+        verify(planQuotaService).release(REQUEST_ID);
         verify(requestRepository).complete(completionCaptor.capture());
         var completion = completionCaptor.getValue();
         assertThat(completion.status()).isEqualTo("FAILED");
-        assertThat(completion.points()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(completion.units()).isEqualTo(0L);
         assertThat(completion.billingStatus()).isEqualTo("RELEASED");
         verify(metrics).generationRequest(PROVIDER, MODEL, "IMAGE_GENERATION", "FAILED");
+    }
+
+    private void stubBilling() {
+        lenient().when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
     }
 
     private static AiModelResponse response(int images) {
@@ -137,11 +146,10 @@ class AiGenerationRecorderTest {
         var model = new AiModel();
         model.getSpec().setModelCode(MODEL);
         model.getSpec().setModelType(AiModel.ModelType.IMAGE);
-        model.getSpec().setImagePointsPerItem(2);
         return model;
     }
 
-    private static ModelRequestRow row(BigDecimal hold) {
+    private static ModelRequestRow row(@org.jspecify.annotations.Nullable String planId) {
         return new ModelRequestRow(
                 1L,
                 REQUEST_ID,
@@ -170,8 +178,9 @@ class AiGenerationRecorderTest {
                 null,
                 null,
                 null,
-                hold,
                 null,
+                planId,
+                "USER",
                 null,
                 "NONE",
                 null,

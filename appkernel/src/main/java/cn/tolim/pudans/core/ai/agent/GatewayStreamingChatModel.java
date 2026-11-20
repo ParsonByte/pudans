@@ -120,7 +120,7 @@ public class GatewayStreamingChatModel implements StreamingChatModel {
                 }
                 case AiGatewayEvent.Usage value -> {
                     usage.set(value.usage());
-                    state.recordUsage(value.usage(), value.points(), value.billingSource());
+                    state.recordUsage(value.usage(), value.units(), value.billingSource());
                     yield Flux.empty();
                 }
                 case AiGatewayEvent.Done done -> {

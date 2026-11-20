@@ -27,7 +27,7 @@ public class AiStatsRepository {
                                COALESCE(selected_model, 'unknown') AS model,
                                status,
                                COUNT(*) AS requests,
-                               COALESCE(SUM(points), 0) AS points
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS points
                         FROM ai_chat_request
                         WHERE created_at >= now() - make_interval(days => :days)
                         GROUP BY selected_provider, selected_model, status
@@ -45,10 +45,10 @@ public class AiStatsRepository {
 
     public Flux<PointStatsRow> points(int days) {
         return databaseClient.sql("""
-                        SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+                        SELECT to_char(date_trunc('day', created_at AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD') AS day,
                                COALESCE(selected_model, 'unknown') AS model,
                                COUNT(*) AS requests,
-                               COALESCE(SUM(points), 0) AS points,
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS points,
                                COALESCE(SUM(total_tokens), 0) AS tokens
                         FROM ai_chat_request
                         WHERE created_at >= now() - make_interval(days => :days)
@@ -73,17 +73,17 @@ public class AiStatsRepository {
                                COALESCE(SUM(input_tokens), 0) AS input_tokens,
                                COALESCE(SUM(cache_tokens), 0) AS cache_tokens,
                                COALESCE(SUM(output_tokens), 0) AS output_tokens,
-                               COALESCE(SUM(points), 0) AS points,
-                               COUNT(*) FILTER (WHERE created_at >= date_trunc('day', now())) AS today_requests,
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS points,
+                               COUNT(*) FILTER (WHERE created_at >= (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai')) AT TIME ZONE 'Asia/Shanghai') AS today_requests,
                                COUNT(*) FILTER (
                                    WHERE status = 'FAILED'
-                                     AND created_at >= date_trunc('day', now())
+                                     AND created_at >= (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai')) AT TIME ZONE 'Asia/Shanghai'
                                ) AS today_failed,
                                COALESCE(SUM(total_tokens) FILTER (
-                                   WHERE created_at >= date_trunc('day', now())
+                                   WHERE created_at >= (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai')) AT TIME ZONE 'Asia/Shanghai'
                                ), 0) AS today_tokens,
-                               COALESCE(SUM(points) FILTER (
-                                   WHERE created_at >= date_trunc('day', now())
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)) FILTER (
+                                   WHERE created_at >= (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai')) AT TIME ZONE 'Asia/Shanghai'
                                ), 0) AS today_points
                         FROM ai_chat_request
                         WHERE created_at >= now() - make_interval(days => :days)
@@ -106,10 +106,10 @@ public class AiStatsRepository {
 
     public Flux<DailyRoutingRow> routingDays(int days) {
         return databaseClient.sql("""
-                        SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS day,
+                        SELECT to_char(date_trunc('day', created_at AT TIME ZONE 'Asia/Shanghai'), 'YYYY-MM-DD') AS day,
                                COUNT(*) AS requests,
                                COUNT(*) FILTER (WHERE status = 'FAILED') AS failed,
-                               COALESCE(SUM(points), 0) AS points
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS points
                         FROM ai_chat_request
                         WHERE created_at >= now() - make_interval(days => :days)
                         GROUP BY day
@@ -124,16 +124,16 @@ public class AiStatsRepository {
                 .all();
     }
 
-    // 供应商账号累计花费，用于 spendCapPoints 上限判断
+    // 供应商账号累计用量单位，用于 spendCapPoints 上限判断
     public Mono<BigDecimal> providerAccountSpent(String provider, String account) {
         return databaseClient.sql("""
                         SELECT COALESCE((
-                                   SELECT SUM(points) FROM ai_chat_request
+                                   SELECT SUM(COALESCE(usage_units, points, 0)) FROM ai_chat_request
                                    WHERE selected_provider = :provider AND selected_account = :account
                                      AND status = 'SUCCEEDED'
                                ), 0)
                              + COALESCE((
-                                   SELECT SUM(points) FROM ai_model_request
+                                   SELECT SUM(COALESCE(usage_units, points, 0)) FROM ai_model_request
                                    WHERE selected_provider = :provider AND selected_account = :account
                                      AND status = 'SUCCEEDED'
                                ), 0) AS spent
@@ -145,19 +145,12 @@ public class AiStatsRepository {
                 .defaultIfEmpty(BigDecimal.ZERO);
     }
 
-    // 团队在窗口内已消耗积分，用于团队配额判断
-    public Mono<BigDecimal> teamPointsUsed(String teamId, Instant since) {
+    // 团队在窗口内已结算的标准 token 单位，用于团队配额判断
+    public Mono<BigDecimal> teamUnitsUsed(String teamId, Instant since) {
         return databaseClient.sql("""
-                        SELECT COALESCE((
-                                   SELECT SUM(points) FROM ai_chat_request
-                                   WHERE team_id = :teamId AND created_at >= :since
-                                     AND status = 'SUCCEEDED'
-                               ), 0)
-                             + COALESCE((
-                                   SELECT SUM(points) FROM ai_model_request
-                                   WHERE team_id = :teamId AND created_at >= :since
-                                     AND status = 'SUCCEEDED'
-                               ), 0) AS used
+                        SELECT COALESCE(SUM(units), 0) AS used
+                        FROM ai_usage_ledger
+                        WHERE team_id = :teamId AND status = 'SETTLED' AND created_at >= :since
                         """)
                 .bind("teamId", teamId)
                 .bind("since", OffsetDateTime.ofInstant(since, ZoneOffset.UTC))
@@ -199,7 +192,8 @@ public class AiStatsRepository {
                         SELECT request_id, user_id, agent_source, route_group,
                                selected_provider, selected_account, selected_model, tier,
                                status, error_code, input_tokens, cache_tokens, output_tokens,
-                               total_tokens, points, latency_ms, ttft_ms, tps,
+                               total_tokens, COALESCE(usage_units, points)::numeric AS points,
+                               latency_ms, ttft_ms, tps,
                                session_key, conversation_id, created_at, completed_at
                         FROM ai_chat_request
                         WHERE created_at >= now() - make_interval(days => :days)
@@ -322,7 +316,7 @@ public class AiStatsRepository {
                                COUNT(*) FILTER (WHERE status = 'SUCCEEDED') AS success,
                                COUNT(*) FILTER (WHERE status = 'FAILED') AS failed
                         FROM ai_chat_request
-                        WHERE created_at >= date_trunc('day', now())
+                        WHERE created_at >= (date_trunc('day', now() AT TIME ZONE 'Asia/Shanghai')) AT TIME ZONE 'Asia/Shanghai'
                           AND selected_provider IS NOT NULL
                           AND selected_account IS NOT NULL
                         GROUP BY selected_provider, selected_account
@@ -402,10 +396,20 @@ public class AiStatsRepository {
             long tokens) {}
 
     public record RoutingStatsRow(
-            String provider, String model, String status, long requests, BigDecimal points) {}
+            String provider,
+            String model,
+            String status,
+            long requests,
+            // 兼容字段名：值为标准 Token 用量。
+            BigDecimal points) {}
 
     public record PointStatsRow(
-            String day, String model, long requests, BigDecimal points, long tokens) {}
+            String day,
+            String model,
+            long requests,
+            // 兼容字段名：值为标准 Token 用量。
+            BigDecimal points,
+            long tokens) {}
 
     public record RoutingSummaryRow(
             long requests,
@@ -414,13 +418,20 @@ public class AiStatsRepository {
             long inputTokens,
             long cacheTokens,
             long outputTokens,
+            // 兼容字段名：值为标准 Token 用量。
             BigDecimal points,
             long todayRequests,
             long todayFailed,
             long todayTokens,
+            // 兼容字段名：值为标准 Token 用量。
             BigDecimal todayPoints) {}
 
-    public record DailyRoutingRow(String day, long requests, long failed, BigDecimal points) {}
+    public record DailyRoutingRow(
+            String day,
+            long requests,
+            long failed,
+            // 兼容字段名：值为标准 Token 用量。
+            BigDecimal points) {}
 
     public record RecentChatRequestRow(
             String requestId,
@@ -437,6 +448,7 @@ public class AiStatsRepository {
             @Nullable Integer cacheTokens,
             @Nullable Integer outputTokens,
             @Nullable Integer totalTokens,
+            // 兼容字段名：值为标准 Token 用量。
             @Nullable BigDecimal points,
             @Nullable Integer latencyMs,
             @Nullable Integer ttftMs,

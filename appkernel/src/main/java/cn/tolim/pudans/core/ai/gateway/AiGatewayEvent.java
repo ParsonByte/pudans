@@ -8,7 +8,7 @@ public sealed interface AiGatewayEvent {
 
     record Delta(AiStreamEvent event) implements AiGatewayEvent {}
 
-    record Usage(AiTokenUsage usage, BigDecimal points, String billingSource) implements AiGatewayEvent {}
+    record Usage(AiTokenUsage usage, BigDecimal units, String billingSource) implements AiGatewayEvent {}
 
     record Done(String messageId, String finishReason, boolean partial) implements AiGatewayEvent {}
 

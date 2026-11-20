@@ -1,17 +1,15 @@
 package cn.tolim.pudans.core.ai.stats;
 
 import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 
 final class UsageWindow {
-
-    static final ZoneId SERVER_ZONE = ZoneId.of("Asia/Shanghai");
 
     private static final int DEFAULT_RANGE_DAYS = 7;
 
@@ -20,7 +18,7 @@ final class UsageWindow {
     private UsageWindow() {}
 
     static Window of(@Nullable LocalDate from, @Nullable LocalDate to, Clock clock) {
-        var end = to == null ? LocalDate.now(clock.withZone(SERVER_ZONE)) : to;
+        var end = to == null ? LocalDate.now(clock.withZone(PudansTime.BEIJING)) : to;
         var start = from == null ? end.minusDays(DEFAULT_RANGE_DAYS - 1L) : from;
         if (start.isAfter(end)) {
             throw new ApiException(
@@ -33,8 +31,8 @@ final class UsageWindow {
         return new Window(
                 start,
                 end,
-                start.atStartOfDay(SERVER_ZONE).toInstant(),
-                end.plusDays(1).atStartOfDay(SERVER_ZONE).toInstant());
+                PudansTime.startOfDay(start),
+                PudansTime.startOfDay(end.plusDays(1)));
     }
 
     record Window(LocalDate from, LocalDate to, Instant fromAt, Instant toAt) {}

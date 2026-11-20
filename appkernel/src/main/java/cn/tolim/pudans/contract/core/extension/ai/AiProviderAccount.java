@@ -90,6 +90,7 @@ public class AiProviderAccount extends AbstractExtension {
 
         private Balance balance = new Balance();
 
+        // 兼容字段名：按标准 Token 用量单位累计。
         private Long spendCapPoints;
 
         private BalanceProbe balanceProbe = new BalanceProbe();

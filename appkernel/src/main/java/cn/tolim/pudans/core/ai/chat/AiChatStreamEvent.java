@@ -51,7 +51,12 @@ public sealed interface AiChatStreamEvent {
 
     record Stage(String stage, String detail) implements AiChatStreamEvent {}
 
-    record Usage(AiTokenUsage usage, BigDecimal points, String billingSource) implements AiChatStreamEvent {}
+    record Usage(
+            AiTokenUsage usage,
+            // 兼容字段名：值为标准 Token 用量。
+            BigDecimal points,
+            String billingSource)
+            implements AiChatStreamEvent {}
 
     record Done(String messageId, String finishReason, boolean partial) implements AiChatStreamEvent {}
 

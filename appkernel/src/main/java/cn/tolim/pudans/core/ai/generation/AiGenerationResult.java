@@ -21,6 +21,7 @@ public record AiGenerationResult(
         @Nullable String model,
         List<AiModelContent> outputs,
         AiModelUsage usage,
+        // 兼容字段名：值为标准 Token 用量。
         @Nullable BigDecimal points,
         @Nullable String billingSource,
         String billingStatus,
@@ -47,7 +48,7 @@ public record AiGenerationResult(
                 row.selectedModel(),
                 outputs(row.resultPayload()),
                 usage(row),
-                row.points(),
+                row.units() == null ? null : BigDecimal.valueOf(row.units()),
                 row.billingSource(),
                 row.billingStatus(),
                 row.providerTaskId(),

@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.ai.gateway;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
+import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
@@ -11,11 +12,16 @@ import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolCodecRegistry;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiResponseEncoders;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiStreamEncoder;
 import cn.tolim.pudans.core.ai.gateway.protocol.GeminiGatewayCodec;
+import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService;
 import cn.tolim.pudans.infra.exception.ApiException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -47,6 +53,8 @@ public class AiGatewayEndpoint implements CustomEndpoint {
     private final AiGatewayStatusService statusService;
 
     private final AiEndpointRequests requests;
+
+    private final PlanUsageService planUsageService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -160,10 +168,12 @@ public class AiGatewayEndpoint implements CustomEndpoint {
                 .complete(invocation)
                 .flatMap(result -> {
                     var encoder = responseEncoders.require(invocation.protocol());
-                    return ServerResponse.ok()
+                    return planHeaders(invocation).flatMap(headers -> ServerResponse.ok()
+                            .headers(target -> target.addAll(headers))
                             .contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue(encoder.encode(result.response(), result.meta().model()));
-                });
+                            .bodyValue(encoder.encode(result.response(), result.meta().model())));
+                })
+                .onErrorResume(error -> openAiQuota(invocation.protocol(), error));
     }
 
     private Mono<ServerResponse> stream(AiGatewayInvocation invocation) {
@@ -186,11 +196,61 @@ public class AiGatewayEndpoint implements CustomEndpoint {
                 return encode(current, event, usage, invocation.protocol());
             });
         });
-        return ServerResponse.ok()
+        return planHeaders(invocation).flatMap(headers -> ServerResponse.ok()
+                .headers(target -> target.addAll(headers))
                 .contentType(MediaType.TEXT_EVENT_STREAM)
                 .header("Cache-Control", "no-cache")
                 .header("X-Accel-Buffering", "no")
-                .body(body, String.class);
+                .body(body, String.class));
+    }
+
+    // 套餐用量响应头在成功响应前附加，SYSTEM 调用和套餐缺失时不附加
+    private Mono<HttpHeaders> planHeaders(AiGatewayInvocation invocation) {
+        if (invocation.usageScope() != AiPlan.BillingScope.USER) {
+            return Mono.just(new HttpHeaders());
+        }
+        return planUsageService
+                .usage(invocation.userId())
+                .map(this::planHeaders)
+                .onErrorResume(error -> Mono.just(new HttpHeaders()))
+                .switchIfEmpty(Mono.just(new HttpHeaders()));
+    }
+
+    private HttpHeaders planHeaders(PlanUsageService.UsageView usage) {
+        var headers = new HttpHeaders();
+        if (usage.plan() != null) {
+            headers.set("X-Plan-Name", StringUtils.hasText(usage.plan().displayName())
+                    ? usage.plan().displayName()
+                    : usage.plan().name());
+        }
+        windowHeaders(headers, "X-Plan-5h", usage.fiveHour());
+        windowHeaders(headers, "X-Plan-Weekly", usage.weekly());
+        return headers;
+    }
+
+    private static void windowHeaders(
+            HttpHeaders headers, String prefix, PlanUsageService.WindowUsage window) {
+        headers.set(prefix + "-Limit", Long.toString(window.limit()));
+        headers.set(prefix + "-Remaining", Long.toString(window.remaining()));
+        if (window.endsAt() != null) {
+            headers.set(prefix + "-Reset", window.endsAt().toString());
+        }
+    }
+
+    private static Mono<ServerResponse> openAiQuota(AiProvider.Protocol protocol, Throwable error) {
+        if (protocol != AiProvider.Protocol.OPENAI_CHAT
+                || !(error instanceof ApiException api)
+                || api.getStatusCode().value() != HttpStatus.TOO_MANY_REQUESTS.value()
+                || !PlanQuotaService.CODE_QUOTA_EXCEEDED.equals(api.getCode())) {
+            return Mono.error(error);
+        }
+        var body = new LinkedHashMap<String, Object>();
+        body.put("type", "insufficient_quota");
+        body.put("code", api.getCode());
+        body.put("message", api.getReason() == null ? "套餐额度不足。" : api.getReason());
+        return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("error", body));
     }
 
     private Flux<String> encode(
@@ -225,9 +285,13 @@ public class AiGatewayEndpoint implements CustomEndpoint {
             case GEMINI -> "data: {\"error\":{\"code\":" + (error.retryable() ? 503 : 500)
                     + ",\"message\":\"" + message + "\",\"status\":\""
                     + (error.retryable() ? "UNAVAILABLE" : "INTERNAL") + "\"}}\n\n";
-            default -> "data: {\"error\":{\"code\":\"" + error.code() + "\",\"message\":\""
+            default -> "data: {\"error\":{\"code\":\"" + openAiErrorType(error.code()) + "\",\"message\":\""
                     + message + "\",\"retryable\":" + error.retryable() + "}}\n\n";
         };
+    }
+
+    private static String openAiErrorType(String code) {
+        return PlanQuotaService.CODE_QUOTA_EXCEEDED.equals(code) ? "insufficient_quota" : code;
     }
 
     private static String metaModel(AiGatewayInvocation invocation) {

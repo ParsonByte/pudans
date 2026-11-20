@@ -1,0 +1,15 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: AiPlanBinding
+metadata:
+  name: binding-normal-users
+  labels:
+    pudans.tolim.cn/builtin: "true"
+    pudans.tolim.cn/do-not-overwrite: "true"
+spec:
+  plan: standard
+  subject:
+    kind: UserGroup
+    name: normal-users
+  priority: 0
+  effectiveFrom: null
+  effectiveTo: null

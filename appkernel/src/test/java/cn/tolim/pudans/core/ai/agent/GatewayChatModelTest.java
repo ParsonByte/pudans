@@ -121,6 +121,6 @@ class GatewayChatModelTest {
                         null, "team-1", "agent-a", "session-1"),
                 new AiTokenUsage(1, 2, null, null),
                 BigDecimal.ONE,
-                "wallet");
+                "PLAN");
     }
 }

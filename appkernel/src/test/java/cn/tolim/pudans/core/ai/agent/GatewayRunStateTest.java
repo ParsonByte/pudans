@@ -15,14 +15,14 @@ import org.junit.jupiter.api.Test;
 class GatewayRunStateTest {
 
     @Test
-    void accumulatesTokenUsageAndPointsAcrossCalls() {
+    void accumulatesTokenUsageAndUnitsAcrossCalls() {
         var state = new GatewayRunState();
 
         state.recordUsage(new AiTokenUsage(1, 2, null, null), BigDecimal.ONE, "PROVIDER");
         state.recordUsage(new AiTokenUsage(3, null, 4, null), BigDecimal.ONE, null);
 
         assertThat(state.usage()).isEqualTo(new AiTokenUsage(4, 2, 4, null));
-        assertThat(state.points()).isEqualByComparingTo("2");
+        assertThat(state.units()).isEqualByComparingTo("2");
         assertThat(state.billingSource()).isEqualTo("PROVIDER");
     }
 

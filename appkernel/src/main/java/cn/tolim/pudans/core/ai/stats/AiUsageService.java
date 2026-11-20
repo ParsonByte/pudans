@@ -7,8 +7,8 @@ import cn.tolim.pudans.contract.core.extension.ai.AiModel;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.core.ai.plan.PlanUsageService;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver.Viewer;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
@@ -29,6 +29,7 @@ import cn.tolim.pudans.infra.r2dbc.ai.stats.AiUsageRepository.SessionStatsRow;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiUsageRepository.SessionStatsTotalsRow;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiUsageRepository.SessionUsageRow;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiUsageRepository.SpeedRow;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -83,7 +84,7 @@ public class AiUsageService {
 
     private static final String METRIC_TOKENS = "tokens";
 
-    private static final String METRIC_POINTS = "points";
+    private static final String METRIC_UNITS = "units";
 
     private static final String GROUP_BY_MODEL = "model";
 
@@ -98,11 +99,11 @@ public class AiUsageService {
 
     private final AiConversationRepository conversationRepository;
 
-    private final AiWalletService walletService;
+    private final PlanUsageService planUsageService;
 
     private final ReactiveExtensionClient extensionClient;
 
-    private Clock clock = Clock.systemUTC();
+    private Clock clock = PudansTime.systemClock();
 
     void setClock(Clock clock) {
         this.clock = clock;
@@ -139,12 +140,16 @@ public class AiUsageService {
                                         viewer.all(),
                                         viewer.userId())
                                 .collectList(),
-                        walletService.wallet(viewer.userId()))
+                        planUsageService
+                                .usage(viewer.userId())
+                                .map(PlanQuota::new)
+                                .switchIfEmpty(Mono.just(new PlanQuota(null)))
+                                .onErrorResume(error -> Mono.just(new PlanQuota(null))))
                 .map(tuple -> new Overview(
                         totals(tuple.getT2()),
                         series(window, tuple.getT1(), bucket),
                         rankings(tuple.getT2()),
-                        tuple.getT3()));
+                        tuple.getT3().plan()));
     }
 
     public Mono<RequestPage> requests(RequestQuery query, long beforeId, int limit, Viewer viewer) {
@@ -331,7 +336,7 @@ public class AiUsageService {
                         window.to().toString(),
                         series(window, rows, Bucket.DAY).stream()
                                 .map(day -> new HeatmapBucket(
-                                        day.day(), null, day.requests(), day.totalTokens(), day.points()))
+                                        day.day(), null, day.requests(), day.totalTokens(), day.units()))
                                 .toList()));
     }
 
@@ -405,7 +410,7 @@ public class AiUsageService {
             return Mono.error(new ApiException(
                     HttpStatus.BAD_REQUEST, AiUsageErrorCodes.BEFORE_REQUIRED, "before 不能为空。"));
         }
-        var beforeAt = query.before().atStartOfDay(UsageWindow.SERVER_ZONE).toInstant();
+        var beforeAt = PudansTime.startOfDay(query.before());
         var provider = text(query.provider());
         var model = text(query.model());
         return Mono.zip(
@@ -458,13 +463,13 @@ public class AiUsageService {
     private static String metric(@Nullable String value) {
         var normalized = value == null ? METRIC_REQUESTS : value.trim().toLowerCase(Locale.ROOT);
         if (METRIC_REQUESTS.equals(normalized) || METRIC_TOKENS.equals(normalized)
-                || METRIC_POINTS.equals(normalized)) {
+                || METRIC_UNITS.equals(normalized)) {
             return normalized;
         }
         throw new ApiException(
                 HttpStatus.BAD_REQUEST,
                 AiUsageErrorCodes.METRIC_INVALID,
-                "metric 必须是 requests、tokens 或 points。");
+                "metric 必须是 requests、tokens 或 units。");
     }
 
     private static String groupBy(@Nullable String value) {
@@ -495,7 +500,7 @@ public class AiUsageService {
         long ttftSum = 0;
         long ttftCount = 0;
         long tpsCount = 0;
-        var points = BigDecimal.ZERO;
+        var units = BigDecimal.ZERO;
         var tpsSum = BigDecimal.ZERO;
         for (var row : rows) {
             requests += row.requests();
@@ -509,7 +514,7 @@ public class AiUsageService {
             cacheTokens += row.cacheTokens();
             outputTokens += row.outputTokens();
             totalTokens += row.totalTokens();
-            points = points.add(row.points());
+            units = units.add(row.units());
             latencySum += row.latencySum();
             latencyCount += row.latencyCount();
             ttftSum += row.ttftSum();
@@ -526,7 +531,7 @@ public class AiUsageService {
                 cacheTokens,
                 outputTokens,
                 totalTokens,
-                points,
+                units,
                 average(latencySum, latencyCount),
                 average(ttftSum, ttftCount),
                 decimalAverage(tpsSum, tpsCount),
@@ -547,7 +552,7 @@ public class AiUsageService {
                 row.cacheTokens(),
                 row.outputTokens(),
                 row.totalTokens(),
-                row.points(),
+                row.units(),
                 null,
                 null,
                 null,
@@ -603,8 +608,8 @@ public class AiUsageService {
         var series = new ArrayList<DailyUsage>();
         switch (bucket) {
             case HOUR -> {
-                var cursor = window.from().atStartOfDay(UsageWindow.SERVER_ZONE);
-                var end = window.to().plusDays(1).atStartOfDay(UsageWindow.SERVER_ZONE);
+                var cursor = window.from().atStartOfDay(PudansTime.BEIJING);
+                var end = window.to().plusDays(1).atStartOfDay(PudansTime.BEIJING);
                 for (; cursor.isBefore(end); cursor = cursor.plusHours(1)) {
                     series.add(daily(HOUR_LABEL.format(cursor), byDay.get(HOUR_LABEL.format(cursor))));
                 }
@@ -637,7 +642,7 @@ public class AiUsageService {
                         row.cacheTokens(),
                         row.outputTokens(),
                         row.totalTokens(),
-                        row.points());
+                        row.units());
     }
 
     private static Rankings rankings(List<OverviewRankingRow> rows) {
@@ -664,7 +669,7 @@ public class AiUsageService {
         return accumulators.values().stream()
                 .sorted(Comparator.comparingLong(RankingAccumulator::requests)
                         .reversed()
-                        .thenComparing(RankingAccumulator::points, Comparator.reverseOrder())
+                        .thenComparing(RankingAccumulator::units, Comparator.reverseOrder())
                         .thenComparing(RankingAccumulator::name))
                 .limit(RANKING_TOP)
                 .map(RankingAccumulator::toEntry)
@@ -697,7 +702,7 @@ public class AiUsageService {
                 row.cacheTokens(),
                 row.outputTokens(),
                 row.totalTokens(),
-                row.points(),
+                row.units(),
                 row.latencyMs(),
                 row.ttftMs(),
                 row.tps(),
@@ -730,11 +735,10 @@ public class AiUsageService {
                 row.cacheTokens(),
                 row.outputTokens(),
                 row.totalTokens(),
-                row.points(),
+                row.units(),
                 new Billing(
                         row.billingSource(),
                         row.billingStatus(),
-                        row.overdraft(),
                         row.usageSource(),
                         row.upstreamRequestId()),
                 row.latencyMs(),
@@ -837,7 +841,7 @@ public class AiUsageService {
                 round(totals.medianMessages()),
                 round(totals.p90Messages()),
                 totals.tokens(),
-                totals.points(),
+                totals.units(),
                 totals.cacheTokens(),
                 totals.activeSeconds());
         var series = daily.stream()
@@ -846,7 +850,7 @@ public class AiUsageService {
                         row.sessions(),
                         row.messages(),
                         row.tokens(),
-                        row.points(),
+                        row.units(),
                         row.activeSeconds()))
                 .toList();
         var hourly = new HashMap<Integer, Long>();
@@ -869,7 +873,7 @@ public class AiUsageService {
                         row.model(),
                         row.messageCount(),
                         row.tokens(),
-                        row.points(),
+                        row.units(),
                         row.lastActivityAt()))
                 .toList();
         return new SessionStats(totalsView, series, hourSeries, models, top, sessionShape(sessions));
@@ -883,7 +887,7 @@ public class AiUsageService {
         }
         return accumulators.entrySet().stream()
                 .map(entry -> new SessionModel(entry.getKey(), entry.getValue().sessions,
-                        entry.getValue().tokens, entry.getValue().points))
+                        entry.getValue().tokens, entry.getValue().units))
                 .sorted(Comparator.comparingLong(SessionModel::tokens)
                         .reversed()
                         .thenComparing(SessionModel::name))
@@ -975,7 +979,7 @@ public class AiUsageService {
                 row.cacheTokens(),
                 row.outputTokens(),
                 row.totalTokens(),
-                row.points(),
+                row.units(),
                 duration(row.createdAt(), row.lastActivityAt()),
                 row.createdAt(),
                 row.lastActivityAt(),
@@ -1000,7 +1004,7 @@ public class AiUsageService {
                         usage.cacheTokens(),
                         usage.outputTokens(),
                         usage.totalTokens(),
-                        usage.points(),
+                        usage.units(),
                         duration(conversation.createdAt(), conversation.lastActivityAt()),
                         conversation.createdAt(),
                         conversation.lastActivityAt(),
@@ -1135,7 +1139,7 @@ public class AiUsageService {
 
         private long outputTokens;
 
-        private BigDecimal points = BigDecimal.ZERO;
+        private BigDecimal units = BigDecimal.ZERO;
 
         private RankingAccumulator(String name, @Nullable String provider) {
             this.name = name;
@@ -1148,15 +1152,15 @@ public class AiUsageService {
             inputTokens += row.inputTokens();
             cacheTokens += row.cacheTokens();
             outputTokens += row.outputTokens();
-            points = points.add(row.points());
+            units = units.add(row.units());
         }
 
         private long requests() {
             return requests;
         }
 
-        private BigDecimal points() {
-            return points;
+        private BigDecimal units() {
+            return units;
         }
 
         private String name() {
@@ -1165,7 +1169,7 @@ public class AiUsageService {
 
         private RankingEntry toEntry() {
             return new RankingEntry(
-                    name, provider, requests, failed, inputTokens, cacheTokens, outputTokens, points);
+                    name, provider, requests, failed, inputTokens, cacheTokens, outputTokens, units);
         }
     }
 
@@ -1175,12 +1179,12 @@ public class AiUsageService {
 
         private long tokens;
 
-        private BigDecimal points = BigDecimal.ZERO;
+        private BigDecimal units = BigDecimal.ZERO;
 
         private void add(SessionStatsRow row) {
             sessions++;
             tokens += row.tokens();
-            points = points.add(row.points());
+            units = units.add(row.units());
         }
     }
 
@@ -1339,8 +1343,13 @@ public class AiUsageService {
     public record ClearQuery(
             @Nullable LocalDate before, @Nullable String provider, @Nullable String model) {}
 
+    private record PlanQuota(PlanUsageService.@Nullable UsageView plan) {}
+
     public record Overview(
-            UsageTotals totals, List<DailyUsage> series, Rankings rankings, AiWalletService.WalletDetail quotas) {}
+            UsageTotals totals,
+            List<DailyUsage> series,
+            Rankings rankings,
+            PlanUsageService.@Nullable UsageView plan) {}
 
     public record UsageTotals(
             long requests,
@@ -1351,7 +1360,7 @@ public class AiUsageService {
             long cacheTokens,
             long outputTokens,
             long totalTokens,
-            BigDecimal points,
+            BigDecimal units,
             @Nullable Integer latencyMs,
             @Nullable Integer ttftMs,
             @Nullable BigDecimal tps,
@@ -1370,7 +1379,7 @@ public class AiUsageService {
             long cacheTokens,
             long outputTokens,
             long totalTokens,
-            BigDecimal points) {}
+            BigDecimal units) {}
 
     public record Rankings(
             List<RankingEntry> agents,
@@ -1386,7 +1395,7 @@ public class AiUsageService {
             long inputTokens,
             long cacheTokens,
             long outputTokens,
-            BigDecimal points) {}
+            BigDecimal units) {}
 
     public record RequestPage(
             List<UsageRequest> items, @Nullable Long nextCursor, UsageTotals totals) {}
@@ -1409,7 +1418,7 @@ public class AiUsageService {
             @Nullable Integer cacheTokens,
             @Nullable Integer outputTokens,
             @Nullable Integer totalTokens,
-            @Nullable BigDecimal points,
+            @Nullable Long units,
             @Nullable Integer latencyMs,
             @Nullable Integer ttftMs,
             @Nullable BigDecimal tps,
@@ -1439,7 +1448,7 @@ public class AiUsageService {
             @Nullable Integer cacheTokens,
             @Nullable Integer outputTokens,
             @Nullable Integer totalTokens,
-            @Nullable BigDecimal points,
+            @Nullable Long units,
             Billing billing,
             @Nullable Integer latencyMs,
             @Nullable Integer ttftMs,
@@ -1459,7 +1468,6 @@ public class AiUsageService {
     public record Billing(
             @Nullable String source,
             String status,
-            @Nullable BigDecimal overdraft,
             @Nullable String usageSource,
             @Nullable String upstreamRequestId) {}
 
@@ -1480,7 +1488,7 @@ public class AiUsageService {
             long cacheTokens,
             long outputTokens,
             long totalTokens,
-            BigDecimal points,
+            BigDecimal units,
             long durationSeconds,
             Instant createdAt,
             Instant lastActivityAt,
@@ -1534,7 +1542,7 @@ public class AiUsageService {
             String metric, String start, String end, List<HeatmapBucket> buckets) {}
 
     public record HeatmapBucket(
-            String date, @Nullable Integer hour, long requests, long tokens, BigDecimal points) {}
+            String date, @Nullable Integer hour, long requests, long tokens, BigDecimal units) {}
 
     public record Speed(List<SpeedItem> items) {}
 
@@ -1561,7 +1569,7 @@ public class AiUsageService {
             long medianMessages,
             long p90Messages,
             long tokens,
-            BigDecimal points,
+            BigDecimal units,
             long cacheReadTokens,
             long activeSeconds) {}
 
@@ -1570,12 +1578,12 @@ public class AiUsageService {
             long sessions,
             long messages,
             long tokens,
-            BigDecimal points,
+            BigDecimal units,
             long activeSeconds) {}
 
     public record SessionStatsHour(int hour, long sessions) {}
 
-    public record SessionModel(String name, long sessions, long tokens, BigDecimal points) {}
+    public record SessionModel(String name, long sessions, long tokens, BigDecimal units) {}
 
     public record TopSession(
             long conversationId,
@@ -1584,7 +1592,7 @@ public class AiUsageService {
             @Nullable String model,
             long messages,
             long tokens,
-            BigDecimal points,
+            BigDecimal units,
             Instant lastActivityAt) {}
 
     public record SessionShape(String bucket, long messages) {}

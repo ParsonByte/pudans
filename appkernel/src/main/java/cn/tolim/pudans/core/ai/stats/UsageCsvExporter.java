@@ -2,14 +2,13 @@ package cn.tolim.pudans.core.ai.stats;
 
 import cn.tolim.pudans.core.ai.export.CsvSupport;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiUsageRepository.RequestRow;
-import java.math.BigDecimal;
 import org.jspecify.annotations.Nullable;
 
 final class UsageCsvExporter {
 
     static final String HEADER =
             "time,requestId,agent,provider,model,account,mode,routeGroup,status,"
-                    + "inputTokens,outputTokens,cacheTokens,totalTokens,points,latencyMs,ttftMs,"
+                    + "inputTokens,outputTokens,cacheTokens,totalTokens,units,latencyMs,ttftMs,"
                     + "cacheHitRate,retried,servedEffort\n";
 
     private UsageCsvExporter() {}
@@ -29,7 +28,7 @@ final class UsageCsvExporter {
                 integer(row.outputTokens()),
                 integer(row.cacheTokens()),
                 integer(row.totalTokens()),
-                decimal(row.points()),
+                number(row.units()),
                 integer(row.latencyMs()),
                 integer(row.ttftMs()),
                 AiUsageService.cacheHitRate(row.inputTokens(), row.cacheTokens()).toPlainString(),
@@ -41,8 +40,8 @@ final class UsageCsvExporter {
         return value == null ? "" : value.toString();
     }
 
-    private static String decimal(@Nullable BigDecimal value) {
-        return value == null ? "" : value.toPlainString();
+    private static String number(@Nullable Long value) {
+        return value == null ? "" : value.toString();
     }
 
     private static String nullToEmpty(@Nullable String value) {

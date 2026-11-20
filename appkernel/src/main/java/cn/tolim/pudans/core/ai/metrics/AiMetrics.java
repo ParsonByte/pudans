@@ -28,7 +28,7 @@ public class AiMetrics {
 
     private static final String METER_GATEWAY_TOKENS = "ai.gateway.tokens";
 
-    private static final String METER_GATEWAY_POINTS = "ai.gateway.points";
+    private static final String METER_GATEWAY_UNITS = "ai.gateway.units";
 
     private static final String METER_ROUTING_DECISIONS = "ai.routing.decisions";
 
@@ -36,7 +36,7 @@ public class AiMetrics {
 
     private static final String METER_GENERATION_UNITS = "ai.generation.units";
 
-    private static final String METER_GENERATION_POINTS = "ai.generation.points";
+    private static final String METER_GENERATION_BILLING_UNITS = "ai.generation.billing.units";
 
     private static final String METER_MEMORY_TASKS = "ai.memory.tasks";
 
@@ -55,8 +55,6 @@ public class AiMetrics {
     private static final String ALERT_ROUTE_EXHAUSTED = "route_exhausted";
 
     private static final String ALERT_TASK_DEAD = "task_dead";
-
-    private static final String ALERT_WALLET_INSUFFICIENT = "wallet_insufficient";
 
     private static final String ALERT_MESSAGE = "AI 告警触发：type={}，severity={}。";
 
@@ -89,15 +87,15 @@ public class AiMetrics {
         incrementTokens(provider, model, "cache", cache);
     }
 
-    public void gatewayPoints(
-            @Nullable BigDecimal points, @Nullable String provider, @Nullable String model) {
-        if (points == null || points.signum() <= 0) {
+    public void gatewayUnits(
+            @Nullable BigDecimal units, @Nullable String provider, @Nullable String model) {
+        if (units == null || units.signum() <= 0) {
             return;
         }
-        safe(() -> Counter.builder(METER_GATEWAY_POINTS)
+        safe(() -> Counter.builder(METER_GATEWAY_UNITS)
                 .tags("provider", tag(provider), "model", tag(model))
                 .register(registry)
-                .increment(points.doubleValue()));
+                .increment(units.doubleValue()));
     }
 
     public void routingDecision(
@@ -140,15 +138,15 @@ public class AiMetrics {
         unit(provider, model, capability, "output_token", usage.outputTokens());
     }
 
-    public void generationPoints(
-            @Nullable BigDecimal points, @Nullable String provider, @Nullable String model) {
-        if (points == null || points.signum() <= 0) {
+    public void generationBillingUnits(
+            @Nullable BigDecimal units, @Nullable String provider, @Nullable String model) {
+        if (units == null || units.signum() <= 0) {
             return;
         }
-        safe(() -> Counter.builder(METER_GENERATION_POINTS)
+        safe(() -> Counter.builder(METER_GENERATION_BILLING_UNITS)
                 .tags("provider", tag(provider), "model", tag(model))
                 .register(registry)
-                .increment(points.doubleValue()));
+                .increment(units.doubleValue()));
     }
 
     public void memoryTask(@Nullable String taskType, @Nullable String status, @Nullable Duration duration) {
@@ -185,10 +183,6 @@ public class AiMetrics {
     public void taskDead(@Nullable String taskType, int retries) {
         alertWithContext(
                 ALERT_TASK_DEAD, SEVERITY_ERROR, "taskType=" + tag(taskType) + "，retries=" + retries);
-    }
-
-    public void walletInsufficient() {
-        alert(ALERT_WALLET_INSUFFICIENT, SEVERITY_WARNING);
     }
 
     private void alertWithContext(String type, String severity, String context) {

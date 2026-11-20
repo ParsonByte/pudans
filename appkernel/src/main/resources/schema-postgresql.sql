@@ -292,8 +292,11 @@ CREATE TABLE IF NOT EXISTS ai_chat_request (
     cache_tokens INT,
     output_tokens INT,
     total_tokens INT,
+    -- 历史积分列仅用于兼容读取，新写入统一使用 usage_units
     points NUMERIC(12,2),
-    overdraft NUMERIC(12,2) NOT NULL DEFAULT 0,
+    usage_units BIGINT,
+    plan_id VARCHAR(128),
+    billing_scope VARCHAR(16) NOT NULL DEFAULT 'USER',
     billing_source VARCHAR(16),
     billing_status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
     latency_ms INT,
@@ -344,8 +347,11 @@ CREATE TABLE IF NOT EXISTS ai_model_request (
     audio_seconds INT,
     speech_characters INT,
     task_count INT,
-    hold_points NUMERIC(12,2),
+    -- 历史积分列仅用于兼容读取，新写入统一使用 usage_units
     points NUMERIC(12,2),
+    usage_units BIGINT,
+    plan_id VARCHAR(128),
+    billing_scope VARCHAR(16) NOT NULL DEFAULT 'USER',
     billing_source VARCHAR(16),
     billing_status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
     latency_ms INT,
@@ -455,65 +461,6 @@ CREATE TABLE IF NOT EXISTS ai_agent_protocol_run (
 @
 CREATE INDEX IF NOT EXISTS idx_ai_agent_protocol_thread
     ON ai_agent_protocol_run (user_id, thread_id, updated_at DESC);
-@
--- 钱包
-CREATE TABLE IF NOT EXISTS ai_wallet (
-    id BIGSERIAL PRIMARY KEY,
-    user_id VARCHAR(128) NOT NULL UNIQUE,
-    balance NUMERIC(14,2) NOT NULL DEFAULT 0,
-    frozen NUMERIC(14,2) NOT NULL DEFAULT 0,
-    total_granted NUMERIC(16,2) NOT NULL DEFAULT 0,
-    total_consumed NUMERIC(16,2) NOT NULL DEFAULT 0,
-    status SMALLINT NOT NULL DEFAULT 1,
-    daily_limit NUMERIC(12,2),
-    min_balance_alert NUMERIC(12,2) DEFAULT 10,
-    version BIGINT NOT NULL DEFAULT 0,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT ai_wallet_balance_non_negative CHECK (balance >= 0),
-    CONSTRAINT ai_wallet_frozen_non_negative CHECK (frozen >= 0),
-    CONSTRAINT ai_wallet_frozen_le_balance CHECK (frozen <= balance)
-);
-@
-CREATE TABLE IF NOT EXISTS ai_wallet_hold (
-    id BIGSERIAL PRIMARY KEY,
-    request_id VARCHAR(64) NOT NULL UNIQUE,
-    user_id VARCHAR(128) NOT NULL,
-    amount NUMERIC(14,2) NOT NULL,
-    kind VARCHAR(16) NOT NULL DEFAULT 'CHAT',
-    status VARCHAR(16) NOT NULL DEFAULT 'HELD',
-    expires_at TIMESTAMPTZ NOT NULL,
-    settled_at TIMESTAMPTZ,
-    released_at TIMESTAMPTZ,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CONSTRAINT ai_wallet_hold_amount_non_negative CHECK (amount >= 0)
-);
-@
-CREATE INDEX IF NOT EXISTS idx_ai_wallet_hold_expiry ON ai_wallet_hold (status, expires_at);
-@
-CREATE TABLE IF NOT EXISTS ai_wallet_txn (
-    id BIGSERIAL PRIMARY KEY,
-    user_id VARCHAR(128) NOT NULL,
-    txn_type VARCHAR(16) NOT NULL,
-    amount NUMERIC(14,2) NOT NULL,
-    balance_after NUMERIC(14,2) NOT NULL,
-    request_id VARCHAR(64),
-    provider_account VARCHAR(128),
-    model_code VARCHAR(128),
-    tier VARCHAR(16),
-    input_tokens INT,
-    cache_tokens INT,
-    output_tokens INT,
-    trace_id VARCHAR(64),
-    billing_source VARCHAR(16),
-    remark VARCHAR(512),
-    idempotency_key VARCHAR(128) NOT NULL UNIQUE,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-@
-CREATE INDEX IF NOT EXISTS idx_ai_wallet_txn_user ON ai_wallet_txn (user_id, created_at DESC);
-@
-CREATE INDEX IF NOT EXISTS idx_ai_wallet_txn_request ON ai_wallet_txn (request_id);
 @
 -- L1 原子事实（scene 切分 + 批量冲突判定后）
 CREATE TABLE IF NOT EXISTS ai_memory_l1 (
@@ -865,6 +812,19 @@ ALTER TABLE ai_chat_request ADD COLUMN IF NOT EXISTS attempts JSONB;
 @
 ALTER TABLE ai_chat_request ADD COLUMN IF NOT EXISTS caller_key VARCHAR(128);
 @
+-- 请求级用量单位与套餐归属：历史行保留 points，读取使用 COALESCE(usage_units, points, 0)
+ALTER TABLE ai_chat_request ADD COLUMN IF NOT EXISTS usage_units BIGINT;
+@
+ALTER TABLE ai_chat_request ADD COLUMN IF NOT EXISTS plan_id VARCHAR(128);
+@
+ALTER TABLE ai_chat_request ADD COLUMN IF NOT EXISTS billing_scope VARCHAR(16) NOT NULL DEFAULT 'USER';
+@
+ALTER TABLE ai_model_request ADD COLUMN IF NOT EXISTS usage_units BIGINT;
+@
+ALTER TABLE ai_model_request ADD COLUMN IF NOT EXISTS plan_id VARCHAR(128);
+@
+ALTER TABLE ai_model_request ADD COLUMN IF NOT EXISTS billing_scope VARCHAR(16) NOT NULL DEFAULT 'USER';
+@
 CREATE INDEX IF NOT EXISTS idx_ai_chat_request_caller_key ON ai_chat_request (caller_key, created_at DESC);
 @
 CREATE INDEX IF NOT EXISTS idx_ai_chat_request_created ON ai_chat_request (created_at DESC, id DESC);
@@ -951,3 +911,82 @@ CREATE TABLE IF NOT EXISTS ai_agent_snapshot (
 );
 @
 CREATE INDEX IF NOT EXISTS idx_ai_agent_snapshot_agent ON ai_agent_snapshot (agent_name, created_at DESC);
+@
+-- AI 套餐窗口计数（仅保存当前窗口）
+CREATE TABLE IF NOT EXISTS ai_plan_counter (
+    user_id VARCHAR(128) NOT NULL,
+    kind VARCHAR(16) NOT NULL,
+    window_key VARCHAR(96) NOT NULL,
+    starts_at TIMESTAMPTZ NOT NULL,
+    ends_at TIMESTAMPTZ NOT NULL,
+    quota_limit BIGINT NOT NULL,
+    used BIGINT NOT NULL DEFAULT 0,
+    reserved BIGINT NOT NULL DEFAULT 0,
+    anchor_source VARCHAR(16) NOT NULL DEFAULT 'PLAN',
+    version BIGINT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, kind),
+    CONSTRAINT ai_plan_counter_used_non_negative CHECK (used >= 0),
+    CONSTRAINT ai_plan_counter_reserved_non_negative CHECK (reserved >= 0)
+);
+@
+-- AI 用量账本
+CREATE TABLE IF NOT EXISTS ai_usage_ledger (
+    id BIGSERIAL PRIMARY KEY,
+    request_id VARCHAR(64) NOT NULL UNIQUE,
+    user_id VARCHAR(128) NOT NULL,
+    team_id VARCHAR(128),
+    plan_id VARCHAR(128),
+    billing_scope VARCHAR(16) NOT NULL DEFAULT 'USER',
+    request_kind VARCHAR(16) NOT NULL,
+    five_hour_window_key VARCHAR(96),
+    weekly_window_key VARCHAR(96),
+    provider VARCHAR(64),
+    provider_account VARCHAR(128),
+    model_code VARCHAR(128),
+    tier VARCHAR(16),
+    input_tokens INT,
+    cache_tokens INT,
+    output_tokens INT,
+    reserved_units BIGINT NOT NULL DEFAULT 0,
+    units BIGINT NOT NULL DEFAULT 0,
+    status VARCHAR(16) NOT NULL DEFAULT 'RESERVED',
+    trace_id VARCHAR(64),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    settled_at TIMESTAMPTZ
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_usage_ledger_user ON ai_usage_ledger (user_id, created_at DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_usage_ledger_status ON ai_usage_ledger (status, created_at);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_usage_ledger_plan ON ai_usage_ledger (plan_id, created_at DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_usage_ledger_team ON ai_usage_ledger (team_id, created_at DESC);
+@
+-- AI 套餐重置券周期计数
+CREATE TABLE IF NOT EXISTS ai_plan_voucher_counter (
+    user_id VARCHAR(128) NOT NULL,
+    kind VARCHAR(24) NOT NULL,
+    period_key VARCHAR(32) NOT NULL,
+    entitlement INT NOT NULL DEFAULT 0,
+    bonus INT NOT NULL DEFAULT 0,
+    used INT NOT NULL DEFAULT 0,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, kind, period_key),
+    CONSTRAINT ai_plan_voucher_counter_used_non_negative CHECK (used >= 0)
+);
+@
+-- AI 套餐重置券使用记录
+CREATE TABLE IF NOT EXISTS ai_plan_voucher_use (
+    id BIGSERIAL PRIMARY KEY,
+    request_id VARCHAR(64) NOT NULL UNIQUE,
+    user_id VARCHAR(128) NOT NULL,
+    kind VARCHAR(24) NOT NULL,
+    period_key VARCHAR(32) NOT NULL,
+    target_window_key VARCHAR(96) NOT NULL,
+    window_key_after VARCHAR(96) NOT NULL,
+    used_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_plan_voucher_use_user ON ai_plan_voucher_use (user_id, id DESC);

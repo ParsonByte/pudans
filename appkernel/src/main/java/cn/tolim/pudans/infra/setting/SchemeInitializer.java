@@ -20,6 +20,8 @@ import cn.tolim.pudans.contract.core.extension.ai.AiMemoryAsset;
 import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
 import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPromptBinding;
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
+import cn.tolim.pudans.contract.core.extension.ai.AiPlanBinding;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
@@ -279,6 +281,15 @@ class SchemeInitializer implements SmartLifecycle {
         });
 
         schemeManager.register(AiSetting.class);
+
+        schemeManager.register(AiPlan.class);
+
+        schemeManager.register(AiPlanBinding.class, is -> is.add(
+                IndexSpecs.<AiPlanBinding, String>single("spec.subject.name", String.class)
+                        .indexFunc(binding -> Optional.ofNullable(binding.getSpec())
+                                .map(AiPlanBinding.Spec::getSubject)
+                                .map(AiPlanBinding.Subject::getName)
+                                .orElse(null))));
 
         schemeManager.register(AiTeam.class, is -> {
             is.add(IndexSpecs.<AiTeam, AiTeam.TeamStatus>single("spec.status", AiTeam.TeamStatus.class)

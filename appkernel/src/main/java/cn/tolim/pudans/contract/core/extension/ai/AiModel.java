@@ -127,22 +127,6 @@ public class AiModel extends AbstractExtension {
 
         private Integer maxOutputItems;
 
-        private int inputTokensPerPoint = 1000;
-
-        private int cacheTokensPerPoint = 1000;
-
-        private int outputTokensPerPoint = 1000;
-
-        private int imagePointsPerItem;
-
-        private int videoPointsPerSecond;
-
-        private int audioPointsPerSecond;
-
-        private int speechPointsPerKiloCharacter;
-
-        private int taskPointsPerInvocation;
-
         private boolean enabled = true;
 
         public Set<Capability> effectiveCapabilities() {

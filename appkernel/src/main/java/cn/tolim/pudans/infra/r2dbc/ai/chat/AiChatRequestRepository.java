@@ -22,19 +22,19 @@ public class AiChatRequestRepository {
                             request_id, space_id, user_id, agent_source, team_id, agent_id, session_key,
                             conversation_id, idempotency_key, mode_code, route_group,
                             selected_provider, selected_account, selected_model, tier,
-                            route_trace, caller_key
+                            route_trace, caller_key, plan_id, billing_scope
                         ) VALUES (
                             :requestId, :spaceId, :userId, :agentSource, :teamId, :agentId, :sessionKey,
                             :conversationId, :idempotencyKey, :modeCode, :routeGroup,
                             :selectedProvider, :selectedAccount, :selectedModel, :tier,
-                            CAST(:routeTrace AS jsonb), :callerKey
+                            CAST(:routeTrace AS jsonb), :callerKey, :planId, :billingScope
                         )
                         RETURNING id, request_id, space_id, user_id, agent_source, team_id, agent_id, session_key,
                                   conversation_id, idempotency_key, mode_code, route_group,
                                   selected_provider, selected_account, selected_model, tier, status,
                                   error_code, input_tokens, cache_tokens, output_tokens, total_tokens,
-                                  points, overdraft, billing_source, billing_status, latency_ms, ttft_ms,
-                                  tps, usage_source, upstream_request_id,
+                                  usage_units, plan_id, billing_scope, billing_source, billing_status,
+                                  latency_ms, ttft_ms, tps, usage_source, upstream_request_id,
                                   route_trace::text AS route_trace, attempts::text AS attempts, caller_key,
                                   created_at, completed_at
                         """)
@@ -56,6 +56,8 @@ public class AiChatRequestRepository {
         spec = AiR2dbcBindings.bindNullable(spec, "tier", request.tier(), String.class);
         spec = AiR2dbcBindings.bindNullable(spec, "routeTrace", request.routeTrace(), String.class);
         spec = AiR2dbcBindings.bindNullable(spec, "callerKey", request.callerKey(), String.class);
+        spec = AiR2dbcBindings.bindNullable(spec, "planId", request.planId(), String.class);
+        spec = spec.bind("billingScope", request.billingScope());
         return spec.map((row, metadata) -> mapChatRequest(row)).one();
     }
 
@@ -68,7 +70,7 @@ public class AiChatRequestRepository {
                             cache_tokens = :cacheTokens,
                             output_tokens = :outputTokens,
                             total_tokens = :totalTokens,
-                            points = :points,
+                            usage_units = :usageUnits,
                             billing_source = :billingSource,
                             billing_status = :billingStatus,
                             latency_ms = :latencyMs,
@@ -84,8 +86,8 @@ public class AiChatRequestRepository {
                                   conversation_id, idempotency_key, mode_code, route_group,
                                   selected_provider, selected_account, selected_model, tier, status,
                                   error_code, input_tokens, cache_tokens, output_tokens, total_tokens,
-                                  points, overdraft, billing_source, billing_status, latency_ms, ttft_ms,
-                                  tps, usage_source, upstream_request_id,
+                                  usage_units, plan_id, billing_scope, billing_source, billing_status,
+                                  latency_ms, ttft_ms, tps, usage_source, upstream_request_id,
                                   route_trace::text AS route_trace, attempts::text AS attempts, caller_key,
                                   created_at, completed_at
                         """)
@@ -97,7 +99,7 @@ public class AiChatRequestRepository {
         spec = AiR2dbcBindings.bindNullable(spec, "cacheTokens", completion.cacheTokens(), Integer.class);
         spec = AiR2dbcBindings.bindNullable(spec, "outputTokens", completion.outputTokens(), Integer.class);
         spec = AiR2dbcBindings.bindNullable(spec, "totalTokens", completion.totalTokens(), Integer.class);
-        spec = AiR2dbcBindings.bindNullable(spec, "points", completion.points(), BigDecimal.class);
+        spec = AiR2dbcBindings.bindNullable(spec, "usageUnits", completion.units(), Long.class);
         spec = AiR2dbcBindings.bindNullable(spec, "billingSource", completion.billingSource(), String.class);
         spec = AiR2dbcBindings.bindNullable(spec, "latencyMs", completion.latencyMs(), Integer.class);
         spec = AiR2dbcBindings.bindNullable(spec, "ttftMs", completion.ttftMs(), Integer.class);
@@ -119,7 +121,7 @@ public class AiChatRequestRepository {
         var sql = new StringBuilder("""
                         SELECT COUNT(*) AS requests,
                                COALESCE(SUM(total_tokens), 0) AS tokens,
-                               COALESCE(SUM(points), 0) AS points
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS units
                         FROM ai_chat_request
                         WHERE caller_key = :callerKey
                         """);
@@ -145,7 +147,7 @@ public class AiChatRequestRepository {
         return spec.map((row, metadata) -> new KeyUsage(
                         row.get("requests", Long.class),
                         row.get("tokens", Long.class),
-                        row.get("points", BigDecimal.class)))
+                        row.get("units", BigDecimal.class)))
                 .one();
     }
 
@@ -185,8 +187,9 @@ public class AiChatRequestRepository {
                 row.get("cache_tokens", Integer.class),
                 row.get("output_tokens", Integer.class),
                 row.get("total_tokens", Integer.class),
-                row.get("points", BigDecimal.class),
-                row.get("overdraft", BigDecimal.class),
+                row.get("usage_units", Long.class),
+                row.get("plan_id", String.class),
+                row.get("billing_scope", String.class),
                 row.get("billing_source", String.class),
                 row.get("billing_status", String.class),
                 row.get("latency_ms", Integer.class),
@@ -215,43 +218,9 @@ public class AiChatRequestRepository {
             @Nullable String selectedModel,
             @Nullable String tier,
             @Nullable String routeTrace,
-            @Nullable String callerKey) {
-
-        public NewChatRequest(
-                String requestId,
-                String spaceId,
-                String userId,
-                String agentSource,
-                String teamId,
-                String agentId,
-                @Nullable String sessionKey,
-                @Nullable Long conversationId,
-                String idempotencyKey,
-                @Nullable String modeCode,
-                @Nullable String routeGroup,
-                @Nullable String selectedProvider,
-                @Nullable String selectedAccount,
-                @Nullable String selectedModel,
-                @Nullable String tier) {
-            this(
-                    requestId,
-                    spaceId,
-                    userId,
-                    agentSource,
-                    teamId,
-                    agentId,
-                    sessionKey,
-                    conversationId,
-                    idempotencyKey,
-                    modeCode,
-                    routeGroup,
-                    selectedProvider,
-                    selectedAccount,
-                    selectedModel,
-                    tier,
-                    null,
-                    null);
-        }
+            @Nullable String callerKey,
+            @Nullable String planId,
+            String billingScope) {
 
         public NewChatRequest {
             requireText(requestId, "requestId");
@@ -261,6 +230,7 @@ public class AiChatRequestRepository {
             requireText(teamId, "teamId");
             requireText(agentId, "agentId");
             requireText(idempotencyKey, "idempotencyKey");
+            requireText(billingScope, "billingScope");
         }
 
         private static void requireText(String value, String name) {
@@ -278,7 +248,7 @@ public class AiChatRequestRepository {
             @Nullable Integer cacheTokens,
             @Nullable Integer outputTokens,
             @Nullable Integer totalTokens,
-            @Nullable BigDecimal points,
+            @Nullable Long units,
             @Nullable String billingSource,
             String billingStatus,
             @Nullable Integer latencyMs,
@@ -297,7 +267,7 @@ public class AiChatRequestRepository {
                 @Nullable Integer cacheTokens,
                 @Nullable Integer outputTokens,
                 @Nullable Integer totalTokens,
-                @Nullable BigDecimal points,
+                @Nullable Long units,
                 @Nullable String billingSource,
                 String billingStatus,
                 @Nullable Integer latencyMs,
@@ -313,7 +283,7 @@ public class AiChatRequestRepository {
                     cacheTokens,
                     outputTokens,
                     totalTokens,
-                    points,
+                    units,
                     billingSource,
                     billingStatus,
                     latencyMs,
@@ -338,7 +308,7 @@ public class AiChatRequestRepository {
         }
     }
 
-    public record KeyUsage(long requests, long tokens, BigDecimal points) {}
+    public record KeyUsage(long requests, long tokens, BigDecimal units) {}
 
     public record ChatRequest(
             long id,
@@ -363,8 +333,9 @@ public class AiChatRequestRepository {
             @Nullable Integer cacheTokens,
             @Nullable Integer outputTokens,
             @Nullable Integer totalTokens,
-            @Nullable BigDecimal points,
-            BigDecimal overdraft,
+            @Nullable Long units,
+            @Nullable String planId,
+            String billingScope,
             @Nullable String billingSource,
             String billingStatus,
             @Nullable Integer latencyMs,

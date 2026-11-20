@@ -36,7 +36,7 @@ public class AiUsageRepository {
         return databaseClient.sql("""
                         WITH usage AS (
                             SELECT created_at, status, input_tokens, cache_tokens, output_tokens,
-                                   total_tokens, points
+                                   total_tokens, COALESCE(usage_units, points) AS units
                             FROM ai_chat_request
                             WHERE created_at >= :fromAt
                               AND created_at < :toAt
@@ -49,7 +49,7 @@ public class AiUsageRepository {
                             SELECT created_at, status, input_tokens, cache_tokens, output_tokens,
                                    COALESCE(input_tokens, 0) + COALESCE(cache_tokens, 0)
                                        + COALESCE(output_tokens, 0) AS total_tokens,
-                                   points
+                                   COALESCE(usage_units, points) AS units
                             FROM ai_model_request
                             WHERE created_at >= :fromAt
                               AND created_at < :toAt
@@ -77,7 +77,7 @@ public class AiUsageRepository {
                                COALESCE(SUM(cache_tokens), 0) AS cache_tokens,
                                COALESCE(SUM(output_tokens), 0) AS output_tokens,
                                COALESCE(SUM(total_tokens), 0) AS total_tokens,
-                               COALESCE(SUM(points), 0) AS points
+                               COALESCE(SUM(units), 0) AS units
                         FROM usage
                         GROUP BY day
                         ORDER BY day
@@ -107,7 +107,8 @@ public class AiUsageRepository {
         return databaseClient.sql("""
                         WITH usage AS (
                             SELECT created_at, agent_id, selected_model, selected_provider, selected_account,
-                                   status, input_tokens, cache_tokens, output_tokens, total_tokens, points,
+                                   status, input_tokens, cache_tokens, output_tokens, total_tokens,
+                                   COALESCE(usage_units, points) AS units,
                                    latency_ms, ttft_ms, tps, route_trace
                             FROM ai_chat_request
                             WHERE created_at >= :fromAt
@@ -122,7 +123,8 @@ public class AiUsageRepository {
                                    status, input_tokens, cache_tokens, output_tokens,
                                    COALESCE(input_tokens, 0) + COALESCE(cache_tokens, 0)
                                        + COALESCE(output_tokens, 0) AS total_tokens,
-                                   points, latency_ms, NULL AS ttft_ms, NULL AS tps, route_trace
+                                   COALESCE(usage_units, points) AS units,
+                                   latency_ms, NULL AS ttft_ms, NULL AS tps, route_trace
                             FROM ai_model_request
                             WHERE created_at >= :fromAt
                               AND created_at < :toAt
@@ -140,7 +142,7 @@ public class AiUsageRepository {
                                COUNT(*) FILTER (WHERE status = 'SUCCEEDED') AS succeeded,
                                COUNT(*) FILTER (WHERE status = 'FAILED') AS failed,
                                COUNT(*) FILTER (WHERE status IN ('CANCELED', 'CANCELLED')) AS canceled_requests,
-                               COUNT(*) FILTER (WHERE points IS NULL) AS unpriced_requests,
+                               COUNT(*) FILTER (WHERE units IS NULL) AS unpriced_requests,
                                COUNT(*) FILTER (
                                    WHERE CASE WHEN route_trace ->> 'tries' ~ '^[0-9]+$'
                                               THEN (route_trace ->> 'tries')::int > 1
@@ -153,7 +155,7 @@ public class AiUsageRepository {
                                COALESCE(SUM(cache_tokens), 0) AS cache_tokens,
                                COALESCE(SUM(output_tokens), 0) AS output_tokens,
                                COALESCE(SUM(total_tokens), 0) AS total_tokens,
-                               COALESCE(SUM(points), 0) AS points,
+                               COALESCE(SUM(units), 0) AS units,
                                COALESCE(SUM(latency_ms), 0) AS latency_sum,
                                COUNT(latency_ms) AS latency_count,
                                COALESCE(SUM(ttft_ms), 0) AS ttft_sum,
@@ -199,7 +201,7 @@ public class AiUsageRepository {
                                COUNT(*) FILTER (WHERE status = 'SUCCEEDED') AS succeeded,
                                COUNT(*) FILTER (WHERE status = 'FAILED') AS failed,
                                COUNT(*) FILTER (WHERE status IN ('CANCELED', 'CANCELLED')) AS canceled_requests,
-                               COUNT(*) FILTER (WHERE points IS NULL) AS unpriced_requests,
+                               COUNT(*) FILTER (WHERE COALESCE(usage_units, points) IS NULL) AS unpriced_requests,
                                COUNT(*) FILTER (
                                    WHERE CASE WHEN route_trace ->> 'tries' ~ '^[0-9]+$'
                                               THEN (route_trace ->> 'tries')::int > 1
@@ -212,7 +214,7 @@ public class AiUsageRepository {
                                COALESCE(SUM(cache_tokens), 0) AS cache_tokens,
                                COALESCE(SUM(output_tokens), 0) AS output_tokens,
                                COALESCE(SUM(total_tokens), 0) AS total_tokens,
-                               COALESCE(SUM(points), 0) AS points
+                               COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS units
                         FROM ai_chat_request
                         WHERE created_at >= :fromAt
                           AND created_at < :toAt
@@ -279,7 +281,8 @@ public class AiUsageRepository {
                         SELECT id, request_id, user_id, team_id, agent_id, agent_source, mode_code,
                                route_group, selected_provider, selected_account, selected_model, tier,
                                status, error_code, input_tokens, cache_tokens, output_tokens, total_tokens,
-                               points, latency_ms, ttft_ms, tps, session_key, conversation_id,
+                               COALESCE(usage_units, points) AS units,
+                               latency_ms, ttft_ms, tps, session_key, conversation_id,
                                CASE WHEN route_trace ->> 'tries' ~ '^[0-9]+$'
                                     THEN (route_trace ->> 'tries')::int > 1
                                     ELSE FALSE END AS retried,
@@ -337,7 +340,8 @@ public class AiUsageRepository {
                         SELECT request_id, user_id, team_id, agent_id, agent_source, mode_code,
                                route_group, selected_provider, selected_account, selected_model, tier,
                                status, error_code, input_tokens, cache_tokens, output_tokens, total_tokens,
-                               points, billing_source, billing_status, overdraft, usage_source,
+                               COALESCE(usage_units, points) AS units,
+                               billing_source, billing_status, usage_source,
                                upstream_request_id, latency_ms, ttft_ms, tps, session_key, conversation_id,
                                route_trace::text AS route_trace,
                                retrieval_trace::text AS retrieval_trace,
@@ -378,7 +382,7 @@ public class AiUsageRepository {
                                COALESCE(r.cache_tokens, 0) AS cache_tokens,
                                COALESCE(r.output_tokens, 0) AS output_tokens,
                                COALESCE(r.total_tokens, 0) AS total_tokens,
-                               COALESCE(r.points, 0) AS points,
+                               COALESCE(r.units, 0) AS units,
                                r.model,
                                COALESCE(m.message_count, 0) AS message_count
                         FROM ai_conversation c
@@ -389,7 +393,7 @@ public class AiUsageRepository {
                                    COALESCE(SUM(cache_tokens), 0) AS cache_tokens,
                                    COALESCE(SUM(output_tokens), 0) AS output_tokens,
                                    COALESCE(SUM(total_tokens), 0) AS total_tokens,
-                                   COALESCE(SUM(points), 0) AS points,
+                                   COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS units,
                                    (ARRAY_AGG(selected_model ORDER BY created_at DESC)
                                        FILTER (WHERE selected_model IS NOT NULL))[1] AS model
                             FROM ai_chat_request
@@ -452,8 +456,8 @@ public class AiUsageRepository {
                                       WHERE conversation_id = :conversationId), 0) AS output_tokens,
                             COALESCE((SELECT SUM(total_tokens) FROM ai_chat_request
                                       WHERE conversation_id = :conversationId), 0) AS total_tokens,
-                            COALESCE((SELECT SUM(points) FROM ai_chat_request
-                                      WHERE conversation_id = :conversationId), 0) AS points,
+                            COALESCE((SELECT SUM(COALESCE(usage_units, points, 0)) FROM ai_chat_request
+                                      WHERE conversation_id = :conversationId), 0) AS units,
                             (SELECT selected_model FROM ai_chat_request
                              WHERE conversation_id = :conversationId
                                AND selected_model IS NOT NULL
@@ -600,7 +604,7 @@ public class AiUsageRepository {
                         requests AS (
                             SELECT r.conversation_id,
                                    COALESCE(SUM(r.total_tokens), 0) AS tokens,
-                                   COALESCE(SUM(r.points), 0) AS points,
+                                   COALESCE(SUM(COALESCE(r.usage_units, r.points, 0)), 0) AS units,
                                    COALESCE(SUM(r.cache_tokens), 0) AS cache_tokens
                             FROM ai_chat_request r
                             JOIN scoped s ON s.id = r.conversation_id
@@ -652,7 +656,7 @@ public class AiUsageRepository {
                                COALESCE(percentile_cont(0.9) WITHIN GROUP (
                                    ORDER BY COALESCE(m.message_count, 0)), 0) AS p90_messages,
                                COALESCE(SUM(COALESCE(r.tokens, 0)), 0) AS tokens,
-                               COALESCE(SUM(COALESCE(r.points, 0)), 0) AS points,
+                               COALESCE(SUM(COALESCE(r.units, 0)), 0) AS units,
                                COALESCE(SUM(COALESCE(r.cache_tokens, 0)), 0) AS cache_tokens,
                                COALESCE(SUM(COALESCE(a.active_seconds, 0)), 0)::bigint AS active_seconds
                         FROM scoped s
@@ -698,7 +702,7 @@ public class AiUsageRepository {
                             SELECT conversation_id,
                                    COUNT(*) AS request_count,
                                    COALESCE(SUM(total_tokens), 0) AS tokens,
-                                   COALESCE(SUM(points), 0) AS points,
+                                   COALESCE(SUM(COALESCE(usage_units, points, 0)), 0) AS units,
                                    COALESCE(SUM(cache_tokens), 0) AS cache_tokens,
                                    (ARRAY_AGG(selected_model ORDER BY created_at DESC)
                                        FILTER (WHERE selected_model IS NOT NULL))[1] AS model
@@ -723,7 +727,7 @@ public class AiUsageRepository {
                                COALESCE(m.message_count, 0) AS message_count,
                                COALESCE(r.request_count, 0) AS request_count,
                                COALESCE(r.tokens, 0) AS tokens,
-                               COALESCE(r.points, 0) AS points,
+                               COALESCE(r.units, 0) AS units,
                                COALESCE(r.cache_tokens, 0) AS cache_tokens,
                                s.last_activity_at
                         FROM scoped s
@@ -818,10 +822,10 @@ public class AiUsageRepository {
                               AND m.created_at < :toAt
                             GROUP BY day
                         ),
-                        points AS (
+                        usage_units AS (
                             SELECT date_trunc('day', r.created_at AT TIME ZONE 'Asia/Shanghai') AS day,
                                    COALESCE(SUM(r.total_tokens), 0) AS tokens,
-                                   COALESCE(SUM(r.points), 0) AS points
+                                   COALESCE(SUM(COALESCE(r.usage_units, r.points, 0)), 0) AS units
                             FROM ai_chat_request r
                             JOIN scoped s ON s.id = r.conversation_id
                             WHERE r.created_at >= :fromAt
@@ -843,12 +847,12 @@ public class AiUsageRepository {
                                COALESCE(s.sessions, 0) AS sessions,
                                COALESCE(m.messages, 0) AS messages,
                                COALESCE(p.tokens, 0) AS tokens,
-                               COALESCE(p.points, 0) AS points,
+                               COALESCE(p.units, 0) AS units,
                                COALESCE(a.seconds, 0)::bigint AS active_seconds
                         FROM days d
                         LEFT JOIN sessions s ON s.day = d.day
                         LEFT JOIN messages m ON m.day = d.day
-                        LEFT JOIN points p ON p.day = d.day
+                        LEFT JOIN usage_units p ON p.day = d.day
                         LEFT JOIN active_by_day a ON a.day = d.day
                         ORDER BY d.day
                         """)
@@ -1052,7 +1056,7 @@ public class AiUsageRepository {
                 count(row, "cache_tokens"),
                 count(row, "output_tokens"),
                 count(row, "total_tokens"),
-                decimal(row, "points"));
+                decimal(row, "units"));
     }
 
     static OverviewRankingRow mapRanking(Row row) {
@@ -1072,7 +1076,7 @@ public class AiUsageRepository {
                 count(row, "cache_tokens"),
                 count(row, "output_tokens"),
                 count(row, "total_tokens"),
-                decimal(row, "points"),
+                decimal(row, "units"),
                 count(row, "latency_sum"),
                 count(row, "latency_count"),
                 count(row, "ttft_sum"),
@@ -1094,7 +1098,7 @@ public class AiUsageRepository {
                 count(row, "cache_tokens"),
                 count(row, "output_tokens"),
                 count(row, "total_tokens"),
-                decimal(row, "points"));
+                decimal(row, "units"));
     }
 
     static RequestRow mapRequest(Row row) {
@@ -1117,7 +1121,7 @@ public class AiUsageRepository {
                 row.get("cache_tokens", Integer.class),
                 row.get("output_tokens", Integer.class),
                 row.get("total_tokens", Integer.class),
-                row.get("points", BigDecimal.class),
+                row.get("usage_units", Long.class),
                 row.get("latency_ms", Integer.class),
                 row.get("ttft_ms", Integer.class),
                 row.get("tps", BigDecimal.class),
@@ -1148,10 +1152,9 @@ public class AiUsageRepository {
                 row.get("cache_tokens", Integer.class),
                 row.get("output_tokens", Integer.class),
                 row.get("total_tokens", Integer.class),
-                row.get("points", BigDecimal.class),
+                row.get("usage_units", Long.class),
                 row.get("billing_source", String.class),
                 row.get("billing_status", String.class),
-                row.get("overdraft", BigDecimal.class),
                 row.get("usage_source", String.class),
                 row.get("upstream_request_id", String.class),
                 row.get("latency_ms", Integer.class),
@@ -1181,7 +1184,7 @@ public class AiUsageRepository {
                 count(row, "cache_tokens"),
                 count(row, "output_tokens"),
                 count(row, "total_tokens"),
-                decimal(row, "points"),
+                decimal(row, "units"),
                 row.get("created_at", Instant.class),
                 row.get("last_activity_at", Instant.class));
     }
@@ -1193,7 +1196,7 @@ public class AiUsageRepository {
                 count(row, "cache_tokens"),
                 count(row, "output_tokens"),
                 count(row, "total_tokens"),
-                decimal(row, "points"),
+                decimal(row, "units"),
                 row.get("model", String.class),
                 count(row, "message_count"),
                 count(row, "user_message_count"),
@@ -1240,7 +1243,7 @@ public class AiUsageRepository {
                 row.get("median_messages", Double.class),
                 row.get("p90_messages", Double.class),
                 count(row, "tokens"),
-                decimal(row, "points"),
+                decimal(row, "units"),
                 count(row, "cache_tokens"),
                 count(row, "active_seconds"));
     }
@@ -1254,7 +1257,7 @@ public class AiUsageRepository {
                 count(row, "message_count"),
                 count(row, "request_count"),
                 count(row, "tokens"),
-                decimal(row, "points"),
+                decimal(row, "units"),
                 count(row, "cache_tokens"),
                 row.get("last_activity_at", Instant.class));
     }
@@ -1265,7 +1268,7 @@ public class AiUsageRepository {
                 count(row, "sessions"),
                 count(row, "messages"),
                 count(row, "tokens"),
-                decimal(row, "points"),
+                decimal(row, "units"),
                 count(row, "active_seconds"));
     }
 
@@ -1312,7 +1315,7 @@ public class AiUsageRepository {
             long cacheTokens,
             long outputTokens,
             long totalTokens,
-            BigDecimal points) {}
+            BigDecimal units) {}
 
     public record OverviewRankingRow(
             String agent,
@@ -1330,7 +1333,7 @@ public class AiUsageRepository {
             long cacheTokens,
             long outputTokens,
             long totalTokens,
-            BigDecimal points,
+            BigDecimal units,
             long latencySum,
             long latencyCount,
             long ttftSum,
@@ -1350,7 +1353,7 @@ public class AiUsageRepository {
             long cacheTokens,
             long outputTokens,
             long totalTokens,
-            BigDecimal points) {}
+            BigDecimal units) {}
 
     public record RequestRow(
             long id,
@@ -1371,7 +1374,7 @@ public class AiUsageRepository {
             @Nullable Integer cacheTokens,
             @Nullable Integer outputTokens,
             @Nullable Integer totalTokens,
-            @Nullable BigDecimal points,
+            @Nullable Long units,
             @Nullable Integer latencyMs,
             @Nullable Integer ttftMs,
             @Nullable BigDecimal tps,
@@ -1400,10 +1403,9 @@ public class AiUsageRepository {
             @Nullable Integer cacheTokens,
             @Nullable Integer outputTokens,
             @Nullable Integer totalTokens,
-            @Nullable BigDecimal points,
+            @Nullable Long units,
             @Nullable String billingSource,
             String billingStatus,
-            @Nullable BigDecimal overdraft,
             @Nullable String usageSource,
             @Nullable String upstreamRequestId,
             @Nullable Integer latencyMs,
@@ -1431,7 +1433,7 @@ public class AiUsageRepository {
             long cacheTokens,
             long outputTokens,
             long totalTokens,
-            BigDecimal points,
+            BigDecimal units,
             Instant createdAt,
             Instant lastActivityAt) {}
 
@@ -1441,7 +1443,7 @@ public class AiUsageRepository {
             long cacheTokens,
             long outputTokens,
             long totalTokens,
-            BigDecimal points,
+            BigDecimal units,
             @Nullable String model,
             long messageCount,
             long userMessageCount,
@@ -1480,7 +1482,7 @@ public class AiUsageRepository {
             @Nullable Double medianMessages,
             @Nullable Double p90Messages,
             long tokens,
-            BigDecimal points,
+            BigDecimal units,
             long cacheTokens,
             long activeSeconds) {}
 
@@ -1492,7 +1494,7 @@ public class AiUsageRepository {
             long messageCount,
             long requestCount,
             long tokens,
-            BigDecimal points,
+            BigDecimal units,
             long cacheTokens,
             Instant lastActivityAt) {}
 
@@ -1501,7 +1503,7 @@ public class AiUsageRepository {
             long sessions,
             long messages,
             long tokens,
-            BigDecimal points,
+            BigDecimal units,
             long activeSeconds) {}
 
     public record SessionStatsHourRow(int hour, long sessions) {}

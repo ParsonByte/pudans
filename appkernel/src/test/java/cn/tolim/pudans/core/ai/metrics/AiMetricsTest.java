@@ -64,10 +64,10 @@ class AiMetricsTest {
     }
 
     @Test
-    void recordsGatewayPointsAsDecimalAmount() {
-        metrics.gatewayPoints(new BigDecimal("2.5"), "provider-a", "model-a");
+    void recordsGatewayUnitsAsDecimalAmount() {
+        metrics.gatewayUnits(new BigDecimal("2.5"), "provider-a", "model-a");
 
-        var counter = registry.find("ai.gateway.points")
+        var counter = registry.find("ai.gateway.units")
                 .tag("provider", "provider-a")
                 .tag("model", "model-a")
                 .counter();
@@ -153,13 +153,6 @@ class AiMetricsTest {
                 .anySatisfy(message -> assertThat(message)
                         .contains("task_dead")
                         .contains("L1_EXTRACT"));
-    }
-
-    @Test
-    void walletInsufficientRecordsWarningAlert() {
-        metrics.walletInsufficient();
-
-        assertThat(alertCount("wallet_insufficient", "WARN")).isEqualTo(1.0);
     }
 
     @Test

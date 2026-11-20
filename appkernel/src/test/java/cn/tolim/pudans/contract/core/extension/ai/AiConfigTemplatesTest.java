@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import cn.tolim.pudans.contract.extension.Unstructured;
 import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
 import java.io.IOException;
+import java.time.DayOfWeek;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
@@ -17,10 +18,10 @@ class AiConfigTemplatesTest {
     @Test
     void loadsAndMapsAiConfigTemplates() throws IOException {
         var resources = new PathMatchingResourcePatternResolver().getResources(CONFIG_LOCATION);
-        assertThat(resources).hasSize(8);
+        assertThat(resources).hasSize(10);
 
         var documents = new YamlUnstructuredLoader(resources).load();
-        assertThat(documents).hasSize(8);
+        assertThat(documents).hasSize(10);
         var byName = documents.stream()
                 .collect(Collectors.toMap(
                         document -> document.getKind() + "|" + document.getMetadata().getName(),
@@ -76,5 +77,33 @@ class AiConfigTemplatesTest {
                 byName.get("AiAgent|default").getData(), AiAgent.class);
         assertThat(agent.getSpec().getTeam()).isEqualTo("default");
         assertThat(agent.getSpec().getDefaultRouteGroup()).isEqualTo("default");
+
+        var plan = Unstructured.OBJECT_MAPPER.convertValue(
+                byName.get("AiPlan|standard").getData(), AiPlan.class);
+        assertThat(plan.getSpec().getDisplayName()).isEqualTo("标准套餐");
+        assertThat(plan.getSpec().isEnabled()).isTrue();
+        assertThat(plan.getSpec().getQuota().getFiveHour().getLimit()).isEqualTo(3_000_000L);
+        assertThat(plan.getSpec().getQuota().getWeekly().getLimit()).isEqualTo(20_000_000L);
+        assertThat(plan.getSpec().getQuota().getWeekly().getResetDayOfWeek())
+                .isEqualTo(DayOfWeek.MONDAY);
+        assertThat(plan.getSpec().getVouchers().getFiveHour()).isEqualTo(2);
+        assertThat(plan.getSpec().getVouchers().getWeekly()).isEqualTo(1);
+        assertThat(plan.getSpec().getVouchers().getPeriod()).isEqualTo(AiPlan.VoucherPeriod.MONTHLY);
+        assertThat(plan.getSpec().getRateLimit().getMaxConcurrency()).isEqualTo(4);
+        assertThat(plan.getSpec().getRateLimit().getMaxRpm()).isZero();
+        assertThat(plan.getSpec().getFallback().getOnFiveHourExhausted())
+                .isEqualTo(AiPlan.FallbackAction.DENY);
+        assertThat(plan.getSpec().getAccess().getRouteGroups()).isEmpty();
+        assertThat(plan.getSpec().getAccess().getModels()).isEmpty();
+        assertThat(plan.getSpec().getAccess().getFeatures()).isEmpty();
+        assertThat(plan.getSpec().violation()).isNull();
+
+        var planBinding = Unstructured.OBJECT_MAPPER.convertValue(
+                byName.get("AiPlanBinding|binding-normal-users").getData(), AiPlanBinding.class);
+        assertThat(planBinding.getSpec().getPlan()).isEqualTo("standard");
+        assertThat(planBinding.getSpec().getSubject().getKind())
+                .isEqualTo(AiPlanBinding.SubjectKind.UserGroup);
+        assertThat(planBinding.getSpec().getSubject().getName()).isEqualTo("normal-users");
+        assertThat(planBinding.getSpec().getPriority()).isZero();
     }
 }

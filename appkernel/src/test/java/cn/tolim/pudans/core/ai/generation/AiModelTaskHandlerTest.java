@@ -20,7 +20,6 @@ import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -316,8 +315,9 @@ class AiModelTaskHandlerTest {
                 null,
                 null,
                 null,
-                new BigDecimal("5"),
                 null,
+                null,
+                "USER",
                 null,
                 "NONE",
                 null,

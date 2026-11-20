@@ -299,40 +299,12 @@ public class BuiltinEntityPolicy {
         if (spec == null) {
             return Mono.error(denied("模型配置不能为空。"));
         }
-        if (!pricingValid(spec)) {
-            return Mono.error(denied(pricingMessage(spec)));
-        }
         if (spec.getModelType() == AiModel.ModelType.EMBEDDING
                 && (spec.getEmbeddingDim() == null || spec.getEmbeddingDim() <= 0)) {
             return Mono.error(denied("Embedding 模型必须配置大于零的向量维度。"));
         }
         var provider = spec.getProvider();
         return requireReference(AiProvider.class, provider, "模型所属供应商");
-    }
-
-    private static boolean pricingValid(AiModel.Spec spec) {
-        return switch (spec.getModelType()) {
-            case CHAT, EMBEDDING, RERANK -> spec.getInputTokensPerPoint() > 0
-                    && spec.getCacheTokensPerPoint() > 0
-                    && spec.getOutputTokensPerPoint() > 0;
-            case IMAGE -> spec.getImagePointsPerItem() > 0;
-            case VIDEO -> spec.getVideoPointsPerSecond() > 0;
-            case SPEECH -> spec.getSpeechPointsPerKiloCharacter() > 0
-                    || spec.getAudioPointsPerSecond() > 0;
-            case AUDIO, MUSIC -> spec.getAudioPointsPerSecond() > 0;
-            case THREE_D -> spec.getTaskPointsPerInvocation() > 0;
-        };
-    }
-
-    private static String pricingMessage(AiModel.Spec spec) {
-        return switch (spec.getModelType()) {
-            case CHAT, EMBEDDING, RERANK -> "模型 token 单价必须大于零。";
-            case IMAGE -> "图片模型必须配置大于零的单张积分单价。";
-            case VIDEO -> "视频模型必须配置大于零的每秒积分单价。";
-            case SPEECH -> "语音模型必须配置大于零的字符或每秒积分单价。";
-            case AUDIO, MUSIC -> "音频或音乐模型必须配置大于零的每秒积分单价。";
-            case THREE_D -> "3D 模型必须配置大于零的任务积分单价。";
-        };
     }
 
     private Mono<Void> checkAiRouteGroupReferences(AiRouteGroup group) {

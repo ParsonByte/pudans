@@ -9,6 +9,5 @@ public enum PipelineTaskType {
     KB_CHUNK,
     KB_EMBED,
     KB_REBUILD,
-    MEMORY_REBUILD,
-    WALLET_SWEEP
+    MEMORY_REBUILD
 }

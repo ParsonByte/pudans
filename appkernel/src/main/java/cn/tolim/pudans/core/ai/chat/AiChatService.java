@@ -190,7 +190,7 @@ public class AiChatService {
                                                 round.provider(),
                                                 round.account(),
                                                 round.usage(),
-                                                round.points(),
+                                                round.units(),
                                                 prepared.citations())))));
     }
 
@@ -456,7 +456,7 @@ public class AiChatService {
                 meta == null ? null : meta.provider(),
                 meta == null ? null : meta.account(),
                 state.usage(),
-                state.points(),
+                state.units(),
                 roundMetadata(turn.thinking(), outcomes));
     }
 
@@ -528,9 +528,9 @@ public class AiChatService {
                                                 || usage.outputTokens() != null
                                                 || usage.cacheReadTokens() != null
                                                 || usage.cacheWriteTokens() != null);
-                                if (hasUsage || state.points().signum() > 0) {
+                                if (hasUsage || state.units().signum() > 0) {
                                     sink.next(new AiChatStreamEvent.Usage(
-                                            usage, state.points(), state.billingSource()));
+                                            usage, state.units(), state.billingSource()));
                                 }
                                 sink.next(new AiChatStreamEvent.Done(
                                         String.valueOf(message.id()),
@@ -1158,7 +1158,7 @@ public class AiChatService {
             @Nullable String provider,
             @Nullable String account,
             @Nullable AiTokenUsage usage,
-            BigDecimal points,
+            BigDecimal units,
             @Nullable JsonNode metadata) {}
 
     private static final class TurnCollector implements Consumer<AgentEvent> {

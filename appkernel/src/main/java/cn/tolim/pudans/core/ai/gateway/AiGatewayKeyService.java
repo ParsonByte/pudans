@@ -6,11 +6,11 @@ import cn.tolim.pudans.contract.security.PersonalAccessToken;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiChatRequestRepository;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
@@ -29,15 +29,13 @@ public class AiGatewayKeyService {
 
     public static final String CODE_KEY_DENIED = "ai-gateway-key-denied";
 
-    private static final ZoneId ZONE = ZoneId.of("Asia/Shanghai");
-
     private final ReactiveExtensionClient client;
 
     private final AiChatRequestRepository chatRequestRepository;
 
     private final AiGatewayRateLimiter rateLimiter;
 
-    private Clock clock = Clock.systemUTC();
+    private Clock clock = PudansTime.systemClock();
 
     void setClock(Clock clock) {
         this.clock = clock;
@@ -109,8 +107,8 @@ public class AiGatewayKeyService {
             return true;
         }
         if (limit.getPoints() != null
-                && usage.points() != null
-                && usage.points().compareTo(BigDecimal.valueOf(limit.getPoints())) >= 0) {
+                && usage.units() != null
+                && usage.units().compareTo(BigDecimal.valueOf(limit.getPoints())) >= 0) {
             return true;
         }
         return limit.getRequests() != null && usage.requests() >= limit.getRequests();
@@ -138,14 +136,12 @@ public class AiGatewayKeyService {
     }
 
     private @Nullable Instant since(PersonalAccessToken.@Nullable LimitPeriod period) {
-        var now = ZonedDateTime.now(clock).withZoneSameInstant(ZONE);
+        var now = ZonedDateTime.now(clock).withZoneSameInstant(PudansTime.BEIJING);
         return switch (period == null ? PersonalAccessToken.LimitPeriod.DAY : period) {
-            case DAY -> now.toLocalDate().atStartOfDay(ZONE).toInstant();
-            case WEEK -> now.toLocalDate()
-                    .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                    .atStartOfDay(ZONE)
-                    .toInstant();
-            case MONTH -> now.toLocalDate().withDayOfMonth(1).atStartOfDay(ZONE).toInstant();
+            case DAY -> PudansTime.startOfDay(now.toLocalDate());
+            case WEEK -> PudansTime.startOfDay(
+                    now.toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)));
+            case MONTH -> PudansTime.startOfDay(now.toLocalDate().withDayOfMonth(1));
             case TOTAL -> null;
         };
     }

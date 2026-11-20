@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
@@ -27,6 +29,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
@@ -129,6 +132,34 @@ class AiGatewayKeyServiceTest {
     }
 
     @Test
+    void budgetWindowsStartAtBeijingDayWeekAndMonthBoundaries() {
+        service.setClock(Clock.fixed(Instant.parse("2026-11-19T16:00:00Z"), ZoneOffset.UTC));
+        var limits = List.of(
+                limit(PersonalAccessToken.LimitPeriod.DAY),
+                limit(PersonalAccessToken.LimitPeriod.WEEK),
+                limit(PersonalAccessToken.LimitPeriod.MONTH),
+                limit(PersonalAccessToken.LimitPeriod.TOTAL));
+        when(client.get(PersonalAccessToken.class, "pat-1"))
+                .thenReturn(Mono.just(pat(gateway(true, List.of(), null, limits))));
+        when(chatRequestRepository.aggregateKeyUsage(any(), eq("pat-1"), any(), any(), any()))
+                .thenReturn(Mono.just(new KeyUsage(0, 0, BigDecimal.ZERO)));
+
+        StepVerifier.create(service.authorize(invocation("pat-1"), model()))
+                .expectNextCount(1)
+                .verifyComplete();
+
+        var since = ArgumentCaptor.forClass(Instant.class);
+        verify(chatRequestRepository, times(4))
+                .aggregateKeyUsage(any(), eq("pat-1"), since.capture(), any(), any());
+        assertThat(since.getAllValues())
+                .containsExactly(
+                        Instant.parse("2026-11-19T16:00:00Z"),
+                        Instant.parse("2026-11-15T16:00:00Z"),
+                        Instant.parse("2026-10-31T16:00:00Z"),
+                        null);
+    }
+
+    @Test
     void acquiresTheKeyConcurrencyPermitFromTheRateLimiter() {
         var permit = new AiGatewayRateLimiter.Permit(List.of(
                 new AiGatewayRateLimiter.Slot("key", true)));
@@ -137,6 +168,13 @@ class AiGatewayKeyServiceTest {
         StepVerifier.create(service.acquire(new AiGatewayKeyService.Access("pat-1", List.of(), 2)))
                 .assertNext(value -> assertThat(value).isSameAs(permit))
                 .verifyComplete();
+    }
+
+    private static PersonalAccessToken.Limit limit(PersonalAccessToken.LimitPeriod period) {
+        var limit = new PersonalAccessToken.Limit();
+        limit.setPeriod(period);
+        limit.setTokens(100L);
+        return limit;
     }
 
     private static PersonalAccessToken pat(PersonalAccessToken.Gateway gateway) {

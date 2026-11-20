@@ -1,21 +1,22 @@
 package cn.tolim.pudans.core.ai.generation;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
-import cn.tolim.pudans.core.ai.wallet.AiPointsCalculator;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService;
-import cn.tolim.pudans.core.ai.wallet.AiWalletUsage;
+import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanUsageSnapshot;
+import cn.tolim.pudans.core.ai.plan.UsageUnitCalculator;
 import cn.tolim.pudans.core.storage.StorageService;
 import cn.tolim.pudans.core.storage.upload.StorageWriteRequest;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelCompletion;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
@@ -52,7 +53,9 @@ public class AiGenerationRecorder {
 
     private final AiModelRequestRepository requestRepository;
 
-    private final AiWalletService walletService;
+    private final PlanQuotaService planQuotaService;
+
+    private final AiSettingService settingService;
 
     private final AiMetrics metrics;
 
@@ -66,56 +69,55 @@ public class AiGenerationRecorder {
             AiModelUsage fallbackUsage,
             Instant startedAt) {
         var usage = response.usage() != null && response.usage().hasAny() ? response.usage() : fallbackUsage;
-        var points = AiPointsCalculator.charge(model, free, usage);
-        metrics.generationRequest(
-                row.selectedProvider(), row.selectedModel(), row.capability(), STATUS_SUCCEEDED);
-        metrics.generationUsage(
-                row.selectedProvider(), row.selectedModel(), row.capability(), usage);
-        metrics.generationPoints(points, row.selectedProvider(), row.selectedModel());
-        var hold = row.holdPoints();
-        var hasHold = hold != null && hold.signum() > 0;
         var billingSource = response.usage() != null && response.usage().hasAny()
                 ? SOURCE_PROVIDER
                 : SOURCE_ESTIMATED;
-        var settle = hasHold
-                ? walletService
-                        .settle(
-                                row.requestId(),
-                                row.userId(),
-                                hold,
-                                points,
-                                walletUsage(row, usage, billingSource))
-                        .then()
-                : Mono.<Void>empty();
         var latency = latency(startedAt);
-        return persistOutputs(response.outputs(), row.userId()).flatMap(outputs -> {
-            var resultPayload = JsonUtils.objectToJson(Map.of("outputs", outputs));
-            var completion = new ModelCompletion(
-                    row.requestId(),
-                    STATUS_SUCCEEDED,
-                    null,
-                    null,
-                    response.providerTaskId() != null
-                            ? response.providerTaskId()
-                            : row.providerTaskId(),
-                    usage.inputTokens(),
-                    usage.cacheReadTokens(),
-                    usage.outputTokens(),
-                    usage.imageCount(),
-                    usage.videoSeconds(),
-                    usage.audioSeconds(),
-                    usage.speechCharacters(),
-                    usage.taskCount(),
-                    points,
-                    billingSource,
-                    hasHold ? BILLING_SETTLED : BILLING_NONE,
-                    latency,
-                    billingSource,
-                    response.id(),
-                    resultPayload);
-            return settle.then(requestRepository.complete(completion))
-                    .map(AiGenerationResult::from);
-        });
+        return billing()
+                .flatMap(billing -> {
+                    var units = new UsageUnitCalculator(billing, free)
+                            .charge(usage, tierOf(row.tier()), row.selectedModel());
+                    metrics.generationRequest(
+                            row.selectedProvider(), row.selectedModel(), row.capability(), STATUS_SUCCEEDED);
+                    metrics.generationUsage(
+                            row.selectedProvider(), row.selectedModel(), row.capability(), usage);
+                    metrics.generationBillingUnits(units, row.selectedProvider(), row.selectedModel());
+                    // 仅实际预留额度时写入套餐名，据此判断是否存在待结算预留
+                    var hasHold = row.planId() != null;
+                    var settle = hasHold
+                            ? planQuotaService
+                                    .settle(row.requestId(), units.longValue(), snapshot(row, usage))
+                                    .then()
+                            : Mono.<Void>empty();
+                    return persistOutputs(response.outputs(), row.userId()).flatMap(outputs -> {
+                        var resultPayload = JsonUtils.objectToJson(Map.of("outputs", outputs));
+                        var completion = new ModelCompletion(
+                                row.requestId(),
+                                STATUS_SUCCEEDED,
+                                null,
+                                null,
+                                response.providerTaskId() != null
+                                        ? response.providerTaskId()
+                                        : row.providerTaskId(),
+                                usage.inputTokens(),
+                                usage.cacheReadTokens(),
+                                usage.outputTokens(),
+                                usage.imageCount(),
+                                usage.videoSeconds(),
+                                usage.audioSeconds(),
+                                usage.speechCharacters(),
+                                usage.taskCount(),
+                                units.longValue(),
+                                billingSource,
+                                hasHold ? BILLING_SETTLED : BILLING_NONE,
+                                latency,
+                                billingSource,
+                                response.id(),
+                                resultPayload);
+                        return settle.then(requestRepository.complete(completion))
+                                .map(AiGenerationResult::from);
+                    });
+                });
     }
 
     private Mono<List<AiModelContent>> persistOutputs(
@@ -209,9 +211,9 @@ public class AiGenerationRecorder {
     public Mono<Void> fail(ModelRequestRow row, Throwable error, Instant startedAt) {
         metrics.generationRequest(
                 row.selectedProvider(), row.selectedModel(), row.capability(), STATUS_FAILED);
-        var hold = row.holdPoints();
-        var hasHold = hold != null && hold.signum() > 0;
-        var release = hasHold ? walletService.release(row.requestId()).then() : Mono.<Void>empty();
+        // 仅实际预留额度时写入套餐名，据此判断是否存在待释放预留
+        var hasHold = row.planId() != null;
+        var release = hasHold ? planQuotaService.release(row.requestId()).then() : Mono.<Void>empty();
         var code = error instanceof ApiException apiException ? apiException.getCode() : ERROR_FAILED;
         var message = error instanceof ApiException apiException && apiException.getReason() != null
                 ? apiException.getReason()
@@ -230,7 +232,7 @@ public class AiGenerationRecorder {
                 null,
                 null,
                 null,
-                BigDecimal.ZERO,
+                0L,
                 null,
                 hasHold ? BILLING_RELEASED : BILLING_NONE,
                 latency(startedAt),
@@ -240,23 +242,35 @@ public class AiGenerationRecorder {
         return release.then(requestRepository.complete(completion)).then();
     }
 
-    private static AiWalletUsage walletUsage(
-            ModelRequestRow row, AiModelUsage usage, String billingSource) {
-        return new AiWalletUsage(
+    private Mono<AiSetting.Billing> billing() {
+        return settingService
+                .spec()
+                .map(spec -> spec.getBilling() == null ? new AiSetting.Billing() : spec.getBilling())
+                .defaultIfEmpty(new AiSetting.Billing());
+    }
+
+    private static AiModel.@Nullable Tier tierOf(@Nullable String tier) {
+        if (!StringUtils.hasText(tier)) {
+            return null;
+        }
+        try {
+            return AiModel.Tier.valueOf(tier);
+        } catch (IllegalArgumentException error) {
+            return null;
+        }
+    }
+
+    private static PlanUsageSnapshot snapshot(ModelRequestRow row, AiModelUsage usage) {
+        return new PlanUsageSnapshot(
+                row.selectedProvider(),
                 row.selectedAccount(),
                 row.selectedModel(),
-                row.tier(),
+                tierOf(row.tier()),
                 usage.inputTokens(),
-                usage.cacheReadTokens(),
+                (usage.cacheReadTokens() == null ? 0 : usage.cacheReadTokens())
+                        + (usage.cacheWriteTokens() == null ? 0 : usage.cacheWriteTokens()),
                 usage.outputTokens(),
-                null,
-                billingSource,
-                usage.imageCount(),
-                usage.videoSeconds(),
-                usage.audioSeconds(),
-                usage.speechCharacters(),
-                usage.taskCount(),
-                usage.extra());
+                row.requestId());
     }
 
     private static int latency(@Nullable Instant startedAt) {

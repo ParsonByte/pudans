@@ -19,6 +19,7 @@ import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.RoutingSummaryRow;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.UserActivityRow;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiUsageRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiUsageRepository.RequestDetailRow;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -44,7 +45,7 @@ public class AiStatsService {
 
     private final AiUsageRepository usageRepository;
 
-    private Clock clock = Clock.systemUTC();
+    private Clock clock = PudansTime.systemClock();
 
     void setClock(Clock clock) {
         this.clock = clock;
@@ -282,13 +283,20 @@ public class AiStatsService {
             long inputTokens,
             long cacheTokens,
             long outputTokens,
+            // 兼容字段名：值为标准 Token 用量。
             BigDecimal points,
             long todayRequests,
             long todayFailed,
             long todayTokens,
+            // 兼容字段名：值为标准 Token 用量。
             BigDecimal todayPoints) {}
 
-    public record DailyRouting(String day, long requests, long failed, BigDecimal points) {}
+    public record DailyRouting(
+            String day,
+            long requests,
+            long failed,
+            // 兼容字段名：值为标准 Token 用量。
+            BigDecimal points) {}
 
     public record RecentRequest(
             String requestId,
@@ -305,6 +313,7 @@ public class AiStatsService {
             Integer cacheTokens,
             Integer outputTokens,
             Integer totalTokens,
+            // 兼容字段名：值为标准 Token 用量。
             BigDecimal points,
             Integer latencyMs,
             Integer ttftMs,

@@ -1,16 +1,23 @@
 package cn.tolim.pudans.core.ai.generation;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
 import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.core.ai.config.AiSettingService;
 import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelRequest;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import cn.tolim.pudans.core.ai.model.AiModelUsageEstimator;
+import cn.tolim.pudans.core.ai.plan.PlanCatalogService;
+import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanResolutionService;
+import cn.tolim.pudans.core.ai.plan.UsageUnitCalculator;
 import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
 import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
@@ -18,14 +25,11 @@ import cn.tolim.pudans.core.ai.routing.RouteSelection;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitFailure;
 import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
-import cn.tolim.pudans.core.ai.wallet.AiPointsCalculator;
-import cn.tolim.pudans.core.ai.wallet.AiWalletService;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.NewModelRequest;
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,8 +57,6 @@ public class AiGenerationService {
 
     private static final String CODE_NO_ACCOUNT = "ai-generation-no-account";
 
-    private static final Duration HOLD_TTL = Duration.ofMinutes(10);
-
     private static final Set<AiModel.Capability> SUPPORTED = Set.of(
             AiModel.Capability.IMAGE_GENERATION,
             AiModel.Capability.IMAGE_EDITING,
@@ -79,7 +81,11 @@ public class AiGenerationService {
 
     private final AiModelRequestRepository requestRepository;
 
-    private final AiWalletService walletService;
+    private final PlanResolutionService planResolutionService;
+
+    private final PlanQuotaService planQuotaService;
+
+    private final AiSettingService settingService;
 
     private final AiGenerationRecorder recorder;
 
@@ -164,6 +170,28 @@ public class AiGenerationService {
 
     private Mono<AiGenerationResult> execute(
             AiGenerationCommand command, Resolved resolved, String idempotencyKey) {
+        return settingService
+                .spec()
+                .map(spec -> spec.getBilling() == null ? new AiSetting.Billing() : spec.getBilling())
+                .defaultIfEmpty(new AiSetting.Billing())
+                .flatMap(billing -> plan(command)
+                        .flatMap(plan -> execute(command, resolved, idempotencyKey, billing, plan)));
+    }
+
+    // SYSTEM 调用不解析套餐，也不占用用户窗口和团队配额
+    private Mono<PlanContext> plan(AiGenerationCommand command) {
+        if (command.billingScope() == AiPlan.BillingScope.SYSTEM) {
+            return Mono.just(PlanContext.SYSTEM);
+        }
+        return planResolutionService.resolve(command.userId()).map(PlanContext::new);
+    }
+
+    private Mono<AiGenerationResult> execute(
+            AiGenerationCommand command,
+            Resolved resolved,
+            String idempotencyKey,
+            AiSetting.Billing billing,
+            PlanContext plan) {
         var model = resolved.model();
         var capability = command.capability();
         var requestId = "gen-" + UUID.randomUUID();
@@ -171,19 +199,34 @@ public class AiGenerationService {
         var estimate = AiModelUsageEstimator.estimate(capability, command.inputs(), command.params());
         var free = resolved.provider().getSpec().isFree()
                 || resolved.account().getSpec().isFreePlan();
-        var estimatedPoints = AiPointsCalculator.estimate(model, free, estimate);
+        var estimatedUnits = new UsageUnitCalculator(billing, free)
+                .charge(estimate, model.getSpec().getTier(), model.getSpec().getModelCode());
+        var config = plan.plan();
+        var reserved = config != null && estimatedUnits.signum() > 0;
+        var planId = reserved && config.getMetadata() != null ? config.getMetadata().getName() : null;
         var guard = providerSpendGuard
-                .check(resolved.provider(), resolved.account(), estimatedPoints)
-                .then(teamQuotaService.check(command.teamId(), estimatedPoints));
-        var hold = guard.then(estimatedPoints.signum() > 0
-                ? walletService.freeze(requestId, command.userId(), estimatedPoints, HOLD_TTL).then()
+                .check(resolved.provider(), resolved.account(), estimatedUnits)
+                .then(config == null ? Mono.empty() : teamQuotaService.check(command.teamId(), estimatedUnits));
+        var hold = guard.then(reserved
+                ? planQuotaService
+                        .reserve(
+                                requestId,
+                                command.userId(),
+                                config,
+                                estimatedUnits.longValue(),
+                                "GENERATION",
+                                command.teamId(),
+                                requestId)
+                        .then()
                 : Mono.<Void>empty());
         var requestPayload = JsonUtils.objectToJson(Map.of(
                 "capability", capability.name(),
                 "inputs", command.inputs(),
                 "params", command.params(),
                 "estimatedUsage", estimate));
-        return hold.then(Mono.defer(() -> requestRepository
+        return requireFeature(plan)
+                .then(hold)
+                .then(Mono.defer(() -> requestRepository
                         .create(new NewModelRequest(
                                 requestId,
                                 "default",
@@ -199,24 +242,26 @@ public class AiGenerationService {
                                 resolved.account().getMetadata().getName(),
                                 model.getMetadata().getName(),
                                 model.getSpec().getTier() == null ? null : model.getSpec().getTier().name(),
-                                estimatedPoints,
+                                planId,
+                                command.billingScope().name(),
                                 requestPayload))
                         .map(row -> new Execution(row, null))
                         .onErrorResume(DuplicateKeyException.class, error -> replay(
-                                command, idempotencyKey, requestId, estimatedPoints))
-                        .onErrorResume(error -> releaseHold(requestId, estimatedPoints)
+                                command, idempotencyKey, requestId, estimatedUnits, config))
+                        .onErrorResume(error -> releaseHold(requestId, estimatedUnits, config)
                                 .then(Mono.error(error)))
                         .flatMap(execution -> execution.replay() != null
                                 ? Mono.just(execution.replay())
-                                : invoke(command, resolved, execution.row(), estimate, startedAt))));
+                                : invoke(command, resolved, execution.row(), estimate, startedAt, plan))));
     }
 
     private Mono<Execution> replay(
             AiGenerationCommand command,
             String idempotencyKey,
             String requestId,
-            java.math.BigDecimal estimatedPoints) {
-        return releaseHold(requestId, estimatedPoints)
+            BigDecimal estimatedUnits,
+            @Nullable AiPlan plan) {
+        return releaseHold(requestId, estimatedUnits, plan)
                 .then(requestRepository.findByUserAndIdempotency(command.userId(), idempotencyKey))
                 .map(row -> new Execution(null, AiGenerationResult.from(row)))
                 .switchIfEmpty(Mono.error(new ApiException(
@@ -225,8 +270,11 @@ public class AiGenerationService {
                         "幂等键已被其他请求占用。")));
     }
 
-    private Mono<Void> releaseHold(String requestId, BigDecimal estimatedPoints) {
-        return estimatedPoints.signum() > 0 ? walletService.release(requestId).then() : Mono.empty();
+    private Mono<Void> releaseHold(
+            String requestId, BigDecimal estimatedUnits, @Nullable AiPlan plan) {
+        return plan == null || estimatedUnits.signum() <= 0
+                ? Mono.empty()
+                : planQuotaService.release(requestId).then();
     }
 
     private Mono<AiGenerationResult> invoke(
@@ -234,32 +282,73 @@ public class AiGenerationService {
             Resolved resolved,
             ModelRequestRow row,
             AiModelUsage estimate,
-            Instant startedAt) {
-        return candidates(resolved)
+            Instant startedAt,
+            PlanContext plan) {
+        return candidates(resolved, plan)
                 .flatMap(list -> attempt(command, list, 0, row, estimate, startedAt, null))
                 .onErrorResume(error -> recorder.fail(row, error, startedAt).then(Mono.error(error)));
     }
 
-    private Mono<List<Resolved>> candidates(Resolved primary) {
-        if (primary.fallbacks().isEmpty()) {
-            return Mono.just(List.of(primary));
+    private Mono<List<Resolved>> candidates(Resolved primary, PlanContext plan) {
+        var candidates = primary.fallbacks().isEmpty()
+                ? Mono.just(List.of(primary))
+                : Flux.fromIterable(primary.fallbacks())
+                        .concatMap(selection -> load(selection)
+                                .map(resources -> new Resolved(
+                                        resources.provider(),
+                                        resources.account(),
+                                        resources.model(),
+                                        primary.routeGroup(),
+                                        List.of()))
+                                .onErrorResume(error -> Mono.empty()))
+                        .collectList()
+                        .map(list -> {
+                            var all = new ArrayList<Resolved>();
+                            all.add(primary);
+                            all.addAll(list);
+                            return all;
+                        });
+        return candidates
+                .map(list -> list.stream().filter(candidate -> planAllows(plan, candidate)).toList())
+                .flatMap(list -> list.isEmpty()
+                        ? Mono.error(planDenied(primary.model().getMetadata().getName()))
+                        : Mono.just(list));
+    }
+
+    private static boolean planAllows(PlanContext plan, Resolved candidate) {
+        var config = plan.plan();
+        if (config == null || config.getSpec() == null) {
+            return true;
         }
-        return Flux.fromIterable(primary.fallbacks())
-                .concatMap(selection -> load(selection)
-                        .map(resources -> new Resolved(
-                                resources.provider(),
-                                resources.account(),
-                                resources.model(),
-                                primary.routeGroup(),
-                                List.of()))
-                        .onErrorResume(error -> Mono.empty()))
-                .collectList()
-                .map(list -> {
-                    var all = new ArrayList<Resolved>();
-                    all.add(primary);
-                    all.addAll(list);
-                    return all;
-                });
+        var access = config.getSpec().getAccess() == null
+                ? new AiPlan.Access()
+                : config.getSpec().getAccess();
+        var modelName = candidate.model().getMetadata() == null
+                ? null
+                : candidate.model().getMetadata().getName();
+        var allowedGroup = candidate.routeGroup() == null || access.allowsRouteGroup(candidate.routeGroup());
+        return allowedGroup && access.allowsModel(modelName);
+    }
+
+    private static Mono<Void> requireFeature(PlanContext plan) {
+        var config = plan.plan();
+        if (config == null || config.getSpec() == null) {
+            return Mono.empty();
+        }
+        var access = config.getSpec().getAccess() == null
+                ? new AiPlan.Access()
+                : config.getSpec().getAccess();
+        if (!access.allowsFeature(AiPlan.Feature.CHAT)) {
+            return Mono.error(planDenied(null));
+        }
+        return Mono.empty();
+    }
+
+    private static ApiException planDenied(@Nullable String model) {
+        var reason = model == null
+                ? "当前套餐不允许使用生成功能。"
+                : "当前套餐不允许使用模型 " + model + "。";
+        return new ApiException(HttpStatus.FORBIDDEN, AiPlan.CODE_MODEL_DENIED, reason);
     }
 
     private Mono<AiGenerationResult> attempt(
@@ -421,6 +510,15 @@ public class AiGenerationService {
             List<RouteSelection> fallbacks) {}
 
     private record Execution(@Nullable ModelRequestRow row, @Nullable AiGenerationResult replay) {}
+
+    private record PlanContext(PlanResolutionService.@Nullable ResolvedPlan resolved) {
+
+        private static final PlanContext SYSTEM = new PlanContext(null);
+
+        private @Nullable AiPlan plan() {
+            return resolved == null ? null : resolved.plan();
+        }
+    }
 
     private record Resources(AiProvider provider, AiProviderAccount account, AiModel model) {}
 

@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
-// 团队积分配额按滚动窗口统计真实用量，超出后拒绝新的计费请求
+// 团队配额按滚动窗口统计已结算的标准 token 单位，超出后拒绝新的计费请求
 @Service
 @RequiredArgsConstructor
 public class AiTeamQuotaService {
@@ -25,11 +25,11 @@ public class AiTeamQuotaService {
 
     private final AiStatsRepository statsRepository;
 
-    public Mono<Void> check(String teamId, BigDecimal estimatedPoints) {
+    public Mono<Void> check(String teamId, BigDecimal estimatedUnits) {
         if (!StringUtils.hasText(teamId)) {
             return Mono.empty();
         }
-        var estimate = estimatedPoints == null ? BigDecimal.ZERO : estimatedPoints.max(BigDecimal.ZERO);
+        var estimate = estimatedUnits == null ? BigDecimal.ZERO : estimatedUnits.max(BigDecimal.ZERO);
         return client.get(AiTeam.class, teamId)
                 .flatMap(team -> {
                     var quota = team.getSpec() == null ? null : team.getSpec().getQuota();
@@ -41,12 +41,12 @@ public class AiTeamQuotaService {
                     var since = quota.getResetsAt() != null && quota.getResetsAt().isAfter(now)
                             ? quota.getResetsAt().minus(Duration.ofDays(windowDays))
                             : now.minus(Duration.ofDays(windowDays));
-                    return statsRepository.teamPointsUsed(teamId, since).flatMap(used -> {
+                    return statsRepository.teamUnitsUsed(teamId, since).flatMap(used -> {
                         if (used.add(estimate).compareTo(quota.getLimit()) > 0) {
                             return Mono.error(new ApiException(
                                     HttpStatus.PAYMENT_REQUIRED,
                                     CODE_QUOTA_EXCEEDED,
-                                    "团队积分配额已用尽。"));
+                                    "团队额度已用尽。"));
                         }
                         return Mono.empty();
                     });
