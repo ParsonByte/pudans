@@ -90,10 +90,8 @@ class UcUserEndpoint implements CustomEndpoint {
                             var verifyPassword = passwordSet
                                     ? verifyOldPassword(username, changeRequest.oldPassword())
                                     : Mono.just(true);
-                            return verifyPassword
-                                    .flatMap(ignored ->
-                                            userService.updateWithRawPassword(username, changeRequest.password()))
-                                    .defaultIfEmpty(user);
+                            return verifyPassword.flatMap(ignored ->
+                                    userService.updateWithRawPassword(username, changeRequest.password()));
                         })))
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user)));
     }

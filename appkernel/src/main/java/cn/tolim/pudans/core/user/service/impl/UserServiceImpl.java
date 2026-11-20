@@ -118,13 +118,11 @@ public class UserServiceImpl implements UserService {
                     "密码只能使用大小写字母 (A-Z, a-z)、数字 (0-9)，以及以下特殊字符: !@#$%^&*.?"));
         }
         return getUser(username)
-                .filter(user -> {
-                    if (!StringUtils.hasText(user.getSpec().getPassword())) {
-                        return true;
-                    }
-                    return !passwordEncoder.matches(rawPassword, user.getSpec().getPassword());
-                })
                 .flatMap(user -> {
+                    if (StringUtils.hasText(user.getSpec().getPassword())
+                            && passwordEncoder.matches(rawPassword, user.getSpec().getPassword())) {
+                        return Mono.error(new UnsatisfiedAttributeValueException("新密码不能与旧密码相同。"));
+                    }
                     user.getSpec().setPassword(passwordEncoder.encode(rawPassword));
                     return client.update(user);
                 })

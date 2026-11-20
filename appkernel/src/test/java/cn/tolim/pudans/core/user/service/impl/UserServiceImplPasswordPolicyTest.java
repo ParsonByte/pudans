@@ -3,7 +3,10 @@ package cn.tolim.pudans.core.user.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.user.User;
 import cn.tolim.pudans.contract.core.user.service.RoleService;
@@ -126,6 +129,23 @@ class UserServiceImplPasswordPolicyTest {
                 .verify();
 
         verifyNoInteractions(client);
+    }
+
+    @Test
+    void samePasswordIsRejected() {
+        var user = user("alice");
+        user.getSpec().setPassword("stored-hash");
+        when(client.get(User.class, "alice")).thenReturn(Mono.just(user));
+        when(passwordEncoder.matches("password", "stored-hash")).thenReturn(true);
+
+        StepVerifier.create(userService.updateWithRawPassword("alice", "password"))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(UnsatisfiedAttributeValueException.class);
+                    assertThat(error.getMessage()).contains("新密码不能与旧密码相同");
+                })
+                .verify();
+
+        verify(client, never()).update(any(User.class));
     }
 
     @Test
