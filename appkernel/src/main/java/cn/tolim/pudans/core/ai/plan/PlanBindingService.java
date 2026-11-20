@@ -18,6 +18,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -55,13 +56,23 @@ public class PlanBindingService {
                 || request.subjects().isEmpty()) {
             return Mono.error(invalid("批量绑定请求不能为空。"));
         }
+        if (request.effectiveFrom() != null
+                && request.effectiveTo() != null
+                && !request.effectiveFrom().isBefore(request.effectiveTo())) {
+            return Mono.error(invalid("生效开始时间必须早于结束时间。"));
+        }
         var subjects = new LinkedHashSet<>(request.subjects());
         return catalogService
                 .requireEnabled(request.plan())
                 .flatMap(plan -> validateSubjects(subjects)
                         .then(Mono.defer(() -> Flux.fromIterable(subjects)
                                 .concatMap(subject -> apply(
-                                        request.plan(), subject, request.priority(), request.replaceExisting()))
+                                        request.plan(),
+                                        subject,
+                                        request.priority(),
+                                        request.replaceExisting(),
+                                        request.effectiveFrom(),
+                                        request.effectiveTo()))
                                 .collectList())))
                 .map(bindings -> new BulkBindResult(request.plan(), bindings))
                 .doOnNext(result -> resolutionService.invalidateAll());
@@ -88,13 +99,18 @@ public class PlanBindingService {
     }
 
     private Mono<BindingSummary> apply(
-            String planName, BindingSubject subject, int priority, boolean replaceExisting) {
+            String planName,
+            BindingSubject subject,
+            int priority,
+            boolean replaceExisting,
+            @Nullable Instant effectiveFrom,
+            @Nullable Instant effectiveTo) {
         var now = clock.instant();
         return effectiveBindings(subject, now)
                 .collectList()
                 .flatMap(existing -> {
                     if (existing.isEmpty()) {
-                        return create(planName, subject, priority);
+                        return create(planName, subject, priority, effectiveFrom, effectiveTo);
                     }
                     if (!replaceExisting) {
                         return Mono.error(conflict("主体 [" + subject.name() + "] 已存在有效套餐绑定。"));
@@ -102,6 +118,8 @@ public class PlanBindingService {
                     var primary = existing.get(0);
                     primary.getSpec().setPlan(planName);
                     primary.getSpec().setPriority(priority);
+                    primary.getSpec().setEffectiveFrom(effectiveFrom);
+                    primary.getSpec().setEffectiveTo(effectiveTo);
                     var duplicates = Flux.fromIterable(existing.subList(1, existing.size()))
                             .concatMap(client::delete)
                             .then();
@@ -111,12 +129,19 @@ public class PlanBindingService {
                 });
     }
 
-    private Mono<BindingSummary> create(String planName, BindingSubject subject, int priority) {
+    private Mono<BindingSummary> create(
+            String planName,
+            BindingSubject subject,
+            int priority,
+            @Nullable Instant effectiveFrom,
+            @Nullable Instant effectiveTo) {
         var name = bindingName(subject);
         return client.get(AiPlanBinding.class, name)
                 .flatMap(existing -> {
                     existing.getSpec().setPlan(planName);
                     existing.getSpec().setPriority(priority);
+                    existing.getSpec().setEffectiveFrom(effectiveFrom);
+                    existing.getSpec().setEffectiveTo(effectiveTo);
                     return client.update(existing);
                 })
                 .switchIfEmpty(Mono.defer(() -> {
@@ -126,6 +151,8 @@ public class PlanBindingService {
                     binding.setMetadata(metadata);
                     binding.getSpec().setPlan(planName);
                     binding.getSpec().setPriority(priority);
+                    binding.getSpec().setEffectiveFrom(effectiveFrom);
+                    binding.getSpec().setEffectiveTo(effectiveTo);
                     var bindingSubject = new AiPlanBinding.Subject();
                     bindingSubject.setKind(subject.kind());
                     bindingSubject.setName(subject.name());
@@ -165,7 +192,9 @@ public class PlanBindingService {
                 binding.getSpec().getPlan(),
                 binding.getSpec().getSubject().getKind(),
                 binding.getSpec().getSubject().getName(),
-                binding.getSpec().getPriority());
+                binding.getSpec().getPriority(),
+                binding.getSpec().getEffectiveFrom(),
+                binding.getSpec().getEffectiveTo());
     }
 
     private static ApiException invalid(String message) {
@@ -177,7 +206,17 @@ public class PlanBindingService {
     }
 
     public record BulkBindRequest(
-            String plan, List<BindingSubject> subjects, int priority, boolean replaceExisting) {
+            String plan,
+            List<BindingSubject> subjects,
+            int priority,
+            boolean replaceExisting,
+            @Nullable Instant effectiveFrom,
+            @Nullable Instant effectiveTo) {
+
+        public BulkBindRequest(
+                String plan, List<BindingSubject> subjects, int priority, boolean replaceExisting) {
+            this(plan, subjects, priority, replaceExisting, null, null);
+        }
     }
 
     public record BindingSubject(AiPlanBinding.SubjectKind kind, String name) {
@@ -188,7 +227,9 @@ public class PlanBindingService {
             String plan,
             AiPlanBinding.SubjectKind kind,
             String subject,
-            int priority) {
+            int priority,
+            @Nullable Instant effectiveFrom,
+            @Nullable Instant effectiveTo) {
     }
 
     public record BulkBindResult(String plan, List<BindingSummary> bindings) {

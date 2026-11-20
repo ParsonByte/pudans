@@ -18,6 +18,7 @@ import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,7 +94,9 @@ class PlanBindingServiceTest {
                                     "standard",
                                     AiPlanBinding.SubjectKind.UserGroup,
                                     "rd",
-                                    3));
+                                    3,
+                                    null,
+                                    null));
                 })
                 .verifyComplete();
 
@@ -237,6 +240,39 @@ class PlanBindingServiceTest {
     void rejectsAnEmptyRequest() {
         StepVerifier.create(service.bulk(new PlanBindingService.BulkBindRequest(
                         "standard", List.of(), 0, true)))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOf(ApiException.class)
+                        .hasFieldOrPropertyWithValue(
+                                "code", PlanBindingService.CODE_BINDING_INVALID))
+                .verify();
+    }
+
+    @Test
+    void appliesEffectiveWindowToBulkBindings() {
+        when(userGroupService.getUserGroup("rd")).thenReturn(Mono.just(new UserGroup()));
+        var from = PlanTestFixtures.NOW.plusSeconds(3600);
+        var to = PlanTestFixtures.NOW.plusSeconds(7200);
+        var subject = new PlanBindingService.BindingSubject(AiPlanBinding.SubjectKind.UserGroup, "rd");
+
+        StepVerifier.create(service.bulk(new PlanBindingService.BulkBindRequest(
+                        "standard", List.of(subject), 0, true, from, to)))
+                .assertNext(result -> assertThat(result.bindings().getFirst().effectiveFrom())
+                        .isEqualTo(from))
+                .verifyComplete();
+
+        var created = ArgumentCaptor.forClass(AiPlanBinding.class);
+        verify(client).create(created.capture());
+        assertThat(created.getValue().getSpec().getEffectiveFrom()).isEqualTo(from);
+        assertThat(created.getValue().getSpec().getEffectiveTo()).isEqualTo(to);
+    }
+
+    @Test
+    void rejectsAnInvalidEffectiveWindow() {
+        var subject = new PlanBindingService.BindingSubject(AiPlanBinding.SubjectKind.UserGroup, "rd");
+        Instant from = PlanTestFixtures.NOW;
+
+        StepVerifier.create(service.bulk(new PlanBindingService.BulkBindRequest(
+                        "standard", List.of(subject), 0, true, from, from)))
                 .expectErrorSatisfies(error -> assertThat(error)
                         .isInstanceOf(ApiException.class)
                         .hasFieldOrPropertyWithValue(

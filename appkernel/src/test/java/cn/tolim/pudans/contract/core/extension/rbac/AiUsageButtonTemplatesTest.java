@@ -19,22 +19,37 @@ class AiUsageButtonTemplatesTest {
     @Test
     void loadsTheUsageOperationsOfEveryPage() throws IOException {
         var all = new ArrayList<Role>();
-        assertTemplate(all, "ai.usage.overview", "overview", "ai-usage-overview:");
-        assertTemplate(all, "ai.usage.requests", "requests", "ai-usage-requests:");
-        assertTemplate(all, "ai.usage.sessions", "sessions", "ai-usage-sessions:");
-        assertTemplate(all, "ai.usage.context", "context", "ai-usage-context:");
+        assertTemplate(
+                all,
+                "ai.usage.overview",
+                "overview",
+                "ai-usage-overview:",
+                3,
+                List.of("view", "export", "use-voucher"));
+        assertTemplate(
+                all, "ai.usage.requests", "requests", "ai-usage-requests:", 2, List.of("view", "export"));
+        assertTemplate(
+                all, "ai.usage.sessions", "sessions", "ai-usage-sessions:", 2, List.of("view", "export"));
+        assertTemplate(
+                all, "ai.usage.context", "context", "ai-usage-context:", 2, List.of("view", "export"));
 
-        assertThat(all).hasSize(8);
+        assertThat(all).hasSize(9);
         assertThat(all.stream().map(role -> role.getMetadata().getName()).toList())
                 .doesNotHaveDuplicates();
     }
 
     private static void assertTemplate(
-            List<Role> all, String menu, String page, String permissionPrefix) throws IOException {
+            List<Role> all,
+            String menu,
+            String page,
+            String permissionPrefix,
+            int expectedSize,
+            List<String> operations)
+            throws IOException {
         var roles = load(BASE + page + ".yaml");
         all.addAll(roles);
 
-        assertThat(roles).hasSize(2);
+        assertThat(roles).hasSize(expectedSize);
         assertThat(roles)
                 .allSatisfy(role -> {
                     assertThat(annotation(role, Role.UI_TYPE_ANNO)).isEqualTo(Role.UI_TYPE_BUTTON);
@@ -43,19 +58,28 @@ class AiUsageButtonTemplatesTest {
                     assertThat(annotation(role, Role.ROLE_DEPENDENCIES_ANNO))
                             .contains("role-template-view-ai-usage-" + page);
                     assertThat(role.getRules()).isNotEmpty();
-                    assertThat(role.getRules())
-                            .allSatisfy(rule -> {
-                                assertThat(rule.getApiGroups()).containsExactly("api.pudans.tolim.cn");
-                                assertThat(rule.getResources()).containsExactly("aistats/usage");
-                                assertThat(rule.getVerbs()).contains("get", "list");
-                            });
                 });
-        assertThat(roles.stream()
-                        .sorted(Comparator.comparingInt(
-                                role -> Integer.parseInt(annotation(role, Role.UI_ORDER_ANNO))))
+        var sorted = roles.stream()
+                .sorted(Comparator.comparingInt(
+                        role -> Integer.parseInt(annotation(role, Role.UI_ORDER_ANNO))))
+                .toList();
+        assertThat(sorted.stream()
                         .map(role -> annotation(role, Role.UI_OPERATION_ANNO))
                         .toList())
-                .containsExactly("view", "export");
+                .containsExactlyElementsOf(operations);
+        if ("overview".equals(page)) {
+            assertThat(sorted.get(2).getRules())
+                    .allSatisfy(rule -> assertThat(rule.getResources())
+                            .containsAnyOf("aiplan/usage", "aiplan/vouchers"));
+            return;
+        }
+        assertThat(roles)
+                .allSatisfy(role -> assertThat(role.getRules())
+                        .allSatisfy(rule -> {
+                            assertThat(rule.getApiGroups()).containsExactly("api.pudans.tolim.cn");
+                            assertThat(rule.getResources()).containsExactly("aistats/usage");
+                            assertThat(rule.getVerbs()).contains("get", "list");
+                        }));
     }
 
     private static List<Role> load(String location) throws IOException {

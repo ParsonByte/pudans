@@ -45,3 +45,36 @@ rules:
     verbs:
       - "get"
       - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-usage-overview-use-voucher
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-usage-overview" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.usage.overview"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "use-voucher"
+    rbac.authorization.pudans.tolim.cn/ui-label: "使用重置券"
+    rbac.authorization.pudans.tolim.cn/ui-description: "使用 5 小时或周重置券提前重置当前窗口。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-usage-overview:use-voucher"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplan/usage"
+      - "aiplan/vouchers"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplan/vouchers"
+    resourceNames:
+      - "-/use"
+    verbs:
+      - "create"

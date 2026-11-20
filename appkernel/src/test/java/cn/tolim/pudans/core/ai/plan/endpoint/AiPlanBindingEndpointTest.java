@@ -52,7 +52,9 @@ class AiPlanBindingEndpointTest {
                                 "standard",
                                 AiPlanBinding.SubjectKind.UserGroup,
                                 "rd",
-                                1)))));
+                                1,
+                                null,
+                                null)))));
 
         client.post()
                 .uri("/aiplanbindings/-/bulk")

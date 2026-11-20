@@ -203,3 +203,19 @@ rules:
     verbs:
       - "get"
       - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplan/usage"
+      - "aiplan/vouchers"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplan/vouchers"
+    resourceNames:
+      - "-/use"
+    verbs:
+      - "create"

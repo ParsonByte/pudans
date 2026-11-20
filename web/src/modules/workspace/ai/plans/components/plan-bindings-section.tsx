@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatBeijingDateTime } from "@/lib/date";
+import { beijingDateTimeInputToIso, formatBeijingDateTime } from "@/lib/date";
 import {
   ConsoleEmpty,
   ConsoleSection,
@@ -72,6 +72,8 @@ export function PlanBindingsSection({ canAssign, canDelete }: PlanBindingsSectio
   const [subjects, setSubjects] = useState<string[]>([]);
   const [planName, setPlanName] = useState("");
   const [priority, setPriority] = useState("0");
+  const [effectiveFrom, setEffectiveFrom] = useState("");
+  const [effectiveTo, setEffectiveTo] = useState("");
   const [replaceExisting, setReplaceExisting] = useState(true);
   const [previewUser, setPreviewUser] = useState<string[]>([]);
   const [deleting, setDeleting] = useState<AiPlanBindingItem | null>(null);
@@ -110,16 +112,25 @@ export function PlanBindingsSection({ canAssign, canDelete }: PlanBindingsSectio
         throw new Error("优先级必须为非负整数。");
       }
       const resolved = await resolvePlanSubjects(kind, subjects);
+      const from = effectiveFrom ? beijingDateTimeInputToIso(effectiveFrom) : undefined;
+      const to = effectiveTo ? beijingDateTimeInputToIso(effectiveTo) : undefined;
+      if (from && to && new Date(from) >= new Date(to)) {
+        throw new Error("生效开始时间必须早于结束时间。");
+      }
       return bulkBindPlan({
         plan: planValue,
         subjects: resolved,
         priority: Number(priority.trim()),
         replaceExisting,
+        effectiveFrom: from ?? null,
+        effectiveTo: to ?? null,
       });
     },
     onSuccess: (result) => {
       toast.success(`已提交 ${result.bindings?.length ?? subjects.length} 个套餐绑定。`);
       setSubjects([]);
+      setEffectiveFrom("");
+      setEffectiveTo("");
       invalidateBindings();
     },
     onError: (error) => toast.error(resolvePlanApiError(error)),
@@ -186,6 +197,26 @@ export function PlanBindingsSection({ canAssign, canDelete }: PlanBindingsSectio
                   value={priority}
                   onChange={(event) => setPriority(event.target.value)}
                   inputMode="numeric"
+                  disabled={!canAssign}
+                />
+              </label>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-1.5 text-sm">
+                <span className="text-muted-foreground">生效开始（北京时间，可空）</span>
+                <Input
+                  type="datetime-local"
+                  value={effectiveFrom}
+                  onChange={(event) => setEffectiveFrom(event.target.value)}
+                  disabled={!canAssign}
+                />
+              </label>
+              <label className="space-y-1.5 text-sm">
+                <span className="text-muted-foreground">生效结束（北京时间，可空）</span>
+                <Input
+                  type="datetime-local"
+                  value={effectiveTo}
+                  onChange={(event) => setEffectiveTo(event.target.value)}
                   disabled={!canAssign}
                 />
               </label>

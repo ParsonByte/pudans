@@ -29,6 +29,7 @@ import { formatBeijingDateTime } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { formatUnits } from "@/modules/workspace/ai/plans/lib/model";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
+import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
 import {
   type PlanUsage,
@@ -47,6 +48,8 @@ import {
 } from "../../lib/model";
 
 export function UsagePlanCard() {
+  const allowedOperations = useAllowedOperations();
+  const canUseVoucher = allowedOperations.has("use-voucher");
   const [voucherOpen, setVoucherOpen] = useState(false);
   const planQuery = useQuery({
     queryKey: ["ai-plan-usage"],
@@ -116,17 +119,19 @@ export function UsagePlanCard() {
                 {usage.plan.name}
               </Badge>
             ) : null}
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2"
-              disabled={voucherRemaining <= 0}
-              onClick={() => setVoucherOpen(true)}
-            >
-              <Ticket />
-              使用重置券
-            </Button>
+            {canUseVoucher ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2"
+                disabled={voucherRemaining <= 0}
+                onClick={() => setVoucherOpen(true)}
+              >
+                <Ticket />
+                使用重置券
+              </Button>
+            ) : null}
           </CardAction>
         </CardHeader>
         <CardContent className="space-y-4">

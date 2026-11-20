@@ -100,6 +100,8 @@ export type BulkBindRequest = {
   subjects: PlanSubject[];
   priority: number;
   replaceExisting: boolean;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
 };
 
 type BindingSummary = {
