@@ -11,6 +11,7 @@ import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.net.URI;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -150,6 +151,20 @@ class SkillServiceTest {
 
         StepVerifier.create(service.byAgent("agent-a"))
                 .assertNext(skill -> assertThat(skill.getMetadata().getName()).isEqualTo("skill-a"))
+                .verifyComplete();
+    }
+
+    @Test
+    void selectsEnabledSkillsByExplicitNames() {
+        var first = skill("skill-a", true, "agent-a");
+        var second = skill("skill-b", true, "agent-b");
+        when(client.listAll(eq(AiSkill.class), any(ListOptions.class), any(Sort.class)))
+                .thenReturn(Flux.just(first, second));
+
+        StepVerifier.create(service.byNames(List.of("skill-b")))
+                .assertNext(skills -> assertThat(skills)
+                        .extracting(skill -> skill.getMetadata().getName())
+                        .containsExactly("skill-b"))
                 .verifyComplete();
     }
 

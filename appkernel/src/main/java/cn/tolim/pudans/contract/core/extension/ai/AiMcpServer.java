@@ -36,7 +36,8 @@ public class AiMcpServer extends AbstractExtension {
     public enum Transport {
         STDIO,
         HTTP,
-        SSE
+        SSE,
+        WEBSOCKET
     }
 
     public enum Health {
@@ -67,6 +68,8 @@ public class AiMcpServer extends AbstractExtension {
         private Map<String, String> env = new LinkedHashMap<>();
 
         private List<String> toolAllowlist = new ArrayList<>();
+
+        private String toolsJson;
 
         private boolean enabled = true;
 

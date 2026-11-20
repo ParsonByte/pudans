@@ -22,6 +22,15 @@ public final class A2aTaskRecord {
     private A2aTaskStatus status = new A2aTaskStatus(A2aTaskStatus.SUBMITTED);
 
     public A2aTaskRecord(String userId, String taskId, String contextId) {
+        this(userId, taskId, contextId, new A2aTaskStatus(A2aTaskStatus.SUBMITTED), null);
+    }
+
+    public A2aTaskRecord(
+            String userId,
+            String taskId,
+            String contextId,
+            A2aTaskStatus status,
+            @Nullable A2aArtifact artifact) {
         if (!StringUtils.hasText(userId)) {
             throw new IllegalArgumentException("用户标识不能为空。");
         }
@@ -34,6 +43,8 @@ public final class A2aTaskRecord {
         this.userId = userId;
         this.taskId = taskId;
         this.contextId = contextId;
+        this.status = Objects.requireNonNull(status, "任务状态不能为空");
+        this.artifact = artifact;
     }
 
     public String userId() {

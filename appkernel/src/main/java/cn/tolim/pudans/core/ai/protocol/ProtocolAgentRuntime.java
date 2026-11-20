@@ -7,6 +7,7 @@ import cn.tolim.pudans.core.ai.agent.GatewayRunState;
 import cn.tolim.pudans.core.ai.agent.GatewayStreamingChatModel;
 import cn.tolim.pudans.core.ai.chat.AiAgentContextService;
 import cn.tolim.pudans.core.ai.chat.AiChatToolService;
+import cn.tolim.pudans.core.ai.chat.SubagentToolFactory;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.harness.agent.AgentRun;
@@ -14,9 +15,12 @@ import cn.tolim.pudans.core.ai.harness.agent.AgentStateStore;
 import cn.tolim.pudans.core.ai.harness.agent.HarnessAgent;
 import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore;
+import cn.tolim.pudans.core.ai.harness.observability.HarnessObservability;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionEngine;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkitFactory;
+import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
 import cn.tolim.pudans.core.ai.prompt.ChatPrompts;
 import cn.tolim.pudans.core.ai.team.AiTeamService;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -44,6 +48,14 @@ public class ProtocolAgentRuntime {
 
     private final AiChatToolService toolService;
 
+    private final SubagentToolFactory subagentToolFactory;
+
+    private final HarnessToolkitFactory harnessToolkitFactory;
+
+    private final McpServerService mcpServerService;
+
+    private final HarnessObservability harnessObservability;
+
     private final AiGatewayService gatewayService;
 
     private final AgentStateStore stateStore;
@@ -56,36 +68,50 @@ public class ProtocolAgentRuntime {
                 : AiTeamService.DEFAULT_AGENT;
         return teamService
                 .requireAgent(agentName, request.userId())
-                .flatMap(agent -> agentContextService.build(agent).map(context -> {
+                .flatMap(agent -> agentContextService.build(agent).flatMap(context -> {
                     var state = new GatewayRunState();
                     var gatewayContext = gatewayContext(request, agent);
                     var toolkit = toolkit(request.userId(), agent, context);
-                    var run = HarnessAgent.builder()
-                            .name(agent.getMetadata().getName())
-                            .systemPrompt(systemPrompt(request, agent, context))
-                            .chatModel(new GatewayChatModel(
-                                    gatewayService, gatewayContext, state))
-                            .streamingChatModel(new GatewayStreamingChatModel(
-                                    gatewayService, gatewayContext, state))
-                            .toolkit(toolkit)
-                            .stateStore(stateStore)
-                            .journalStore(journalStore)
-                            .permissionEngine(new PermissionEngine(context.harness().permission()))
-                            .confirmationTimeout(context.harness().confirmationTimeout())
-                            .planModeEnabled(context.harness().planModeEnabled())
-                            .todoEnabled(context.harness().todosEnabled())
-                            .compaction(context.harness().compaction())
-                            .toolResultEviction(context.harness().eviction())
-                            .build()
-                            .start(
-                                    request.input(),
-                                    RuntimeContext.builder()
-                                            .userId(request.userId())
-                                            .sessionId(request.threadId())
-                                            .metadata(request.metadata())
-                                            .build(),
-                                    request.streaming());
-                    return run;
+                    return subagentToolFactory
+                            .create(gatewayContext, context.subagents())
+                            .flatMap(subagentTools -> mcpServerService
+                                    .decorateToolkit(toolkit, agent.getMetadata().getName())
+                                    .map(decorated -> HarnessAgent.builder()
+                                            .name(agent.getMetadata().getName())
+                                            .systemPrompt(systemPrompt(request, agent, context))
+                                            .chatModel(new GatewayChatModel(
+                                                    gatewayService, gatewayContext, state))
+                                            .streamingChatModel(new GatewayStreamingChatModel(
+                                                    gatewayService, gatewayContext, state))
+                                            .toolkit(decorated)
+                                            .stateStore(stateStore)
+                                            .journalStore(journalStore)
+                                            .permissionEngine(new PermissionEngine(
+                                                    context.harness().permission()))
+                                            .confirmationTimeout(
+                                                    context.harness().confirmationTimeout())
+                                            .skillRuntime(context.skillRuntime())
+                                            .subagentTools(subagentTools)
+                                            .teamTools(context.teamTools())
+                                            .planModeEnabled(
+                                                    context.harness().planModeEnabled())
+                                            .todoEnabled(context.harness().todosEnabled())
+                                            .toolSearchEnabled(
+                                                    context.harness().toolSearchEnabled())
+                                            .externalToolPatterns(
+                                                    context.harness().externalToolPatterns())
+                                            .observability(harnessObservability)
+                                            .compaction(context.harness().compaction())
+                                            .toolResultEviction(context.harness().eviction())
+                                            .build()
+                                            .start(
+                                                    request.input(),
+                                                    RuntimeContext.builder()
+                                                            .userId(request.userId())
+                                                            .sessionId(request.threadId())
+                                                            .metadata(request.metadata())
+                                                            .build(),
+                                                    request.streaming())));
                 }));
     }
 
@@ -107,13 +133,11 @@ public class ProtocolAgentRuntime {
 
     private HarnessToolkit toolkit(
             String userId, AiAgent agent, AiAgentContextService.AgentContext context) {
-        var toolkit = new HarnessToolkit();
-        for (var tool : context.tools()) {
-            toolkit.register(tool, (request, arguments) ->
-                    executeTool(userId, agent, request, arguments));
-        }
-        toolkit.fallbackHandler((request, arguments) -> executeTool(userId, agent, request, arguments));
-        return toolkit;
+        return harnessToolkitFactory.create(
+                context.tools(),
+                (request, arguments) -> executeTool(userId, agent, request, arguments),
+                context.harness().toolGroupsEnabled(),
+                context.harness().asyncToolPatterns());
     }
 
     private HarnessToolkit.ToolResult executeTool(

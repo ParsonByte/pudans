@@ -6,6 +6,7 @@ import dev.langchain4j.data.message.UserMessage;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
@@ -28,21 +29,26 @@ public class A2aRequestHandler {
         var contextId = identifier(message.contextId());
         var taskId = identifier(message.taskId());
         var record = new A2aTaskRecord(userId, taskId, contextId);
+        var saved = new AtomicBoolean();
         return runtime.start(runRequest(userId, params.agentId(), contextId, message, false))
                 .flatMap(run -> {
                     record.attach(run);
-                    taskStore.save(record);
                     record.working();
-                    return run.result();
+                    saved.set(true);
+                    return taskStore.save(record).then(run.result());
                 })
-                .map(result -> {
+                .flatMap(result -> {
                     record.complete(A2aArtifact.ofText(taskId + ARTIFACT_SUFFIX, result.content()));
-                    return record.task();
+                    return taskStore.save(record).thenReturn(record.task());
                 })
-                .doOnCancel(record::cancel)
+                .doOnCancel(() -> {
+                    record.cancel();
+                    taskStore.save(record).subscribe();
+                })
                 .onErrorResume(error -> {
                     record.fail();
-                    return Mono.error(error);
+                    var persist = saved.get() ? taskStore.save(record) : Mono.<Void>empty();
+                    return persist.then(Mono.error(error));
                 });
     }
 
@@ -55,42 +61,55 @@ public class A2aRequestHandler {
                 .start(runRequest(userId, params.agentId(), contextId, message, true))
                 .flatMapMany(run -> {
                     record.attach(run);
-                    taskStore.save(record);
                     var submitted = record.status();
                     record.working();
                     var start = Flux.just(
                             A2aStreamEvent.Status.of(taskId, contextId, submitted, false),
                             A2aStreamEvent.Status.of(taskId, contextId, record.status(), false));
-                    var finish = run.result()
-                            .map(result -> complete(record, taskId, contextId, result.content()))
-                            .onErrorResume(error -> Mono.just(failed(record, taskId, contextId)))
-                            .flatMapMany(Flux::fromIterable)
-                            .doOnCancel(run::cancel);
+                    var finish = taskStore
+                            .save(record)
+                            .thenMany(run.result()
+                                    .flatMapMany(result -> {
+                                        var events = complete(
+                                                record, taskId, contextId, result.content());
+                                        return taskStore
+                                                .save(record)
+                                                .thenMany(Flux.fromIterable(events));
+                                    })
+                                    .onErrorResume(error -> {
+                                        var events = failed(record, taskId, contextId);
+                                        return taskStore
+                                                .save(record)
+                                                .thenMany(Flux.fromIterable(events));
+                                    })
+                                    .doOnCancel(run::cancel));
                     return Flux.concat(start, finish);
                 }));
     }
 
-    public A2aTask task(String userId, JsonNode params) {
+    public Mono<A2aTask> task(String userId, JsonNode params) {
         var taskId = requiredTaskId(params);
         return taskStore
                 .find(userId, taskId)
                 .map(A2aTaskRecord::task)
-                .orElseThrow(() -> A2aRpcException.taskNotFound(taskId));
+                .switchIfEmpty(Mono.error(A2aRpcException.taskNotFound(taskId)));
     }
 
-    public A2aTask cancel(String userId, JsonNode params) {
+    public Mono<A2aTask> cancel(String userId, JsonNode params) {
         var taskId = requiredTaskId(params);
-        var record = taskStore
+        return taskStore
                 .find(userId, taskId)
-                .orElseThrow(() -> A2aRpcException.taskNotFound(taskId));
-        var run = record.run();
-        if (!record.cancel()) {
-            throw A2aRpcException.taskNotCancelable(taskId);
-        }
-        if (run != null) {
-            run.cancel();
-        }
-        return record.task();
+                .switchIfEmpty(Mono.error(A2aRpcException.taskNotFound(taskId)))
+                .flatMap(record -> {
+                    var run = record.run();
+                    if (!record.cancel()) {
+                        return Mono.error(A2aRpcException.taskNotCancelable(taskId));
+                    }
+                    if (run != null) {
+                        run.cancel();
+                    }
+                    return taskStore.save(record).thenReturn(record.task());
+                });
     }
 
     private static List<A2aStreamEvent> complete(

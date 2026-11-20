@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -96,10 +97,24 @@ public class SkillService {
     }
 
     public Flux<AiSkill> byAgent(String agentName) {
-        return client.listAll(AiSkill.class, ListOptions.builder().build(), defaultSort())
-                .filter(skill -> skill.getSpec() != null && skill.getSpec().isEnabled())
+        return enabledSkills()
                 .filter(skill -> skill.getSpec().getAgents() != null
                         && skill.getSpec().getAgents().contains(agentName));
+    }
+
+    public Mono<List<AiSkill>> byNames(List<String> names) {
+        if (names == null || names.isEmpty()) {
+            return Mono.just(List.of());
+        }
+        var wanted = Set.copyOf(names);
+        return enabledSkills()
+                .filter(skill -> wanted.contains(skill.getMetadata().getName()))
+                .collectList();
+    }
+
+    private Flux<AiSkill> enabledSkills() {
+        return client.listAll(AiSkill.class, ListOptions.builder().build(), defaultSort())
+                .filter(skill -> skill.getSpec() != null && skill.getSpec().isEnabled());
     }
 
     public Flux<SkillSummary> skillsForAgent(String agentName) {

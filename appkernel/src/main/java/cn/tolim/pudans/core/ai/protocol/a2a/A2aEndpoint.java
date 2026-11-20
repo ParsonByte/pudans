@@ -110,13 +110,20 @@ public class A2aEndpoint implements CustomEndpoint {
         return switch (rpc.method()) {
             case METHOD_MESSAGE_SEND -> send(rpc, userId);
             case METHOD_MESSAGE_STREAM -> stream(rpc, userId);
-            case METHOD_TASKS_GET -> respond(
-                    A2aJsonRpcResponse.result(rpc.id(), handler.task(userId, rpc.params())));
-            case METHOD_TASKS_CANCEL -> respond(
-                    A2aJsonRpcResponse.result(rpc.id(), handler.cancel(userId, rpc.params())));
+            case METHOD_TASKS_GET -> taskResponse(rpc, handler.task(userId, rpc.params()));
+            case METHOD_TASKS_CANCEL -> taskResponse(rpc, handler.cancel(userId, rpc.params()));
             default -> respond(A2aJsonRpcResponse.error(
                     rpc.id(), A2aRpcException.METHOD_NOT_FOUND, "未知方法：" + rpc.method()));
         };
+    }
+
+    private Mono<ServerResponse> taskResponse(A2aJsonRpcRequest rpc, Mono<A2aTask> task) {
+        return task.map(result -> A2aJsonRpcResponse.result(rpc.id(), result))
+                .onErrorResume(A2aRpcException.class, error -> Mono.just(
+                        A2aJsonRpcResponse.error(rpc.id(), error.code(), error.getMessage())))
+                .onErrorResume(error -> Mono.just(A2aJsonRpcResponse.error(
+                        rpc.id(), A2aRpcException.INTERNAL_ERROR, message(error))))
+                .flatMap(this::respond);
     }
 
     private Mono<ServerResponse> send(A2aJsonRpcRequest rpc, String userId) {

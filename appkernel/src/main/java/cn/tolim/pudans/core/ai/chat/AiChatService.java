@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.ai.chat;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
 import cn.tolim.pudans.contract.core.extension.ai.AiChatMode;
+import cn.tolim.pudans.contract.core.extension.ai.AiSubagent;
 import cn.tolim.pudans.contract.core.extension.ai.AiHook;
 import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
 import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
@@ -34,10 +35,15 @@ import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import cn.tolim.pudans.core.ai.harness.event.AgentEvent;
 import cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
+import cn.tolim.pudans.core.ai.harness.observability.HarnessObservability;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionEngine;
+import cn.tolim.pudans.core.ai.harness.skill.SkillRuntime;
+import cn.tolim.pudans.core.ai.harness.team.TeamTools;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkitFactory;
 import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
 import cn.tolim.pudans.core.ai.library.hook.HookService;
+import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
 import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryInjection;
@@ -151,6 +157,14 @@ public class AiChatService {
 
     private final AgentStateStore stateStore;
 
+    private final SubagentToolFactory subagentToolFactory;
+
+    private final HarnessToolkitFactory harnessToolkitFactory;
+
+    private final McpServerService mcpServerService;
+
+    private final HarnessObservability harnessObservability;
+
     private final ConcurrentMap<String, ChatRun> activeRuns = new ConcurrentHashMap<>();
 
     public Mono<AiChatCompletionResult> complete(AiChatCommand command) {
@@ -191,16 +205,17 @@ public class AiChatService {
         return retrieveKnowledge(prepared, userText(currentUser))
                 .flatMap(knowledge -> sessionStore(prepared).flatMap(store -> {
                     var state = new GatewayRunState();
-                    var agent = harnessAgent(prepared, store, state, outcomes);
-                    var run = agent.start(
-                            userMessage(currentUser, knowledge),
-                            runtimeContext(prepared),
-                            false);
-                    activeRuns.put(run.id(), new ChatRun(prepared.userId(), run));
-                    run.onEvent(turn);
-                    return run.result()
-                            .doFinally(signal -> activeRuns.remove(run.id()))
-                            .map(result -> agentRound(result, state, outcomes, turn));
+                    return harnessAgent(prepared, store, state, outcomes).flatMap(agent -> {
+                        var run = agent.start(
+                                userMessage(currentUser, knowledge),
+                                runtimeContext(prepared),
+                                false);
+                        activeRuns.put(run.id(), new ChatRun(prepared.userId(), run));
+                        run.onEvent(turn);
+                        return run.result()
+                                .doFinally(signal -> activeRuns.remove(run.id()))
+                                .map(result -> agentRound(result, state, outcomes, turn));
+                    });
                 }));
     }
 
@@ -210,6 +225,24 @@ public class AiChatService {
             return false;
         }
         return chatRun.run().confirm(toolCallId, approved);
+    }
+
+    public boolean submitExternalResult(
+            String userId, String runId, String toolCallId, String output, boolean error) {
+        var chatRun = activeRuns.get(runId);
+        if (chatRun == null || !chatRun.userId().equals(userId)) {
+            return false;
+        }
+        return chatRun.run().submitExternalResult(toolCallId, output, error);
+    }
+
+    public boolean interrupt(String userId, String runId) {
+        var chatRun = activeRuns.get(runId);
+        if (chatRun == null || !chatRun.userId().equals(userId)) {
+            return false;
+        }
+        chatRun.run().interrupt();
+        return true;
     }
 
     private static @Nullable AiChatMessage lastUserMessage(List<AiChatMessage> messages) {
@@ -330,7 +363,7 @@ public class AiChatService {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
-    private HarnessAgent harnessAgent(
+    private Mono<HarnessAgent> harnessAgent(
             Prepared prepared,
             AgentStateStore store,
             GatewayRunState state,
@@ -348,43 +381,51 @@ public class AiChatService {
                 prepared.conversation().id(),
                 prepared.modelOverride());
         var params = prepared.params();
-        return HarnessAgent.builder()
-                .name(prepared.agentName())
-                .systemPrompt(systemText(prepared.messages()))
-                .chatModel(new GatewayChatModel(gatewayService, context, state))
-                .streamingChatModel(new GatewayStreamingChatModel(gatewayService, context, state))
-                .toolkit(toolkit(prepared, outcomes))
-                .stateStore(store)
-                .journalStore(journalStore)
-                .permissionEngine(new PermissionEngine(prepared.harness().permission()))
-                .confirmationTimeout(prepared.harness().confirmationTimeout())
-                .knowledgeBaseRetrievalTool(prepared.knowledgeTool())
-                .planModeEnabled(prepared.harness().planModeEnabled())
-                .todoEnabled(prepared.harness().todosEnabled())
-                .compaction(prepared.harness().compaction())
-                .toolResultEviction(prepared.harness().eviction())
-                .temperature(params.temperature())
-                .maxOutputTokens(params.maxTokens())
-                .topP(params.topP())
-                .topK(params.topK())
-                .stopSequences(params.stop())
-                .build();
+        return subagentToolFactory
+                .create(context, prepared.subagents())
+                .flatMap(subagentTools -> mcpServerService
+                        .decorateToolkit(toolkit(prepared, outcomes), prepared.agentName())
+                        .map(toolkit -> HarnessAgent.builder()
+                                .name(prepared.agentName())
+                                .systemPrompt(systemText(prepared.messages()))
+                                .chatModel(new GatewayChatModel(gatewayService, context, state))
+                                .streamingChatModel(new GatewayStreamingChatModel(
+                                        gatewayService, context, state))
+                                .toolkit(toolkit)
+                                .stateStore(store)
+                                .journalStore(journalStore)
+                                .permissionEngine(new PermissionEngine(
+                                        prepared.harness().permission()))
+                                .confirmationTimeout(prepared.harness().confirmationTimeout())
+                                .knowledgeBaseRetrievalTool(prepared.knowledgeTool())
+                                .skillRuntime(prepared.skillRuntime())
+                                .subagentTools(subagentTools)
+                                .teamTools(prepared.teamTools())
+                                .planModeEnabled(prepared.harness().planModeEnabled())
+                                .todoEnabled(prepared.harness().todosEnabled())
+                                .toolSearchEnabled(prepared.harness().toolSearchEnabled())
+                                .externalToolPatterns(prepared.harness().externalToolPatterns())
+                                .observability(harnessObservability)
+                                .compaction(prepared.harness().compaction())
+                                .toolResultEviction(prepared.harness().eviction())
+                                .temperature(params.temperature())
+                                .maxOutputTokens(params.maxTokens())
+                                .topP(params.topP())
+                                .topK(params.topK())
+                                .stopSequences(params.stop())
+                                .build()));
     }
 
     private HarnessToolkit toolkit(Prepared prepared, CopyOnWriteArrayList<ToolOutcome> outcomes) {
-        var toolkit = new HarnessToolkit();
-        for (var tool : prepared.tools()) {
-            toolkit.register(tool, (request, arguments) -> {
-                var outcome = executeTool(prepared, request, outcomes);
-                return new HarnessToolkit.ToolResult(outcome.output(), outcome.isError());
-            });
-        }
-        // 模型可能调用未声明的工具，按用户权限执行，保持与旧版一致的容错行为。
-        toolkit.fallbackHandler((request, arguments) -> {
-            var outcome = executeTool(prepared, request, outcomes);
-            return new HarnessToolkit.ToolResult(outcome.output(), outcome.isError());
-        });
-        return toolkit;
+        // 模型可能调用未声明的工具，回退处理器按用户权限执行。
+        return harnessToolkitFactory.create(
+                prepared.tools(),
+                (request, arguments) -> {
+                    var outcome = executeTool(prepared, request, outcomes);
+                    return new HarnessToolkit.ToolResult(outcome.output(), outcome.isError());
+                },
+                prepared.harness().toolGroupsEnabled(),
+                prepared.harness().asyncToolPatterns());
     }
 
     private ToolOutcome executeTool(
@@ -434,18 +475,21 @@ public class AiChatService {
                         .flatMapMany(store -> {
                             var state = new GatewayRunState();
                             var turn = new TurnCollector(true);
-                            var agent = harnessAgent(prepared, store, state, outcomes);
-                            var run = agent.start(
-                                    userMessage(currentUser, knowledge),
-                                    runtimeContext(prepared),
-                                    true);
-                            activeRuns.put(run.id(), new ChatRun(prepared.userId(), run));
-                            return streamRun(prepared, run, state, outcomes, turn)
-                                    .onErrorResume(error -> Flux.just(new AiChatStreamEvent.Error(
-                                            "ai-chat-stream-failed",
-                                            errorMessage(error),
-                                            false,
-                                            !turn.content("").isEmpty())));
+                            return harnessAgent(prepared, store, state, outcomes)
+                                    .flatMapMany(agent -> {
+                                        var run = agent.start(
+                                                userMessage(currentUser, knowledge),
+                                                runtimeContext(prepared),
+                                                true);
+                                        activeRuns.put(run.id(), new ChatRun(prepared.userId(), run));
+                                        return streamRun(prepared, run, state, outcomes, turn)
+                                                .onErrorResume(error -> Flux.just(
+                                                        new AiChatStreamEvent.Error(
+                                                                "ai-chat-stream-failed",
+                                                                errorMessage(error),
+                                                                false,
+                                                                !turn.content("").isEmpty())));
+                                    });
                         })))
                 .onErrorResume(error -> Flux.just(new AiChatStreamEvent.Error(
                         "ai-chat-stream-failed", errorMessage(error), false, false)));
@@ -547,6 +591,17 @@ public class AiChatService {
         }
         if (event instanceof AgentEvent.ThinkingBlockDelta delta) {
             return List.of(new AiChatStreamEvent.Delta(null, delta.delta()));
+        }
+        if (event instanceof AgentEvent.AgentStart start) {
+            return List.of(new AiChatStreamEvent.RunStarted(start.runId()));
+        }
+        if (event instanceof AgentEvent.RequireExternalExecution external) {
+            return List.of(new AiChatStreamEvent.ToolExternal(
+                    external.runId(), external.id(), external.name(), external.arguments()));
+        }
+        if (event instanceof AgentEvent.ExternalExecutionResult result) {
+            return List.of(new AiChatStreamEvent.ToolExternalResult(
+                    result.runId(), result.id(), result.output(), result.error()));
         }
         if (event instanceof AgentEvent.RequireUserConfirm confirm) {
             return List.of(new AiChatStreamEvent.ToolConfirm(
@@ -688,6 +743,22 @@ public class AiChatService {
                                 Base64.getEncoder().encodeToString(bytes),
                                 null,
                                 "auto",
+                                null));
+                    }
+                    if (mediaType.startsWith("audio/")) {
+                        return data.map(bytes -> new AiContentPart.Audio(
+                                mediaType,
+                                Base64.getEncoder().encodeToString(bytes),
+                                null,
+                                null,
+                                null));
+                    }
+                    if (mediaType.startsWith("video/")) {
+                        return data.map(bytes -> new AiContentPart.Video(
+                                mediaType,
+                                Base64.getEncoder().encodeToString(bytes),
+                                null,
+                                null,
                                 null));
                     }
                     if (isInlineText(mediaType)) {
@@ -947,12 +1018,15 @@ public class AiChatService {
                 memorySetting,
                 List.copyOf(messages),
                 context.tools(),
+                context.subagents(),
                 params,
                 mode.getMetadata().getName(),
                 command.request().routeGroup(),
                 command.request().model(),
                 command.request().isRegenerate(),
-                context.harness());
+                context.harness(),
+                context.skillRuntime(),
+                context.teamTools());
         var appendUser = command.request().isRegenerate()
                 ? Mono.<Message>empty()
                 : conversationService.appendUserMessage(
@@ -1223,17 +1297,22 @@ public class AiChatService {
             AiSetting.Memory memorySetting,
             List<AiChatMessage> messages,
             List<AiTool> tools,
+            List<AiSubagent> subagents,
             AiRequestParams params,
             String modeCode,
             @Nullable String routeGroup,
             @Nullable String modelOverride,
             boolean regenerate,
-            AiAgentContextService.HarnessSettings harness) {
+            AiAgentContextService.HarnessSettings harness,
+            SkillRuntime skillRuntime,
+            @Nullable TeamTools teamTools) {
 
         private Prepared {
             messages = messages == null ? List.of() : List.copyOf(messages);
             tools = tools == null ? List.of() : List.copyOf(tools);
+            subagents = subagents == null ? List.of() : List.copyOf(subagents);
             harness = harness == null ? AiAgentContextService.HarnessSettings.DEFAULT : harness;
+            skillRuntime = skillRuntime == null ? new SkillRuntime(List.of()) : skillRuntime;
         }
 
         private String agentName() {

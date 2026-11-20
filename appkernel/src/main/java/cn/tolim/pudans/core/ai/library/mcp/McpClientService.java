@@ -9,6 +9,10 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.internal.JsonSchemaElementJsonUtils;
 import dev.langchain4j.mcp.client.McpApplicationErrorException;
 import dev.langchain4j.mcp.client.McpClient;
+import dev.langchain4j.mcp.client.McpGetPromptResult;
+import dev.langchain4j.mcp.client.McpPrompt;
+import dev.langchain4j.mcp.client.McpReadResourceResult;
+import dev.langchain4j.mcp.client.McpResource;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.service.tool.ToolExecutionResult;
 import java.util.Comparator;
@@ -68,7 +72,39 @@ public class McpClientService implements DisposableBean {
                 .onErrorMap(this::mapError);
     }
 
-    public void close(String serverName) {
+    public Mono<List<McpClient>> clients(List<AiMcpServer> servers) {
+    return Mono.fromCallable(() -> servers.stream().map(this::client).toList())
+            .subscribeOn(Schedulers.boundedElastic())
+            .onErrorMap(this::mapError);
+}
+
+public Mono<List<McpResource>> listResources(AiMcpServer server) {
+    return Mono.fromCallable(() -> client(server).listResources())
+            .subscribeOn(Schedulers.boundedElastic())
+            .onErrorMap(this::mapError);
+}
+
+public Mono<McpReadResourceResult> readResource(AiMcpServer server, String uri) {
+    return Mono.fromCallable(() -> client(server).readResource(uri))
+            .subscribeOn(Schedulers.boundedElastic())
+            .onErrorMap(this::mapError);
+}
+
+public Mono<List<McpPrompt>> listPrompts(AiMcpServer server) {
+    return Mono.fromCallable(() -> client(server).listPrompts())
+            .subscribeOn(Schedulers.boundedElastic())
+            .onErrorMap(this::mapError);
+}
+
+public Mono<McpGetPromptResult> getPrompt(
+            AiMcpServer server, String name, @Nullable Map<String, Object> arguments) {
+    var values = arguments == null ? Map.<String, Object>of() : arguments;
+    return Mono.fromCallable(() -> client(server).getPrompt(name, values))
+            .subscribeOn(Schedulers.boundedElastic())
+            .onErrorMap(this::mapError);
+}
+
+public void close(String serverName) {
         var holder = clients.remove(serverName);
         if (holder != null) {
             holder.close();

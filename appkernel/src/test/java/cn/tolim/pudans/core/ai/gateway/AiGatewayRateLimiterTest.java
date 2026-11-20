@@ -58,6 +58,25 @@ class AiGatewayRateLimiterTest {
     }
 
     @Test
+    void enforcesUserConcurrencyLimits() {
+        var permit = limiter.acquireUser("user-1", 1).block();
+
+        StepVerifier.create(limiter.acquireUser("user-1", 1))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(ApiException.class);
+                    assertThat(((ApiException) error).getCode())
+                            .isEqualTo(AiGatewayRateLimiter.CODE_USER_LIMITED);
+                })
+                .verify();
+
+        limiter.release(permit).block();
+
+        StepVerifier.create(limiter.acquireUser("user-1", 1))
+                .expectNextCount(1)
+                .verifyComplete();
+    }
+
+    @Test
     void enforcesTheRollingMinuteRpmPerAccount() {
         var provider = provider("provider-a", 0, 0);
         var account = account("account-a", 1, 0);

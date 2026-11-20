@@ -253,6 +253,28 @@ class AgentRuntimeServiceTest {
     }
 
     @Test
+    void reportsTheSandboxStatus() {
+        var adapter = mock(SandboxProviderAdapter.class);
+        when(teamService.requireAgent(AGENT, USER))
+                .thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(repository.find(AGENT))
+                .thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
+        when(registry.adapter(AiSandboxProvider.Provider.ALIYUN))
+                .thenReturn(Mono.just(adapter));
+        when(adapter.status("sb-1"))
+                .thenReturn(Mono.just(
+                        new cn.tolim.pudans.core.ai.runtime.sandbox.SandboxStatus(
+                                SandboxState.RUNNING, "ok")));
+
+        StepVerifier.create(service.status(AGENT, USER))
+                .assertNext(status -> {
+                    assertThat(status.state()).isEqualTo(SandboxState.RUNNING);
+                    assertThat(status.message()).isEqualTo("ok");
+                })
+                .verifyComplete();
+    }
+
+    @Test
     void executesACommandInTheRunningSandbox() {
         var adapter = mock(SandboxProviderAdapter.class);
         when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));

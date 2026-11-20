@@ -201,6 +201,7 @@ class AiGatewayEndpointTest {
         var captured = ArgumentCaptor.forClass(AiGatewayInvocation.class);
         verify(gatewayService).complete(captured.capture());
         assertThat(captured.getValue().callerKey()).isEqualTo("pat-1");
+        assertThat(captured.getValue().modelOverride()).isEqualTo("gpt-test");
     }
 
     @Test

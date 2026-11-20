@@ -26,4 +26,29 @@ class AgentRunTest {
 
         assertThat(run.awaitConfirmation("call-2").block()).isFalse();
     }
+
+    @Test
+    void suspendsUntilAnExternalResultArrives() throws Exception {
+        var run = new AgentRun("run-3");
+        var result = run.awaitExternalResult("call-3").toFuture();
+
+        assertThat(run.status()).isEqualTo(AgentRunStatus.SUSPENDED);
+        assertThat(run.submitExternalResult("call-3", "external-output", false)).isTrue();
+        var resolved = result.get(3, TimeUnit.SECONDS);
+        assertThat(resolved.output()).isEqualTo("external-output");
+        assertThat(resolved.error()).isFalse();
+        assertThat(run.status()).isEqualTo(AgentRunStatus.RUNNING);
+    }
+
+    @Test
+    void acceptsAnExternalResultBeforeTheRunAsks() {
+        var run = new AgentRun("run-4");
+
+        assertThat(run.submitExternalResult("call-4", "failed", true)).isTrue();
+
+        var result = run.awaitExternalResult("call-4").block();
+        assertThat(result).isNotNull();
+        assertThat(result.output()).isEqualTo("failed");
+        assertThat(result.error()).isTrue();
+    }
 }

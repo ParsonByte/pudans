@@ -12,6 +12,10 @@ public final class AiTokenEstimator {
 
     private static final int FILE_TOKENS = 128;
 
+    private static final int AUDIO_TOKENS = 256;
+
+    private static final int VIDEO_TOKENS = 512;
+
     private AiTokenEstimator() {}
 
     public static int estimateMessages(List<AiChatMessage> messages) {
@@ -50,6 +54,8 @@ public final class AiTokenEstimator {
             case AiContentPart.Text text -> estimateText(text.text());
             case AiContentPart.Thinking thinking -> estimateText(thinking.text());
             case AiContentPart.Image ignored -> IMAGE_TOKENS;
+            case AiContentPart.Audio ignored -> AUDIO_TOKENS;
+            case AiContentPart.Video ignored -> VIDEO_TOKENS;
             case AiContentPart.File file -> file.fileId() == null
                     ? FILE_TOKENS
                     : FILE_TOKENS + estimateText(file.fileId());

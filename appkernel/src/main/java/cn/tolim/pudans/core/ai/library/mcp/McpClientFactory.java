@@ -10,6 +10,7 @@ import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.client.transport.http.StreamableHttpMcpTransport;
 import dev.langchain4j.mcp.client.transport.stdio.StdioMcpTransport;
+import dev.langchain4j.mcp.client.transport.websocket.WebSocketMcpTransport;
 import dev.langchain4j.service.tool.ToolExecutionResult;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -62,6 +63,7 @@ public class McpClientFactory {
         return switch (spec.getTransport()) {
             case STDIO -> stdio(server.getMetadata().getName(), spec);
             case HTTP, SSE -> http(spec);
+            case WEBSOCKET -> websocket(spec);
         };
     }
 
@@ -84,11 +86,32 @@ public class McpClientFactory {
                 .url(url)
                 .timeout(TOOL_CALL_TIMEOUT);
         if (spec.getHeaders() != null) {
-            builder.customHeaders(spec.getHeaders().entrySet().stream()
-                    .filter(entry -> StringUtils.hasText(entry.getKey()) && entry.getValue() != null)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+            builder.customHeaders(headers(spec));
         }
         return builder.build();
+    }
+
+    private McpTransport websocket(AiMcpServer.Spec spec) {
+        String url;
+        try {
+            url = McpUrls.requireWebSocket(spec.getUrl());
+        } catch (IllegalArgumentException error) {
+            throw invalid(error.getMessage());
+        }
+        return new WebSocketMcpTransport.Builder()
+                .url(url)
+                .timeout(TOOL_CALL_TIMEOUT)
+                .headersSupplier(() -> headers(spec))
+                .build();
+    }
+
+    private static Map<String, String> headers(AiMcpServer.Spec spec) {
+        if (spec.getHeaders() == null) {
+            return Map.of();
+        }
+        return spec.getHeaders().entrySet().stream()
+                .filter(entry -> StringUtils.hasText(entry.getKey()) && entry.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     private static ToolExecutionResult result(List<Map<String, Object>> content, boolean isError) {

@@ -119,6 +119,31 @@ class AiChatEndpointTest {
     }
 
     @Test
+    void submitsAnExternalToolResult() {
+        when(chatService.submitExternalResult("user-1", "run-1", "call-1", "外部结果", false))
+                .thenReturn(true);
+
+        client.post()
+                .uri("/chats/-/tool-external-results")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("""
+                        {"runId":"run-1","toolCallId":"call-1","output":"外部结果","error":false}
+                        """)
+                .exchange()
+                .expectStatus().isAccepted();
+    }
+
+    @Test
+    void interruptsARun() {
+        when(chatService.interrupt("user-1", "run-1")).thenReturn(true);
+
+        client.post()
+                .uri("/chats/-/runs/run-1/interrupt")
+                .exchange()
+                .expectStatus().isAccepted();
+    }
+
+    @Test
     void reportsAnUnknownToolConfirmation() {
         when(chatService.confirm("user-1", "run-1", "call-1", false)).thenReturn(false);
 

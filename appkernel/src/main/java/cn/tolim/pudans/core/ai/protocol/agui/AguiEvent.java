@@ -42,6 +42,54 @@ public sealed interface AguiEvent {
         }
     }
 
+    record StepStarted(String threadId, String runId, String stepName) implements AguiEvent {
+
+        @Override
+        public AguiEventType type() {
+            return AguiEventType.STEP_STARTED;
+        }
+    }
+
+    record StepFinished(String threadId, String runId, String stepName) implements AguiEvent {
+
+        @Override
+        public AguiEventType type() {
+            return AguiEventType.STEP_FINISHED;
+        }
+    }
+
+    record StateSnapshot(String threadId, String runId, String snapshot) implements AguiEvent {
+
+        @Override
+        public AguiEventType type() {
+            return AguiEventType.STATE_SNAPSHOT;
+        }
+    }
+
+    record StateDelta(String threadId, String runId, String delta) implements AguiEvent {
+
+        @Override
+        public AguiEventType type() {
+            return AguiEventType.STATE_DELTA;
+        }
+    }
+
+    record Raw(String threadId, String runId, String event) implements AguiEvent {
+
+        @Override
+        public AguiEventType type() {
+            return AguiEventType.RAW;
+        }
+    }
+
+    record Custom(String threadId, String runId, String name, String value) implements AguiEvent {
+
+        @Override
+        public AguiEventType type() {
+            return AguiEventType.CUSTOM;
+        }
+    }
+
     record TextMessageStart(String threadId, String runId, String messageId, String role)
             implements AguiEvent {
 

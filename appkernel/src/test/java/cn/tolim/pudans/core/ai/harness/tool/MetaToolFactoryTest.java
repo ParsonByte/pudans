@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.ai.harness.tool;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
@@ -81,6 +82,66 @@ class MetaToolFactoryTest {
                         .set("to_activate", JsonUtils.mapper().createArrayNode().add(1)))
                 .error())
                 .isTrue();
+    }
+
+    @Test
+    void searchesTheActiveToolkitAndReturnsDescriptions() {
+        var toolkit = new HarnessToolkit();
+        toolkit.register(
+                new AiTool(
+                        "search_docs",
+                        "Search documents",
+                        JsonUtils.mapper().createObjectNode().put("type", "object"),
+                        null),
+                (request, arguments) -> new HarnessToolkit.ToolResult("ok", false));
+        toolkit.register(
+                new AiTool(
+                        "send_mail",
+                        "Send mail",
+                        JsonUtils.mapper().createObjectNode().put("type", "object"),
+                        null),
+                (request, arguments) -> new HarnessToolkit.ToolResult("ok", false));
+        var factory = new MetaToolFactory(toolkit.groupManager());
+
+        var result = factory.searchTools(
+                toolkit, JsonUtils.mapper().createObjectNode().put("query", "documents"));
+
+        assertThat(result.error()).isFalse();
+        assertThat(result.output()).contains("search_docs").contains("Search documents");
+        assertThat(result.output()).doesNotContain("send_mail");
+    }
+
+    @Test
+    void readsAndWaitsForAsyncToolTasks() {
+        var registry = new InMemoryAsyncToolRegistry();
+        var task = registry
+                .submit("fast", () -> new HarnessToolkit.ToolResult("done", false))
+                .block();
+        var factory = new MetaToolFactory(new ToolGroupManager());
+
+        var current = factory.asyncTask(
+                        registry,
+                        JsonUtils.mapper().createObjectNode().put("task_id", task.id()))
+                .block();
+        assertThat(current).isNotNull();
+        assertThat(current.error()).isFalse();
+
+        var completed = factory.asyncTask(
+                        registry,
+                        JsonUtils.mapper().createObjectNode()
+                                .put("task_id", task.id())
+                                .put("wait", true))
+                .block();
+        assertThat(completed).isNotNull();
+        assertThat(completed.error()).isFalse();
+        assertThat(completed.output()).contains("\"status\":\"completed\"").contains("\"output\":\"done\"");
+
+        var listed = factory.asyncTask(
+                        registry, JsonUtils.mapper().createObjectNode().put("action", "list"))
+                .block();
+        assertThat(listed).isNotNull();
+        assertThat(listed.error()).isFalse();
+        assertThat(listed.output()).contains(task.id());
     }
 
     @Test

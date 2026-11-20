@@ -10,6 +10,8 @@ public sealed interface AiChatStreamEvent {
 
     record Meta(AiChatCompletionResult.StreamMeta meta) implements AiChatStreamEvent {}
 
+    record RunStarted(String runId) implements AiChatStreamEvent {}
+
     record Delta(String content, String reasoning) implements AiChatStreamEvent {}
 
     record CitationEvent(Citation citation) implements AiChatStreamEvent {}
@@ -21,6 +23,12 @@ public sealed interface AiChatStreamEvent {
             implements AiChatStreamEvent {}
 
     record ToolConfirm(String runId, String toolCallId, String name, String message)
+            implements AiChatStreamEvent {}
+
+    record ToolExternal(String runId, String toolCallId, String name, String arguments)
+            implements AiChatStreamEvent {}
+
+    record ToolExternalResult(String runId, String toolCallId, String output, boolean error)
             implements AiChatStreamEvent {}
 
     record Artifact(

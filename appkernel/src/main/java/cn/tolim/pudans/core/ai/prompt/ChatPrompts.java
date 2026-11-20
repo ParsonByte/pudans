@@ -20,7 +20,8 @@ public final class ChatPrompts {
     public static final String SUBAGENTS_HEADER = "【可用子代理】\n";
 
     public static final String SUBAGENTS_HINT =
-            "\n需要委派任务时调用 subagent 工具，参数 name 与 prompt。";
+            "\n需要委派任务时调用 agent_spawn 工具，参数 agent_id 与 task；"
+                    + "可复用子代理用 agent_send 继续对话，后台任务用 agent_task 查询。";
 
     private ChatPrompts() {}
 

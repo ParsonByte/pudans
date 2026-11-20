@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.ai.wallet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -46,8 +47,41 @@ class AiWalletServiceTest {
 
     @BeforeEach
     void setUp() {
+        org.mockito.Mockito.lenient()
+                .when(walletRepository.ensure("user-1"))
+                .thenReturn(Mono.empty());
+        org.mockito.Mockito.lenient()
+                .when(walletRepository.findDetailByUserId("user-1"))
+                .thenReturn(Mono.empty());
         service = new AiWalletService(walletRepository, holdRepository, txnRepository);
         service.setClock(Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
+    }
+
+    @Test
+    void rejectsAFreezeBeyondTheDailyLimit() {
+        var amount = new BigDecimal("10.00");
+        when(walletRepository.findDetailByUserId("user-1"))
+                .thenReturn(Mono.just(new AiWalletRepository.WalletRecord(
+                        new BigDecimal("100.00"),
+                        BigDecimal.ZERO,
+                        new BigDecimal("100.00"),
+                        BigDecimal.ZERO,
+                        1,
+                        new BigDecimal("15.00"))));
+        when(txnRepository.chargedSince(eq("user-1"), any()))
+                .thenReturn(Mono.just(new BigDecimal("10.00")));
+
+        StepVerifier.create(service.freeze(
+                        "req-daily", "user-1", amount, Duration.ofMinutes(5)))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(ApiException.class);
+                    assertThat(((ApiException) error).getCode())
+                            .isEqualTo("ai-wallet-daily-limit");
+                })
+                .verify();
+
+        verify(holdRepository, org.mockito.Mockito.never())
+                .insertIfAbsent(any(), any(), any(), any());
     }
 
     @Test

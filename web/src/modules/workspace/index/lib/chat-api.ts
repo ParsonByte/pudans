@@ -76,6 +76,24 @@ export type ChatToolConfirm = {
   message?: string;
 };
 
+type ChatRunStarted = {
+  runId?: string;
+};
+
+type ChatToolExternal = {
+  runId?: string;
+  toolCallId?: string;
+  name?: string;
+  arguments?: string;
+};
+
+type ChatToolExternalResult = {
+  runId?: string;
+  toolCallId?: string;
+  output?: string;
+  isError?: boolean;
+};
+
 export type ChatArtifact = {
   kind: string;
   fileId?: string;
@@ -231,9 +249,12 @@ export type ChatStreamError = {
 export type ChatStreamHandlers = {
   onMeta?: (meta: ChatStreamMeta) => void;
   onDelta?: (delta: { content?: string; reasoning?: string }) => void;
+  onRunStarted?: (event: ChatRunStarted) => void;
   onToolCall?: (call: ChatToolCall) => void;
   onToolResult?: (result: ChatToolResult) => void;
   onToolConfirm?: (confirm: ChatToolConfirm) => void;
+  onToolExternal?: (external: ChatToolExternal) => void;
+  onToolExternalResult?: (result: ChatToolExternalResult) => void;
   onArtifact?: (artifact: ChatArtifact) => void;
   onStage?: (stage: ChatStreamStage) => void;
   onUsage?: (usage: ChatStreamUsage) => void;
@@ -584,6 +605,9 @@ function dispatch(block: string, handlers: ChatStreamHandlers): boolean {
     case "meta":
       handlers.onMeta?.(payload as ChatStreamMeta);
       break;
+    case "run_started":
+      handlers.onRunStarted?.(payload as ChatRunStarted);
+      break;
     case "delta":
       handlers.onDelta?.(payload as { content?: string; reasoning?: string });
       break;
@@ -595,6 +619,12 @@ function dispatch(block: string, handlers: ChatStreamHandlers): boolean {
       break;
     case "tool_confirm":
       handlers.onToolConfirm?.(payload as ChatToolConfirm);
+      break;
+    case "tool_external":
+      handlers.onToolExternal?.(payload as ChatToolExternal);
+      break;
+    case "tool_external_result":
+      handlers.onToolExternalResult?.(payload as ChatToolExternalResult);
       break;
     case "artifact":
       handlers.onArtifact?.(payload as ChatArtifact);

@@ -15,9 +15,11 @@ import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 public final class HarnessToolkit {
@@ -27,6 +29,8 @@ public final class HarnessToolkit {
     private final Map<String, ToolExecutor> namedExecutors = new LinkedHashMap<>();
 
     private final Set<String> names = new HashSet<>();
+
+    private final Set<String> asyncNames = new LinkedHashSet<>();
 
     private final ToolGroupManager groupManager = new ToolGroupManager();
 
@@ -72,6 +76,11 @@ public final class HarnessToolkit {
         return register(tool, handler, groupName, false);
     }
 
+    public HarnessToolkit register(ToolSpecification specification, ToolExecutor executor) {
+        put(specification, executor, null);
+        return this;
+    }
+
     public HarnessToolkit registerAsync(AiTool tool, ToolHandler handler) {
         return register(tool, handler, null, true);
     }
@@ -92,6 +101,9 @@ public final class HarnessToolkit {
                 ? asyncExecutor(specification.name(), handler)
                 : dynamicExecutor(handler);
         put(specification, executor, groupName);
+        if (async) {
+            asyncNames.add(specification.name());
+        }
         return this;
     }
 
@@ -102,6 +114,20 @@ public final class HarnessToolkit {
     public HarnessToolkit asyncRegistry(AsyncToolRegistry asyncRegistry) {
         this.asyncRegistry = Objects.requireNonNull(asyncRegistry, "异步工具注册表不能为空");
         return this;
+    }
+
+    public AsyncToolRegistry asyncRegistry() {
+        return asyncRegistry;
+    }
+
+    public boolean hasAsyncTools() {
+        return !asyncNames.isEmpty();
+    }
+
+    public Optional<ToolSpecification> specification(String name) {
+        return executors.keySet().stream()
+                .filter(specification -> specification.name().equals(name))
+                .findFirst();
     }
 
     public HarnessToolkit fallbackHandler(ToolHandler fallbackHandler) {

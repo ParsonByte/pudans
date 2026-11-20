@@ -8,10 +8,12 @@ import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionBehavior;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionMode;
+import cn.tolim.pudans.core.ai.harness.team.TeamRuntimeRegistry;
 import cn.tolim.pudans.core.ai.library.LibraryView;
 import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
 import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariableService;
 import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
+import cn.tolim.pudans.core.ai.library.skill.SkillService;
 import cn.tolim.pudans.core.ai.library.subagent.SubagentService;
 import java.time.Duration;
 import java.util.List;
@@ -40,12 +42,23 @@ class AiAgentContextServiceTest {
     @Mock
     EnvironmentVariableService environmentVariableService;
 
+    @Mock
+    SkillService skillService;
+
+    @Mock
+    TeamRuntimeRegistry teamRuntimeRegistry;
+
     private AiAgentContextService service;
 
     @BeforeEach
     void setUp() {
         service = new AiAgentContextService(
-                libraryView, subagentService, slashCommandService, environmentVariableService);
+                libraryView,
+                subagentService,
+                slashCommandService,
+                environmentVariableService,
+                skillService,
+                teamRuntimeRegistry);
     }
 
     @Test
@@ -59,6 +72,11 @@ class AiAgentContextServiceTest {
         harness.setCompactionKeepMessages(4);
         harness.setToolResultEvictionMaxChars(2048);
         harness.setConfirmationTimeoutSeconds(30);
+        harness.setToolSearchEnabled(false);
+        harness.setToolGroupsEnabled(false);
+        harness.setAsyncToolPatterns(List.of("mcp.*.long_*"));
+        harness.setExternalToolPatterns(List.of("mcp.*.dangerous"));
+        harness.setWorkspaceEnabled(false);
         harness.setPermissionMode(AiAgent.Harness.PermissionMode.EXPLORE);
         var rule = new AiAgent.Harness.PermissionRule();
         rule.setToolName("echo");
@@ -78,6 +96,12 @@ class AiAgentContextServiceTest {
                     assertThat(settings.eviction().enabled()).isTrue();
                     assertThat(settings.eviction().maxChars()).isEqualTo(2048);
                     assertThat(settings.confirmationTimeout()).isEqualTo(Duration.ofSeconds(30));
+                    assertThat(settings.toolSearchEnabled()).isFalse();
+                    assertThat(settings.toolGroupsEnabled()).isFalse();
+                    assertThat(settings.asyncToolPatterns()).containsExactly("mcp.*.long_*");
+                    assertThat(settings.externalToolPatterns())
+                            .containsExactly("mcp.*.dangerous");
+                    assertThat(settings.workspaceEnabled()).isFalse();
                     assertThat(settings.permission().mode()).isEqualTo(PermissionMode.EXPLORE);
                     assertThat(settings.permission().rules()).singleElement().satisfies(config -> {
                         assertThat(config.toolName()).isEqualTo("echo");
@@ -115,6 +139,7 @@ class AiAgentContextServiceTest {
         when(subagentService.byAgent("agent-a")).thenReturn(Flux.empty());
         when(slashCommandService.byAgent("agent-a")).thenReturn(Flux.empty());
         when(environmentVariableService.resolveValues("agent-a")).thenReturn(Mono.just(Map.of()));
+        when(skillService.byAgent("agent-a")).thenReturn(Flux.empty());
     }
 
     private static AiAgent agent() {

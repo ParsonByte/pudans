@@ -30,6 +30,8 @@ public class AiGatewayRateLimiter {
 
     public static final String CODE_KEY_LIMITED = "ai-gateway-key-limited";
 
+    public static final String CODE_USER_LIMITED = "ai-gateway-user-limited";
+
     private static final String KEY_PREFIX = "pudans:ai:gateway:";
 
     private static final long WINDOW_MILLIS = 60_000;
@@ -114,6 +116,16 @@ public class AiGatewayRateLimiter {
         return acquireKeyPermit("key", callerKey, maxConcurrency)
                 .map(slot -> new Permit(List.of(slot)))
                 .defaultIfEmpty(Permit.empty());
+    }
+
+    public Mono<Permit> acquireUser(String userId, int maxConcurrency) {
+        if (userId == null || userId.isBlank() || !positive(maxConcurrency)) {
+            return Mono.just(Permit.empty());
+        }
+        var key = key("user", userId, "concurrency");
+        return acquireSlot(key, maxConcurrency, true).flatMap(acquired -> acquired.allowed()
+                ? Mono.just(new Permit(List.of(new Slot(key, acquired.local()))))
+                : Mono.error(userLimited(userId)));
     }
 
     public Mono<Void> release(Permit permit) {
@@ -236,6 +248,13 @@ public class AiGatewayRateLimiter {
                 HttpStatus.TOO_MANY_REQUESTS,
                 CODE_RATE_LIMITED,
                 "AI 网关限流： " + scope + " " + name + " 超过速率或并发限制。");
+    }
+
+    private static ApiException userLimited(String userId) {
+        return new ApiException(
+                HttpStatus.TOO_MANY_REQUESTS,
+                CODE_USER_LIMITED,
+                "用户并发请求超限：" + userId + "。");
     }
 
     private static ApiException keyLimited(String name) {

@@ -2,12 +2,14 @@ package cn.tolim.pudans.core.ai.protocol;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.chat.AiAgentContextService;
 import cn.tolim.pudans.core.ai.chat.AiChatToolService;
+import cn.tolim.pudans.core.ai.chat.SubagentToolFactory;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayMeta;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayResult;
@@ -18,8 +20,14 @@ import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.harness.agent.InMemoryAgentStateStore;
 import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import cn.tolim.pudans.core.ai.harness.journal.InMemoryThreadJournalStore;
+import cn.tolim.pudans.core.ai.harness.observability.HarnessObservability;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEvent;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEventType;
+import cn.tolim.pudans.core.ai.harness.subagent.SubagentRuntime;
+import cn.tolim.pudans.core.ai.harness.subagent.SubagentTools;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
+import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkitFactory;
+import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
 import cn.tolim.pudans.core.ai.team.AiTeamService;
 import dev.langchain4j.data.message.UserMessage;
 import java.math.BigDecimal;
@@ -45,6 +53,18 @@ class ProtocolAgentRuntimeTest {
     AiChatToolService toolService;
 
     @Mock
+    SubagentToolFactory subagentToolFactory;
+
+    @Mock
+    HarnessToolkitFactory harnessToolkitFactory;
+
+    @Mock
+    McpServerService mcpServerService;
+
+    @Mock
+    HarnessObservability harnessObservability;
+
+    @Mock
     AiGatewayService gatewayService;
 
     @Test
@@ -53,11 +73,26 @@ class ProtocolAgentRuntimeTest {
         when(teamService.requireAgent("agent-a", "user-1")).thenReturn(Mono.just(agent));
         when(agentContextService.build(agent)).thenReturn(Mono.just(new AiAgentContextService.AgentContext(
                 "", List.of(), List.of(), List.of(), List.of(), Map.of())));
+        when(subagentToolFactory.create(any(), any())).thenReturn(
+                Mono.just(new SubagentTools(new SubagentRuntime())));
+        when(harnessToolkitFactory.create(any(), any(), anyBoolean(), any()))
+                .thenReturn(new HarnessToolkit());
+        when(mcpServerService.decorateToolkit(any(), any()))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
         var stateStore = new InMemoryAgentStateStore();
         var journalStore = new InMemoryThreadJournalStore();
         var runtime = new ProtocolAgentRuntime(
-                teamService, agentContextService, toolService, gatewayService, stateStore, journalStore);
+                teamService,
+                agentContextService,
+                toolService,
+                subagentToolFactory,
+                harnessToolkitFactory,
+                mcpServerService,
+                harnessObservability,
+                gatewayService,
+                stateStore,
+                journalStore);
 
         var run = runtime.start(new ProtocolAgentRuntime.ProtocolRunRequest(
                         "user-1", "agent-a", "thread-1", null, UserMessage.from("你好"), false, Map.of()))

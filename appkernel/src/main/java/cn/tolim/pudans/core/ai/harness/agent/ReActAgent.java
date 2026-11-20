@@ -21,6 +21,7 @@ import cn.tolim.pudans.core.ai.harness.team.TeamTools;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import cn.tolim.pudans.core.ai.harness.tool.InMemoryToolResultStore;
 import cn.tolim.pudans.core.ai.harness.tool.MetaToolFactory;
+import cn.tolim.pudans.core.ai.harness.tool.ToolPatterns;
 import cn.tolim.pudans.core.ai.harness.tool.ToolResultEvictionConfig;
 import cn.tolim.pudans.core.ai.harness.tool.ToolResultStore;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jToolMapper;
@@ -37,6 +38,7 @@ import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.PartialThinking;
+import dev.langchain4j.model.chat.response.PartialToolCall;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -95,6 +97,10 @@ public final class ReActAgent implements Agent {
 
     private final boolean todoEnabled;
 
+    private final boolean toolSearchEnabled;
+
+    private final List<String> externalToolPatterns;
+
     private final @Nullable ContextCompactor compactor;
 
     private final ToolResultEvictionConfig evictionConfig;
@@ -133,6 +139,10 @@ public final class ReActAgent implements Agent {
                 : builder.confirmationTimeout;
         this.planModeEnabled = builder.planModeEnabled;
         this.todoEnabled = builder.todoEnabled;
+        this.toolSearchEnabled = builder.toolSearchEnabled;
+        this.externalToolPatterns = builder.externalToolPatterns == null
+                ? List.of()
+                : List.copyOf(builder.externalToolPatterns);
         this.compactor = builder.compaction != null && builder.compaction.enabled()
                 ? new ContextCompactor(chatModel, builder.compaction)
                 : null;
@@ -219,7 +229,14 @@ public final class ReActAgent implements Agent {
                     journal.checkpoint(state, "run-start");
                     var compacted = compactor == null ? Mono.just(false) : compactor.compactIfNeeded(state);
                     var execution = compacted
-                            .then(Mono.defer(() -> loop(state, context, run, 0, streaming, journal, version, false)))
+                            .flatMap(didCompact -> {
+                                if (didCompact) {
+                                    run.emit(new AgentEvent.HintBlock(
+                                            run.id(), "历史上下文已压缩。"));
+                                }
+                                return Mono.defer(() -> loop(
+                                        state, context, run, 0, streaming, journal, version, false));
+                            })
                             .map(result -> {
                                 journal.record(
                                         JournalEventType.RUN_OUTPUT,
@@ -413,9 +430,13 @@ public final class ReActAgent implements Agent {
                     error.addSuppressed(compactionError);
                     return Mono.just(false);
                 })
-                .flatMap(compacted -> compacted
-                        ? loop(state, context, run, iteration, streaming, journal, version, true)
-                        : Mono.error(error));
+                .flatMap(compacted -> {
+                    if (!compacted) {
+                        return Mono.error(error);
+                    }
+                    run.emit(new AgentEvent.HintBlock(run.id(), "上下文溢出，已压缩后重试。"));
+                    return loop(state, context, run, iteration, streaming, journal, version, true);
+                });
     }
 
     private static boolean isContextOverflow(Throwable error) {
@@ -461,6 +482,12 @@ public final class ReActAgent implements Agent {
                         }
                         text.append(partial);
                         run.emit(new AgentEvent.TextBlockDelta(run.id(), partial));
+                    }
+
+                    @Override
+                    public void onPartialToolCall(PartialToolCall partial) {
+                        run.emit(new AgentEvent.ToolCallDelta(
+                                run.id(), partial.id(), partial.partialArguments()));
                     }
 
                     @Override
@@ -557,8 +584,14 @@ public final class ReActAgent implements Agent {
                     .flatMap(result -> appendToolResult(run, state, id, call.name(), result));
         }
         if (subagentTools != null && isSubagentTool(call.name())) {
+            var subagentArgs = LangChain4jToolMapper.arguments(call.arguments());
+            var subagentName = subagentArgs.path("agent_id").asText("");
+            if (subagentName.isBlank()) {
+                subagentName = subagentArgs.path("label").asText("");
+            }
+            run.emit(new AgentEvent.SubagentExposed(run.id(), subagentName));
             return subagentTools
-                    .execute(call.name(), LangChain4jToolMapper.arguments(call.arguments()), context)
+                    .execute(call.name(), subagentArgs, context)
                     .flatMap(result -> appendToolResult(run, state, id, call.name(), result));
         }
         if (teamTools != null && TeamTools.TEAM.equals(call.name())) {
@@ -566,7 +599,9 @@ public final class ReActAgent implements Agent {
                     .execute(call.name(), LangChain4jToolMapper.arguments(call.arguments()), context)
                     .flatMap(result -> appendToolResult(run, state, id, call.name(), result));
         }
-        if (skillRuntime != null && HarnessSkillTools.SKILL.equals(call.name())) {
+        if (skillRuntime != null
+                && HarnessSkillTools.SKILL.equals(call.name())
+                && !skillRuntime.catalog().isEmpty()) {
             var result = HarnessSkillTools.execute(
                     LangChain4jToolMapper.arguments(call.arguments()), skillRuntime);
             run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
@@ -574,6 +609,16 @@ public final class ReActAgent implements Agent {
                     run.id(), id, call.name(), result.output(), result.error()));
             appendToolResult(state, id, call.name(), result.output(), result.error());
             return Mono.empty();
+        }
+        if (toolSearchEnabled && MetaToolFactory.TOOL_SEARCH.equals(call.name())) {
+            var result = new MetaToolFactory(toolkit.groupManager())
+                    .searchTools(toolkit, LangChain4jToolMapper.arguments(call.arguments()));
+            return appendToolResult(run, state, id, call.name(), result);
+        }
+        if (MetaToolFactory.TOOL_TASK.equals(call.name())) {
+            return new MetaToolFactory(toolkit.groupManager())
+                    .asyncTask(toolkit.asyncRegistry(), LangChain4jToolMapper.arguments(call.arguments()))
+                    .flatMap(result -> appendToolResult(run, state, id, call.name(), result));
         }
         if (MetaToolFactory.RESET_TOOLS.equals(call.name())) {
             var result = new MetaToolFactory(toolkit.groupManager())
@@ -637,10 +682,43 @@ public final class ReActAgent implements Agent {
                                     state, id, call.name(), "用户拒绝了工具调用：" + call.name(), true);
                             return Mono.empty();
                         }
-                        return executeTool(state, run, call, id);
+                        return executeToolOrExternal(
+                                state, context, run, call, id, journal, version);
                     });
         }
-        return executeTool(state, run, call, id);
+        return executeToolOrExternal(state, context, run, call, id, journal, version);
+    }
+
+    private Mono<Void> executeToolOrExternal(
+            AgentState state,
+            RuntimeContext context,
+            AgentRun run,
+            ToolExecutionRequest call,
+            String id,
+            JournalEventSink journal,
+            AtomicLong version) {
+        if (!ToolPatterns.matches(externalToolPatterns, call.name())) {
+            return executeTool(state, run, call, id);
+        }
+        run.emit(new AgentEvent.RequireExternalExecution(
+                run.id(), id, call.name(), call.arguments()));
+        journal.toolDecision(run.id(), id, "external");
+        return saveState(state, context, version)
+                .then(run.awaitExternalResult(id)
+                        .timeout(confirmationTimeout, Mono.fromSupplier(() -> {
+                            var timeout = new AgentRun.ExternalResult(
+                                    "外部执行超时，结果未知。", true);
+                            run.emit(new AgentEvent.ExternalExecutionResult(
+                                    run.id(), id, timeout.output(), timeout.error()));
+                            return timeout;
+                        })))
+                .flatMap(result -> {
+                    run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
+                    run.emit(new AgentEvent.ToolResultEnd(
+                            run.id(), id, call.name(), result.output(), result.error()));
+                    appendToolResult(state, id, call.name(), result.output(), result.error());
+                    return Mono.empty();
+                });
     }
 
     private Mono<Void> executeTool(
@@ -736,6 +814,14 @@ public final class ReActAgent implements Agent {
             specifications.addAll(LangChain4jToolMapper.toSpecifications(
                     List.of(knowledgeBaseRetrievalTool.definition())));
         }
+        if (toolSearchEnabled) {
+            specifications.addAll(LangChain4jToolMapper.toSpecifications(
+                    List.of(MetaToolFactory.toolSearchTool())));
+        }
+        if (toolkit.hasAsyncTools()) {
+            specifications.addAll(LangChain4jToolMapper.toSpecifications(
+                    List.of(MetaToolFactory.toolTaskTool())));
+        }
         if (!toolkit.groupManager().metaGroupNames().isEmpty()) {
             var resetTool = new MetaToolFactory(toolkit.groupManager()).resetToolsTool();
             specifications.addAll(LangChain4jToolMapper.toSpecifications(List.of(resetTool)));
@@ -815,6 +901,10 @@ public final class ReActAgent implements Agent {
         private boolean planModeEnabled;
 
         private boolean todoEnabled;
+
+        private boolean toolSearchEnabled = true;
+
+        private List<String> externalToolPatterns;
 
         private CompactionConfig compaction;
 
@@ -914,6 +1004,16 @@ public final class ReActAgent implements Agent {
 
         public Builder todoEnabled(boolean todoEnabled) {
             this.todoEnabled = todoEnabled;
+            return this;
+        }
+
+        public Builder toolSearchEnabled(boolean toolSearchEnabled) {
+            this.toolSearchEnabled = toolSearchEnabled;
+            return this;
+        }
+
+        public Builder externalToolPatterns(List<String> externalToolPatterns) {
+            this.externalToolPatterns = externalToolPatterns;
             return this;
         }
 
