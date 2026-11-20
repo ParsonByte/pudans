@@ -21,13 +21,12 @@ import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
 import cn.tolim.pudans.infra.audit.AuditStore;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -95,7 +94,7 @@ public class DashboardEndpoint implements CustomEndpoint {
 
     Mono<DashboardOverview> aggregate() {
         var now = Instant.now();
-        var dayStart = now.truncatedTo(ChronoUnit.DAYS);
+        var dayStart = PudansTime.startOfDay(now);
         var totalUsers = countNotDeleting(User.class);
         var globalInfo = systemInfoGetter
                 .get()
@@ -225,7 +224,7 @@ public class DashboardEndpoint implements CustomEndpoint {
     }
 
     private static List<LoginTrendPoint> toDailyTrend(Map<LocalDate, Long> daysByCount, Instant now) {
-        var today = LocalDate.ofInstant(now, ZoneOffset.UTC);
+        var today = PudansTime.dateOf(now);
         var points = new ArrayList<LoginTrendPoint>(TREND_DAYS);
         for (var offset = TREND_DAYS - 1; offset >= 0; offset--) {
             var day = today.minusDays(offset);
@@ -238,7 +237,7 @@ public class DashboardEndpoint implements CustomEndpoint {
         var counts = creationTimestamps.stream()
                 .filter(java.util.Objects::nonNull)
                 .collect(Collectors.groupingBy(
-                        timestamp -> LocalDate.ofInstant(timestamp, ZoneOffset.UTC),
+                        PudansTime::dateOf,
                         Collectors.counting()));
         return toDailyTrend(counts, now);
     }

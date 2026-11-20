@@ -22,6 +22,7 @@ import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalService;
 import cn.tolim.pudans.core.ai.team.AiTeamService;
 import cn.tolim.pudans.core.storage.StorageService;
 import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import org.junit.jupiter.api.BeforeEach;
@@ -139,7 +140,7 @@ class AiChatServiceSystemPromptTest {
 
         assertThat(system)
                 .contains("PUDANS AI 助手")
-                .contains(LocalDate.now().toString())
+                .contains(LocalDate.now(PudansTime.BEIJING).toString())
                 .contains("ChatGPT");
     }
 

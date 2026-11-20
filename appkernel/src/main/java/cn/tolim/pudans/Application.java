@@ -1,5 +1,6 @@
 package cn.tolim.pudans;
 
+import cn.tolim.pudans.infra.utils.PudansTime;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
@@ -48,6 +49,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class Application {
 
     public static void main(String[] args) {
+        PudansTime.applySystemTimeZone();
         new SpringApplicationBuilder(Application.class)
                 .applicationStartup(new BufferingApplicationStartup(1024))
                 .run(args);

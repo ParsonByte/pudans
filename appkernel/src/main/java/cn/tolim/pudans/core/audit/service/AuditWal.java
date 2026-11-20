@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
 import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.utils.PudansTime;
 
 @Slf4j
 @Component
@@ -39,7 +40,7 @@ public class AuditWal {
         synchronized (writeLock) {
             try {
                 Files.createDirectories(directory);
-                var file = directory.resolve("audit-" + LocalDate.now() + SUFFIX);
+                var file = directory.resolve("audit-" + LocalDate.now(PudansTime.BEIJING) + SUFFIX);
                 Files.writeString(
                         file,
                         serialized + System.lineSeparator(),

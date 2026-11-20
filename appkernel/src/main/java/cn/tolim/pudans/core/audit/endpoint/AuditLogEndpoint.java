@@ -10,11 +10,11 @@ import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.infra.audit.AuditStore;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -930,7 +930,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         } catch (Exception e) {
             throw new ServerWebInputException("查询参数 'date' 必须是 ISO 日期，例如 2026-11-14。");
         }
-        var from = date.atStartOfDay(ZoneOffset.UTC).toInstant();
+        var from = PudansTime.startOfDay(date);
         var to = from.plus(Duration.ofDays(1));
         return auditService
                 .findByUidBetween(uid, from, to)

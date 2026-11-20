@@ -8,6 +8,8 @@ spring:
   output:
     ansi:
       enabled: detect
+  jackson:
+    time-zone: Asia/Shanghai
   r2dbc:
     url: ${PUDANS_DB_URL:r2dbc:postgresql://localhost:5432/pudans}
     username: ${PUDANS_DB_USERNAME:pudans}

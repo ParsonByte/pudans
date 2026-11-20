@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.function.UnaryOperator;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
@@ -63,19 +62,19 @@ public class PudansUtils {
 
     public static String getDayText(Instant instant) {
         Assert.notNull(instant, "Instant 不能为空");
-        int dayValue = instant.atZone(ZoneId.systemDefault()).getDayOfMonth();
+        int dayValue = instant.atZone(PudansTime.BEIJING).getDayOfMonth();
         return StringUtils.leftPad(String.valueOf(dayValue), 2, '0');
     }
 
     public static String getMonthText(Instant instant) {
         Assert.notNull(instant, "Instant 不能为空");
-        int monthValue = instant.atZone(ZoneId.systemDefault()).getMonthValue();
+        int monthValue = instant.atZone(PudansTime.BEIJING).getMonthValue();
         return StringUtils.leftPad(String.valueOf(monthValue), 2, '0');
     }
 
     public static String getYearText(Instant instant) {
         Assert.notNull(instant, "Instant 不能为空");
-        return String.valueOf(instant.atZone(ZoneId.systemDefault()).getYear());
+        return String.valueOf(instant.atZone(PudansTime.BEIJING).getYear());
     }
 
 

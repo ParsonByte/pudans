@@ -11,9 +11,9 @@ import cn.tolim.pudans.contract.core.user.service.UserService;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.user.service.UserConnectionService;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -69,7 +69,7 @@ class UserEndpointUserDetailTest {
 
     @Test
     void returnsDailyActivityForTheRequestedRange() {
-        var today = LocalDate.now(ZoneOffset.UTC);
+        var today = LocalDate.now(PudansTime.BEIJING);
         when(userService.getUser("alice")).thenReturn(Mono.just(user()));
         when(auditService.countPerDay(any(), eq("uid-1"), isNull(), isNull()))
                 .thenReturn(Mono.just(Map.of(today, 3L)));

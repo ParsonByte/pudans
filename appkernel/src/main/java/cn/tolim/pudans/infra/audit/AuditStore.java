@@ -25,6 +25,7 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
+import cn.tolim.pudans.infra.utils.PudansTime;
 
 @Slf4j
 @Component
@@ -284,7 +285,7 @@ public class AuditStore {
         return Flux.merge(active, archived)
                 .map(record -> record.getTimestamp() == null
                         ? null
-                        : LocalDate.ofInstant(record.getTimestamp(), ZoneOffset.UTC))
+                        : PudansTime.dateOf(record.getTimestamp()))
                 .filter(Objects::nonNull)
                 .collectList()
                 .map(days -> days.stream()

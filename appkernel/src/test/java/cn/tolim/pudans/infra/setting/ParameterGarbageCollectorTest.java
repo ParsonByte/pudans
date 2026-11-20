@@ -9,11 +9,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
+import java.util.TimeZone;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.scheduling.support.SimpleTriggerContext;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,6 +47,23 @@ class ParameterGarbageCollectorTest {
         assertThat(deleted).isEqualTo(1);
         assertThat(Files.exists(expired)).isFalse();
         assertThat(Files.exists(fresh)).isTrue();
+    }
+
+    @Test
+    void schedulesTheDailyGcAtBeijingThree() {
+        var original = TimeZone.getDefault();
+        try {
+            TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+            var trigger = ParameterGarbageCollector.gcTrigger("0 0 3 * * *");
+            var context = new SimpleTriggerContext();
+            var now = Instant.parse("2026-11-19T16:00:00Z");
+            context.update(now, now, now);
+
+            assertThat(trigger.nextExecution(context))
+                    .isEqualTo(Instant.parse("2026-11-19T19:00:00Z"));
+        } finally {
+            TimeZone.setDefault(original);
+        }
     }
 
     @Test

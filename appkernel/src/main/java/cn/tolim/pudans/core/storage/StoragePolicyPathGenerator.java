@@ -2,7 +2,6 @@ package cn.tolim.pudans.core.storage;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
+import cn.tolim.pudans.infra.utils.PudansTime;
 
 @Component
 public class StoragePolicyPathGenerator {
@@ -126,7 +126,7 @@ public class StoragePolicyPathGenerator {
     }
 
     private String value(String variable, StoragePathContext context, boolean pathAvailable) {
-        var time = LocalDateTime.ofInstant(context.now(), ZoneId.systemDefault());
+        var time = LocalDateTime.ofInstant(context.now(), PudansTime.BEIJING);
         return switch (variable) {
             case "{randomkey16}" -> randomString(16);
             case "{randomkey8}" -> randomString(8);

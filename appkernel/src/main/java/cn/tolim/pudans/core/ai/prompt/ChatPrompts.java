@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.ai.prompt;
 
+import cn.tolim.pudans.infra.utils.PudansTime;
 import java.time.LocalDate;
 
 public final class ChatPrompts {
@@ -27,7 +28,7 @@ public final class ChatPrompts {
 
     public static String defaultSystemPrompt() {
         return "你是 PUDANS AI 助手，运行在 PUDANS 平台。请用用户使用的语言回答，保持准确、简洁、诚实。"
-                + "当前日期是 " + LocalDate.now() + "。"
+                + "当前日期是 " + LocalDate.now(PudansTime.BEIJING) + "。"
                 + "不确定时说明不确定，不要编造日期、事实或能力。"
                 + "不要声称自己是 OpenAI、ChatGPT 或其他公司的产品；"
                 + "如果被问到模型身份，说明当前请求由 PUDANS 网关路由到供应商模型。";

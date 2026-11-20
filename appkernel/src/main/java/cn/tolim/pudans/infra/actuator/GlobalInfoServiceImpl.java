@@ -3,6 +3,7 @@ package cn.tolim.pudans.infra.actuator;
 import cn.tolim.pudans.contract.infra.ExternalUrlSupplier;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.TimeZone;
@@ -30,7 +31,7 @@ public class GlobalInfoServiceImpl implements GlobalInfoService {
     public Mono<GlobalInfo> getGlobalInfo() {
         final var info = new GlobalInfo();
         info.setExternalUrl(externalUrl.getRaw());
-        info.setTimeZone(TimeZone.getDefault());
+        info.setTimeZone(TimeZone.getTimeZone(PudansTime.BEIJING));
         info.setAllowRegistration(false);
         info.setMustVerifyEmailOnRegistration(false);
 

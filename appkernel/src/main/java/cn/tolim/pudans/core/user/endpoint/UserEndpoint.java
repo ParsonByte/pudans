@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -61,6 +60,7 @@ import cn.tolim.pudans.core.user.service.LocalUserService;
 import cn.tolim.pudans.core.user.service.UserConnectionService;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
 import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import cn.tolim.pudans.infra.utils.PudansTime;
 
 @Component
 @RequiredArgsConstructor
@@ -725,12 +725,12 @@ public class UserEndpoint implements CustomEndpoint {
         return resolveName(request)
                 .flatMap(userService::getUser)
                 .flatMap(user -> {
-                    var end = LocalDate.now(ZoneOffset.UTC);
+                    var end = LocalDate.now(PudansTime.BEIJING);
                     var start = end.minusDays(activityDays - 1L);
                     var uid = user.getSpec().getUid();
                     var counts = StringUtils.hasText(uid)
                             ? auditService.countPerDay(
-                                    start.atStartOfDay(ZoneOffset.UTC).toInstant(), uid, null, null)
+                                    PudansTime.startOfDay(start), uid, null, null)
                             : Mono.just(Map.<LocalDate, Long>of());
                     return counts.map(values -> IntStream.range(0, activityDays)
                             .mapToObj(offset -> {

@@ -22,6 +22,7 @@ import cn.tolim.pudans.core.audit.service.AuditService;
 import cn.tolim.pudans.core.rbac.service.UserGroupService;
 import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
 import cn.tolim.pudans.infra.audit.AuditStore;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import com.github.zafarkhaja.semver.Version;
 import java.net.URL;
 import java.time.Instant;
@@ -167,9 +168,9 @@ class DashboardEndpointTest {
         when(auditService.countSince(any(Instant.class))).thenReturn(Mono.just(41L));
         when(auditService.findRecent(5)).thenReturn(Flux.empty());
         when(auditService.countPerDay(any(Instant.class), eq("LOGIN"), eq("SUCCESS")))
-                .thenReturn(Mono.just(Map.of(LocalDate.now(java.time.ZoneOffset.UTC), 7L)));
+                .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 7L)));
         when(auditService.countPerDay(any(Instant.class), isNull(), isNull()))
-                .thenReturn(Mono.just(Map.of(LocalDate.now(java.time.ZoneOffset.UTC), 12L)));
+                .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 12L)));
         when(auditService.query(any(AuditStore.AuditQuery.class)))
                 .thenReturn(Flux.just(
                         record("audit-1", "uid-1", "LOGIN", "SUCCESS"),

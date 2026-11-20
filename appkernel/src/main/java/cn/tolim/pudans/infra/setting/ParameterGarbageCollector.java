@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.concurrent.ScheduledFuture;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import cn.tolim.pudans.security.authentication.rememberme.RememberTokenCleaner;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
@@ -86,8 +87,13 @@ public class ParameterGarbageCollector {
         if (!expression.equals(cron)) {
             log.warn("无效的垃圾回收 cron 表达式 [{}]，使用 [{}]", cron, DEFAULT_GC_CRON);
         }
-        currentTask = taskScheduler.schedule(this::run, new CronTrigger(expression));
+        currentTask = taskScheduler.schedule(this::run, gcTrigger(expression));
         log.info("参数垃圾回收已按 cron 表达式 [{}] 调度", expression);
+    }
+
+    // 回收 cron 以北京时间为基准，默认表达式为每天 03:00
+    static CronTrigger gcTrigger(String expression) {
+        return new CronTrigger(expression, PudansTime.BEIJING);
     }
 
     void run() {
