@@ -10,8 +10,6 @@ public final class MinimaxProtocol {
 
     public static final String NAME = "MiniMax";
 
-    public static final String MESSAGES_PATH = "/anthropic/v1/messages";
-
     public static final String COUNT_TOKENS_PATH = "/anthropic/v1/messages/count_tokens";
 
     public static final String NATIVE_CHAT_PATH = "/v1/text/chatcompletion_v2";
@@ -33,8 +31,6 @@ public final class MinimaxProtocol {
     public static final String ANTHROPIC_MODELS_PATH = "/anthropic/v1/models";
 
     public static final String TTS_WEBSOCKET_PATH = "/ws/v1/t2a_v2";
-
-    public static final String TTS_BIDI_WEBSOCKET_PATH = "/ws/v1/t2a_v2_bidi";
 
     private static final String WEBSOCKET_PREFIX = "/ws/v1/";
 

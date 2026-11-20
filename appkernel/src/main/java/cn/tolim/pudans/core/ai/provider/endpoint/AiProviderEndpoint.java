@@ -11,7 +11,10 @@ import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
 import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ListOptions;
+import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.contract.extension.MetadataOperator;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
@@ -21,25 +24,31 @@ import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelRequest;
 import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
-import cn.tolim.pudans.core.ai.provider.AiProviderAdapterRegistry;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
+import cn.tolim.pudans.core.ai.rerank.AiRerankService;
 import cn.tolim.pudans.infra.exception.ApiException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class AiProviderEndpoint implements CustomEndpoint {
@@ -59,11 +68,13 @@ public class AiProviderEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
-    private final AiProviderAdapterRegistry adapterRegistry;
+    private final LangChain4jChatService chatService;
 
     private final AiModelAdapterRegistry modelAdapters;
 
     private final AiEmbeddingService embeddingService;
+
+    private final AiRerankService rerankService;
 
     private final AiProviderAccountService accountService;
 
@@ -95,6 +106,19 @@ public class AiProviderEndpoint implements CustomEndpoint {
                         .parameter(nameParameter())
                         .requestBody(requestBodyBuilder().required(true).implementation(QuotaUpdate.class))
                         .response(responseBuilder().implementation(AiProviderAccount.class)))
+                .POST("/aiproviders/-/arrange", this::arrange, builder -> builder
+                        .operationId("arrangeAiProviders")
+                        .description("Write provider order according to the given names.")
+                        .tag(TAG)
+                        .requestBody(requestBodyBuilder().required(true).implementation(ArrangeRequest.class))
+                        .response(responseBuilder()))
+                .POST("/aiproviders/{name}/actions/duplicate", this::duplicate, builder -> builder
+                        .operationId("duplicateAiProvider")
+                        .description("Duplicate a provider together with its accounts and models.")
+                        .tag(TAG)
+                        .parameter(nameParameter())
+                        .requestBody(requestBodyBuilder().required(true).implementation(DuplicateRequest.class))
+                        .response(responseBuilder().implementation(AiProvider.class)))
                 .build();
     }
 
@@ -117,7 +141,10 @@ public class AiProviderEndpoint implements CustomEndpoint {
                         return Mono.error(testFailed("模型配置不能为空。"));
                     }
                     if (model.getSpec().getModelType() == AiModel.ModelType.EMBEDDING) {
-                        return testEmbedding(model);
+                        return client.get(AiProvider.class, model.getSpec().getProvider())
+                                .flatMap(provider -> firstAccount(provider.getMetadata().getName())
+                                        .switchIfEmpty(Mono.error(testFailed("供应商没有可用账号。")))
+                                        .flatMap(account -> testEmbedding(provider, account, model)));
                     }
                     if (model.getSpec().getModelType() == AiModel.ModelType.CHAT) {
                         return client.get(AiProvider.class, model.getSpec().getProvider())
@@ -185,7 +212,118 @@ public class AiProviderEndpoint implements CustomEndpoint {
                 .flatMap(account -> ServerResponse.ok().bodyValue(account));
     }
 
-    private Mono<TestResult> testEmbedding(AiModel model) {
+    private Mono<ServerResponse> arrange(ServerRequest request) {
+        return request
+                .bodyToMono(ArrangeRequest.class)
+                .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
+                .flatMap(body -> {
+                    var names = body.names() == null
+                            ? List.<String>of()
+                            : body.names().stream().filter(StringUtils::hasText).toList();
+                    if (names.isEmpty() || new HashSet<>(names).size() != names.size()) {
+                        return Mono.error(invalid("供应商名称列表不能为空且不得重复。"));
+                    }
+                    return Flux.fromIterable(names)
+                            .index()
+                            .concatMap(tuple -> client.get(AiProvider.class, tuple.getT2())
+                                    .switchIfEmpty(Mono.error(notFound("供应商不存在：" + tuple.getT2() + "。")))
+                                    .flatMap(provider -> {
+                                        if (provider.getSpec() == null) {
+                                            provider.setSpec(new AiProvider.Spec());
+                                        }
+                                        provider.getSpec().setOrder(tuple.getT1().intValue());
+                                        return client.update(provider);
+                                    }))
+                            .collectList()
+                            .flatMap(providers -> ServerResponse.ok().bodyValue(providers));
+                });
+    }
+
+    private Mono<ServerResponse> duplicate(ServerRequest request) {
+        return request
+                .bodyToMono(DuplicateRequest.class)
+                .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
+                .flatMap(body -> {
+                    if (!StringUtils.hasText(body.name())) {
+                        return Mono.error(invalid("新供应商名称不能为空。"));
+                    }
+                    return client.get(AiProvider.class, request.pathVariable("name"))
+                            .switchIfEmpty(Mono.error(notFound("供应商不存在。")))
+                            .flatMap(source -> client.get(AiProvider.class, body.name())
+                                    .flatMap(existing -> Mono.<AiProvider>error(conflict("供应商名称已存在。")))
+                                    .switchIfEmpty(Mono.defer(() -> copyProvider(source, body))))
+                            .flatMap(provider -> ServerResponse.ok().bodyValue(provider));
+                });
+    }
+
+    private Mono<AiProvider> copyProvider(AiProvider source, DuplicateRequest request) {
+        var copy = new AiProvider();
+        copy.setMetadata(copyMetadata(source.getMetadata(), request.name()));
+        copy.setSpec(source.getSpec() == null
+                ? new AiProvider.Spec()
+                : JsonUtils.deepCopy(source.getSpec()));
+        copy.getSpec().setDisplayName(
+                StringUtils.hasText(request.displayName())
+                        ? request.displayName()
+                        : source.getSpec() == null ? null : source.getSpec().getDisplayName());
+        copy.setStatus(new AiProvider.Status());
+        var sourceName = source.getMetadata().getName();
+        return client.create(copy).flatMap(created -> copyAccounts(sourceName, request.name())
+                .then(copyModels(sourceName, request.name()))
+                .thenReturn(created));
+    }
+
+    private Mono<Void> copyAccounts(String sourceName, String providerName) {
+        var options = ListOptions.builder().andQuery(equal("spec.provider", sourceName)).build();
+        return client.listAll(AiProviderAccount.class, options, defaultSort())
+                .index()
+                .concatMap(tuple -> {
+                    var source = tuple.getT2();
+                    var copy = new AiProviderAccount();
+                    copy.setMetadata(copyMetadata(
+                            source.getMetadata(), providerName + "-account-" + (tuple.getT1() + 1)));
+                    copy.setSpec(source.getSpec() == null
+                            ? new AiProviderAccount.Spec()
+                            : JsonUtils.deepCopy(source.getSpec()));
+                    copy.getSpec().setProvider(providerName);
+                    copy.getSpec().setApiKey(null);
+                    copy.getSpec().setConfigured(false);
+                    copy.setStatus(new AiProviderAccount.Status());
+                    return client.create(copy);
+                })
+                .then();
+    }
+
+    private Mono<Void> copyModels(String sourceName, String providerName) {
+        var options = ListOptions.builder().andQuery(equal("spec.provider", sourceName)).build();
+        return client.listAll(AiModel.class, options, defaultSort())
+                .index()
+                .concatMap(tuple -> {
+                    var source = tuple.getT2();
+                    var copy = new AiModel();
+                    copy.setMetadata(copyMetadata(
+                            source.getMetadata(), providerName + "-model-" + (tuple.getT1() + 1)));
+                    copy.setSpec(source.getSpec() == null
+                            ? new AiModel.Spec()
+                            : JsonUtils.deepCopy(source.getSpec()));
+                    copy.getSpec().setProvider(providerName);
+                    return client.create(copy);
+                })
+                .then();
+    }
+
+    private static Metadata copyMetadata(@Nullable MetadataOperator source, String name) {
+        var metadata = new Metadata();
+        metadata.setName(name);
+        if (source != null) {
+            metadata.setLabels(source.getLabels() == null ? null : new HashMap<>(source.getLabels()));
+            metadata.setAnnotations(
+                    source.getAnnotations() == null ? null : new HashMap<>(source.getAnnotations()));
+        }
+        return metadata;
+    }
+
+    private Mono<TestResult> testEmbedding(AiProvider provider, AiProviderAccount account, AiModel model) {
         var started = Instant.now();
         return embeddingService
                 .embed(List.of(TEST_PROMPT), model.getMetadata().getName())
@@ -194,20 +332,21 @@ public class AiProviderEndpoint implements CustomEndpoint {
                         Duration.between(started, Instant.now()).toMillis(),
                         "Embedding 连通性正常。",
                         batch.modelCode()))
-                .onErrorMap(error -> testError(error));
+                .flatMap(result -> markSuccess(provider, account, result))
+                .onErrorResume(error -> markFailure(provider, account, error).then(Mono.error(error)));
     }
 
     private Mono<TestResult> test(AiProvider provider, AiProviderAccount account, AiModel model) {
         var started = Instant.now();
-        return adapterRegistry
-                .require(provider.getSpec().getProtocol())
-                .chat(provider, account, model, testRequest())
+        return chatService
+                .chat(provider, account, model, provider.getSpec().getProtocol(), testRequest())
                 .map(response -> new TestResult(
                         true,
                         Duration.between(started, Instant.now()).toMillis(),
                         "连通性正常。",
                         response.model()))
-                .onErrorMap(error -> testError(error));
+                .flatMap(result -> markSuccess(provider, account, result))
+                .onErrorResume(error -> markFailure(provider, account, error).then(Mono.error(error)));
     }
 
     private Mono<TestResult> testCapability(
@@ -217,10 +356,27 @@ public class AiProviderEndpoint implements CustomEndpoint {
             return Mono.error(testFailed("该模型不支持同步连通性测试，请通过生成接口验证。"));
         }
         var protocol = provider.getSpec().getProtocol();
+        var started = Instant.now();
+        if (capability == AiModel.Capability.RERANK) {
+            return rerankService
+                    .rerank(
+                            provider,
+                            account,
+                            model,
+                            TEST_PROMPT,
+                            List.of(TEST_PROMPT, TEST_PROMPT),
+                            1)
+                    .map(result -> new TestResult(
+                            true,
+                            Duration.between(started, Instant.now()).toMillis(),
+                            "重排连通性正常。",
+                            model.getSpec().getModelCode()))
+                    .flatMap(result -> markSuccess(provider, account, result))
+                    .onErrorResume(error -> markFailure(provider, account, error).then(Mono.error(error)));
+        }
         if (!modelAdapters.supports(protocol, capability)) {
             return Mono.error(testFailed("供应商协议不支持模型能力：" + capability + "。"));
         }
-        var started = Instant.now();
         return modelAdapters
                 .require(protocol, capability)
                 .invoke(provider, account, model, testModelRequest(capability))
@@ -229,18 +385,70 @@ public class AiProviderEndpoint implements CustomEndpoint {
                         Duration.between(started, Instant.now()).toMillis(),
                         "连通性正常。",
                         response.modelCode()))
-                .onErrorMap(error -> testError(error));
+                .flatMap(result -> markSuccess(provider, account, result))
+                .onErrorResume(error -> markFailure(provider, account, error).then(Mono.error(error)));
+    }
+
+    private Mono<TestResult> markSuccess(
+            AiProvider provider, @Nullable AiProviderAccount account, TestResult result) {
+        var now = Instant.now();
+        var status = provider.getStatus() == null ? new AiProvider.Status() : provider.getStatus();
+        status.setHealthScore(100.0);
+        status.setLastTestedAt(now);
+        status.setMessage(result.message());
+        provider.setStatus(status);
+        var updates = new ArrayList<Mono<?>>();
+        updates.add(client.update(provider));
+        if (account != null) {
+            var accountStatus =
+                    account.getStatus() == null ? new AiProviderAccount.Status() : account.getStatus();
+            accountStatus.setHealthScore(100.0);
+            accountStatus.setLastUsedAt(now);
+            accountStatus.setLastError(null);
+            account.setStatus(accountStatus);
+            updates.add(client.update(account));
+        }
+        return Mono.when(updates)
+                .thenReturn(result)
+                .onErrorResume(error -> {
+                    log.warn("供应商测试状态写回失败。", error);
+                    return Mono.just(result);
+                });
+    }
+
+    private Mono<Void> markFailure(
+            AiProvider provider, @Nullable AiProviderAccount account, Throwable error) {
+        var reason = testError(error).getReason();
+        var message = StringUtils.hasText(reason) ? reason : "供应商连通性测试失败。";
+        var now = Instant.now();
+        var status = provider.getStatus() == null ? new AiProvider.Status() : provider.getStatus();
+        status.setLastTestedAt(now);
+        status.setMessage(message);
+        provider.setStatus(status);
+        var updates = new ArrayList<Mono<?>>();
+        updates.add(client.update(provider));
+        if (account != null) {
+            var accountStatus =
+                    account.getStatus() == null ? new AiProviderAccount.Status() : account.getStatus();
+            accountStatus.setLastError(message);
+            account.setStatus(accountStatus);
+            updates.add(client.update(account));
+        }
+        return Mono.when(updates)
+                .then()
+                .onErrorResume(updateError -> {
+                    log.warn("供应商测试失败状态写回失败。", updateError);
+                    return Mono.empty();
+                });
     }
 
     private static AiModelRequest testModelRequest(AiModel.Capability capability) {
-        var inputs = capability == AiModel.Capability.RERANK
-                ? List.<AiModelContent>of(
-                        new AiModelContent.Text(TEST_PROMPT), new AiModelContent.Text(TEST_PROMPT))
-                : List.<AiModelContent>of(new AiModelContent.Text(TEST_PROMPT));
-        var params = capability == AiModel.Capability.RERANK
-                ? Map.<String, JsonNode>of("topK", JsonNodeFactory.instance.numberNode(1))
-                : Map.<String, JsonNode>of();
-        return new AiModelRequest(capability, inputs, params, false, null);
+        return new AiModelRequest(
+                capability,
+                List.of(new AiModelContent.Text(TEST_PROMPT)),
+                Map.of(),
+                false,
+                null);
     }
 
     private static AiModel.@Nullable Capability syncTestCapability(AiModel model) {
@@ -278,6 +486,18 @@ public class AiProviderEndpoint implements CustomEndpoint {
         return new ApiException(HttpStatus.BAD_GATEWAY, CODE_TEST_FAILED, message);
     }
 
+    private static ApiException invalid(String message) {
+        return new ApiException(HttpStatus.BAD_REQUEST, "ai-provider-request-invalid", message);
+    }
+
+    private static ApiException notFound(String message) {
+        return new ApiException(HttpStatus.NOT_FOUND, "ai-provider-not-found", message);
+    }
+
+    private static ApiException conflict(String message) {
+        return new ApiException(HttpStatus.CONFLICT, "ai-provider-conflict", message);
+    }
+
     private ApiException testError(Throwable error) {
         if (error instanceof ApiException apiException) {
             return apiException;
@@ -295,4 +515,8 @@ public class AiProviderEndpoint implements CustomEndpoint {
             AiProviderAccount.Quota quota,
             List<AiProviderAccount.QuotaWindow> windows,
             AiProviderAccount.Balance balance) {}
+
+    public record ArrangeRequest(List<String> names) {}
+
+    public record DuplicateRequest(String name, @Nullable String displayName) {}
 }

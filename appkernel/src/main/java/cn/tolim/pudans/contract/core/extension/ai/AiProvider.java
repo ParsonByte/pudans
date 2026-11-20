@@ -4,8 +4,10 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import cn.tolim.pudans.contract.extension.AbstractExtension;
 import cn.tolim.pudans.contract.extension.GVK;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +34,43 @@ public class AiProvider extends AbstractExtension {
     private Spec spec = new Spec();
 
     private Status status = new Status();
+
+    public enum Vendor {
+        OPENAI(Protocol.OPENAI_CHAT),
+        ANTHROPIC(Protocol.ANTHROPIC),
+        GEMINI(Protocol.GEMINI),
+        DEEPSEEK(Protocol.DEEPSEEK_CHAT),
+        MINIMAX(Protocol.MINIMAX_CHAT),
+        QIANWEN(Protocol.QIANWEN),
+        OLLAMA(Protocol.OLLAMA),
+        CUSTOM(Protocol.CUSTOM_HTTP);
+
+        private final Protocol protocol;
+
+        Vendor(Protocol protocol) {
+            this.protocol = protocol;
+        }
+
+        public Protocol protocol() {
+            return protocol;
+        }
+
+        public static Vendor of(@Nullable Protocol protocol) {
+            if (protocol == null) {
+                return CUSTOM;
+            }
+            return switch (protocol) {
+                case OPENAI_CHAT, OPENAI_RESPONSES -> OPENAI;
+                case ANTHROPIC -> ANTHROPIC;
+                case DEEPSEEK, DEEPSEEK_CHAT, DEEPSEEK_RESPONSES -> DEEPSEEK;
+                case MINIMAX, MINIMAX_CHAT, MINIMAX_NATIVE, MINIMAX_RESPONSES -> MINIMAX;
+                case QIANWEN -> QIANWEN;
+                case GEMINI, GEMINI_OPENAI -> GEMINI;
+                case OLLAMA -> OLLAMA;
+                case CUSTOM_HTTP -> CUSTOM;
+            };
+        }
+    }
 
     public enum Protocol {
         OPENAI_CHAT,
@@ -79,7 +118,10 @@ public class AiProvider extends AbstractExtension {
         @Schema(requiredMode = REQUIRED)
         private String displayName;
 
-        @Schema(requiredMode = REQUIRED)
+        private Vendor vendor;
+
+        @Schema(hidden = true)
+        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         private Protocol protocol;
 
         private String baseUrl;
@@ -98,11 +140,21 @@ public class AiProvider extends AbstractExtension {
 
         private Affinity affinity = Affinity.AUTO;
 
+        private int order;
+
         private List<String> fallback = new ArrayList<>();
 
         private boolean free;
 
         private boolean enabled = true;
+
+        public Vendor getVendor() {
+            return vendor == null ? Vendor.of(protocol) : vendor;
+        }
+
+        public Protocol getProtocol() {
+            return vendor == null ? (protocol == null ? Protocol.CUSTOM_HTTP : protocol) : vendor.protocol();
+        }
     }
 
     @Data

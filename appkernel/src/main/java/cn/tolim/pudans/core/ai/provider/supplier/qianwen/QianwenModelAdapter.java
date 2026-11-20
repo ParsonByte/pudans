@@ -30,12 +30,6 @@ public class QianwenModelAdapter implements AiModelAdapter {
 
     private static final String THREE_D_PATH = QianwenProtocol.THREE_D_PATH;
 
-    private static final String EMBEDDING_PATH = QianwenProtocol.EMBEDDING_PATH;
-
-    private static final String RERANK_PATH = QianwenProtocol.RERANK_PATH;
-
-    private static final String TEXT_EMBEDDING_PATH = QianwenProtocol.TEXT_EMBEDDING_PATH;
-
     private static final String SPEECH_PATH = QianwenProtocol.SPEECH_PATH;
 
     private static final String ASR_PATH = QianwenProtocol.ASR_PATH;
@@ -51,8 +45,6 @@ public class QianwenModelAdapter implements AiModelAdapter {
             AiModel.Capability.IMAGE_EDITING,
             AiModel.Capability.VIDEO_GENERATION,
             AiModel.Capability.THREE_D_GENERATION,
-            AiModel.Capability.EMBEDDING,
-            AiModel.Capability.RERANK,
             AiModel.Capability.VISION,
             AiModel.Capability.AUDIO_UNDERSTANDING,
             AiModel.Capability.VIDEO_UNDERSTANDING,
@@ -96,8 +88,6 @@ public class QianwenModelAdapter implements AiModelAdapter {
                     OCR -> multimodal(provider, account, model, request);
             case VIDEO_GENERATION -> video(provider, account, model, request);
             case THREE_D_GENERATION -> threeD(provider, account, model, request);
-            case EMBEDDING -> embed(provider, account, model, request);
-            case RERANK -> rerank(provider, account, model, request);
             case SPEECH_SYNTHESIS, AUDIO_GENERATION -> speech(provider, account, model, request);
             case SPEECH_RECOGNITION -> asr(provider, account, model, request);
             case MUSIC_GENERATION -> music(provider, account, model, request);
@@ -258,94 +248,6 @@ public class QianwenModelAdapter implements AiModelAdapter {
         }
         return client.post(provider, account, THREE_D_PATH, body, true)
                 .map(root -> created(root, model));
-    }
-
-    private Mono<AiModelResponse> embed(
-            AiProvider provider, AiProviderAccount account, AiModel model, AiModelRequest request) {
-        var modelCode = modelCode(model);
-        var textOnly = request.inputs().stream().allMatch(AiModelContent.Text.class::isInstance);
-        if (textOnly && modelCode.startsWith("text-embedding")) {
-            return textEmbedding(provider, account, modelCode, request);
-        }
-        return multimodalEmbedding(provider, account, modelCode, request);
-    }
-
-    private Mono<AiModelResponse> textEmbedding(
-            AiProvider provider,
-            AiProviderAccount account,
-            String modelCode,
-            AiModelRequest request) {
-        var body = mapper.createObjectNode();
-        body.put("model", modelCode);
-        var input = body.putObject("input");
-        var texts = input.putArray("texts");
-        for (var content : request.inputs()) {
-            texts.add(((AiModelContent.Text) content).text());
-        }
-        var parameters = body.putObject("parameters");
-        request.params().forEach(parameters::set);
-        return client.post(provider, account, TEXT_EMBEDDING_PATH, body, false).map(root -> {
-            var vectors = new TreeMap<Integer, float[]>();
-            var embeddings = root.path("output").path("embeddings");
-            for (var position = 0; position < embeddings.size(); position++) {
-                var item = embeddings.get(position);
-                vectors.put(optionalInteger(item, "text_index", position), vector(item.get("embedding")));
-            }
-            return embeddingResponse(
-                    root,
-                    modelCode,
-                    vectors,
-                    AiProviderHttpSupport.integer(root.path("usage"), "total_tokens"));
-        });
-    }
-
-    private Mono<AiModelResponse> multimodalEmbedding(
-            AiProvider provider,
-            AiProviderAccount account,
-            String modelCode,
-            AiModelRequest request) {
-        var body = mapper.createObjectNode();
-        body.put("model", modelCode);
-        var input = body.putObject("input");
-        var contents = input.putArray("contents");
-        for (var content : request.inputs()) {
-            contents.add(contentItem(content));
-        }
-        var parameters = body.putObject("parameters");
-        request.params().forEach(parameters::set);
-        return client.post(provider, account, EMBEDDING_PATH, body, false).map(root -> {
-            var vectors = new TreeMap<Integer, float[]>();
-            var embeddings = root.path("output").path("embeddings");
-            for (var position = 0; position < embeddings.size(); position++) {
-                var item = embeddings.get(position);
-                vectors.put(optionalInteger(item, "index", position), vector(item.get("embedding")));
-            }
-            return embeddingResponse(
-                    root,
-                    modelCode,
-                    vectors,
-                    AiProviderHttpSupport.integer(root.path("usage"), "input_tokens"));
-        });
-    }
-
-    private AiModelResponse embeddingResponse(
-            JsonNode root,
-            String modelCode,
-            TreeMap<Integer, float[]> vectors,
-            @Nullable Integer inputTokens) {
-        var outputs = new ArrayList<AiModelContent>();
-        for (var values : vectors.values()) {
-            outputs.add(new AiModelContent.Vector(modelCode, values.length, values));
-        }
-        return new AiModelResponse(
-                text(root, "request_id"),
-                modelCode,
-                outputs,
-                new AiModelUsage(
-                        inputTokens, null, null, null, null, null, null, null, null, Map.of()),
-                null,
-                null,
-                AiModelResponse.TaskStatus.SUCCEEDED);
     }
 
     private Mono<AiModelResponse> speech(
@@ -516,89 +418,6 @@ public class QianwenModelAdapter implements AiModelAdapter {
         });
     }
 
-    private Mono<AiModelResponse> rerank(
-            AiProvider provider, AiProviderAccount account, AiModel model, AiModelRequest request) {
-        var modelCode = modelCode(model);
-        if (request.inputs().isEmpty()) {
-            return Mono.just(new AiModelResponse(
-                    null,
-                    modelCode,
-                    List.of(),
-                    AiModelUsage.EMPTY,
-                    null,
-                    null,
-                    AiModelResponse.TaskStatus.SUCCEEDED));
-        }
-        var body = mapper.createObjectNode();
-        body.put("model", modelCode);
-        var input = body.putObject("input");
-        input.set("query", contentItem(request.inputs().getFirst()));
-        var documents = input.putArray("documents");
-        for (var content : request.inputs().subList(1, request.inputs().size())) {
-            documents.add(contentItem(content));
-        }
-        var parameters = body.putObject("parameters");
-        var topK = integerParam(request.params(), "topK", documents.size());
-        if (topK > 0) {
-            parameters.put("top_n", topK);
-        }
-        request.params().forEach((name, value) -> {
-            if (!"topK".equals(name)) {
-                parameters.set(name, value);
-            }
-        });
-        return client.post(provider, account, RERANK_PATH, body, false).map(root -> {
-            var results = root.path("output").path("results");
-            if (!results.isArray()) {
-                results = root.path("results");
-            }
-            var outputs = new ArrayList<AiModelContent>();
-            for (var position = 0; position < results.size(); position++) {
-                var item = results.get(position);
-                var index = optionalInteger(item, "index", position);
-                var score = decimal(item, "relevance_score");
-                if (score == null) {
-                    score = decimal(item, "score");
-                }
-                if (score == null) {
-                    throw new IllegalArgumentException("千问重排响应缺少有效分数");
-                }
-                var node = mapper.createObjectNode();
-                node.put("index", index);
-                node.put("score", score);
-                outputs.add(new AiModelContent.Json(node));
-            }
-            var usage = root.path("usage");
-            return new AiModelResponse(
-                    text(root, "request_id"),
-                    modelCode,
-                    outputs,
-                    new AiModelUsage(
-                            AiProviderHttpSupport.integer(usage, "total_tokens"),
-                            null, null, null, null, null, null, null, null, Map.of()),
-                    null,
-                    null,
-                    AiModelResponse.TaskStatus.SUCCEEDED);
-        });
-    }
-
-    private ObjectNode contentItem(AiModelContent content) {
-        var item = mapper.createObjectNode();
-        if (content instanceof AiModelContent.Text text) {
-            item.put("text", text.text());
-        } else if (content instanceof AiModelContent.Image image) {
-            item.put("image", imageReference(image.url(), image.data(), image.mediaType()));
-        } else if (content instanceof AiModelContent.Video video) {
-            if (video.url() == null) {
-                throw new IllegalArgumentException("千问视频向量输入需要公网 URL");
-            }
-            item.put("video", video.url());
-        } else {
-            throw new IllegalArgumentException("千问不支持该向量输入类型：" + content.getClass().getSimpleName());
-        }
-        return item;
-    }
-
     private static String imageReference(
             @Nullable String url, @Nullable String data, @Nullable String mediaType) {
         return mediaReference(url, data, mediaType, "image/png");
@@ -633,19 +452,9 @@ public class QianwenModelAdapter implements AiModelAdapter {
         return values;
     }
 
-    private static int optionalInteger(JsonNode node, String field, int fallback) {
-        var value = AiProviderHttpSupport.integer(node, field);
-        return value == null ? fallback : value;
-    }
-
     private static @Nullable Double decimal(JsonNode node, String field) {
         var value = node == null ? null : node.get(field);
         return value != null && value.isNumber() ? value.doubleValue() : null;
-    }
-
-    private static int integerParam(Map<String, JsonNode> params, String name, int fallback) {
-        var value = params == null ? null : params.get(name);
-        return value != null && value.isIntegralNumber() ? value.asInt() : fallback;
     }
 
     private AiModelResponse created(JsonNode root, AiModel model) {

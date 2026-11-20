@@ -1,6 +1,5 @@
 package cn.tolim.pudans.core.ai.provider;
 
-import static cn.tolim.pudans.core.ai.provider.AiProviderAdapterTestFixtures.request;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -63,35 +62,6 @@ class AiProviderHttpSupportTest {
 
         assertThat(headers.getFirst("X-Org-Id")).isEqualTo("org-1");
         assertThat(headers.containsHeader("X-Empty")).isFalse();
-    }
-
-    @Test
-    void appliesModelCodeAndStreamFlag() {
-        var model = AiProviderAdapterTestFixtures.model("gpt-4o-mini", null);
-
-        var prepared = AiProviderHttpSupport.withModelAndStream(request(), model, true);
-
-        assertThat(prepared.stream()).isTrue();
-        assertThat(prepared.requestParams().model()).isEqualTo("gpt-4o-mini");
-        assertThat(prepared.requestParams().temperature()).isEqualTo(0.2);
-    }
-
-    @Test
-    void keepsExplicitMaxTokensAndFillsMissingOnes() {
-        var model = AiProviderAdapterTestFixtures.model("claude-sonnet-4-5", 2048);
-        var prepared = AiProviderHttpSupport.withModelAndStream(request(), model, false);
-
-        var filled = AiProviderHttpSupport.withDefaultMaxTokens(prepared, 2048);
-
-        assertThat(filled.requestParams().maxTokens()).isEqualTo(2048);
-        assertThat(AiProviderHttpSupport.withDefaultMaxTokens(filled, 4096)
-                        .requestParams()
-                        .maxTokens())
-                .isEqualTo(2048);
-        assertThat(AiProviderHttpSupport.withDefaultMaxTokens(prepared, null)
-                        .requestParams()
-                        .maxTokens())
-                .isNull();
     }
 
     @Test

@@ -6,13 +6,13 @@ import java.net.URI;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
 
-final class AiProviderConfigSupport {
+public final class AiProviderConfigSupport {
 
-    static final String CODE_INVALID = "ai-provider-config-invalid";
+    public static final String CODE_INVALID = "ai-provider-config-invalid";
 
     private AiProviderConfigSupport() {}
 
-    static void validate(AiProvider provider) {
+    public static void validate(AiProvider provider) {
         var spec = provider == null ? null : provider.getSpec();
         var baseUrl = spec == null ? null : spec.getBaseUrl();
         if (!StringUtils.hasText(baseUrl)) {
@@ -34,11 +34,11 @@ final class AiProviderConfigSupport {
         }
     }
 
-    static ApiException invalid(String reason) {
+    public static ApiException invalid(String reason) {
         return invalid(reason, null);
     }
 
-    static ApiException invalid(String reason, Throwable cause) {
+    public static ApiException invalid(String reason, Throwable cause) {
         return new ApiException(HttpStatus.BAD_REQUEST, CODE_INVALID, reason, cause);
     }
 }

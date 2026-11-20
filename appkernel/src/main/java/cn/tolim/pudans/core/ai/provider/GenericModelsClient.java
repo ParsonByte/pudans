@@ -44,11 +44,17 @@ public class GenericModelsClient {
         return protocol == AiProvider.Protocol.OPENAI_CHAT
                 || protocol == AiProvider.Protocol.OPENAI_RESPONSES
                 || protocol == AiProvider.Protocol.ANTHROPIC
-                || protocol == AiProvider.Protocol.GEMINI_OPENAI;
+                || protocol == AiProvider.Protocol.GEMINI_OPENAI
+                || protocol == AiProvider.Protocol.QIANWEN
+                || protocol == AiProvider.Protocol.MINIMAX_CHAT;
     }
 
     static String path(AiProvider.Protocol protocol) {
-        return protocol == AiProvider.Protocol.GEMINI_OPENAI ? "/models" : "/v1/models";
+        return switch (protocol) {
+            case GEMINI_OPENAI -> "/models";
+            case QIANWEN -> "/compatible-mode/v1/models";
+            default -> "/v1/models";
+        };
     }
 
     public Mono<DeepSeekModelsClient.ModelList> list(

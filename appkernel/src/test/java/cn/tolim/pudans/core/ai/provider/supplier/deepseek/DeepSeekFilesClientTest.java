@@ -87,7 +87,7 @@ class DeepSeekFilesClientTest {
         assertThat(request.method()).isEqualTo(HttpMethod.POST);
         assertThat(request.url().toString()).isEqualTo("https://api.example.com/files");
         assertThat(request.headers().getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer sk-ds-secret");
-        assertThat(request.headers().containsHeader(DeepSeekProtocol.BETA_HEADER)).isFalse();
+        assertThat(request.headers().containsHeader("anthropic-beta")).isFalse();
         var multipart = body(request);
         assertThat(multipart)
                 .contains("name=\"purpose\"")

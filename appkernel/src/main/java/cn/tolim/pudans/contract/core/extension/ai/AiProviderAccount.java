@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -57,6 +59,17 @@ public class AiProviderAccount extends AbstractExtension {
 
         private String apiKey;
 
+        private boolean configured;
+
+        private String keyName;
+
+        @Schema(hidden = true)
+        @com.fasterxml.jackson.annotation.JsonProperty(
+                access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
+        private AiProvider.Protocol protocolOverride;
+
+        private String keyPlan;
+
         private int weight = 1;
 
         private int priority;
@@ -76,6 +89,26 @@ public class AiProviderAccount extends AbstractExtension {
         private List<QuotaWindow> windows = new ArrayList<>();
 
         private Balance balance = new Balance();
+
+        private Long spendCapPoints;
+
+        private BalanceProbe balanceProbe = new BalanceProbe();
+
+        private Map<String, Integer> concurrencyByModel = new LinkedHashMap<>();
+    }
+
+    @Data
+    public static class BalanceProbe {
+
+        private String url;
+
+        private String path;
+
+        private String method = "GET";
+
+        private String token;
+
+        private String headerName = "Authorization";
     }
 
     @Data
