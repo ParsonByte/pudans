@@ -36,6 +36,7 @@ public final class HarnessSkillTools {
         if (entry.isEmpty()) {
             return new HarnessToolkit.ToolResult("技能不存在：" + name, true);
         }
+        runtime.recordUse(name);
         var skill = entry.get();
         var output = new StringBuilder(skill.markdown());
         if (!skill.resources().list().isEmpty()) {

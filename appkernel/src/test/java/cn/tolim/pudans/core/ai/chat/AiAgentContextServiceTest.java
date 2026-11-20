@@ -8,6 +8,8 @@ import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionBehavior;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionMode;
+import cn.tolim.pudans.core.ai.harness.skill.curator.InMemorySkillUsageStore;
+import cn.tolim.pudans.core.ai.harness.skill.curator.SkillUsageStore;
 import cn.tolim.pudans.core.ai.harness.team.TeamRuntimeRegistry;
 import cn.tolim.pudans.core.ai.library.LibraryView;
 import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
@@ -48,6 +50,8 @@ class AiAgentContextServiceTest {
     @Mock
     TeamRuntimeRegistry teamRuntimeRegistry;
 
+    private final SkillUsageStore skillUsageStore = new InMemorySkillUsageStore();
+
     private AiAgentContextService service;
 
     @BeforeEach
@@ -58,6 +62,7 @@ class AiAgentContextServiceTest {
                 slashCommandService,
                 environmentVariableService,
                 skillService,
+                skillUsageStore,
                 teamRuntimeRegistry);
     }
 

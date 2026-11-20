@@ -7,6 +7,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 public final class TeamRuntime {
@@ -21,12 +22,20 @@ public final class TeamRuntime {
 
     private final Board board = new Board();
 
+    private final @Nullable TeamTaskStore taskStore;
+
     public TeamRuntime(String teamName, TeamAccessPolicy accessPolicy) {
+        this(teamName, accessPolicy, null);
+    }
+
+    public TeamRuntime(
+            String teamName, TeamAccessPolicy accessPolicy, @Nullable TeamTaskStore taskStore) {
         if (teamName == null || teamName.isBlank()) {
             throw new IllegalArgumentException("团队名称不能为空。");
         }
         this.teamName = teamName.trim();
         this.accessPolicy = Objects.requireNonNull(accessPolicy, "团队访问策略不能为空");
+        this.taskStore = taskStore;
     }
 
     public Mono<TeamTask> createTask(
@@ -35,38 +44,47 @@ public final class TeamRuntime {
             String description,
             List<String> blockedBy,
             String owner) {
-        return authorize(userId).then(Mono.fromCallable(
-                () -> board.createTask(teamName, subject, description, blockedBy, owner)));
+        return authorize(userId).then(taskStore != null
+                ? taskStore.create(teamName, subject, description, blockedBy, owner)
+                : Mono.fromCallable(() -> board.createTask(teamName, subject, description, blockedBy, owner)));
     }
 
     public Mono<TeamTask> assignTask(
             String userId, String taskId, String owner, long expectedVersion) {
-        return authorize(userId).then(Mono.fromCallable(
-                () -> board.assignTask(taskId, owner, expectedVersion)));
+        return authorize(userId).then(taskStore != null
+                ? taskStore.assign(teamName, taskId, owner, expectedVersion)
+                : Mono.fromCallable(() -> board.assignTask(taskId, owner, expectedVersion)));
     }
 
     public Mono<TeamTask> claimTask(
             String userId, String memberName, String taskId, long expectedVersion) {
-        return authorize(userId).then(Mono.fromCallable(
-                () -> board.claimTask(taskId, memberName, expectedVersion)));
+        return authorize(userId).then(taskStore != null
+                ? taskStore.claim(teamName, taskId, memberName, expectedVersion)
+                : Mono.fromCallable(() -> board.claimTask(taskId, memberName, expectedVersion)));
     }
 
     public Mono<TeamTask> completeTask(String userId, String taskId, String result) {
-        return authorize(userId).then(Mono.fromCallable(
-                () -> board.completeTask(taskId, result)));
+        return authorize(userId).then(taskStore != null
+                ? taskStore.complete(teamName, taskId, result)
+                : Mono.fromCallable(() -> board.completeTask(taskId, result)));
     }
 
     public Mono<TeamTask> failTask(String userId, String taskId, String reason) {
-        return authorize(userId).then(Mono.fromCallable(
-                () -> board.failTask(taskId, reason)));
+        return authorize(userId).then(taskStore != null
+                ? taskStore.fail(teamName, taskId, reason)
+                : Mono.fromCallable(() -> board.failTask(taskId, reason)));
     }
 
     public Mono<List<TeamTask>> tasks(String userId) {
-        return authorize(userId).then(Mono.fromCallable(() -> board.tasks()));
+        return authorize(userId).then(taskStore != null
+                ? taskStore.tasks(teamName)
+                : Mono.fromCallable(() -> board.tasks()));
     }
 
     public Mono<List<TeamTask>> claimableTasks(String userId, String memberName) {
-        return authorize(userId).then(Mono.fromCallable(() -> board.claimableTasks(memberName)));
+        return authorize(userId).then(taskStore != null
+                ? taskStore.claimable(teamName, memberName)
+                : Mono.fromCallable(() -> board.claimableTasks(memberName)));
     }
 
     public Mono<TeamMessage> sendMessage(

@@ -5,6 +5,8 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import cn.tolim.pudans.contract.extension.AbstractExtension;
 import cn.tolim.pudans.contract.extension.GVK;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,7 +65,19 @@ public class AiTeam extends AbstractExtension {
 
         private List<Member> members = new ArrayList<>();
 
+        private Quota quota = new Quota();
+
         private Map<String, Object> metadata = new LinkedHashMap<>();
+    }
+
+    @Data
+    public static class Quota {
+
+        private BigDecimal limit;
+
+        private Instant resetsAt;
+
+        private int windowDays = 30;
     }
 
     @Data

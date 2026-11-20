@@ -55,7 +55,8 @@ class L1PipelineServiceOrgCandidateTest {
                 conversationRepository,
                 taskRepository,
                 generationLogRepository,
-                new PersonaTrigger());
+                new PersonaTrigger(),
+                null);
         service.setClock(Clock.fixed(NOW, ZoneOffset.UTC));
     }
 

@@ -10,6 +10,7 @@ import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService.RuntimeView;
+import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService.SnapshotView;
 import cn.tolim.pudans.core.ai.runtime.SandboxProviderRegistry;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxErrors;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxExecResult;
@@ -123,6 +124,33 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
                         .parameter(parameterBuilder().in(QUERY).name("follow").required(false))
                         .parameter(parameterBuilder().in(QUERY).name("cursor").required(false))
                         .response(responseBuilder().description("SSE event stream with log events.")))
+                .GET("/airuntimes/{agent}/snapshots", this::snapshots, builder -> builder
+                        .operationId("listAiRuntimeSnapshots")
+                        .description("List workspace snapshots stored for the Agent sandbox.")
+                        .tag(TAG)
+                        .parameter(agentParameter())
+                        .response(responseBuilder().implementationArray(SnapshotView.class)))
+                .POST("/airuntimes/{agent}/snapshots", this::snapshot, builder -> builder
+                        .operationId("createAiRuntimeSnapshot")
+                        .description("Archive the current sandbox workspace into a stored snapshot.")
+                        .tag(TAG)
+                        .parameter(agentParameter())
+                        .requestBody(requestBodyBuilder().required(true).implementation(SnapshotRequest.class))
+                        .response(responseBuilder().implementation(SnapshotView.class)))
+                .POST("/airuntimes/{agent}/snapshots/{snapshotId}/restore", this::restoreSnapshot, builder -> builder
+                        .operationId("restoreAiRuntimeSnapshot")
+                        .description("Restore a stored snapshot into the running sandbox workspace.")
+                        .tag(TAG)
+                        .parameter(agentParameter())
+                        .parameter(snapshotIdParameter())
+                        .response(responseBuilder().description("Snapshot restored.")))
+                .DELETE("/airuntimes/{agent}/snapshots/{snapshotId}", this::deleteSnapshot, builder -> builder
+                        .operationId("deleteAiRuntimeSnapshot")
+                        .description("Delete a stored sandbox snapshot.")
+                        .tag(TAG)
+                        .parameter(agentParameter())
+                        .parameter(snapshotIdParameter())
+                        .response(responseBuilder().description("Snapshot deleted.")))
                 .build();
     }
 
@@ -232,6 +260,56 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         });
     }
 
+    private Mono<ServerResponse> snapshots(ServerRequest request) {
+        var agent = agent(request);
+        return requests
+                .userId(request)
+                .flatMapMany(userId -> runtimeService.snapshots(agent, userId, DEFAULT_LIST_LIMIT))
+                .collectList()
+                .flatMap(items -> ServerResponse.ok().bodyValue(items));
+    }
+
+    private Mono<ServerResponse> snapshot(ServerRequest request) {
+        var agent = agent(request);
+        return request
+                .bodyToMono(SnapshotRequest.class)
+                .defaultIfEmpty(new SnapshotRequest(null))
+                .flatMap(body -> requests.userId(request).flatMap(userId -> runtimeService.snapshot(
+                        agent, userId, body.name(), userId)))
+                .flatMap(view -> ServerResponse.ok().bodyValue(view));
+    }
+
+    private Mono<ServerResponse> restoreSnapshot(ServerRequest request) {
+        var agent = agent(request);
+        var snapshotId = snapshotId(request);
+        return requests
+                .userId(request)
+                .flatMap(userId -> runtimeService.restoreSnapshot(agent, userId, snapshotId))
+                .then(ServerResponse.noContent().build());
+    }
+
+    private Mono<ServerResponse> deleteSnapshot(ServerRequest request) {
+        var agent = agent(request);
+        var snapshotId = snapshotId(request);
+        return requests
+                .userId(request)
+                .flatMap(userId -> runtimeService.deleteSnapshot(agent, userId, snapshotId))
+                .then(ServerResponse.noContent().build());
+    }
+
+    private static long snapshotId(ServerRequest request) {
+        var value = request.pathVariable("snapshotId");
+        try {
+            var id = Long.parseLong(value);
+            if (id <= 0) {
+                throw SandboxErrors.configInvalid("snapshotId 必须为正数。");
+            }
+            return id;
+        } catch (NumberFormatException error) {
+            throw SandboxErrors.configInvalid("snapshotId 必须是整数。");
+        }
+    }
+
     private String logEvent(Object event) {
         try {
             return "event: log\ndata: " + mapper.writeValueAsString(event) + "\n\n";
@@ -260,8 +338,14 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         return parameterBuilder().in(QUERY).name("beforeId").required(false);
     }
 
+    private static Builder snapshotIdParameter() {
+        return parameterBuilder().in(PATH).name("snapshotId").required(true);
+    }
+
     public record ExecRequest(
             String command, @Nullable List<String> args, @Nullable String workdir, @Nullable Integer timeoutSeconds) {}
 
     public record WriteFileRequest(String path, @Nullable String encoding, String content) {}
+
+    public record SnapshotRequest(@Nullable String name) {}
 }

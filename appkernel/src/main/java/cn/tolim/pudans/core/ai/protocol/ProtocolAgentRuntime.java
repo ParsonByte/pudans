@@ -137,7 +137,8 @@ public class ProtocolAgentRuntime {
                 context.tools(),
                 (request, arguments) -> executeTool(userId, agent, request, arguments),
                 context.harness().toolGroupsEnabled(),
-                context.harness().asyncToolPatterns());
+                context.harness().asyncToolPatterns(),
+                userId + ":protocol");
     }
 
     private HarnessToolkit.ToolResult executeTool(

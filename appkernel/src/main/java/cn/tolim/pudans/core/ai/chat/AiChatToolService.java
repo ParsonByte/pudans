@@ -121,6 +121,9 @@ public class AiChatToolService {
             case RuntimeTools.STATUS -> runtimeStatus(userId, agent);
             case RuntimeTools.START -> runtimeStart(userId, agent);
             case RuntimeTools.STOP -> runtimeStop(userId, agent);
+            case RuntimeTools.SNAPSHOT -> runtimeSnapshot(userId, agent, arguments);
+            case RuntimeTools.RESTORE -> runtimeRestore(userId, agent, arguments);
+            case RuntimeTools.SNAPSHOTS -> runtimeSnapshots(userId, agent);
             case WorkspaceTools.LIST -> workspaceList(userId, agent, arguments);
             case WorkspaceTools.READ -> workspaceRead(userId, agent, arguments);
             case WorkspaceTools.WRITE -> workspaceWrite(userId, agent, arguments);
@@ -216,6 +219,40 @@ public class AiChatToolService {
         return runtimeService
                 .stop(agent.getMetadata().getName(), userId)
                 .map(view -> new RawOutcome("state: " + view.state(), false));
+    }
+
+    private Mono<RawOutcome> runtimeSnapshot(
+            String userId, AiAgent agent, JsonNode arguments) {
+        var name = text(arguments, "name");
+        return runtimeService
+                .snapshot(
+                        agent.getMetadata().getName(),
+                        userId,
+                        StringUtils.hasText(name) ? name : null,
+                        userId)
+                .map(view -> new RawOutcome(
+                        "snapshotId: " + view.id() + "\nname: " + view.name()
+                                + "\nsizeBytes: " + view.sizeBytes(),
+                        false));
+    }
+
+    private Mono<RawOutcome> runtimeRestore(
+            String userId, AiAgent agent, JsonNode arguments) {
+        var value = arguments == null ? null : arguments.get("snapshotId");
+        if (value == null || !value.canConvertToLong()) {
+            return Mono.just(new RawOutcome("缺少 snapshotId。", true));
+        }
+        return runtimeService
+                .restoreSnapshot(agent.getMetadata().getName(), userId, value.asLong())
+                .thenReturn(new RawOutcome("快照已恢复。", false));
+    }
+
+    private Mono<RawOutcome> runtimeSnapshots(String userId, AiAgent agent) {
+        return runtimeService
+                .snapshots(agent.getMetadata().getName(), userId, 20)
+                .map(view -> "id=" + view.id() + " name=" + view.name() + " size=" + view.sizeBytes())
+                .collectList()
+                .map(lines -> new RawOutcome(String.join("\n", lines), false));
     }
 
     private Mono<RawOutcome> workspaceList(String userId, AiAgent agent, JsonNode arguments) {

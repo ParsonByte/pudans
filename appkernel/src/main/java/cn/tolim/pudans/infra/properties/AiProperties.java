@@ -23,6 +23,8 @@ public class AiProperties {
 
     private Runtime runtime = new Runtime();
 
+    private Observability observability = new Observability();
+
     @Data
     public static class Worker {
 
@@ -79,6 +81,20 @@ public class AiProperties {
     public static class Embedding {
 
         private int dimension = 1536;
+    }
+
+    @Data
+    public static class Observability {
+
+        private boolean otlpEnabled = false;
+
+        private String serviceName = "pudans-appkernel";
+
+        private String endpoint = "http://localhost:4318/v1/traces";
+
+        private String metricsEndpoint = "http://localhost:4318/v1/metrics";
+
+        private Duration exportInterval = Duration.ofSeconds(15);
     }
 
     @Data

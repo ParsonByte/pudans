@@ -9,6 +9,7 @@ import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.provider.AiProviderSecretCipher;
 import cn.tolim.pudans.core.ai.provider.AiWebClientConfiguration;
 import cn.tolim.pudans.core.ai.runtime.sandbox.AliyunSandboxAdapter;
+import cn.tolim.pudans.core.ai.runtime.sandbox.E2BSandboxAdapter;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxErrors;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxProviderAdapter;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxProviderConfig;
@@ -104,6 +105,7 @@ public class SandboxProviderRegistry {
         return switch (spec.getProvider()) {
             case ALIYUN -> new AliyunSandboxAdapter(webClient, mapper, config, settings);
             case TENCENT -> new TencentSandboxAdapter(webClient, mapper, config, settings);
+            case E2B -> new E2BSandboxAdapter(webClient, mapper, config, settings);
         };
     }
 

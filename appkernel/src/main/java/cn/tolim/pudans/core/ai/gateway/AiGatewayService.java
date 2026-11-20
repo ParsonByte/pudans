@@ -26,6 +26,7 @@ import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
+import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
 import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
 import cn.tolim.pudans.core.ai.routing.RouteRequest;
@@ -35,6 +36,7 @@ import cn.tolim.pudans.core.ai.routing.RouteTrace;
 import cn.tolim.pudans.core.ai.routing.SunkRouteRegistry;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitFailure;
+import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
 import cn.tolim.pudans.core.ai.wallet.AiPointsCalculator;
 import cn.tolim.pudans.core.ai.wallet.AiWalletService;
 import cn.tolim.pudans.core.ai.wallet.AiWalletUsage;
@@ -126,6 +128,10 @@ public class AiGatewayService {
     private final AiProperties properties;
 
     private final AiMetrics metrics;
+
+    private final ProviderSpendGuard providerSpendGuard;
+
+    private final AiTeamQuotaService teamQuotaService;
 
     public Mono<AiGatewayResult> complete(AiGatewayInvocation invocation) {
         return prepare(invocation)
@@ -303,7 +309,7 @@ public class AiGatewayService {
                 .flatMap(resources -> keyService.authorize(invocation, resources.model())
                         .flatMap(access -> conversation(invocation, resolution, session)
                                 .flatMap(conversation -> bind(invocation, conversation.id())
-                                        .flatMap(bound -> hold(invocation, setting, resolution, resources)
+                                        .flatMap(bound -> hold(invocation, setting, session, resolution, resources)
                                                 .flatMap(hold -> createChatRequest(
                                                                 invocation, resolution, bound, conversation)
                                                         .onErrorResume(error -> release(hold).then(Mono.error(error)))
@@ -355,6 +361,7 @@ public class AiGatewayService {
     private Mono<Hold> hold(
             AiGatewayInvocation invocation,
             AiSetting.Spec setting,
+            GatewaySession session,
             AiRouteResolutionService.Resolution resolution,
             Resources resources) {
         var request = resolution.request();
@@ -364,18 +371,25 @@ public class AiGatewayService {
                 ? request.getMaxOutputTokens()
                 : defaultMaxOutput(resources.model());
         var amount = AiPointsCalculator.estimate(resources.model(), free, request.getPromptTokens(), maxOutput);
-        if (amount.signum() <= 0) {
-            return Mono.just(new Hold(null, ZERO, free));
-        }
-        var billing = setting.getBilling() == null ? new AiSetting.Billing() : setting.getBilling();
-        return walletService
-                .ensureWallet(invocation.userId())
-                .then(walletService.freeze(
-                        invocation.requestId(),
-                        invocation.userId(),
-                        amount,
-                        Duration.ofSeconds(Math.max(1, billing.getFreezeExpirySeconds()))))
-                .map(freeze -> new Hold(freeze, amount, free));
+        return providerSpendGuard
+                .check(resources.provider(), resources.account(), amount)
+                .then(teamQuotaService.check(session.teamId(), amount))
+                .then(Mono.defer(() -> {
+                    if (amount.signum() <= 0) {
+                        return Mono.just(new Hold(null, ZERO, free));
+                    }
+                    var billing = setting.getBilling() == null
+                            ? new AiSetting.Billing()
+                            : setting.getBilling();
+                    return walletService
+                            .ensureWallet(invocation.userId())
+                            .then(walletService.freeze(
+                                    invocation.requestId(),
+                                    invocation.userId(),
+                                    amount,
+                                    Duration.ofSeconds(Math.max(1, billing.getFreezeExpirySeconds()))))
+                            .map(freeze -> new Hold(freeze, amount, free));
+                }));
     }
 
     private Mono<Void> createChatRequest(

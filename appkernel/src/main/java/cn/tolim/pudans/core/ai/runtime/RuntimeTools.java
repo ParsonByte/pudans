@@ -23,6 +23,12 @@ public final class RuntimeTools {
 
     public static final String STOP = "runtime_stop";
 
+    public static final String SNAPSHOT = "runtime_snapshot";
+
+    public static final String RESTORE = "runtime_restore";
+
+    public static final String SNAPSHOTS = "runtime_snapshots";
+
     private RuntimeTools() {}
 
     public static List<AiTool> definitions() {
@@ -50,7 +56,18 @@ public final class RuntimeTools {
                         null),
                 new AiTool(STATUS, "查询 Agent 沙箱状态。", emptySchema(), null),
                 new AiTool(START, "启动 Agent 沙箱。", emptySchema(), null),
-                new AiTool(STOP, "停止 Agent 沙箱。", emptySchema(), null));
+                new AiTool(STOP, "停止 Agent 沙箱。", emptySchema(), null),
+                new AiTool(
+                        SNAPSHOT,
+                        "把 Agent 沙箱工作区打包为快照。",
+                        schema(Map.of("name", "快照名称，可选"), List.of()),
+                        null),
+                new AiTool(
+                        RESTORE,
+                        "把已保存的快照恢复到 Agent 沙箱工作区。",
+                        schema(Map.of("snapshotId", "快照标识"), List.of("snapshotId")),
+                        null),
+                new AiTool(SNAPSHOTS, "列出 Agent 沙箱的历史快照。", emptySchema(), null));
     }
 
     private static JsonNode execSchema() {

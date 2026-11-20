@@ -17,7 +17,7 @@ class TeamRuntimeRegistryTest {
 
     @Test
     void reusesOneRuntimePerTeam() {
-        var registry = new TeamRuntimeRegistry(teamService);
+        var registry = new TeamRuntimeRegistry(teamService, null);
 
         var first = registry.runtime("team-a");
         var second = registry.runtime("team-a");
@@ -29,7 +29,7 @@ class TeamRuntimeRegistryTest {
 
     @Test
     void rejectsBlankTeamNames() {
-        var registry = new TeamRuntimeRegistry(teamService);
+        var registry = new TeamRuntimeRegistry(teamService, null);
 
         assertThatThrownBy(() -> registry.runtime(" "))
                 .isInstanceOf(IllegalArgumentException.class);

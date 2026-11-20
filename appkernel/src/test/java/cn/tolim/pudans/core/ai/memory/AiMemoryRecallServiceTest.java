@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.ai.memory;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
@@ -9,9 +10,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
+import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL3Repository;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryRecallRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryRecallRepository.RecalledMemory;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -40,6 +44,12 @@ class AiMemoryRecallServiceTest {
     @Mock
     AiMemoryL3Repository personaRepository;
 
+    @Mock
+    AiEmbeddingService embeddingService;
+
+    @Mock
+    AiOrgMemoryRepository orgMemoryRepository;
+
     private final MemoryPromptResolver promptResolver = new MemoryPromptResolver();
 
     private AiMemoryRecallService service;
@@ -47,6 +57,33 @@ class AiMemoryRecallServiceTest {
     @BeforeEach
     void setUp() {
         service = new AiMemoryRecallService(recallRepository, personaRepository, promptResolver, 3000, 4000);
+    }
+
+    @Test
+    void usesVectorRecallAndIncludesVerifiedOrgMemory() {
+        var vector = new float[] {0.1f, 0.2f};
+        when(embeddingService.embedOne("发布流程")).thenReturn(Mono.just(vector));
+        when(recallRepository.searchL1Vector(
+                        "team-1", "agent-1", "user-1", vector, 5))
+                .thenReturn(Flux.just(new RecalledMemory(
+                        11L, "record-1", "发布前需要冻结变更", MemoryType.EPISODIC, "release",
+                        80, 1, NOW, 0.91)));
+        when(orgMemoryRepository.searchVerified("team-1", "发布流程", 5))
+                .thenReturn(Flux.just(new OrgMemoryRecord(
+                        3L, "组织级发布规范", "FACT", "hash", "VERIFIED", "CROSS_TEAM",
+                        List.of("team-1"), List.of("user-1"), List.of(11L), 3, "system", NOW,
+                        true, NOW, NOW)));
+        when(recallRepository.findScenes("team-1", "agent-1", 3)).thenReturn(Flux.empty());
+        when(personaRepository.findByScope("team-1", "agent-1")).thenReturn(Mono.empty());
+        var vectorService = new AiMemoryRecallService(
+                recallRepository, personaRepository, promptResolver, embeddingService, orgMemoryRepository,
+                3000, 4000);
+
+        StepVerifier.create(vectorService.build(CONTEXT, "发布流程", 5, 3))
+                .assertNext(injection -> assertThat(injection.refs())
+                        .extracting(ref -> ref.recordId())
+                        .contains("record-1", "org:3"))
+                .verifyComplete();
     }
 
     @Test

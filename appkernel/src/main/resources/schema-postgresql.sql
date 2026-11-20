@@ -875,3 +875,79 @@ CREATE INDEX IF NOT EXISTS idx_ai_model_request_created ON ai_model_request (cre
 @
 CREATE INDEX IF NOT EXISTS idx_ai_conversation_activity ON ai_conversation (last_activity_at DESC, id DESC);
 @
+@
+-- 技能使用统计（Curator 晋升与自学习输入）
+CREATE TABLE IF NOT EXISTS ai_skill_usage (
+    skill_name VARCHAR(128) PRIMARY KEY,
+    created_by VARCHAR(128),
+    use_count BIGINT NOT NULL DEFAULT 0,
+    view_count BIGINT NOT NULL DEFAULT 0,
+    patch_count BIGINT NOT NULL DEFAULT 0,
+    state VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+    promoted_by VARCHAR(128),
+    environments TEXT[] NOT NULL DEFAULT '{}',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    last_activity_at TIMESTAMPTZ
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_skill_usage_activity ON ai_skill_usage (state, use_count DESC, last_activity_at DESC);
+@
+-- 技能 Curator 审计日志
+CREATE TABLE IF NOT EXISTS ai_skill_audit (
+    id BIGSERIAL PRIMARY KEY,
+    occurred_at TIMESTAMPTZ NOT NULL,
+    actor VARCHAR(128) NOT NULL,
+    operation VARCHAR(64) NOT NULL,
+    target VARCHAR(128) NOT NULL,
+    decision VARCHAR(32) NOT NULL,
+    detail TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_skill_audit_occurred ON ai_skill_audit (occurred_at DESC, id DESC);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_skill_audit_target ON ai_skill_audit (target, occurred_at DESC);
+@
+-- 异步工具任务（跨副本可查询同一请求内的任务状态）
+CREATE TABLE IF NOT EXISTS ai_async_tool_task (
+    task_id VARCHAR(128) PRIMARY KEY,
+    scope VARCHAR(256) NOT NULL,
+    tool_name VARCHAR(128) NOT NULL,
+    status VARCHAR(16) NOT NULL,
+    output TEXT NOT NULL DEFAULT '',
+    error TEXT NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_async_tool_task_scope ON ai_async_tool_task (scope, created_at DESC);
+@
+-- 团队任务板（跨副本共享）
+CREATE TABLE IF NOT EXISTS ai_team_task (
+    task_id VARCHAR(64) PRIMARY KEY,
+    team_name VARCHAR(128) NOT NULL,
+    subject VARCHAR(512) NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    state VARCHAR(16) NOT NULL,
+    owner VARCHAR(128) NOT NULL DEFAULT '',
+    blocked_by TEXT[] NOT NULL DEFAULT '{}',
+    result TEXT NOT NULL DEFAULT '',
+    version BIGINT NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_team_task_board ON ai_team_task (team_name, state, created_at);
+@
+-- Agent 沙箱快照（工作区压缩包）
+CREATE TABLE IF NOT EXISTS ai_agent_snapshot (
+    id BIGSERIAL PRIMARY KEY,
+    agent_name VARCHAR(255) NOT NULL,
+    name VARCHAR(128) NOT NULL,
+    content BYTEA NOT NULL,
+    size_bytes INT NOT NULL,
+    created_by VARCHAR(128),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+@
+CREATE INDEX IF NOT EXISTS idx_ai_agent_snapshot_agent ON ai_agent_snapshot (agent_name, created_at DESC);

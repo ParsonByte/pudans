@@ -28,7 +28,8 @@ public class AiSandboxProvider extends AbstractExtension {
 
     public enum Provider {
         ALIYUN,
-        TENCENT
+        TENCENT,
+        E2B
     }
 
     @Data

@@ -41,7 +41,9 @@ class AiProviderModelEndpointTest {
 
     @BeforeEach
     void setUp() {
-        var endpoint = new AiProviderModelEndpoint(client, accountService, modelsClient, genericModelsClient);
+        var syncService = new cn.tolim.pudans.core.ai.provider.AiProviderModelSyncService(
+                client, accountService, modelsClient, genericModelsClient);
+        var endpoint = new AiProviderModelEndpoint(syncService);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 

@@ -54,6 +54,43 @@ public class AiMemoryRecallRepository {
                 .all();
     }
 
+    // 有可用嵌入时按余弦相似度召回，否则调用方回退到三元组关键词评分
+    public Flux<RecalledMemory> searchL1Vector(
+            String teamId, String agentId, String userId, float[] queryEmbedding, int limit) {
+        Objects.requireNonNull(teamId, "teamId");
+        Objects.requireNonNull(agentId, "agentId");
+        Objects.requireNonNull(userId, "userId");
+        if (limit <= 0) {
+            return Flux.empty();
+        }
+        return databaseClient.sql("""
+                        WITH query_vector AS (SELECT CAST(:queryVector AS vector) AS embedding)
+                        SELECT m.id, m.record_id, m.content, m.memory_type, m.scene_name,
+                               m.priority, m.version, m.updated_at,
+                               CAST((
+                                   (1 - (m.embedding <=> query_vector.embedding)) * 0.7
+                                   + (m.priority / 100.0) * 0.2
+                                   + (m.decay_score / 100.0) * 0.1
+                               ) AS double precision) AS score
+                        FROM ai_memory_l1 m
+                        CROSS JOIN query_vector
+                        WHERE m.team_id = :teamId
+                          AND m.agent_id = :agentId
+                          AND m.status = 'ACTIVE'
+                          AND m.embedding IS NOT NULL
+                          AND (m.user_id = :userId OR m.scope = 'TEAM')
+                        ORDER BY m.embedding <=> query_vector.embedding, m.updated_at DESC, m.id
+                        LIMIT :limit
+                        """)
+                .bind("queryVector", cn.tolim.pudans.infra.r2dbc.ai.vector.VectorCodec.format(queryEmbedding))
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("userId", userId)
+                .bind("limit", limit)
+                .map((row, metadata) -> mapRecalled(row))
+                .all();
+    }
+
     public Flux<L2SceneBlock> findScenes(String teamId, String agentId, int limit) {
         Objects.requireNonNull(teamId, "teamId");
         Objects.requireNonNull(agentId, "agentId");

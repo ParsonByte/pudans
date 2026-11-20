@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import org.jspecify.annotations.Nullable;
 
 public class InMemoryCircuitBreaker implements CircuitBreaker {
 
@@ -116,6 +117,38 @@ public class InMemoryCircuitBreaker implements CircuitBreaker {
     private Circuit circuit(String key) {
         var normalized = Objects.requireNonNull(key, "key");
         return circuits.computeIfAbsent(normalized, ignored -> new Circuit());
+    }
+
+    // 跨副本同步使用的只读快照，不暴露内部计数结构
+    java.util.Set<String> keys() {
+        return java.util.Set.copyOf(circuits.keySet());
+    }
+
+    @Nullable
+    Instant retryAt(String key) {
+        var circuit = circuit(key);
+        synchronized (circuit) {
+            transitionIfReady(circuit);
+            return circuit.state == CircuitState.OPEN ? circuit.retryAt : null;
+        }
+    }
+
+    // 其他副本已熔断时，本地至少保持到相同冷却时间
+    void forceOpen(String key, @Nullable Instant retryAt) {
+        if (retryAt == null) {
+            return;
+        }
+        var circuit = circuit(key);
+        synchronized (circuit) {
+            transitionIfReady(circuit);
+            if (circuit.state == CircuitState.OPEN && circuit.retryAt != null && !retryAt.isAfter(circuit.retryAt)) {
+                return;
+            }
+            circuit.state = CircuitState.OPEN;
+            circuit.halfOpenSuccesses = 0;
+            circuit.consecutiveFailures = 0;
+            circuit.retryAt = retryAt;
+        }
     }
 
     private void transitionIfReady(Circuit circuit) {

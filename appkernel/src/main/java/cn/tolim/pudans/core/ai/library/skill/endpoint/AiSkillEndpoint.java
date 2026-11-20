@@ -7,6 +7,9 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import cn.tolim.pudans.contract.core.extension.ai.AiSkill;
 import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
+import cn.tolim.pudans.core.ai.harness.skill.curator.SkillAuditLog;
+import cn.tolim.pudans.core.ai.harness.skill.curator.SkillCuratorService;
+import cn.tolim.pudans.core.ai.harness.skill.curator.SkillUsageRecord;
 import cn.tolim.pudans.core.ai.library.skill.SkillService;
 import cn.tolim.pudans.core.ai.team.AiTeamService;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -20,6 +23,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Component
@@ -33,6 +37,8 @@ public class AiSkillEndpoint implements CustomEndpoint {
     private final AiTeamService teamService;
 
     private final AiEndpointRequests requests;
+
+    private final SkillCuratorService curatorService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -49,6 +55,29 @@ public class AiSkillEndpoint implements CustomEndpoint {
                         .tag(TAG)
                         .parameter(agentParameter())
                         .response(responseBuilder().implementationArray(AiSkill.class)))
+                .GET("/aiskills/-/usage", this::usage, builder -> builder
+                        .operationId("listAiSkillUsage")
+                        .description("List persisted skill usage records for the curator.")
+                        .tag(TAG)
+                        .response(responseBuilder().implementationArray(SkillUsageRecord.class)))
+                .GET("/aiskills/-/audit", this::audit, builder -> builder
+                        .operationId("listAiSkillAudit")
+                        .description("List recent skill curator audit entries.")
+                        .tag(TAG)
+                        .parameter(limitParameter())
+                        .response(responseBuilder().implementationArray(SkillAuditLog.Entry.class)))
+                .POST("/aiskills/{name}/actions/promote", this::promote, builder -> builder
+                        .operationId("promoteAiSkill")
+                        .description("Publish a draft skill after the curator review.")
+                        .tag(TAG)
+                        .parameter(nameParameter())
+                        .response(responseBuilder().implementation(SkillCuratorService.Result.class)))
+                .POST("/aiskills/{name}/actions/archive", this::archive, builder -> builder
+                        .operationId("archiveAiSkill")
+                        .description("Archive a published skill and record the curator audit.")
+                        .tag(TAG)
+                        .parameter(nameParameter())
+                        .response(responseBuilder().implementation(SkillCuratorService.Result.class)))
                 .build();
     }
 
@@ -72,6 +101,48 @@ public class AiSkillEndpoint implements CustomEndpoint {
                 .flatMap(skills -> ServerResponse.ok().bodyValue(skills));
     }
 
+    private Mono<ServerResponse> usage(ServerRequest request) {
+        return requests
+                .userId(request)
+                .flatMapMany(userId -> curatorService.usage().flatMapMany(Flux::fromIterable))
+                .collectList()
+                .flatMap(records -> ServerResponse.ok().bodyValue(records));
+    }
+
+    private Mono<ServerResponse> audit(ServerRequest request) {
+        var limit = request.queryParam("limit")
+                .filter(StringUtils::hasText)
+                .map(value -> {
+                    try {
+                        return Math.max(1, Integer.parseInt(value.strip()));
+                    } catch (NumberFormatException error) {
+                        throw new ServerWebInputException("查询参数 'limit' 必须是整数。");
+                    }
+                })
+                .orElse(100);
+        return requests
+                .userId(request)
+                .flatMapMany(userId -> curatorService.audit(limit).flatMapMany(Flux::fromIterable))
+                .collectList()
+                .flatMap(entries -> ServerResponse.ok().bodyValue(entries));
+    }
+
+    private Mono<ServerResponse> promote(ServerRequest request) {
+        var name = request.pathVariable("name");
+        return requests
+                .userId(request)
+                .flatMap(actor -> curatorService.promote(name, actor))
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    private Mono<ServerResponse> archive(ServerRequest request) {
+        var name = request.pathVariable("name");
+        return requests
+                .userId(request)
+                .flatMap(actor -> curatorService.archive(name, actor))
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
     private static String agent(ServerRequest request) {
         return request.queryParam("agent")
                 .filter(StringUtils::hasText)
@@ -80,6 +151,14 @@ public class AiSkillEndpoint implements CustomEndpoint {
 
     private static Builder agentParameter() {
         return parameterBuilder().in(ParameterIn.QUERY).name("agent").required(true);
+    }
+
+    private static Builder nameParameter() {
+        return parameterBuilder().in(ParameterIn.PATH).name("name").required(true);
+    }
+
+    private static Builder limitParameter() {
+        return parameterBuilder().in(ParameterIn.QUERY).name("limit").required(false);
     }
 
     public record SkillImportRequest(@Nullable String url, @Nullable String ref) {}

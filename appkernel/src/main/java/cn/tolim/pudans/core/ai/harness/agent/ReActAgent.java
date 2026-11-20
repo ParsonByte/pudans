@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.ai.harness.agent;
 import cn.tolim.pudans.core.ai.harness.compaction.CompactionConfig;
 import cn.tolim.pudans.core.ai.harness.compaction.ContextCompactor;
 import cn.tolim.pudans.core.ai.harness.event.AgentEvent;
+import cn.tolim.pudans.core.ai.harness.event.ToolResultBlocks;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEventSink;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEventType;
 import cn.tolim.pudans.core.ai.harness.journal.ThreadJournalStore;
@@ -224,7 +225,7 @@ public final class ReActAgent implements Agent {
                 .flatMap(loadedState -> {
                     var state = loadedState.state();
                     var version = new AtomicLong(loadedState.version());
-                    closeDanglingToolCalls(state);
+                    closeDanglingToolCalls(run, state);
                     state.addMessage(input);
                     journal.checkpoint(state, "run-start");
                     var compacted = compactor == null ? Mono.just(false) : compactor.compactIfNeeded(state);
@@ -299,7 +300,7 @@ public final class ReActAgent implements Agent {
                 .then();
     }
 
-    private static void closeDanglingToolCalls(AgentState state) {
+    private static void closeDanglingToolCalls(AgentRun run, AgentState state) {
         var messages = state.messages();
         AiMessage last = null;
         for (var index = messages.size() - 1; index >= 0; index--) {
@@ -325,6 +326,8 @@ public final class ReActAgent implements Agent {
                         .text("上次运行在工具完成前中断。")
                         .isError(true)
                         .build());
+                run.emit(new AgentEvent.ToolCompensated(
+                        run.id(), call.id(), call.name(), "上次运行中断，已补偿为错误结果。"));
             }
         }
     }
@@ -604,11 +607,7 @@ public final class ReActAgent implements Agent {
                 && !skillRuntime.catalog().isEmpty()) {
             var result = HarnessSkillTools.execute(
                     LangChain4jToolMapper.arguments(call.arguments()), skillRuntime);
-            run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
-            run.emit(new AgentEvent.ToolResultEnd(
-                    run.id(), id, call.name(), result.output(), result.error()));
-            appendToolResult(state, id, call.name(), result.output(), result.error());
-            return Mono.empty();
+            return appendToolResult(run, state, id, call.name(), result);
         }
         if (toolSearchEnabled && MetaToolFactory.TOOL_SEARCH.equals(call.name())) {
             var result = new MetaToolFactory(toolkit.groupManager())
@@ -623,20 +622,17 @@ public final class ReActAgent implements Agent {
         if (MetaToolFactory.RESET_TOOLS.equals(call.name())) {
             var result = new MetaToolFactory(toolkit.groupManager())
                     .resetTools(LangChain4jToolMapper.arguments(call.arguments()));
-            run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
-            run.emit(new AgentEvent.ToolResultEnd(
-                    run.id(), id, call.name(), result.output(), result.error()));
-            appendToolResult(state, id, call.name(), result.output(), result.error());
-            return Mono.empty();
+            return appendToolResult(run, state, id, call.name(), result);
         }
         if (HarnessBuiltInTools.isBuiltIn(call.name())) {
             var builtIn = HarnessBuiltInTools.execute(
                     call.name(), LangChain4jToolMapper.arguments(call.arguments()), state);
-            run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
-            run.emit(new AgentEvent.ToolResultEnd(
-                    run.id(), id, call.name(), builtIn.output(), builtIn.error()));
-            appendToolResult(state, id, call.name(), builtIn.output(), builtIn.error());
-            return Mono.empty();
+            return appendToolResult(
+                    run,
+                    state,
+                    id,
+                    call.name(),
+                    new HarnessToolkit.ToolResult(builtIn.output(), builtIn.error()));
         }
         if (HarnessBuiltInTools.isReadToolResult(call.name())) {
             var resultId = LangChain4jToolMapper.arguments(call.arguments()).path("id").asText("");
@@ -647,26 +643,26 @@ public final class ReActAgent implements Agent {
                     .flatMap(stored -> {
                         var error = stored.isEmpty();
                         var text = error ? "工具结果不存在：" + resultId : stored.get();
-                        run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
-                        run.emit(new AgentEvent.ToolResultEnd(
-                                run.id(), id, call.name(), text, error));
-                        appendToolResult(state, id, call.name(), text, error);
-                        return Mono.empty();
+                        return appendToolResult(
+                                run, state, id, call.name(), new HarnessToolkit.ToolResult(text, error));
                     });
         }
         if (state.planMode().active() && !HarnessBuiltInTools.allowedInPlanMode(call.name())) {
             run.emit(new AgentEvent.AllToolsDenied(run.id()));
             journal.toolDecision(run.id(), id, "plan-mode-denied");
-            appendToolResult(
-                    state, id, call.name(), "计划模式只允许只读工具和 plan_*/todo_write。", true);
-            return Mono.empty();
+            return appendToolResult(
+                    run,
+                    state,
+                    id,
+                    call.name(),
+                    new HarnessToolkit.ToolResult("计划模式只允许只读工具和 plan_*/todo_write。", true));
         }
         var decision = permissionEngine.check(call);
         if (decision.behavior() == PermissionBehavior.DENY) {
             run.emit(new AgentEvent.AllToolsDenied(run.id()));
             journal.toolDecision(run.id(), id, "denied");
-            appendToolResult(state, id, call.name(), decision.message(), true);
-            return Mono.empty();
+            return appendToolResult(
+                    run, state, id, call.name(), new HarnessToolkit.ToolResult(decision.message(), true));
         }
         if (decision.behavior() == PermissionBehavior.ASK) {
             run.emit(new AgentEvent.RequireUserConfirm(
@@ -678,9 +674,13 @@ public final class ReActAgent implements Agent {
                     .flatMap(approved -> {
                         if (!approved) {
                             journal.toolDecision(run.id(), id, "user-denied");
-                            appendToolResult(
-                                    state, id, call.name(), "用户拒绝了工具调用：" + call.name(), true);
-                            return Mono.empty();
+                            return appendToolResult(
+                                    run,
+                                    state,
+                                    id,
+                                    call.name(),
+                                    new HarnessToolkit.ToolResult(
+                                            "用户拒绝了工具调用：" + call.name(), true));
                         }
                         return executeToolOrExternal(
                                 state, context, run, call, id, journal, version);
@@ -702,6 +702,7 @@ public final class ReActAgent implements Agent {
         }
         run.emit(new AgentEvent.RequireExternalExecution(
                 run.id(), id, call.name(), call.arguments()));
+        run.emit(new AgentEvent.ToolResultProgress(run.id(), id, "等待外部执行结果。"));
         journal.toolDecision(run.id(), id, "external");
         return saveState(state, context, version)
                 .then(run.awaitExternalResult(id)
@@ -712,27 +713,26 @@ public final class ReActAgent implements Agent {
                                     run.id(), id, timeout.output(), timeout.error()));
                             return timeout;
                         })))
-                .flatMap(result -> {
-                    run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
-                    run.emit(new AgentEvent.ToolResultEnd(
-                            run.id(), id, call.name(), result.output(), result.error()));
-                    appendToolResult(state, id, call.name(), result.output(), result.error());
-                    return Mono.empty();
-                });
+                .flatMap(result -> appendToolResult(
+                        run,
+                        state,
+                        id,
+                        call.name(),
+                        new HarnessToolkit.ToolResult(result.output(), result.error())));
     }
 
     private Mono<Void> executeTool(
             AgentState state, AgentRun run, ToolExecutionRequest call, String id) {
-        run.emit(new AgentEvent.ToolResultStart(run.id(), id, call.name()));
+        run.emit(new AgentEvent.ToolResultProgress(run.id(), id, "正在执行工具 " + call.name() + "。"));
         return Mono.fromCallable(() -> toolkit.execute(call))
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(result -> evict(run, call.name(), result.output())
-                        .flatMap(output -> {
-                            run.emit(new AgentEvent.ToolResultEnd(
-                                    run.id(), id, call.name(), output, result.error()));
-                            appendToolResult(state, id, call.name(), output, result.error());
-                            return Mono.empty();
-                        }));
+                        .flatMap(output -> appendToolResult(
+                                run,
+                                state,
+                                id,
+                                call.name(),
+                                new HarnessToolkit.ToolResult(output, result.error()))));
     }
 
     private static void emitText(AgentRun run, AiMessage message) {
@@ -766,11 +766,33 @@ public final class ReActAgent implements Agent {
 
     private static Mono<Void> appendToolResult(
             AgentRun run, AgentState state, String id, String toolName, HarnessToolkit.ToolResult result) {
+        var output = result.output() == null ? "" : result.output();
+        run.emit(new AgentEvent.ToolResultProgress(run.id(), id, "工具执行完成，正在整理结果。"));
+        if (!output.isBlank()) {
+            run.emit(new AgentEvent.ToolResultTextDelta(run.id(), id, clipToolOutput(output)));
+        }
+        ToolResultBlocks.emit(run, output);
+        if (result.error()) {
+            run.emit(new AgentEvent.ToolCompensated(
+                    run.id(), id, toolName, "工具返回错误，已记录为失败结果。"));
+        }
         run.emit(new AgentEvent.ToolResultStart(run.id(), id, toolName));
         run.emit(new AgentEvent.ToolResultEnd(
-                run.id(), id, toolName, result.output(), result.error()));
-        appendToolResult(state, id, toolName, result.output(), result.error());
+                run.id(), id, toolName, output, result.error()));
+        appendToolResult(state, id, toolName, output, result.error());
         return Mono.empty();
+    }
+
+    private static String clipToolOutput(String output) {
+        var limit = 4000;
+        if (output.length() <= limit) {
+            return output;
+        }
+        var cut = limit;
+        if (Character.isHighSurrogate(output.charAt(cut - 1))) {
+            cut--;
+        }
+        return output.substring(0, cut) + "…";
     }
 
     private static void appendToolResult(

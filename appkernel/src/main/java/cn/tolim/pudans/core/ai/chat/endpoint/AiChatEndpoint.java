@@ -388,6 +388,13 @@ public class AiChatEndpoint implements CustomEndpoint {
             case AiChatStreamEvent.CitationEvent citation -> event("citation", citationJson(citation));
             case AiChatStreamEvent.ToolCall toolCall -> event("tool_call", toolCallJson(toolCall));
             case AiChatStreamEvent.ToolResult toolResult -> event("tool_result", toolResultJson(toolResult));
+            case AiChatStreamEvent.ToolProgress progress -> event("tool_progress", toolProgressJson(progress));
+            case AiChatStreamEvent.ToolResultDelta delta ->
+                    event("tool_result_delta", toolResultDeltaJson(delta));
+            case AiChatStreamEvent.ToolCompensated compensated ->
+                    event("tool_compensated", toolCompensatedJson(compensated));
+            case AiChatStreamEvent.DataBlock dataBlock -> event(
+                    "data_block_" + dataBlock.phase(), dataBlockJson(dataBlock));
             case AiChatStreamEvent.ToolConfirm toolConfirm -> event("tool_confirm", toolConfirmJson(toolConfirm));
             case AiChatStreamEvent.ToolExternal external -> event("tool_external", toolExternalJson(external));
             case AiChatStreamEvent.ToolExternalResult externalResult ->
@@ -458,6 +465,35 @@ public class AiChatEndpoint implements CustomEndpoint {
         put(node, "output", event.output());
         node.put("isError", event.isError());
         node.put("durationMs", event.durationMs());
+        return node;
+    }
+
+    private ObjectNode toolProgressJson(AiChatStreamEvent.ToolProgress event) {
+        var node = mapper.createObjectNode();
+        put(node, "id", event.id());
+        put(node, "message", event.message());
+        return node;
+    }
+
+    private ObjectNode toolResultDeltaJson(AiChatStreamEvent.ToolResultDelta event) {
+        var node = mapper.createObjectNode();
+        put(node, "id", event.id());
+        put(node, "delta", event.delta());
+        return node;
+    }
+
+    private ObjectNode toolCompensatedJson(AiChatStreamEvent.ToolCompensated event) {
+        var node = mapper.createObjectNode();
+        put(node, "id", event.id());
+        put(node, "name", event.name());
+        put(node, "message", event.message());
+        return node;
+    }
+
+    private ObjectNode dataBlockJson(AiChatStreamEvent.DataBlock event) {
+        var node = mapper.createObjectNode();
+        put(node, "mediaType", event.mediaType());
+        put(node, "data", event.data());
         return node;
     }
 

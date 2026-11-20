@@ -57,7 +57,8 @@ class L1PipelineServiceTest {
                 conversationRepository,
                 taskRepository,
                 generationLogRepository,
-                new PersonaTrigger());
+                new PersonaTrigger(),
+                null);
         service.setClock(Clock.fixed(NOW, ZoneOffset.UTC));
     }
 

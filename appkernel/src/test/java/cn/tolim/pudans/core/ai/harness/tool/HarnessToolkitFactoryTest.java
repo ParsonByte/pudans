@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 
 class HarnessToolkitFactoryTest {
 
-    private final HarnessToolkitFactory factory = new HarnessToolkitFactory();
+    private final HarnessToolkitFactory factory = new HarnessToolkitFactory(null);
 
     @Test
     void groupsMcpToolsAndRegistersAsyncPatterns() {
@@ -21,7 +21,7 @@ class HarnessToolkitFactoryTest {
                         tool("mcp.a.long_run")),
                 (request, arguments) -> new HarnessToolkit.ToolResult("ok", false),
                 true,
-                List.of("mcp.*.long_*"));
+                List.of("mcp.*.long_*"), "test-scope");
 
         assertThat(toolkit.groupManager().get("mcp.a")).isNotNull();
         assertThat(toolkit.groupManager().get("mcp.b")).isNotNull();
@@ -39,7 +39,7 @@ class HarnessToolkitFactoryTest {
                 List.of(tool("mcp.a.search")),
                 (request, arguments) -> new HarnessToolkit.ToolResult("ok", false),
                 false,
-                List.of());
+                List.of(), "test-scope");
 
         assertThat(toolkit.groupManager().groups()).isEmpty();
         assertThat(toolkit.hasAsyncTools()).isFalse();
@@ -52,7 +52,7 @@ class HarnessToolkitFactoryTest {
                 List.of(tool("mcp.a.long_run")),
                 (request, arguments) -> new HarnessToolkit.ToolResult("done", false),
                 false,
-                List.of("mcp.*.long_*"));
+                List.of("mcp.*.long_*"), "test-scope");
 
         var result = toolkit.execute(ToolExecutionRequest.builder()
                 .name("mcp.a.long_run")

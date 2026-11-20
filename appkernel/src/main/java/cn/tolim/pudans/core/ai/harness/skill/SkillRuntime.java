@@ -81,6 +81,17 @@ public final class SkillRuntime {
         return builder.append("</available_skills>\n").toString();
     }
 
+    public void recordUse(String name) {
+        if (usageStore == null || !StringUtils.hasText(name)) {
+            return;
+        }
+        try {
+            usageStore.recordUse(name);
+        } catch (RuntimeException error) {
+            log.debug("记录技能 {} 使用情况失败：{}", name, error.getMessage());
+        }
+    }
+
     private void recordView(String name) {
         if (usageStore == null) {
             return;

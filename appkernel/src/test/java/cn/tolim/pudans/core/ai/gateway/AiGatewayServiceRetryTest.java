@@ -40,7 +40,9 @@ import cn.tolim.pudans.core.ai.routing.RouteSeat;
 import cn.tolim.pudans.core.ai.routing.RouteSelection;
 import cn.tolim.pudans.core.ai.routing.RouteTrace;
 import cn.tolim.pudans.core.ai.routing.SunkRouteRegistry;
+import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
+import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
 import cn.tolim.pudans.core.ai.wallet.AiWalletService;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
@@ -106,6 +108,12 @@ class AiGatewayServiceRetryTest {
     CircuitBreaker circuitBreaker;
 
     @Mock
+    ProviderSpendGuard providerSpendGuard;
+
+    @Mock
+    AiTeamQuotaService teamQuotaService;
+
+    @Mock
     AiGatewayRateLimiter rateLimiter;
 
     @Mock
@@ -144,6 +152,8 @@ class AiGatewayServiceRetryTest {
                 .when(keyService.acquire(any()))
                 .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
         lenient().when(keyService.release(any())).thenReturn(Mono.empty());
+        lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
+        lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
     }
 
     @Test
@@ -354,7 +364,9 @@ class AiGatewayServiceRetryTest {
                 keyService,
                 sunkRouteRegistry,
                 properties,
-                new AiMetrics(new SimpleMeterRegistry()));
+                new AiMetrics(new SimpleMeterRegistry()),
+                providerSpendGuard,
+                teamQuotaService);
     }
 
     private void stubGateway(

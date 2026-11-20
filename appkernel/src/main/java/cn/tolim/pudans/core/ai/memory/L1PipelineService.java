@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.ai.memory;
 
 import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
+import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
 import cn.tolim.pudans.core.ai.memory.org.OrgCandidateTaskPayload;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository;
@@ -13,14 +14,17 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-@RequiredArgsConstructor
 public class L1PipelineService {
+
+    private static final Logger log = LoggerFactory.getLogger(L1PipelineService.class);
 
     private final L1DedupService dedupService;
 
@@ -35,6 +39,27 @@ public class L1PipelineService {
     private final AiMemoryGenerationLogRepository generationLogRepository;
 
     private final PersonaTrigger personaTrigger;
+
+    private final @Nullable AiEmbeddingService embeddingService;
+
+    public L1PipelineService(
+            L1DedupService dedupService,
+            MemoryPromptResolver promptResolver,
+            AiMemoryL1Repository l1Repository,
+            AiConversationRepository conversationRepository,
+            AiMemoryTaskRepository taskRepository,
+            AiMemoryGenerationLogRepository generationLogRepository,
+            PersonaTrigger personaTrigger,
+            @Nullable AiEmbeddingService embeddingService) {
+        this.dedupService = dedupService;
+        this.promptResolver = promptResolver;
+        this.l1Repository = l1Repository;
+        this.conversationRepository = conversationRepository;
+        this.taskRepository = taskRepository;
+        this.generationLogRepository = generationLogRepository;
+        this.personaTrigger = personaTrigger;
+        this.embeddingService = embeddingService;
+    }
 
     private Clock clock = Clock.systemUTC();
 
@@ -149,15 +174,31 @@ public class L1PipelineService {
 
     private Mono<Outcome> writeGenerationLog(
             Request request, MemoryPromptContext promptContext, L1MemoryRecord record, long supersededCount) {
-        return generationLogRepository
-                .insert(promptContext.toGenerationLog(
+        return embed(record)
+                .then(generationLogRepository.insert(promptContext.toGenerationLog(
                         record.id(),
                         request.context().teamId(),
                         request.context().agentId(),
                         request.context().userId(),
                         request.context().sessionId(),
-                        request.generation()))
+                        request.generation())))
                 .thenReturn(new Outcome(record, supersededCount));
+    }
+
+    // 向量写入是召回增强，失败时保留关键词召回能力
+    private Mono<Void> embed(L1MemoryRecord record) {
+        if (embeddingService == null || record.id() == null) {
+            return Mono.empty();
+        }
+        return embeddingService
+                .embed(List.of(record.content()))
+                .filter(batch -> !batch.vectors().isEmpty())
+                .flatMap(batch -> l1Repository.updateEmbedding(record.id(), batch.vectors().getFirst()))
+                .then()
+                .onErrorResume(error -> {
+                    log.debug("L1 记忆 {} 向量写入失败：{}", record.id(), error.getMessage());
+                    return Mono.empty();
+                });
     }
 
     private Mono<Long> supersede(DedupDecision decision, List<String> targetRecordIds, long supersededBy) {
