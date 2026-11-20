@@ -184,6 +184,29 @@ rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
+      - "aiagui/run"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiagentprotocol/runs"
+      - "aiagentprotocol/threads"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aia2a"
+      - "aia2a/agent.json"
+    verbs:
+      - "get"
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "aistats/usage"
     verbs:
       - "get"
