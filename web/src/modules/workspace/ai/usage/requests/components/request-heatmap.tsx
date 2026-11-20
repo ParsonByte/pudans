@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
-import { formatPoints, formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
+import { formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
 import { ConsoleEmpty } from "@/modules/workspace/console/components/console-page";
 
 import { UsageErrorState } from "../../components/usage-state";
@@ -38,8 +38,8 @@ function metricValue(bucket: UsageHeatmapBucket, metric: UsageHeatmapMetric): nu
   if (metric === "tokens") {
     return bucket.tokens;
   }
-  if (metric === "points") {
-    return bucket.points;
+  if (metric === "units") {
+    return bucket.units;
   }
   return bucket.requests;
 }
@@ -48,8 +48,8 @@ function formatHeatmapValue(metric: UsageHeatmapMetric, value: number): string {
   if (metric === "tokens") {
     return `${formatTokenCount(value)} Token`;
   }
-  if (metric === "points") {
-    return formatPoints(value) ?? "0 点";
+  if (metric === "units") {
+    return `${formatTokenCount(value)} 标准 Token`;
   }
   return `${formatNumber(value)} 次请求`;
 }
@@ -118,14 +118,14 @@ export function RequestHeatmap({
           size="sm"
           value={metric}
           onValueChange={(value) => {
-            if (value === "requests" || value === "tokens" || value === "points") {
+            if (value === "requests" || value === "tokens" || value === "units") {
               onMetricChange(value);
             }
           }}
         >
           <ToggleGroupItem value="requests">请求</ToggleGroupItem>
           <ToggleGroupItem value="tokens">Token</ToggleGroupItem>
-          <ToggleGroupItem value="points">积分</ToggleGroupItem>
+          <ToggleGroupItem value="units">标准 Token</ToggleGroupItem>
         </ToggleGroup>
       </div>
 

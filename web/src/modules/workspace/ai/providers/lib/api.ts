@@ -217,14 +217,6 @@ export type AiModelSpec = {
   maxInputImages?: number;
   maxInputSeconds?: number;
   maxOutputItems?: number;
-  inputTokensPerPoint?: number;
-  cacheTokensPerPoint?: number;
-  outputTokensPerPoint?: number;
-  imagePointsPerItem?: number;
-  videoPointsPerSecond?: number;
-  audioPointsPerSecond?: number;
-  speechPointsPerKiloCharacter?: number;
-  taskPointsPerInvocation?: number;
   enabled?: boolean;
   [key: string]: unknown;
 };
@@ -324,11 +316,36 @@ type AiSettingGateway = {
   supportedProtocols?: AiProviderProtocol[];
 };
 
+type AiUnassignedPolicy = "DEFAULT_PLAN" | "DENY";
+
+export type AiUsageRatios = {
+  input?: number;
+  output?: number;
+  cacheRead?: number;
+  cacheWrite?: number;
+  imagePerItem?: number;
+  videoPerSecond?: number;
+  audioPerSecond?: number;
+  speechPerKiloChar?: number;
+  toolCall?: number;
+};
+
+export type AiBilling = {
+  defaultPlan?: string;
+  unassignedPolicy?: AiUnassignedPolicy;
+  ratios?: AiUsageRatios;
+  tierMultipliers?: Partial<Record<AiModelTier, number>>;
+  modelMultipliers?: Record<string, number>;
+  reservationTtlSeconds?: number;
+  reservationOutputCap?: number;
+};
+
 type AiSettingSpec = {
   defaultRouteGroup?: string;
   defaultChatMode?: string;
   routing?: AiSettingRouting;
   gateway?: AiSettingGateway;
+  billing?: AiBilling;
   [key: string]: unknown;
 };
 

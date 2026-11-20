@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import type { AuditRecord } from "@pudans-dev/api-client";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format, subDays } from "date-fns";
+import { subDays } from "date-fns";
 import { Archive, History, Loader2, Play, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { resolveApiError } from "@/lib/api-error";
+import { beijingDateTimeInputValue } from "@/lib/date";
 import { AuditLogDetailDialog } from "@/modules/workspace/console/audit/components/audit-log-detail-dialog";
 import { AuditResultBadge } from "@/modules/workspace/console/audit/components/audit-result-badge";
 import {
@@ -86,7 +87,7 @@ function defaultArchiveFilters(): ArchiveFilterForm {
 }
 
 function defaultCutoff(): string {
-  return format(subDays(new Date(), 90), "yyyy-MM-dd'T'HH:mm");
+  return beijingDateTimeInputValue(subDays(new Date(), 90));
 }
 
 export function ReplayView() {

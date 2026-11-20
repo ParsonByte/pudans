@@ -122,14 +122,6 @@ rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
-      - "wallet"
-      - "wallet/transactions"
-    verbs:
-      - "get"
-      - "list"
-  - apiGroups:
-      - "api.pudans.tolim.cn"
-    resources:
       - "aimcpservers"
       - "aimcpservers/by-agent"
       - "aiskills"

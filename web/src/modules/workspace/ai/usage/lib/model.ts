@@ -1,18 +1,15 @@
 import { differenceInCalendarDays, format, parseISO, subDays } from "date-fns";
 
-import { formatTrendDay } from "@/lib/date";
+import { beijingTimestamp, formatTrendDay, serverToday } from "@/lib/date";
 
 import { formatNumber } from "../../providers/lib/model";
 import {
   cacheHitRate,
   formatDuration,
-  formatPoints,
   formatTokenCount,
   requestStatusLabel,
 } from "../../routing/lib/model";
-import type { UsageBucket, UsageScope, UsageTotals } from "./api";
-
-export const SERVER_TIME_ZONE = "Asia/Shanghai";
+import type { PlanVoucherKind, UsageBucket, UsageScope, UsageTotals } from "./api";
 
 const MAX_USAGE_RANGE_DAYS = 366;
 
@@ -59,10 +56,6 @@ export const USAGE_SESSION_STATUS_OPTIONS: { value: string; label: string }[] = 
   { value: "ARCHIVED", label: sessionStatusLabel("ARCHIVED") },
   { value: "DELETED", label: sessionStatusLabel("DELETED") },
 ];
-
-export function serverToday(): string {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: SERVER_TIME_ZONE }).format(new Date());
-}
 
 export function usageDateRange(preset: Exclude<UsageRangePreset, "custom">): UsageDateRangeValue {
   const today = serverToday();
@@ -123,7 +116,44 @@ export function formatSessionDuration(seconds: number | null | undefined): strin
 }
 
 export function usageExportFilename(prefix: string): string {
-  return `${prefix}-${format(new Date(), "yyyyMMdd-HHmm")}.csv`;
+  return `${prefix}-${beijingTimestamp()}.csv`;
+}
+
+export const PLAN_VOUCHER_KIND_OPTIONS: {
+  value: PlanVoucherKind;
+  label: string;
+  hint: string;
+}[] = [
+  {
+    value: "FIVE_HOUR_RESET",
+    label: "5 小时重置券",
+    hint: "立即重置 5 小时窗口，新窗口从当前时刻开始滚动 5 小时。",
+  },
+  {
+    value: "WEEKLY_RESET",
+    label: "周重置券",
+    hint: "立即重置周窗口，新的周窗口从当前时刻开始固定 7 天。",
+  },
+];
+
+export function planVoucherKindLabel(kind: string | null | undefined): string {
+  if (kind === "FIVE_HOUR_RESET") {
+    return "5 小时重置券";
+  }
+  if (kind === "WEEKLY_RESET") {
+    return "周重置券";
+  }
+  return "—";
+}
+
+export function voucherResetPreview(kind: PlanVoucherKind, now: Date = new Date()): Date {
+  const next = new Date(now);
+  if (kind === "FIVE_HOUR_RESET") {
+    next.setHours(next.getHours() + 5);
+  } else {
+    next.setDate(next.getDate() + 7);
+  }
+  return next;
 }
 
 export type UsageKpiItem = {
@@ -164,33 +194,6 @@ export function usagePercentile(values: readonly number[], ratio: number): numbe
     return sorted[lower];
   }
   return sorted[lower] + (sorted[upper] - sorted[lower]) * (position - lower);
-}
-
-export function serverDayKey(value: string): string | null {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return new Intl.DateTimeFormat("en-CA", { timeZone: SERVER_TIME_ZONE }).format(date);
-}
-
-export function serverHourOf(value: string): number | null {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  const hour = new Intl.DateTimeFormat("en-GB", {
-    timeZone: SERVER_TIME_ZONE,
-    hour: "numeric",
-    hour12: false,
-  })
-    .formatToParts(date)
-    .find((part) => part.type === "hour")?.value;
-  if (hour == null) {
-    return null;
-  }
-  const parsed = Number(hour);
-  return Number.isFinite(parsed) ? parsed % 24 : null;
 }
 
 export function formatUsageBucketLabel(value: string, bucket: UsageBucket): string {
@@ -250,8 +253,8 @@ export function buildUsageTotalsKpis(
         .join(" · "),
     },
     {
-      label: "积分消耗",
-      value: formatPoints(totals.points) ?? "0 点",
+      label: "标准 Token 消耗",
+      value: formatTokenCount(totals.units),
       hint:
         unpriced > 0 ? `已结算请求累计 · 未计价 ${formatNumber(unpriced)} 次` : "按已结算请求累计",
     },
@@ -313,16 +316,4 @@ export function usageSourceLabel(source: string | null | undefined): string {
     ESTIMATED: "系统估算",
   };
   return source ? (labels[source] ?? source) : "—";
-}
-
-export function walletTxnTypeLabel(txnType: string): string {
-  const labels: Record<string, string> = {
-    GRANT: "发放",
-    DEDUCT: "扣减",
-    SETTLE: "结算",
-    RELEASE: "释放",
-    FREEZE: "冻结",
-    UNFREEZE: "解冻",
-  };
-  return labels[txnType] ?? txnType;
 }

@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { format } from "date-fns";
 import {
   Activity,
   AlertTriangle,
@@ -32,6 +31,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { downloadCsv } from "@/lib/csv";
+import { beijingTimestamp } from "@/lib/date";
 import { AuditResultBadge } from "@/modules/workspace/console/audit/components/audit-result-badge";
 import {
   formatAuditExactTime,
@@ -174,10 +174,7 @@ export function TracesView() {
         toast.info("没有可导出的链路详情。");
         return;
       }
-      downloadCsv(
-        `journeys-${format(new Date(), "yyyyMMdd-HHmm")}.csv`,
-        journeyDetailsToCsv(details),
-      );
+      downloadCsv(`journeys-${beijingTimestamp()}.csv`, journeyDetailsToCsv(details));
       toast.success(`已导出 ${details.length} 位用户的链路详情。`);
       setSelected(new Set());
     } catch {

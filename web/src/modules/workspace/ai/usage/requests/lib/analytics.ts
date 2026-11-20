@@ -1,9 +1,11 @@
 import { format, parseISO, startOfWeek, subWeeks } from "date-fns";
 
-import type { UsageRequestItem, UsageSpeedGroupBy, UsageSpeedItem } from "../../lib/api";
-import { serverDayKey, serverToday, usageMedian } from "../../lib/model";
+import { beijingDateKey, serverToday } from "@/lib/date";
 
-export type UsageTrendMetric = "tokens" | "points" | "calls" | "speed";
+import type { UsageRequestItem, UsageSpeedGroupBy, UsageSpeedItem } from "../../lib/api";
+import { usageMedian } from "../../lib/model";
+
+export type UsageTrendMetric = "tokens" | "units" | "calls" | "speed";
 
 export type UsageTrendSplit = "model" | "provider" | "agent";
 
@@ -58,7 +60,7 @@ export function buildUsageTrend(
   const dayCounts = new Map<string, Map<string, number>>();
 
   for (const item of items) {
-    const day = serverDayKey(item.createdAt);
+    const day = beijingDateKey(item.createdAt);
     if (!day) {
       continue;
     }
@@ -77,7 +79,7 @@ export function buildUsageTrend(
       continue;
     }
     const value =
-      metric === "tokens" ? (item.totalTokens ?? 0) : metric === "points" ? (item.points ?? 0) : 1;
+      metric === "tokens" ? (item.totalTokens ?? 0) : metric === "units" ? (item.units ?? 0) : 1;
     dayValues.set(label, (dayValues.get(label) ?? 0) + value);
     totals.set(label, (totals.get(label) ?? 0) + value);
   }

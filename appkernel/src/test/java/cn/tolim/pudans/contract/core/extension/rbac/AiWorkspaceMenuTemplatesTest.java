@@ -23,7 +23,7 @@ class AiWorkspaceMenuTemplatesTest {
                 .map(document -> Unstructured.OBJECT_MAPPER.convertValue(document.getData(), Role.class))
                 .toList();
 
-        assertThat(roles).hasSize(21);
+        assertThat(roles).hasSize(22);
 
         var workspaces = roles.stream()
                 .filter(role -> Role.UI_TYPE_WORKSPACE.equals(annotation(role, Role.UI_TYPE_ANNO)))
@@ -39,7 +39,7 @@ class AiWorkspaceMenuTemplatesTest {
                 .filter(role -> Role.UI_TYPE_MENU.equals(annotation(role, Role.UI_TYPE_ANNO)))
                 .sorted(Comparator.comparingInt(menu -> order(menu)))
                 .toList();
-        assertThat(menus).hasSize(20);
+        assertThat(menus).hasSize(21);
         assertThat(menus)
                 .allSatisfy(menu -> {
                     assertThat(annotation(menu, Role.UI_WORKSPACE_ANNO)).isEqualTo("ai");

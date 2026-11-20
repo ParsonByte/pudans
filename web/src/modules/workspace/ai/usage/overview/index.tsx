@@ -16,7 +16,7 @@ import {
 } from "@/modules/workspace/console/components/console-page";
 import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
 
-import { fetchAllProviderModels } from "../../providers/lib/api";
+import { fetchAiSetting, fetchAllProviderModels } from "../../providers/lib/api";
 import { UsageCompositionBar } from "../components/usage-composition-bar";
 import { UsageDateRangeFilter } from "../components/usage-date-range";
 import { UsageKpiCards } from "../components/usage-kpi-cards";
@@ -35,8 +35,8 @@ import {
   useUsageUrlSearch,
 } from "../lib/url-state";
 import { UsageClearDialog } from "./components/usage-clear-dialog";
+import { UsagePlanCard } from "./components/usage-plan-card";
 import { UsageRankingsTable } from "./components/usage-rankings";
-import { UsageWalletCard } from "./components/usage-wallet-card";
 
 const OVERVIEW_CSV_HEADERS = [
   "date",
@@ -47,7 +47,7 @@ const OVERVIEW_CSV_HEADERS = [
   "cacheTokens",
   "outputTokens",
   "totalTokens",
-  "points",
+  "units",
 ];
 
 const PAGE_TITLE = "用量概览";
@@ -63,6 +63,7 @@ export function AiUsageOverviewView() {
   const canView = allowedOperations.has("view");
   const canExport = allowedOperations.has("export");
   const providersPath = useMenuPath("ai-providers");
+  const plansPath = useMenuPath("ai-plans");
   const queryClient = useQueryClient();
   const { search, update } = useUsageUrlSearch();
   const range = useMemo(() => usageRangeFromSearch(search), [search]);
@@ -93,6 +94,13 @@ export function AiUsageOverviewView() {
   const modelsQuery = useQuery({
     queryKey: ["ai-provider-models", "all"],
     queryFn: fetchAllProviderModels,
+    retry: false,
+    staleTime: 5 * 60_000,
+    enabled: canView,
+  });
+  const settingsQuery = useQuery({
+    queryKey: ["ai-settings", "ai-setting"],
+    queryFn: fetchAiSetting,
     retry: false,
     staleTime: 5 * 60_000,
     enabled: canView,
@@ -146,7 +154,7 @@ export function AiUsageOverviewView() {
       item.cacheTokens,
       item.outputTokens,
       item.totalTokens,
-      item.points,
+      item.units,
     ]);
     downloadCsv(usageExportFilename("ai-usage-overview"), toCsv(OVERVIEW_CSV_HEADERS, rows));
     toast.success("用量概览已开始下载。");
@@ -159,7 +167,7 @@ export function AiUsageOverviewView() {
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight">{PAGE_TITLE}</h2>
             <p className="text-xs text-muted-foreground">
-              汇总请求、缓存、Token、积分与响应性能，按服务端时区聚合。
+              汇总请求、缓存、Token、标准 Token 用量与响应性能，按北京时间聚合。
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -292,7 +300,7 @@ export function AiUsageOverviewView() {
               <ConsoleSection className="overflow-hidden">
                 <ConsoleSectionHeader
                   title="用量排行"
-                  description="按 Token 占比展示前 10 名，低于 1% 的条目合并为“其他”；模型可查看只读定价。"
+                  description="按 Token 占比展示前 10 名，低于 1% 的条目合并为“其他”；模型可查看只读权重系数。"
                   action={
                     <Button
                       type="button"
@@ -311,14 +319,18 @@ export function AiUsageOverviewView() {
                     totalTokens={overview.totals.totalTokens}
                     models={modelsQuery.data ?? []}
                     providersPath={providersPath}
+                    plansPath={plansPath}
                     modelsLoading={modelsQuery.isPending}
                     modelsError={modelsQuery.isError}
+                    billing={settingsQuery.data?.spec.billing}
+                    billingLoading={settingsQuery.isPending}
+                    billingError={settingsQuery.isError}
                   />
                 ) : (
                   <ConsoleEmpty>排行已隐藏。</ConsoleEmpty>
                 )}
               </ConsoleSection>
-              <UsageWalletCard wallet={overview.quotas} />
+              <UsagePlanCard />
             </div>
           </>
         ) : null}

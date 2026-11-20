@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/chart";
 import { formatTrendDay } from "@/lib/date";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
-import { formatPoints, formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
+import { formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
 
 import type { UsageTrend, UsageTrendMetric } from "../lib/analytics";
 
@@ -30,8 +30,8 @@ function formatTrendMetricValue(metric: UsageTrendMetric, value: number): string
   if (metric === "tokens") {
     return formatTokenCount(value);
   }
-  if (metric === "points") {
-    return formatPoints(value) ?? "0 点";
+  if (metric === "units") {
+    return formatTokenCount(value);
   }
   if (metric === "speed") {
     return `${formatNumber(value, 1)} token/秒`;

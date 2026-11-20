@@ -1,3 +1,5 @@
+import { beijingDateKey, beijingHourOf } from "@/lib/date";
+
 import type {
   UsageSession,
   UsageSessionStats,
@@ -6,7 +8,7 @@ import type {
   UsageSessionStatsModel,
   UsageSessionStatsTopSession,
 } from "../../lib/api";
-import { serverDayKey, serverHourOf, usageMedian, usagePercentile } from "../../lib/model";
+import { usageMedian, usagePercentile } from "../../lib/model";
 
 const TOP_SESSION_LIMIT = 8;
 
@@ -16,17 +18,17 @@ export function deriveUsageSessionStats(items: readonly UsageSession[]): UsageSe
   const hourCounts = Array.from({ length: 24 }, () => 0);
   const modelMap = new Map<string, UsageSessionStatsModel>();
   let tokens = 0;
-  let points = 0;
+  let units = 0;
   let cacheReadTokens = 0;
   let activeSeconds = 0;
 
   for (const item of items) {
     tokens += item.totalTokens;
-    points += item.points;
+    units += item.units;
     cacheReadTokens += item.cacheTokens;
     activeSeconds += item.durationSeconds;
 
-    const day = serverDayKey(item.lastActivityAt) ?? serverDayKey(item.createdAt);
+    const day = beijingDateKey(item.lastActivityAt) ?? beijingDateKey(item.createdAt);
     if (day) {
       const dayEntry =
         dayMap.get(day) ??
@@ -35,18 +37,18 @@ export function deriveUsageSessionStats(items: readonly UsageSession[]): UsageSe
           sessions: 0,
           messages: 0,
           tokens: 0,
-          points: 0,
+          units: 0,
           activeSeconds: 0,
         } satisfies UsageSessionStatsDay);
       dayEntry.sessions += 1;
       dayEntry.messages += item.messageCount;
       dayEntry.tokens += item.totalTokens;
-      dayEntry.points += item.points;
+      dayEntry.units += item.units;
       dayEntry.activeSeconds += item.durationSeconds;
       dayMap.set(day, dayEntry);
     }
 
-    const hour = serverHourOf(item.lastActivityAt) ?? serverHourOf(item.createdAt);
+    const hour = beijingHourOf(item.lastActivityAt) ?? beijingHourOf(item.createdAt);
     if (hour != null) {
       hourCounts[hour] += 1;
     }
@@ -58,11 +60,11 @@ export function deriveUsageSessionStats(items: readonly UsageSession[]): UsageSe
         name: modelName,
         sessions: 0,
         tokens: 0,
-        points: 0,
+        units: 0,
       } satisfies UsageSessionStatsModel);
     modelEntry.sessions += 1;
     modelEntry.tokens += item.totalTokens;
-    modelEntry.points += item.points;
+    modelEntry.units += item.units;
     modelMap.set(modelName, modelEntry);
   }
 
@@ -81,7 +83,7 @@ export function deriveUsageSessionStats(items: readonly UsageSession[]): UsageSe
       model: item.model,
       messages: item.messageCount,
       tokens: item.totalTokens,
-      points: item.points,
+      units: item.units,
       lastActivityAt: item.lastActivityAt,
     }));
 
@@ -91,7 +93,7 @@ export function deriveUsageSessionStats(items: readonly UsageSession[]): UsageSe
       medianMessages: usageMedian(messageCounts) ?? 0,
       p90Messages: usagePercentile(messageCounts, 0.9) ?? 0,
       tokens,
-      points,
+      units,
       cacheReadTokens,
       activeSeconds,
     },

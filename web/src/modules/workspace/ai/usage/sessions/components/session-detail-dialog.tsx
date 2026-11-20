@@ -13,7 +13,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
-import { formatPoints, formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
+import { formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
 import { ConsoleEmpty } from "@/modules/workspace/console/components/console-page";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
 
@@ -97,7 +97,7 @@ function SessionDetailBody({ detail }: { detail: UsageSessionDetail }) {
         <Metric label="输入 Token" value={formatTokenCount(conversation.inputTokens)} />
         <Metric label="缓存 Token" value={formatTokenCount(conversation.cacheTokens)} />
         <Metric label="输出 Token" value={formatTokenCount(conversation.outputTokens)} />
-        <Metric label="积分" value={formatPoints(conversation.points) ?? "0 点"} />
+        <Metric label="标准 Token" value={formatTokenCount(conversation.units)} />
       </div>
 
       <section className="space-y-2">

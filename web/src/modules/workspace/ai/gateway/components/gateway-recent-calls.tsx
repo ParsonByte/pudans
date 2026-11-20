@@ -22,6 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { beijingDateKey } from "@/lib/date";
 import {
   ConsoleEmpty,
   ConsoleSection,
@@ -54,7 +55,6 @@ import { useCursorPager } from "../../usage/lib/cursor";
 import {
   USAGE_STATUS_OPTIONS,
   type UsageDateRangeValue,
-  serverDayKey,
   usageDateRange,
 } from "../../usage/lib/model";
 import { RequestDetailDialog } from "../../usage/requests/components/request-detail-dialog";
@@ -103,7 +103,7 @@ function fromUsageRequest(request: UsageRequestItem): RecentCall {
     status: request.status,
     errorCode: request.errorCode,
     totalTokens: request.totalTokens,
-    points: request.points,
+    points: request.units,
     latencyMs: request.latencyMs,
     ttftMs: request.ttftMs,
     routeGroup: request.routeGroup,
@@ -193,7 +193,7 @@ export function GatewayRecentCalls({ providers, models }: GatewayRecentCallsProp
     const normalizedAgent = agent.toLowerCase();
     return requests
       .filter((request) => {
-        const day = serverDayKey(request.createdAt);
+        const day = beijingDateKey(request.createdAt);
         if (!day || day < range.from || day > range.to) {
           return false;
         }

@@ -67,8 +67,6 @@ const MODALITY_VALUES = MODALITY_OPTIONS.map((option) => option.value) as [
   ...AiModality[],
 ];
 
-const NON_NEGATIVE_PATTERN = /^\d+(\.\d+)?$/;
-
 const modelSchema = z.object({
   name: z
     .string()
@@ -86,38 +84,6 @@ const modelSchema = z.object({
   capabilities: z.array(z.enum(MODEL_CAPABILITY_VALUES)),
   inputModalities: z.array(z.enum(MODALITY_VALUES)),
   outputModalities: z.array(z.enum(MODALITY_VALUES)),
-  inputTokensPerPoint: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
-  cacheTokensPerPoint: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
-  outputTokensPerPoint: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
-  imagePointsPerItem: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
-  videoPointsPerSecond: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
-  audioPointsPerSecond: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
-  speechPointsPerKiloCharacter: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
-  taskPointsPerInvocation: z
-    .string()
-    .trim()
-    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
   supportsStream: z.boolean(),
   supportsTools: z.boolean(),
   supportsJson: z.boolean(),
@@ -127,49 +93,6 @@ const modelSchema = z.object({
 });
 
 type ModelFormValues = z.infer<typeof modelSchema>;
-
-const POINT_FIELDS = [
-  {
-    name: "inputTokensPerPoint",
-    label: "输入 Token",
-    hint: "每 1 积分对应的输入 Token 数。",
-  },
-  {
-    name: "cacheTokensPerPoint",
-    label: "缓存 Token",
-    hint: "每 1 积分对应的缓存 Token 数。",
-  },
-  {
-    name: "outputTokensPerPoint",
-    label: "输出 Token",
-    hint: "每 1 积分对应的输出 Token 数。",
-  },
-  {
-    name: "imagePointsPerItem",
-    label: "图像积分",
-    hint: "每张生成图像消耗的积分数。",
-  },
-  {
-    name: "videoPointsPerSecond",
-    label: "视频积分",
-    hint: "每秒视频消耗的积分数。",
-  },
-  {
-    name: "audioPointsPerSecond",
-    label: "音频积分",
-    hint: "每秒音频消耗的积分数。",
-  },
-  {
-    name: "speechPointsPerKiloCharacter",
-    label: "语音积分",
-    hint: "每千字符语音消耗的积分数。",
-  },
-  {
-    name: "taskPointsPerInvocation",
-    label: "任务积分",
-    hint: "每次异步任务消耗的积分数。",
-  },
-] as const;
 
 type ModelDialogProps = {
   provider: AiProviderItem;
@@ -213,14 +136,6 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
         capabilities: values.capabilities.length > 0 ? values.capabilities : undefined,
         inputModalities: values.inputModalities.length > 0 ? values.inputModalities : undefined,
         outputModalities: values.outputModalities.length > 0 ? values.outputModalities : undefined,
-        inputTokensPerPoint: parsePointValue(values.inputTokensPerPoint),
-        cacheTokensPerPoint: parsePointValue(values.cacheTokensPerPoint),
-        outputTokensPerPoint: parsePointValue(values.outputTokensPerPoint),
-        imagePointsPerItem: parsePointValue(values.imagePointsPerItem),
-        videoPointsPerSecond: parsePointValue(values.videoPointsPerSecond),
-        audioPointsPerSecond: parsePointValue(values.audioPointsPerSecond),
-        speechPointsPerKiloCharacter: parsePointValue(values.speechPointsPerKiloCharacter),
-        taskPointsPerInvocation: parsePointValue(values.taskPointsPerInvocation),
         supportsStream: values.supportsStream,
         supportsTools: values.supportsTools,
         supportsJson: values.supportsJson,
@@ -466,30 +381,6 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
         </div>
       </ProviderDialogSection>
 
-      <ProviderDialogSection title="积分计费">
-        <p className="text-xs text-muted-foreground">
-          用于按积分统计消耗；留空表示未设置，文本模型通常填写每积分对应的 Token 数。
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {POINT_FIELDS.map((field) => (
-            <ProviderFieldRow
-              key={field.name}
-              label={field.label}
-              hint={field.hint}
-              error={form.formState.errors[field.name]?.message}
-            >
-              <Input
-                type="number"
-                min={0}
-                placeholder="0"
-                aria-label={field.label}
-                {...form.register(field.name)}
-              />
-            </ProviderFieldRow>
-          ))}
-        </div>
-      </ProviderDialogSection>
-
       {model ? (
         <ProviderDialogSection title="最近测试">
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -546,14 +437,6 @@ function initialValues(model: AiModelItem | undefined): ModelFormValues {
     capabilities: spec?.capabilities ?? [],
     inputModalities: spec?.inputModalities ?? [],
     outputModalities: spec?.outputModalities ?? [],
-    inputTokensPerPoint: toInputValue(spec?.inputTokensPerPoint),
-    cacheTokensPerPoint: toInputValue(spec?.cacheTokensPerPoint),
-    outputTokensPerPoint: toInputValue(spec?.outputTokensPerPoint),
-    imagePointsPerItem: toInputValue(spec?.imagePointsPerItem),
-    videoPointsPerSecond: toInputValue(spec?.videoPointsPerSecond),
-    audioPointsPerSecond: toInputValue(spec?.audioPointsPerSecond),
-    speechPointsPerKiloCharacter: toInputValue(spec?.speechPointsPerKiloCharacter),
-    taskPointsPerInvocation: toInputValue(spec?.taskPointsPerInvocation),
     supportsStream: spec?.supportsStream ?? true,
     supportsTools: spec?.supportsTools ?? false,
     supportsJson: spec?.supportsJson ?? false,
@@ -561,17 +444,4 @@ function initialValues(model: AiModelItem | undefined): ModelFormValues {
     supportsAsync: spec?.supportsAsync ?? false,
     enabled: spec?.enabled ?? true,
   };
-}
-
-function toInputValue(value: number | undefined): string {
-  return value == null || value === 0 ? "" : String(value);
-}
-
-function parsePointValue(value: string): number | undefined {
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-  const parsed = Number(trimmed);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }

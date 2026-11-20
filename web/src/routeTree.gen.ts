@@ -37,6 +37,7 @@ import { Route as AuthenticatedWorkspaceconsoleStoragePoliciesRouteImport } from
 import { Route as AuthenticatedWorkspaceindexIndexRouteImport } from './routes/_authenticated/_workspace/(index)/index'
 import { Route as AuthenticatedWorkspaceaiAiAgentRuntimeRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/agent-runtime'
 import { Route as AuthenticatedWorkspaceaiAiKnowledgeBasesRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/knowledge-bases'
+import { Route as AuthenticatedWorkspaceaiAiPlansRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/plans'
 import { Route as AuthenticatedWorkspaceaiAiSessionsRouteImport } from './routes/_authenticated/_workspace/(ai)/ai/sessions'
 import { Route as AuthenticatedWorkspaceconsoleAuditIndexRouteImport } from './routes/_authenticated/_workspace/(console)/audit/index'
 import { Route as AuthenticatedWorkspaceconsoleAuditLogsRouteImport } from './routes/_authenticated/_workspace/(console)/audit/logs'
@@ -211,6 +212,12 @@ const AuthenticatedWorkspaceaiAiKnowledgeBasesRoute =
   AuthenticatedWorkspaceaiAiKnowledgeBasesRouteImport.update({
     id: '/(ai)/ai/knowledge-bases',
     path: '/ai/knowledge-bases',
+    getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
+  } as any)
+const AuthenticatedWorkspaceaiAiPlansRoute =
+  AuthenticatedWorkspaceaiAiPlansRouteImport.update({
+    id: '/(ai)/ai/plans',
+    path: '/ai/plans',
     getParentRoute: () => AuthenticatedWorkspaceRouteRoute,
   } as any)
 const AuthenticatedWorkspaceaiAiSessionsRoute =
@@ -406,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/storage-policies': typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
   '/ai/agent-runtime': typeof AuthenticatedWorkspaceaiAiAgentRuntimeRoute
   '/ai/knowledge-bases': typeof AuthenticatedWorkspaceaiAiKnowledgeBasesRoute
+  '/ai/plans': typeof AuthenticatedWorkspaceaiAiPlansRoute
   '/ai/sessions': typeof AuthenticatedWorkspaceaiAiSessionsRoute
   '/audit/logs': typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   '/traces/$traceFlowId': typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
@@ -459,6 +467,7 @@ export interface FileRoutesByTo {
   '/storage-policies': typeof AuthenticatedWorkspaceconsoleStoragePoliciesRoute
   '/ai/agent-runtime': typeof AuthenticatedWorkspaceaiAiAgentRuntimeRoute
   '/ai/knowledge-bases': typeof AuthenticatedWorkspaceaiAiKnowledgeBasesRoute
+  '/ai/plans': typeof AuthenticatedWorkspaceaiAiPlansRoute
   '/ai/sessions': typeof AuthenticatedWorkspaceaiAiSessionsRoute
   '/audit/logs': typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   '/traces/$traceFlowId': typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
@@ -518,6 +527,7 @@ export interface FileRoutesById {
   '/_authenticated/_workspace/(index)/': typeof AuthenticatedWorkspaceindexIndexRoute
   '/_authenticated/_workspace/(ai)/ai/agent-runtime': typeof AuthenticatedWorkspaceaiAiAgentRuntimeRoute
   '/_authenticated/_workspace/(ai)/ai/knowledge-bases': typeof AuthenticatedWorkspaceaiAiKnowledgeBasesRoute
+  '/_authenticated/_workspace/(ai)/ai/plans': typeof AuthenticatedWorkspaceaiAiPlansRoute
   '/_authenticated/_workspace/(ai)/ai/sessions': typeof AuthenticatedWorkspaceaiAiSessionsRoute
   '/_authenticated/_workspace/(console)/audit/logs': typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   '/_authenticated/_workspace/(console)/traces/$traceFlowId': typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
@@ -573,6 +583,7 @@ export interface FileRouteTypes {
     | '/storage-policies'
     | '/ai/agent-runtime'
     | '/ai/knowledge-bases'
+    | '/ai/plans'
     | '/ai/sessions'
     | '/audit/logs'
     | '/traces/$traceFlowId'
@@ -626,6 +637,7 @@ export interface FileRouteTypes {
     | '/storage-policies'
     | '/ai/agent-runtime'
     | '/ai/knowledge-bases'
+    | '/ai/plans'
     | '/ai/sessions'
     | '/audit/logs'
     | '/traces/$traceFlowId'
@@ -684,6 +696,7 @@ export interface FileRouteTypes {
     | '/_authenticated/_workspace/(index)/'
     | '/_authenticated/_workspace/(ai)/ai/agent-runtime'
     | '/_authenticated/_workspace/(ai)/ai/knowledge-bases'
+    | '/_authenticated/_workspace/(ai)/ai/plans'
     | '/_authenticated/_workspace/(ai)/ai/sessions'
     | '/_authenticated/_workspace/(console)/audit/logs'
     | '/_authenticated/_workspace/(console)/traces/$traceFlowId'
@@ -923,6 +936,13 @@ declare module '@tanstack/react-router' {
       path: '/ai/knowledge-bases'
       fullPath: '/ai/knowledge-bases'
       preLoaderRoute: typeof AuthenticatedWorkspaceaiAiKnowledgeBasesRouteImport
+      parentRoute: typeof AuthenticatedWorkspaceRouteRoute
+    }
+    '/_authenticated/_workspace/(ai)/ai/plans': {
+      id: '/_authenticated/_workspace/(ai)/ai/plans'
+      path: '/ai/plans'
+      fullPath: '/ai/plans'
+      preLoaderRoute: typeof AuthenticatedWorkspaceaiAiPlansRouteImport
       parentRoute: typeof AuthenticatedWorkspaceRouteRoute
     }
     '/_authenticated/_workspace/(ai)/ai/sessions': {
@@ -1179,6 +1199,7 @@ interface AuthenticatedWorkspaceRouteRouteChildren {
   AuthenticatedWorkspaceindexIndexRoute: typeof AuthenticatedWorkspaceindexIndexRoute
   AuthenticatedWorkspaceaiAiAgentRuntimeRoute: typeof AuthenticatedWorkspaceaiAiAgentRuntimeRoute
   AuthenticatedWorkspaceaiAiKnowledgeBasesRoute: typeof AuthenticatedWorkspaceaiAiKnowledgeBasesRoute
+  AuthenticatedWorkspaceaiAiPlansRoute: typeof AuthenticatedWorkspaceaiAiPlansRoute
   AuthenticatedWorkspaceaiAiSessionsRoute: typeof AuthenticatedWorkspaceaiAiSessionsRoute
   AuthenticatedWorkspaceconsoleAuditLogsRoute: typeof AuthenticatedWorkspaceconsoleAuditLogsRoute
   AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute: typeof AuthenticatedWorkspaceconsoleTracesTraceFlowIdRoute
@@ -1231,6 +1252,7 @@ const AuthenticatedWorkspaceRouteRouteChildren: AuthenticatedWorkspaceRouteRoute
       AuthenticatedWorkspaceaiAiAgentRuntimeRoute,
     AuthenticatedWorkspaceaiAiKnowledgeBasesRoute:
       AuthenticatedWorkspaceaiAiKnowledgeBasesRoute,
+    AuthenticatedWorkspaceaiAiPlansRoute: AuthenticatedWorkspaceaiAiPlansRoute,
     AuthenticatedWorkspaceaiAiSessionsRoute:
       AuthenticatedWorkspaceaiAiSessionsRoute,
     AuthenticatedWorkspaceconsoleAuditLogsRoute:

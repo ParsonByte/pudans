@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { beijingDateTimeInputToIso, beijingDateTimeInputValue } from "@/lib/date";
 
 import {
   AI_API_VERSION,
@@ -349,9 +350,9 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
       <ProviderDialogSection title="计费">
         <div className="space-y-3">
           <ProviderFieldRow
-            label="点数上限"
+            label="Token 上限"
             htmlFor="ai-account-spend-cap"
-            hint="留空或 0 表示不限制该账号的点数消耗。"
+            hint="留空或 0 表示不限制该账号的标准 Token 消耗。"
             error={form.formState.errors.spendCapPoints?.message}
           >
             <Input
@@ -744,7 +745,7 @@ function initialValues(account: AiProviderAccountItem | undefined): AccountFormV
       unit: window.unit ?? "TOKEN",
       limit: window.limit == null ? "" : String(window.limit),
       used: window.used == null ? "" : String(window.used),
-      resetsAt: toLocalInput(window.resetsAt),
+      resetsAt: beijingDateTimeInputValue(window.resetsAt),
     })),
     concurrencyByModel: Object.entries(spec?.concurrencyByModel ?? {}).map(([model, value]) => ({
       model,
@@ -767,7 +768,7 @@ function toWindows(
       unit: row.unit,
       limit: parseNumber(row.limit),
       used: parseNumber(row.used) ?? 0,
-      resetsAt: row.resetsAt ? new Date(row.resetsAt).toISOString() : undefined,
+      resetsAt: row.resetsAt ? beijingDateTimeInputToIso(row.resetsAt) : undefined,
     }))
     .filter(
       (window) =>
@@ -863,16 +864,4 @@ function parseNumber(value: string): number | undefined {
   }
   const parsed = Number(trimmed);
   return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function toLocalInput(value: string | undefined): string {
-  if (!value) {
-    return "";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return "";
-  }
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
 }

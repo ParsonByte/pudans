@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import type { AuditRecord } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { format } from "date-fns";
 import {
   Activity,
   CheckCircle2,
@@ -18,6 +17,7 @@ import { ActivityBarChart } from "@/components/activity-bar-chart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { serverToday } from "@/lib/date";
 import {
   ConsoleEmpty,
   ConsolePage,
@@ -42,7 +42,7 @@ const EMPTY_RECORDS: AuditRecord[] = [];
 export function AuditView() {
   const auditPath = useMenuPath("audit");
   const [detailTarget, setDetailTarget] = useState<AuditRecord | null>(null);
-  const todayKey = format(new Date(), "yyyy-MM-dd");
+  const todayKey = serverToday();
   const auditQuery = useQuery({
     queryKey: ["audit-overview", todayKey],
     queryFn: () => fetchTodayAuditLogs(500),

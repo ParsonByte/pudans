@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { format } from "date-fns";
 import {
   Activity,
   Ban,
@@ -42,6 +41,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { formatBeijingDateTimeSeconds } from "@/lib/date";
 import {
   ConsoleEmpty,
   ConsolePage,
@@ -867,11 +867,7 @@ function resolveEventStatus(
 }
 
 function formatExactTime(value?: string): string {
-  if (!value) {
-    return "—";
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? value : format(date, "yyyy-MM-dd HH:mm:ss");
+  return formatBeijingDateTimeSeconds(value);
 }
 
 function formatRemaining(seconds: number): string {

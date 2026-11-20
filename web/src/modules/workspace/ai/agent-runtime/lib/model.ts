@@ -1,3 +1,4 @@
+import { formatBeijingClock, toDate } from "@/lib/date";
 import type { MultiSelectOption } from "@/modules/workspace/ai/library/components/multi-select";
 import { formatDuration, formatRelativeTime } from "@/modules/workspace/ai/routing/lib/model";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
@@ -256,13 +257,7 @@ export function fileEncodingLabel(encoding: string | undefined): string {
 }
 
 export function formatLogTime(value: string | null | undefined): string {
-  if (!value) {
-    return "--:--:--";
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "--:--:--"
-    : date.toLocaleTimeString("zh-CN", { hour12: false });
+  return toDate(value) ? formatBeijingClock(value) : "--:--:--";
 }
 
 export function formatRuntimeLastActive(value: string | null | undefined): string {

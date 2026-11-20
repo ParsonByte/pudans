@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { beijingDateKey, formatBeijingClock } from "@/lib/date";
 import { ConsoleEmpty, ConsoleSection } from "@/modules/workspace/console/components/console-page";
 
 import { ProviderBrandIcon } from "../../providers/components/provider-brand-icon";
@@ -29,7 +30,6 @@ import {
   agentLabel,
   cacheHitRate,
   dayKeyLabel,
-  formatClock,
   formatDuration,
   formatPoints,
   formatRelativeTime,
@@ -40,7 +40,6 @@ import {
   routeGroupDisplayName,
   shortIdentifier,
   userDisplayName,
-  utcDayKey,
 } from "../lib/model";
 
 type RoutingRequestsProps = {
@@ -71,7 +70,7 @@ export function RoutingRequests({
     () =>
       activeDay === "live"
         ? requests
-        : requests.filter((request) => utcDayKey(request.createdAt) === activeDay),
+        : requests.filter((request) => beijingDateKey(request.createdAt) === activeDay),
     [activeDay, requests],
   );
 
@@ -215,7 +214,7 @@ function RequestRow({
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-[11px] text-muted-foreground">
-          {formatClock(request.createdAt)}
+          {formatBeijingClock(request.createdAt)}
         </span>
         <span className={`size-1.5 rounded-full ${requestStatusDotClass(request.status)}`} />
         <span className="inline-flex items-center gap-1.5">

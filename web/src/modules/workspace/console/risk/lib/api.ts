@@ -1,6 +1,7 @@
 import { apiClient, axiosInstance } from "@pudans-dev/api-client";
 
 import { resolveApiError } from "@/lib/api-error";
+import { beijingDateKey } from "@/lib/date";
 
 const API_PREFIX = "/apis/api.pudans.tolim.cn/v1alpha1";
 
@@ -132,7 +133,7 @@ export async function fetchRiskEventTrend(days = 7): Promise<RiskTrendPoint[]> {
     if (!event.timestamp) {
       continue;
     }
-    const date = event.timestamp.slice(0, 10);
+    const date = beijingDateKey(event.timestamp) ?? event.timestamp.slice(0, 10);
     counts.set(date, (counts.get(date) ?? 0) + 1);
   }
   return [...counts.entries()]

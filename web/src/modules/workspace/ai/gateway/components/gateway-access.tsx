@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { beijingDateKey } from "@/lib/date";
 
 import type { AiModelItem, AiProviderItem } from "../../providers/lib/api";
 import { modelDisplayName } from "../../providers/lib/model";
@@ -76,7 +77,7 @@ export function GatewayAccess({
     keyOptions.push({
       value: `created:${createdToken.name}`,
       label: `${createdToken.displayName}（刚创建）`,
-      hint: createdToken.expiresAt ? `到期 ${createdToken.expiresAt.slice(0, 10)}` : "刚创建",
+      hint: createdToken.expiresAt ? `到期 ${beijingDateKey(createdToken.expiresAt)}` : "刚创建",
       token: createdToken.token,
     });
   }
@@ -88,7 +89,7 @@ export function GatewayAccess({
       value: `token:${token.metadata.name}`,
       label: token.spec.name || token.metadata.name,
       hint: `${gatewayTokenFingerprint(token.spec.tokenId)} · ${
-        token.spec.expiresAt ? `到期 ${token.spec.expiresAt.slice(0, 10)}` : "永不过期"
+        token.spec.expiresAt ? `到期 ${beijingDateKey(token.spec.expiresAt)}` : "永不过期"
       }`,
       token: undefined,
     });

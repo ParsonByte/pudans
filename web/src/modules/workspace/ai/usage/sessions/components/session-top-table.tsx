@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
-import { formatPoints, formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
+import { formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
 import { ConsoleEmpty } from "@/modules/workspace/console/components/console-page";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
 
@@ -33,7 +33,7 @@ export function SessionTopTable({ sessions, onOpen }: SessionTopTableProps) {
           <TableHead className="px-5">模型</TableHead>
           <TableHead className="px-5 text-end">消息数</TableHead>
           <TableHead className="px-5 text-end">Tokens</TableHead>
-          <TableHead className="px-5 text-end">积分</TableHead>
+          <TableHead className="px-5 text-end">标准 Token</TableHead>
           <TableHead className="px-5">最后活动</TableHead>
           <TableHead className="px-5 text-end">操作</TableHead>
         </TableRow>
@@ -62,7 +62,7 @@ export function SessionTopTable({ sessions, onOpen }: SessionTopTableProps) {
               {formatTokenCount(session.tokens)}
             </TableCell>
             <TableCell className="px-5 py-3 text-end text-sm tabular-nums">
-              {formatPoints(session.points) ?? "—"}
+              {formatTokenCount(session.units)}
             </TableCell>
             <TableCell className="px-5 py-3 text-xs text-muted-foreground tabular-nums">
               {formatUserDateTime(session.lastActivityAt)}

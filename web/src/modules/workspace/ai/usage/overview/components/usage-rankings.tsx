@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CircleDollarSign } from "lucide-react";
+import { Scale } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,15 +14,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DEFAULT_TIER_MULTIPLIERS, billingRatios } from "@/modules/workspace/ai/plans/lib/model";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
-import {
-  formatPoints,
-  formatTokenCount,
-  tierLabel,
-} from "@/modules/workspace/ai/routing/lib/model";
+import { formatTokenCount, tierLabel } from "@/modules/workspace/ai/routing/lib/model";
 import { ConsoleEmpty } from "@/modules/workspace/console/components/console-page";
 
-import type { AiModelItem } from "../../../providers/lib/api";
+import type { AiBilling, AiModelItem } from "../../../providers/lib/api";
 import type { UsageRankingEntry, UsageRankings } from "../../lib/api";
 import { formatPercent } from "../../lib/model";
 
@@ -35,8 +32,12 @@ type UsageRankingsTableProps = {
   totalTokens: number;
   models: AiModelItem[];
   providersPath?: string;
+  plansPath?: string;
   modelsLoading?: boolean;
   modelsError?: boolean;
+  billing?: AiBilling;
+  billingLoading?: boolean;
+  billingError?: boolean;
 };
 
 export function UsageRankingsTable({
@@ -44,8 +45,12 @@ export function UsageRankingsTable({
   totalTokens,
   models,
   providersPath,
+  plansPath,
   modelsLoading = false,
   modelsError = false,
+  billing,
+  billingLoading = false,
+  billingError = false,
 }: UsageRankingsTableProps) {
   return (
     <Tabs defaultValue="agents" className="gap-0">
@@ -66,8 +71,12 @@ export function UsageRankingsTable({
           totalTokens={totalTokens}
           models={models}
           providersPath={providersPath}
+          plansPath={plansPath}
           modelsLoading={modelsLoading}
           modelsError={modelsError}
+          billing={billing}
+          billingLoading={billingLoading}
+          billingError={billingError}
         />
       </TabsContent>
       <TabsContent value="providers">
@@ -85,8 +94,12 @@ type RankingTableProps = {
   totalTokens: number;
   models?: AiModelItem[];
   providersPath?: string;
+  plansPath?: string;
   modelsLoading?: boolean;
   modelsError?: boolean;
+  billing?: AiBilling;
+  billingLoading?: boolean;
+  billingError?: boolean;
 };
 
 function RankingTable({
@@ -94,8 +107,12 @@ function RankingTable({
   totalTokens,
   models,
   providersPath,
+  plansPath,
   modelsLoading = false,
   modelsError = false,
+  billing,
+  billingLoading = false,
+  billingError = false,
 }: RankingTableProps) {
   if (rows.length === 0) {
     return <ConsoleEmpty>所选时间范围内暂无排行数据。</ConsoleEmpty>;
@@ -113,8 +130,8 @@ function RankingTable({
           <TableHead className="px-5 text-end">输入</TableHead>
           <TableHead className="px-5 text-end">缓存</TableHead>
           <TableHead className="px-5 text-end">输出</TableHead>
-          <TableHead className="px-5 text-end">积分</TableHead>
-          {models ? <TableHead className="px-5 text-end">价格</TableHead> : null}
+          <TableHead className="px-5 text-end">标准 Token</TableHead>
+          {models ? <TableHead className="px-5 text-end">权重</TableHead> : null}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -158,19 +175,21 @@ function RankingTable({
                 {formatTokenCount(row.outputTokens)}
               </TableCell>
               <TableCell className="px-5 py-3 text-end text-sm tabular-nums">
-                {formatPoints(row.points) ?? "—"}
+                {formatTokenCount(row.units)}
               </TableCell>
               {models ? (
                 <TableCell className="px-5 py-3 text-end">
                   {row.name === OTHER_NAME ? (
                     <span className="text-xs text-muted-foreground">—</span>
                   ) : (
-                    <ModelPricePopover
+                    <ModelWeightPopover
                       row={row}
                       models={models}
                       providersPath={providersPath}
-                      loading={modelsLoading}
-                      failed={modelsError}
+                      plansPath={plansPath}
+                      loading={modelsLoading || billingLoading}
+                      failed={modelsError || billingError}
+                      billing={billing}
                     />
                   )}
                 </TableCell>
@@ -204,7 +223,7 @@ function mergeSmallRows(rows: UsageRankingEntry[], totalTokens: number): UsageRa
       inputTokens: accumulator.inputTokens + row.inputTokens,
       cacheTokens: accumulator.cacheTokens + row.cacheTokens,
       outputTokens: accumulator.outputTokens + row.outputTokens,
-      points: accumulator.points + row.points,
+      units: accumulator.units + row.units,
     }),
     {
       name: OTHER_NAME,
@@ -214,27 +233,31 @@ function mergeSmallRows(rows: UsageRankingEntry[], totalTokens: number): UsageRa
       inputTokens: 0,
       cacheTokens: 0,
       outputTokens: 0,
-      points: 0,
+      units: 0,
     },
   );
   return [...kept, other];
 }
 
-type ModelPricePopoverProps = {
+type ModelWeightPopoverProps = {
   row: UsageRankingEntry;
   models: AiModelItem[];
   providersPath?: string;
+  plansPath?: string;
   loading: boolean;
   failed: boolean;
+  billing?: AiBilling;
 };
 
-function ModelPricePopover({
+function ModelWeightPopover({
   row,
   models,
   providersPath,
+  plansPath,
   loading,
   failed,
-}: ModelPricePopoverProps) {
+  billing,
+}: ModelWeightPopoverProps) {
   const matches = models.filter(
     (model) =>
       model.spec.modelCode === row.name &&
@@ -245,71 +268,107 @@ function ModelPricePopover({
     <Popover>
       <PopoverTrigger asChild>
         <Button type="button" variant="ghost" size="sm" className="h-7 px-2">
-          <CircleDollarSign />
-          价格
+          <Scale />
+          权重
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-80">
+      <PopoverContent align="end" className="w-96">
         <div className="space-y-3">
           <div>
             <p className="text-sm font-medium">{row.name}</p>
             <p className="text-[11px] text-muted-foreground">
-              {row.provider ?? "全部供应商"} · 只读模型定价
+              {row.provider ?? "全部供应商"} · 只读权重系数
             </p>
           </div>
           {loading ? (
-            <p className="text-xs text-muted-foreground">正在加载模型定价配置…</p>
+            <p className="text-xs text-muted-foreground">正在加载计费权重配置…</p>
           ) : failed ? (
-            <p className="text-xs text-destructive">无法加载模型定价配置，请稍后重试。</p>
+            <p className="text-xs text-destructive">无法加载计费权重配置，请稍后重试。</p>
           ) : matches.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              未找到该模型的供应商模型配置，无法读取积分单价。
+              未找到该模型的供应商模型配置，无法读取权重系数。
             </p>
           ) : (
             <div className="space-y-3">
               {matches.map((model) => (
-                <div key={model.metadata.name} className="space-y-1.5 rounded-lg border p-2.5">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant="outline">{model.spec.provider}</Badge>
-                    <span className="font-mono text-[11px] text-muted-foreground">
-                      {model.metadata.name}
-                    </span>
-                    {model.spec.tier ? (
-                      <Badge variant="secondary">
-                        {tierLabel(model.spec.tier) ?? model.spec.tier}
-                      </Badge>
-                    ) : null}
-                  </div>
-                  <PriceRow label="输入" value={model.spec.inputTokensPerPoint} />
-                  <PriceRow label="缓存" value={model.spec.cacheTokensPerPoint} />
-                  <PriceRow label="输出" value={model.spec.outputTokensPerPoint} />
-                  <p className="text-[11px] text-muted-foreground">
-                    上下文窗口{" "}
-                    {model.spec.contextWindow == null
-                      ? "未配置"
-                      : formatTokenCount(model.spec.contextWindow)}
-                  </p>
-                </div>
+                <ModelWeightCard key={model.metadata.name} model={model} billing={billing} />
               ))}
             </div>
           )}
-          {providersPath ? (
-            <Button asChild variant="outline" size="sm" className="w-full">
-              <Link to={providersPath}>前往供应商模型编辑</Link>
-            </Button>
-          ) : null}
+          <div className="grid grid-cols-2 gap-2">
+            {plansPath ? (
+              <Button asChild variant="outline" size="sm">
+                <Link to={plansPath}>前往计费比例</Link>
+              </Button>
+            ) : null}
+            {providersPath ? (
+              <Button asChild variant="outline" size="sm">
+                <Link to={providersPath}>前往模型配置</Link>
+              </Button>
+            ) : null}
+          </div>
         </div>
       </PopoverContent>
     </Popover>
   );
 }
 
-function PriceRow({ label, value }: { label: string; value: number | undefined }) {
+function ModelWeightCard({ model, billing }: { model: AiModelItem; billing?: AiBilling }) {
+  const ratios = billingRatios(billing);
+  const tierMultiplier = model.spec.tier
+    ? (billing?.tierMultipliers?.[model.spec.tier] ?? DEFAULT_TIER_MULTIPLIERS[model.spec.tier])
+    : 1;
+  const modelMultiplier = billing?.modelMultipliers?.[model.spec.modelCode] ?? 1;
+  const combined = tierMultiplier * modelMultiplier;
+
   return (
-    <div className="flex items-center justify-between text-xs">
-      <span className="text-muted-foreground">{label}（Token/积分）</span>
+    <div className="space-y-1.5 rounded-lg border p-2.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge variant="outline">{model.spec.provider}</Badge>
+        <span className="font-mono text-[11px] text-muted-foreground">{model.metadata.name}</span>
+        {model.spec.tier ? (
+          <Badge variant="secondary">{tierLabel(model.spec.tier) ?? model.spec.tier}</Badge>
+        ) : null}
+      </div>
+      <WeightRow
+        label="档位系数"
+        value={tierMultiplier}
+        hint={model.spec.tier ? (tierLabel(model.spec.tier) ?? model.spec.tier) : "未设置档位"}
+      />
+      <WeightRow
+        label="模型系数"
+        value={modelMultiplier}
+        hint={modelMultiplier === 1 ? "未覆盖，默认 1" : "计费比例中的模型覆盖"}
+      />
+      <WeightRow label="综合系数" value={combined} hint="档位系数 × 模型系数" />
+      <div className="border-t pt-1.5">
+        <p className="mb-1 text-[11px] font-medium text-muted-foreground">基础权重</p>
+        <WeightRow label="输入" value={ratios.input} />
+        <WeightRow label="输出" value={ratios.output} />
+        <WeightRow label="缓存读取" value={ratios.cacheRead} />
+        <WeightRow label="缓存写入" value={ratios.cacheWrite} />
+      </div>
+    </div>
+  );
+}
+
+function WeightRow({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number | undefined;
+  hint?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-xs">
+      <span className="text-muted-foreground">
+        {label}
+        {hint ? <span className="ms-1 text-[10px]">{hint}</span> : null}
+      </span>
       <span className="font-medium tabular-nums">
-        {value == null ? "未配置" : formatNumber(value, 0)}
+        {value == null || !Number.isFinite(value) ? "—" : `×${formatNumber(value, 4)}`}
       </span>
     </div>
   );

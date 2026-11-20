@@ -1,4 +1,5 @@
 import { axiosInstance } from "@pudans-dev/api-client";
+import { isAxiosError } from "axios";
 
 import { resolveApiError } from "@/lib/api-error";
 
@@ -12,7 +13,7 @@ const USAGE_REQUEST_SAMPLE_MAX_ROWS = 2000;
 
 const USAGE_REQUEST_SAMPLE_PAGE_SIZE = 200;
 
-const WALLET_API_PATH = `${AI_API_PREFIX}/wallet/-/transactions`;
+const PLAN_API_PATH = `${AI_API_PREFIX}/aiplan`;
 
 export const USAGE_SESSION_EXPORT_MAX_ROWS = 2000;
 
@@ -31,7 +32,7 @@ export type UsageTotals = {
   cacheTokens: number;
   outputTokens: number;
   totalTokens: number;
-  points: number;
+  units: number;
   latencyMs: number | null;
   ttftMs: number | null;
   tps: number | null;
@@ -51,7 +52,7 @@ export type UsageDaily = {
   cacheTokens: number;
   outputTokens: number;
   totalTokens: number;
-  points: number;
+  units: number;
 };
 
 export type UsageRankingEntry = {
@@ -62,7 +63,7 @@ export type UsageRankingEntry = {
   inputTokens: number;
   cacheTokens: number;
   outputTokens: number;
-  points: number;
+  units: number;
 };
 
 export type UsageRankings = {
@@ -72,21 +73,62 @@ export type UsageRankings = {
   accounts: UsageRankingEntry[];
 };
 
-export type UsageWallet = {
-  balance: number;
-  frozen: number;
-  available: number;
-  totalGranted: number;
-  totalConsumed: number;
-  status: number;
-  dailyLimit: number | null;
+export type PlanUsageWindow = {
+  limit: number;
+  used: number;
+  reserved: number;
+  remaining: number;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  state?: string | null;
+};
+
+export type PlanVoucherBalance = {
+  total: number;
+  used: number;
+  remaining: number;
+};
+
+type PlanRateLimit = {
+  maxConcurrency?: number | null;
+  maxRpm?: number | null;
+};
+
+export type PlanUsage = {
+  plan?: {
+    name?: string | null;
+    displayName?: string | null;
+    matchedBy?: string | null;
+  } | null;
+  fiveHour: PlanUsageWindow;
+  weekly: PlanUsageWindow;
+  rateLimit?: PlanRateLimit | null;
+  vouchers?: {
+    fiveHour?: PlanVoucherBalance | null;
+    weekly?: PlanVoucherBalance | null;
+  } | null;
+};
+
+export type PlanVoucherKind = "FIVE_HOUR_RESET" | "WEEKLY_RESET";
+
+export type PlanVoucherUseRequest = {
+  kind: PlanVoucherKind;
+  requestId: string;
+};
+
+export type PlanVoucherUseResult = {
+  requestId?: string;
+  kind?: PlanVoucherKind | null;
+  duplicate?: boolean;
+  targetWindowKey?: string;
+  windowKeyAfter?: string;
+  usedAt?: string | null;
 };
 
 export type UsageOverview = {
   totals: UsageTotals;
   series: UsageDaily[];
   rankings: UsageRankings;
-  quotas: UsageWallet;
 };
 
 export type UsageOverviewQuery = {
@@ -132,7 +174,7 @@ export type UsageRequestItem = {
   cacheTokens: number | null;
   outputTokens: number | null;
   totalTokens: number | null;
-  points: number | null;
+  units: number | null;
   latencyMs: number | null;
   ttftMs: number | null;
   tps: number | null;
@@ -157,7 +199,6 @@ export type UsageRequestPage = {
 type UsageBilling = {
   source: string | null;
   status: string;
-  overdraft: number | null;
   usageSource: string | null;
   upstreamRequestId: string | null;
 };
@@ -200,7 +241,7 @@ export type UsageSession = {
   cacheTokens: number;
   outputTokens: number;
   totalTokens: number;
-  points: number;
+  units: number;
   durationSeconds: number;
   createdAt: string;
   lastActivityAt: string;
@@ -264,14 +305,14 @@ export type UsageContext = {
   models: UsageContextBreakdown[];
 };
 
-export type UsageHeatmapMetric = "requests" | "tokens" | "points";
+export type UsageHeatmapMetric = "requests" | "tokens" | "units";
 
 export type UsageHeatmapBucket = {
   date: string;
   hour?: number;
   requests: number;
   tokens: number;
-  points: number;
+  units: number;
 };
 
 export type UsageHeatmap = {
@@ -317,7 +358,7 @@ type UsageSessionStatsTotals = {
   medianMessages: number;
   p90Messages: number;
   tokens: number;
-  points: number;
+  units: number;
   cacheReadTokens: number;
   activeSeconds: number;
 };
@@ -327,7 +368,7 @@ export type UsageSessionStatsDay = {
   sessions: number;
   messages: number;
   tokens: number;
-  points: number;
+  units: number;
   activeSeconds: number;
 };
 
@@ -340,7 +381,7 @@ export type UsageSessionStatsModel = {
   name: string;
   sessions: number;
   tokens: number;
-  points: number;
+  units: number;
 };
 
 export type UsageSessionStatsTopSession = {
@@ -350,7 +391,7 @@ export type UsageSessionStatsTopSession = {
   model: string | null;
   messages: number;
   tokens: number;
-  points: number;
+  units: number;
   lastActivityAt: string;
 };
 
@@ -406,23 +447,6 @@ export type UsageContextGridQuery = {
   model?: string;
   limit?: number;
   scope?: UsageScope;
-};
-
-export type UsageWalletTransaction = {
-  id: number;
-  txnType: string;
-  amount: number;
-  balanceAfter: number;
-  requestId: string | null;
-  providerAccount: string | null;
-  modelCode: string | null;
-  tier: string | null;
-  inputTokens: number | null;
-  cacheTokens: number | null;
-  outputTokens: number | null;
-  traceId: string | null;
-  billingSource: string | null;
-  createdAt: string;
 };
 
 export type UsageClearRequest = {
@@ -575,14 +599,58 @@ export async function fetchUsageRequestSample(
   return items.slice(0, maxRows);
 }
 
-export async function fetchUsageWalletTransactions(
-  limit = 20,
-  beforeId?: number,
-): Promise<UsageWalletTransaction[]> {
-  const response = await axiosInstance.get<UsageWalletTransaction[]>(WALLET_API_PATH, {
-    params: compactParams({ limit, beforeId }),
-  });
+export async function fetchPlanUsage(): Promise<PlanUsage> {
+  const response = await axiosInstance.get<PlanUsage>(`${PLAN_API_PATH}/-/usage`);
   return response.data;
+}
+
+export async function redeemPlanVoucher(
+  request: PlanVoucherUseRequest,
+): Promise<PlanVoucherUseResult> {
+  const response = await axiosInstance.post<PlanVoucherUseResult>(
+    `${PLAN_API_PATH}/-/vouchers/use`,
+    request,
+  );
+  return response.data;
+}
+
+const PLAN_VOUCHER_ERROR_MESSAGES: Record<string, string> = {
+  "ai-plan-voucher-missing": "没有可用的重置券。",
+  "ai-plan-reset-busy": "当前有进行中的请求，暂时无法重置。",
+  "ai-plan-reset-not-needed": "目标窗口没有用量，无需重置。",
+  "ai-plan-voucher-conflict": "本次重置请求与已提交的请求冲突，请刷新后重试。",
+};
+
+const PLAN_USAGE_ERROR_MESSAGES: Record<string, string> = {
+  "ai-plan-missing": "当前账号未分配 AI 套餐。",
+  "ai-plan-quota-exceeded": "套餐额度不足。",
+  "ai-plan-model-denied": "当前套餐不允许该模型或路由组。",
+};
+
+export function resolvePlanUsageApiError(error: unknown): string {
+  if (isAxiosError<{ code?: string; detail?: string }>(error)) {
+    const code = error.response?.data?.code?.trim();
+    const detail = error.response?.data?.detail?.trim();
+    const known = code ? PLAN_USAGE_ERROR_MESSAGES[code] : undefined;
+    const message = known ?? detail;
+    if (message) {
+      return code ? `${message}（${code}）` : message;
+    }
+  }
+  return resolveUsageApiError(error);
+}
+
+export function resolvePlanVoucherApiError(error: unknown): string {
+  if (isAxiosError<{ code?: string; detail?: string }>(error)) {
+    const code = error.response?.data?.code?.trim();
+    const detail = error.response?.data?.detail?.trim();
+    const known = code ? PLAN_VOUCHER_ERROR_MESSAGES[code] : undefined;
+    const message = known ?? detail;
+    if (message) {
+      return code ? `${message}（${code}）` : message;
+    }
+  }
+  return resolveUsageApiError(error);
 }
 
 export async function clearUsage(request: UsageClearRequest): Promise<UsageClearResult> {

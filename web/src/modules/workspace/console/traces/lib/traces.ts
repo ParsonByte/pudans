@@ -1,5 +1,6 @@
 import type { AuditRecord } from "@pudans-dev/api-client";
-import { format } from "date-fns";
+
+import { formatBeijingDateTimeMillis } from "@/lib/date";
 
 export type TraceSpanKind = "ENTRY" | "CHILD" | "ORPHAN";
 
@@ -258,7 +259,7 @@ export function formatDuration(value?: number): string {
 }
 
 export function formatTraceTime(value: number): string {
-  return format(value, "yyyy-MM-dd HH:mm:ss.SSS");
+  return formatBeijingDateTimeMillis(new Date(value));
 }
 
 export function formatTraceAxis(valueMs: number): string {

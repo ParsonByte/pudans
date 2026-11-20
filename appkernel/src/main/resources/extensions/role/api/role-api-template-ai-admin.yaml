@@ -7,7 +7,7 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "AI"
     rbac.authorization.pudans.tolim.cn/display-name: "AI 系统管理员"
-    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-ai-operator" ]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-ai-operator", "role-template-ai-plans", "role-template-view-ai-plans", "role-template-plans-view", "role-template-create-ai-plans", "role-template-update-ai-plans", "role-template-delete-ai-plans", "role-template-assign-ai-plans", "role-template-ratios-ai-plans", "role-template-grant-ai-plans" ]'
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -75,12 +75,6 @@ rules:
       - "knowledgebases/documents"
       - "knowledgebases/reindex"
       - "knowledgebases/querylogs"
-      - "wallets"
-      - "wallets/adjust"
-      - "wallets/freeze"
-      - "wallets/batch-adjust"
-      - "pointtransactions"
-      - "pointtransactions/export"
       - "aistats/routing"
       - "aistats/points"
       - "aistats/memory"

@@ -1,3 +1,5 @@
+import { beijingDateKey, serverToday } from "@/lib/date";
+
 import type {
   AiModelItem,
   AiModelTier,
@@ -200,13 +202,9 @@ export function requestStatusDotClass(status: string | undefined): string {
   return STATUS_CLASSES[status ?? ""] ?? "bg-muted-foreground";
 }
 
-export function utcDayKey(iso: string): string {
-  return iso.slice(0, 10);
-}
-
 export function dayKeyLabel(day: string): string {
-  const today = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+  const today = serverToday();
+  const yesterday = beijingDateKey(new Date(Date.now() - 86_400_000));
   if (day === today) {
     return "今天";
   }
@@ -218,28 +216,6 @@ export function dayKeyLabel(day: string): string {
     return day;
   }
   return `${date.getUTCMonth() + 1}月${date.getUTCDate()}日 ${WEEKDAYS[date.getUTCDay()]}`;
-}
-
-export function formatClock(iso: string | undefined): string {
-  if (!iso) {
-    return "—";
-  }
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-  return date.toLocaleTimeString("zh-CN", { hour12: false });
-}
-
-export function formatDateTime(iso: string | undefined): string {
-  if (!iso) {
-    return "—";
-  }
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) {
-    return "—";
-  }
-  return date.toLocaleString("zh-CN", { hour12: false });
 }
 
 export function formatRelativeTime(iso: string | undefined): string {

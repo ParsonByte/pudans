@@ -1,0 +1,48 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-ai-plans
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI Billing"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 套餐与计费管理员"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplans"
+      - "aiplanbindings"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplanbindings/bulk"
+      - "aiplan/vouchers"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplanbindings/resolve"
+      - "aiplan/usage"
+      - "aiplan/vouchers"
+      - "aisettings"
+      - "users"
+      - "usergroups"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aisettings"
+    verbs:
+      - "update"
+      - "patch"

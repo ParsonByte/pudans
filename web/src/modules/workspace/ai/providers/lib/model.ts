@@ -1,3 +1,5 @@
+import { formatBeijingDateTime, toDate } from "@/lib/date";
+
 import type {
   AiAccountType,
   AiModality,
@@ -207,14 +209,7 @@ export function formatTestResult(result: {
 }
 
 export function formatTestTimestamp(value: string | undefined): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return undefined;
-  }
-  return date.toLocaleString("zh-CN", { hour12: false });
+  return toDate(value) ? formatBeijingDateTime(value) : undefined;
 }
 
 export function statusLabel(status: AiProviderStatus | undefined): string {

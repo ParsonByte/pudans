@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { resolveApiErrorWithDetail } from "@/lib/api-error";
+import { formatBeijingDateTime } from "@/lib/date";
 import { ConsoleEmpty, ConsoleSection } from "@/modules/workspace/console/components/console-page";
 
 import type { AiModelItem, AiProviderItem, AiRouteGroupItem } from "../../providers/lib/api";
@@ -34,7 +35,6 @@ import {
   HISTORY_STATUS_OPTIONS,
   accountDisplayName,
   agentLabel,
-  formatDateTime,
   formatDuration,
   formatRelativeTime,
   providerDisplayName,
@@ -380,7 +380,9 @@ function HistoryRow({ item, lookups, onOpen }: HistoryRowProps) {
   return (
     <TableRow>
       <TableCell className="text-xs text-muted-foreground">
-        <span title={formatDateTime(item.createdAt)}>{formatRelativeTime(item.createdAt)}</span>
+        <span title={formatBeijingDateTime(item.createdAt)}>
+          {formatRelativeTime(item.createdAt)}
+        </span>
       </TableCell>
       <TableCell>
         <span className="inline-flex items-center gap-1.5 text-xs">

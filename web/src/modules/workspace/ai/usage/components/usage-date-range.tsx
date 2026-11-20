@@ -16,15 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { BEIJING_TIME_ZONE, serverToday } from "@/lib/date";
 
 import {
-  SERVER_TIME_ZONE,
   USAGE_ALL_RANGE_HINT,
   USAGE_RANGE_OPTIONS,
   type UsageDateRangeValue,
   type UsageRangeOptionValue,
   type UsageRangePreset,
-  serverToday,
   usageDateRange,
   validateUsageDateRange,
 } from "../lib/model";
@@ -139,7 +138,7 @@ export function UsageDateRangeFilter({
         </>
       ) : (
         <span className="pb-2 text-xs text-muted-foreground">
-          {value.from} 至 {value.to}（按 {SERVER_TIME_ZONE} 自然日）
+          {value.from} 至 {value.to}（按 {BEIJING_TIME_ZONE} 自然日）
         </span>
       )}
       <span className="basis-full text-[11px] text-muted-foreground">{USAGE_ALL_RANGE_HINT}</span>

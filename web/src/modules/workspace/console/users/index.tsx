@@ -4,7 +4,6 @@ import { apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { type ColumnDef, createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { format } from "date-fns";
 import {
   Ban,
   CheckCircle2,
@@ -50,6 +49,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { downloadCsv } from "@/lib/csv";
+import { beijingTimestamp } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { ConsolePage } from "@/modules/workspace/console/components/console-page";
 import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
@@ -215,7 +215,7 @@ export function UsersView() {
     if (items.length === 0) {
       return 0;
     }
-    downloadCsv(`users-${prefix}-${format(new Date(), "yyyyMMdd-HHmm")}.csv`, usersToCsv(items));
+    downloadCsv(`users-${prefix}-${beijingTimestamp()}.csv`, usersToCsv(items));
     return items.length;
   };
 

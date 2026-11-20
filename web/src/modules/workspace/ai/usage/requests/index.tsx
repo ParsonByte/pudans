@@ -18,11 +18,11 @@ import {
 } from "@/components/ui/table";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { downloadBlob } from "@/lib/csv";
+import { beijingDateKey } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
 import {
   formatDuration,
-  formatPoints,
   formatTokenCount,
   requestStatusLabel,
 } from "@/modules/workspace/ai/routing/lib/model";
@@ -60,7 +60,6 @@ import {
   buildUsageTotalsKpis,
   formatPercent,
   resolveUsageCacheHitRate,
-  serverDayKey,
   usageExportFilename,
 } from "../lib/model";
 import {
@@ -251,7 +250,7 @@ export function AiUsageRequestsView() {
   const trendItems = useMemo(
     () =>
       sampleItems.filter((item) => {
-        const day = serverDayKey(item.createdAt);
+        const day = beijingDateKey(item.createdAt);
         return day != null && day >= urlForm.range.from && day <= urlForm.range.to;
       }),
     [sampleItems, urlForm.range.from, urlForm.range.to],
@@ -371,7 +370,7 @@ export function AiUsageRequestsView() {
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight">{PAGE_TITLE}</h2>
             <p className="text-xs text-muted-foreground">
-              按创建时间倒序查看每个请求的路由、Token、积分与响应指标。
+              按创建时间倒序查看每个请求的路由、Token、标准 Token 用量与响应指标。
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -442,7 +441,7 @@ export function AiUsageRequestsView() {
                   onValueChange={(value) => {
                     if (
                       value === "tokens" ||
-                      value === "points" ||
+                      value === "units" ||
                       value === "calls" ||
                       value === "speed"
                     ) {
@@ -451,7 +450,7 @@ export function AiUsageRequestsView() {
                   }}
                 >
                   <ToggleGroupItem value="tokens">Token</ToggleGroupItem>
-                  <ToggleGroupItem value="points">积分</ToggleGroupItem>
+                  <ToggleGroupItem value="units">标准 Token</ToggleGroupItem>
                   <ToggleGroupItem value="calls">请求</ToggleGroupItem>
                   <ToggleGroupItem value="speed">速度</ToggleGroupItem>
                 </ToggleGroup>
@@ -586,7 +585,7 @@ export function AiUsageRequestsView() {
                   <TableHead className="px-5">状态</TableHead>
                   <TableHead className="px-5 text-end">Tokens</TableHead>
                   <TableHead className="px-5 text-end">缓存命中</TableHead>
-                  <TableHead className="px-5 text-end">积分</TableHead>
+                  <TableHead className="px-5 text-end">标准 Token</TableHead>
                   <TableHead className="px-5 text-end">延迟</TableHead>
                   <TableHead className="px-5 text-end">首 Token</TableHead>
                   <TableHead className="px-5">档位 / 重试</TableHead>
@@ -648,7 +647,7 @@ export function AiUsageRequestsView() {
                           {formatPercent(cacheHit)}
                         </TableCell>
                         <TableCell className="px-5 py-3 text-end text-sm tabular-nums">
-                          {formatPoints(request.points ?? undefined) ?? "—"}
+                          {formatTokenCount(request.units ?? undefined)}
                         </TableCell>
                         <TableCell className="px-5 py-3 text-end text-xs text-muted-foreground tabular-nums">
                           {request.latencyMs == null ? "—" : formatDuration(request.latencyMs)}

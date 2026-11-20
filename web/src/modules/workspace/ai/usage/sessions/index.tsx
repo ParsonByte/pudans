@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/table";
 import { downloadCsv, toCsv } from "@/lib/csv";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
-import { formatPoints, formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
+import { formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
 import {
   ConsoleEmpty,
   ConsolePage,
@@ -100,7 +100,7 @@ const SESSION_CSV_HEADERS = [
   "cacheTokens",
   "outputTokens",
   "totalTokens",
-  "points",
+  "units",
   "durationSeconds",
   "createdAt",
   "lastActivityAt",
@@ -214,8 +214,8 @@ export function AiUsageSessionsView() {
           hint: sourceHint,
         },
         {
-          label: "积分消耗",
-          value: formatPoints(stats.totals.points) ?? "0 点",
+          label: "标准 Token 消耗",
+          value: formatTokenCount(stats.totals.units),
           hint: sourceHint,
         },
         {
@@ -292,7 +292,7 @@ export function AiUsageSessionsView() {
         session.cacheTokens,
         session.outputTokens,
         session.totalTokens,
-        session.points,
+        session.units,
         session.durationSeconds,
         session.createdAt,
         session.lastActivityAt,
@@ -317,7 +317,7 @@ export function AiUsageSessionsView() {
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight">{PAGE_TITLE}</h2>
             <p className="text-xs text-muted-foreground">
-              按会话聚合消息、请求、Token 与积分消耗，可查看最近消息。
+              按会话聚合消息、请求、Token 与标准 Token 用量，可查看最近消息。
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -550,7 +550,7 @@ export function AiUsageSessionsView() {
               <ConsoleSection className="overflow-hidden">
                 <ConsoleSectionHeader
                   title="模型分布"
-                  description="按会话使用的模型聚合 Token 与积分。"
+                  description="按会话使用的模型聚合 Token 与标准 Token 用量。"
                 />
                 {statsLoading ? (
                   <div className="space-y-2 p-5">
@@ -589,7 +589,7 @@ export function AiUsageSessionsView() {
                   <TableHead className="px-5 text-end">消息数</TableHead>
                   <TableHead className="px-5 text-end">请求数</TableHead>
                   <TableHead className="px-5 text-end">Tokens</TableHead>
-                  <TableHead className="px-5 text-end">积分</TableHead>
+                  <TableHead className="px-5 text-end">标准 Token</TableHead>
                   <TableHead className="px-5 text-end">时长</TableHead>
                   <TableHead className="px-5">最后活动</TableHead>
                   <TableHead className="px-5 text-end">操作</TableHead>
@@ -639,7 +639,7 @@ export function AiUsageSessionsView() {
                         {formatTokenCount(session.totalTokens)}
                       </TableCell>
                       <TableCell className="px-5 py-3 text-end text-sm tabular-nums">
-                        {formatPoints(session.points) ?? "—"}
+                        {formatTokenCount(session.units)}
                       </TableCell>
                       <TableCell className="px-5 py-3 text-end text-xs text-muted-foreground tabular-nums">
                         {formatSessionDuration(session.durationSeconds)}

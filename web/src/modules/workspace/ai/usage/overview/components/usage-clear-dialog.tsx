@@ -46,7 +46,7 @@ export function UsageClearDialog({ open, range, onOpenChange, onCleared }: Usage
           <AlertDialogTitle>清空用量</AlertDialogTitle>
           <AlertDialogDescription>
             将删除截至 {range.to} 的 AI
-            聊天请求与模型请求用量记录，操作不可恢复；钱包与积分流水不受影响。仅管理员可执行。
+            聊天请求与模型请求用量记录，操作不可恢复；套餐窗口计数与用量账本不受影响。仅管理员可执行。
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

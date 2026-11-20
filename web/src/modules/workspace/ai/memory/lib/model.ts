@@ -1,3 +1,5 @@
+import { beijingDateTimeInputToIso, beijingDateTimeInputValue } from "@/lib/date";
+
 import type {
   MemoryAssetView,
   MemoryAssetVisibility,
@@ -144,26 +146,14 @@ export function sortMemoryItemsAscending<T extends { id?: number | string } & Me
   });
 }
 
-function pad(value: number): string {
-  return String(value).padStart(2, "0");
-}
-
-function toDateTimeLocal(date: Date): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 export function defaultMemoryTimeRange(): MemoryTimeRange {
   const to = new Date();
   const from = new Date(to.getTime() - 24 * 60 * 60 * 1000);
-  return { from: toDateTimeLocal(from), to: toDateTimeLocal(to) };
+  return { from: beijingDateTimeInputValue(from), to: beijingDateTimeInputValue(to) };
 }
 
 export function toIsoDateTime(value: string): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  return beijingDateTimeInputToIso(value);
 }
 
 export function stripScenarioMeta(content: string): string {

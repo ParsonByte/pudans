@@ -23,10 +23,10 @@ import {
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatBeijingClock } from "@/lib/date";
 import { formatFileSize } from "@/modules/workspace/console/storage-policies/lib/model";
 import { useMenuPath } from "@/modules/workspace/lib/permissions";
 
-import { formatClock } from "../../../ai/routing/lib/model";
 import {
   type ChatArtifact,
   type ChatAttachmentRef,
@@ -320,7 +320,7 @@ function UserMessage({
             </Button>
           ) : null}
           {createdAt ? (
-            <span className="text-muted-foreground">{formatClock(createdAt)}</span>
+            <span className="text-muted-foreground">{formatBeijingClock(createdAt)}</span>
           ) : null}
         </MessageFooter>
       </MessageContent>
@@ -415,7 +415,7 @@ function AssistantMessage({
               </Button>
             ) : null}
             {createdAt ? (
-              <span className="text-muted-foreground">{formatClock(createdAt)}</span>
+              <span className="text-muted-foreground">{formatBeijingClock(createdAt)}</span>
             ) : null}
             {tokenCount != null ? (
               <span className="ms-2 text-muted-foreground">{tokenCount} token</span>

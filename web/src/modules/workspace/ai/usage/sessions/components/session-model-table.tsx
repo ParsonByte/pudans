@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
-import { formatPoints, formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
+import { formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
 import { ConsoleEmpty } from "@/modules/workspace/console/components/console-page";
 
 import type { UsageSessionStatsModel } from "../../lib/api";
@@ -25,7 +25,7 @@ export function SessionModelTable({ models }: { models: UsageSessionStatsModel[]
           <TableHead className="px-5 text-end">会话数</TableHead>
           <TableHead className="px-5 text-end">Tokens</TableHead>
           <TableHead className="w-40 px-5">Token 占比</TableHead>
-          <TableHead className="px-5 text-end">积分</TableHead>
+          <TableHead className="px-5 text-end">标准 Token</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -54,7 +54,7 @@ export function SessionModelTable({ models }: { models: UsageSessionStatsModel[]
                 </div>
               </TableCell>
               <TableCell className="px-5 py-3 text-end text-sm tabular-nums">
-                {formatPoints(model.points) ?? "—"}
+                {formatTokenCount(model.units)}
               </TableCell>
             </TableRow>
           );

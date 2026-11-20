@@ -152,7 +152,7 @@ function RequestDetailBody({ detail }: { detail: UsageRequestDetail }) {
               }),
             )}
           />
-          <Metric label="积分" value={formatNumber(detail.points ?? undefined, 2)} />
+          <Metric label="标准 Token" value={formatNumber(detail.units ?? undefined)} />
           <Metric
             label="延迟"
             value={detail.latencyMs == null ? "—" : formatDuration(detail.latencyMs)}
@@ -175,20 +175,12 @@ function RequestDetailBody({ detail }: { detail: UsageRequestDetail }) {
             label="计费状态"
             value={<Badge variant="outline">{billingStatusLabel(detail.billing.status)}</Badge>}
           />
-          <DetailField
-            label="欠费积分"
-            value={
-              detail.billing.overdraft == null
-                ? "—"
-                : formatNumber(detail.billing.overdraft ?? undefined, 2)
-            }
-          />
           <DetailField label="用量来源" value={usageSourceLabel(detail.billing.usageSource)} />
           <DetailField label="上游请求 ID" value={detail.billing.upstreamRequestId || "—"} mono />
-          <DetailField label="积分合计" value={formatNumber(detail.points ?? undefined, 2)} />
+          <DetailField label="标准 Token 合计" value={formatNumber(detail.units ?? undefined)} />
         </div>
         <p className="text-xs text-muted-foreground">
-          计费状态与上游请求信息由网关结算流程写入，积分以已结算记录为准。
+          计费状态与上游请求信息由网关结算流程写入，用量以已结算记录为准。
         </p>
       </TabsContent>
 

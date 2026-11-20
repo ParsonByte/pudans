@@ -1,5 +1,12 @@
 import { type AuditLogPage, type AuditRecord, apiClient } from "@pudans-dev/api-client";
-import { format, parseISO, startOfDay } from "date-fns";
+
+import {
+  beijingDateTimeInputToIso,
+  beijingDateTimeInputValue,
+  beijingHourKey,
+  formatBeijingDateTimeSeconds,
+  startOfBeijingDay,
+} from "@/lib/date";
 
 export type AuditVolumePoint = {
   date: string;
@@ -35,7 +42,7 @@ export async function fetchAuditLogsPage(
 }
 
 export function fetchTodayAuditLogs(limit = 500) {
-  return fetchAuditLogs({ from: startOfDay(new Date()).toISOString(), limit });
+  return fetchAuditLogs({ from: startOfBeijingDay(new Date()).toISOString(), limit });
 }
 
 export function auditVolumeByHour(records: readonly AuditRecord[]): AuditVolumePoint[] {
@@ -44,11 +51,10 @@ export function auditVolumeByHour(records: readonly AuditRecord[]): AuditVolumeP
     if (!record.timestamp) {
       continue;
     }
-    const date = parseISO(record.timestamp);
-    if (Number.isNaN(date.getTime())) {
+    const key = beijingHourKey(record.timestamp);
+    if (!key) {
       continue;
     }
-    const key = format(date, "yyyy-MM-dd'T'HH:00:00");
     buckets.set(key, (buckets.get(key) ?? 0) + 1);
   }
   return [...buckets.entries()]
@@ -57,42 +63,29 @@ export function auditVolumeByHour(records: readonly AuditRecord[]): AuditVolumeP
 }
 
 export function formatAuditHour(value: string): string {
-  const date = parseISO(value);
-  return Number.isNaN(date.getTime()) ? value : format(date, "HH:mm");
+  return value.length >= 16 && value[10] === "T" ? value.slice(11, 16) : value;
 }
 
 export function formatAuditExactTime(value?: string): string {
-  if (!value) {
-    return "—";
-  }
-  const date = parseISO(value);
-  return Number.isNaN(date.getTime()) ? value : format(date, "yyyy-MM-dd HH:mm:ss");
-}
-
-function toLocalDateTimeInput(value: Date): string {
-  return format(value, "yyyy-MM-dd'T'HH:mm");
+  return formatBeijingDateTimeSeconds(value);
 }
 
 export function defaultAuditTimeRange(): { from: string; to: string } {
   const now = new Date();
   return {
-    from: toLocalDateTimeInput(new Date(now.getTime() - 24 * 60 * 60 * 1000)),
-    to: toLocalDateTimeInput(now),
+    from: beijingDateTimeInputValue(new Date(now.getTime() - 24 * 60 * 60 * 1000)),
+    to: beijingDateTimeInputValue(now),
   };
 }
 
 export function todayAuditTimeRange(): { from: string; to: string } {
   const now = new Date();
   return {
-    from: toLocalDateTimeInput(startOfDay(now)),
-    to: toLocalDateTimeInput(now),
+    from: beijingDateTimeInputValue(startOfBeijingDay(now)),
+    to: beijingDateTimeInputValue(now),
   };
 }
 
 export function localDateTimeToIso(value: string): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+  return beijingDateTimeInputToIso(value);
 }

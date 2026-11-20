@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { resolveApiErrorWithDetail } from "@/lib/api-error";
+import { formatBeijingDateTime } from "@/lib/date";
 
 import type { AiRouteGroupMode } from "../../providers/lib/api";
 import type {
@@ -39,7 +40,6 @@ import {
   agentLabel,
   complexityLabel,
   eliminationReasonLabel,
-  formatDateTime,
   formatDuration,
   outcomeLabel,
   providerDisplayName,
@@ -149,8 +149,8 @@ function DetailContent({
           <DetailItem label="档位">{tierLabel(detail.tier) ?? "—"}</DetailItem>
           <DetailItem label="尝试次数">{detail.tries > 0 ? `${detail.tries} 次` : "—"}</DetailItem>
           <DetailItem label="延迟">{formatDuration(detail.latencyMs)}</DetailItem>
-          <DetailItem label="开始时间">{formatDateTime(detail.createdAt)}</DetailItem>
-          <DetailItem label="完成时间">{formatDateTime(detail.completedAt)}</DetailItem>
+          <DetailItem label="开始时间">{formatBeijingDateTime(detail.createdAt)}</DetailItem>
+          <DetailItem label="完成时间">{formatBeijingDateTime(detail.completedAt)}</DetailItem>
         </div>
         {detail.conversationId ? (
           <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 px-3 py-2">
@@ -432,7 +432,9 @@ function AttemptRow({
       <TableCell className="text-end text-xs text-muted-foreground">
         {formatDuration(attempt.latencyMillis)}
       </TableCell>
-      <TableCell className="text-xs text-muted-foreground">{formatDateTime(attempt.at)}</TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {formatBeijingDateTime(attempt.at)}
+      </TableCell>
     </TableRow>
   );
 }
