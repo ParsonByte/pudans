@@ -7,6 +7,8 @@ import {
   Boxes,
   ChevronDown,
   ChevronRight,
+  Copy,
+  Download,
   KeyRound,
   Link2,
   Loader2,
@@ -42,6 +44,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { KeyValueEditor } from "@/modules/workspace/ai/library/components/key-value-editor";
+import { MultiSelect } from "@/modules/workspace/ai/library/components/multi-select";
+import {
+  type KeyValueEntry,
+  entriesToRecord,
+  keyValueMessage,
+  recordToEntries,
+} from "@/modules/workspace/ai/library/lib/model";
 import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
 import {
@@ -59,10 +69,12 @@ import {
   deleteModel,
   deleteProvider,
   deleteProviderAccount,
+  duplicateProvider,
   fetchProvider,
   fetchProviderAccounts,
   fetchProviderModels,
   fetchProviderRemoteModels,
+  fetchProviders,
   patchProviderAccount,
   resolveAiProviderApiError,
   testModel,
@@ -71,6 +83,7 @@ import {
   updateModel,
   updateProvider,
 } from "../lib/api";
+import { buildProviderBundle, bundleFileName, downloadJson } from "../lib/bundle";
 import {
   AFFINITY_OPTIONS,
   DEFAULT_PROVIDER_SPEC,
@@ -78,16 +91,21 @@ import {
   formatBalance,
   formatQuota,
   formatTestResult,
+  formatTestTimestamp,
   modelNameFromCode,
   providerEndpoints,
+  statusLabel,
   supportsModelDiscovery,
   uniqueModelName,
+  windowsSummary,
 } from "../lib/model";
-import { protocolFamilyLabel, websiteForProvider } from "../lib/presets";
+import { vendorLabel, websiteForProvider } from "../lib/presets";
+import { useProviderPresetsQuery } from "../lib/queries";
 import { AccountDialog } from "./account-dialog";
 import { ModelDialog } from "./model-dialog";
 import { ProviderBrandIcon } from "./provider-brand-icon";
 import { QuotaDialog } from "./quota-dialog";
+import { ResourceCopyDialog } from "./resource-copy-dialog";
 
 const ROUTING_VALUES = ROUTING_OPTIONS.map((option) => option.value) as [
   AiProviderRouting,
@@ -101,6 +119,14 @@ const AFFINITY_VALUES = AFFINITY_OPTIONS.map((option) => option.value) as [
 
 const editorSchema = z.object({
   displayName: z.string().trim().min(1, "请输入名称。").max(100, "名称不能超过 100 个字符。"),
+  baseUrl: z
+    .string()
+    .trim()
+    .max(500, "地址不能超过 500 个字符。")
+    .refine(
+      (value) => value === "" || /^https?:\/\//i.test(value),
+      "请输入以 http:// 或 https:// 开头的地址。",
+    ),
   routing: z.enum(ROUTING_VALUES),
   affinity: z.enum(AFFINITY_VALUES),
   maxConcurrency: z.coerce
@@ -137,6 +163,10 @@ export function ProviderEditorDialog({
   const [quickKeyOpen, setQuickKeyOpen] = useState(false);
   const [quickKeyName, setQuickKeyName] = useState("");
   const [quickKeyValue, setQuickKeyValue] = useState("");
+  const [fallback, setFallback] = useState<string[]>(initialProvider.spec.fallback ?? []);
+  const [headers, setHeaders] = useState<KeyValueEntry[]>(() =>
+    recordToEntries(initialProvider.spec.headers),
+  );
   const [modelCode, setModelCode] = useState("");
   const [accountTarget, setAccountTarget] = useState<AiProviderAccountItem | null | undefined>(
     undefined,
@@ -150,6 +180,7 @@ export function ProviderEditorDialog({
     null,
   );
   const [deleteModelTarget, setDeleteModelTarget] = useState<AiModelItem | null>(null);
+  const [copyOpen, setCopyOpen] = useState(false);
 
   const providerQuery = useQuery({
     queryKey: ["ai-provider", name],
@@ -157,6 +188,12 @@ export function ProviderEditorDialog({
     initialData: initialProvider,
     retry: false,
   });
+  const providersQuery = useQuery({
+    queryKey: ["ai-providers", "all"],
+    queryFn: () => fetchProviders(1, 100),
+    retry: false,
+  });
+  const presetsQuery = useProviderPresetsQuery();
   const accountsQuery = useQuery({
     queryKey: ["ai-provider-accounts", name],
     queryFn: () => fetchProviderAccounts(name),
@@ -170,11 +207,11 @@ export function ProviderEditorDialog({
   const provider = providerQuery.data ?? initialProvider;
   const accounts = accountsQuery.data ?? [];
   const models = modelsQuery.data ?? [];
-  const remoteEnabled = supportsModelDiscovery(provider.spec.protocol);
+  const remoteEnabled = supportsModelDiscovery(provider.spec.vendor);
   const canDiscoverModels = canCreate || canUpdate;
   const remoteQuery = useQuery({
-    queryKey: ["ai-provider-remote-models", name, provider.spec.protocol],
-    queryFn: () => fetchProviderRemoteModels(name, provider.spec.protocol),
+    queryKey: ["ai-provider-remote-models", name, provider.spec.vendor],
+    queryFn: () => fetchProviderRemoteModels(name),
     enabled: remoteEnabled && canDiscoverModels && accounts.length > 0 && fetchModels,
     retry: false,
   });
@@ -185,13 +222,23 @@ export function ProviderEditorDialog({
     modelView === "selected" ? models.filter((model) => model.spec.enabled !== false) : models;
   const remoteCandidates = modelView === "all" && fetchModels ? importedCandidates : [];
   const activeAccount = accounts.find((account) => account.spec.enabled) ?? accounts[0];
-  const website = websiteForProvider(provider);
-  const endpoints = providerEndpoints(provider.spec.protocol, provider.spec.baseUrl);
+  const website = websiteForProvider(presetsQuery.data?.supported ?? [], provider);
+  const fallbackOptions = (providersQuery.data?.items ?? [])
+    .filter((item) => item.metadata.name !== name)
+    .map((item) => ({
+      value: item.metadata.name,
+      label: item.spec.displayName || item.metadata.name,
+      hint: vendorLabel(item.spec.vendor),
+    }));
+  const existingProviderNames = new Set(
+    (providersQuery.data?.items ?? []).map((item) => item.metadata.name),
+  );
 
   const form = useForm<EditorFormValues>({
     resolver: zodResolver(editorSchema) as Resolver<EditorFormValues>,
     defaultValues: {
       displayName: provider.spec.displayName || name,
+      baseUrl: provider.spec.baseUrl ?? "",
       routing: provider.spec.routing ?? DEFAULT_PROVIDER_SPEC.routing,
       affinity: provider.spec.affinity ?? DEFAULT_PROVIDER_SPEC.affinity,
       maxConcurrency: provider.spec.maxConcurrency ?? DEFAULT_PROVIDER_SPEC.maxConcurrency,
@@ -204,6 +251,8 @@ export function ProviderEditorDialog({
   const free = useWatch({ control: form.control, name: "free" });
   const routing = useWatch({ control: form.control, name: "routing" });
   const affinity = useWatch({ control: form.control, name: "affinity" });
+  const baseUrl = useWatch({ control: form.control, name: "baseUrl" });
+  const endpoints = providerEndpoints(provider.spec.vendor, baseUrl);
 
   const invalidateProvider = () =>
     queryClient.invalidateQueries({ queryKey: ["ai-provider", name] });
@@ -214,21 +263,30 @@ export function ProviderEditorDialog({
   const invalidateList = () => queryClient.invalidateQueries({ queryKey: ["ai-providers"] });
 
   const saveMutation = useMutation({
-    mutationFn: (values: EditorFormValues) =>
-      updateProvider({
+    mutationFn: (payload: {
+      values: EditorFormValues;
+      fallback: string[];
+      headers: KeyValueEntry[];
+    }) => {
+      const headerRecord = entriesToRecord(payload.headers);
+      return updateProvider({
         ...provider,
         spec: {
           ...provider.spec,
-          displayName: values.displayName,
-          routing: values.routing,
-          affinity: values.affinity,
-          maxConcurrency: values.maxConcurrency,
-          maxRPM: values.maxRPM,
-          connectTimeoutMs: values.connectTimeoutMs,
-          readTimeoutMs: values.readTimeoutMs,
-          free: values.free,
+          displayName: payload.values.displayName,
+          baseUrl: payload.values.baseUrl || undefined,
+          routing: payload.values.routing,
+          affinity: payload.values.affinity,
+          maxConcurrency: payload.values.maxConcurrency,
+          maxRPM: payload.values.maxRPM,
+          connectTimeoutMs: payload.values.connectTimeoutMs,
+          readTimeoutMs: payload.values.readTimeoutMs,
+          free: payload.values.free,
+          fallback: payload.fallback,
+          headers: Object.keys(headerRecord).length > 0 ? headerRecord : undefined,
         },
-      }),
+      });
+    },
     onSuccess: async () => {
       await invalidateProvider();
       await invalidateList();
@@ -317,7 +375,10 @@ export function ProviderEditorDialog({
 
   const testAccountMutation = useMutation({
     mutationFn: (account: AiProviderAccountItem) => testProviderAccount(account.metadata.name),
-    onSuccess: (result) => toast.success(formatTestResult(result)),
+    onSuccess: async (result) => {
+      await invalidateAccounts();
+      toast.success(formatTestResult(result));
+    },
     onError: (error) => toast.error(resolveAiProviderApiError(error)),
   });
 
@@ -417,13 +478,33 @@ export function ProviderEditorDialog({
 
   const testModelMutation = useMutation({
     mutationFn: (model: AiModelItem) => testModel(model.metadata.name),
-    onSuccess: (result) => toast.success(formatTestResult(result)),
+    onSuccess: async (result) => {
+      await invalidateModels();
+      toast.success(formatTestResult(result));
+    },
     onError: (error) => toast.error(resolveAiProviderApiError(error)),
   });
 
   const testProviderMutation = useMutation({
     mutationFn: () => testProvider(name),
-    onSuccess: (result) => toast.success(formatTestResult(result)),
+    onSuccess: async (result) => {
+      await invalidateProvider();
+      await invalidateAccounts();
+      await invalidateModels();
+      toast.success(formatTestResult(result));
+    },
+    onError: (error) => toast.error(resolveAiProviderApiError(error)),
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: (values: { name: string; displayName: string }) => duplicateProvider(name, values),
+    onSuccess: async () => {
+      await invalidateList();
+      await invalidateProvider();
+      setCopyOpen(false);
+      toast.success("供应商已复制，请检查副本的账号与模型配置。");
+      onClose();
+    },
     onError: (error) => toast.error(resolveAiProviderApiError(error)),
   });
 
@@ -444,11 +525,24 @@ export function ProviderEditorDialog({
   });
 
   const onSubmit = form.handleSubmit(
-    (values) => saveMutation.mutate(values),
+    (values) => {
+      const headerError = keyValueMessage(headers);
+      if (headerError) {
+        toast.error(headerError);
+        return;
+      }
+      saveMutation.mutate({ values, fallback, headers });
+    },
     () => toast.error("请检查填写内容。"),
   );
 
   const firstTestableModel = models.find((model) => model.spec.enabled !== false) ?? models[0];
+
+  const exportBundle = () => {
+    const bundle = buildProviderBundle([{ provider, accounts, models }]);
+    downloadJson(bundleFileName(name), bundle);
+    toast.success("供应商配置已导出，文件不包含密钥。");
+  };
 
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
@@ -489,6 +583,16 @@ export function ProviderEditorDialog({
                 onCheckedChange={() => toggleProviderMutation.mutate()}
                 aria-label="启用供应商"
               />
+              <Button type="button" variant="ghost" size="sm" onClick={exportBundle}>
+                <Download />
+                导出
+              </Button>
+              {canCreate ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setCopyOpen(true)}>
+                  <Copy />
+                  复制
+                </Button>
+              ) : null}
               {canDelete ? (
                 <Button
                   type="button"
@@ -537,6 +641,29 @@ export function ProviderEditorDialog({
               <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
                 <span className="text-sm text-muted-foreground">ID</span>
                 <Input value={name} disabled />
+              </div>
+              <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
+                <span className="text-sm text-muted-foreground">供应商</span>
+                <Input value={vendorLabel(provider.spec.vendor)} disabled />
+              </div>
+              <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
+                <span className="text-sm text-muted-foreground">Base URL</span>
+                <div className="min-w-0 space-y-1">
+                  <Input
+                    disabled={!canUpdate}
+                    placeholder="https://api.example.com"
+                    {...form.register("baseUrl")}
+                    aria-invalid={Boolean(form.formState.errors.baseUrl)}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    供应商 API 根地址；请求协议由平台自动选择。
+                  </p>
+                  {form.formState.errors.baseUrl ? (
+                    <span className="text-xs text-destructive">
+                      {form.formState.errors.baseUrl.message}
+                    </span>
+                  ) : null}
+                </div>
               </div>
             </section>
 
@@ -640,9 +767,37 @@ export function ProviderEditorDialog({
                           ) : null}
                         </div>
                         <p className="truncate text-xs text-muted-foreground">
-                          密钥已配置（不可查看） · {protocolFamilyLabel(provider.spec.protocol)} ·
-                          并发 {account.spec.maxConcurrency ?? "不限"}
+                          密钥已配置（不可查看） · {vendorLabel(provider.spec.vendor)} · 并发{" "}
+                          {account.spec.maxConcurrency ?? "不限"}
+                          {account.spec.keyName ? ` · 密钥 ${account.spec.keyName}` : ""}
                         </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                          {account.spec.keyPlan ? (
+                            <Badge variant="outline">{account.spec.keyPlan}</Badge>
+                          ) : null}
+                          {account.spec.windows && account.spec.windows.length > 0 ? (
+                            <span title={windowsSummary(account.spec.windows)}>
+                              {account.spec.windows.length} 个额度窗口
+                            </span>
+                          ) : null}
+                          {account.status?.health ? (
+                            <span>状态 {account.status.health}</span>
+                          ) : null}
+                          {account.status?.healthScore != null ? (
+                            <span>健康 {Math.round(account.status.healthScore)}%</span>
+                          ) : null}
+                          {formatTestTimestamp(account.status?.lastUsedAt) ? (
+                            <span>最近使用 {formatTestTimestamp(account.status?.lastUsedAt)}</span>
+                          ) : null}
+                        </div>
+                        {account.status?.lastError ? (
+                          <p
+                            className="mt-1 truncate text-xs text-destructive"
+                            title={account.status.lastError}
+                          >
+                            {account.status.lastError}
+                          </p>
+                        ) : null}
                       </div>
                       <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                         <Badge variant="outline">权重 {account.spec.weight}</Badge>
@@ -919,6 +1074,23 @@ export function ProviderEditorDialog({
                 <Link2 className="size-4" />
                 端点
               </h3>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <Badge
+                  variant={provider.status?.message ? "destructive" : "secondary"}
+                  className="font-normal"
+                >
+                  {statusLabel(provider.status)}
+                </Badge>
+                {provider.status?.healthScore == null ? null : (
+                  <span>健康度 {Math.round(provider.status.healthScore)}%</span>
+                )}
+                {formatTestTimestamp(provider.status?.lastTestedAt) ? (
+                  <span>最近测试 {formatTestTimestamp(provider.status?.lastTestedAt)}</span>
+                ) : null}
+              </div>
+              {provider.status?.message ? (
+                <p className="text-xs text-muted-foreground">{provider.status.message}</p>
+              ) : null}
               {endpoints.length === 0 ? (
                 <p className="text-sm text-muted-foreground">配置接入地址后显示端点。</p>
               ) : (
@@ -1060,6 +1232,38 @@ export function ProviderEditorDialog({
                       aria-label="免费供应商"
                     />
                   </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <span className="text-xs text-muted-foreground">后备供应商</span>
+                    <MultiSelect
+                      value={fallback}
+                      onChange={setFallback}
+                      options={fallbackOptions}
+                      placeholder="未设置后备供应商"
+                      emptyMessage={
+                        providersQuery.isError ? "无法加载其他供应商。" : "没有其他供应商可选。"
+                      }
+                      searchPlaceholder="搜索供应商"
+                      loading={providersQuery.isPending}
+                      disabled={!canUpdate}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      当前供应商不可用时，按顺序尝试这些供应商。
+                    </p>
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <span className="text-xs text-muted-foreground">自定义请求头</span>
+                    <KeyValueEditor
+                      value={headers}
+                      onChange={setHeaders}
+                      keyPlaceholder="请求头名称"
+                      valuePlaceholder="请求头值"
+                      addLabel="添加请求头"
+                      disabled={!canUpdate}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      这些请求头会附加到发往供应商的每次调用；键不能为空或重复。
+                    </p>
+                  </div>
                 </div>
               ) : null}
             </section>
@@ -1079,6 +1283,18 @@ export function ProviderEditorDialog({
       ) : null}
       {modelTarget ? (
         <ModelDialog provider={provider} model={modelTarget} onClose={() => setModelTarget(null)} />
+      ) : null}
+      {copyOpen ? (
+        <ResourceCopyDialog
+          title="复制供应商"
+          description="创建供应商副本；密钥不会在浏览器中保存，复制后请检查账号配置。"
+          defaultName={`${name}-copy`}
+          defaultDisplayName={`${provider.spec.displayName || name} 副本`}
+          existingNames={existingProviderNames}
+          isPending={duplicateMutation.isPending}
+          onSubmit={(values) => duplicateMutation.mutate(values)}
+          onClose={() => setCopyOpen(false)}
+        />
       ) : null}
 
       <ConfirmDialog

@@ -28,16 +28,13 @@ import {
   RESOURCE_NAME_HINT,
   RESOURCE_NAME_PATTERN,
   modelNameFromCode,
-  protocolEndpoint,
+  vendorEndpoint,
 } from "../lib/model";
 import {
-  PROTOCOL_FAMILY_OPTIONS,
   type ProviderPreset,
-  type ProviderProtocolFamily,
   type ProviderRegionId,
-  presetEndpoint,
   presetRegion,
-  protocolForFamily,
+  vendorLabel,
 } from "../lib/presets";
 import { ProviderBrandIcon } from "./provider-brand-icon";
 import { ProviderDialogShell, ProviderFieldRow } from "./provider-dialog-shell";
@@ -50,7 +47,6 @@ const customProviderSchema = z.object({
     .max(63, "ID 不能超过 63 个字符。")
     .regex(RESOURCE_NAME_PATTERN, RESOURCE_NAME_HINT),
   displayName: z.string().trim().min(1, "请输入名称。").max(100, "名称不能超过 100 个字符。"),
-  family: z.enum(["openai", "responses", "anthropic"]),
   region: z.string(),
   baseUrl: z
     .string()
@@ -76,86 +72,61 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
   const [showKey, setShowKey] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const firstRegion = preset ? preset.regions[0] : undefined;
-  const defaultFamily: ProviderProtocolFamily = preset?.families[0] ?? "openai";
+  const selectedVendor = preset?.vendor ?? "CUSTOM";
   const form = useForm<CustomProviderFormValues>({
     resolver: zodResolver(customProviderSchema) as Resolver<CustomProviderFormValues>,
     defaultValues: {
       name: preset?.id ?? "",
       displayName: preset?.displayName ?? "",
-      family: defaultFamily,
       region: firstRegion?.id ?? "global",
-      baseUrl:
-        preset && firstRegion
-          ? (presetEndpoint(preset, firstRegion.id, defaultFamily)?.baseUrl ?? "")
-          : "",
+      baseUrl: preset && firstRegion ? firstRegion.baseUrl : "",
       apiKey: "",
       modelCodes: "",
       enabled: true,
     },
   });
-  const family = useWatch({ control: form.control, name: "family" });
   const regionId = useWatch({ control: form.control, name: "region" });
   const enabled = useWatch({ control: form.control, name: "enabled" });
   const baseUrl = useWatch({ control: form.control, name: "baseUrl" });
   const activeRegion = preset ? presetRegion(preset, regionId as ProviderRegionId) : undefined;
-  const familyOptions = preset
-    ? PROTOCOL_FAMILY_OPTIONS.filter((option) => preset.families.includes(option.value))
-    : PROTOCOL_FAMILY_OPTIONS;
-  const selectedEndpoint = preset
-    ? presetEndpoint(preset, regionId as ProviderRegionId, family)
-    : undefined;
-  const protocol = selectedEndpoint?.protocol ?? protocolForFamily(family);
-  const endpoint = protocolEndpoint(protocol, baseUrl);
-
-  const selectFamily = (nextFamily: ProviderProtocolFamily) => {
-    form.setValue("family", nextFamily, { shouldDirty: true });
-    if (preset) {
-      const nextEndpoint = presetEndpoint(preset, regionId as ProviderRegionId, nextFamily);
-      if (nextEndpoint) {
-        form.setValue("baseUrl", nextEndpoint.baseUrl, { shouldDirty: true });
-      }
-    }
-  };
+  const keyUrl = preset ? activeRegion?.keysUrl || preset.keysUrl : undefined;
+  const endpoint = vendorEndpoint(selectedVendor, baseUrl);
 
   const selectRegion = (nextRegion: ProviderRegionId) => {
     form.setValue("region", nextRegion, { shouldDirty: true });
-    if (preset) {
-      const currentName = form.getValues("name");
-      const currentDisplayName = form.getValues("displayName");
-      const regionSuffix = nextRegion === "cn" ? "-cn" : "";
-      if (currentName === preset.id || currentName === `${preset.id}-cn`) {
-        form.setValue("name", `${preset.id}${regionSuffix}`, { shouldDirty: true });
-      }
-      if (
-        currentDisplayName === preset.displayName ||
-        currentDisplayName === `${preset.displayName} (China)`
-      ) {
-        form.setValue(
-          "displayName",
-          nextRegion === "cn" ? `${preset.displayName} (China)` : preset.displayName,
-          { shouldDirty: true },
-        );
-      }
-      const nextEndpoint = presetEndpoint(preset, nextRegion, family);
-      form.setValue("baseUrl", nextEndpoint?.baseUrl ?? form.getValues("baseUrl"), {
-        shouldDirty: true,
-      });
+    if (!preset) {
+      return;
     }
+    const currentName = form.getValues("name");
+    const currentDisplayName = form.getValues("displayName");
+    const regionSuffix = nextRegion === "cn" ? "-cn" : "";
+    if (currentName === preset.id || currentName === `${preset.id}-cn`) {
+      form.setValue("name", `${preset.id}${regionSuffix}`, { shouldDirty: true });
+    }
+    if (
+      currentDisplayName === preset.displayName ||
+      currentDisplayName === `${preset.displayName} (China)`
+    ) {
+      form.setValue(
+        "displayName",
+        nextRegion === "cn" ? `${preset.displayName} (China)` : preset.displayName,
+        { shouldDirty: true },
+      );
+    }
+    form.setValue("baseUrl", presetRegion(preset, nextRegion).baseUrl, {
+      shouldDirty: true,
+    });
   };
 
   const mutation = useMutation({
     mutationFn: async (values: CustomProviderFormValues) => {
-      const selectedEndpoint = preset
-        ? presetEndpoint(preset, values.region as ProviderRegionId, values.family)
-        : undefined;
-      const selectedProtocol = selectedEndpoint?.protocol ?? protocolForFamily(values.family);
       const provider = await createProvider({
         apiVersion: AI_API_VERSION,
         kind: AI_PROVIDER_KIND,
         metadata: { name: values.name },
         spec: {
           displayName: values.displayName,
-          protocol: selectedProtocol,
+          vendor: selectedVendor,
           baseUrl: values.baseUrl,
           routing: DEFAULT_PROVIDER_SPEC.routing,
           affinity: DEFAULT_PROVIDER_SPEC.affinity,
@@ -255,8 +226,8 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
       title={preset ? `添加 ${preset.displayName}` : "自定义供应商"}
       description={
         preset
-          ? "选择地区和协议，填入 API 密钥；保存后会打开编辑弹窗并自动拉取模型。"
-          : "OpenAI、Responses 或 Anthropic 兼容的供应商；保存后自动拉取模型。"
+          ? "选择地区，填入 API 密钥；保存后会打开编辑弹窗并自动拉取模型。"
+          : "填写供应商 ID、地址和 API 密钥；平台会自动选择接入协议，保存后自动拉取模型。"
       }
       icon={
         preset ? (
@@ -281,20 +252,12 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
         <Input {...form.register("name")} />
       </ProviderFieldRow>
 
-      <ProviderFieldRow label="协议">
-        {preset && preset.families.length === 1 ? (
-          <Badge variant="outline">{familyOptions[0]?.label}</Badge>
-        ) : (
-          <Segmented
-            options={familyOptions}
-            value={family}
-            onChange={(value) => selectFamily(value)}
-          />
-        )}
+      <ProviderFieldRow label="供应商">
+        <Badge variant="outline">{vendorLabel(selectedVendor)}</Badge>
       </ProviderFieldRow>
 
       {preset && preset.regions.length > 1 ? (
-        <ProviderFieldRow label="区域">
+        <ProviderFieldRow label="区域 / 套餐">
           <Segmented
             options={preset.regions.map((region) => ({
               value: region.id,
@@ -307,21 +270,22 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
       ) : null}
 
       <ProviderFieldRow label="Base URL" error={form.formState.errors.baseUrl?.message}>
-        <Input
-          placeholder={family === "openai" ? "https://api.example.com" : "https://api.example.com"}
-          {...form.register("baseUrl")}
-        />
+        <Input placeholder="https://api.example.com" {...form.register("baseUrl")} />
         {endpoint ? (
-          <p className="truncate text-xs text-muted-foreground">请求地址：{endpoint}</p>
+          <p className="truncate text-xs text-muted-foreground">示例请求：{endpoint}</p>
         ) : null}
       </ProviderFieldRow>
 
-      <ProviderFieldRow label="API 密钥" error={form.formState.errors.apiKey?.message}>
+      <ProviderFieldRow
+        label="API 密钥"
+        hint={preset?.kind === "local" ? "本地服务通常无需密钥，可留空。" : undefined}
+        error={form.formState.errors.apiKey?.message}
+      >
         <div className="flex items-center gap-2">
           <Input
             type={showKey ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="粘贴 API 密钥"
+            placeholder={preset?.kind === "local" ? "可留空" : "粘贴 API 密钥"}
             {...form.register("apiKey")}
           />
           <Button
@@ -332,9 +296,9 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
           >
             {showKey ? "隐藏" : "显示"}
           </Button>
-          {activeRegion ? (
+          {keyUrl && preset?.kind !== "local" ? (
             <Button type="button" variant="ghost" size="sm" asChild>
-              <a href={activeRegion.keysUrl} target="_blank" rel="noreferrer">
+              <a href={keyUrl} target="_blank" rel="noreferrer">
                 获取密钥
                 <ExternalLink />
               </a>
@@ -342,6 +306,8 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
           ) : null}
         </div>
       </ProviderFieldRow>
+
+      {preset?.note ? <p className="text-xs text-muted-foreground">{preset.note}</p> : null}
 
       <ProviderFieldRow
         label="模型"

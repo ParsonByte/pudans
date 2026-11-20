@@ -6,6 +6,7 @@ import { Boxes } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -15,10 +16,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { MultiSelect } from "@/modules/workspace/ai/library/components/multi-select";
 
 import {
   AI_API_VERSION,
   AI_MODEL_KIND,
+  type AiModality,
+  type AiModelCapability,
   type AiModelItem,
   type AiModelTier,
   type AiModelType,
@@ -28,10 +32,14 @@ import {
   updateModel,
 } from "../lib/api";
 import {
+  MODALITY_OPTIONS,
+  MODEL_CAPABILITY_OPTIONS,
   MODEL_TIER_OPTIONS,
   MODEL_TYPE_OPTIONS,
   RESOURCE_NAME_HINT,
   RESOURCE_NAME_PATTERN,
+  formatTestTimestamp,
+  statusLabel,
 } from "../lib/model";
 import {
   ProviderDialogSection,
@@ -49,6 +57,18 @@ const MODEL_TIER_VALUES = ["NONE", ...MODEL_TIER_OPTIONS.map((option) => option.
   ...string[],
 ];
 
+const MODEL_CAPABILITY_VALUES = MODEL_CAPABILITY_OPTIONS.map((option) => option.value) as [
+  AiModelCapability,
+  ...AiModelCapability[],
+];
+
+const MODALITY_VALUES = MODALITY_OPTIONS.map((option) => option.value) as [
+  AiModality,
+  ...AiModality[],
+];
+
+const NON_NEGATIVE_PATTERN = /^\d+(\.\d+)?$/;
+
 const modelSchema = z.object({
   name: z
     .string()
@@ -63,6 +83,41 @@ const modelSchema = z.object({
   contextWindow: z.coerce.number().int().min(0, "上下文长度不能为负数。").max(10000000),
   maxOutputTokens: z.coerce.number().int().min(0, "输出长度不能为负数。").max(10000000),
   embeddingDim: z.coerce.number().int().min(0, "向量维度不能为负数。").max(100000),
+  capabilities: z.array(z.enum(MODEL_CAPABILITY_VALUES)),
+  inputModalities: z.array(z.enum(MODALITY_VALUES)),
+  outputModalities: z.array(z.enum(MODALITY_VALUES)),
+  inputTokensPerPoint: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
+  cacheTokensPerPoint: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
+  outputTokensPerPoint: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
+  imagePointsPerItem: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
+  videoPointsPerSecond: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
+  audioPointsPerSecond: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
+  speechPointsPerKiloCharacter: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
+  taskPointsPerInvocation: z
+    .string()
+    .trim()
+    .refine((value) => value === "" || NON_NEGATIVE_PATTERN.test(value), "请输入非负数字。"),
   supportsStream: z.boolean(),
   supportsTools: z.boolean(),
   supportsJson: z.boolean(),
@@ -72,6 +127,49 @@ const modelSchema = z.object({
 });
 
 type ModelFormValues = z.infer<typeof modelSchema>;
+
+const POINT_FIELDS = [
+  {
+    name: "inputTokensPerPoint",
+    label: "输入 Token",
+    hint: "每 1 积分对应的输入 Token 数。",
+  },
+  {
+    name: "cacheTokensPerPoint",
+    label: "缓存 Token",
+    hint: "每 1 积分对应的缓存 Token 数。",
+  },
+  {
+    name: "outputTokensPerPoint",
+    label: "输出 Token",
+    hint: "每 1 积分对应的输出 Token 数。",
+  },
+  {
+    name: "imagePointsPerItem",
+    label: "图像积分",
+    hint: "每张生成图像消耗的积分数。",
+  },
+  {
+    name: "videoPointsPerSecond",
+    label: "视频积分",
+    hint: "每秒视频消耗的积分数。",
+  },
+  {
+    name: "audioPointsPerSecond",
+    label: "音频积分",
+    hint: "每秒音频消耗的积分数。",
+  },
+  {
+    name: "speechPointsPerKiloCharacter",
+    label: "语音积分",
+    hint: "每千字符语音消耗的积分数。",
+  },
+  {
+    name: "taskPointsPerInvocation",
+    label: "任务积分",
+    hint: "每次异步任务消耗的积分数。",
+  },
+] as const;
 
 type ModelDialogProps = {
   provider: AiProviderItem;
@@ -87,6 +185,9 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
   });
   const modelType = useWatch({ control: form.control, name: "modelType" });
   const tier = useWatch({ control: form.control, name: "tier" });
+  const capabilities = useWatch({ control: form.control, name: "capabilities" });
+  const inputModalities = useWatch({ control: form.control, name: "inputModalities" });
+  const outputModalities = useWatch({ control: form.control, name: "outputModalities" });
   const supportsStream = useWatch({ control: form.control, name: "supportsStream" });
   const supportsTools = useWatch({ control: form.control, name: "supportsTools" });
   const supportsJson = useWatch({ control: form.control, name: "supportsJson" });
@@ -109,6 +210,17 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
           values.modelType === "EMBEDDING" && values.embeddingDim > 0
             ? values.embeddingDim
             : undefined,
+        capabilities: values.capabilities.length > 0 ? values.capabilities : undefined,
+        inputModalities: values.inputModalities.length > 0 ? values.inputModalities : undefined,
+        outputModalities: values.outputModalities.length > 0 ? values.outputModalities : undefined,
+        inputTokensPerPoint: parsePointValue(values.inputTokensPerPoint),
+        cacheTokensPerPoint: parsePointValue(values.cacheTokensPerPoint),
+        outputTokensPerPoint: parsePointValue(values.outputTokensPerPoint),
+        imagePointsPerItem: parsePointValue(values.imagePointsPerItem),
+        videoPointsPerSecond: parsePointValue(values.videoPointsPerSecond),
+        audioPointsPerSecond: parsePointValue(values.audioPointsPerSecond),
+        speechPointsPerKiloCharacter: parsePointValue(values.speechPointsPerKiloCharacter),
+        taskPointsPerInvocation: parsePointValue(values.taskPointsPerInvocation),
         supportsStream: values.supportsStream,
         supportsTools: values.supportsTools,
         supportsJson: values.supportsJson,
@@ -149,6 +261,7 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
       onSubmit={onSubmit}
       isPending={mutation.isPending}
       submitLabel={model ? "保存模型" : "创建模型"}
+      className="sm:max-w-3xl"
     >
       <ProviderDialogSection title="基础信息">
         <div className="space-y-3">
@@ -220,51 +333,105 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
               </SelectContent>
             </Select>
           </ProviderFieldRow>
-          <ProviderFieldRow
-            label="上下文长度"
-            htmlFor="ai-model-context-window"
-            hint="0 表示未设置。"
-            error={form.formState.errors.contextWindow?.message}
-          >
-            <Input
-              id="ai-model-context-window"
-              type="number"
-              min={0}
-              {...form.register("contextWindow")}
-            />
-          </ProviderFieldRow>
-          <ProviderFieldRow
-            label="最大输出"
-            htmlFor="ai-model-max-output"
-            hint="0 表示未设置。"
-            error={form.formState.errors.maxOutputTokens?.message}
-          >
-            <Input
-              id="ai-model-max-output"
-              type="number"
-              min={0}
-              {...form.register("maxOutputTokens")}
-            />
-          </ProviderFieldRow>
-          {modelType === "EMBEDDING" ? (
+          <div className="grid gap-3 sm:grid-cols-3">
             <ProviderFieldRow
-              label="向量维度"
-              htmlFor="ai-model-embedding-dim"
+              label="上下文"
+              htmlFor="ai-model-context-window"
               hint="0 表示未设置。"
-              error={form.formState.errors.embeddingDim?.message}
+              error={form.formState.errors.contextWindow?.message}
             >
               <Input
-                id="ai-model-embedding-dim"
+                id="ai-model-context-window"
                 type="number"
                 min={0}
-                {...form.register("embeddingDim")}
+                {...form.register("contextWindow")}
               />
             </ProviderFieldRow>
-          ) : null}
+            <ProviderFieldRow
+              label="最大输出"
+              htmlFor="ai-model-max-output"
+              hint="0 表示未设置。"
+              error={form.formState.errors.maxOutputTokens?.message}
+            >
+              <Input
+                id="ai-model-max-output"
+                type="number"
+                min={0}
+                {...form.register("maxOutputTokens")}
+              />
+            </ProviderFieldRow>
+            {modelType === "EMBEDDING" ? (
+              <ProviderFieldRow
+                label="向量维度"
+                htmlFor="ai-model-embedding-dim"
+                hint="0 表示未设置。"
+                error={form.formState.errors.embeddingDim?.message}
+              >
+                <Input
+                  id="ai-model-embedding-dim"
+                  type="number"
+                  min={0}
+                  {...form.register("embeddingDim")}
+                />
+              </ProviderFieldRow>
+            ) : null}
+          </div>
         </div>
       </ProviderDialogSection>
 
-      <ProviderDialogSection title="能力">
+      <ProviderDialogSection title="能力与模态">
+        <div className="space-y-3">
+          <ProviderFieldRow
+            label="能力"
+            hint="留空时根据模型类型与下方开关自动推导。"
+            error={form.formState.errors.capabilities?.message}
+          >
+            <MultiSelect
+              value={capabilities}
+              onChange={(value) =>
+                form.setValue("capabilities", value as AiModelCapability[], {
+                  shouldDirty: true,
+                })
+              }
+              options={MODEL_CAPABILITY_OPTIONS}
+              placeholder="自动推导"
+              emptyMessage="没有匹配的能力。"
+              searchPlaceholder="搜索能力"
+            />
+          </ProviderFieldRow>
+          <ProviderFieldRow
+            label="输入模态"
+            hint="留空时根据模型类型自动推导。"
+            error={form.formState.errors.inputModalities?.message}
+          >
+            <MultiSelect
+              value={inputModalities}
+              onChange={(value) =>
+                form.setValue("inputModalities", value as AiModality[], { shouldDirty: true })
+              }
+              options={MODALITY_OPTIONS}
+              placeholder="自动推导"
+              emptyMessage="没有匹配的模态。"
+              searchPlaceholder="搜索模态"
+            />
+          </ProviderFieldRow>
+          <ProviderFieldRow
+            label="输出模态"
+            hint="留空时根据模型类型自动推导。"
+            error={form.formState.errors.outputModalities?.message}
+          >
+            <MultiSelect
+              value={outputModalities}
+              onChange={(value) =>
+                form.setValue("outputModalities", value as AiModality[], { shouldDirty: true })
+              }
+              options={MODALITY_OPTIONS}
+              placeholder="自动推导"
+              emptyMessage="没有匹配的模态。"
+              searchPlaceholder="搜索模态"
+            />
+          </ProviderFieldRow>
+        </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <SwitchRow
             label="流式输出"
@@ -298,6 +465,54 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
           />
         </div>
       </ProviderDialogSection>
+
+      <ProviderDialogSection title="积分计费">
+        <p className="text-xs text-muted-foreground">
+          用于按积分统计消耗；留空表示未设置，文本模型通常填写每积分对应的 Token 数。
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {POINT_FIELDS.map((field) => (
+            <ProviderFieldRow
+              key={field.name}
+              label={field.label}
+              hint={field.hint}
+              error={form.formState.errors[field.name]?.message}
+            >
+              <Input
+                type="number"
+                min={0}
+                placeholder="0"
+                aria-label={field.label}
+                {...form.register(field.name)}
+              />
+            </ProviderFieldRow>
+          ))}
+        </div>
+      </ProviderDialogSection>
+
+      {model ? (
+        <ProviderDialogSection title="最近测试">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <Badge variant={model.status?.message ? "destructive" : "secondary"}>
+              {statusLabel(model.status)}
+            </Badge>
+            {model.status?.healthScore == null ? null : (
+              <span className="text-xs text-muted-foreground">
+                健康度 {Math.round(model.status.healthScore)}%
+              </span>
+            )}
+            {formatTestTimestamp(model.status?.lastTestedAt) ? (
+              <span className="text-xs text-muted-foreground">
+                测试于 {formatTestTimestamp(model.status?.lastTestedAt)}
+              </span>
+            ) : null}
+          </div>
+          {model.status?.message ? (
+            <p className="text-xs text-muted-foreground">{model.status.message}</p>
+          ) : null}
+          {!model.status ? <p className="text-xs text-muted-foreground">尚未测试该模型。</p> : null}
+        </ProviderDialogSection>
+      ) : null}
     </ProviderDialogShell>
   );
 }
@@ -328,6 +543,17 @@ function initialValues(model: AiModelItem | undefined): ModelFormValues {
     contextWindow: spec?.contextWindow ?? 0,
     maxOutputTokens: spec?.maxOutputTokens ?? 0,
     embeddingDim: spec?.embeddingDim ?? 0,
+    capabilities: spec?.capabilities ?? [],
+    inputModalities: spec?.inputModalities ?? [],
+    outputModalities: spec?.outputModalities ?? [],
+    inputTokensPerPoint: toInputValue(spec?.inputTokensPerPoint),
+    cacheTokensPerPoint: toInputValue(spec?.cacheTokensPerPoint),
+    outputTokensPerPoint: toInputValue(spec?.outputTokensPerPoint),
+    imagePointsPerItem: toInputValue(spec?.imagePointsPerItem),
+    videoPointsPerSecond: toInputValue(spec?.videoPointsPerSecond),
+    audioPointsPerSecond: toInputValue(spec?.audioPointsPerSecond),
+    speechPointsPerKiloCharacter: toInputValue(spec?.speechPointsPerKiloCharacter),
+    taskPointsPerInvocation: toInputValue(spec?.taskPointsPerInvocation),
     supportsStream: spec?.supportsStream ?? true,
     supportsTools: spec?.supportsTools ?? false,
     supportsJson: spec?.supportsJson ?? false,
@@ -335,4 +561,17 @@ function initialValues(model: AiModelItem | undefined): ModelFormValues {
     supportsAsync: spec?.supportsAsync ?? false,
     enabled: spec?.enabled ?? true,
   };
+}
+
+function toInputValue(value: number | undefined): string {
+  return value == null || value === 0 ? "" : String(value);
+}
+
+function parsePointValue(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
