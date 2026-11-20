@@ -32,6 +32,11 @@ import type {
   AiRouteGroupItem,
 } from "../../providers/lib/api";
 import { formatNumber, modelDisplayName } from "../../providers/lib/model";
+import {
+  effectiveParentMode,
+  parentModeLabel,
+  routeGroupRules,
+} from "../../route-groups/lib/model";
 import type { AiRoutingLive, AiRoutingUser } from "../lib/api";
 import {
   formatTokenCount,
@@ -333,7 +338,10 @@ export function RoutingTopology({
           {defaultGroup ? (
             <span>
               默认路由组「{routeGroupDisplayName(defaultGroup, defaultGroup.metadata.name)}」·{" "}
-              {routeModeLabel(defaultGroup.spec.routeMode)}
+              {routeModeLabel(defaultGroup.spec.routeMode)} ·{" "}
+              {parentModeLabel(effectiveParentMode(defaultGroup))} · 规则{" "}
+              {routeGroupRules(defaultGroup).length}
+              {defaultGroup.spec.sink ? " · Sink" : ""}
             </span>
           ) : (
             <span>未设置默认路由组</span>

@@ -16,9 +16,12 @@ import { fetchChatModes } from "@/modules/workspace/index/lib/chat-api";
 import { chatModeLabel } from "@/modules/workspace/index/lib/chat-functions";
 import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
 
+import { ResourceCopyDialog } from "../providers/components/resource-copy-dialog";
 import {
   type AiRouteGroupItem,
   type AiRouteGroupTier,
+  arrangeRouteGroups,
+  copyRouteGroup,
   createRouteGroup,
   deleteRouteGroup,
   fetchAiSetting,
@@ -39,6 +42,7 @@ import {
   type RouteTemplate,
   buildRouteTemplates,
   groupFromTemplate,
+  sortRouteGroupsByOrder,
   usableModels,
 } from "./lib/model";
 
@@ -60,6 +64,7 @@ export function AiRouteGroupsView() {
   const [editingGroup, setEditingGroup] = useState<AiRouteGroupItem | null>(null);
   const [template, setTemplate] = useState<RouteTemplate | undefined>(undefined);
   const [deleteTarget, setDeleteTarget] = useState<AiRouteGroupItem | null>(null);
+  const [copyTarget, setCopyTarget] = useState<AiRouteGroupItem | null>(null);
 
   const routeGroupsQuery = useQuery({
     queryKey: ["ai-route-groups", "all"],
@@ -92,7 +97,10 @@ export function AiRouteGroupsView() {
     retry: false,
   });
 
-  const routeGroups = useMemo(() => routeGroupsQuery.data ?? [], [routeGroupsQuery.data]);
+  const routeGroups = useMemo(
+    () => sortRouteGroupsByOrder(routeGroupsQuery.data ?? []),
+    [routeGroupsQuery.data],
+  );
   const providers = useMemo(() => providersQuery.data?.items ?? [], [providersQuery.data]);
   const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data]);
   const models = useMemo(() => modelsQuery.data ?? [], [modelsQuery.data]);
@@ -160,6 +168,37 @@ export function AiRouteGroupsView() {
     },
     onError: (error) => toast.error(resolveAiProviderApiError(error)),
   });
+
+  const copyMutation = useMutation({
+    mutationFn: (payload: { sourceName: string; name: string; displayName: string }) =>
+      copyRouteGroup(payload.sourceName, {
+        name: payload.name,
+        displayName: payload.displayName,
+      }),
+    onSuccess: async () => {
+      await invalidate();
+      setCopyTarget(null);
+      toast.success("路由组已复制。");
+    },
+    onError: (error) => toast.error(resolveAiProviderApiError(error)),
+  });
+
+  const arrangeMutation = useMutation({
+    mutationFn: (names: string[]) => arrangeRouteGroups(names),
+    onSuccess: invalidate,
+    onError: (error) => toast.error(resolveAiProviderApiError(error)),
+  });
+
+  const moveGroup = (group: AiRouteGroupItem, offset: -1 | 1) => {
+    const names = routeGroups.map((item) => item.metadata.name);
+    const index = names.indexOf(group.metadata.name);
+    const target = index + offset;
+    if (index < 0 || target < 0 || target >= names.length) {
+      return;
+    }
+    [names[index], names[target]] = [names[target], names[index]];
+    arrangeMutation.mutate(names);
+  };
 
   const settingsMutation = useMutation({
     mutationFn: async (patch: SettingsPatch) => {
@@ -309,16 +348,21 @@ export function AiRouteGroupsView() {
             </ConsoleEmpty>
           ) : (
             <div className="grid gap-3 px-5 py-5 sm:grid-cols-2 xl:grid-cols-3">
-              {routeGroups.map((group) => (
+              {routeGroups.map((group, index) => (
                 <RouteGroupCard
                   key={group.metadata.name}
                   group={group}
                   models={models}
                   providers={providers}
+                  accounts={accounts}
                   isDefault={defaultGroupName === group.metadata.name}
                   usedByMode={modeByGroup.get(group.metadata.name)}
+                  canCreate={canCreate}
                   canUpdate={canUpdate}
                   canDelete={canDelete}
+                  canArrange={canUpdate && !arrangeMutation.isPending}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < routeGroups.length - 1}
                   toggling={
                     toggleMutation.isPending &&
                     toggleMutation.variables?.metadata.name === group.metadata.name
@@ -326,6 +370,9 @@ export function AiRouteGroupsView() {
                   onEdit={() => openEdit(group)}
                   onToggle={() => toggleMutation.mutate(group)}
                   onDelete={() => setDeleteTarget(group)}
+                  onCopy={() => setCopyTarget(group)}
+                  onMoveUp={() => moveGroup(group, -1)}
+                  onMoveDown={() => moveGroup(group, 1)}
                 />
               ))}
             </div>
@@ -368,6 +415,25 @@ export function AiRouteGroupsView() {
           onSaved={() => {
             closeDialog();
           }}
+        />
+      ) : null}
+
+      {copyTarget ? (
+        <ResourceCopyDialog
+          title="复制路由组"
+          description="创建路由组副本，成员、规则与调度设置会一并复制。"
+          defaultName={`${copyTarget.metadata.name}-copy`}
+          defaultDisplayName={`${copyTarget.spec.displayName || copyTarget.metadata.name} 副本`}
+          existingNames={existingNames}
+          isPending={copyMutation.isPending}
+          onSubmit={(values) =>
+            copyMutation.mutate({
+              sourceName: copyTarget.metadata.name,
+              name: values.name,
+              displayName: values.displayName,
+            })
+          }
+          onClose={() => setCopyTarget(null)}
         />
       ) : null}
 

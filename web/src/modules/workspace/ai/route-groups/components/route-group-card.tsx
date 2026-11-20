@@ -1,44 +1,71 @@
-import { Layers, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Layers, Pencil, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 
 import { ProviderBrandIcon } from "../../providers/components/provider-brand-icon";
-import type { AiModelItem, AiProviderItem, AiRouteGroupItem } from "../../providers/lib/api";
+import type {
+  AiModelItem,
+  AiProviderAccountItem,
+  AiProviderItem,
+  AiRouteGroupItem,
+} from "../../providers/lib/api";
 import { modelDisplayName } from "../../providers/lib/model";
 import { routeModeLabel } from "../../routing/lib/model";
-import { affinityLabel } from "../lib/model";
+import { affinityLabel, effectiveParentMode, parentModeLabel, routeGroupRules } from "../lib/model";
 
 type RouteGroupCardProps = {
   group: AiRouteGroupItem;
   models: AiModelItem[];
   providers: AiProviderItem[];
+  accounts: AiProviderAccountItem[];
   isDefault: boolean;
   usedByMode?: string;
+  canCreate: boolean;
   canUpdate: boolean;
   canDelete: boolean;
+  canArrange: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   toggling: boolean;
   onEdit: () => void;
   onToggle: () => void;
   onDelete: () => void;
+  onCopy: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 };
 
 export function RouteGroupCard({
   group,
   models,
   providers,
+  accounts,
   isDefault,
   usedByMode,
+  canCreate,
   canUpdate,
   canDelete,
+  canArrange,
+  canMoveUp,
+  canMoveDown,
   toggling,
   onEdit,
   onToggle,
   onDelete,
+  onCopy,
+  onMoveUp,
+  onMoveDown,
 }: RouteGroupCardProps) {
   const enabled = group.spec.enabled !== false;
   const memberCount = group.spec.members?.length ?? 0;
+  const ruleCount = routeGroupRules(group).length;
+  const parentMode = effectiveParentMode(group);
+  const qualityThreshold = group.spec.qualityThreshold;
+  const accountNames = (group.spec.accounts ?? []).map(
+    (name) => accounts.find((account) => account.metadata.name === name)?.spec.displayName || name,
+  );
   const memberModels = (group.spec.members ?? [])
     .map((member) => models.find((model) => model.metadata.name === member.model))
     .filter((model): model is AiModelItem => Boolean(model));
@@ -59,6 +86,7 @@ export function RouteGroupCard({
               {group.spec.displayName || group.metadata.name}
             </h3>
             {isDefault ? <Badge variant="secondary">默认</Badge> : null}
+            <Badge variant="outline">{parentModeLabel(parentMode)}</Badge>
             {usedByMode ? <Badge variant="outline">{usedByMode}模式</Badge> : null}
             {!enabled ? <Badge variant="outline">已停用</Badge> : null}
           </div>
@@ -81,6 +109,17 @@ export function RouteGroupCard({
       <div className="mt-2 flex flex-wrap items-center gap-1.5">
         <Badge variant="outline">{routeModeLabel(group.spec.routeMode)}</Badge>
         <Badge variant="outline">{affinityLabel(group.spec.affinity)}</Badge>
+        {qualityThreshold == null ? null : (
+          <Badge variant="outline">质量阈值 {Number(qualityThreshold).toFixed(2)}</Badge>
+        )}
+        <Badge
+          variant="outline"
+          title={accountNames.length > 0 ? accountNames.join("、") : "不限制账号"}
+        >
+          {accountNames.length > 0 ? `账号 ${accountNames.length}` : "账号不限"}
+        </Badge>
+        <Badge variant="outline">规则 {ruleCount}</Badge>
+        {group.spec.sink ? <Badge variant="outline">Sink</Badge> : null}
         <span className="text-[11px] text-muted-foreground">{memberCount} 个模型成员</span>
       </div>
 
@@ -107,8 +146,14 @@ export function RouteGroupCard({
         ) : null}
       </div>
 
-      {canUpdate || canDelete ? (
-        <div className="mt-4 flex items-center gap-1 border-t pt-3">
+      {canCreate || canUpdate || canDelete || canArrange ? (
+        <div className="mt-4 flex flex-wrap items-center gap-1 border-t pt-3">
+          {canCreate ? (
+            <Button type="button" size="sm" variant="ghost" onClick={onCopy}>
+              <Copy />
+              复制
+            </Button>
+          ) : null}
           {canUpdate ? (
             <Button type="button" size="sm" variant="ghost" onClick={onEdit}>
               <Pencil />
@@ -129,6 +174,30 @@ export function RouteGroupCard({
               删除
             </Button>
           ) : null}
+          <div className="ms-auto flex items-center gap-0.5">
+            <Button
+              type="button"
+              size="icon-xs"
+              variant="ghost"
+              onClick={onMoveUp}
+              disabled={!canArrange || !canMoveUp}
+              aria-label="上移路由组"
+              title="上移"
+            >
+              <ChevronUp />
+            </Button>
+            <Button
+              type="button"
+              size="icon-xs"
+              variant="ghost"
+              onClick={onMoveDown}
+              disabled={!canArrange || !canMoveDown}
+              aria-label="下移路由组"
+              title="下移"
+            >
+              <ChevronDown />
+            </Button>
+          </div>
         </div>
       ) : null}
     </article>

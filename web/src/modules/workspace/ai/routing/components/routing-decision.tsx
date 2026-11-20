@@ -6,6 +6,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ConsoleSection } from "@/modules/workspace/console/components/console-page";
 
 import { modelDisplayName } from "../../providers/lib/model";
+import {
+  effectiveParentMode,
+  parentModeLabel,
+  routeGroupRules,
+} from "../../route-groups/lib/model";
 import type { AiRoutingLive, AiRoutingRequest } from "../lib/api";
 import {
   type AiRoutingLookups,
@@ -38,6 +43,8 @@ export function RoutingDecision({
 }: RoutingDecisionProps) {
   const latest = live?.requests[0];
   const defaultGroup = defaultGroupName ? lookups.routeGroups.get(defaultGroupName) : undefined;
+  const latestGroup = latest?.routeGroup ? lookups.routeGroups.get(latest.routeGroup) : undefined;
+  const routeGroup = latestGroup ?? defaultGroup;
 
   return (
     <ConsoleSection>
@@ -84,22 +91,20 @@ export function RoutingDecision({
                   )
                 : "未指定"}
             </Strong>{" "}
-            以{" "}
-            <Strong>
-              {routeModeLabel(
-                latest.routeGroup
-                  ? lookups.routeGroups.get(latest.routeGroup)?.spec.routeMode
-                  : defaultGroup?.spec.routeMode,
-              )}
-            </Strong>{" "}
-            方式选择，账号{" "}
+            以 <Strong>{routeModeLabel(routeGroup?.spec.routeMode)}</Strong> 方式选择，账号{" "}
             <Strong>
               {accountDisplayName(
                 lookups.accounts.get(latest.account ?? ""),
                 latest.account ?? "未知账号",
               )}
             </Strong>
-            {latest.tier ? `，等级 ${tierLabel(latest.tier)}` : ""}。
+            {latest.tier ? `，等级 ${tierLabel(latest.tier)}` : ""}
+            {routeGroup
+              ? `；所属模式${parentModeLabel(effectiveParentMode(routeGroup))}，配置 ${
+                  routeGroupRules(routeGroup).length
+                } 条规则${routeGroup.spec.sink ? "，Sink 开启" : ""}`
+              : ""}
+            。
           </Step>
           <Step icon={<CheckCircle2 className="size-3.5" />}>
             {providerDisplayName(
@@ -123,14 +128,16 @@ export function RoutingDecision({
               <>
                 默认路由组{" "}
                 <Strong>{routeGroupDisplayName(defaultGroup, defaultGroup.metadata.name)}</Strong>{" "}
-                使用 <Strong>{routeModeLabel(defaultGroup.spec.routeMode)}</Strong> 方式，包含{" "}
+                使用 <Strong>{routeModeLabel(defaultGroup.spec.routeMode)}</Strong> 方式，所属模式
+                <Strong>{parentModeLabel(effectiveParentMode(defaultGroup))}</Strong>，配置{" "}
+                <Strong>{routeGroupRules(defaultGroup).length}</Strong> 条规则，包含{" "}
                 <Strong>
                   {
                     (defaultGroup.spec.members ?? []).filter((member) => member.enabled !== false)
                       .length
                   }
                 </Strong>{" "}
-                个模型成员。
+                个模型成员{defaultGroup.spec.sink ? "，Sink 开启" : ""}。
               </>
             ) : (
               "还没有默认路由组。网关需要路由组才能选择模型。"
@@ -141,6 +148,12 @@ export function RoutingDecision({
           </Step>
         </ol>
       )}
+
+      {latest ? (
+        <p className="px-5 pb-4 text-[11px] text-muted-foreground">
+          路由记录只包含最终选择结果，不包含命中的规则明细；上方展示的是当前路由组的规则配置。
+        </p>
+      ) : null}
     </ConsoleSection>
   );
 }

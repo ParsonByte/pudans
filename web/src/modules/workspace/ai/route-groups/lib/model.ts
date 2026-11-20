@@ -6,9 +6,12 @@ import {
   type AiProviderAccountItem,
   type AiProviderAffinity,
   type AiProviderItem,
+  type AiRouteGroupContextMode,
   type AiRouteGroupItem,
   type AiRouteGroupMember,
   type AiRouteGroupMode,
+  type AiRouteGroupParentMode,
+  type AiRouteGroupRule,
   type AiRouteGroupTier,
 } from "../../providers/lib/api";
 import {
@@ -27,6 +30,56 @@ export const ROUTE_GROUP_TIER_OPTIONS: { value: AiRouteGroupTier; label: string 
   { value: "AUTO", label: "继承" },
   ...MODEL_TIER_OPTIONS,
 ];
+
+export const ROUTE_GROUP_PARENT_MODE_OPTIONS: {
+  value: AiRouteGroupParentMode;
+  label: string;
+}[] = [
+  { value: "FAST", label: "快速（FAST）" },
+  { value: "PRO", label: "进阶（PRO）" },
+  { value: "NONE", label: "不关联（NONE）" },
+];
+
+export const ROUTE_GROUP_CONTEXT_MODE_OPTIONS: {
+  value: AiRouteGroupContextMode;
+  label: string;
+  hint: string;
+}[] = [
+  { value: "SMALLEST", label: "最小上下文优先", hint: "优先选择上下文窗口更小的模型。" },
+  { value: "LARGEST", label: "最大上下文优先", hint: "优先选择上下文窗口更大的模型。" },
+];
+
+const BUILTIN_FAST_GROUP = "fast-group";
+
+const BUILTIN_PRO_GROUP = "pro-group";
+
+export function builtinParentMode(name: string | undefined): AiRouteGroupParentMode | undefined {
+  if (name === BUILTIN_FAST_GROUP) {
+    return "FAST";
+  }
+  if (name === BUILTIN_PRO_GROUP) {
+    return "PRO";
+  }
+  return undefined;
+}
+
+export function effectiveParentMode(group: AiRouteGroupItem): AiRouteGroupParentMode {
+  return builtinParentMode(group.metadata.name) ?? group.spec.parentMode ?? "NONE";
+}
+
+export function parentModeLabel(mode: AiRouteGroupParentMode | undefined): string {
+  return optionLabel(ROUTE_GROUP_PARENT_MODE_OPTIONS, mode, "不关联");
+}
+
+export function effectiveContextMode(
+  contextMode: AiRouteGroupContextMode | undefined,
+): AiRouteGroupContextMode {
+  return contextMode === "LARGEST" ? "LARGEST" : "SMALLEST";
+}
+
+export function routeGroupRules(group: AiRouteGroupItem | undefined): AiRouteGroupRule[] {
+  return group?.spec.rules ?? [];
+}
 
 export type RouteTemplate = {
   id: string;
@@ -150,12 +203,24 @@ export function groupFromTemplate(
       description: template.description,
       routeMode: template.mode,
       defaultTier: "AUTO",
+      parentMode: "NONE",
+      qualityThreshold: 0.6,
       affinity: "AUTO",
+      fallback: [],
+      accounts: [],
+      order: 0,
+      contextMode: "SMALLEST",
+      patienceSeconds: 60,
+      firstTokenSeconds: 0,
+      sink: false,
+      rules: [],
       isDefault: false,
       enabled: true,
       members: template.models.map((model) => ({
         model: model.metadata.name,
         weight: 1,
+        capabilityTags: [],
+        extraContextMargin: 1024,
         enabled: true,
       })),
     },
@@ -180,8 +245,21 @@ export function memberDrafts(group: AiRouteGroupItem | undefined): AiRouteGroupM
       model: member.model,
       weight: member.weight ?? 1,
       tierOverride: member.tierOverride,
+      capabilityTags: member.capabilityTags ?? [],
+      extraContextMargin: member.extraContextMargin ?? 1024,
       enabled: member.enabled !== false,
     }));
+}
+
+export function sortRouteGroupsByOrder(groups: readonly AiRouteGroupItem[]): AiRouteGroupItem[] {
+  return [...groups].sort(
+    (left, right) =>
+      (left.spec.order ?? 0) - (right.spec.order ?? 0) ||
+      (left.spec.displayName || left.metadata.name).localeCompare(
+        right.spec.displayName || right.metadata.name,
+        "zh-CN",
+      ),
+  );
 }
 
 export function routeGroupTierLabel(tier: AiRouteGroupTier | undefined): string {
