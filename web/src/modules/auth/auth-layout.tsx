@@ -1,9 +1,13 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 
-import { Link, Outlet } from "@tanstack/react-router";
 import { Pause, Play } from "lucide-react";
+import Link from "next/link";
 
+import { PageTransition } from "@/components/motion/page-transition";
 import { ThemeSwitch } from "@/components/theme-switch";
+import { BASE_PATH } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 
 const BRAND_NAME = "PUDANS";
@@ -12,9 +16,10 @@ type AuthLayoutVariant = "auth" | "legal" | "setup";
 
 type AuthLayoutProps = {
   variant?: AuthLayoutVariant;
+  children: React.ReactNode;
 };
 
-export function AuthLayout({ variant = "auth" }: AuthLayoutProps) {
+export function AuthLayout({ variant = "auth", children }: AuthLayoutProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const isLegal = variant === "legal";
@@ -59,41 +64,37 @@ export function AuthLayout({ variant = "auth" }: AuthLayoutProps) {
         onPlay={() => setVideoPlaying(true)}
         onPause={() => setVideoPlaying(false)}
       >
-        <source src={`${import.meta.env.BASE_URL}login-bg.mp4`} type="video/mp4" />
+        <source src={`${BASE_PATH}login-bg.mp4`} type="video/mp4" />
       </video>
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-[1] bg-[linear-gradient(90deg,rgba(0,0,0,0.78)_0%,rgba(0,0,0,0.46)_42%,rgba(0,0,0,0.2)_68%,rgba(0,0,0,0.38)_100%)] backdrop-blur-[2px]"
+        className="pointer-events-none fixed inset-0 z-[1] bg-[image:var(--auth-horizontal-overlay)] backdrop-blur-[2px]"
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed inset-0 z-[1] bg-[linear-gradient(180deg,rgba(0,0,0,0.34)_0%,transparent_28%,transparent_72%,rgba(0,0,0,0.38)_100%)]"
+        className="pointer-events-none fixed inset-0 z-[1] bg-[image:var(--auth-vertical-overlay)]"
       />
 
-      <header className="fixed inset-x-0 top-0 z-20 flex items-center justify-between gap-5 bg-gradient-to-b from-black/35 to-transparent px-5 py-4 text-white sm:px-10 sm:py-5">
+      <header className="fixed inset-x-0 top-0 z-20 flex items-center justify-between gap-5 bg-[image:var(--auth-header-gradient)] px-5 py-4 text-(--auth-foreground) sm:px-10 sm:py-5">
         <Link
-          to={isSetup ? "/setup" : "/sign-in"}
+          href={isSetup ? "/setup" : "/sign-in"}
           aria-label={BRAND_NAME}
           className="inline-flex min-w-0 items-center gap-2.5"
         >
-          <img
-            src={`${import.meta.env.BASE_URL}brand/icon-small.svg`}
-            alt=""
-            className="size-8 shrink-0"
-          />
+          <img src={`${BASE_PATH}brand/icon-small.svg`} alt="" className="size-8 shrink-0" />
           <span className="truncate text-sm leading-none font-bold tracking-[0.16em]">
             {BRAND_NAME}
           </span>
         </Link>
 
         <div className="flex items-center justify-end gap-1">
-          <ThemeSwitch className="text-white/70 hover:bg-white/10 hover:text-white" />
+          <ThemeSwitch className="text-(--auth-foreground-muted) hover:bg-(--auth-surface) hover:text-(--auth-foreground)" />
         </div>
       </header>
 
       {variant === "auth" ? (
-        <section className="pointer-events-none fixed bottom-[clamp(88px,12vh,132px)] left-[clamp(28px,6vw,104px)] z-10 hidden max-w-[min(620px,48vw)] text-white drop-shadow-[0_4px_30px_rgba(0,0,0,0.55)] md:block">
-          <p className="mb-4 text-xs font-semibold tracking-[0.22em] text-white/55">
+        <section className="pointer-events-none fixed bottom-[clamp(88px,12vh,132px)] left-[clamp(28px,6vw,104px)] z-10 hidden max-w-[min(620px,48vw)] text-(--auth-foreground) [filter:drop-shadow(var(--auth-drop-shadow))] md:block">
+          <p className="mb-4 text-xs font-semibold tracking-[0.22em] text-(--auth-foreground-muted)">
             PUDANS · 数字空间
           </p>
           <h1 className="flex flex-col gap-0.5 text-[clamp(32px,4.1vw,58px)] leading-[1.16] font-semibold tracking-[-0.045em]">
@@ -111,7 +112,7 @@ export function AuthLayout({ variant = "auth" }: AuthLayoutProps) {
       >
         <div
           className={cn(
-            "flex w-full flex-col rounded-xl border border-border/80 bg-card p-6 text-card-foreground shadow-2xl md:rounded-2xl md:p-8",
+            "flex w-full flex-col border border-border/80 bg-card p-6 text-card-foreground shadow-2xl md:p-8",
             isLegal
               ? "max-w-[min(800px,calc(100vw-2rem))] md:min-h-[640px]"
               : isSetup
@@ -119,14 +120,14 @@ export function AuthLayout({ variant = "auth" }: AuthLayoutProps) {
                 : "max-w-[460px]",
           )}
         >
-          <Outlet />
+          <PageTransition className="flex-1">{children}</PageTransition>
         </div>
       </section>
 
       <button
         type="button"
         className={cn(
-          "fixed bottom-20 left-1/2 z-20 hidden -translate-x-1/2 items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white/65 backdrop-blur-md transition-colors hover:bg-white/15 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:outline-none md:inline-flex",
+          "fixed bottom-20 left-1/2 z-20 hidden -translate-x-1/2 items-center gap-2 border border-(--auth-border) bg-(--auth-surface) px-3 py-1.5 text-xs font-medium whitespace-nowrap text-(--auth-foreground-subtle) backdrop-blur-md transition-colors hover:bg-(--auth-surface-hover) hover:text-(--auth-foreground) focus-visible:ring-2 focus-visible:ring-(--auth-ring) focus-visible:outline-none md:inline-flex",
         )}
         aria-label={videoPlaying ? "暂停背景视频" : "继续播放"}
         aria-pressed={!videoPlaying}
@@ -140,30 +141,27 @@ export function AuthLayout({ variant = "auth" }: AuthLayoutProps) {
         {videoPlaying ? "创意正在进行" : "开始发挥创意"}
       </button>
 
-      <footer className="fixed inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-gradient-to-t from-black/40 to-transparent px-4 py-4 text-[11px] text-white/45">
+      <footer className="fixed inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-[image:var(--auth-footer-gradient)] px-4 py-4 text-[11px] text-(--auth-foreground-subtle)">
         <span>
           © {new Date().getFullYear()} {BRAND_NAME}。保留所有权利。
         </span>
         {!isSetup ? (
           <>
             <Link
-              to="/legal"
-              search={{ tab: "terms" }}
-              className="transition-colors hover:text-white"
+              href="/legal?tab=terms"
+              className="transition-colors hover:text-(--auth-foreground)"
             >
               用户协议
             </Link>
             <Link
-              to="/legal"
-              search={{ tab: "privacy" }}
-              className="transition-colors hover:text-white"
+              href="/legal?tab=privacy"
+              className="transition-colors hover:text-(--auth-foreground)"
             >
               隐私政策
             </Link>
             <Link
-              to="/legal"
-              search={{ tab: "confidentiality" }}
-              className="transition-colors hover:text-white"
+              href="/legal?tab=confidentiality"
+              className="transition-colors hover:text-(--auth-foreground)"
             >
               数据保密协议
             </Link>

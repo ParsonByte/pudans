@@ -587,7 +587,7 @@ export function ChatComposer({
   return (
     <div className="space-y-2">
       {generationKind ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-dashed px-3 py-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 border border-dashed px-3 py-2 text-xs">
           <Badge variant="secondary">
             {generationKind === "IMAGE" ? (
               <ImageIcon />
@@ -639,7 +639,7 @@ export function ChatComposer({
             tabIndex={-1}
             onChange={onAttach}
           />
-          <InputGroup className="rounded-2xl">
+          <InputGroup className="">
             {files.length > 0 ? <ChatAttachments files={files} onRemove={removeFile} /> : null}
             <ChatRichInput
               ref={richInputRef}
@@ -722,7 +722,7 @@ export function ChatComposer({
                 </DropdownMenu>
                 {recording ? (
                   <span className="flex items-center gap-1.5 px-1 text-xs text-destructive tabular-nums">
-                    <span className="size-2 animate-pulse rounded-full bg-destructive" />
+                    <span className="size-2 animate-pulse bg-destructive" />
                     {formatRecordingTime(recordingSeconds)}
                   </span>
                 ) : null}
@@ -747,7 +747,7 @@ export function ChatComposer({
                 <InputGroupButton
                   size="icon-sm"
                   variant="outline"
-                  className="rounded-full"
+                  className=""
                   aria-label="添加附件"
                   onClick={() => fileInputRef.current?.click()}
                 >
@@ -757,7 +757,7 @@ export function ChatComposer({
                   type="submit"
                   size="icon-sm"
                   variant="default"
-                  className="rounded-full"
+                  className=""
                   disabled={!canSend}
                   aria-label="发送"
                 >

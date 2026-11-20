@@ -42,7 +42,7 @@ export function MemoryDetailPanel({
 
   if (!asset) {
     return (
-      <div className="flex h-full items-center justify-center rounded-xl border bg-card">
+      <div className="flex h-full items-center justify-center border bg-card">
         <MemoryEmptyState
           title="选择一个记忆块"
           description="从左侧选择记忆块，查看 L0–L3 分层内容与绑定关系。"
@@ -57,7 +57,7 @@ export function MemoryDetailPanel({
     : "—";
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-xl border bg-card">
+    <div className="flex h-full min-h-0 flex-col border bg-card">
       <div className="shrink-0 space-y-2 border-b px-4 py-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">

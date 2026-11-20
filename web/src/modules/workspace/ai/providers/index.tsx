@@ -295,7 +295,7 @@ export function AiProvidersView() {
         {providersQuery.isPending ? (
           <div className="grid gap-3">
             {Array.from({ length: 3 }, (_, index) => (
-              <Skeleton key={index} className="h-20 rounded-xl" />
+              <Skeleton key={index} className="h-20" />
             ))}
           </div>
         ) : providersQuery.isError ? (
@@ -367,7 +367,7 @@ export function AiProvidersView() {
             {presetsQuery.isPending ? (
               <div className="grid gap-3 px-5 py-5 sm:grid-cols-2 xl:grid-cols-3">
                 {Array.from({ length: 6 }, (_, index) => (
-                  <Skeleton key={index} className="h-24 rounded-2xl" />
+                  <Skeleton key={index} className="h-24" />
                 ))}
               </div>
             ) : presetsQuery.isError ? (
@@ -402,9 +402,9 @@ export function AiProvidersView() {
                           key={preset.id}
                           type="button"
                           onClick={() => setCustomTarget(preset)}
-                          className="group flex items-center gap-3 rounded-2xl border bg-card/40 p-4 text-start transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                          className="group flex items-center gap-3 border bg-card/40 p-4 text-start transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/30 hover:shadow-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                         >
-                          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+                          <span className="flex size-10 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
                             <ProviderBrandIcon preset={preset} className="size-6" />
                           </span>
                           <div className="min-w-0 flex-1">
@@ -445,7 +445,7 @@ export function AiProvidersView() {
                   {unsupportedPresets.map((preset) => (
                     <div
                       key={preset.id}
-                      className="flex flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-2 text-xs text-muted-foreground"
+                      className="flex flex-wrap items-center gap-2 border border-dashed px-3 py-2 text-xs text-muted-foreground"
                     >
                       <span className="font-medium text-foreground">{preset.displayName}</span>
                       <span>{preset.unsupportedReason || preset.description}</span>
@@ -518,13 +518,13 @@ function ProviderCard({
   const enabled = provider.spec.enabled !== false;
   const healthScore = provider.status?.healthScore;
   return (
-    <div className="group flex items-center gap-3 rounded-2xl border bg-card/40 p-4 transition-colors hover:bg-accent/20">
+    <div className="group flex items-center gap-3 border bg-card/40 p-4 transition-colors hover:bg-accent/20">
       <button
         type="button"
         onClick={onOpen}
         className="flex min-w-0 flex-1 items-center gap-3 text-start"
       >
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+        <span className="flex size-11 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
           <ProviderBrandIcon provider={provider} className="size-6" />
         </span>
         <div className="min-w-0 flex-1 space-y-1">

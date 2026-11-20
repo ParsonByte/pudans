@@ -186,7 +186,7 @@ export function AccountIdentitiesView() {
           <div className="divide-y">
             {connections.map((connection) => (
               <div key={connection.metadata.name} className="flex items-center gap-3 px-5 py-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <span className="flex size-9 shrink-0 items-center justify-center bg-muted">
                   <Link2 className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -291,7 +291,7 @@ function ProviderRow({
 }) {
   return (
     <div className="flex items-center gap-3 px-5 py-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+      <span className="flex size-9 shrink-0 items-center justify-center bg-muted">
         <Link2 className="size-4" />
       </span>
       <div className="min-w-0 flex-1">

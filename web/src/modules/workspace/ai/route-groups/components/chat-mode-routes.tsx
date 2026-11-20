@@ -46,8 +46,8 @@ export function ChatModeRoutes({
 
       {loading ? (
         <div className="grid gap-3 px-5 py-5 sm:grid-cols-2">
-          <Skeleton className="h-24 rounded-2xl" />
-          <Skeleton className="h-24 rounded-2xl" />
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
         </div>
       ) : error ? (
         <p className="px-5 py-5 text-xs text-muted-foreground">无法加载聊天模式。</p>
@@ -69,11 +69,8 @@ export function ChatModeRoutes({
               : [];
             const Icon = chatModeIcon(mode.name);
             return (
-              <div
-                key={mode.name}
-                className="flex items-start gap-3 rounded-2xl border bg-card/40 p-4"
-              >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+              <div key={mode.name} className="flex items-start gap-3 border bg-card/40 p-4">
+                <span className="flex size-10 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
                   <Icon className="size-5 text-muted-foreground" />
                 </span>
                 <div className="min-w-0 flex-1">

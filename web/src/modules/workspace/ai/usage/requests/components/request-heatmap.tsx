@@ -191,7 +191,7 @@ export function RequestHeatmap({
                       <Tooltip key={day.date}>
                         <TooltipTrigger asChild>
                           <div
-                            className="rounded-[2px] border border-transparent bg-muted transition-opacity hover:opacity-80"
+                            className="border border-transparent bg-muted transition-opacity hover:opacity-80"
                             style={
                               level < 0
                                 ? undefined
@@ -216,7 +216,7 @@ export function RequestHeatmap({
                 {OPACITY_LEVELS.map((opacity) => (
                   <span
                     key={opacity}
-                    className="size-[10px] rounded-[2px]"
+                    className="size-[10px]"
                     style={{ backgroundColor: "var(--chart-1)", opacity }}
                   />
                 ))}

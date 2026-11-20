@@ -1,8 +1,10 @@
 dist/
 build/
+.next/
+next-env.d.ts
 node_modules/
 package-lock.json
 public/brand/
-src/routeTree.gen.ts
+src/components/ui/
 packages/api-client/src/
 packages/api-client/dist/

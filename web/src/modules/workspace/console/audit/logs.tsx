@@ -2,8 +2,8 @@ import { useState } from "react";
 
 import type { AuditRecord } from "@pudans-dev/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Loader2, RefreshCw, Search } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { DataTablePagination, LongText } from "@/components/data-table";
@@ -139,7 +139,7 @@ export function AuditLogsView() {
         <div className="flex flex-wrap items-center gap-2">
           {auditPath ? (
             <Button variant="ghost" size="sm" asChild>
-              <Link to={auditPath}>
+              <Link href={auditPath}>
                 <ArrowLeft />
                 返回审计
               </Link>

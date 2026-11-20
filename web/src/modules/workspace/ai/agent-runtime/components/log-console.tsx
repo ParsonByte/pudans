@@ -88,7 +88,7 @@ export function LogConsole({ agent, running, available }: LogConsoleProps) {
 
   if (!available) {
     return (
-      <p className="rounded-lg border border-dashed px-3 py-8 text-center text-xs text-muted-foreground">
+      <p className="border border-dashed px-3 py-8 text-center text-xs text-muted-foreground">
         运行时尚未创建，启动运行时后即可查看沙箱日志。
       </p>
     );
@@ -168,10 +168,7 @@ export function LogConsole({ agent, running, available }: LogConsoleProps) {
         </Alert>
       ) : null}
 
-      <div
-        ref={scrollRef}
-        className="h-80 overflow-auto rounded-lg border bg-muted/30 p-3 font-mono text-xs"
-      >
+      <div ref={scrollRef} className="h-80 overflow-auto border bg-muted/30 p-3 font-mono text-xs">
         {lines.length === 0 ? (
           <p className="py-8 text-center text-muted-foreground">
             暂无日志。启动沙箱或执行命令后查看输出。

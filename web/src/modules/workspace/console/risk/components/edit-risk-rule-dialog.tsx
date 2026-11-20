@@ -107,7 +107,7 @@ export function EditRiskRuleDialog({ rule, onClose }: EditRiskRuleDialogProps) {
       maxHeightRatio={0.55}
       submitLabel="保存规则"
     >
-      <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+      <div className="flex items-center justify-between gap-4 border p-4">
         <div className="space-y-1">
           <p className="text-sm font-medium">启用规则</p>
           <p className="text-xs text-muted-foreground">关闭后该场景不再参与风险判定。</p>

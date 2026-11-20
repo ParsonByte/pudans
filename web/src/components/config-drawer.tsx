@@ -1,6 +1,7 @@
 import { type ComponentType, type SVGProps } from "react";
 
 import { CircleCheck, RotateCcw, Settings } from "lucide-react";
+import { useTheme } from "next-themes";
 
 import { IconDir } from "@/assets/custom/icon-dir";
 import { IconLayoutCompact } from "@/assets/custom/icon-layout-compact";
@@ -27,7 +28,6 @@ import {
 import { useSidebar } from "@/components/ui/sidebar";
 import { type Direction, useDirection } from "@/context/direction-provider";
 import { type Collapsible, type LayoutVariant, useLayout } from "@/context/layout-provider";
-import { type Theme, useTheme } from "@/context/theme-provider";
 import { cn } from "@/lib/utils";
 
 type ConfigOptionData = {
@@ -52,7 +52,7 @@ function SectionTitle({ title, showReset = false, onReset, resetAriaLabel }: Sec
           type="button"
           size="icon"
           variant="secondary"
-          className="size-4 rounded-full"
+          className="size-4"
           onClick={onReset}
           aria-label={resetAriaLabel}
         >
@@ -69,7 +69,7 @@ function ConfigOption({ item, isTheme = false }: { item: ConfigOptionData; isThe
       value={item.value}
       aria-label={`选择${item.label}`}
       className={cn(
-        "group relative block aspect-auto size-auto w-full shrink-0 cursor-pointer rounded-lg border-0 bg-transparent p-1 pb-2 text-left shadow-none transition-colors",
+        "group relative block aspect-auto size-auto w-full shrink-0 cursor-pointer border-0 bg-transparent p-1 pb-2 text-left shadow-none transition-colors",
         "data-[state=checked]:bg-muted/60! data-[state=checked]:text-foreground",
         "after:hidden focus-visible:ring-0",
         "data-checked:border-transparent data-checked:bg-transparent data-checked:text-inherit",
@@ -77,7 +77,7 @@ function ConfigOption({ item, isTheme = false }: { item: ConfigOptionData; isThe
     >
       <span
         aria-hidden="true"
-        className="relative block rounded-[6px] bg-muted/20 ring-1 ring-border transition group-focus-visible:ring-2 group-focus-visible:ring-foreground/60 group-data-[state=checked]:shadow-sm group-data-[state=checked]:ring-2 group-data-[state=checked]:ring-foreground"
+        className="relative block bg-muted/20 ring-1 ring-border transition group-focus-visible:ring-2 group-focus-visible:ring-foreground/60 group-data-[state=checked]:shadow-sm group-data-[state=checked]:ring-2 group-data-[state=checked]:ring-foreground"
       >
         <item.icon
           className={cn(
@@ -98,26 +98,20 @@ function ConfigOption({ item, isTheme = false }: { item: ConfigOptionData; isThe
 export function ConfigDrawer() {
   const { setOpen } = useSidebar();
   const { resetDir } = useDirection();
-  const { resetTheme } = useTheme();
+  const { setTheme } = useTheme();
   const { resetLayout } = useLayout();
 
   const handleReset = () => {
     setOpen(false);
     resetDir();
-    resetTheme();
+    setTheme("system");
     resetLayout();
   };
 
   return (
     <Sheet>
       <SheetTrigger asChild>
-        <Button
-          type="button"
-          size="icon"
-          variant="ghost"
-          aria-label="打开主题设置"
-          className="rounded-full"
-        >
+        <Button type="button" size="icon" variant="ghost" aria-label="打开主题设置" className="">
           <Settings aria-hidden="true" />
         </Button>
       </SheetTrigger>
@@ -151,7 +145,8 @@ export function ConfigDrawer() {
 }
 
 function ThemeConfig() {
-  const { defaultTheme, theme, setTheme } = useTheme();
+  const { theme, setTheme } = useTheme();
+  const defaultTheme = "system";
   const options: ConfigOptionData[] = [
     { value: "system", label: "跟随系统", icon: IconThemeSystem },
     { value: "light", label: "浅色", icon: IconThemeLight },
@@ -167,8 +162,8 @@ function ThemeConfig() {
         resetAriaLabel="重置主题为默认值"
       />
       <RadioGroup
-        value={theme}
-        onValueChange={(value) => setTheme(value as Theme)}
+        value={theme ?? defaultTheme}
+        onValueChange={(value) => setTheme(value)}
         className="grid w-full max-w-md grid-cols-3 gap-4"
         aria-label="选择主题"
       >

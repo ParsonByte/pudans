@@ -112,8 +112,8 @@ export function RolesView() {
     <ConsolePage title="角色">
       {loading ? (
         <div className="grid flex-1 gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-          <Skeleton className="h-[420px] rounded-xl" />
-          <Skeleton className="h-[520px] rounded-xl" />
+          <Skeleton className="h-[420px]" />
+          <Skeleton className="h-[520px]" />
         </div>
       ) : rolesQuery.isError || catalogQuery.isError || !catalog ? (
         <ConsoleSection className="flex min-h-64 flex-col items-center justify-center gap-4 p-8 text-center">
@@ -309,7 +309,7 @@ function RoleListItem({ role, selected, onSelect }: RoleListItemProps) {
       onClick={() => onSelect(role.metadata.name)}
       title={roleDisplayName(role)}
       className={cn(
-        "flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
+        "flex w-full items-center gap-2 px-2 py-2 text-left text-sm transition-colors",
         selected ? "bg-primary text-primary-foreground" : "hover:bg-muted",
       )}
     >

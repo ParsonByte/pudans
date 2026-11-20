@@ -61,7 +61,7 @@ function ToolCallItem({
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <div className="rounded-lg border bg-muted/30 text-xs">
+      <div className="border bg-muted/30 text-xs">
         <CollapsibleTrigger asChild>
           <button
             type="button"

@@ -31,7 +31,7 @@ export function ActiveUserRanking({ users }: ActiveUserRankingProps) {
             >
               <span
                 className={cn(
-                  "flex size-7 shrink-0 items-center justify-center rounded-md text-xs font-semibold",
+                  "flex size-7 shrink-0 items-center justify-center text-xs font-semibold",
                   index < 3
                     ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground",

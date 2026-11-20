@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { KeyRound } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -57,7 +57,7 @@ export function RoutingAccounts({
         </div>
         {usagePath ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link to={usagePath}>查看用量</Link>
+            <Link href={usagePath}>查看用量</Link>
           </Button>
         ) : null}
       </div>
@@ -74,7 +74,10 @@ export function RoutingAccounts({
           <span className="space-y-2">
             <span className="block">还没有供应商账号。</span>
             {providersPath ? (
-              <Link to={providersPath} className="text-sm font-medium text-primary hover:underline">
+              <Link
+                href={providersPath}
+                className="text-sm font-medium text-primary hover:underline"
+              >
                 去供应商添加账号
               </Link>
             ) : null}
@@ -137,10 +140,8 @@ function AccountRow({
   const enabled = account.spec.enabled;
   return (
     <div className="flex flex-wrap items-center gap-3 px-5 py-3">
-      <span
-        className={`size-2 shrink-0 rounded-full ${enabled ? "bg-emerald-500" : "bg-muted-foreground/50"}`}
-      />
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted/50">
+      <span className={`size-2 shrink-0 ${enabled ? "bg-success" : "bg-muted-foreground/50"}`} />
+      <span className="flex size-8 shrink-0 items-center justify-center bg-muted/50">
         <KeyRound className="size-4 text-muted-foreground" />
       </span>
       <div className="min-w-0 flex-1">

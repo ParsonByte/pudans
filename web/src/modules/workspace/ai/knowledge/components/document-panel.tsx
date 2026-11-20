@@ -145,7 +145,7 @@ export function DocumentPanel({ knowledgeBaseName, canUpload, canDelete }: Docum
           className="border-dashed bg-transparent"
         />
       ) : (
-        <div className="overflow-hidden rounded-lg border">
+        <div className="overflow-hidden border">
           <Table>
             <TableHeader>
               <TableRow>

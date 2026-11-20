@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 
 import type { AuditRecord } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useSearch } from "@tanstack/react-router";
 import { ArrowLeft, Loader2, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,7 +34,11 @@ type JourneyDetailViewProps = {
 
 export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
   const tracesPath = useMenuPath("traces");
-  const search = useSearch({ strict: false }) as { from?: string; to?: string };
+  const searchParams = useSearchParams();
+  const search = {
+    from: searchParams.get("from") ?? undefined,
+    to: searchParams.get("to") ?? undefined,
+  };
   const range = todayAuditTimeRange();
   const from = search.from || localDateTimeToIso(range.from);
   const to = search.to || localDateTimeToIso(range.to);
@@ -55,8 +60,8 @@ export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
       <ConsolePage title="链路详情">
         <div className="space-y-4">
           <Skeleton className="h-10 w-40" />
-          <Skeleton className="h-32 rounded-xl" />
-          <Skeleton className="h-80 rounded-xl" />
+          <Skeleton className="h-32" />
+          <Skeleton className="h-80" />
         </div>
       </ConsolePage>
     );
@@ -68,7 +73,7 @@ export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
         <div className="flex flex-wrap items-center gap-2">
           {tracesPath ? (
             <Button variant="ghost" size="sm" asChild>
-              <Link to={tracesPath}>
+              <Link href={tracesPath}>
                 <ArrowLeft />
                 返回链路
               </Link>
@@ -87,7 +92,7 @@ export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
       <div className="flex flex-wrap items-center gap-2">
         {tracesPath ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link to={tracesPath}>
+            <Link href={tracesPath}>
               <ArrowLeft />
               返回链路
             </Link>

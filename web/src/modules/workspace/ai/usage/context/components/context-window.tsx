@@ -41,7 +41,7 @@ export function UsageContextWindow({ totals, scopeLabel, contextWindow }: UsageC
               ) : null}
             </div>
             <Progress value={progressValue} aria-label="上下文窗口利用率" />
-            <div className="rounded-lg border bg-muted/30 px-3 py-2.5">
+            <div className="border bg-muted/30 px-3 py-2.5">
               <p className="text-[11px] text-muted-foreground">窗口容量合计</p>
               <p className="mt-1 text-sm font-medium tabular-nums">
                 {formatTokenCount(totals.contextWindowTokens ?? undefined)}

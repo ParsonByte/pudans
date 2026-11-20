@@ -177,7 +177,7 @@ function UsageWindowBlock({ label, window, vouchers }: UsageWindowBlockProps) {
   const percent = limit > 0 ? Math.min(Math.max(((used + reserved) / limit) * 100, 0), 100) : 0;
 
   return (
-    <div className="space-y-2 rounded-lg border p-3">
+    <div className="space-y-2 border p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-medium">{label}</span>
         <span className="text-[11px] text-muted-foreground">
@@ -284,7 +284,7 @@ function UsageVoucherUseDialog({ usage, onClose }: UsageVoucherUseDialogProps) {
               <label
                 key={option.value}
                 className={cn(
-                  "flex items-start gap-3 rounded-lg border p-3",
+                  "flex items-start gap-3 border p-3",
                   usable ? "cursor-pointer" : "cursor-not-allowed opacity-60",
                 )}
               >

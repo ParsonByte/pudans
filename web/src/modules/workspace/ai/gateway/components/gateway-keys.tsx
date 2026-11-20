@@ -405,7 +405,7 @@ export function GatewayKeys({
                   hint="用作 Bearer Token；请勿写入代码仓库或公开分享。"
                 />
               ) : (
-                <p className="rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+                <p className="border border-warning/40 bg-warning/5 px-3 py-2 text-xs text-warning">
                   后端没有在创建响应中返回一次性明文。如仍需要明文，请删除该密钥后重新创建。
                 </p>
               )}

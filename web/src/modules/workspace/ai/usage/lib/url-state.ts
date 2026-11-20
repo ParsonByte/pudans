@@ -1,6 +1,6 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
-import { useLocation, useNavigate, useSearch } from "@tanstack/react-router";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import type { UsageScope } from "./api";
 import {
@@ -55,18 +55,17 @@ export function usageRangeSearch(range: UsageDateRangeValue): UsageSearchPatch {
 }
 
 export function useUsageUrlSearch() {
-  const search = useSearch({ strict: false }) as UsageUrlSearch;
-  const navigate = useNavigate();
-  const pathname = useLocation({ select: (location) => location.pathname });
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const search = useMemo<UsageUrlSearch>(
+    () => Object.fromEntries(searchParams.entries()),
+    [searchParams],
+  );
 
   const update = useCallback(
     (patch: UsageSearchPatch) => {
-      const params = new URLSearchParams();
-      for (const [key, value] of Object.entries(search)) {
-        if (typeof value === "string" && value !== "") {
-          params.set(key, value);
-        }
-      }
+      const params = new URLSearchParams(searchParams);
       for (const [key, value] of Object.entries(patch)) {
         if (value == null || value === "") {
           params.delete(key);
@@ -75,10 +74,9 @@ export function useUsageUrlSearch() {
         }
       }
       const query = params.toString();
-      const href = query ? `${pathname}?${query}` : pathname;
-      void navigate({ href } as Parameters<typeof navigate>[0]);
+      router.push(query ? `${pathname}?${query}` : pathname);
     },
-    [navigate, pathname, search],
+    [pathname, router, searchParams],
   );
 
   return { search, update };

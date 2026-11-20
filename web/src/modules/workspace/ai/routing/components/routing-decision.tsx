@@ -161,7 +161,7 @@ export function RoutingDecision({
 function Step({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   return (
     <li className="flex items-start gap-3 text-sm leading-6">
-      <span className="mt-1 flex size-5 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      <span className="mt-1 flex size-5 shrink-0 items-center justify-center bg-muted text-muted-foreground">
         {icon}
       </span>
       <span className="min-w-0 flex-1 text-muted-foreground [&_strong]:font-medium [&_strong]:text-foreground">

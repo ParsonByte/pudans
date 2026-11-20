@@ -32,7 +32,7 @@ export function LibraryTable({
       <ConsoleSection>
         <div className="space-y-2 p-4">
           {Array.from({ length: SKELETON_ROWS }, (_, index) => (
-            <Skeleton key={index} className="h-10 rounded-lg" />
+            <Skeleton key={index} className="h-10" />
           ))}
         </div>
       </ConsoleSection>

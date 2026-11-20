@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { Scale } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -298,12 +298,12 @@ function ModelWeightPopover({
           <div className="grid grid-cols-2 gap-2">
             {plansPath ? (
               <Button asChild variant="outline" size="sm">
-                <Link to={plansPath}>前往计费比例</Link>
+                <Link href={plansPath}>前往计费比例</Link>
               </Button>
             ) : null}
             {providersPath ? (
               <Button asChild variant="outline" size="sm">
-                <Link to={providersPath}>前往模型配置</Link>
+                <Link href={providersPath}>前往模型配置</Link>
               </Button>
             ) : null}
           </div>
@@ -322,7 +322,7 @@ function ModelWeightCard({ model, billing }: { model: AiModelItem; billing?: AiB
   const combined = tierMultiplier * modelMultiplier;
 
   return (
-    <div className="space-y-1.5 rounded-lg border p-2.5">
+    <div className="space-y-1.5 border p-2.5">
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge variant="outline">{model.spec.provider}</Badge>
         <span className="font-mono text-[11px] text-muted-foreground">{model.metadata.name}</span>

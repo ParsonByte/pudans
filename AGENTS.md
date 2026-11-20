@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Pudans is an enterprise identity and permission management platform. Backend: Java 25 / Spring Boot on a Gradle multi-module build. Frontend: React 19 / TypeScript / Vite in `web/`, with shadcn/ui as the only UI component library; components are added only through the shadcn CLI.
+Pudans is an enterprise identity and permission management platform. Backend: Java 25 / Spring Boot on a Gradle multi-module build. Frontend: Next.js 16 (App Router) / React 19 / TypeScript in `web/`, served as a standalone Node app with shadcn/ui as the only UI component library; components are added only through the shadcn CLI.
 
 ## Mandatory reading order
 
@@ -9,7 +9,8 @@ This order is a hard requirement. If the required file has not been read, do not
 1. Before changing code, tests or configuration: read `.agents/rules/development-repo.md`, `.agents/rules/reuse-and-cleanup.md`, `.agents/rules/testing.md`, `.agents/skills/development-repo/SKILL.md` and `.agents/skills/reuse-check/SKILL.md`.
 2. Before staging or committing: read `.agents/rules/commit.md` and `.agents/skills/commit-repo/SKILL.md`.
 3. Before writing or changing a comment: read `.agents/rules/comments.md` and `.agents/skills/comments/SKILL.md`.
-4. Before adding or changing a role, permission, workspace, menu or extension resource: read `.agents/rules/extensions.md`.
+4. Before adding, changing or animating any UI component: read `.agents/rules/shadcn.md` and `.agents/skills/shadcn/SKILL.md`.
+5. Before adding or changing a role, permission, workspace, menu or extension resource: read `.agents/rules/extensions.md`.
 
 The existing `.agents/rules/development.md` and `.agents/skills/development/SKILL.md` remain authoritative for branches, pull requests and merges.
 
@@ -41,6 +42,7 @@ Read the matching rule under `.agents/rules` before starting a task, and follow 
 | Development (repo) | `.agents/rules/development-repo.md` | Mandatory read order, reuse first, no redundancy, minimal diff |
 | Reuse and cleanup | `.agents/rules/reuse-and-cleanup.md` | Search dimensions, decision tree, cleanup checklist |
 | Extensions | `.agents/rules/extensions.md` | Extension directory layout, template naming, menu and permission placement |
+| shadcn/ui | `.agents/rules/shadcn.md` | Registry-first CLI components, immutable `components/ui`, preset `b1oVxsw5`, token-only styling, Motion/GSAP |
 | Testing | `.agents/rules/testing.md` | Test-first behaviour changes, JUnit commands, no disabled tests |
 | Skill authoring | `.agents/rules/skills.md` | `.agents/skills/<name>/` layout and SKILL.md requirements |
 
@@ -60,6 +62,7 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `development-repo` | Running the mandatory development flow from rules to verified change |
 | `reuse-check` | Searching for reusable implementations before creating code |
 | `skill-authoring` | Creating, editing or validating a skill under `.agents/skills` |
+| `shadcn` | Finding, adding or animating shadcn/ui components and aligning the preset |
 
 ## Rule and skill index
 
@@ -75,6 +78,7 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `.agents/rules/development.md` | Branches, pull requests, dependencies, secrets and review | Branch, PR or merge work | Yes for that workflow |
 | `.agents/rules/sql.md` | R2DBC-only data access and SQL boundaries | Any data-access change | Yes |
 | `.agents/rules/tech-stack.md` | Required versions, prohibited stacks, dependency rules, frontend stack and the CLI-only shadcn/ui component policy | Dependency, build, configuration or frontend UI change | Yes |
+| `.agents/rules/shadcn.md` | Registry-first shadcn/ui workflow, the `b1oVxsw5` preset and the Motion/GSAP animation policy | Adding, changing or animating any UI component | Yes |
 | `.agents/rules/skills.md` | Skill directory layout and SKILL.md requirements | Creating or editing a skill | Yes |
 | `.agents/skills/development-repo/SKILL.md` | Executable development flow | Before any code, test or configuration change | Yes |
 | `.agents/skills/reuse-check/SKILL.md` | Executable reuse search and decision procedure | Before creating any implementation | Yes |
@@ -84,6 +88,7 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `.agents/skills/comments/SKILL.md` | Comment cleanup procedure | Comment authoring or review | Recommended |
 | `.agents/skills/code-style/SKILL.md` | Style implementation and review checklist | Implementation or review | Recommended |
 | `.agents/skills/skill-authoring/SKILL.md` | Skill creation and validation procedure | Skill authoring | Recommended |
+| `.agents/skills/shadcn/SKILL.md` | Executable shadcn CLI, preset and animation procedure | UI component work | Yes |
 
 ## Layout
 
@@ -97,17 +102,18 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `api-docs/` | OpenAPI aggregation and validation, no business code |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
 | `gradle/libs.versions.toml` | Version catalog; backend dependency changes go here |
-| `web/` | Frontend: React 19, TypeScript, Vite, TanStack Router/Query, Tailwind CSS v4 and shadcn/ui; bundled into the backend jar |
+| `web/` | Frontend: Next.js 16 App Router, React 19, TypeScript, TanStack Query, Tailwind CSS v4 and shadcn/ui; served as a standalone Node app that proxies API routes to the backend |
 
 ## Commands
 
 ```bash
-./gradlew test                 # backend tests (builds the bundled web)
-./gradlew build                # backend and bundled web build
-cd web && npm run dev          # frontend dev server
+./gradlew test                 # backend tests
+./gradlew build                # backend build and standalone web build
+cd web && npm run dev          # Next.js dev server (proxies API to 8090)
+cd web && npm run start        # standalone Next.js server
 cd web && npm run lint         # frontend lint
 cd web && npm run format:check # frontend formatting check
-cd web && npm run build        # frontend typecheck and standalone production build
+cd web && npm run build        # frontend typecheck and production build
 ```
 
 Backend tests and frontend checks must pass before committing (see `.agents/rules/development.md` and `.agents/rules/tech-stack.md`).

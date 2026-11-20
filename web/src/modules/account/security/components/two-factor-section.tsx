@@ -188,7 +188,7 @@ export function TwoFactorSection() {
             </div>
             {authLink ? (
               <div className="flex flex-wrap items-start gap-4">
-                <div className="rounded-lg bg-white p-3">
+                <div className="bg-card p-3">
                   <QRCodeSVG
                     value={authLink}
                     size={176}

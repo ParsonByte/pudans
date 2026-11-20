@@ -59,13 +59,13 @@ export function ConversationMessageList({ conversationId }: ConversationMessageL
       </div>
 
       {messagesQuery.isPending ? (
-        <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
-          <Skeleton className="ms-auto h-14 w-3/5 rounded-xl" />
-          <Skeleton className="h-20 w-4/5 rounded-xl" />
-          <Skeleton className="h-16 w-2/3 rounded-xl" />
+        <div className="space-y-3 border bg-muted/20 p-4">
+          <Skeleton className="ms-auto h-14 w-3/5" />
+          <Skeleton className="h-20 w-4/5" />
+          <Skeleton className="h-16 w-2/3" />
         </div>
       ) : messagesQuery.isError ? (
-        <div className="flex min-h-40 flex-col items-center justify-center gap-3 rounded-lg border border-dashed p-6 text-center">
+        <div className="flex min-h-40 flex-col items-center justify-center gap-3 border border-dashed p-6 text-center">
           <p className="text-sm font-medium">无法加载消息</p>
           <p className="max-w-md text-xs text-muted-foreground">
             {resolveAiSessionApiError(messagesQuery.error)}
@@ -80,11 +80,11 @@ export function ConversationMessageList({ conversationId }: ConversationMessageL
           </Button>
         </div>
       ) : messages.length === 0 ? (
-        <div className="flex min-h-40 items-center justify-center rounded-lg border border-dashed p-6 text-sm text-muted-foreground">
+        <div className="flex min-h-40 items-center justify-center border border-dashed p-6 text-sm text-muted-foreground">
           该会话还没有消息。
         </div>
       ) : (
-        <ScrollArea className="h-[46vh] rounded-lg border bg-muted/20">
+        <ScrollArea className="h-[46vh] border bg-muted/20">
           <div className="space-y-5 p-4">
             {messages.map((message) => (
               <SessionMessage key={message.id} message={message} />

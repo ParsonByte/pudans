@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { type ColumnDef, createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import {
   Ban,
@@ -17,6 +16,7 @@ import {
   Upload,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -366,7 +366,7 @@ export function UsersView() {
             );
             return usersPath ? (
               <Link
-                to={`${usersPath}/${row.original.name ?? ""}` as string}
+                href={`${usersPath}/${row.original.name ?? ""}`}
                 className="flex min-w-0 items-center gap-2"
               >
                 {content}
@@ -455,7 +455,7 @@ export function UsersView() {
                 <DropdownMenuContent align="end" className="w-40">
                   {usersPath ? (
                     <DropdownMenuItem asChild>
-                      <Link to={`${usersPath}/${user.name ?? ""}` as string}>
+                      <Link href={`${usersPath}/${user.name ?? ""}`}>
                         <Eye />
                         查看详情
                       </Link>
@@ -609,7 +609,7 @@ export function UsersView() {
             </Button>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-md border">
+          <div className="overflow-hidden border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (

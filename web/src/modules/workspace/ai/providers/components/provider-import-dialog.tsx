@@ -260,7 +260,7 @@ export function ProviderImportDialog({
 
       <ProviderDialogSection title="预览">
         {!raw.trim() ? (
-          <div className="flex min-h-20 items-center justify-center rounded-xl border border-dashed px-4 py-5 text-center text-xs text-muted-foreground">
+          <div className="flex min-h-20 items-center justify-center border border-dashed px-4 py-5 text-center text-xs text-muted-foreground">
             粘贴或选择 JSON 后，这里会显示可导入的资源数量。
           </div>
         ) : preview.error ? null : (

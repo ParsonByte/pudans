@@ -35,7 +35,7 @@ export function ParameterGroupPanel({ group, sectionActions, render }: Parameter
   if (groupQuery.isError || !groupQuery.data) {
     return (
       <div className="flex min-h-48 flex-col items-center justify-center gap-4 p-6 text-center">
-        <span className="flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+        <span className="flex size-10 items-center justify-center bg-destructive/10 text-destructive">
           <TriangleAlert className="size-5" />
         </span>
         <div className="space-y-1">

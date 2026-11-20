@@ -217,7 +217,7 @@ export function GatewaySettings({
       ) : loading ? (
         <div className="grid gap-3 px-5 py-5 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 9 }, (_, index) => (
-            <Skeleton key={index} className="h-16 rounded-lg" />
+            <Skeleton key={index} className="h-16" />
           ))}
         </div>
       ) : error || !setting ? (
@@ -416,7 +416,7 @@ function SwitchRow({
   onCheckedChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-lg border px-3 py-3">
+    <div className="flex items-start justify-between gap-3 border px-3 py-3">
       <div className="space-y-1">
         <Label htmlFor={id}>{label}</Label>
         <p className="text-[11px] text-muted-foreground">{description}</p>

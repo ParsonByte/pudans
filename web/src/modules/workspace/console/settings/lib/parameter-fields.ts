@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { BASE_PATH } from "@/lib/base-path";
+
 export type ParameterGroupKey = "site" | "session" | "captcha" | "mail" | "audit" | "server";
 
 type ParameterFieldKind =
@@ -76,7 +78,7 @@ const CAPTCHA_PROVIDERS = [
   { value: "none", label: "关闭验证" },
 ] as const;
 
-const BRAND_BASE = import.meta.env.BASE_URL;
+const BRAND_BASE = BASE_PATH;
 const DEFAULT_LOGO_DARK = `${BRAND_BASE}brand/logo-dark.svg`;
 const DEFAULT_LOGO_LIGHT = `${BRAND_BASE}brand/logo-light.svg`;
 const DEFAULT_FAVICON = `${BRAND_BASE}brand/icon-small.svg`;

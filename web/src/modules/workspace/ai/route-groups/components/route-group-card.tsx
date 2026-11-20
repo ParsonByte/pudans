@@ -72,12 +72,12 @@ export function RouteGroupCard({
 
   return (
     <article
-      className={`flex flex-col rounded-2xl border bg-card/40 p-4 transition-colors hover:bg-accent/10 ${
+      className={`flex flex-col border bg-card/40 p-4 transition-colors hover:bg-accent/10 ${
         enabled ? "" : "opacity-70"
       }`}
     >
       <div className="flex items-start gap-3">
-        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+        <span className="flex size-10 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
           <Layers className="size-5 text-muted-foreground" />
         </span>
         <div className="min-w-0 flex-1">
@@ -129,7 +129,7 @@ export function RouteGroupCard({
           return (
             <span
               key={model.metadata.name}
-              className="inline-flex max-w-full items-center gap-1 rounded-full border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground"
+              className="inline-flex max-w-full items-center gap-1 border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground"
             >
               <ProviderBrandIcon provider={provider} className="size-3" />
               <span className="truncate">{modelDisplayName(model)}</span>
@@ -137,7 +137,7 @@ export function RouteGroupCard({
           );
         })}
         {memberCount > 4 ? (
-          <span className="inline-flex items-center rounded-full border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground">
+          <span className="inline-flex items-center border border-border/60 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground">
             另外 {memberCount - 4} 个
           </span>
         ) : null}

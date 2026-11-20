@@ -62,8 +62,8 @@ export function RoutingContext({ live, lookups, loading, error }: RoutingContext
                 )}{" "}
                 · {modelLabel(request, lookups)}
               </Badge>
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400">
-                <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+              <span className="inline-flex items-center gap-1 text-[11px] text-success">
+                <span className="size-1.5 animate-pulse bg-success" />
                 实时
               </span>
             </>
@@ -126,9 +126,9 @@ export function RoutingContext({ live, lookups, loading, error }: RoutingContext
                 </span>
                 <span>{cacheRate == null ? "未上报缓存" : `${cacheRate.toFixed(1)}% 命中`}</span>
               </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+              <div className="mt-2 h-2 overflow-hidden bg-muted">
                 <div
-                  className="h-full rounded-full bg-emerald-500 transition-[width]"
+                  className="h-full bg-success transition-[width]"
                   style={{ width: `${cacheRate ?? 0}%` }}
                 />
               </div>
@@ -141,17 +141,17 @@ export function RoutingContext({ live, lookups, loading, error }: RoutingContext
           </div>
 
           <div>
-            <div className="flex h-14 w-full overflow-hidden rounded-xl border bg-muted/20">
+            <div className="flex h-14 w-full overflow-hidden border bg-muted/20">
               <Segment
                 value={request.inputTokens ?? 0}
                 total={contextWindow ?? used}
-                className="bg-sky-500/80"
+                className="bg-info/80"
                 title={`输入 ${formatTokenCount(request.inputTokens)} token`}
               />
               <Segment
                 value={request.outputTokens ?? 0}
                 total={contextWindow ?? used}
-                className="bg-violet-500/80"
+                className="bg-primary/70"
                 title={`输出 ${formatTokenCount(request.outputTokens)} token`}
               />
               {remaining != null ? (
@@ -165,12 +165,12 @@ export function RoutingContext({ live, lookups, loading, error }: RoutingContext
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
               <Legend
-                className="bg-sky-500"
+                className="bg-info"
                 label="输入"
                 value={formatTokenCount(request.inputTokens)}
               />
               <Legend
-                className="bg-violet-500"
+                className="bg-primary/70"
                 label="输出"
                 value={formatTokenCount(request.outputTokens)}
               />
@@ -220,7 +220,7 @@ function Segment({
 function Legend({ className, label, value }: { className: string; label: string; value: string }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className={`size-2 rounded-sm ${className}`} />
+      <span className={`size-2 ${className}`} />
       {label} {value}
     </span>
   );

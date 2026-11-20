@@ -43,7 +43,7 @@ function MemorySettingsForm({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4 rounded-lg border p-3">
+      <div className="flex items-start justify-between gap-4 border p-3">
         <div className="space-y-1">
           <Label htmlFor="memory-enabled">启用记忆</Label>
           <p className="text-xs text-muted-foreground">

@@ -181,7 +181,7 @@ export function ChatSettingsPopover({
           <div className="space-y-1.5">
             <span className="text-xs font-medium text-muted-foreground">知识库</span>
             {knowledgeError ? (
-              <div className="flex items-center justify-between gap-2 rounded-md bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
+              <div className="flex items-center justify-between gap-2 bg-destructive/5 px-2 py-1.5 text-xs text-destructive">
                 <span className="truncate">{knowledgeError}</span>
                 {onRetryKnowledge ? (
                   <Button type="button" variant="ghost" size="xs" onClick={onRetryKnowledge}>

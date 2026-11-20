@@ -104,7 +104,7 @@ export function ContextRequestList({
                     <PopoverTrigger asChild>
                       <button
                         type="button"
-                        className="flex h-2.5 w-24 overflow-hidden rounded-full bg-muted"
+                        className="flex h-2.5 w-24 overflow-hidden bg-muted"
                         aria-label="查看上下文构成"
                         onClick={(event) => event.stopPropagation()}
                       >
@@ -135,10 +135,7 @@ export function ContextRequestList({
                             className="flex items-center justify-between gap-3 text-xs"
                           >
                             <span className="inline-flex items-center gap-1.5">
-                              <span
-                                className="size-2 rounded-[2px]"
-                                style={{ backgroundColor: part.color }}
-                              />
+                              <span className="size-2" style={{ backgroundColor: part.color }} />
                               {part.label}
                             </span>
                             <span className="tabular-nums">

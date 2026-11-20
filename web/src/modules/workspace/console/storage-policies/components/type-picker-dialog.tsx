@@ -38,9 +38,9 @@ export function TypePickerDialog({ types, onSelect, onClose }: TypePickerDialogP
               key={type.type}
               type="button"
               onClick={() => onSelect(type.type)}
-              className="group flex items-center gap-4 rounded-xl border bg-card p-4 text-start transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              className="group flex items-center gap-4 border bg-card p-4 text-start transition-colors hover:border-primary/50 hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             >
-              <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:text-foreground">
+              <span className="flex size-11 shrink-0 items-center justify-center bg-muted text-muted-foreground transition-colors group-hover:text-foreground">
                 <StorageTypeIcon type={type.type} className="size-5" />
               </span>
               <span className="min-w-0 space-y-1">

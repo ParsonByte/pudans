@@ -92,7 +92,7 @@ export function MemorySplitLayout({ list, detail }: MemorySplitLayoutProps) {
         }}
         className="group -mx-2 hidden w-4 shrink-0 cursor-col-resize touch-none items-center justify-center outline-none min-[960px]:flex"
       >
-        <span className="h-16 w-px rounded-full bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary" />
+        <span className="h-16 w-px bg-border transition-colors group-hover:bg-primary group-focus-visible:bg-primary" />
       </div>
       <div className="min-w-0 flex-1">
         <div className={`${MEMORY_PANEL_HEIGHT_CLASS} overflow-hidden`}>{detail}</div>

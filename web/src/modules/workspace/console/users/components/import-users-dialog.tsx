@@ -79,7 +79,7 @@ export function ImportUsersDialog({ onClose }: ImportUsersDialogProps) {
       <DialogContent className="flex max-h-[75vh] flex-col overflow-hidden sm:max-w-2xl">
         <DialogHeader>
           <div className="flex items-start gap-3 pe-8">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <span className="flex size-10 shrink-0 items-center justify-center bg-muted">
               <Upload />
             </span>
             <div className="space-y-1">
@@ -122,7 +122,7 @@ export function ImportUsersDialog({ onClose }: ImportUsersDialogProps) {
             </div>
 
             {parsed?.errors.length ? (
-              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+              <div className="border border-destructive/30 bg-destructive/5 p-3">
                 <p className="text-xs font-medium text-destructive">
                   发现 {parsed.errors.length} 个问题，请修正文件后重新上传。
                 </p>
@@ -144,7 +144,7 @@ export function ImportUsersDialog({ onClose }: ImportUsersDialogProps) {
                 <p className="text-xs font-medium text-muted-foreground">
                   预览前 {previewUsers.length} 个用户
                 </p>
-                <div className="overflow-hidden rounded-md border">
+                <div className="overflow-hidden border">
                   <Table>
                     <TableHeader>
                       <TableRow>

@@ -39,7 +39,7 @@ export function ContextGrid({ items, selectedRequestId, onSelect }: ContextGridP
             return (
               <div
                 key={`empty-${index}`}
-                className="aspect-square rounded-[2px] border border-dashed bg-muted/30"
+                className="aspect-square border border-dashed bg-muted/30"
               />
             );
           }
@@ -51,7 +51,7 @@ export function ContextGrid({ items, selectedRequestId, onSelect }: ContextGridP
                   type="button"
                   aria-label={`请求 ${item.requestId}`}
                   onClick={() => onSelect(item.requestId)}
-                  className={`aspect-square rounded-[2px] transition-shadow hover:ring-2 hover:ring-ring ${contextHealthColorClass(
+                  className={`aspect-square transition-shadow hover:ring-2 hover:ring-ring ${contextHealthColorClass(
                     health,
                   )} ${selectedRequestId === item.requestId ? "ring-2 ring-ring ring-offset-1" : ""}`}
                 />
@@ -78,10 +78,7 @@ export function ContextGrid({ items, selectedRequestId, onSelect }: ContextGridP
                   {CONTEXT_WINDOW_PARTS.map((part) => (
                     <div key={part.key} className="flex items-center justify-between gap-3">
                       <span className="inline-flex items-center gap-1.5">
-                        <span
-                          className="size-2 rounded-[2px]"
-                          style={{ backgroundColor: part.color }}
-                        />
+                        <span className="size-2" style={{ backgroundColor: part.color }} />
                         {part.label}
                       </span>
                       <span className="tabular-nums">{formatTokenCount(item.parts[part.key])}</span>
@@ -99,19 +96,19 @@ export function ContextGrid({ items, selectedRequestId, onSelect }: ContextGridP
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-muted-foreground">
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[2px] bg-emerald-500" />
+          <span className="size-2.5 bg-success" />
           健康 &lt; 75%
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[2px] bg-amber-500" />
+          <span className="size-2.5 bg-warning" />
           关注 75% - 90%
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[2px] bg-destructive" />
+          <span className="size-2.5 bg-destructive" />
           高危 ≥ 90%
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span className="size-2.5 rounded-[2px] bg-muted" />
+          <span className="size-2.5 bg-muted" />
           无窗口数据
         </span>
         <span>共 {items.length} 个请求，最多展示 400 格。</span>
@@ -121,7 +118,7 @@ export function ContextGrid({ items, selectedRequestId, onSelect }: ContextGridP
         <span className="font-medium text-foreground">窗口构成：</span>
         {CONTEXT_WINDOW_PARTS.map((part) => (
           <span key={part.key} className="inline-flex items-center gap-1.5">
-            <span className="size-2.5 rounded-[2px]" style={{ backgroundColor: part.color }} />
+            <span className="size-2.5" style={{ backgroundColor: part.color }} />
             {part.label}
           </span>
         ))}

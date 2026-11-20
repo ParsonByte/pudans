@@ -1,6 +1,5 @@
-import { useRouteContext } from "@tanstack/react-router";
-
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useSessionContext } from "@/modules/auth/lib/session-context";
 import { ConsolePage } from "@/modules/workspace/console/components/console-page";
 import { hasUiPermission, useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
@@ -12,7 +11,7 @@ const DELETE_SESSIONS_PERMISSION = "ai-sessions:delete";
 const GATEWAY_SESSIONS_PERMISSION = "ai-sessions:gateway";
 
 export function SessionsView() {
-  const { session } = useRouteContext({ from: "/_authenticated" });
+  const { session } = useSessionContext();
   const allowedOperations = useAllowedOperations();
   const canDelete =
     allowedOperations.has("delete") ||

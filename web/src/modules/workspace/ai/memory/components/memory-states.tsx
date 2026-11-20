@@ -20,7 +20,7 @@ export function MemoryErrorState({
 }: MemoryErrorStateProps) {
   return (
     <div className="flex min-h-40 flex-col items-center justify-center gap-3 px-5 py-8 text-center">
-      <span className="flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+      <span className="flex size-10 items-center justify-center bg-destructive/10 text-destructive">
         <AlertCircle className="size-5" />
       </span>
       <div className="space-y-1">
@@ -45,7 +45,7 @@ type MemoryEmptyStateProps = {
 export function MemoryEmptyState({ title, description, action }: MemoryEmptyStateProps) {
   return (
     <div className="flex min-h-40 flex-col items-center justify-center gap-3 px-5 py-8 text-center">
-      <span className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
+      <span className="flex size-10 items-center justify-center bg-muted text-muted-foreground">
         <Inbox className="size-5" />
       </span>
       <div className="space-y-1">
@@ -71,10 +71,10 @@ export function MemoryBlockListSkeleton() {
   return (
     <div className="space-y-2 p-3">
       {Array.from({ length: 5 }, (_, index) => (
-        <div key={index} className="space-y-2 rounded-lg px-3.5 py-3">
+        <div key={index} className="space-y-2 px-3.5 py-3">
           <div className="flex items-center justify-between gap-3">
             <Skeleton className="h-4 w-3/5" />
-            <Skeleton className="h-4 w-8 rounded-full" />
+            <Skeleton className="h-4 w-8" />
           </div>
           <Skeleton className="h-3 w-2/3" />
           <div className="flex items-center justify-between gap-3">
@@ -95,7 +95,7 @@ function ChatSkeleton() {
         if (index === 2) {
           return (
             <div key={index} className="flex justify-center">
-              <Skeleton className="h-6 w-48 rounded-full" />
+              <Skeleton className="h-6 w-48" />
             </div>
           );
         }
@@ -103,7 +103,7 @@ function ChatSkeleton() {
         return (
           <div key={index} className={isUser ? "flex justify-end" : "flex justify-start"}>
             <div
-              className={`space-y-2 rounded-[10px] p-3 ${isUser ? "w-2/3 bg-primary/10" : "w-3/4 border-l-[3px] border-primary/40 bg-muted"}`}
+              className={`space-y-2 p-3 ${isUser ? "w-2/3 bg-primary/10" : "w-3/4 border-l-[3px] border-primary/40 bg-muted"}`}
             >
               <Skeleton className="h-3 w-16" />
               <Skeleton className="h-3 w-full" />
@@ -120,7 +120,7 @@ function AtomicSkeleton() {
   return (
     <div className="space-y-2.5">
       {Array.from({ length: 4 }, (_, index) => (
-        <div key={index} className="space-y-2 rounded-lg border bg-card p-3">
+        <div key={index} className="space-y-2 border bg-card p-3">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-8 rounded" />
             <Skeleton className="h-4 flex-1" />
@@ -138,7 +138,7 @@ function SceneSkeleton() {
   return (
     <div className="space-y-2.5">
       {Array.from({ length: 4 }, (_, index) => (
-        <div key={index} className="flex items-center gap-2 rounded-lg border bg-card p-3">
+        <div key={index} className="flex items-center gap-2 border bg-card p-3">
           <Skeleton className="h-4 w-8 rounded" />
           <Skeleton className="h-4 flex-1" />
           <Skeleton className="h-3 w-20" />
@@ -151,7 +151,7 @@ function SceneSkeleton() {
 
 function ProfileSkeleton() {
   return (
-    <div className="space-y-3 rounded-lg border bg-card p-3">
+    <div className="space-y-3 border bg-card p-3">
       <div className="flex items-center gap-2 border-b pb-2">
         <Skeleton className="h-4 w-8 rounded" />
         <Skeleton className="h-4 w-40" />

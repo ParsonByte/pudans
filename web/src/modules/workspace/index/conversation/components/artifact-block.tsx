@@ -30,7 +30,7 @@ export function ArtifactBlock({ artifact }: ArtifactBlockProps) {
   return (
     <div className="w-full space-y-1.5">
       {showProgress ? (
-        <div className="space-y-1.5 rounded-lg border bg-muted/30 px-2.5 py-2 text-xs">
+        <div className="space-y-1.5 border bg-muted/30 px-2.5 py-2 text-xs">
           <div className="flex items-center gap-2">
             <FileText className="size-3.5 text-muted-foreground" />
             <span>生成中…</span>
@@ -41,15 +41,11 @@ export function ArtifactBlock({ artifact }: ArtifactBlockProps) {
       ) : null}
       {url && (kind === "IMAGE" || mimeType.startsWith("image/")) ? (
         <a href={url} target="_blank" rel="noreferrer" className="inline-block">
-          <img
-            src={url}
-            alt={name}
-            className="max-h-72 max-w-full rounded-xl border object-contain"
-          />
+          <img src={url} alt={name} className="max-h-72 max-w-full border object-contain" />
         </a>
       ) : null}
       {url && (kind === "VIDEO" || mimeType.startsWith("video/")) ? (
-        <video src={url} controls className="max-h-72 max-w-full rounded-xl border" />
+        <video src={url} controls className="max-h-72 max-w-full border" />
       ) : null}
       {url && (kind === "AUDIO" || mimeType.startsWith("audio/")) ? (
         <audio src={url} controls className="w-full max-w-md" />

@@ -18,7 +18,7 @@ export function UsageCompositionBar({ segments }: UsageCompositionBarProps) {
 
   return (
     <div className="space-y-3">
-      <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+      <div className="flex h-3 w-full overflow-hidden bg-muted">
         {total > 0
           ? segments
               .filter((segment) => segment.tokens > 0)
@@ -38,10 +38,7 @@ export function UsageCompositionBar({ segments }: UsageCompositionBarProps) {
       <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
         {segments.map((segment) => (
           <span key={segment.key} className="inline-flex items-center gap-1.5">
-            <span
-              className="size-2 shrink-0 rounded-[2px]"
-              style={{ backgroundColor: segment.color }}
-            />
+            <span className="size-2 shrink-0" style={{ backgroundColor: segment.color }} />
             {segment.label}
             <span className="tabular-nums">
               {formatPercent(total > 0 ? segment.tokens / total : null)}

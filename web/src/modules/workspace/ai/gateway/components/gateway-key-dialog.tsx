@@ -259,7 +259,7 @@ export function GatewayKeyDialog({
               />
             </FormField>
 
-            <div className="rounded-lg border bg-muted/25 px-4 py-3">
+            <div className="border bg-muted/25 px-4 py-3">
               <p className="text-xs text-muted-foreground">固定权限</p>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <Badge variant="secondary">{GATEWAY_TOKEN_ROLE}</Badge>
@@ -271,7 +271,7 @@ export function GatewayKeyDialog({
             </div>
 
             {advancedSupported ? (
-              <div className="space-y-4 rounded-lg border px-4 py-4">
+              <div className="space-y-4 border px-4 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <p className="text-sm font-medium">密钥级网关限制</p>
@@ -385,7 +385,7 @@ export function GatewayKeyDialog({
                   {limitsError ? <p className="text-xs text-destructive">{limitsError}</p> : null}
 
                   {limits.fields.length === 0 ? (
-                    <p className="rounded-lg border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
+                    <p className="border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
                       未配置用量限制。
                     </p>
                   ) : (
@@ -393,7 +393,7 @@ export function GatewayKeyDialog({
                       {limits.fields.map((field, index) => {
                         const itemErrors = form.formState.errors.limits?.[index];
                         return (
-                          <div key={field.id} className="space-y-3 rounded-lg border p-3">
+                          <div key={field.id} className="space-y-3 border p-3">
                             <div className="flex items-center justify-between gap-2">
                               <p className="text-xs font-medium">限制 {index + 1}</p>
                               <Button

@@ -18,11 +18,11 @@ type IdentityCardProps = {
 };
 
 const WATERMARK_CLASSES: Record<IdentityKind, string> = {
-  totp: "text-sky-500",
-  oauth2: "text-slate-500",
-  oidc: "text-orange-500",
-  feishu: "text-emerald-500",
-  pat: "text-amber-500",
+  totp: "text-info",
+  oauth2: "text-muted-foreground",
+  oidc: "text-warning",
+  feishu: "text-success",
+  pat: "text-foreground",
 };
 
 export function IdentityCard({
@@ -50,7 +50,7 @@ export function IdentityCard({
       aria-label={`编辑${title}`}
       onClick={onEdit}
       onKeyDown={handleKeyDown}
-      className="group relative flex min-h-56 cursor-pointer flex-col overflow-hidden rounded-xl border bg-card p-6 text-left transition-colors outline-none hover:bg-muted/20 focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="group relative flex min-h-56 cursor-pointer flex-col overflow-hidden border bg-card p-6 text-left transition-colors outline-none hover:bg-muted/20 focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <div className="pointer-events-none absolute top-0 right-0 h-full w-1/2 bg-gradient-to-l from-muted/50 to-transparent" />
       <div className="pointer-events-none absolute top-1/2 right-6 -translate-y-1/2 opacity-20">
@@ -61,7 +61,7 @@ export function IdentityCard({
         <h3 className="max-w-[70%] truncate text-lg font-semibold tracking-tight">{title}</h3>
         <div className="flex flex-wrap gap-2">
           {tags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="rounded-full px-2.5">
+            <Badge key={tag} variant="secondary" className="px-2.5">
               {tag}
             </Badge>
           ))}
@@ -105,9 +105,9 @@ export function AddIdentityCard({ label, onClick }: AddIdentityCardProps) {
     <button
       type="button"
       onClick={onClick}
-      className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-card/40 p-6 text-sm text-muted-foreground transition-colors hover:border-ring hover:bg-muted/30 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+      className="flex min-h-56 flex-col items-center justify-center gap-3 border border-dashed bg-card/40 p-6 text-sm text-muted-foreground transition-colors hover:border-ring hover:bg-muted/30 hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
     >
-      <span className="flex size-11 items-center justify-center rounded-full bg-muted">
+      <span className="flex size-11 items-center justify-center bg-muted">
         <Plus className="size-5" />
       </span>
       <span className="font-medium">{label}</span>

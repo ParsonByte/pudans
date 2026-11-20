@@ -41,7 +41,7 @@ export function ConsoleOverviewView() {
     return (
       <ConsolePage title="面板首页">
         <ConsoleSection className="flex min-h-72 flex-col items-center justify-center gap-4 p-8 text-center">
-          <span className="flex size-10 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+          <span className="flex size-10 items-center justify-center bg-destructive/10 text-destructive">
             <TriangleAlert className="size-5" />
           </span>
           <div className="space-y-1">
@@ -99,14 +99,14 @@ function OverviewSkeleton() {
       <Skeleton className="h-8 w-40" />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }, (_, index) => (
-          <Skeleton key={index} className="h-28 rounded-xl" />
+          <Skeleton key={index} className="h-28" />
         ))}
       </div>
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <Skeleton className="h-80 rounded-xl" />
-        <Skeleton className="h-80 rounded-xl" />
+        <Skeleton className="h-80" />
+        <Skeleton className="h-80" />
       </div>
-      <Skeleton className="h-64 rounded-xl" />
+      <Skeleton className="h-64" />
     </div>
   );
 }

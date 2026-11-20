@@ -1,8 +1,8 @@
 import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { Loader2, RefreshCw, Search } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -105,7 +105,7 @@ export function GatewaySessions({ canDelete, sessionsPath }: GatewaySessionsProp
           <div className="flex items-center gap-2">
             {sessionsPath ? (
               <Button type="button" variant="ghost" size="sm" asChild>
-                <Link to={sessionsPath}>会话排障</Link>
+                <Link href={sessionsPath}>会话排障</Link>
               </Button>
             ) : null}
             <Button
@@ -169,7 +169,7 @@ export function GatewaySessions({ canDelete, sessionsPath }: GatewaySessionsProp
           {sessionsPath ? (
             <p className="px-5 pb-4 text-xs text-muted-foreground">
               网关会话排障需要管理员授予对应操作权限，可前往
-              <Link to={sessionsPath} className="mx-1 font-medium text-primary hover:underline">
+              <Link href={sessionsPath} className="mx-1 font-medium text-primary hover:underline">
                 会话页
               </Link>
               查看。

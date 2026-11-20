@@ -328,7 +328,7 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
         {advancedOpen ? "收起高级" : "高级"}
       </button>
       {advancedOpen ? (
-        <div className="space-y-3 rounded-lg border p-4">
+        <div className="space-y-3 border p-4">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm font-medium">启用供应商</p>
@@ -356,12 +356,12 @@ type SegmentedProps<T extends string> = {
 
 function Segmented<T extends string>({ options, value, onChange }: SegmentedProps<T>) {
   return (
-    <div className="inline-flex flex-wrap gap-1 rounded-lg bg-muted p-1">
+    <div className="inline-flex flex-wrap gap-1 bg-muted p-1">
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
-          className={`rounded-md px-3 py-1 text-sm transition-colors ${
+          className={`px-3 py-1 text-sm transition-colors ${
             option.value === value
               ? "bg-background text-foreground shadow-sm"
               : "text-muted-foreground hover:text-foreground"

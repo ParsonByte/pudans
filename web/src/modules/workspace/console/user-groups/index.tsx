@@ -2,7 +2,6 @@ import { useCallback, useMemo, useState } from "react";
 
 import { type UserGroup, apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { type ColumnDef, createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import {
   Eye,
@@ -14,6 +13,7 @@ import {
   Trash2,
   UsersRound,
 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -348,7 +348,7 @@ export function UserGroupsView() {
           cell: ({ row }) => {
             const content = (
               <>
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                <span className="flex size-8 shrink-0 items-center justify-center bg-muted text-muted-foreground">
                   <UsersRound className="size-4" />
                 </span>
                 <LongText className="max-w-36 text-sm font-medium">
@@ -358,7 +358,7 @@ export function UserGroupsView() {
             );
             return groupsPath ? (
               <Link
-                to={`${groupsPath}/${row.original.metadata.name}` as string}
+                href={`${groupsPath}/${row.original.metadata.name}`}
                 className="flex min-w-0 items-center gap-2"
               >
                 {content}
@@ -458,7 +458,7 @@ export function UserGroupsView() {
                 <DropdownMenuContent align="end" className="w-40">
                   {groupsPath ? (
                     <DropdownMenuItem asChild>
-                      <Link to={`${groupsPath}/${group.metadata.name}` as string}>
+                      <Link href={`${groupsPath}/${group.metadata.name}`}>
                         <Eye />
                         查看详情
                       </Link>
@@ -608,7 +608,7 @@ export function UserGroupsView() {
             </Button>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-md border">
+          <div className="overflow-hidden border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (

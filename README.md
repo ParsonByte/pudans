@@ -106,7 +106,7 @@ Browser / Agents
    PostgreSQL                    Redis
 ```
 
-The backend owns identity, permission decisions, extension reconciliation, AI routing, the agent harness, protocols and conversations. The frontend is a React SPA built into the backend jar, so a single deployment serves both the console and the compatibility APIs.
+The backend owns identity, permission decisions, extension reconciliation, AI routing, the agent harness, protocols and conversations. The frontend is a Next.js App Router app served by its own Node process; it proxies `/apis`, `/login` and `/logout` to the backend, which owns the compatibility APIs.
 
 ## Repository layout
 
@@ -120,7 +120,7 @@ The backend owns identity, permission decisions, extension reconciliation, AI ro
 | `api-docs/` | OpenAPI aggregation and validation |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
 | `gradle/libs.versions.toml` | Backend dependency version catalog |
-| `web/` | React console, bundled into the backend jar |
+| `web/` | Next.js console, served as a standalone Node app |
 
 ## Quick start
 
@@ -131,7 +131,7 @@ The backend owns identity, permission decisions, extension reconciliation, AI ro
 - PostgreSQL and Redis
 - Docker, optional but handy for the two services
 
-The Gradle build installs the frontend dependencies and builds `web/` before packaging the backend jar.
+The Gradle build installs the frontend dependencies, builds `web/` as a standalone Next.js server and packages the backend jar.
 
 ### 1. Start PostgreSQL and Redis
 
@@ -155,7 +155,7 @@ The defaults match `appkernel/src/main/resources/application.yaml`. Override the
 ./gradlew :appkernel:bootRun
 ```
 
-Open <http://localhost:8090>. The backend serves the built React app, creates or updates the PostgreSQL schema on startup and reconciles the extension resources.
+The backend starts on <http://localhost:8090>, creates or updates the PostgreSQL schema on startup and reconciles the extension resources. The console runs from the Next.js server in the next step.
 
 ### 3. Frontend dev server (optional)
 
@@ -165,7 +165,15 @@ npm install
 npm run dev
 ```
 
-Vite proxies `/apis`, `/login` and `/logout` to `http://localhost:8090`, so start the backend first.
+The Next.js dev server proxies `/apis`, `/login` and `/logout` to `http://localhost:8090`, so start the backend first. Open <http://localhost:3000>.
+
+### 4. Container deployment (optional)
+
+```bash
+docker compose up --build
+```
+
+The `web` service serves the console on <http://localhost:3000> and proxies the API routes to the `api` service. `PUDANS_API_ORIGIN` is fixed when the web image is built.
 
 ## Configuration
 
@@ -200,8 +208,9 @@ Secrets belong in environment variables or local configuration; never commit the
 ## Build and test
 
 ```bash
-./gradlew test                    # backend tests, including the bundled web build
-./gradlew build                   # backend and web build
+./gradlew test                    # backend tests
+./gradlew build                   # backend and standalone web build
+./gradlew :web:standaloneWeb      # Next.js standalone server bundle
 ./gradlew :api-docs:validateOpenApiDocs
 ```
 

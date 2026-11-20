@@ -449,7 +449,7 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
           按时间窗口跟踪用量，例如 5 小时、每日或每月；窗口名称为空时显示为“窗口”。
         </p>
         {windows.fields.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          <p className="border border-dashed p-4 text-sm text-muted-foreground">
             未设置额度窗口，账号只使用上方配额与余额。
           </p>
         ) : (
@@ -486,7 +486,7 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
           为单个模型设置独立并发上限；未列出的模型使用账号最大并发。
         </p>
         {modelConcurrency.fields.length === 0 ? (
-          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          <p className="border border-dashed p-4 text-sm text-muted-foreground">
             未设置模型级并发覆盖。
           </p>
         ) : (
@@ -615,7 +615,7 @@ type SwitchRowProps = {
 
 function SwitchRow({ label, checked, onChange }: SwitchRowProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+    <div className="flex items-center justify-between gap-3 border p-3">
       <p className="text-sm font-medium">{label}</p>
       <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
     </div>
@@ -631,7 +631,7 @@ type WindowRowProps = {
 function WindowRow({ form, index, onRemove }: WindowRowProps) {
   const unit = useWatch({ control: form.control, name: `windows.${index}.unit` });
   return (
-    <div className="space-y-2 rounded-lg border p-3">
+    <div className="space-y-2 border p-3">
       <div className="flex items-center gap-2">
         <Input
           placeholder="窗口名称，如 5h / daily"

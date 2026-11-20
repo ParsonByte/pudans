@@ -40,8 +40,8 @@ export function RoleDistribution({ roles }: RoleDistributionProps) {
                     {users.toLocaleString("zh-CN")}
                   </span>
                 </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${width}%` }} />
+                <div className="h-1.5 overflow-hidden bg-muted">
+                  <div className="h-full bg-primary" style={{ width: `${width}%` }} />
                 </div>
               </li>
             );

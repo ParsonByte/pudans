@@ -29,9 +29,9 @@ export function FloatingActionBar({
         role="region"
         aria-label="浮动操作栏"
         aria-live="polite"
+        data-motion="enter"
         className={cn(
-          "pointer-events-auto flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-2 rounded-xl border bg-background/95 p-2 shadow-lg backdrop-blur",
-          "animate-in duration-200 fade-in-0 slide-in-from-bottom-4",
+          "pointer-events-auto flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-2 border bg-background/95 p-2 shadow-lg backdrop-blur",
           className,
         )}
       >

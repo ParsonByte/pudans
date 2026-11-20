@@ -92,7 +92,7 @@ export function ReplayMap({ steps, activeStep, onSelectStepIndex }: ReplayMapPro
 
   return (
     <div className="flex h-full flex-col gap-2">
-      <div className="min-h-[460px] w-full flex-1 overflow-hidden rounded-lg border bg-background [&_.react-flow__controls-button]:border-border [&_.react-flow__controls-button]:bg-background [&_.react-flow__controls-button]:text-foreground [&_.react-flow__controls-button:hover]:bg-muted">
+      <div className="min-h-[460px] w-full flex-1 overflow-hidden border bg-background [&_.react-flow__controls-button]:border-border [&_.react-flow__controls-button]:bg-background [&_.react-flow__controls-button]:text-foreground [&_.react-flow__controls-button:hover]:bg-muted">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -129,7 +129,7 @@ function ReplayMapNodeView({ data }: NodeProps<ReplayFlowNode>) {
       </span>
       <div
         className={cn(
-          "flex size-20 flex-col items-center justify-center rounded-full border-2 bg-background shadow-sm transition-shadow",
+          "flex size-20 flex-col items-center justify-center border-2 bg-background shadow-sm transition-shadow",
           data.active
             ? "border-primary ring-4 ring-primary/20"
             : data.errorCount > 0

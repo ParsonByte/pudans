@@ -365,10 +365,10 @@ export function RolePermissionEditor({
                 return (
                   <div
                     key={workspace.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4"
+                    className="flex flex-wrap items-center justify-between gap-3 border p-4"
                   >
                     <div className="flex items-center gap-3">
-                      <span className="flex size-9 items-center justify-center rounded-lg bg-muted">
+                      <span className="flex size-9 items-center justify-center bg-muted">
                         {alwaysAccessible ? (
                           <Boxes className="size-5" />
                         ) : (
@@ -461,7 +461,7 @@ function EditorLockNote({ readOnly, builtin, wildcard }: EditorLockNoteProps) {
         : "";
 
   return (
-    <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+    <div className="flex items-start gap-2 border bg-muted/40 p-3 text-xs text-muted-foreground">
       <Lock className="mt-0.5 size-3.5 shrink-0" />
       {message}
     </div>
@@ -470,7 +470,7 @@ function EditorLockNote({ readOnly, builtin, wildcard }: EditorLockNoteProps) {
 
 function PermissionLimitNote() {
   return (
-    <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
+    <div className="flex items-start gap-2 border bg-muted/40 p-3 text-xs text-muted-foreground">
       <Info className="mt-0.5 size-3.5 shrink-0" />
       只能授予当前账号已有的权限，超出范围的选项不可选。
     </div>
@@ -499,7 +499,7 @@ function MenuAccessCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-lg border p-3 transition-colors",
+        "flex flex-col gap-3 border p-3 transition-colors",
         accessible && "border-primary/40 bg-primary/5",
       )}
     >
@@ -554,7 +554,7 @@ function OperationCard({ operation, checked, disabled, onCheckedChange }: Operat
   return (
     <label
       className={cn(
-        "flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors",
+        "flex cursor-pointer items-start gap-3 border p-3 transition-colors",
         checked && "border-primary/40 bg-primary/5",
         disabled && "cursor-not-allowed opacity-70",
       )}
@@ -608,7 +608,7 @@ function DataPermissionsPanel({ rows, resourceLabels, preview }: DataPermissions
       {rows.length === 0 ? (
         <ConsoleEmpty>该角色暂无数据权限。</ConsoleEmpty>
       ) : (
-        <div className="overflow-x-auto rounded-md border">
+        <div className="overflow-x-auto border">
           <Table>
             <TableHeader>
               <TableRow>

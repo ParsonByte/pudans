@@ -46,7 +46,7 @@ export function MemoryListPanel({
   const agentLabels = useAgentLabels();
 
   return (
-    <div className="flex h-full flex-col rounded-xl border bg-card">
+    <div className="flex h-full flex-col border bg-card">
       <div className="flex shrink-0 items-center justify-between gap-2 border-b px-4 py-3">
         <div>
           <h2 className="text-sm font-medium">记忆块</h2>
@@ -75,7 +75,7 @@ export function MemoryListPanel({
                 <li
                   key={asset.name}
                   data-selected={selected ? "true" : undefined}
-                  className={`rounded-lg border transition-colors ${
+                  className={`border transition-colors ${
                     selected
                       ? "border-primary/30 bg-primary/5"
                       : "border-transparent hover:bg-muted/60"
@@ -91,7 +91,7 @@ export function MemoryListPanel({
                       <span className="line-clamp-1 text-[13px] font-medium">
                         {memoryAssetTitle(asset)}
                       </span>
-                      <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+                      <span className="shrink-0 bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
                         {memoryAssetCount(asset)}
                       </span>
                     </span>

@@ -185,7 +185,7 @@ export function TraceTree({ tree, onSelect, className }: TraceTreeProps) {
                     failed
                       ? "bg-destructive"
                       : span.kind === "ORPHAN"
-                        ? "bg-amber-500"
+                        ? "bg-warning"
                         : span.kind === "ENTRY"
                           ? "bg-primary"
                           : "bg-primary/60",

@@ -189,14 +189,14 @@ type JourneyActionListProps = {
 function JourneyActionList({ actions, page, onSelectRecord }: JourneyActionListProps) {
   if (actions.length === 0) {
     return (
-      <p className="mt-3 rounded-lg border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
+      <p className="mt-3 border bg-muted/20 px-3 py-2 text-xs text-muted-foreground">
         该页面没有记录到操作。
       </p>
     );
   }
   const actionIds = new Set(actions.map((action) => action.metadata.name));
   return (
-    <div className="mt-3 divide-y rounded-lg border bg-muted/20">
+    <div className="mt-3 divide-y border bg-muted/20">
       {actions.map((action) => {
         const child = Boolean(
           action.parentAuditId &&

@@ -277,7 +277,7 @@ export function MemoryLayerContent({ asset, team, counts, isOwner }: MemoryLayer
                   setActiveLayer(layer.id);
                   setSelectedIds(new Set());
                 }}
-                className={`rounded-lg border px-2.5 py-2 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
+                className={`border px-2.5 py-2 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                   active ? "border-primary bg-primary/5" : "border-border bg-card hover:bg-muted/50"
                 }`}
               >

@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { Boxes } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -47,7 +47,10 @@ export function GatewayModels({ models, providers, loading, providersPath }: Gat
           <span className="space-y-2">
             <span className="block">还没有可用模型。</span>
             {providersPath ? (
-              <Link to={providersPath} className="text-sm font-medium text-primary hover:underline">
+              <Link
+                href={providersPath}
+                className="text-sm font-medium text-primary hover:underline"
+              >
                 去供应商添加账号和模型
               </Link>
             ) : null}
@@ -63,7 +66,7 @@ export function GatewayModels({ models, providers, loading, providersPath }: Gat
                 key={model.metadata.name}
                 className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/20"
               >
-                <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+                <span className="flex size-10 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
                   <ProviderBrandIcon provider={provider} className="size-5" />
                 </span>
                 <div className="min-w-0 flex-1">

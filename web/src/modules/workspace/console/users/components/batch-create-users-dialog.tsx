@@ -110,7 +110,7 @@ export function BatchCreateUsersDialog({ onClose }: BatchCreateUsersDialogProps)
           const errors = form.formState.errors.users?.[index];
 
           return (
-            <div key={field.id} className="space-y-3 rounded-lg border p-4">
+            <div key={field.id} className="space-y-3 border p-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">用户 {index + 1}</span>
                 {fields.length > 1 ? (

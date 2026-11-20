@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-import { useNavigate } from "@tanstack/react-router";
 import { ChevronsUpDown } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 import {
   DropdownMenu,
@@ -27,7 +27,7 @@ type WorkspaceSwitcherProps = {
 };
 
 export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSwitcherProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { isMobile } = useSidebar();
   const activeWorkspace =
     workspaces.find((workspace) => workspace.id === activeWorkspaceId) ?? workspaces[0];
@@ -45,13 +45,13 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
       }
 
       event.preventDefault();
-      void navigate({ to: workspace.homeUrl });
+      router.push(workspace.homeUrl);
     };
 
     window.addEventListener("keydown", onKeyDown);
 
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [navigate, workspaces]);
+  }, [router, workspaces]);
 
   if (!activeWorkspace) {
     return null;
@@ -68,9 +68,9 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
             >
               <div
                 className={cn(
-                  "flex aspect-square size-8 items-center justify-center rounded-lg",
+                  "flex aspect-square size-8 items-center justify-center",
                   activeWorkspace.logoImage
-                    ? "bg-zinc-100 dark:bg-zinc-900"
+                    ? "bg-muted"
                     : "bg-sidebar-primary text-sidebar-primary-foreground",
                 )}
               >
@@ -84,7 +84,7 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
             align="start"
             side={isMobile ? "bottom" : "right"}
             sideOffset={4}
@@ -93,13 +93,13 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
             {workspaces.map((workspace, index) => (
               <DropdownMenuItem
                 key={workspace.id}
-                onSelect={() => void navigate({ to: workspace.homeUrl })}
+                onSelect={() => router.push(workspace.homeUrl)}
                 className="gap-2 p-2"
               >
                 <div
                   className={cn(
-                    "flex size-6 items-center justify-center rounded-sm",
-                    workspace.logoImage ? "bg-zinc-100 dark:bg-zinc-900" : "border",
+                    "flex size-6 items-center justify-center",
+                    workspace.logoImage ? "bg-muted" : "border",
                   )}
                 >
                   <workspace.logo className={workspace.logoImage ? "size-5" : "size-4 shrink-0"} />

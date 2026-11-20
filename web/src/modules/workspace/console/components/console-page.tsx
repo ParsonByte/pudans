@@ -19,12 +19,7 @@ export function ConsolePage({ title, children }: ConsolePageProps) {
 }
 
 export function ConsoleSection({ className, ...props }: ComponentProps<"section">) {
-  return (
-    <section
-      className={cn("rounded-xl border bg-card text-card-foreground", className)}
-      {...props}
-    />
-  );
+  return <section className={cn("border bg-card text-card-foreground", className)} {...props} />;
 }
 
 type ConsoleSectionHeaderProps = {

@@ -27,7 +27,7 @@ export function GenerationProgress({ progress }: GenerationProgressProps) {
             生成中
           </span>
         </MessageHeader>
-        <div className="w-full space-y-2 rounded-xl border bg-muted/30 px-3 py-2.5 text-xs">
+        <div className="w-full space-y-2 border bg-muted/30 px-3 py-2.5 text-xs">
           <div className="flex items-center gap-2">
             <Icon className="size-3.5 text-muted-foreground" />
             <span className="font-medium">正在生成{KIND_LABELS[progress.kind]}</span>

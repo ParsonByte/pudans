@@ -9,7 +9,7 @@ export function RuntimeTableSkeleton({ rows = 3 }: RuntimeTableSkeletonProps) {
   return (
     <div className="grid gap-2 p-4">
       {Array.from({ length: rows }, (_, index) => (
-        <Skeleton key={index} className="h-12 rounded-lg" />
+        <Skeleton key={index} className="h-12" />
       ))}
     </div>
   );

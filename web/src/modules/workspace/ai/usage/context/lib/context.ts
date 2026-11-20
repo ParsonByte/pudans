@@ -92,10 +92,10 @@ export function contextHealthColorClass(health: ContextHealth): string {
     return "bg-destructive";
   }
   if (health === "warning") {
-    return "bg-amber-500";
+    return "bg-warning";
   }
   if (health === "healthy") {
-    return "bg-emerald-500";
+    return "bg-success";
   }
   return "bg-muted";
 }

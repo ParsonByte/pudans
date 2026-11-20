@@ -398,7 +398,7 @@ export function GatewayRecentCalls({ providers, models }: GatewayRecentCallsProp
       </div>
 
       {fallbackMode ? (
-        <div className="border-b bg-amber-500/5 px-5 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+        <div className="border-b bg-warning/5 px-5 py-2 text-[11px] text-warning">
           当前账号没有用量明细读取权限，已回退到路由实时记录（所选日期共 {days} 个自然日、最多 200
           条，客户端筛选与分页）； 回退模式不提供请求详情、路由轨迹与尝试记录，Agent 筛选按 Agent
           来源匹配。
@@ -561,7 +561,7 @@ function RecentCallRow({
       </TableCell>
       <TableCell>
         <span className="inline-flex items-center gap-1.5 text-xs whitespace-nowrap">
-          <span className={`size-1.5 rounded-full ${requestStatusDotClass(item.status)}`} />
+          <span className={`size-1.5 ${requestStatusDotClass(item.status)}`} />
           {requestStatusLabel(item.status)}
         </span>
         {item.errorCode ? (

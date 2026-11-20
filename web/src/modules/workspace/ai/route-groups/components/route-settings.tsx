@@ -53,7 +53,7 @@ export function RouteSettings({
     <ConsoleSection>
       <div className="flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
         <div className="flex items-start gap-3">
-          <span className="flex size-8 items-center justify-center rounded-lg bg-muted">
+          <span className="flex size-8 items-center justify-center bg-muted">
             <Settings2 className="size-4 text-muted-foreground" />
           </span>
           <div className="space-y-1">

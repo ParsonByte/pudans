@@ -133,7 +133,7 @@ export function KnowledgeBaseList({
       {loading ? (
         <div className="grid gap-3">
           {Array.from({ length: 4 }, (_, index) => (
-            <Skeleton key={index} className="h-24 rounded-xl" />
+            <Skeleton key={index} className="h-24" />
           ))}
         </div>
       ) : error ? (
@@ -175,7 +175,7 @@ export function KnowledgeBaseList({
                 aria-pressed={selected}
                 onClick={() => onSelect(item.metadata.name)}
                 className={cn(
-                  "group flex w-full flex-col gap-3 rounded-xl border bg-card p-4 text-start transition-colors hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                  "group flex w-full flex-col gap-3 border bg-card p-4 text-start transition-colors hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                   selected && "border-primary/60 bg-accent/40 ring-1 ring-primary/30",
                 )}
               >

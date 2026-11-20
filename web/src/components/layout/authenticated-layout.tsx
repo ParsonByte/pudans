@@ -1,5 +1,6 @@
-import { Outlet } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 
+import { PageTransition } from "@/components/motion/page-transition";
 import { SkipToMain } from "@/components/skip-to-main";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +14,7 @@ import type { SidebarData } from "./types";
 
 type AuthenticatedLayoutProps = Partial<SidebarData> & {
   onSignOut?: () => void;
+  children: ReactNode;
 };
 
 export function AuthenticatedLayout({
@@ -21,6 +23,7 @@ export function AuthenticatedLayout({
   activeWorkspaceId,
   navGroups,
   onSignOut,
+  children,
 }: AuthenticatedLayoutProps) {
   const defaultOpen = getCookie("sidebar_state") !== "false";
 
@@ -44,7 +47,7 @@ export function AuthenticatedLayout({
                 "peer-data-[variant=inset]:has-data-[layout=fixed]:h-[calc(100svh-(var(--spacing)*4))]",
               )}
             >
-              <Outlet />
+              <PageTransition>{children}</PageTransition>
             </SidebarInset>
           </SidebarProvider>
         </LayoutProvider>

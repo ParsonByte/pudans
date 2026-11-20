@@ -117,7 +117,7 @@ export function StoragePoliciesView() {
         {policiesQuery.isPending ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 3 }, (_, index) => (
-              <Skeleton key={index} className="h-56 rounded-xl" />
+              <Skeleton key={index} className="h-56" />
             ))}
           </div>
         ) : policiesQuery.isError ? (
@@ -136,9 +136,9 @@ export function StoragePoliciesView() {
               <button
                 type="button"
                 onClick={() => setCreateOpen(true)}
-                className="flex min-h-56 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-6 text-muted-foreground transition-colors hover:border-primary/50 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                className="flex min-h-56 flex-col items-center justify-center gap-3 border border-dashed p-6 text-muted-foreground transition-colors hover:border-primary/50 hover:bg-accent/30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               >
-                <span className="flex size-12 items-center justify-center rounded-full bg-muted">
+                <span className="flex size-12 items-center justify-center bg-muted">
                   <Plus className="size-5" />
                 </span>
                 <span className="text-sm font-medium">添加存储策略</span>
@@ -269,7 +269,7 @@ function PolicyCard({
     <ConsoleSection className="flex flex-col gap-4 p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+          <span className="flex size-10 shrink-0 items-center justify-center bg-muted text-muted-foreground">
             <StorageTypeIcon type={type} className="size-5" />
           </span>
           <div className="min-w-0">

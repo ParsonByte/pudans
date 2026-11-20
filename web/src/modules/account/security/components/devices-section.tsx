@@ -77,7 +77,7 @@ export function DevicesSection() {
             const os = device.status?.os;
             return (
               <div key={device.metadata.name} className="flex items-center gap-3 px-5 py-3">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <span className="flex size-9 shrink-0 items-center justify-center bg-muted">
                   <MonitorSmartphone className="size-4" />
                 </span>
                 <div className="min-w-0 flex-1">

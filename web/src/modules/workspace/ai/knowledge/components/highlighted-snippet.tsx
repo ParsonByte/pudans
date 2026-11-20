@@ -18,7 +18,7 @@ export function HighlightedSnippet({ text, query }: HighlightedSnippetProps) {
       searchWords={words}
       autoEscape
       textToHighlight={text}
-      highlightClassName="rounded-sm bg-amber-200/70 text-foreground dark:bg-amber-400/30"
+      highlightClassName=" bg-warning/25 text-foreground"
     />
   );
 }

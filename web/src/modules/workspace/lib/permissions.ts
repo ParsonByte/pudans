@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 
-import { useLocation, useRouteContext } from "@tanstack/react-router";
+import { usePathname } from "next/navigation";
+
+import { useSessionContext } from "@/modules/auth/lib/session-context";
 
 import { findNavigationMenu } from "./workspaces";
 
@@ -17,8 +19,8 @@ export function hasUiPermission(
 }
 
 export function useAllowedOperations(): ReadonlySet<string> {
-  const { navigation } = useRouteContext({ from: "/_authenticated" });
-  const pathname = useLocation({ select: (location) => location.pathname });
+  const { navigation } = useSessionContext();
+  const pathname = usePathname();
   const menu = findNavigationMenu(navigation, pathname);
   const operations = menu?.operations;
 
@@ -34,7 +36,7 @@ export function useAllowedOperations(): ReadonlySet<string> {
 }
 
 export function useMenuPath(component: string): string | undefined {
-  const { navigation } = useRouteContext({ from: "/_authenticated" });
+  const { navigation } = useSessionContext();
 
   return (navigation.workspaces ?? [])
     .flatMap((workspace) => workspace.menus ?? [])

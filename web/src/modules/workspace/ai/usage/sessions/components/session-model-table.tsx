@@ -42,9 +42,9 @@ export function SessionModelTable({ models }: { models: UsageSessionStatsModel[]
               </TableCell>
               <TableCell className="px-5 py-3">
                 <div className="flex items-center gap-2">
-                  <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
+                  <div className="h-2 flex-1 overflow-hidden bg-muted">
                     <div
-                      className="h-full rounded-full bg-chart-2"
+                      className="h-full bg-chart-2"
                       style={{ width: `${Math.max(share * 100, share > 0 ? 2 : 0)}%` }}
                     />
                   </div>

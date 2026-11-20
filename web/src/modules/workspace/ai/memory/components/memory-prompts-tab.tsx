@@ -289,7 +289,7 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
         </Button>
       </div>
 
-      <div className="rounded-xl border bg-card p-3">
+      <div className="border bg-card p-3">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium">当前生效提示词</span>
           {settingQuery.data ? (
@@ -323,14 +323,14 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
             <AlertDescription>{resolveMemoryApiError(settingQuery.error)}</AlertDescription>
           </Alert>
         ) : (
-          <div className="max-h-44 overflow-y-auto rounded-lg bg-muted/50 p-2 font-mono text-xs leading-relaxed whitespace-pre-wrap">
+          <div className="max-h-44 overflow-y-auto bg-muted/50 p-2 font-mono text-xs leading-relaxed whitespace-pre-wrap">
             {settingQuery.data?.prompt || "当前层级使用系统默认提示词。"}
           </div>
         )}
       </div>
 
       <div className="grid gap-3 min-[1200px]:grid-cols-[280px_1fr]">
-        <div className="rounded-xl border bg-card">
+        <div className="border bg-card">
           <div className="border-b px-3 py-2 text-sm font-medium">提示词资源</div>
           {promptsQuery.isLoading ? (
             <div className="space-y-2 p-3">
@@ -355,7 +355,7 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
                   <button
                     type="button"
                     onClick={() => setSelectedPromptName(prompt.metadata.name)}
-                    className={`w-full rounded-md px-2.5 py-2 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
+                    className={`w-full px-2.5 py-2 text-left transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${
                       prompt.metadata.name === selectedPrompt?.metadata.name
                         ? "bg-primary/5"
                         : "hover:bg-muted/60"
@@ -375,7 +375,7 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
           )}
         </div>
 
-        <div className="rounded-xl border bg-card p-3">
+        <div className="border bg-card p-3">
           <div className="mb-2 text-sm font-medium">编辑提示词</div>
           {selectedPrompt ? (
             <PromptEditor
@@ -394,7 +394,7 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
         </div>
       </div>
 
-      <div className="rounded-xl border bg-card">
+      <div className="border bg-card">
         <div className="flex items-center justify-between border-b px-3 py-2">
           <span className="text-sm font-medium">操作日志</span>
           <span className="text-[11px] text-muted-foreground">

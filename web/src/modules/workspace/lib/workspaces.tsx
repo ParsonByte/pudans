@@ -3,6 +3,7 @@ import type { ElementType } from "react";
 import { Icon } from "@iconify/react";
 
 import type { NavCollapsible, NavGroup, NavItem, Workspace } from "@/components/layout/types";
+import { BASE_PATH } from "@/lib/base-path";
 
 import type { Navigation, NavigationMenu } from "./permission-api";
 
@@ -25,7 +26,7 @@ function iconSource(icon: string): string {
   if (/^[a-z]+:\/\//i.test(icon) || icon.startsWith("data:")) {
     return icon;
   }
-  return `${import.meta.env.BASE_URL}${icon.replace(/^\/+/, "")}`;
+  return `${BASE_PATH}${icon.replace(/^\/+/, "")}`;
 }
 
 export function buildWorkspaces(navigation: Navigation): Workspace[] {

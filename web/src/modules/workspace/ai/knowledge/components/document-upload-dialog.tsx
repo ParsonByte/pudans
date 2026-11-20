@@ -84,7 +84,7 @@ export function DocumentUploadDialog({
       <DialogContent>
         <DialogHeader>
           <div className="flex items-start gap-3 pe-8">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <span className="flex size-9 shrink-0 items-center justify-center bg-muted">
               <Upload className="size-4" />
             </span>
             <div className="space-y-1">

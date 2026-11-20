@@ -676,14 +676,14 @@ export function RouteGroupDialog({
           />
         </ProviderFieldRow>
         <ProviderFieldRow label="后备组" hint="当前组无法选出候选时，按顺序尝试这些路由组。">
-          <div className="max-h-44 space-y-1 overflow-y-auto rounded-lg border p-2">
+          <div className="max-h-44 space-y-1 overflow-y-auto border p-2">
             {fallbackOptions.length === 0 ? (
               <p className="px-2 py-3 text-xs text-muted-foreground">没有其他路由组可选。</p>
             ) : (
               fallbackOptions.map((option) => (
                 <label
                   key={option.metadata.name}
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent/40"
+                  className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/40"
                 >
                   <Checkbox
                     checked={fallbackGroups.includes(option.metadata.name)}
@@ -771,7 +771,7 @@ export function RouteGroupDialog({
                           key={model.metadata.name}
                           type="button"
                           onClick={() => addMember(model)}
-                          className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-start transition-colors hover:bg-accent"
+                          className="flex w-full items-center gap-2 px-2 py-1.5 text-start transition-colors hover:bg-accent"
                         >
                           <ProviderBrandIcon provider={provider} className="size-4" />
                           <span className="min-w-0 flex-1">
@@ -798,7 +798,7 @@ export function RouteGroupDialog({
         </div>
 
         {members.length === 0 ? (
-          <div className="flex min-h-24 items-center justify-center rounded-xl border border-dashed px-4 py-6 text-center text-xs text-muted-foreground">
+          <div className="flex min-h-24 items-center justify-center border border-dashed px-4 py-6 text-center text-xs text-muted-foreground">
             还没有成员。添加模型后，网关才能从这个组选择。
           </div>
         ) : (
@@ -809,7 +809,7 @@ export function RouteGroupDialog({
                 ? providers.find((item) => item.metadata.name === model.spec.provider)
                 : undefined;
               return (
-                <div key={member.model} className="rounded-xl border bg-background/40 p-3">
+                <div key={member.model} className="border bg-background/40 p-3">
                   <div className="flex items-center gap-2">
                     <ProviderBrandIcon provider={provider} className="size-4" />
                     <div className="min-w-0 flex-1">
@@ -961,7 +961,7 @@ export function RouteGroupDialog({
           阈值和图片阈值属于结构化条件，可与条件同时使用。优先级高的规则先匹配，暂停的规则不参与匹配。
         </p>
         {rules.length === 0 ? (
-          <div className="flex min-h-20 items-center justify-center rounded-xl border border-dashed px-4 py-5 text-center text-xs text-muted-foreground">
+          <div className="flex min-h-20 items-center justify-center border border-dashed px-4 py-5 text-center text-xs text-muted-foreground">
             {members.length === 0
               ? "先添加模型成员，再配置规则。"
               : "还没有规则。添加规则后，满足条件的请求会优先选择指定成员。"}
@@ -969,7 +969,7 @@ export function RouteGroupDialog({
         ) : (
           <div className="space-y-2">
             {rules.map((rule, index) => (
-              <div key={index} className="space-y-2 rounded-xl border bg-background/40 p-3">
+              <div key={index} className="space-y-2 border bg-background/40 p-3">
                 <div className="flex items-center gap-2">
                   <Input
                     value={rule.name}

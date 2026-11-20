@@ -2,7 +2,6 @@ import { type FormEvent, useEffect, useState } from "react";
 
 import { apiClient, axiosInstance } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { isAxiosError } from "axios";
 import {
   CheckCircle2,
@@ -12,6 +11,7 @@ import {
   MessageCircle,
   TriangleAlert,
 } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { IconFeishu } from "@/assets/custom/icon-feishu";
@@ -231,7 +231,7 @@ export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor="password">密码</Label>
           <Link
-            to="/forgot-password"
+            href="/forgot-password"
             className="text-xs font-medium text-primary transition-opacity hover:opacity-80"
           >
             忘记密码？
@@ -257,7 +257,7 @@ export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
           新设备登录会提醒你
         </p>
         {!rsaEncryptionEnabled ? (
-          <p className="flex items-center gap-2 text-amber-600">
+          <p className="flex items-center gap-2 text-warning">
             <TriangleAlert className="size-3.5" />
             当前实例未启用登录传输加密，请确认通过 HTTPS 访问
           </p>
@@ -327,11 +327,7 @@ export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
 
       <p className="mt-2 text-center text-xs leading-5 text-muted-foreground">
         登录即代表同意{" "}
-        <Link
-          to="/legal"
-          search={{ tab: "terms" }}
-          className="text-primary transition-opacity hover:opacity-80"
-        >
+        <Link href="/legal?tab=terms" className="text-primary transition-opacity hover:opacity-80">
           法律协议
         </Link>
       </p>

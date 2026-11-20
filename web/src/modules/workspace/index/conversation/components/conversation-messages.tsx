@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { Link } from "@tanstack/react-router";
 import { Copy, FileText, Loader2, PencilLine, RotateCcw } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import {
@@ -103,8 +103,8 @@ export function ConversationMessages({
             <MessageScrollerContent className="mx-auto w-full max-w-3xl px-6 py-6">
               {loading ? (
                 <div className="space-y-4">
-                  <Skeleton className="ms-auto h-16 w-3/5 rounded-xl" />
-                  <Skeleton className="h-24 w-4/5 rounded-xl" />
+                  <Skeleton className="ms-auto h-16 w-3/5" />
+                  <Skeleton className="h-24 w-4/5" />
                 </div>
               ) : empty ? (
                 <div className="flex min-h-48 items-center justify-center text-center text-sm text-muted-foreground">
@@ -159,11 +159,11 @@ export function ConversationMessages({
               )}
 
               {error ? (
-                <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
+                <div className="mt-4 border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
                   {error}
                   {routeHint && routeGroupsPath ? (
                     <Link
-                      to={routeGroupsPath}
+                      href={routeGroupsPath}
                       className="ms-2 inline-block font-medium underline underline-offset-2"
                     >
                       去配置路由组
@@ -260,7 +260,7 @@ function UserMessage({
                 key={attachment.fileId}
                 src={chatAttachmentUrl(attachment.fileId)}
                 alt={attachment.name || "图片"}
-                className="max-h-64 max-w-64 rounded-xl border object-cover"
+                className="max-h-64 max-w-64 border object-cover"
               />
             ))}
             {videos.map((attachment) => (
@@ -268,7 +268,7 @@ function UserMessage({
                 key={attachment.fileId}
                 src={chatAttachmentUrl(attachment.fileId)}
                 controls
-                className="max-h-64 max-w-64 rounded-xl border"
+                className="max-h-64 max-w-64 border"
               />
             ))}
             {audios.map((attachment) => (

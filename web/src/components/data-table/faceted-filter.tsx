@@ -53,23 +53,19 @@ export function DataTableFacetedFilter({
           {selectedValues.size > 0 ? (
             <>
               <Separator orientation="vertical" className="mx-2 h-4" />
-              <Badge variant="secondary" className="rounded-sm px-1 font-normal lg:hidden">
+              <Badge variant="secondary" className="px-1 font-normal lg:hidden">
                 {selectedValues.size}
               </Badge>
               <div className="hidden space-x-1 lg:flex">
                 {selectedValues.size > 2 ? (
-                  <Badge variant="secondary" className="rounded-sm px-1 font-normal">
+                  <Badge variant="secondary" className="px-1 font-normal">
                     {selectedValues.size} 项
                   </Badge>
                 ) : (
                   options
                     .filter((option) => selectedValues.has(option.value))
                     .map((option) => (
-                      <Badge
-                        key={option.value}
-                        variant="secondary"
-                        className="rounded-sm px-1 font-normal"
-                      >
+                      <Badge key={option.value} variant="secondary" className="px-1 font-normal">
                         {option.label}
                       </Badge>
                     ))
@@ -91,7 +87,7 @@ export function DataTableFacetedFilter({
                   <CommandItem key={option.value} onSelect={() => toggle(option.value)}>
                     <div
                       className={cn(
-                        "flex size-4 items-center justify-center rounded-sm border border-primary",
+                        "flex size-4 items-center justify-center border border-primary",
                         isSelected
                           ? "bg-primary text-primary-foreground"
                           : "opacity-50 [&_svg]:invisible",

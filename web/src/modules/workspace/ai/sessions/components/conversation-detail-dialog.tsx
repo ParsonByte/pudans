@@ -88,7 +88,7 @@ export function ConversationDetailDialog({ conversation, onClose }: Conversation
             </div>
 
             {detailQuery.isError ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              <div className="flex flex-wrap items-center justify-between gap-2 border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                 <span className="min-w-0">
                   无法刷新会话信息：{resolveAiSessionApiError(detailQuery.error)}
                 </span>

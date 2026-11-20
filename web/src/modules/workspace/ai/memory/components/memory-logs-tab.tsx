@@ -112,7 +112,7 @@ export function MemoryLogsTab({ assets, team }: MemoryLogsTabProps) {
         </Button>
       </div>
 
-      <div className="rounded-xl border bg-card">
+      <div className="border bg-card">
         {!assetName ? (
           <MemoryEmptyState
             title="选择记忆块查看生成日志"

@@ -18,7 +18,7 @@ export function Search({ className, placeholder = "搜索", ...props }: SearchPr
       {...props}
       variant="outline"
       className={cn(
-        "h-8 w-8 justify-center gap-2 rounded-md bg-muted/30 px-0 text-sm font-normal text-muted-foreground shadow-none hover:bg-accent sm:w-56 sm:justify-start sm:px-3 lg:w-64",
+        "h-8 w-8 justify-center gap-2 bg-muted/30 px-0 text-sm font-normal text-muted-foreground shadow-none hover:bg-accent sm:w-56 sm:justify-start sm:px-3 lg:w-64",
         className,
       )}
       aria-label={placeholder}

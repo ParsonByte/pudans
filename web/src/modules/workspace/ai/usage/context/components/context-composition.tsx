@@ -62,10 +62,7 @@ export function UsageContextComposition({ totals, scopeLabel }: UsageContextComp
                   <TableRow key={part.key}>
                     <TableCell className="px-0 py-2.5">
                       <span className="inline-flex items-center gap-2 text-sm font-medium">
-                        <span
-                          className="size-2 shrink-0 rounded-[2px]"
-                          style={{ backgroundColor: part.color }}
-                        />
+                        <span className="size-2 shrink-0" style={{ backgroundColor: part.color }} />
                         {part.label}
                       </span>
                     </TableCell>

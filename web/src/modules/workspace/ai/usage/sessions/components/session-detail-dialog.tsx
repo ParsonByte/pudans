@@ -111,10 +111,7 @@ function SessionDetailBody({ detail }: { detail: UsageSessionDetail }) {
           <ScrollArea className="h-72 pe-3">
             <div className="space-y-3">
               {detail.recentMessages.map((message) => (
-                <div
-                  key={message.messageId}
-                  className="space-y-1.5 rounded-lg border bg-muted/30 p-3"
-                >
+                <div key={message.messageId} className="space-y-1.5 border bg-muted/30 p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={message.role === "assistant" ? "default" : "outline"}>
                       {messageRoleLabel(message.role)}
@@ -157,7 +154,7 @@ function DetailField({ label, value }: { label: string; value: ReactNode }) {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border bg-muted/30 px-3 py-2">
+    <div className="border bg-muted/30 px-3 py-2">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <p className="mt-1 text-sm font-medium tabular-nums">{value}</p>
     </div>

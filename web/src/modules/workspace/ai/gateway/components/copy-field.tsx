@@ -17,7 +17,7 @@ export function CopyButton({ value, label = "复制", className = "" }: CopyButt
           .then(() => toast.success(`${label}已复制。`))
           .catch(() => toast.error("复制失败，请手动选择文本。"));
       }}
-      className={`inline-flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${className}`}
+      className={`inline-flex size-7 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:bg-muted hover:text-foreground ${className}`}
       aria-label={label}
       title={label}
     >
@@ -37,7 +37,7 @@ export function CopyField({ value, label, hint, mono = true }: CopyFieldProps) {
   return (
     <div className="space-y-1.5">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <div className="flex items-center gap-2 rounded-lg border bg-muted/30 py-2 ps-3 pe-1.5">
+      <div className="flex items-center gap-2 border bg-muted/30 py-2 ps-3 pe-1.5">
         <span
           className={`min-w-0 flex-1 truncate text-xs ${mono ? "font-mono" : ""}`}
           title={value}

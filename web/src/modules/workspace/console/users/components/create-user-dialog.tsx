@@ -2,8 +2,8 @@ import { Controller, type Resolver, useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -44,7 +44,7 @@ type CreateUserValues = z.infer<typeof createUserSchema>;
 
 export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const router = useRouter();
   const usersPath = useMenuPath("users");
   const form = useForm<CreateUserValues>({
     resolver: zodResolver(createUserSchema) as Resolver<CreateUserValues>,
@@ -70,7 +70,7 @@ export function CreateUserDialog({ onClose }: CreateUserDialogProps) {
       toast.success("用户已创建。");
       onClose();
       if (createdName && usersPath) {
-        void navigate({ to: `${usersPath}/${createdName}` });
+        router.push(`${usersPath}/${createdName}`);
       }
     },
     onError: (error) => toast.error(resolveUserApiError(error)),

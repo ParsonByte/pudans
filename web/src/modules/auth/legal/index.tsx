@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,7 +56,7 @@ export function LegalView({ activeTab, onTabChange }: LegalViewProps) {
           <h1 className="text-2xl font-semibold tracking-tight">法律协议</h1>
         </div>
         <Link
-          to="/sign-in"
+          href="/sign-in"
           className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           <ArrowLeft className="size-3.5" />

@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 
@@ -25,15 +25,14 @@ export function ErrorPage({ status, title, description, actions }: ErrorPageProp
 }
 
 export function BackHomeActions() {
-  const navigate = useNavigate();
-  const { history } = useRouter();
+  const router = useRouter();
 
   return (
     <>
-      <Button variant="outline" onClick={() => history.go(-1)}>
+      <Button variant="outline" onClick={() => router.back()}>
         返回上一页
       </Button>
-      <Button onClick={() => navigate({ to: "/" })}>返回首页</Button>
+      <Button onClick={() => router.push("/")}>返回首页</Button>
     </>
   );
 }

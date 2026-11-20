@@ -439,7 +439,7 @@ export function PolicyDialog({
           </FormField>
           <div className="grid gap-4 sm:grid-cols-2">
             {!isLocal(type) && !oneDrive ? (
-              <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+              <div className="flex items-center justify-between gap-4 border p-4">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">私有 Bucket</p>
                   <p className="text-xs text-muted-foreground">私有桶通过签名 URL 访问文件。</p>
@@ -457,7 +457,7 @@ export function PolicyDialog({
                 />
               </div>
             ) : null}
-            <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-4 border p-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">默认策略</p>
                 <p className="text-xs text-muted-foreground">未指定策略时使用该存储。</p>
@@ -474,7 +474,7 @@ export function PolicyDialog({
                 )}
               />
             </div>
-            <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-4 border p-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">下载中转</p>
                 <p className="text-xs text-muted-foreground">下载请求经后端代理转发。</p>
@@ -546,7 +546,7 @@ export function PolicyDialog({
                 </FormField>
               ) : null}
               {supportsS3PathStyle(type) ? (
-                <div className="flex items-center justify-between gap-4 rounded-lg border p-4 sm:col-span-2">
+                <div className="flex items-center justify-between gap-4 border p-4 sm:col-span-2">
                   <div className="space-y-1">
                     <p className="text-sm font-medium">路径风格</p>
                     <p className="text-xs text-muted-foreground">
@@ -638,7 +638,7 @@ export function PolicyDialog({
 
         {oneDrive ? (
           <FormDialogSection title="OneDrive 授权">
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border p-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">
                   {oauthStatusQuery.data?.authorized ? "已授权" : "尚未授权"}
@@ -677,7 +677,7 @@ export function PolicyDialog({
                 </Button>
               </div>
             </div>
-            <div className="space-y-2 rounded-lg border p-4">
+            <div className="space-y-2 border p-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">解析 SharePoint 站点</p>
                 <p className="text-xs text-muted-foreground">
@@ -758,7 +758,7 @@ export function PolicyDialog({
                 {...form.register("fileTypes")}
               />
             </FormField>
-            <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-4 border p-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">拒绝名单</p>
                 <p className="text-xs text-muted-foreground">开启后列表中的扩展名禁止上传。</p>
@@ -788,7 +788,7 @@ export function PolicyDialog({
               {...form.register("nameRegexp")}
             />
           </FormField>
-          <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+          <div className="flex items-center justify-between gap-4 border p-4">
             <div className="space-y-1">
               <p className="text-sm font-medium">文件名拒绝名单</p>
               <p className="text-xs text-muted-foreground">开启后匹配正则的文件名禁止上传。</p>

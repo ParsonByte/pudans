@@ -2,11 +2,12 @@ import type { ReactNode } from "react";
 
 import {
   CodeBlock,
-  CodeBlockContent,
   CodeBlockCopyButton,
   CodeBlockHeader,
   CodeBlockTitle,
 } from "@/components/ui/code-block";
+
+import { HighlightedCode } from "./highlighted-code";
 
 type Block = { kind: "text"; value: string } | { kind: "code"; language: string; value: string };
 
@@ -21,7 +22,7 @@ export function MessageMarkdown({ content }: { content: string }) {
               <CodeBlockTitle>{block.language || "代码"}</CodeBlockTitle>
               <CodeBlockCopyButton value={block.value} />
             </CodeBlockHeader>
-            <CodeBlockContent>{block.value}</CodeBlockContent>
+            <HighlightedCode code={block.value} language={block.language} />
           </CodeBlock>
         ) : (
           <Paragraphs key={index} text={block.value} />

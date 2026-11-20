@@ -17,7 +17,7 @@ export function ConsoleStat({ label, value, icon: Icon }: ConsoleStatProps) {
           {value.toLocaleString("zh-CN")}
         </p>
       </div>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+      <span className="flex size-9 shrink-0 items-center justify-center bg-primary/10 text-primary">
         <Icon className="size-4" />
       </span>
     </ConsoleSection>

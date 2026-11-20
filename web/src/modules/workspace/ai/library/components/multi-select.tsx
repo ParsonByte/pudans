@@ -123,7 +123,7 @@ export function MultiSelect({
                     <div
                       key={option.value}
                       className={cn(
-                        "flex items-start gap-2 rounded-md px-2 py-1.5 text-sm",
+                        "flex items-start gap-2 px-2 py-1.5 text-sm",
                         option.disabled
                           ? "cursor-not-allowed opacity-50"
                           : "focus-within:bg-accent hover:bg-accent",
@@ -177,7 +177,7 @@ export function MultiSelect({
                   type="button"
                   aria-label={`移除 ${label}`}
                   onClick={() => toggle(item)}
-                  className="rounded-full p-0.5 hover:bg-background/60"
+                  className="p-0.5 hover:bg-background/60"
                 >
                   <X className="size-3" />
                 </button>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useRouter } from "next/navigation";
 
 import { PageHeader } from "@/components/layout/page-header";
 
@@ -25,7 +25,7 @@ import { setPendingChat } from "./lib/pending-chat";
 const TITLE_LIMIT = 80;
 
 export function ChatNewView() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [modeOverride, setModeOverride] = useState<string | undefined>(undefined);
   const [agent, setAgent] = useState<string | undefined>(undefined);
@@ -76,10 +76,7 @@ export function ChatNewView() {
         command: request.command,
         commandInput: request.commandInput,
       });
-      await navigate({
-        to: "/chat/$conversationId",
-        params: { conversationId: String(conversation.id) },
-      });
+      router.push(`/chat/${conversation.id}`);
     } catch (error) {
       throw new Error(resolveChatError(error), { cause: error });
     } finally {
@@ -108,10 +105,7 @@ export function ChatNewView() {
         kbCodes,
         generation: { kind: input.kind, format: input.format },
       });
-      await navigate({
-        to: "/chat/$conversationId",
-        params: { conversationId: String(conversation.id) },
-      });
+      router.push(`/chat/${conversation.id}`);
     } catch (error) {
       throw new Error(resolveChatError(error), { cause: error });
     } finally {

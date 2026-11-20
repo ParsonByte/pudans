@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 
 import { Icon } from "@iconify/react";
-import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -87,7 +87,7 @@ export function RoutingRequests({
           <span>网关返回的最近 {requests.length} 个</span>
           {usagePath ? (
             <Button variant="ghost" size="sm" asChild>
-              <Link to={usagePath}>查看用量</Link>
+              <Link href={usagePath}>查看用量</Link>
             </Button>
           ) : null}
         </div>
@@ -108,7 +108,7 @@ export function RoutingRequests({
             onClick={() => setSelectedDay(day.day)}
           />
         ))}
-        <div className="ms-auto inline-flex overflow-hidden rounded-lg border bg-muted/30 p-0.5">
+        <div className="ms-auto inline-flex overflow-hidden border bg-muted/30 p-0.5">
           <ModeButton
             active={groupMode === "request"}
             onClick={() => setGroupMode("request")}
@@ -209,14 +209,14 @@ function RequestRow({
   return (
     <div
       className={`px-5 py-3 text-sm transition-colors hover:bg-muted/20 ${
-        request.status === "RUNNING" ? "bg-amber-500/5" : ""
+        request.status === "RUNNING" ? "bg-warning/5" : ""
       }`}
     >
       <div className="flex flex-wrap items-center gap-2">
         <span className="font-mono text-[11px] text-muted-foreground">
           {formatBeijingClock(request.createdAt)}
         </span>
-        <span className={`size-1.5 rounded-full ${requestStatusDotClass(request.status)}`} />
+        <span className={`size-1.5 ${requestStatusDotClass(request.status)}`} />
         <span className="inline-flex items-center gap-1.5">
           <Icon
             icon={agentIcon(request.agentSource)}
@@ -298,7 +298,7 @@ function DayPill({
     <button
       type="button"
       onClick={onClick}
-      className={`inline-flex h-7 items-center gap-1.5 rounded-full border px-3 text-xs transition-colors ${
+      className={`inline-flex h-7 items-center gap-1.5 border px-3 text-xs transition-colors ${
         active
           ? "border-primary/40 bg-primary/10 font-medium text-primary"
           : "border-border/60 bg-muted/30 text-muted-foreground hover:border-border hover:text-foreground"
@@ -323,7 +323,7 @@ function ModeButton({
     <button
       type="button"
       onClick={onClick}
-      className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+      className={`px-2.5 py-1 text-xs transition-colors ${
         active
           ? "bg-background font-medium text-foreground shadow-sm"
           : "text-muted-foreground hover:text-foreground"

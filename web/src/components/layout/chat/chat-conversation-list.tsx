@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   ArrowUpToLine,
   ChevronDown,
@@ -10,6 +9,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -45,8 +45,6 @@ import {
   saveChatPreferences,
 } from "@/modules/workspace/index/lib/chat-preferences";
 
-import type { NavUrl } from "../types";
-
 const CONVERSATION_LIMIT = 100;
 
 const RECENT_PREVIEW = 20;
@@ -58,9 +56,9 @@ type ChatConversation = ApiChatConversation & {
 };
 
 export function ChatConversationList() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
-  const pathname = useLocation({ select: (location) => location.pathname });
+  const pathname = usePathname();
   const [preferences, setPreferences] = useState<ChatPreferences>(loadChatPreferences);
   const [pinnedOpen, setPinnedOpen] = useState(true);
   const [recentOpen, setRecentOpen] = useState(true);
@@ -140,7 +138,7 @@ export function ChatConversationList() {
       }));
       await queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
       if (pathname === `/chat/${conversation.id}`) {
-        await navigate({ to: "/" });
+        router.push("/");
       }
       setDeleting(null);
       toast.success("对话已删除。");
@@ -153,7 +151,7 @@ export function ChatConversationList() {
     editingId,
     onSelect: (conversation: ChatConversation) => {
       markSeen(conversation);
-      void navigate({ to: `/chat/${conversation.id}` as NavUrl });
+      router.push(`/chat/${conversation.id}`);
     },
     onTogglePin: togglePin,
     onStartEdit: (conversation: ChatConversation) => setEditingId(String(conversation.id)),
@@ -317,7 +315,7 @@ function ConversationRows({
                 </SidebarMenuButton>
                 {conversation.unread ? (
                   <SidebarMenuBadge className="bg-transparent">
-                    <span className="size-1.5 rounded-full bg-blue-500" />
+                    <span className="size-1.5 bg-primary" />
                   </SidebarMenuBadge>
                 ) : null}
                 <DropdownMenu>

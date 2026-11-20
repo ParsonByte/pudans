@@ -178,7 +178,7 @@ export function CommandConsole({
       ) : null}
 
       {selected ? (
-        <div className="space-y-3 rounded-xl border p-4">
+        <div className="space-y-3 border p-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant={selected.exitCode === 0 ? "secondary" : "destructive"}>
               退出码 {selected.exitCode}
@@ -214,7 +214,7 @@ export function CommandConsole({
           </Button>
         </div>
         {history.length === 0 ? (
-          <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
+          <p className="border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
             尚无执行记录。
           </p>
         ) : (
@@ -224,7 +224,7 @@ export function CommandConsole({
                 key={entry.id}
                 type="button"
                 onClick={() => setSelectedId(entry.id)}
-                className={`flex w-full items-center gap-2 rounded-md border px-2 py-1.5 text-start text-xs transition-colors hover:bg-accent ${
+                className={`flex w-full items-center gap-2 border px-2 py-1.5 text-start text-xs transition-colors hover:bg-accent ${
                   entry.id === selected?.id ? "border-primary/40 bg-accent/40" : ""
                 }`}
               >
@@ -257,7 +257,7 @@ function OutputBlock({ label, value, emptyText }: OutputBlockProps) {
     <div className="space-y-1">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       {value ? (
-        <pre className="max-h-56 overflow-auto rounded-lg border bg-muted/40 p-3 font-mono text-xs break-words whitespace-pre-wrap">
+        <pre className="max-h-56 overflow-auto border bg-muted/40 p-3 font-mono text-xs break-words whitespace-pre-wrap">
           {value}
         </pre>
       ) : (

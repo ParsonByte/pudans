@@ -1,7 +1,7 @@
 import { useState } from "react";
 
-import { Link } from "@tanstack/react-router";
 import { ChevronsUpDown, Link2, LogOut, ShieldCheck, UserRound } from "lucide-react";
+import Link from "next/link";
 
 import { SignOutDialog } from "@/components/sign-out-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -56,9 +56,9 @@ export function NavUser({ user, onSignOut }: NavUserProps) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg">
+              <Avatar className="h-8 w-8">
                 {user.avatar ? <AvatarImage src={user.avatar} alt={user.name} /> : null}
-                <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                <AvatarFallback className="">{initials}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-start text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name}</span>
@@ -68,16 +68,16 @@ export function NavUser({ user, onSignOut }: NavUserProps) {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
             side={isMobile ? "bottom" : "right"}
             align="end"
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                <Avatar className="h-8 w-8 rounded-lg">
+                <Avatar className="h-8 w-8">
                   {user.avatar ? <AvatarImage src={user.avatar} alt={user.name} /> : null}
-                  <AvatarFallback className="rounded-lg">{initials}</AvatarFallback>
+                  <AvatarFallback className="">{initials}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-start text-sm leading-tight">
                   <span className="truncate font-semibold">{user.name}</span>
@@ -88,19 +88,19 @@ export function NavUser({ user, onSignOut }: NavUserProps) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link to={PROFILE_URL}>
+                <Link href={PROFILE_URL}>
                   <UserRound />
                   个人设置
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to={SECURITY_URL}>
+                <Link href={SECURITY_URL}>
                   <ShieldCheck />
                   安全中心
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to={IDENTITIES_URL}>
+                <Link href={IDENTITIES_URL}>
                   <Link2 />
                   身份提供商
                 </Link>

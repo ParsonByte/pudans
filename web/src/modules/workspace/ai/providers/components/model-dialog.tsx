@@ -416,7 +416,7 @@ type SwitchRowProps = {
 
 function SwitchRow({ label, checked, onChange }: SwitchRowProps) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+    <div className="flex items-center justify-between gap-3 border p-3">
       <p className="text-sm font-medium">{label}</p>
       <Switch checked={checked} onCheckedChange={onChange} aria-label={label} />
     </div>

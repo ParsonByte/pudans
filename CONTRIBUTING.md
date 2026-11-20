@@ -37,7 +37,7 @@ docs: add readme contributing and license
 - 遵循 [`.editorconfig`](.editorconfig)，不要顺手格式化无关代码。
 - 注释只允许使用单行中文 `//` 注释；禁止 Javadoc 块、注释掉的代码或英文注释。
 - 后端只使用 WebFlux、R2DBC 与现有 Jackson 配置；禁止引入 JDBC、JPA、Spring MVC、Flyway 或第二套 HTTP / JSON 库。
-- 前端使用 React 19、TypeScript、TanStack Router / Query、Tailwind CSS v4 与 shadcn/ui。shadcn 组件只能通过 `npx shadcn@latest add <component>` 添加；禁止手写 `web/src/components/ui` 下的文件。
+- 前端使用 Next.js 16 App Router、React 19、TypeScript、TanStack Query、Tailwind CSS v4 与 shadcn/ui。shadcn 组件只能通过 `npx shadcn@latest add <component>` 添加；禁止手写 `web/src/components/ui` 下的文件。
 - 后端依赖版本写入 `gradle/libs.versions.toml`；前端依赖写入 `web/package.json` 并用 npm 锁定。Pull Request 中说明新增依赖的用途与重叠情况。
 - 禁止提交凭据、令牌、私钥或本地环境文件。
 

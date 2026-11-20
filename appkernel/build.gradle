@@ -110,21 +110,6 @@ dependencies {
     add('runtimeOnly', 'io.r2dbc:r2dbc-pool')
 }
 
-def webGeneratedResources = layout.buildDirectory.dir('generated-resources/web')
-def webStaticResources = layout.buildDirectory.dir('generated-resources/web/static')
-
-sourceSets.main.resources.srcDir(webGeneratedResources)
-
-tasks.register('copyWebAssets', Copy) {
-    dependsOn ':web:buildWeb'
-    from project(':web').layout.buildDirectory.dir('web')
-    into webStaticResources
-}
-
-tasks.named('processResources') {
-    dependsOn tasks.named('copyWebAssets')
-}
-
 springBoot {
     buildInfo {
         properties {

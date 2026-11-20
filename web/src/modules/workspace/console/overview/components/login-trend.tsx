@@ -155,13 +155,13 @@ function TrendTooltip({ active, payload, label }: TooltipContentProps) {
   const values = new Map(payload.map((entry) => [String(entry.dataKey), entry.value]));
 
   return (
-    <div className="min-w-44 rounded-xl border bg-popover p-3 text-popover-foreground shadow-lg">
+    <div className="min-w-44 border bg-popover p-3 text-popover-foreground shadow-lg">
       <p className="mb-2 text-sm font-semibold">{formatTrendDay(String(label ?? ""))}</p>
       <div className="space-y-1.5">
         {SERIES.map((series) => (
           <div key={series.key} className="flex items-center justify-between gap-6 text-xs">
             <span className="flex items-center gap-2 text-muted-foreground">
-              <span className="size-2.5 rounded-[3px]" style={{ backgroundColor: series.color }} />
+              <span className="size-2.5" style={{ backgroundColor: series.color }} />
               {series.label}
             </span>
             <span className="font-medium tabular-nums">
@@ -177,7 +177,7 @@ function TrendTooltip({ active, payload, label }: TooltipContentProps) {
 function LegendItem({ label, color }: { label: string; color: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className="size-2 rounded-full" style={{ backgroundColor: color }} />
+      <span className="size-2" style={{ backgroundColor: color }} />
       {label}
     </span>
   );

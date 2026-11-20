@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { Loader2, Plus, Wand2 } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -52,7 +52,7 @@ export function RouteTemplateGrid({
       {loading ? (
         <div className="grid gap-3 px-5 py-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           {Array.from({ length: 6 }, (_, index) => (
-            <Skeleton key={index} className="h-52 rounded-2xl" />
+            <Skeleton key={index} className="h-52" />
           ))}
         </div>
       ) : !hasModels ? (
@@ -60,7 +60,10 @@ export function RouteTemplateGrid({
           <span className="space-y-2">
             <span className="block">还没有可用模型，模板暂时无法生成。</span>
             {providersPath ? (
-              <Link to={providersPath} className="text-sm font-medium text-primary hover:underline">
+              <Link
+                href={providersPath}
+                className="text-sm font-medium text-primary hover:underline"
+              >
                 去供应商添加账号和模型
               </Link>
             ) : null}
@@ -108,7 +111,7 @@ function TemplateCard({
 
   return (
     <article
-      className={`flex min-h-52 flex-col rounded-2xl border p-4 transition-colors ${
+      className={`flex min-h-52 flex-col border p-4 transition-colors ${
         template.highlighted
           ? "border-primary/40 bg-primary/5"
           : template.available
@@ -119,7 +122,7 @@ function TemplateCard({
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-sm font-semibold">{template.title}</h3>
         {provider ? (
-          <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-background ring-1 ring-border/60">
+          <span className="flex size-7 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
             <ProviderBrandIcon provider={provider} className="size-4" />
           </span>
         ) : null}

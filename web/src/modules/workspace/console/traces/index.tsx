@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
 import {
   Activity,
   AlertTriangle,
@@ -12,6 +11,8 @@ import {
   Users,
   Waypoints,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { DataTableBulkActions, DataTablePagination, LongText } from "@/components/data-table";
@@ -64,7 +65,7 @@ function defaultFilters(): JourneyFilterForm {
 }
 
 export function TracesView() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const tracesPath = useMenuPath("traces");
   const allowedOperations = useAllowedOperations();
   const canExport = allowedOperations.has("export");
@@ -189,6 +190,12 @@ export function TracesView() {
     ...(to ? { to } : {}),
   };
 
+  const journeyHref = (path: string) => {
+    const params = new URLSearchParams(journeySearch);
+    const query = params.toString();
+    return query ? `${path}?${query}` : path;
+  };
+
   return (
     <ConsolePage title="链路">
       <div className="flex flex-1 flex-col gap-4 sm:gap-6">
@@ -260,7 +267,7 @@ export function TracesView() {
         </div>
 
         {truncated ? (
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+          <div className="border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning">
             匹配的审计记录超过后端聚合上限，请缩小时间范围或指定用户后再查看完整链路。
           </div>
         ) : null}
@@ -321,10 +328,7 @@ export function TracesView() {
                         if (!detailPath) {
                           return;
                         }
-                        void navigate({
-                          to: detailPath,
-                          search: journeySearch,
-                        });
+                        router.push(journeyHref(detailPath));
                       }}
                     >
                       {canExport ? (
@@ -384,8 +388,7 @@ export function TracesView() {
                         {detailPath ? (
                           <Button variant="ghost" size="sm" asChild>
                             <Link
-                              to={detailPath}
-                              search={journeySearch}
+                              href={journeyHref(detailPath)}
                               onClick={(event) => event.stopPropagation()}
                             >
                               查看

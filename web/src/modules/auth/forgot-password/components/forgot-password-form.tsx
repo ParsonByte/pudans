@@ -1,9 +1,9 @@
 import { type FormEvent, Fragment, useState } from "react";
 
 import { apiClient } from "@pudans-dev/api-client";
-import { Link } from "@tanstack/react-router";
 import { isAxiosError } from "axios";
 import { ArrowLeft, ArrowRight, Check, CheckCircle2, Loader2, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { PasswordInput } from "@/components/password-input";
@@ -145,7 +145,7 @@ export function ForgotPasswordForm() {
             >
               <span
                 className={cn(
-                  "inline-flex size-6 items-center justify-center rounded-full border text-[11px]",
+                  "inline-flex size-6 items-center justify-center border text-[11px]",
                   step === item.number && "border-primary bg-primary text-primary-foreground",
                   step > item.number && "border-primary bg-primary/10 text-primary",
                 )}
@@ -160,13 +160,13 @@ export function ForgotPasswordForm() {
 
       {step === 3 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-8 text-center">
-          <span className="inline-flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <span className="inline-flex size-14 items-center justify-center bg-primary/10 text-primary">
             <CheckCircle2 className="size-8" />
           </span>
           <h3 className="text-lg font-semibold">密码已重置</h3>
           <p className="text-sm leading-6 text-muted-foreground">现在可以使用新密码登录。</p>
           <Button asChild className="mt-2">
-            <Link to="/sign-in">返回登录</Link>
+            <Link href="/sign-in">返回登录</Link>
           </Button>
         </div>
       ) : (
@@ -274,7 +274,7 @@ export function ForgotPasswordForm() {
       )}
 
       <Link
-        to="/sign-in"
+        href="/sign-in"
         className="mt-auto inline-flex items-center justify-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="size-3.5" />

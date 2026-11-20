@@ -53,12 +53,12 @@ export function ActivityBarChart({
             contentStyle={{
               background: "var(--popover)",
               border: "1px solid var(--border)",
-              borderRadius: "0.75rem",
+              borderRadius: 0,
               color: "var(--popover-foreground)",
               fontSize: "0.75rem",
             }}
           />
-          <Bar dataKey="count" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="count" fill="var(--primary)" radius={0} />
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -12,9 +12,9 @@ help:
 		/^## / { desc = substr($$0, 4); next } \
 		/^[a-zA-Z0-9_-]+:/ { if (desc != "") { printf "  %-14s %s\n", $$1, desc; desc = "" } }' $(MAKEFILE_LIST)
 
-## 构建后端（编译、测试并打包）
+## 构建后端与前端产物
 build:
-	$(GRADLE) :appkernel:build
+	$(GRADLE) :appkernel:build :web:standaloneWeb
 
 ## 编译后端主代码
 compile:

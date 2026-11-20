@@ -1,8 +1,8 @@
 import { type ReactNode, useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -365,7 +365,7 @@ export function ModelMarketView() {
           {modelsQuery.isPending ? (
             <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
               {Array.from({ length: 6 }, (_, index) => (
-                <Skeleton key={index} className="h-56 rounded-2xl" />
+                <Skeleton key={index} className="h-56" />
               ))}
             </div>
           ) : modelsQuery.isError ? (
@@ -382,7 +382,7 @@ export function ModelMarketView() {
                   <p>还没有模型。先到供应商里添加账号并导入模型。</p>
                   {providersPath ? (
                     <Link
-                      to={providersPath}
+                      href={providersPath}
                       className="inline-flex text-sm font-medium text-primary hover:underline"
                     >
                       去供应商配置
@@ -413,9 +413,9 @@ function ModelCard({ info }: { info: ModelInfo }) {
   const capabilityLabels = modelCapabilityLabels(model.spec);
   const contextWindow = model.spec.contextWindow;
   return (
-    <article className="flex min-h-56 flex-col rounded-2xl border bg-card/40 p-5 transition-colors hover:border-border/80 hover:bg-accent/10">
+    <article className="flex min-h-56 flex-col border bg-card/40 p-5 transition-colors hover:border-border/80 hover:bg-accent/10">
       <div className="flex items-start gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+        <span className="flex size-11 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
           <ProviderBrandIcon provider={provider} className="size-6" />
         </span>
         <div className="min-w-0 flex-1">
@@ -484,8 +484,8 @@ function FilterChip({ label, active, icon, onClick }: FilterChipProps) {
       onClick={onClick}
       className={
         active
-          ? "inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
-          : "inline-flex items-center gap-1.5 rounded-full border border-border/50 bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
+          ? "inline-flex items-center gap-1.5 border border-primary/40 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary"
+          : "inline-flex items-center gap-1.5 border border-border/50 bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-border hover:text-foreground"
       }
     >
       {icon}

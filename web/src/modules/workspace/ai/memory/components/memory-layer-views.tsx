@@ -64,7 +64,7 @@ export function MemoryChatView({
           return (
             <div key={item.id} className="flex items-center justify-center gap-2">
               <MemorySelection {...selection} id={item.id} label={`选择第 ${item.id} 条系统消息`} />
-              <span className="max-w-[85%] rounded-full bg-muted px-3 py-1 text-xs text-muted-foreground">
+              <span className="max-w-[85%] bg-muted px-3 py-1 text-xs text-muted-foreground">
                 {content}
               </span>
             </div>
@@ -76,7 +76,7 @@ export function MemoryChatView({
             <MemorySelection {...selection} id={item.id} label={`选择第 ${item.id} 条消息`} />
             <div className={`flex min-w-0 flex-1 ${isUser ? "justify-end" : "justify-start"}`}>
               <div
-                className={`max-w-[75%] rounded-[10px] px-3 py-2.5 ${
+                className={`max-w-[75%] px-3 py-2.5 ${
                   isUser ? "bg-primary/5" : "border-l-[3px] border-primary bg-muted/60"
                 }`}
               >
@@ -116,7 +116,7 @@ export function MemoryAtomicView({
   return (
     <div className="space-y-2.5">
       {items.map((item) => (
-        <div key={item.id} className="flex items-start gap-2 rounded-lg border bg-card p-3">
+        <div key={item.id} className="flex items-start gap-2 border bg-card p-3">
           <MemorySelection {...selection} id={item.id} label={`选择第 ${item.id} 条原子记忆`} />
           <div className="min-w-0 flex-1 space-y-2">
             <div className="flex flex-wrap items-center gap-1.5">
@@ -199,7 +199,7 @@ function MemorySceneRow({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded-lg border bg-card">
+    <div className="border bg-card">
       <div className="flex items-center gap-2 p-2.5">
         <Collapsible open={open} onOpenChange={setOpen} className="min-w-0 flex-1">
           <CollapsibleTrigger asChild>
@@ -284,7 +284,7 @@ export function MemoryProfileView({
   onEdit: () => void;
 }) {
   return (
-    <div className="rounded-lg border bg-card">
+    <div className="border bg-card">
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <Badge variant="secondary">核心画像</Badge>
         <span className="text-[11px] text-muted-foreground">

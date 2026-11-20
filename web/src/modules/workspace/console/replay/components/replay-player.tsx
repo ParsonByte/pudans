@@ -172,7 +172,7 @@ function ReplayStepDetail({ step }: { step?: ReplayStep }) {
   }
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
-      <div className="grid shrink-0 gap-4 rounded-lg border p-4 sm:grid-cols-2">
+      <div className="grid shrink-0 gap-4 border p-4 sm:grid-cols-2">
         <InfoRow label="时间" value={formatAuditExactTime(step.timestamp)} />
         <InfoRow label="结果" value={<AuditResultBadge result={step.result} />} />
         <InfoRow label="操作" value={auditOperationLabel(step.operation)} />
@@ -201,7 +201,7 @@ function ReplayStepDetail({ step }: { step?: ReplayStep }) {
       </div>
       <section className="flex min-h-0 flex-1 flex-col gap-2">
         <h3 className="text-sm font-semibold">操作快照</h3>
-        <pre className="min-h-40 flex-1 overflow-auto rounded-lg border bg-muted/40 p-3 text-xs leading-5 break-all whitespace-pre-wrap">
+        <pre className="min-h-40 flex-1 overflow-auto border bg-muted/40 p-3 text-xs leading-5 break-all whitespace-pre-wrap">
           {formatAuditSnapshot(step.actionSnapshot)}
         </pre>
       </section>

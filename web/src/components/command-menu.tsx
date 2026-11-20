@@ -1,7 +1,8 @@
 import { useCallback } from "react";
 
-import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, ChevronRight, Laptop, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 
 import type { NavGroup } from "@/components/layout/types";
 import {
@@ -16,14 +17,13 @@ import {
 } from "@/components/ui/command";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSearch } from "@/context/search-provider";
-import { useTheme } from "@/context/theme-provider";
 
 type CommandMenuProps = {
   navGroups?: NavGroup[];
 };
 
 export function CommandMenu({ navGroups = [] }: CommandMenuProps) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { setTheme } = useTheme();
   const { open, setOpen } = useSearch();
 
@@ -51,7 +51,7 @@ export function CommandMenu({ navGroups = [] }: CommandMenuProps) {
                         key={`${navItem.url}-${index}`}
                         value={navItem.title}
                         onSelect={() => {
-                          runCommand(() => navigate({ to: navItem.url }));
+                          runCommand(() => router.push(navItem.url));
                         }}
                       >
                         <div className="flex size-4 items-center justify-center">
@@ -67,7 +67,7 @@ export function CommandMenu({ navGroups = [] }: CommandMenuProps) {
                       key={`${navItem.title}-${subItem.url}-${subIndex}`}
                       value={`${navItem.title}-${subItem.url}`}
                       onSelect={() => {
-                        runCommand(() => navigate({ to: subItem.url }));
+                        runCommand(() => router.push(subItem.url));
                       }}
                     >
                       <div className="flex size-4 items-center justify-center">

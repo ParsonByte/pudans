@@ -93,10 +93,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_CLASSES: Record<string, string> = {
-  SUCCEEDED: "bg-emerald-500",
-  SUCCESS: "bg-emerald-500",
+  SUCCEEDED: "bg-success",
+  SUCCESS: "bg-success",
   FAILED: "bg-destructive",
-  RUNNING: "bg-amber-500",
+  RUNNING: "bg-warning",
 };
 
 const AGENT_LABELS: Record<string, string> = {

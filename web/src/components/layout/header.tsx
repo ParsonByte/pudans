@@ -31,7 +31,7 @@ export function Header({ className, fixed, children, ...props }: HeaderProps) {
         className={cn(
           "relative flex h-full items-center gap-3 transition-all duration-200 sm:gap-4",
           scrolled
-            ? "mx-3 my-2 h-12 rounded-full border bg-background/70 px-4 shadow-lg backdrop-blur-xl"
+            ? "mx-3 my-2 h-12 border bg-background/70 px-4 shadow-lg backdrop-blur-xl"
             : "p-4",
         )}
       >

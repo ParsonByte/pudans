@@ -1,3 +1,5 @@
+import { BASE_PATH } from "@/lib/base-path";
+
 import type { AiProviderVendor } from "./api";
 
 export type ProviderRegionId = string;
@@ -63,7 +65,7 @@ const PRESET_ICON_PATHS: Record<string, string> = {
 
 export function presetIcon(preset: ProviderPreset): string | undefined {
   const path = PRESET_ICON_PATHS[preset.id];
-  return path ? `${import.meta.env.BASE_URL}${path}` : undefined;
+  return path ? `${BASE_PATH}${path}` : undefined;
 }
 
 export function presetRegion(preset: ProviderPreset, regionId: ProviderRegionId): PresetRegion {

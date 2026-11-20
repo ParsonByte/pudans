@@ -26,7 +26,7 @@ export function ChatMentionMenu({
   const actions = items.filter((item) => item.kind === "add");
 
   return (
-    <div className="absolute inset-x-0 bottom-full z-50 mb-2 overflow-hidden rounded-xl border bg-popover shadow-lg">
+    <div className="absolute inset-x-0 bottom-full z-50 mb-2 overflow-hidden border bg-popover shadow-lg">
       <Command shouldFilter={false} value={activeValue} onValueChange={onActiveValueChange}>
         <CommandList>
           {files.length > 0 ? (

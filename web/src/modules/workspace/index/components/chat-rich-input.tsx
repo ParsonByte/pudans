@@ -31,7 +31,7 @@ type ChatRichInputProps = {
 };
 
 const CHIP_CLASS =
-  "mx-0.5 inline-flex max-w-full items-center gap-1 rounded-full bg-primary/15 py-0.5 pr-2 pl-1 align-middle text-sm text-foreground";
+  "mx-0.5 inline-flex max-w-full items-center gap-1  bg-primary/15 py-0.5 pr-2 pl-1 align-middle text-sm text-foreground";
 
 const FILE_ICON =
   "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' class='size-3.5 shrink-0'><path d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/><path d='M14 2v4a2 2 0 0 0 2 2h4'/></svg>";
@@ -74,7 +74,7 @@ function buildChip(chip: ChatMentionChip): HTMLSpanElement {
     const image = document.createElement("img");
     image.src = chip.url;
     image.alt = "";
-    image.className = "size-4 shrink-0 rounded-full object-cover";
+    image.className = "size-4 shrink-0  object-cover";
     element.append(image);
   } else {
     const icon = document.createElement("span");
@@ -315,7 +315,7 @@ export function ChatRichInput({
         onInput={emit}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
-        className="relative max-h-64 min-h-24 w-full flex-1 overflow-y-auto overscroll-contain rounded-none border-0 bg-transparent p-3 text-base break-words whitespace-pre-wrap outline-none md:text-base dark:bg-transparent"
+        className="relative max-h-64 min-h-24 w-full flex-1 overflow-y-auto overscroll-contain border-0 bg-transparent p-3 text-base break-words whitespace-pre-wrap outline-none md:text-base dark:bg-transparent"
       />
       {empty ? (
         <span className="pointer-events-none absolute inset-0 p-3 text-base text-muted-foreground md:text-base">

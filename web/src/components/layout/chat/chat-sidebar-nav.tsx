@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Brain,
   ChevronRight,
@@ -13,6 +12,8 @@ import {
   ScanSearch,
   Sparkles,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -44,20 +45,20 @@ const MORE_ITEMS = [
 ] as const;
 
 export function ChatSidebarNav() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
-  const pathname = useLocation({ select: (location) => location.pathname });
+  const pathname = usePathname();
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
-        void navigate({ to: NEW_CHAT_URL });
+        router.push(NEW_CHAT_URL);
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [navigate]);
+  }, [router]);
 
   const openUnavailable = (label: string) => {
     toast.info(`${label}功能尚未开放。`);
@@ -72,7 +73,7 @@ export function ChatSidebarNav() {
             isActive={pathname === NEW_CHAT_URL}
             className="h-10 border bg-background"
           >
-            <Link to={NEW_CHAT_URL}>
+            <Link href={NEW_CHAT_URL}>
               <MessageCirclePlus className="size-5" />
               <span>新建会话</span>
               <KbdGroup className="ms-auto">
@@ -88,7 +89,7 @@ export function ChatSidebarNav() {
               <item.icon className="size-5" />
               <span>{item.label}</span>
               {"badge" in item && item.badge ? (
-                <Badge className="ms-auto rounded-md bg-indigo-500/15 px-1.5 text-[10px] font-medium text-indigo-500 dark:text-indigo-400">
+                <Badge className="ms-auto bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
                   {item.badge}
                 </Badge>
               ) : null}

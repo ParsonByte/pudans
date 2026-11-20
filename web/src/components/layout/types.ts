@@ -1,7 +1,5 @@
 import type { ElementType } from "react";
 
-import type { LinkProps } from "@tanstack/react-router";
-
 type User = {
   name: string;
   email: string;
@@ -24,7 +22,7 @@ type BaseNavItem = {
   icon?: ElementType;
 };
 
-type NavUrl = LinkProps["to"] | (string & {});
+type NavUrl = string;
 
 type NavLink = BaseNavItem & {
   url: NavUrl;

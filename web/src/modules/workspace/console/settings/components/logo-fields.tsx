@@ -18,7 +18,7 @@ export function LogoPreview({ url, label, fallback }: LogoPreviewProps) {
   const previewUrl = url || fallback;
 
   return (
-    <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted/30 p-2">
+    <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden border bg-muted/30 p-2">
       {previewUrl ? (
         <img
           src={previewUrl}
@@ -62,7 +62,7 @@ export function LogoPair({ form, fields }: LogoPairProps) {
           <LogoPreviewCard
             url={resolveLogoUrl(lightValue, lightField.defaultValue ?? "")}
             label="日间模式 Logo 预览"
-            className="border bg-white"
+            className="border bg-background"
           />
           <LogoPreviewCard
             url={resolveLogoUrl(darkValue, darkField.defaultValue ?? "")}
@@ -95,7 +95,7 @@ function LogoUrlInput({
       </Label>
       <div
         className={cn(
-          "flex h-9 items-center overflow-hidden rounded-lg border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30",
+          "flex h-9 items-center overflow-hidden border border-input bg-transparent transition-colors focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 dark:bg-input/30",
           message && "border-destructive ring-3 ring-destructive/20",
         )}
       >
@@ -108,7 +108,7 @@ function LogoUrlInput({
           maxLength={field.maxLength}
           aria-invalid={Boolean(message)}
           autoComplete="off"
-          className="h-full rounded-none border-0 bg-transparent px-2.5 shadow-none focus-visible:ring-0 dark:bg-transparent"
+          className="h-full border-0 bg-transparent px-2.5 shadow-none focus-visible:ring-0 dark:bg-transparent"
           {...form.register(field.name)}
         />
       </div>
@@ -127,9 +127,7 @@ function LogoPreviewCard({
   className: string;
 }) {
   return (
-    <div
-      className={cn("flex h-16 min-w-36 items-center justify-center rounded-xl px-4", className)}
-    >
+    <div className={cn("flex h-16 min-w-36 items-center justify-center px-4", className)}>
       <img src={url} alt={label} className="max-h-9 max-w-32 object-contain" />
     </div>
   );

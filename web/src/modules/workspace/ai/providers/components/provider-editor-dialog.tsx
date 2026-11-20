@@ -551,7 +551,7 @@ export function ProviderEditorDialog({
           <div className="flex items-start justify-between gap-4 pe-10">
             <div className="min-w-0 space-y-1">
               <DialogTitle className="flex items-center gap-2">
-                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+                <span className="flex size-8 shrink-0 items-center justify-center bg-muted">
                   <ProviderBrandIcon provider={provider} className="size-5" />
                 </span>
                 <span className="truncate">{provider.spec.displayName || name}</span>
@@ -622,7 +622,7 @@ export function ProviderEditorDialog({
 
         <AutoScrollArea fill>
           <div className="space-y-6 pb-6">
-            <section className="space-y-4 rounded-2xl border bg-card/30 p-4">
+            <section className="space-y-4 border bg-card/30 p-4">
               <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
                 <span className="text-sm text-muted-foreground">名称</span>
                 <div className="min-w-0 space-y-1">
@@ -667,7 +667,7 @@ export function ProviderEditorDialog({
               </div>
             </section>
 
-            <section className="space-y-3 rounded-2xl border bg-card/30 p-4">
+            <section className="space-y-3 border bg-card/30 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -699,7 +699,7 @@ export function ProviderEditorDialog({
               </div>
 
               {quickKeyOpen && canCreate ? (
-                <div className="flex flex-wrap items-center gap-2 rounded-lg border p-3">
+                <div className="flex flex-wrap items-center gap-2 border p-3">
                   <Input
                     value={quickKeyName}
                     onChange={(event) => setQuickKeyName(event.target.value)}
@@ -741,7 +741,7 @@ export function ProviderEditorDialog({
                   {resolveAiProviderApiError(accountsQuery.error)}
                 </p>
               ) : accounts.length === 0 ? (
-                <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                <p className="border border-dashed p-4 text-sm text-muted-foreground">
                   还没有密钥。至少添加一个密钥后才能测试供应商。
                 </p>
               ) : (
@@ -749,7 +749,7 @@ export function ProviderEditorDialog({
                   {accounts.map((account) => (
                     <div
                       key={account.metadata.name}
-                      className="flex flex-wrap items-center gap-3 rounded-lg border p-3"
+                      className="flex flex-wrap items-center gap-3 border p-3"
                     >
                       <Switch
                         checked={account.spec.enabled}
@@ -862,7 +862,7 @@ export function ProviderEditorDialog({
               )}
             </section>
 
-            <section className="space-y-3 rounded-2xl border bg-card/30 p-4">
+            <section className="space-y-3 border bg-card/30 p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
                   <h3 className="flex items-center gap-2 text-sm font-semibold">
@@ -938,10 +938,10 @@ export function ProviderEditorDialog({
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex gap-1 rounded-lg bg-muted p-1">
+                <div className="inline-flex gap-1 bg-muted p-1">
                   <button
                     type="button"
-                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                    className={`px-3 py-1 text-sm transition-colors ${
                       modelView === "all"
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
@@ -952,7 +952,7 @@ export function ProviderEditorDialog({
                   </button>
                   <button
                     type="button"
-                    className={`rounded-md px-3 py-1 text-sm transition-colors ${
+                    className={`px-3 py-1 text-sm transition-colors ${
                       modelView === "selected"
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
@@ -983,7 +983,7 @@ export function ProviderEditorDialog({
                 {displayedModels.map((model) => (
                   <div
                     key={model.metadata.name}
-                    className={`flex items-center gap-1 rounded-full border px-3 py-1 text-xs ${
+                    className={`flex items-center gap-1 border px-3 py-1 text-xs ${
                       model.spec.enabled === false
                         ? "border-dashed text-muted-foreground"
                         : "bg-muted/40"
@@ -1000,13 +1000,13 @@ export function ProviderEditorDialog({
                     {canUpdate ? (
                       <button
                         type="button"
-                        className="flex size-4 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                        className="flex size-4 items-center justify-center text-muted-foreground hover:text-foreground"
                         aria-label={model.spec.enabled === false ? "启用模型" : "停用模型"}
                         title={model.spec.enabled === false ? "启用模型" : "停用模型"}
                         onClick={() => toggleModelMutation.mutate(model)}
                       >
                         <span
-                          className={`block size-2 rounded-full ${
+                          className={`block size-2 ${
                             model.spec.enabled === false ? "bg-muted-foreground/40" : "bg-primary"
                           }`}
                         />
@@ -1029,7 +1029,7 @@ export function ProviderEditorDialog({
                     key={remote.id}
                     type="button"
                     disabled={!canCreate || importModelMutation.isPending}
-                    className="rounded-full border border-dashed px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50"
+                    className="border border-dashed px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50"
                     onClick={() => importModelMutation.mutate(remote)}
                   >
                     <Plus className="me-1 inline size-3" />
@@ -1069,7 +1069,7 @@ export function ProviderEditorDialog({
               ) : null}
             </section>
 
-            <section className="space-y-2 rounded-2xl border bg-card/30 p-4">
+            <section className="space-y-2 border bg-card/30 p-4">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 <Link2 className="size-4" />
                 端点
@@ -1120,7 +1120,7 @@ export function ProviderEditorDialog({
               ) : null}
             </section>
 
-            <section className="space-y-3 rounded-2xl border bg-card/30 p-4">
+            <section className="space-y-3 border bg-card/30 p-4">
               <button
                 type="button"
                 className="flex items-center gap-2 text-sm font-semibold"
@@ -1218,7 +1218,7 @@ export function ProviderEditorDialog({
                       {...form.register("readTimeoutMs")}
                     />
                   </label>
-                  <div className="flex items-center justify-between gap-4 rounded-lg border p-4 sm:col-span-2">
+                  <div className="flex items-center justify-between gap-4 border p-4 sm:col-span-2">
                     <div className="space-y-1">
                       <p className="text-sm font-medium">免费供应商</p>
                       <p className="text-xs text-muted-foreground">参与免费优先调度。</p>

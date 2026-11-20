@@ -120,7 +120,7 @@ export function EditUserGroupDialog({ group, onClose }: EditUserGroupDialogProps
       submitLabel={builtin ? "保存角色" : "保存更改"}
     >
       {builtin ? (
-        <p className="rounded-lg border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
+        <p className="border bg-muted/40 p-3 text-xs leading-5 text-muted-foreground">
           内置用户组不能移除内置角色，但可以添加自定义角色。
         </p>
       ) : (

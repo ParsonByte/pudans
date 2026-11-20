@@ -165,7 +165,7 @@ export function SandboxProviderDialog({ provider, onClose }: SandboxProviderDial
           control={form.control}
           name="enabled"
           render={({ field }) => (
-            <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+            <div className="flex items-center justify-between gap-4 border p-4">
               <div className="space-y-1">
                 <p className="text-sm font-medium">启用</p>
                 <p className="text-xs text-muted-foreground">

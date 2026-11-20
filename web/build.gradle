@@ -5,10 +5,18 @@ plugins {
     alias(libs.plugins.node)
 }
 
-description = 'Pudans web frontend and bundled static assets.'
+description = 'Pudans web frontend build.'
 
 node {
     download = false
+}
+
+def webInputs = fileTree(layout.projectDirectory) {
+    include 'next.config.ts', 'package.json', 'package-lock.json',
+        'tsconfig*.json', 'postcss.config.mjs', 'eslint.config.js',
+        '.prettierrc.json', '.prettierignore', 'knip.json', 'components.json',
+        'src/**', 'tests/**', 'public/**', 'packages/**', 'scripts/**'
+    exclude '**/node_modules/**', '**/dist/**', '**/build/**', '**/.next/**'
 }
 
 tasks.named('npmInstall') {
@@ -20,14 +28,15 @@ tasks.named('npmInstall') {
 tasks.register('buildWeb', NpmTask) {
     dependsOn tasks.named('npmInstall')
     args = ['run', 'build']
-    inputs.files(fileTree(layout.projectDirectory) {
-        include 'index.html', 'package.json', 'package-lock.json',
-            'tsconfig*.json', 'vite.config.ts', 'eslint.config.js',
-            '.prettierrc.json', '.prettierignore', 'knip.json', 'components.json',
-            'src/**', 'public/**', 'packages/**'
-        exclude '**/node_modules/**', '**/dist/**', '**/build/**'
-    })
-    outputs.dir(layout.buildDirectory.dir('web'))
+    inputs.files(webInputs)
+    outputs.dir(layout.projectDirectory.dir('.next'))
+}
+
+tasks.register('standaloneWeb', NpmTask) {
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'build:standalone']
+    inputs.files(webInputs)
+    outputs.dir(layout.projectDirectory.dir('.next/standalone'))
 }
 
 tasks.register('lint', NpmTask) {
@@ -46,9 +55,13 @@ tasks.register('formatCheck', NpmTask) {
 }
 
 tasks.named('assemble') {
-    dependsOn tasks.named('buildWeb')
+    dependsOn tasks.named('standaloneWeb')
 }
 
 tasks.named('check') {
     dependsOn tasks.named('lint'), tasks.named('typecheck'), tasks.named('formatCheck')
+}
+
+tasks.named('clean') {
+    delete layout.projectDirectory.dir('.next')
 }

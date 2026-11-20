@@ -265,7 +265,7 @@ export function RoutingHistory({ providers, models, routeGroups, lookups }: Rout
       {query.isPending ? (
         <div className="space-y-3 px-5 py-4">
           {Array.from({ length: 5 }, (_, index) => (
-            <Skeleton key={index} className="h-11 rounded-lg" />
+            <Skeleton key={index} className="h-11" />
           ))}
         </div>
       ) : query.isError && items.length === 0 ? (
@@ -386,7 +386,7 @@ function HistoryRow({ item, lookups, onOpen }: HistoryRowProps) {
       </TableCell>
       <TableCell>
         <span className="inline-flex items-center gap-1.5 text-xs">
-          <span className={`size-1.5 rounded-full ${requestStatusDotClass(item.status)}`} />
+          <span className={`size-1.5 ${requestStatusDotClass(item.status)}`} />
           {requestStatusLabel(item.status)}
         </span>
       </TableCell>

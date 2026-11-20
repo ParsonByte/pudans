@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import { MessageSquare } from "lucide-react";
+import Link from "next/link";
 
 import { AutoScrollArea } from "@/components/auto-scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -79,12 +79,12 @@ export function RoutingTraceDetail({ requestId, lookups, onClose }: RoutingTrace
           <div className="space-y-4 pb-4">
             {query.isPending ? (
               <div className="space-y-3">
-                <Skeleton className="h-24 rounded-xl" />
-                <Skeleton className="h-40 rounded-xl" />
-                <Skeleton className="h-40 rounded-xl" />
+                <Skeleton className="h-24" />
+                <Skeleton className="h-40" />
+                <Skeleton className="h-40" />
               </div>
             ) : query.isError ? (
-              <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-10 text-center">
+              <div className="flex flex-col items-center gap-3 border border-dashed px-6 py-10 text-center">
                 <p className="text-sm font-medium">无法加载路由详情</p>
                 <p className="max-w-md text-xs text-muted-foreground">
                   {resolveApiErrorWithDetail(query.error, {
@@ -126,11 +126,11 @@ function DetailContent({
 
   return (
     <>
-      <section className="space-y-3 rounded-xl border p-4">
+      <section className="space-y-3 border p-4">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-sm font-semibold">概览</h3>
           <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span className={`size-1.5 rounded-full ${requestStatusDotClass(detail.status)}`} />
+            <span className={`size-1.5 ${requestStatusDotClass(detail.status)}`} />
             {requestStatusLabel(detail.status)}
           </span>
           <Badge variant="outline">{agentLabel(detail.agent)}</Badge>
@@ -153,15 +153,12 @@ function DetailContent({
           <DetailItem label="完成时间">{formatBeijingDateTime(detail.completedAt)}</DetailItem>
         </div>
         {detail.conversationId ? (
-          <div className="flex flex-wrap items-center gap-3 rounded-lg bg-muted/40 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-3 bg-muted/40 px-3 py-2">
             <p className="min-w-0 flex-1 text-xs text-muted-foreground">
               请求关联会话 #{detail.conversationId}。Pudans 不会自动重发请求，请打开原会话继续提问。
             </p>
             <Button type="button" variant="outline" size="sm" asChild>
-              <Link
-                to="/chat/$conversationId"
-                params={{ conversationId: String(detail.conversationId) }}
-              >
+              <Link href={`/chat/${detail.conversationId}`}>
                 <MessageSquare />
                 去聊天重试
               </Link>
@@ -170,20 +167,20 @@ function DetailContent({
         ) : null}
       </section>
 
-      <section className="space-y-3 rounded-xl border p-4">
+      <section className="space-y-3 border p-4">
         <div className="flex flex-wrap items-center gap-2">
           <h3 className="text-sm font-semibold">路由追踪</h3>
           {trace?.outcome ? <Badge variant="outline">{outcomeLabel(trace.outcome)}</Badge> : null}
         </div>
         {!trace ? (
-          <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+          <p className="border border-dashed p-4 text-sm text-muted-foreground">
             本次请求没有保存路由追踪。
           </p>
         ) : (
           <TraceContent trace={trace} lookups={lookups} />
         )}
         {detail.retrievalTrace ? (
-          <details className="rounded-lg border">
+          <details className="border">
             <summary className="cursor-pointer px-3 py-2 text-sm font-medium">检索追踪</summary>
             <pre className="max-h-72 overflow-auto border-t bg-muted/40 p-3 font-mono text-[11px]">
               {JSON.stringify(detail.retrievalTrace, null, 2)}
@@ -237,7 +234,7 @@ function TraceContent({ trace, lookups }: { trace: AiRouteTrace; lookups: AiRout
       </div>
 
       {matchedRule ? (
-        <div className="space-y-1 rounded-lg border bg-muted/20 p-3 text-xs">
+        <div className="space-y-1 border bg-muted/20 p-3 text-xs">
           <p className="text-sm font-medium">
             命中规则 {matchedRule.name || "未命名"} · 优先级 {matchedRule.priority ?? 0}
           </p>
@@ -253,9 +250,7 @@ function TraceContent({ trace, lookups }: { trace: AiRouteTrace; lookups: AiRout
           候选（{(trace.candidates ?? []).length}）
         </h4>
         {(trace.candidates ?? []).length === 0 ? (
-          <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-            没有候选记录。
-          </p>
+          <p className="border border-dashed p-3 text-xs text-muted-foreground">没有候选记录。</p>
         ) : (
           <Table>
             <TableHeader>
@@ -286,9 +281,7 @@ function TraceContent({ trace, lookups }: { trace: AiRouteTrace; lookups: AiRout
           尝试（{(trace.attempts ?? []).length}）
         </h4>
         {(trace.attempts ?? []).length === 0 ? (
-          <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">
-            没有尝试记录。
-          </p>
+          <p className="border border-dashed p-3 text-xs text-muted-foreground">没有尝试记录。</p>
         ) : (
           <Table>
             <TableHeader>
@@ -316,7 +309,7 @@ function TraceContent({ trace, lookups }: { trace: AiRouteTrace; lookups: AiRout
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5 rounded-lg border p-3">
+        <div className="space-y-1.5 border p-3">
           <p className="text-xs font-medium text-muted-foreground">后备组</p>
           {(trace.fallbackGroups ?? []).length === 0 ? (
             <p className="text-xs text-muted-foreground">未设置。</p>
@@ -330,7 +323,7 @@ function TraceContent({ trace, lookups }: { trace: AiRouteTrace; lookups: AiRout
             </div>
           )}
         </div>
-        <div className="space-y-1.5 rounded-lg border p-3">
+        <div className="space-y-1.5 border p-3">
           <p className="text-xs font-medium text-muted-foreground">后备供应商</p>
           {(trace.fallback ?? []).length === 0 ? (
             <p className="text-xs text-muted-foreground">未设置。</p>

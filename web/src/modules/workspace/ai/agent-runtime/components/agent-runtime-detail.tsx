@@ -252,14 +252,14 @@ export function AgentRuntimeDetail({
               {spec?.prompt ? (
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">系统提示词</p>
-                  <pre className="max-h-40 overflow-auto rounded-lg border bg-muted/40 p-3 text-xs break-words whitespace-pre-wrap">
+                  <pre className="max-h-40 overflow-auto border bg-muted/40 p-3 text-xs break-words whitespace-pre-wrap">
                     {spec.prompt}
                   </pre>
                 </div>
               ) : null}
             </section>
           ) : (
-            <p className="rounded-lg border border-dashed px-3 py-4 text-xs text-muted-foreground">
+            <p className="border border-dashed px-3 py-4 text-xs text-muted-foreground">
               该运行时对应的 Agent 不在当前可见的 Agent 列表中，只能查看和操作运行时。
             </p>
           )}
@@ -267,7 +267,7 @@ export function AgentRuntimeDetail({
           <section className="space-y-3">
             <h3 className="text-sm font-semibold">运行时控制台</h3>
             {tabs.length === 0 ? (
-              <p className="rounded-lg border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
+              <p className="border border-dashed px-3 py-6 text-center text-xs text-muted-foreground">
                 当前角色没有命令、文件或日志操作权限。
               </p>
             ) : (
@@ -324,7 +324,7 @@ type InfoItemProps = {
 
 function InfoItem({ label, value, mono = false }: InfoItemProps) {
   return (
-    <div className="min-w-0 rounded-lg border bg-card/40 px-3 py-2">
+    <div className="min-w-0 border bg-card/40 px-3 py-2">
       <p className="text-[11px] text-muted-foreground">{label}</p>
       <div className={`min-w-0 truncate text-sm ${mono ? "font-mono text-xs" : ""}`}>{value}</div>
     </div>

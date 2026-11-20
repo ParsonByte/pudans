@@ -46,7 +46,7 @@ export function ProviderDialogShell({
         <DialogHeader>
           <div className="flex items-start gap-3 pe-8">
             {icon ? (
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+              <span className="flex size-9 shrink-0 items-center justify-center bg-muted">
                 {icon}
               </span>
             ) : null}
@@ -58,7 +58,7 @@ export function ProviderDialogShell({
         </DialogHeader>
         <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto py-2 pe-1">{children}</div>
-          <DialogFooter className="mx-0 mt-4 mb-0 rounded-none border-t bg-transparent px-0 pt-4 sm:justify-end">
+          <DialogFooter className="mx-0 mt-4 mb-0 border-t bg-transparent px-0 pt-4 sm:justify-end">
             <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
               {cancelLabel}
             </Button>
@@ -81,7 +81,7 @@ type ProviderDialogSectionProps = {
 
 export function ProviderDialogSection({ title, children, className }: ProviderDialogSectionProps) {
   return (
-    <section className={cn("space-y-3 rounded-2xl border bg-card/30 p-4", className)}>
+    <section className={cn("space-y-3 border bg-card/30 p-4", className)}>
       {title ? <h3 className="text-sm font-semibold">{title}</h3> : null}
       {children}
     </section>

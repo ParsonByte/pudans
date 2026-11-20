@@ -35,7 +35,7 @@ export function SessionHourHeatmap({ hours }: { hours: UsageSessionStatsHour[] }
                 <Tooltip key={hour.hour}>
                   <TooltipTrigger asChild>
                     <div
-                      className="flex h-9 items-end justify-center rounded-sm bg-muted pt-1 text-[9px] text-muted-foreground"
+                      className="flex h-9 items-end justify-center bg-muted pt-1 text-[9px] text-muted-foreground"
                       style={
                         level < 0
                           ? undefined
@@ -67,7 +67,7 @@ export function SessionHourHeatmap({ hours }: { hours: UsageSessionStatsHour[] }
               {OPACITY_LEVELS.map((opacity) => (
                 <span
                   key={opacity}
-                  className="size-2.5 rounded-sm"
+                  className="size-2.5"
                   style={{ backgroundColor: "var(--chart-2)", opacity }}
                 />
               ))}

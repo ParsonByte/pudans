@@ -86,7 +86,7 @@ export function RetrievalPanel({ knowledgeBase }: RetrievalPanelProps) {
         检索范围：当前知识库「{knowledgeBase.spec.displayName || knowledgeBase.metadata.name}」。
       </p>
 
-      <form onSubmit={submit} className="space-y-4 rounded-lg border p-4" noValidate>
+      <form onSubmit={submit} className="space-y-4 border p-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="retrieval-query">检索问题</Label>
           <Textarea
@@ -152,7 +152,7 @@ export function RetrievalPanel({ knowledgeBase }: RetrievalPanelProps) {
       {searchMutation.isPending ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }, (_, index) => (
-            <Skeleton key={index} className="h-24 rounded-lg" />
+            <Skeleton key={index} className="h-24" />
           ))}
         </div>
       ) : searchMutation.isError ? (
@@ -164,7 +164,7 @@ export function RetrievalPanel({ knowledgeBase }: RetrievalPanelProps) {
         />
       ) : result ? (
         result.citations.length === 0 ? (
-          <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
+          <div className="border border-dashed p-6 text-center text-xs text-muted-foreground">
             没有命中任何片段。可尝试降低分数阈值、提高召回数量，或更换检索问题。
           </div>
         ) : (
@@ -173,10 +173,7 @@ export function RetrievalPanel({ knowledgeBase }: RetrievalPanelProps) {
               命中 {result.citations.length} 个片段，分数越高表示与问题越相关。
             </p>
             {result.citations.map((citation) => (
-              <div
-                key={`${citation.index}-${citation.docId}`}
-                className="space-y-2 rounded-lg border p-4"
-              >
+              <div key={`${citation.index}-${citation.docId}`} className="space-y-2 border p-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge>引用 {citation.index}</Badge>
                   <Badge variant="secondary">分数 {formatScore(citation.score)}</Badge>
@@ -191,7 +188,7 @@ export function RetrievalPanel({ knowledgeBase }: RetrievalPanelProps) {
           </div>
         )
       ) : (
-        <div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground">
+        <div className="border border-dashed p-6 text-center text-xs text-muted-foreground">
           输入问题后执行检索测试，查看命中片段、分数与引用来源。
         </div>
       )}

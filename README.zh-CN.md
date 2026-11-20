@@ -120,7 +120,7 @@ Pudans 的 AI 能力运行在 LangChain4j Agent Harness 上，而不是独立的
 | `api-docs/` | OpenAPI 聚合与校验 |
 | `platform/appkernel/` | 后端依赖约束（BOM） |
 | `gradle/libs.versions.toml` | 后端依赖版本目录 |
-| `web/` | React 控制台，构建后打包进后端 jar |
+| `web/` | Next.js 控制台，以独立 Node 服务运行 |
 
 ## 快速开始
 
@@ -131,7 +131,7 @@ Pudans 的 AI 能力运行在 LangChain4j Agent Harness 上，而不是独立的
 - 可访问的 PostgreSQL 与 Redis
 - Docker（可选，便于启动依赖服务）
 
-Gradle 构建会安装前端依赖、构建 `web/`，再打包后端 jar。
+Gradle 构建会安装前端依赖、把 `web/` 构建为独立的 Next.js 服务，并打包后端 jar。
 
 ### 1. 启动 PostgreSQL 与 Redis
 
@@ -155,7 +155,7 @@ docker run -d --name pudans-redis -p 6379:6379 redis:latest
 ./gradlew :appkernel:bootRun
 ```
 
-访问 <http://localhost:8090>。后端会提供构建后的 React 页面，在启动时创建或更新 PostgreSQL 表结构，并协调扩展资源。
+后端在 <http://localhost:8090> 启动，创建或更新 PostgreSQL 表结构，并协调扩展资源。控制台由下一步的 Next.js 服务提供。
 
 ### 3. 启动前端开发服务器（可选）
 
@@ -165,7 +165,15 @@ npm install
 npm run dev
 ```
 
-Vite 会把 `/apis`、`/login` 和 `/logout` 代理到 `http://localhost:8090`，请先启动后端。
+Next.js 开发服务器会把 `/apis`、`/login` 和 `/logout` 代理到 `http://localhost:8090`，请先启动后端。访问 <http://localhost:3000>。
+
+### 4. 容器部署（可选）
+
+```bash
+docker compose up --build
+```
+
+`web` 服务在 <http://localhost:3000> 提供控制台，并把 API 路由代理到 `api` 服务。`PUDANS_API_ORIGIN` 在构建 Web 镜像时固化。
 
 ## 配置
 
@@ -200,8 +208,9 @@ Vite 会把 `/apis`、`/login` 和 `/logout` 代理到 `http://localhost:8090`�
 ## 构建与测试
 
 ```bash
-./gradlew test                    # 后端测试，同时构建打包的前端
-./gradlew build                   # 后端与前端构建
+./gradlew test                    # 后端测试
+./gradlew build                   # 后端与独立前端构建
+./gradlew :web:standaloneWeb      # Next.js 独立服务产物
 ./gradlew :api-docs:validateOpenApiDocs
 ```
 

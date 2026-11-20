@@ -22,7 +22,7 @@ export function RoleRefSelector({
   onChange,
 }: RoleRefSelectorProps) {
   if (isLoading) {
-    return <Skeleton className="h-24 w-full rounded-md" />;
+    return <Skeleton className="h-24 w-full" />;
   }
   if (isError) {
     return <p className="text-xs text-muted-foreground">无法加载角色列表，暂不能调整角色绑定。</p>;
@@ -37,11 +37,11 @@ export function RoleRefSelector({
   };
 
   return (
-    <div className="max-h-56 overflow-y-auto rounded-md border p-1">
+    <div className="max-h-56 overflow-y-auto border p-1">
       {options.map((option) => (
         <label
           key={option.name}
-          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted"
+          className="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-sm hover:bg-muted"
           title={option.locked ? "内置角色不可移除" : undefined}
         >
           <Checkbox

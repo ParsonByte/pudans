@@ -127,9 +127,9 @@ export function RequestSpeedRanking({
                     {item.p50Tps == null ? "—" : `${formatNumber(item.p50Tps, 1)} token/秒`}
                   </TableCell>
                   <TableCell className="px-5 py-3">
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                    <div className="h-2 w-full overflow-hidden bg-muted">
                       <div
-                        className="h-full rounded-full bg-chart-1"
+                        className="h-full bg-chart-1"
                         style={{
                           width: `${maxTps > 0 ? Math.max(((item.p50Tps ?? 0) / maxTps) * 100, 2) : 0}%`,
                         }}

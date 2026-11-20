@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { ChatComposer } from "../components/chat-composer";
@@ -64,7 +65,7 @@ export function ChatConversationView({ conversationId }: ChatConversationViewPro
 function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
   const id = Number(conversationId);
   const valid = Number.isInteger(id) && id > 0;
-  const navigate = useNavigate();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [modeOverride, setModeOverride] = useState<string | undefined>(undefined);
   const [modelOverride, setModelOverride] = useState<string | undefined>(undefined);
@@ -446,17 +447,14 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
           routeGroup: routeGroupOverride ?? branch.routeGroup ?? undefined,
           kbCodes,
         });
-        await navigate({
-          to: "/chat/$conversationId",
-          params: { conversationId: String(branch.id) },
-        });
+        router.push(`/chat/${branch.id}`);
         return true;
       } catch (error) {
         toast.error(resolveChatError(error));
         return false;
       }
     },
-    [id, kbCodes, mode, modelOverride, navigate, queryClient, routeGroupOverride],
+    [id, kbCodes, mode, modelOverride, router, queryClient, routeGroupOverride],
   );
 
   if (!valid) {
@@ -465,7 +463,7 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
         <ConversationHeader title="会话不存在" />
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
           <p className="text-sm text-muted-foreground">会话标识无效。</p>
-          <Link to="/" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/" className="text-sm font-medium text-primary hover:underline">
             返回新会话
           </Link>
         </div>
@@ -481,7 +479,7 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
           <p className="text-sm text-muted-foreground">
             {resolveChatError(conversationQuery.error)}
           </p>
-          <Link to="/" className="text-sm font-medium text-primary hover:underline">
+          <Link href="/" className="text-sm font-medium text-primary hover:underline">
             返回新会话
           </Link>
         </div>

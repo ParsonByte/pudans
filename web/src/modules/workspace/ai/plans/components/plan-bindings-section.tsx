@@ -289,7 +289,7 @@ export function PlanBindingsSection({ canAssign, canDelete }: PlanBindingsSectio
                 {resolvePlanApiError(previewMutation.error)}
               </p>
             ) : previewMutation.data ? (
-              <div className="space-y-2 rounded-lg border p-3">
+              <div className="space-y-2 border p-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium">
                     {previewMutation.data.displayName ||

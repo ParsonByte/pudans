@@ -29,7 +29,7 @@ export function ChatCommandMenu({
   const commands = items.filter((item) => item.kind === "command");
 
   return (
-    <div className="absolute inset-x-0 bottom-full z-50 mb-2 overflow-hidden rounded-xl border bg-popover shadow-lg">
+    <div className="absolute inset-x-0 bottom-full z-50 mb-2 overflow-hidden border bg-popover shadow-lg">
       <Command shouldFilter={false} value={activeValue} onValueChange={onActiveValueChange}>
         <CommandList>
           <CommandEmpty>没有匹配的功能或命令</CommandEmpty>

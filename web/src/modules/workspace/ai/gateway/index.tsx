@@ -182,7 +182,7 @@ export function AiGatewayView() {
         />
 
         {coreError ? (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
+          <div className="border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
             无法加载网关配置：{resolveAiProviderApiError(coreError)}
           </div>
         ) : null}

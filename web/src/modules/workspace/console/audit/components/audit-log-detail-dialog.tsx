@@ -1,5 +1,5 @@
 import type { AuditRecord } from "@pudans-dev/api-client";
-import { Link } from "@tanstack/react-router";
+import Link from "next/link";
 
 import { InfoRow } from "@/components/info-row";
 import { Button } from "@/components/ui/button";
@@ -66,14 +66,14 @@ export function AuditLogDetailDialog({ record, onClose }: AuditLogDetailDialogPr
               <TabsContent value="log" className="mt-0 space-y-5">
                 <section className="space-y-2">
                   <h3 className="text-sm font-semibold">日志正文</h3>
-                  <pre className="overflow-x-auto rounded-lg border bg-muted/40 p-3 text-xs leading-5 break-all whitespace-pre-wrap">
+                  <pre className="overflow-x-auto border bg-muted/40 p-3 text-xs leading-5 break-all whitespace-pre-wrap">
                     {logBody(record)}
                   </pre>
                 </section>
 
                 <section className="space-y-2">
                   <h3 className="text-sm font-semibold">日志属性</h3>
-                  <div className="grid gap-4 rounded-lg border p-3 sm:grid-cols-2">
+                  <div className="grid gap-4 border p-3 sm:grid-cols-2">
                     <InfoRow label="操作" value={auditOperationLabel(record.operation)} />
                     <InfoRow label="结果" value={<AuditResultBadge result={record.result} />} />
                     <InfoRow label="用户 UID" value={record.uid || "—"} />
@@ -112,7 +112,7 @@ export function AuditLogDetailDialog({ record, onClose }: AuditLogDetailDialogPr
 
                 <section className="space-y-2">
                   <h3 className="text-sm font-semibold">资源属性</h3>
-                  <div className="grid gap-4 rounded-lg border p-3 sm:grid-cols-2">
+                  <div className="grid gap-4 border p-3 sm:grid-cols-2">
                     <InfoRow label="资源类型" value={auditResourceLabel(record.resourceType)} />
                     <InfoRow
                       label="资源名称"
@@ -144,7 +144,7 @@ export function AuditLogDetailDialog({ record, onClose }: AuditLogDetailDialogPr
                 {contextEntries.length === 0 ? (
                   <p className="text-xs text-muted-foreground">该记录没有上下文信息。</p>
                 ) : (
-                  <div className="space-y-2 rounded-lg border p-3">
+                  <div className="space-y-2 border p-3">
                     {contextEntries.map(([key, value]) => (
                       <div
                         key={key}
@@ -161,7 +161,7 @@ export function AuditLogDetailDialog({ record, onClose }: AuditLogDetailDialogPr
               </TabsContent>
 
               <TabsContent value="snapshot" className="mt-0">
-                <pre className="max-h-96 overflow-auto rounded-lg border bg-muted/40 p-3 text-xs leading-5 break-all whitespace-pre-wrap">
+                <pre className="max-h-96 overflow-auto border bg-muted/40 p-3 text-xs leading-5 break-all whitespace-pre-wrap">
                   {formatAuditSnapshot(record.actionSnapshot)}
                 </pre>
               </TabsContent>
@@ -175,7 +175,7 @@ export function AuditLogDetailDialog({ record, onClose }: AuditLogDetailDialogPr
           </Button>
           {traceLink ? (
             <Button asChild>
-              <Link to={traceLink}>查看链路</Link>
+              <Link href={traceLink}>查看链路</Link>
             </Button>
           ) : null}
         </DialogFooter>

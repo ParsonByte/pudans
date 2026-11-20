@@ -2,7 +2,6 @@ import { useState } from "react";
 
 import { apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowLeft,
   Ban,
@@ -15,6 +14,8 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { IconFeishu } from "@/assets/custom/icon-feishu";
@@ -50,7 +51,7 @@ type UserDetailViewProps = {
 
 export function UserDetailView({ name }: UserDetailViewProps) {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const router = useRouter();
   const allowedOperations = useAllowedOperations();
   const usersPath = useMenuPath("users");
   const canUpdate = allowedOperations.has("update");
@@ -138,7 +139,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
       await queryClient.invalidateQueries({ queryKey: ["users"] });
       toast.success("用户已删除。");
       if (usersPath) {
-        void navigate({ to: usersPath });
+        router.push(usersPath);
       }
     },
     onError: (error) => toast.error(resolveUserApiError(error)),
@@ -165,10 +166,10 @@ export function UserDetailView({ name }: UserDetailViewProps) {
         <div className="space-y-4">
           <Skeleton className="h-10 w-40" />
           <div className="grid gap-4 xl:grid-cols-3">
-            <Skeleton className="h-64 rounded-xl xl:col-span-2" />
-            <Skeleton className="h-64 rounded-xl" />
-            <Skeleton className="h-48 rounded-xl" />
-            <Skeleton className="h-48 rounded-xl xl:col-span-2" />
+            <Skeleton className="h-64 xl:col-span-2" />
+            <Skeleton className="h-64" />
+            <Skeleton className="h-48" />
+            <Skeleton className="h-48 xl:col-span-2" />
           </div>
         </div>
       </ConsolePage>
@@ -187,7 +188,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
           <div className="flex gap-2">
             {usersPath ? (
               <Button variant="outline" size="sm" asChild>
-                <Link to={usersPath}>
+                <Link href={usersPath}>
                   <ArrowLeft />
                   返回用户列表
                 </Link>
@@ -210,7 +211,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
       <div className="flex flex-wrap items-center gap-2">
         {usersPath ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link to={usersPath}>
+            <Link href={usersPath}>
               <ArrowLeft />
               返回用户列表
             </Link>
@@ -359,7 +360,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
                       }
                       className="flex items-center gap-3 px-5 py-3"
                     >
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <span className="flex size-9 shrink-0 items-center justify-center bg-muted">
                         <ConnectionIcon
                           registrationId={connection.registrationId}
                           logo={provider?.logo}

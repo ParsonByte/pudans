@@ -68,7 +68,7 @@ export function FormDialog<T extends FieldValues>({
         <DialogHeader>
           <div className="flex items-start gap-3 pe-8">
             {icon ? (
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+              <span className="flex size-10 shrink-0 items-center justify-center bg-muted">
                 {icon}
               </span>
             ) : null}

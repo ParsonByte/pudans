@@ -105,7 +105,7 @@ export function GatewayAccess({
   const examples = gatewayExamples(protocol, modelId, key, os);
 
   return (
-    <section className="rounded-xl border bg-card text-card-foreground">
+    <section className="border bg-card text-card-foreground">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
         <div className="space-y-1">
           <h2 className="text-sm font-semibold">接入</h2>
@@ -186,7 +186,7 @@ export function GatewayAccess({
                       />
                     ) : (
                       <div className="space-y-1.5">
-                        <div className="flex items-center gap-2 rounded-lg border bg-muted/30 py-2 ps-3 pe-3">
+                        <div className="flex items-center gap-2 border bg-muted/30 py-2 ps-3 pe-3">
                           <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
                             {GATEWAY_KEY_PLACEHOLDER}
                           </span>
@@ -199,7 +199,7 @@ export function GatewayAccess({
                       </div>
                     )
                   ) : (
-                    <div className="flex min-h-[38px] flex-wrap items-center gap-2 rounded-lg border border-dashed bg-muted/20 px-3 py-1.5">
+                    <div className="flex min-h-[38px] flex-wrap items-center gap-2 border border-dashed bg-muted/20 px-3 py-1.5">
                       <span className="text-xs text-muted-foreground">
                         {canCreateToken ? "还没有可用密钥。" : "没有可用的网关密钥。"}
                       </span>
@@ -250,7 +250,7 @@ export function GatewayAccess({
                       ))}
                     </SelectContent>
                   </Select>
-                  <div className="flex items-center gap-2 rounded-lg border bg-muted/30 py-2 ps-3 pe-1.5">
+                  <div className="flex items-center gap-2 border bg-muted/30 py-2 ps-3 pe-1.5">
                     <span className="min-w-0 flex-1 truncate font-mono text-xs">{modelId}</span>
                     <CopyButton value={modelId} label="模型 ID" />
                   </div>
@@ -308,7 +308,7 @@ export function GatewayAccess({
                     </Tabs>
                   </div>
                 </div>
-                <div className="relative overflow-hidden rounded-xl border bg-muted/25">
+                <div className="relative overflow-hidden border bg-muted/25">
                   <div className="absolute end-2 top-2 z-10">
                     <CopyButton value={examples[example]} label="示例" />
                   </div>

@@ -33,7 +33,7 @@ export function DataTableBulkActions({
       </Button>
       <Separator orientation="vertical" className="h-5" />
       <div className="flex items-center gap-1 text-sm">
-        <Badge className="min-w-8 rounded-lg">{selectedCount}</Badge>
+        <Badge className="min-w-8">{selectedCount}</Badge>
         <span>个{entityName}已选择</span>
       </div>
       <Separator orientation="vertical" className="h-5" />

@@ -297,7 +297,7 @@ export function AiRouteGroupsView() {
         </div>
 
         {coreError ? (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
+          <div className="border border-destructive/30 bg-destructive/5 px-4 py-3 text-xs text-destructive">
             无法加载路由组数据：{resolveAiProviderApiError(coreError)}
           </div>
         ) : null}
@@ -326,7 +326,7 @@ export function AiRouteGroupsView() {
           {routeGroupsQuery.isPending ? (
             <div className="grid gap-3 px-5 py-5 sm:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 3 }, (_, index) => (
-                <Skeleton key={index} className="h-56 rounded-2xl" />
+                <Skeleton key={index} className="h-56" />
               ))}
             </div>
           ) : routeGroupsQuery.isError ? (

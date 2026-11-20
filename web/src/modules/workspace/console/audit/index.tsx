@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 
 import type { AuditRecord } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import {
   Activity,
   CheckCircle2,
@@ -12,6 +11,7 @@ import {
   ShieldAlert,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 
 import { ActivityBarChart } from "@/components/activity-bar-chart";
 import { Badge } from "@/components/ui/badge";
@@ -79,7 +79,7 @@ export function AuditView() {
             </Button>
             {auditPath ? (
               <Button asChild>
-                <Link to={`${auditPath}/logs` as string}>
+                <Link href={`${auditPath}/logs`}>
                   <Search />
                   查询日志
                 </Link>

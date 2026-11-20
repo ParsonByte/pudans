@@ -2,8 +2,9 @@ import { useMemo, useState } from "react";
 
 import { type Role, apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Lock, Pencil, RefreshCw, ShieldCheck, Trash2, UsersRound } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -68,7 +69,7 @@ type MemberRow = {
 
 export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
   const queryClient = useQueryClient();
-  const navigate = useNavigate();
+  const router = useRouter();
   const allowedOperations = useAllowedOperations();
   const groupsPath = useMenuPath("user-groups");
   const usersPath = useMenuPath("users");
@@ -195,7 +196,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
       ]);
       toast.success("用户组已删除。");
       if (groupsPath) {
-        void navigate({ to: groupsPath });
+        router.push(groupsPath);
       }
     },
     onError: (error) => {
@@ -210,9 +211,9 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
         <div className="space-y-4">
           <Skeleton className="h-10 w-40" />
           <div className="grid gap-4 xl:grid-cols-3">
-            <Skeleton className="h-64 rounded-xl xl:col-span-2" />
-            <Skeleton className="h-64 rounded-xl" />
-            <Skeleton className="h-64 rounded-xl xl:col-span-3" />
+            <Skeleton className="h-64 xl:col-span-2" />
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64 xl:col-span-3" />
           </div>
         </div>
       </ConsolePage>
@@ -233,7 +234,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
           <div className="flex gap-2">
             {groupsPath ? (
               <Button variant="outline" size="sm" asChild>
-                <Link to={groupsPath}>
+                <Link href={groupsPath}>
                   <ArrowLeft />
                   返回用户组列表
                 </Link>
@@ -254,7 +255,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
       <div className="flex flex-wrap items-center gap-2">
         {groupsPath ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link to={groupsPath}>
+            <Link href={groupsPath}>
               <ArrowLeft />
               返回用户组列表
             </Link>
@@ -359,7 +360,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
 
                   return (
                     <div key={roleName} className="flex items-start gap-3 px-5 py-3">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+                      <span className="flex size-9 shrink-0 items-center justify-center bg-muted">
                         <ShieldCheck className="size-4 text-muted-foreground" />
                       </span>
                       <div className="min-w-0 flex-1 space-y-1">
@@ -450,7 +451,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
                         <TableCell className="px-5 py-3">
                           {usersPath ? (
                             <Link
-                              to={`${usersPath}/${member.name}` as string}
+                              href={`${usersPath}/${member.name}`}
                               className="flex min-w-0 items-center gap-2"
                             >
                               {memberContent}

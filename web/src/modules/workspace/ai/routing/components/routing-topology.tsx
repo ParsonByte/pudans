@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 
 import { Icon } from "@iconify/react";
-import { Link } from "@tanstack/react-router";
 import {
   Background,
   BaseEdge,
@@ -17,10 +16,12 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Loader2, RefreshCw, Settings2, UserRound } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BASE_PATH } from "@/lib/base-path";
 import { cn } from "@/lib/utils";
 import { ConsoleSection } from "@/modules/workspace/console/components/console-page";
 
@@ -259,8 +260,8 @@ export function RoutingTopology({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
         <div className="flex items-center gap-2">
           <span className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex size-full animate-ping bg-success opacity-60" />
+            <span className="relative inline-flex size-2 bg-success" />
           </span>
           <span className="text-sm font-medium">实时</span>
           <span className="text-xs text-muted-foreground">· 网关正在做的决定</span>
@@ -268,7 +269,7 @@ export function RoutingTopology({
         <div className="flex items-center gap-2">
           {routeGroupsPath ? (
             <Button variant="ghost" size="sm" asChild>
-              <Link to={routeGroupsPath}>
+              <Link href={routeGroupsPath}>
                 <Settings2 />
                 路由组
               </Link>
@@ -283,23 +284,23 @@ export function RoutingTopology({
 
       <div className="px-5 py-6">
         {loading ? (
-          <Skeleton className="h-[330px] w-full rounded-2xl" />
+          <Skeleton className="h-[330px] w-full" />
         ) : enabledProviders.length === 0 ? (
-          <div className="flex min-h-40 flex-col items-center justify-center rounded-2xl border border-dashed px-4 py-8 text-center text-xs text-muted-foreground">
+          <div className="flex min-h-40 flex-col items-center justify-center border border-dashed px-4 py-8 text-center text-xs text-muted-foreground">
             还没有启用的供应商。
             {providersPath ? (
-              <Link to={providersPath} className="mt-1 font-medium text-primary hover:underline">
+              <Link href={providersPath} className="mt-1 font-medium text-primary hover:underline">
                 去供应商配置
               </Link>
             ) : null}
           </div>
         ) : (
           <div
-            className="relative w-full overflow-hidden rounded-2xl border bg-background [&_.react-flow__controls-button]:border-border [&_.react-flow__controls-button]:bg-background [&_.react-flow__controls-button]:text-foreground [&_.react-flow__controls-button:hover]:bg-muted"
+            className="relative w-full overflow-hidden border bg-background [&_.react-flow__controls-button]:border-border [&_.react-flow__controls-button]:bg-background [&_.react-flow__controls-button]:text-foreground [&_.react-flow__controls-button:hover]:bg-muted"
             style={{ height: graph.height }}
           >
             {live && liveUsers.length === 0 ? (
-              <div className="pointer-events-none absolute top-4 left-4 z-10 rounded-full border bg-background/90 px-3 py-1 text-[11px] text-muted-foreground">
+              <div className="pointer-events-none absolute top-4 left-4 z-10 border bg-background/90 px-3 py-1 text-[11px] text-muted-foreground">
                 最近还没有用户调用
               </div>
             ) : null}
@@ -390,12 +391,12 @@ function UserNode({ data }: { data: TopologyNodeData }) {
   return (
     <div
       className={cn(
-        "relative flex h-[88px] w-60 items-center gap-3 rounded-2xl border bg-card px-4 py-3 shadow-sm transition-colors",
+        "relative flex h-[88px] w-60 items-center gap-3 border bg-card px-4 py-3 shadow-sm transition-colors",
         tone === "active" && "border-primary/60 ring-2 ring-primary/15",
         tone === "failed" && "border-destructive/60 ring-2 ring-destructive/15",
       )}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+      <span className="flex size-10 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
         <UserRound className="size-4" />
       </span>
       <div className="min-w-0 flex-1">
@@ -415,7 +416,7 @@ function UserNode({ data }: { data: TopologyNodeData }) {
       {tone !== "idle" ? (
         <span
           className={cn(
-            "absolute top-1/2 -right-1 size-2 -translate-y-1/2 rounded-full",
+            "absolute top-1/2 -right-1 size-2 -translate-y-1/2",
             tone === "failed" ? "bg-destructive" : "bg-primary",
           )}
         />
@@ -431,15 +432,15 @@ function GatewayNode({ data }: { data: TopologyNodeData }) {
   return (
     <div
       className={cn(
-        "relative flex h-[136px] w-56 flex-col justify-center gap-3 rounded-2xl border bg-card px-4 py-4 shadow-sm transition-colors",
+        "relative flex h-[136px] w-56 flex-col justify-center gap-3 border bg-card px-4 py-4 shadow-sm transition-colors",
         tone === "active" && "border-primary/60 ring-2 ring-primary/15",
         tone === "failed" && "border-destructive/60 ring-2 ring-destructive/15",
       )}
     >
       <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+        <span className="flex size-11 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
           <img
-            src={`${import.meta.env.BASE_URL}brand/icon-large.svg`}
+            src={`${BASE_PATH}brand/icon-large.svg`}
             alt=""
             className="size-8"
             aria-hidden="true"
@@ -455,8 +456,8 @@ function GatewayNode({ data }: { data: TopologyNodeData }) {
       <Badge variant={data.running ? "secondary" : "outline"} className="w-fit">
         <span
           className={cn(
-            "size-1.5 rounded-full",
-            data.running ? "animate-pulse bg-emerald-500" : "bg-muted-foreground",
+            "size-1.5",
+            data.running ? "animate-pulse bg-success" : "bg-muted-foreground",
           )}
         />
         {data.running ? "运行中" : "待配置"}
@@ -485,12 +486,12 @@ function ProviderNode({ data }: { data: TopologyNodeData }) {
   return (
     <div
       className={cn(
-        "relative flex h-[88px] w-64 items-center gap-3 rounded-2xl border bg-card px-4 py-3 shadow-sm transition-colors",
+        "relative flex h-[88px] w-64 items-center gap-3 border bg-card px-4 py-3 shadow-sm transition-colors",
         tone === "active" && "border-primary/60 ring-2 ring-primary/15",
         tone === "failed" && "border-destructive/60 ring-2 ring-destructive/15",
       )}
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-background ring-1 ring-border/60">
+      <span className="flex size-10 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
         <ProviderBrandIcon provider={provider} className="size-6" />
       </span>
       <div className="min-w-0 flex-1">
@@ -501,15 +502,15 @@ function ProviderNode({ data }: { data: TopologyNodeData }) {
           <span
             className={cn(
               "inline-flex items-center gap-1 text-[10px] text-muted-foreground",
-              data.running && "text-emerald-600 dark:text-emerald-400",
+              data.running && "text-success",
               tone === "failed" && "text-destructive",
             )}
           >
             <span
               className={cn(
-                "size-1.5 rounded-full",
+                "size-1.5",
                 data.running
-                  ? "animate-pulse bg-emerald-500"
+                  ? "animate-pulse bg-success"
                   : tone === "failed"
                     ? "bg-destructive"
                     : "bg-muted-foreground/60",
@@ -526,7 +527,7 @@ function ProviderNode({ data }: { data: TopologyNodeData }) {
       {tone !== "idle" ? (
         <span
           className={cn(
-            "absolute top-1/2 -left-1 size-2 -translate-y-1/2 rounded-full",
+            "absolute top-1/2 -left-1 size-2 -translate-y-1/2",
             tone === "failed" ? "bg-destructive" : "bg-primary",
           )}
         />
@@ -554,7 +555,7 @@ function TopologyEdgeView({
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 24,
+    borderRadius: 0,
   });
   const color =
     tone === "failed"

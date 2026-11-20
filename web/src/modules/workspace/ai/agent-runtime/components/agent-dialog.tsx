@@ -495,7 +495,7 @@ export function AgentDialog({ agent, configuredProviders, onClose }: AgentDialog
             control={form.control}
             name="autoStart"
             render={({ field }) => (
-              <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+              <div className="flex items-center justify-between gap-4 border p-4">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">自动启动</p>
                   <p className="text-xs text-muted-foreground">
@@ -515,7 +515,7 @@ export function AgentDialog({ agent, configuredProviders, onClose }: AgentDialog
             control={form.control}
             name="networkEnabled"
             render={({ field }) => (
-              <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+              <div className="flex items-center justify-between gap-4 border p-4">
                 <div className="space-y-1">
                   <p className="text-sm font-medium">网络访问</p>
                   <p className="text-xs text-muted-foreground">允许沙箱访问外部网络。</p>

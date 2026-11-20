@@ -3,8 +3,8 @@ import { type FieldErrors, useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { apiClient } from "@pudans-dev/api-client";
-import { useNavigate } from "@tanstack/react-router";
 import { Globe2, Loader2, Rocket, ShieldCheck, UserRound } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { PasswordInput } from "@/components/password-input";
@@ -31,7 +31,7 @@ function SetupSection({ icon: Icon, title, description, children }: SetupSection
   return (
     <section className="space-y-4">
       <div className="flex items-start gap-3">
-        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <span className="flex size-8 shrink-0 items-center justify-center bg-primary/10 text-primary">
           <Icon className="size-4" />
         </span>
         <div className="space-y-0.5">
@@ -62,7 +62,7 @@ function SetupField({ id, label, hint, children }: SetupFieldProps) {
 }
 
 export function SetupForm() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const {
     register,
     handleSubmit,
@@ -87,13 +87,13 @@ export function SetupForm() {
         { timeout: 60_000 },
       );
       toast.success("系统初始化完成，请登录。");
-      await navigate({ to: "/sign-in", replace: true });
+      router.replace("/sign-in");
     } catch (error) {
       const result = resolveSetupError(error);
       toast.error(result.message);
 
       if (result.setupCompleted) {
-        await navigate({ to: "/sign-in", replace: true });
+        router.replace("/sign-in");
       }
     }
   };

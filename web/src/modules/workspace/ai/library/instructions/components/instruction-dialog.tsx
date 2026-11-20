@@ -186,7 +186,7 @@ export function InstructionDialog({ instruction, onClose }: InstructionDialogPro
             render={({ field }) => <AgentsField value={field.value} onChange={field.onChange} />}
           />
         ) : (
-          <div className="rounded-lg border p-4">
+          <div className="border p-4">
             <p className="text-sm font-medium">共享指令</p>
             <p className="text-xs text-muted-foreground">
               共享指令对所有 Agent 生效，无需绑定具体 Agent。

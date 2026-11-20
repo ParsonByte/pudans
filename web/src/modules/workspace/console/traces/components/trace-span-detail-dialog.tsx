@@ -48,7 +48,7 @@ export function TraceSpanDetailDialog({
     record?.result !== "SUCCESS"
       ? "bg-destructive"
       : span?.kind === "ORPHAN"
-        ? "bg-amber-500"
+        ? "bg-warning"
         : "bg-primary";
 
   return (
@@ -82,16 +82,16 @@ export function TraceSpanDetailDialog({
 
         {span && record ? (
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto py-4">
-            <section className="space-y-3 rounded-lg border p-4">
+            <section className="space-y-3 border p-4">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">Span 时间轴</h3>
                 <span className="text-xs text-muted-foreground">
                   入口偏移 {formatDuration(span.offsetMs)} · 占总耗时 {durationRatio.toFixed(1)}%
                 </span>
               </div>
-              <div className="relative h-3 overflow-hidden rounded-full bg-muted">
+              <div className="relative h-3 overflow-hidden bg-muted">
                 <div
-                  className={cn("absolute inset-y-0 rounded-full", barColor)}
+                  className={cn("absolute inset-y-0", barColor)}
                   style={{
                     left: `${span.relativeOffset}%`,
                     width: `${span.relativeWidth}%`,
@@ -108,7 +108,7 @@ export function TraceSpanDetailDialog({
 
             <section className="space-y-2">
               <h3 className="text-sm font-semibold">Span 标识</h3>
-              <div className="grid gap-4 rounded-lg border p-3 sm:grid-cols-2">
+              <div className="grid gap-4 border p-3 sm:grid-cols-2">
                 <InfoRow
                   label="Span ID"
                   value={
@@ -140,7 +140,7 @@ export function TraceSpanDetailDialog({
 
             <section className="space-y-2">
               <h3 className="text-sm font-semibold">调用关系</h3>
-              <div className="grid gap-4 rounded-lg border p-3 sm:grid-cols-2">
+              <div className="grid gap-4 border p-3 sm:grid-cols-2">
                 <InfoRow
                   label="Span 类型"
                   value={
@@ -176,7 +176,7 @@ export function TraceSpanDetailDialog({
 
             <section className="space-y-2">
               <h3 className="text-sm font-semibold">执行信息</h3>
-              <div className="grid gap-4 rounded-lg border p-3 sm:grid-cols-2">
+              <div className="grid gap-4 border p-3 sm:grid-cols-2">
                 <InfoRow label="用户 UID" value={record.uid || "—"} />
                 <InfoRow label="结果" value={<AuditResultBadge result={record.result} />} />
                 <InfoRow label="请求方法" value={record.requestMethod || "—"} />
@@ -199,11 +199,9 @@ export function TraceSpanDetailDialog({
             <section className="space-y-2">
               <h3 className="text-sm font-semibold">Span 标签</h3>
               {contextEntries.length === 0 ? (
-                <p className="rounded-lg border p-3 text-xs text-muted-foreground">
-                  该 Span 没有标签。
-                </p>
+                <p className="border p-3 text-xs text-muted-foreground">该 Span 没有标签。</p>
               ) : (
-                <div className="space-y-2 rounded-lg border p-3">
+                <div className="space-y-2 border p-3">
                   {contextEntries.map(([key, value]) => (
                     <div
                       key={key}

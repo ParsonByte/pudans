@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -10,6 +9,7 @@ import {
   RefreshCw,
   Waypoints,
 } from "lucide-react";
+import Link from "next/link";
 
 import { InfoRow } from "@/components/info-row";
 import { Badge } from "@/components/ui/badge";
@@ -57,8 +57,8 @@ export function TraceDetailView({ traceFlowId }: TraceDetailViewProps) {
       <ConsolePage title="链路详情">
         <div className="space-y-4">
           <Skeleton className="h-10 w-40" />
-          <Skeleton className="h-40 rounded-xl" />
-          <Skeleton className="h-80 rounded-xl" />
+          <Skeleton className="h-40" />
+          <Skeleton className="h-80" />
         </div>
       </ConsolePage>
     );
@@ -76,7 +76,7 @@ export function TraceDetailView({ traceFlowId }: TraceDetailViewProps) {
           <div className="flex gap-2">
             {tracesPath ? (
               <Button variant="outline" size="sm" asChild>
-                <Link to={tracesPath}>
+                <Link href={tracesPath}>
                   <ArrowLeft />
                   返回链路列表
                 </Link>
@@ -101,7 +101,7 @@ export function TraceDetailView({ traceFlowId }: TraceDetailViewProps) {
       <div className="flex flex-wrap items-center gap-2">
         {tracesPath ? (
           <Button variant="ghost" size="sm" asChild>
-            <Link to={tracesPath}>
+            <Link href={tracesPath}>
               <ArrowLeft />
               返回链路列表
             </Link>
@@ -174,7 +174,7 @@ export function TraceDetailView({ traceFlowId }: TraceDetailViewProps) {
         </div>
         <div
           className={cn(
-            "mx-5 mb-5 flex flex-wrap items-center gap-2 rounded-lg border px-3 py-2 text-xs",
+            "mx-5 mb-5 flex flex-wrap items-center gap-2 border px-3 py-2 text-xs",
             tree.completeness.complete
               ? "bg-muted/40 text-muted-foreground"
               : "border-destructive/30 bg-destructive/5 text-destructive",

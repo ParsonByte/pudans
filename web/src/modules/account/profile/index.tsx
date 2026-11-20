@@ -59,9 +59,9 @@ export function AccountProfileView() {
         />
         <div className="space-y-5 p-5">
           <div className="flex flex-wrap items-center gap-4">
-            <Avatar className="size-16 rounded-xl">
+            <Avatar className="size-16">
               {user?.spec.avatar ? <AvatarImage src={user.spec.avatar} alt="" /> : null}
-              <AvatarFallback className="rounded-xl text-lg">{initials}</AvatarFallback>
+              <AvatarFallback className="text-lg">{initials}</AvatarFallback>
             </Avatar>
             <div className="space-y-1">
               <p className="text-sm font-medium">{user?.spec.displayName ?? "—"}</p>

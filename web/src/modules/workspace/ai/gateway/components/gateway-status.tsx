@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { Loader2, Network, RefreshCw } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,7 +97,7 @@ export function GatewayStatus({
     <ConsoleSection className="overflow-hidden">
       <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-5">
         <div className="flex items-start gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <span className="flex size-11 shrink-0 items-center justify-center bg-primary/10 text-primary">
             <Network className="size-5" />
           </span>
           <div className="space-y-1">
@@ -105,11 +105,11 @@ export function GatewayStatus({
               <h2 className="text-base font-semibold">网关</h2>
               <Badge variant={enabled ? "secondary" : "outline"}>
                 <span
-                  className={`size-1.5 rounded-full ${
+                  className={`size-1.5 ${
                     statusLoading
                       ? "bg-muted-foreground"
                       : enabled
-                        ? "bg-emerald-500"
+                        ? "bg-success"
                         : "bg-muted-foreground"
                   }`}
                 />
@@ -126,7 +126,7 @@ export function GatewayStatus({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" size="sm" asChild>
-            <Link to="/">聊天页面</Link>
+            <Link href="/">聊天页面</Link>
           </Button>
           <Button size="sm" onClick={onRefresh} disabled={refreshing}>
             {refreshing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
@@ -137,9 +137,7 @@ export function GatewayStatus({
 
       <div
         className={`border-t px-5 py-2 text-[11px] ${
-          status
-            ? "bg-muted/20 text-muted-foreground"
-            : "bg-amber-500/5 text-amber-700 dark:text-amber-300"
+          status ? "bg-muted/20 text-muted-foreground" : "bg-warning/5 text-warning"
         }`}
       >
         {statusNote}
@@ -232,7 +230,7 @@ export function GatewayStatus({
                     key={`${error.code}-${error.at ?? index}`}
                     className="flex flex-wrap items-center gap-2 text-xs"
                   >
-                    <span className="size-1.5 rounded-full bg-destructive" />
+                    <span className="size-1.5 bg-destructive" />
                     <span className="font-mono text-[11px] text-destructive">{error.code}</span>
                     {error.at ? (
                       <span className="text-[11px] text-muted-foreground">
@@ -253,12 +251,12 @@ export function GatewayStatus({
         {providersPath || routeGroupsPath ? (
           <span className="ms-auto flex items-center gap-3">
             {providersPath ? (
-              <Link to={providersPath} className="font-medium text-primary hover:underline">
+              <Link href={providersPath} className="font-medium text-primary hover:underline">
                 供应商
               </Link>
             ) : null}
             {routeGroupsPath ? (
-              <Link to={routeGroupsPath} className="font-medium text-primary hover:underline">
+              <Link href={routeGroupsPath} className="font-medium text-primary hover:underline">
                 路由组
               </Link>
             ) : null}

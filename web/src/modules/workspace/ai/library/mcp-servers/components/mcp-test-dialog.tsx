@@ -46,11 +46,11 @@ export function McpTestDialog({ serverName, result, onClose }: McpTestDialogProp
         {result.message ? <p className="text-sm">{result.message}</p> : null}
 
         {result.tools.length === 0 ? (
-          <p className="rounded-lg border px-3 py-6 text-center text-xs text-muted-foreground">
+          <p className="border px-3 py-6 text-center text-xs text-muted-foreground">
             该服务器未返回任何工具。
           </p>
         ) : (
-          <ScrollArea className="max-h-64 rounded-lg border">
+          <ScrollArea className="max-h-64 border">
             <ul className="divide-y">
               {result.tools.map((tool) => (
                 <li key={tool.name} className="space-y-1 px-3 py-2">

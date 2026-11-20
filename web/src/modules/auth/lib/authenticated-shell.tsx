@@ -1,18 +1,24 @@
+import type { ReactNode } from "react";
+
 import { axiosInstance } from "@pudans-dev/api-client";
-import { useLocation } from "@tanstack/react-router";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import type { User } from "@/components/layout/types";
-import type { AuthenticatedContext } from "@/modules/auth/lib/authenticated-context";
+import type { SessionContextValue } from "@/modules/auth/lib/session-context";
 import {
   buildWorkspaceNavGroups,
   buildWorkspaces,
   resolveActiveWorkspace,
 } from "@/modules/workspace/lib/workspaces";
 
-export function AuthenticatedShell({ session, navigation }: AuthenticatedContext) {
-  const pathname = useLocation({ select: (location) => location.pathname });
+export function AuthenticatedShell({
+  session,
+  navigation,
+  children,
+}: SessionContextValue & { children: ReactNode }) {
+  const pathname = usePathname();
   const workspaces = buildWorkspaces(navigation);
   const activeWorkspace = resolveActiveWorkspace(workspaces, pathname);
   const navGroups = activeWorkspace ? buildWorkspaceNavGroups(navigation, activeWorkspace.id) : [];
@@ -38,6 +44,8 @@ export function AuthenticatedShell({ session, navigation }: AuthenticatedContext
       activeWorkspaceId={activeWorkspace?.id}
       navGroups={navGroups}
       onSignOut={handleSignOut}
-    />
+    >
+      {children}
+    </AuthenticatedLayout>
   );
 }
