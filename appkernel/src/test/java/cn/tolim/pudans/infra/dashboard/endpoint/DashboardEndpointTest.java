@@ -27,7 +27,6 @@ import com.github.zafarkhaja.semver.Version;
 import java.net.URL;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

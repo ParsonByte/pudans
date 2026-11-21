@@ -4,7 +4,6 @@ import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
-import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
