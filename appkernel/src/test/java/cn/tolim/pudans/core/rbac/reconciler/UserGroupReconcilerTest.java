@@ -7,9 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.rbac.UserGroup;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.Unstructured;
-import cn.tolim.pudans.extension.api.controller.Reconciler.Request;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.Unstructured;
+import cn.tolim.pudans.extension.contract.controller.Reconciler.Request;
 import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import java.util.ArrayList;
 import java.util.List;

@@ -1,8 +1,8 @@
 package cn.tolim.pudans.setting;
 
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.utils.SettingUtils;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;

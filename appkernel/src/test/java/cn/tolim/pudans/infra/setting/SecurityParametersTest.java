@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.OidcProperties;
 import java.util.List;

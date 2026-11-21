@@ -5,10 +5,10 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.MetadataUtil;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.MetadataUtil;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import cn.tolim.pudans.core.rbac.TempGrants;

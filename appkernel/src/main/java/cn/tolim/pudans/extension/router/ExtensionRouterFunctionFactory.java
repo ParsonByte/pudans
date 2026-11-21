@@ -6,11 +6,11 @@ import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
 
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.ListResult;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.Scheme;
-import cn.tolim.pudans.extension.api.router.SortableRequest;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.ListResult;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.Scheme;
+import cn.tolim.pudans.extension.contract.router.SortableRequest;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import io.swagger.v3.core.util.RefUtils;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;

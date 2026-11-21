@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.rbac.group;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.extension.api.index.query.Queries.in;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.in;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -24,8 +24,8 @@ import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.contract.rbac.UserGroupBinding;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.core.rbac.permission.RbacCache;
@@ -204,7 +204,7 @@ public class Groups {
                                 .doOnNext(binding -> publishGroupChanged(username, fromGroup, groupName));
                     }
                     var binding = UserGroupBinding.membership(username, groupName);
-                    var metadata = new cn.tolim.pudans.extension.api.Metadata();
+                    var metadata = new cn.tolim.pudans.extension.contract.Metadata();
                     metadata.setName(username + "-" + groupName + "-binding");
                     binding.setMetadata(metadata);
                     return client.create(binding)

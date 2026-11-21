@@ -1,18 +1,18 @@
 package cn.tolim.pudans.security.authentication.device;
 
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.security.api.Device;
-import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.GroupVersion;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.router.selector.FieldSelector;
-import cn.tolim.pudans.security.api.device.DeviceSessions;
+import cn.tolim.pudans.security.contract.Device;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.GroupVersion;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.router.selector.FieldSelector;
+import cn.tolim.pudans.security.contract.device.DeviceSessions;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.security.Principal;

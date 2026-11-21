@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.setting;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.exception.ApiException;
 import jakarta.mail.MessagingException;
 import java.util.HashMap;

@@ -5,7 +5,7 @@ import static com.nimbusds.jose.jwk.KeyOperation.VERIFY;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-import cn.tolim.pudans.security.api.authentication.LoginCipher;
+import cn.tolim.pudans.security.contract.authentication.LoginCipher;
 import cn.tolim.pudans.security.authentication.login.InvalidEncryptedMessageException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;

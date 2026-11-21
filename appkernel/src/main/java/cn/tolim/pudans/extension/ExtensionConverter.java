@@ -1,6 +1,6 @@
 package cn.tolim.pudans.extension;
 
-import cn.tolim.pudans.extension.api.Extension;
+import cn.tolim.pudans.extension.contract.Extension;
 import cn.tolim.pudans.infra.r2dbc.store.ExtensionStore;
 
 

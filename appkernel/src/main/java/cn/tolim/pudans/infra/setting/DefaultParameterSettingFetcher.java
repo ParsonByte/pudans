@@ -1,12 +1,12 @@
 package cn.tolim.pudans.infra.setting;
 
-import static cn.tolim.pudans.infra.api.ParameterSetting.PARAMETER_SETTINGS;
-import static cn.tolim.pudans.infra.api.ParameterSetting.PARAMETER_SETTINGS_DEFAULT;
+import static cn.tolim.pudans.infra.contract.ParameterSetting.PARAMETER_SETTINGS;
+import static cn.tolim.pudans.infra.contract.ParameterSetting.PARAMETER_SETTINGS_DEFAULT;
 
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.api.ParameterSetting;
-import cn.tolim.pudans.infra.api.utils.JsonParseException;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
+import cn.tolim.pudans.infra.contract.utils.JsonParseException;
 import cn.tolim.pudans.infra.utils.ReactiveUtils;
 import cn.tolim.pudans.infra.utils.ParameterSettingUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;

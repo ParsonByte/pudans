@@ -5,8 +5,8 @@ import static cn.tolim.pudans.contract.user.User.KIND;
 import static cn.tolim.pudans.contract.user.User.VERSION;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import cn.tolim.pudans.extension.api.AbstractExtension;
-import cn.tolim.pudans.extension.api.GVK;
+import cn.tolim.pudans.extension.contract.AbstractExtension;
+import cn.tolim.pudans.extension.contract.GVK;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import lombok.Data;

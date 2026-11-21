@@ -1,7 +1,7 @@
 package cn.tolim.pudans.infra.utils;
 
-import cn.tolim.pudans.extension.api.Unstructured;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.extension.contract.Unstructured;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.beans.factory.config.YamlProcessor;

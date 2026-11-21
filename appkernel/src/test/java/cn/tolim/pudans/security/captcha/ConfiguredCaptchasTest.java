@@ -6,7 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

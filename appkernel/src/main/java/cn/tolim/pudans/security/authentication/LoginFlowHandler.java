@@ -2,7 +2,7 @@ package cn.tolim.pudans.security.authentication;
 
 import static cn.tolim.pudans.security.authentication.SecurityConstant.USERNAME_PARAMETER_NAME;
 
-import cn.tolim.pudans.security.api.device.DeviceSessions;
+import cn.tolim.pudans.security.contract.device.DeviceSessions;
 import cn.tolim.pudans.core.user.UserLoginOrLogoutProcessing;
 import cn.tolim.pudans.security.authentication.oauth2.OAuth2LoginFlowEnhancer;
 import cn.tolim.pudans.security.authentication.rememberme.RememberMeServices;

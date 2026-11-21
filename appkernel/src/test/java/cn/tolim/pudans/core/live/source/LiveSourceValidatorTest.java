@@ -6,8 +6,8 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.live.LivePlatform;
 import cn.tolim.pudans.contract.live.LiveSource;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.core.live.recorder.LiveStoragePolicyResolver;
 import cn.tolim.pudans.core.live.resolve.LiveRoomLinkParser;

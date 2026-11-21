@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.user;
 
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 import java.time.Clock;
 import java.time.Instant;

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.contract.risk;
 
-import cn.tolim.pudans.extension.api.AbstractExtension;
-import cn.tolim.pudans.extension.api.GVK;
+import cn.tolim.pudans.extension.contract.AbstractExtension;
+import cn.tolim.pudans.extension.contract.GVK;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

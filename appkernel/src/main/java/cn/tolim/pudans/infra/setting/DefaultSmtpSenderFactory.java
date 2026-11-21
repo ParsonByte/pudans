@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.setting;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Component;

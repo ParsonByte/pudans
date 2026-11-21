@@ -6,14 +6,14 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 import static org.springframework.web.reactive.function.server.RequestPredicates.path;
 
-import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.GroupVersion;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.api.ExternalUrlSupplier;
-import cn.tolim.pudans.infra.api.ValidationUtils;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.GroupVersion;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.contract.ExternalUrlSupplier;
+import cn.tolim.pudans.infra.contract.ValidationUtils;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.feishu;
 
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.contract.risk.dto.RiskAlert;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import java.time.Duration;

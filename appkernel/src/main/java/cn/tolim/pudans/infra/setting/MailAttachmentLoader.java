@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.setting;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.core.io.ClassPathResource;

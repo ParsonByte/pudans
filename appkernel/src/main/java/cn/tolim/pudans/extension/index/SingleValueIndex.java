@@ -1,8 +1,8 @@
 package cn.tolim.pudans.extension.index;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.index.SingleValueIndexSpec;
-import cn.tolim.pudans.extension.api.index.UnknownKey;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.index.SingleValueIndexSpec;
+import cn.tolim.pudans.extension.contract.index.UnknownKey;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;

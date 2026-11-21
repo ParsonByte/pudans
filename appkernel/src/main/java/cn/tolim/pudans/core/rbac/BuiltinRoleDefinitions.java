@@ -11,9 +11,9 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Component;
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.contract.rbac.UserGroup;
-import cn.tolim.pudans.extension.api.AbstractExtension;
-import cn.tolim.pudans.extension.api.MetadataUtil;
-import cn.tolim.pudans.extension.api.Unstructured;
+import cn.tolim.pudans.extension.contract.AbstractExtension;
+import cn.tolim.pudans.extension.contract.MetadataUtil;
+import cn.tolim.pudans.extension.contract.Unstructured;
 import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
 
 @Component

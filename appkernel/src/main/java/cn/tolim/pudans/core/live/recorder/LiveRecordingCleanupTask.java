@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.extension.api.index.query.Queries.in;
-import static cn.tolim.pudans.extension.api.index.query.Queries.lessThan;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.in;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.lessThan;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -22,8 +22,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.LiveRecordingState;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.core.live.alert.LiveAlerts;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;

@@ -1,10 +1,10 @@
 package cn.tolim.pudans.security.authentication.reconciler;
 
-import cn.tolim.pudans.security.api.AuthProvider;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.controller.Controller;
-import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
-import cn.tolim.pudans.extension.api.controller.Reconciler;
+import cn.tolim.pudans.security.contract.AuthProvider;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.controller.Controller;
+import cn.tolim.pudans.extension.contract.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.contract.controller.Reconciler;
 import cn.tolim.pudans.infra.utils.ReactiveUtils;
 import cn.tolim.pudans.security.authentication.AuthProviders;
 import cn.tolim.pudans.security.authentication.AuthProviderUtils;

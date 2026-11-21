@@ -2,8 +2,8 @@ package cn.tolim.pudans.contract.rbac;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import cn.tolim.pudans.extension.api.AbstractExtension;
-import cn.tolim.pudans.extension.api.GVK;
+import cn.tolim.pudans.extension.contract.AbstractExtension;
+import cn.tolim.pudans.extension.contract.GVK;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;

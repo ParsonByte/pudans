@@ -8,10 +8,10 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.MetadataUtil;
-import cn.tolim.pudans.extension.api.controller.Reconciler.Request;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.MetadataUtil;
+import cn.tolim.pudans.extension.contract.controller.Reconciler.Request;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.SuperAdminResolver;
 import java.util.LinkedList;

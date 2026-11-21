@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.config;
 
-import cn.tolim.pudans.extension.api.JsonExtension;
+import cn.tolim.pudans.extension.contract.JsonExtension;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

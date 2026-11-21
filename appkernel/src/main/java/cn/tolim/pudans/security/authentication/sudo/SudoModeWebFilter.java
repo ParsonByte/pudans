@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.sudo;
 
-import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.contract.ApiGroups;
 
 import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
 

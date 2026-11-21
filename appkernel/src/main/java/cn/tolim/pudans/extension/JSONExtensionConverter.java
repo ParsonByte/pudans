@@ -1,11 +1,11 @@
 package cn.tolim.pudans.extension;
 
-import static cn.tolim.pudans.extension.api.Unstructured.OBJECT_MAPPER;
+import static cn.tolim.pudans.extension.contract.Unstructured.OBJECT_MAPPER;
 import static cn.tolim.pudans.extension.ExtensionStoreUtil.buildStoreName;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.Scheme;
-import cn.tolim.pudans.extension.api.SchemeManager;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.Scheme;
+import cn.tolim.pudans.extension.contract.SchemeManager;
 import cn.tolim.pudans.extension.event.SchemeRemovedEvent;
 import cn.tolim.pudans.extension.exception.ExtensionConvertException;
 import cn.tolim.pudans.extension.exception.SchemaViolationException;

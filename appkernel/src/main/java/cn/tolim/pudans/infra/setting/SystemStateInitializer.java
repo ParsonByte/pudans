@@ -1,15 +1,15 @@
 package cn.tolim.pudans.infra.setting;
 
-import static cn.tolim.pudans.extension.api.index.query.Queries.isNull;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.isNull;
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
 
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.PageRequestImpl;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.router.selector.FieldSelector;
-import cn.tolim.pudans.extension.api.router.selector.LabelSelector;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.PageRequestImpl;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.router.selector.FieldSelector;
+import cn.tolim.pudans.extension.contract.router.selector.LabelSelector;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;

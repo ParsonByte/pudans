@@ -16,9 +16,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import cn.tolim.pudans.contract.rbac.Role;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.controller.Reconciler.Request;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.controller.Reconciler.Request;
 import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 
 @ExtendWith(MockitoExtension.class)

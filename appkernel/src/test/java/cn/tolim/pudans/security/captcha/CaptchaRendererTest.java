@@ -2,7 +2,7 @@ package cn.tolim.pudans.security.captcha;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import org.junit.jupiter.api.Test;
 
 class CaptchaRendererTest {

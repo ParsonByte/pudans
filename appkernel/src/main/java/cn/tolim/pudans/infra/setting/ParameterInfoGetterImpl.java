@@ -1,10 +1,10 @@
 package cn.tolim.pudans.infra.setting;
 
-import cn.tolim.pudans.infra.api.ExternalUrlSupplier;
-import cn.tolim.pudans.infra.api.ParameterInfoGetter;
-import cn.tolim.pudans.infra.api.ParameterSetting;
-import cn.tolim.pudans.infra.api.SystemInfo;
-import cn.tolim.pudans.infra.api.SystemVersionSupplier;
+import cn.tolim.pudans.infra.contract.ExternalUrlSupplier;
+import cn.tolim.pudans.infra.contract.ParameterInfoGetter;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
+import cn.tolim.pudans.infra.contract.SystemInfo;
+import cn.tolim.pudans.infra.contract.SystemVersionSupplier;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;

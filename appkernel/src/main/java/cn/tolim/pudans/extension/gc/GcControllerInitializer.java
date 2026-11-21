@@ -1,6 +1,6 @@
 package cn.tolim.pudans.extension.gc;
 
-import cn.tolim.pudans.extension.api.controller.Controller;
+import cn.tolim.pudans.extension.contract.controller.Controller;
 import cn.tolim.pudans.infra.setting.InitializationPhase;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;

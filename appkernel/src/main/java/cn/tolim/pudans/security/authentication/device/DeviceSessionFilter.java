@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.device;
 
-import cn.tolim.pudans.security.api.device.DeviceSessions;
+import cn.tolim.pudans.security.contract.device.DeviceSessions;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

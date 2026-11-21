@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authorization;
 
-import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.contract.ApiGroups;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;

@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.setting.MasterKeys;
 import java.time.Instant;
 import java.util.List;

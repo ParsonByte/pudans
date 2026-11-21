@@ -1,6 +1,6 @@
 package cn.tolim.pudans.extension.exception;
 
-import cn.tolim.pudans.extension.api.exception.ExtensionException;
+import cn.tolim.pudans.extension.contract.exception.ExtensionException;
 
 
 public class ExtensionConvertException extends ExtensionException {

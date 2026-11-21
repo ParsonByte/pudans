@@ -1,12 +1,12 @@
 package cn.tolim.pudans.infra.setting.reconciler;
 
-import cn.tolim.pudans.setting.api.AnnotationSetting;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.GroupKind;
-import cn.tolim.pudans.extension.api.MetadataUtil;
-import cn.tolim.pudans.extension.api.controller.Controller;
-import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
-import cn.tolim.pudans.extension.api.controller.Reconciler;
+import cn.tolim.pudans.setting.contract.AnnotationSetting;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.GroupKind;
+import cn.tolim.pudans.extension.contract.MetadataUtil;
+import cn.tolim.pudans.extension.contract.controller.Controller;
+import cn.tolim.pudans.extension.contract.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.contract.controller.Reconciler;
 import java.util.Map;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Component;

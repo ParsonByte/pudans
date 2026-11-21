@@ -1,7 +1,7 @@
 package cn.tolim.pudans.extension.index;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.index.MultiValueIndexSpec;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.index.MultiValueIndexSpec;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;

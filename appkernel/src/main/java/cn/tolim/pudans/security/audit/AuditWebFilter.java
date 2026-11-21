@@ -13,9 +13,9 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.infra.api.trace.TraceContext;
+import cn.tolim.pudans.infra.contract.trace.TraceContext;
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.security.web.StaticRequestPaths;
 

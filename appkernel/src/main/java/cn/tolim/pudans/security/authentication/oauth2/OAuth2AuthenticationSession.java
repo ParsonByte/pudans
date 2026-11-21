@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.oauth2;
 
-import cn.tolim.pudans.security.api.authentication.oauth2.PudansOAuth2AuthenticationToken;
+import cn.tolim.pudans.security.contract.authentication.oauth2.PudansOAuth2AuthenticationToken;
 import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.security.authentication.PudansUserDetailsContract;

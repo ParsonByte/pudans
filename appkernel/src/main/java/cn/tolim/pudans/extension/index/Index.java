@@ -1,6 +1,6 @@
 package cn.tolim.pudans.extension.index;
 
-import cn.tolim.pudans.extension.api.Extension;
+import cn.tolim.pudans.extension.contract.Extension;
 import java.io.Closeable;
 
 

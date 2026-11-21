@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.security.api.PersonalAccessToken;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.user.PersonalTokens;
 import cn.tolim.pudans.infra.setting.SecurityParameters;

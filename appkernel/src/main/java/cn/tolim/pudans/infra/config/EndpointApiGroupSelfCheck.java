@@ -1,8 +1,8 @@
 package cn.tolim.pudans.infra.config;
 
-import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.SchemeManager;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.SchemeManager;
 import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import java.util.ArrayDeque;
 import java.util.ArrayList;

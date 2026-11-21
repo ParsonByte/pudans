@@ -1,9 +1,9 @@
 package cn.tolim.pudans.security.authentication.token;
 
-import static cn.tolim.pudans.security.api.PersonalAccessToken.PAT_TOKEN_PREFIX;
+import static cn.tolim.pudans.security.contract.PersonalAccessToken.PAT_TOKEN_PREFIX;
 
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.setting.MasterKeys;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;

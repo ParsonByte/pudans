@@ -1,8 +1,8 @@
 package cn.tolim.pudans.extension.gc;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.Watcher;
-import cn.tolim.pudans.extension.api.controller.RequestQueue;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.Watcher;
+import cn.tolim.pudans.extension.contract.controller.RequestQueue;
 
 class GcWatcher implements Watcher {
 

@@ -1,13 +1,13 @@
 package cn.tolim.pudans.infra;
 
-import static cn.tolim.pudans.extension.api.index.query.Queries.isNull;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.isNull;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.ListResult;
-import cn.tolim.pudans.extension.api.PageRequest;
-import cn.tolim.pudans.extension.api.PageRequestImpl;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.ListResult;
+import cn.tolim.pudans.extension.contract.PageRequest;
+import cn.tolim.pudans.extension.contract.PageRequestImpl;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import java.time.Duration;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;

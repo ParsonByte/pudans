@@ -1,12 +1,12 @@
 package cn.tolim.pudans.core.user;
 
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 import static org.springframework.data.domain.Sort.Order.asc;
 import static org.springframework.data.domain.Sort.Order.desc;
 
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.security.api.PersonalAccessToken;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.user.PersonalTokens;
 import cn.tolim.pudans.core.user.UserScopedPatHandler;

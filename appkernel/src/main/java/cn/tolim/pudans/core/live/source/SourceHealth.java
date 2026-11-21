@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.live.source;
 
 import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.live.LiveSourceState;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.contract.live.dto.LiveSourceHealth;

@@ -2,8 +2,8 @@ package cn.tolim.pudans.extension.index;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.extension.api.ListResult;
-import cn.tolim.pudans.extension.api.PageRequestImpl;
+import cn.tolim.pudans.extension.contract.ListResult;
+import cn.tolim.pudans.extension.contract.PageRequestImpl;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
@@ -32,7 +32,7 @@ class DefaultIndexEnginePaginationTest {
     void indexPaginationUsesOneBasedPages(int page, int size) throws Exception {
         var engine = new DefaultIndexEngine(new DefaultConversionService());
         Method method = DefaultIndexEngine.class.getDeclaredMethod(
-                "paginate", Collection.class, cn.tolim.pudans.extension.api.PageRequest.class, List.class);
+                "paginate", Collection.class, cn.tolim.pudans.extension.contract.PageRequest.class, List.class);
         method.setAccessible(true);
 
         var result = (ListResult<String>) method.invoke(

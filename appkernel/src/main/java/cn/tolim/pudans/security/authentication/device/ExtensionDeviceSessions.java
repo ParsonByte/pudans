@@ -1,16 +1,16 @@
 package cn.tolim.pudans.security.authentication.device;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.infra.utils.IpAddressUtils.getClientIp;
 import static cn.tolim.pudans.security.authentication.rememberme.PersistentTokenBasedRememberMeServices.REMEMBER_ME_SERIES_REQUEST_NAME;
 
-import cn.tolim.pudans.security.api.Device;
-import cn.tolim.pudans.extension.api.ExtensionUtil;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.index.query.Queries;
-import cn.tolim.pudans.security.api.device.DeviceSessions;
+import cn.tolim.pudans.security.contract.Device;
+import cn.tolim.pudans.extension.contract.ExtensionUtil;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.index.query.Queries;
+import cn.tolim.pudans.security.contract.device.DeviceSessions;
 import cn.tolim.pudans.infra.utils.UserAgentUtils;
 import cn.tolim.pudans.security.authentication.rememberme.PersistentRememberMeTokenRepository;
 import java.security.Principal;

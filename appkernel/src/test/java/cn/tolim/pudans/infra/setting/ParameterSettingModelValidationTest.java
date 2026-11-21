@@ -2,7 +2,7 @@ package cn.tolim.pudans.infra.setting;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import org.junit.jupiter.api.BeforeEach;

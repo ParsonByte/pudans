@@ -1,12 +1,12 @@
 package cn.tolim.pudans.security.authentication.rememberme;
 
-import static cn.tolim.pudans.extension.api.index.query.Queries.and;
-import static cn.tolim.pudans.extension.api.index.query.Queries.isNull;
-import static cn.tolim.pudans.extension.api.index.query.Queries.lessThan;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.and;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.isNull;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.lessThan;
 
-import cn.tolim.pudans.security.api.RememberMeToken;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.router.selector.FieldSelector;
+import cn.tolim.pudans.security.contract.RememberMeToken;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.router.selector.FieldSelector;
 import cn.tolim.pudans.infra.ReactiveExtensionPaginatedOperator;
 import cn.tolim.pudans.infra.utils.ReactiveUtils;
 import java.time.Duration;

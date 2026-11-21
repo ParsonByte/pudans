@@ -3,9 +3,9 @@ package cn.tolim.pudans.core.user.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.GroupVersion;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.GroupVersion;
 import cn.tolim.pudans.infra.properties.PasskeyProperties;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 import cn.tolim.pudans.infra.webauthn.Passkeys;

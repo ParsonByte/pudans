@@ -1,6 +1,6 @@
 package cn.tolim.pudans.extension.index;
 
-import cn.tolim.pudans.extension.api.index.UnknownKey;
+import cn.tolim.pudans.extension.contract.index.UnknownKey;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
 

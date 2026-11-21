@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.token;
 
-import static cn.tolim.pudans.security.api.PersonalAccessToken.PAT_TOKEN_PREFIX;
+import static cn.tolim.pudans.security.contract.PersonalAccessToken.PAT_TOKEN_PREFIX;
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.ANONYMOUS_ROLE_NAME;
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.AUTHENTICATED_ROLE_NAME;
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
@@ -9,9 +9,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.extension.api.ExtensionUtil;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.security.api.PersonalAccessToken;
+import cn.tolim.pudans.extension.contract.ExtensionUtil;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.setting.MasterKeys;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;

@@ -5,11 +5,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.api.ParameterSetting;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 import java.time.Instant;
 import java.util.HashMap;

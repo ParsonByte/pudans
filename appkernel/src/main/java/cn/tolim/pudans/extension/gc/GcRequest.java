@@ -1,6 +1,6 @@
 package cn.tolim.pudans.extension.gc;
 
-import cn.tolim.pudans.extension.api.GroupVersionKind;
+import cn.tolim.pudans.extension.contract.GroupVersionKind;
 import org.springframework.util.Assert;
 
 record GcRequest(GroupVersionKind gvk, String name) {

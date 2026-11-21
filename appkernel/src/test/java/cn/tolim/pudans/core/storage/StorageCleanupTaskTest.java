@@ -11,7 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import cn.tolim.pudans.contract.storage.StorageFile;
-import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

@@ -31,7 +31,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.audit.AuditRecord;
-import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.contract.Metadata;
 
 @ExtendWith(MockitoExtension.class)
 class AuditStoreTest {

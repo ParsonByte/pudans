@@ -1,11 +1,11 @@
 package cn.tolim.pudans.security.authentication.login;
 
-import cn.tolim.pudans.security.api.AuthProvider;
+import cn.tolim.pudans.security.contract.AuthProvider;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.core.rbac.permission.UiPermissions;
-import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.GroupVersion;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.GroupVersion;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
 import cn.tolim.pudans.infra.setting.SecurityParameters;

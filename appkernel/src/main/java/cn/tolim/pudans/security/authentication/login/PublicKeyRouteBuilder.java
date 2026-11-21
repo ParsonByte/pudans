@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.authentication.login;
 
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.security.api.authentication.LoginCipher;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.security.contract.authentication.LoginCipher;
 import java.util.Base64;
 import lombok.Data;
 import org.springdoc.core.fn.builders.apiresponse.Builder;

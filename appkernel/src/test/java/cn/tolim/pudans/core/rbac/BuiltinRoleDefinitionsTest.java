@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.rbac;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.tolim.pudans.contract.rbac.Role;
-import cn.tolim.pudans.extension.api.MetadataUtil;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.extension.contract.MetadataUtil;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.ArrayDeque;
 import java.util.HashSet;

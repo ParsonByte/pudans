@@ -1,10 +1,10 @@
 package cn.tolim.pudans.extension.index;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.index.IndexSpecs;
-import cn.tolim.pudans.extension.api.index.MultiValueIndexSpec;
-import cn.tolim.pudans.extension.api.index.SingleValueIndexSpec;
-import cn.tolim.pudans.extension.api.index.ValueIndexSpec;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.index.IndexSpecs;
+import cn.tolim.pudans.extension.contract.index.MultiValueIndexSpec;
+import cn.tolim.pudans.extension.contract.index.SingleValueIndexSpec;
+import cn.tolim.pudans.extension.contract.index.ValueIndexSpec;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;

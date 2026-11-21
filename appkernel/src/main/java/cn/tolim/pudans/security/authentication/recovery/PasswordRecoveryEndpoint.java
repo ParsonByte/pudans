@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.authentication.recovery;
 
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.infra.api.ValidationUtils;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.infra.contract.ValidationUtils;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.security.captcha.Captchas;
 import io.swagger.v3.oas.annotations.Operation;

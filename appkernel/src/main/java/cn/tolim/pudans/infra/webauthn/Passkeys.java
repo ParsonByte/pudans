@@ -1,13 +1,13 @@
 package cn.tolim.pudans.infra.webauthn;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.user.UserConnection;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.properties.PasskeyProperties;
 import com.webauthn4j.WebAuthnManager;
 import com.webauthn4j.converter.util.ObjectConverter;

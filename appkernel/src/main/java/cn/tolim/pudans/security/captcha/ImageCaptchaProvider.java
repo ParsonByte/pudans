@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.captcha;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import java.time.Duration;
 import java.util.Locale;
 import java.util.Objects;

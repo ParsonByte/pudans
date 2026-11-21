@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.user;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 
 import java.time.Clock;
 import java.util.Collection;
@@ -25,11 +25,11 @@ import reactor.core.scheduler.Schedulers;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.router.selector.FieldSelector;
-import cn.tolim.pudans.infra.api.ValidationUtils;
-import cn.tolim.pudans.security.api.device.DeviceSessions;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.router.selector.FieldSelector;
+import cn.tolim.pudans.infra.contract.ValidationUtils;
+import cn.tolim.pudans.security.contract.device.DeviceSessions;
 import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.event.user.PasswordChangedEvent;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;

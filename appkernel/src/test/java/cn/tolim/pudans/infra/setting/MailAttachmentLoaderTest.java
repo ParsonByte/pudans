@@ -3,7 +3,7 @@ package cn.tolim.pudans.infra.setting;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;

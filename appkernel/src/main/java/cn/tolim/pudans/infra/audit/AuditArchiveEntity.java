@@ -67,7 +67,7 @@ public class AuditArchiveEntity {
 
     public AuditRecord toRecord() {
         var record = new AuditRecord();
-        var metadata = new cn.tolim.pudans.extension.api.Metadata();
+        var metadata = new cn.tolim.pudans.extension.contract.Metadata();
         metadata.setName(id);
         record.setMetadata(metadata);
         record.setTraceId(traceId);

@@ -2,14 +2,14 @@ package cn.tolim.pudans.infra.utils;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
-import cn.tolim.pudans.setting.api.Setting;
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.controller.Reconciler.Result;
-import cn.tolim.pudans.extension.api.controller.RequeueException;
-import cn.tolim.pudans.infra.api.utils.JsonParseException;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.setting.contract.Setting;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.controller.Reconciler.Result;
+import cn.tolim.pudans.extension.contract.controller.RequeueException;
+import cn.tolim.pudans.infra.contract.utils.JsonParseException;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.fge.jsonpatch.JsonPatchException;
 import com.github.fge.jsonpatch.mergepatch.JsonMergePatch;

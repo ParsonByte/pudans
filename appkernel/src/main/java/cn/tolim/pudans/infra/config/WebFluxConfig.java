@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.config;
 
-import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.infra.SecureRequestMappingHandlerAdapter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

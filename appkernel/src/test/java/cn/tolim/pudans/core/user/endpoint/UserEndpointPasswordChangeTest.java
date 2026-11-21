@@ -4,7 +4,7 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.contract.Metadata;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;

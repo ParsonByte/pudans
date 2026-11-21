@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication;
 
-import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import com.google.common.net.HttpHeaders;

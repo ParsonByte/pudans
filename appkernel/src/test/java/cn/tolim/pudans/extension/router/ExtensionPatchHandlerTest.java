@@ -24,11 +24,11 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.rbac.UserGroupBinding;
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.GroupVersionKind;
-import cn.tolim.pudans.extension.api.JsonExtension;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.Scheme;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.GroupVersionKind;
+import cn.tolim.pudans.extension.contract.JsonExtension;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.Scheme;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 

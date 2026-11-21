@@ -2,7 +2,7 @@ package cn.tolim.pudans.infra.config;
 
 import static org.springdoc.core.utils.Constants.SPRINGDOC_ENABLED;
 
-import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.extension.router.JsonPatch;
 import io.swagger.v3.core.converter.ModelConverter;
 import io.swagger.v3.core.jackson.ModelResolver;

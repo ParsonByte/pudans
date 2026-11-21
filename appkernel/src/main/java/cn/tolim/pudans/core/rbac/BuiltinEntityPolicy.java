@@ -26,17 +26,17 @@ import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.user.UserConnection;
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.GroupVersionKind;
-import cn.tolim.pudans.extension.api.JsonExtension;
-import cn.tolim.pudans.extension.api.MetadataUtil;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.ReservedLabels;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
-import cn.tolim.pudans.security.api.PersonalAccessToken;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.GroupVersionKind;
+import cn.tolim.pudans.extension.contract.JsonExtension;
+import cn.tolim.pudans.extension.contract.MetadataUtil;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ReservedLabels;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
+import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
-import cn.tolim.pudans.extension.api.Unstructured;
+import cn.tolim.pudans.extension.contract.Unstructured;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -245,13 +245,13 @@ public class BuiltinEntityPolicy {
 
     private Mono<Void> checkConfigMapDeletion(ConfigMap configMap) {
         if (configMap.getMetadata() != null
-                && (cn.tolim.pudans.infra.api.ParameterSetting.PARAMETER_SETTINGS.equals(
+                && (cn.tolim.pudans.infra.contract.ParameterSetting.PARAMETER_SETTINGS.equals(
                                 configMap.getMetadata().getName())
-                        || cn.tolim.pudans.infra.api.ParameterSetting.PARAMETER_SETTINGS_DEFAULT.equals(
+                        || cn.tolim.pudans.infra.contract.ParameterSetting.PARAMETER_SETTINGS_DEFAULT.equals(
                                 configMap.getMetadata().getName())
-                        || cn.tolim.pudans.infra.api.ParameterSetting.LEGACY_PARAMETER_SETTINGS.equals(
+                        || cn.tolim.pudans.infra.contract.ParameterSetting.LEGACY_PARAMETER_SETTINGS.equals(
                                 configMap.getMetadata().getName())
-                        || cn.tolim.pudans.infra.api.ParameterSetting.LEGACY_PARAMETER_SETTINGS_DEFAULT.equals(
+                        || cn.tolim.pudans.infra.contract.ParameterSetting.LEGACY_PARAMETER_SETTINGS_DEFAULT.equals(
                                 configMap.getMetadata().getName()))) {
             return Mono.error(denied("参数设置配置不可删除。"));
         }

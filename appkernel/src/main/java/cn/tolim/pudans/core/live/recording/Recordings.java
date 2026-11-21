@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.live.recording;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.index.query.Queries.in;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.in;
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_INVALID_ARGUMENT;
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_INVALID_SPEC;
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_RECORDING_ACTIVE;
@@ -15,9 +15,9 @@ import cn.tolim.pudans.contract.live.LiveRecordingState;
 import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.live.LiveSourceState;
 import cn.tolim.pudans.contract.live.PartState;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.contract.live.dto.LiveRecordingRetry;
 import cn.tolim.pudans.core.live.recorder.LiveRecorderRegistry;

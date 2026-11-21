@@ -11,9 +11,9 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.security.api.PersonalAccessToken;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.setting.MasterKeys;
 import java.util.Base64;

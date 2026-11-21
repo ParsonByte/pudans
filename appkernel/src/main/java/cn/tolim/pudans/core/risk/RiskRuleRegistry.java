@@ -1,11 +1,11 @@
 package cn.tolim.pudans.core.risk;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
 
 import cn.tolim.pudans.contract.risk.RiskRule;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.extension;
 
-import cn.tolim.pudans.extension.api.Scheme;
+import cn.tolim.pudans.extension.contract.Scheme;
 import org.springframework.util.StringUtils;
 
 
