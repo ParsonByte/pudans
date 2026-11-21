@@ -7,7 +7,27 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/module: "AI"
     rbac.authorization.pudans.tolim.cn/display-name: "AI 普通用户"
-    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-usage-overview", "role-template-usage-overview-view", "role-template-usage-overview-use-voucher" ]'
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [
+        "role-template-view-ai-usage-overview",
+        "role-template-usage-overview-view",
+        "role-template-usage-overview-use-voucher",
+        "role-template-view-ai-model-market",
+        "role-template-view-ai-knowledge-bases",
+        "role-template-view-ai-teams",
+        "role-template-view-ai-generations",
+        "role-template-view-ai-memory",
+        "role-template-view-ai-instructions",
+        "role-template-view-ai-mcp-servers",
+        "role-template-view-ai-skills",
+        "role-template-view-ai-hooks",
+        "role-template-view-ai-environment-variables",
+        "role-template-view-ai-subagents",
+        "role-template-view-ai-slash-commands",
+        "role-template-view-ai-usage-requests",
+        "role-template-view-ai-usage-sessions",
+        "role-template-view-ai-usage-context"
+      ]
 rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
@@ -147,8 +167,17 @@ rules:
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
+      - "aiskills/usage"
+      - "aiskills/audit"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "aimcpservers/test"
       - "aiskills/import"
+      - "aiskills/actions"
       - "aislashcommands/resolve"
       - "aienvironmentvariables/value"
     verbs:
@@ -160,6 +189,7 @@ rules:
       - "airuntimes/providers"
       - "airuntimes/files"
       - "airuntimes/logs"
+      - "airuntimes/snapshots"
     verbs:
       - "get"
       - "list"

@@ -20,6 +20,7 @@ rules:
       - "aiproviders"
       - "aiprovideraccounts"
       - "aimodels"
+      - "aiproviders/files"
     verbs:
       - "create"
   - apiGroups:
@@ -76,8 +77,10 @@ rules:
       - "aiproviders/models"
       - "aiproviders/minimax"
       - "aiproviders/qianwen"
+      - "aiproviders/files"
     verbs:
       - "get"
+      - "list"
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role
@@ -101,6 +104,7 @@ rules:
       - "aiproviders"
       - "aiprovideraccounts"
       - "aimodels"
+      - "aiproviders/files"
     verbs:
       - "delete"
 ---

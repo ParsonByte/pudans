@@ -1,0 +1,93 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-create-ai-teams
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-teams" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.teams"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "新建团队"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建 AI 团队。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-teams:create"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiteams"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-update-ai-teams
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-teams" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.teams"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "update"
+    rbac.authorization.pudans.tolim.cn/ui-label: "编辑团队"
+    rbac.authorization.pudans.tolim.cn/ui-description: "编辑团队资料与配置。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-teams:update"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiteams"
+    verbs:
+      - "update"
+      - "patch"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-delete-ai-teams
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-teams" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.teams"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "delete"
+    rbac.authorization.pudans.tolim.cn/ui-label: "删除团队"
+    rbac.authorization.pudans.tolim.cn/ui-description: "删除 AI 团队。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-teams:delete"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiteams"
+    verbs:
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-members-ai-teams
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-ai-teams" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.teams"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "members"
+    rbac.authorization.pudans.tolim.cn/ui-label: "管理成员"
+    rbac.authorization.pudans.tolim.cn/ui-description: "添加或移除团队成员。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "40"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-teams:members"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiteams/members"
+    verbs:
+      - "create"
+      - "delete"

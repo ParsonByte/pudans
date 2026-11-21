@@ -23,7 +23,7 @@ class AiWorkspaceMenuTemplatesTest {
                 .map(document -> Unstructured.OBJECT_MAPPER.convertValue(document.getData(), Role.class))
                 .toList();
 
-        assertThat(roles).hasSize(22);
+        assertThat(roles).hasSize(26);
 
         var workspaces = roles.stream()
                 .filter(role -> Role.UI_TYPE_WORKSPACE.equals(annotation(role, Role.UI_TYPE_ANNO)))
@@ -39,7 +39,7 @@ class AiWorkspaceMenuTemplatesTest {
                 .filter(role -> Role.UI_TYPE_MENU.equals(annotation(role, Role.UI_TYPE_ANNO)))
                 .sorted(Comparator.comparingInt(menu -> order(menu)))
                 .toList();
-        assertThat(menus).hasSize(21);
+        assertThat(menus).hasSize(25);
         assertThat(menus)
                 .allSatisfy(menu -> {
                     assertThat(annotation(menu, Role.UI_WORKSPACE_ANNO)).isEqualTo("ai");
@@ -47,7 +47,7 @@ class AiWorkspaceMenuTemplatesTest {
                     assertThat(annotation(menu, Role.UI_COMPONENT_ANNO)).isNotBlank();
                     assertThat(annotation(menu, Role.UI_LABEL_ANNO)).isNotBlank();
                     assertThat(annotation(menu, Role.UI_PERMISSIONS_ANNO)).contains(":view");
-                    assertThat(annotation(menu, Role.UI_GROUP_ANNO)).isIn("使用", "模型", "观测");
+                    assertThat(annotation(menu, Role.UI_GROUP_ANNO)).isIn("使用", "模型", "观测", "配置");
                 });
         assertThat(menus)
                 .extracting(menu -> menu.getMetadata().getName())
@@ -60,7 +60,7 @@ class AiWorkspaceMenuTemplatesTest {
                 .doesNotHaveDuplicates();
         assertThat(menus)
                 .extracting(menu -> annotation(menu, Role.UI_GROUP_ANNO))
-                .containsSubsequence("使用", "模型", "观测");
+                .containsSubsequence("使用", "模型", "观测", "配置");
 
         assertThat(parentLabels(menus, "资源库"))
                 .containsExactly(
@@ -70,7 +70,7 @@ class AiWorkspaceMenuTemplatesTest {
                         .filter(menu -> "模型".equals(annotation(menu, Role.UI_GROUP_ANNO)))
                         .map(menu -> annotation(menu, Role.UI_LABEL_ANNO))
                         .toList())
-                .containsExactly("供应商", "模型广场", "路由", "路由组", "网关");
+                .containsExactly("供应商", "模型广场", "路由", "聊天模式", "路由组", "网关");
     }
 
     private static List<String> parentLabels(List<Role> menus, String parent) {

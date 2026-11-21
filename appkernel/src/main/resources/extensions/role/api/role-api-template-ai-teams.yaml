@@ -1,0 +1,28 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-ai-teams
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI 团队管理"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiteams"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiteams/members"
+    verbs:
+      - "create"
+      - "delete"

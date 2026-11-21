@@ -1,0 +1,29 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-storage-files
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Storage"
+    rbac.authorization.pudans.tolim.cn/display-name: "Storage File View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage-files"
+    rbac.authorization.pudans.tolim.cn/ui-component: "storage-files"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/storage-files"
+    rbac.authorization.pudans.tolim.cn/ui-label: "存储文件"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理存储文件、回收站与下载。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:folder-open"
+    rbac.authorization.pudans.tolim.cn/ui-group: "存储"
+    rbac.authorization.pudans.tolim.cn/ui-order: "35"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage-files:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagefiles"
+    verbs:
+      - "get"
+      - "list"
