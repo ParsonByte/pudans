@@ -26,8 +26,7 @@ class BuiltinRoleDefinitionsTest {
                 .containsExactlyInAnyOrder(
                         BuiltinEntities.SUPER_ROLE,
                         BuiltinEntities.SYSTEM_ADMIN_ROLE,
-                        BuiltinEntities.NORMAL_ROLE,
-                        BuiltinEntities.AI_OPERATOR_ROLE);
+                        BuiltinEntities.NORMAL_ROLE);
         assertThat(definitions.builtinGroups())
                 .extracting(group -> group.getMetadata().getName())
                 .containsExactlyInAnyOrder(
@@ -58,12 +57,6 @@ class BuiltinRoleDefinitionsTest {
     }
 
     @Test
-    void aiAdminRoleCoversEveryAiOperationTemplate() {
-        assertThat(dependencyClosure("role-template-ai-admin"))
-                .containsAll(operationTemplates(menu -> menu.startsWith("ai.")));
-    }
-
-    @Test
     void systemAdminRoleCoversEveryConsoleOperationTemplate() {
         assertThat(dependencyClosure(BuiltinEntities.SYSTEM_ADMIN_ROLE))
                 .containsAll(operationTemplates(menu -> menu.startsWith("console.")));
@@ -76,25 +69,11 @@ class BuiltinRoleDefinitionsTest {
     }
 
     @Test
-    void normalRoleOnlyReceivesPersonalWorkspaceMenus() {
+    void normalRoleDoesNotGrantConsoleMenus() {
         var closure = dependencyClosure(BuiltinEntities.NORMAL_ROLE);
 
-        assertThat(closure)
-                .contains(
-                        "role-template-view-my-usage-overview",
-                        "role-template-view-my-usage-requests",
-                        "role-template-view-my-usage-sessions",
-                        "role-template-view-my-usage-context",
-                        "role-template-view-my-plan",
-                        "role-template-view-my-generations");
-        assertThat(closure).doesNotContainAnyElementsOf(workspaceMenuTemplates("ai"));
+        assertThat(closure).contains("authenticated");
         assertThat(closure).doesNotContainAnyElementsOf(workspaceMenuTemplates("console"));
-    }
-
-    @Test
-    void aiOperatorRoleKeepsTheAiConsoleMenus() {
-        assertThat(dependencyClosure(BuiltinEntities.AI_OPERATOR_ROLE))
-                .contains("role-template-view-ai-memory", "role-template-view-ai-knowledge-bases");
     }
 
     private Set<String> workspaceMenuTemplates(String workspace) {

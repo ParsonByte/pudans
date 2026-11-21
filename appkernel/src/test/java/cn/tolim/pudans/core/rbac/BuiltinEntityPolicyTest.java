@@ -24,18 +24,10 @@ import cn.tolim.pudans.contract.rbac.RoleBinding;
 import cn.tolim.pudans.contract.rbac.TempRoleBinding;
 import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.contract.rbac.UserGroupBinding;
-import cn.tolim.pudans.contract.ai.AiChatMode;
-import cn.tolim.pudans.contract.ai.AiModel;
-import cn.tolim.pudans.contract.ai.AiProvider;
-import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.ai.AiRouteGroup;
-import cn.tolim.pudans.contract.ai.AiSetting;
-import cn.tolim.pudans.contract.ai.AiTeam;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.security.api.PersonalAccessToken;
-import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.extension.api.GroupVersionKind;
 import cn.tolim.pudans.extension.api.JsonExtension;
 import cn.tolim.pudans.extension.api.Metadata;
@@ -58,9 +50,6 @@ class BuiltinEntityPolicyTest {
     @Mock
     RolePermissionPolicy rolePermissionPolicy;
 
-    @Mock
-    Accounts accounts;
-
     private final BuiltinRoleDefinitions builtinRoleDefinitions = new BuiltinRoleDefinitions();
 
     private BuiltinEntityPolicy policy;
@@ -68,7 +57,7 @@ class BuiltinEntityPolicyTest {
     @BeforeEach
     void setUp() {
         policy = new BuiltinEntityPolicy(
-                client, superAdminResolver, builtinRoleDefinitions, rolePermissionPolicy, accounts);
+                client, superAdminResolver, builtinRoleDefinitions, rolePermissionPolicy);
     }
 
     private static GroupVersionKind userGvk() {
@@ -544,150 +533,6 @@ class BuiltinEntityPolicyTest {
         storagePolicy.setMetadata(metadata);
         storagePolicy.getSpec().getCredentials().setAccessKey(accessKey);
         return storagePolicy;
-    }
-
-    @Test
-    void createAiSettingRejectsANonSingletonName() {
-        var setting = new AiSetting();
-        var metadata = new Metadata();
-        metadata.setName("another-setting");
-        setting.setMetadata(metadata);
-
-        StepVerifier.create(policy.checkCreate(aiSettingGvk(), setting))
-                .expectError(AccessDeniedException.class)
-                .verify();
-    }
-
-    @Test
-    void createAiChatModeRejectsBuiltinNames() {
-        var mode = new AiChatMode();
-        var metadata = new Metadata();
-        metadata.setName("fast");
-        mode.setMetadata(metadata);
-        mode.getSpec().setDisplayName("快速模式");
-        mode.getSpec().setRouteGroup("fast-group");
-
-        StepVerifier.create(policy.checkCreate(aiChatModeGvk(), mode))
-                .expectError(AccessDeniedException.class)
-                .verify();
-    }
-
-    @Test
-    void updateAiProviderAccountPreservesTheStoredKeyWhenTheRequestOmitsIt() {
-        when(client.get(AiProviderAccount.class, "account-1"))
-                .thenReturn(Mono.just(aiProviderAccount("enc:stored-key")));
-        when(client.fetch(AiProvider.class, "openai-primary")).thenReturn(Mono.just(new AiProvider()));
-        var requested = aiProviderAccount(null);
-
-        StepVerifier.create(policy.checkUpdate(aiProviderAccountGvk(), "account-1", requested))
-                .verifyComplete();
-
-        assertThat(requested.getSpec().getApiKey()).isEqualTo("enc:stored-key");
-    }
-
-    @Test
-    void deleteAiSettingIsDenied() {
-        var setting = new AiSetting();
-        var metadata = new Metadata();
-        metadata.setName("ai-setting");
-        setting.setMetadata(metadata);
-
-        StepVerifier.create(policy.checkDelete(setting))
-                .expectError(AccessDeniedException.class)
-                .verify();
-    }
-
-
-    @Test
-    void createAiChatModeRejectsAMissingRouteGroup() {
-        var mode = new AiChatMode();
-        var metadata = new Metadata();
-        metadata.setName("custom");
-        mode.setMetadata(metadata);
-        mode.getSpec().setDisplayName("自定义模式");
-        mode.getSpec().setRouteGroup("missing-group");
-        when(client.fetch(AiRouteGroup.class, "missing-group")).thenReturn(Mono.empty());
-
-        StepVerifier.create(policy.checkCreate(aiChatModeGvk(), mode))
-                .expectError(AccessDeniedException.class)
-                .verify();
-    }
-
-    @Test
-    void createAiRouteGroupRejectsAMissingMemberModel() {
-        var group = new AiRouteGroup();
-        var metadata = new Metadata();
-        metadata.setName("group-a");
-        group.setMetadata(metadata);
-        group.getSpec().setDisplayName("路由组 A");
-        var member = new AiRouteGroup.Member();
-        member.setModel("missing-model");
-        group.getSpec().getMembers().add(member);
-        when(client.fetch(AiModel.class, "missing-model")).thenReturn(Mono.empty());
-
-        StepVerifier.create(policy.checkCreate(aiRouteGroupGvk(), group))
-                .expectError(AccessDeniedException.class)
-                .verify();
-    }
-
-    @Test
-    void createAiProviderAccountRejectsAMissingProvider() {
-        var account = new AiProviderAccount();
-        var metadata = new Metadata();
-        metadata.setName("account-a");
-        account.setMetadata(metadata);
-        account.getSpec().setProvider("missing-provider");
-        when(client.fetch(AiProvider.class, "missing-provider")).thenReturn(Mono.empty());
-
-        StepVerifier.create(policy.checkCreate(aiProviderAccountGvk(), account))
-                .expectError(AccessDeniedException.class)
-                .verify();
-    }
-
-    @Test
-    void createAiTeamAcceptsTheSystemIdentity() {
-        var team = new AiTeam();
-        var metadata = new Metadata();
-        metadata.setName("team-a");
-        team.setMetadata(metadata);
-        team.getSpec().setDisplayName("团队 A");
-        team.getSpec().setOwnerUserId(BuiltinEntities.SYSTEM_USER);
-        var member = new AiTeam.Member();
-        member.setUserId(BuiltinEntities.SYSTEM_USER);
-        team.getSpec().getMembers().add(member);
-
-        StepVerifier.create(policy.checkCreate(aiTeamGvk(), team))
-                .verifyComplete();
-    }
-
-    private static GroupVersionKind aiSettingGvk() {
-        return new GroupVersionKind(AiSetting.GROUP, AiSetting.VERSION, AiSetting.KIND);
-    }
-
-    private static GroupVersionKind aiChatModeGvk() {
-        return new GroupVersionKind(AiChatMode.GROUP, AiChatMode.VERSION, AiChatMode.KIND);
-    }
-
-    private static GroupVersionKind aiTeamGvk() {
-        return new GroupVersionKind(AiTeam.GROUP, AiTeam.VERSION, AiTeam.KIND);
-    }
-
-    private static GroupVersionKind aiRouteGroupGvk() {
-        return new GroupVersionKind(AiRouteGroup.GROUP, AiRouteGroup.VERSION, AiRouteGroup.KIND);
-    }
-
-    private static GroupVersionKind aiProviderAccountGvk() {
-        return new GroupVersionKind(AiProviderAccount.GROUP, AiProviderAccount.VERSION, AiProviderAccount.KIND);
-    }
-
-    private static AiProviderAccount aiProviderAccount(String apiKey) {
-        var account = new AiProviderAccount();
-        var metadata = new Metadata();
-        metadata.setName("account-1");
-        account.setMetadata(metadata);
-        account.getSpec().setProvider("openai-primary");
-        account.getSpec().setApiKey(apiKey);
-        return account;
     }
 
     @Test

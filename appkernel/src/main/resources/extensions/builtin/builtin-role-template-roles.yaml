@@ -61,34 +61,6 @@ metadata:
         "role-template-view-temproles",
         "role-template-view-riskrules",
         "role-template-view-settings",
-        "role-template-ai-admin",
-        "role-template-update-ai-memory",
-        "role-template-delete-ai-memory",
-        "role-template-execute-ai-memory",
-        "role-template-export-ai-memory",
-        "role-template-create-ai-memory",
-        "role-template-import-ai-memory",
-        "role-template-allocate-ai-memory",
-        "role-template-clear-ai-memory",
-        "role-template-settings-ai-memory",
-        "role-template-prompts-ai-memory",
-        "role-template-logs-ai-memory",
-        "role-template-gateway-ai-sessions",
-        "role-template-create-ai-agent-runtime",
-        "role-template-update-ai-agent-runtime",
-        "role-template-delete-ai-agent-runtime",
-        "role-template-start-ai-agent-runtime",
-        "role-template-stop-ai-agent-runtime",
-        "role-template-restart-ai-agent-runtime",
-        "role-template-exec-ai-agent-runtime",
-        "role-template-files-ai-agent-runtime",
-        "role-template-logs-ai-agent-runtime",
-        "role-template-ai-gateway",
-        "role-template-create-ai-gateway",
-        "role-template-manage-ai-gateway",
-        "role-template-settings-ai-gateway",
-        "role-template-sessions-ai-gateway",
-        "role-template-usage-overview-clear",
         "role-template-create-users",
         "role-template-batch-create-users",
         "role-template-import-users",
@@ -141,7 +113,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/system-reserved: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/display-name: "普通用户"
-    rbac.authorization.pudans.tolim.cn/dependencies: '[ "authenticated", "role-template-ai-user" ]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "authenticated" ]'
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["profile:manage","authentications:manage"]'
   finalizers:
     - system-protection
@@ -173,17 +145,3 @@ rules:
       - "site"
     verbs:
       - "get"
----
-apiVersion: pudans.tolim.cn/v1alpha1
-kind: Role
-metadata:
-  name: ai-operator-role
-  labels:
-    pudans.tolim.cn/builtin: "true"
-    rbac.authorization.pudans.tolim.cn/system-reserved: "true"
-  annotations:
-    rbac.authorization.pudans.tolim.cn/display-name: "AI 记忆管理员"
-    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-ai-operator", "role-template-update-ai-memory", "role-template-execute-ai-memory", "role-template-export-ai-memory", "role-template-create-ai-memory", "role-template-import-ai-memory", "role-template-allocate-ai-memory", "role-template-clear-ai-memory", "role-template-settings-ai-memory", "role-template-prompts-ai-memory", "role-template-logs-ai-memory" ]'
-  finalizers:
-    - system-protection
-rules: []
