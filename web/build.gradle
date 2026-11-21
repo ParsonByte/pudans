@@ -59,8 +59,15 @@ tasks.register('testWeb', NpmTask) {
     args = ['run', 'test']
 }
 
-tasks.named('assemble') {
+tasks.register('stageDistribution', Sync) {
+    description = 'Copy the standalone web server into the root build directory.'
     dependsOn tasks.named('standaloneWeb')
+    from(layout.projectDirectory.dir('.next/standalone'))
+    into(rootProject.layout.buildDirectory.dir('web'))
+}
+
+tasks.named('assemble') {
+    dependsOn tasks.named('standaloneWeb'), tasks.named('stageDistribution')
 }
 
 tasks.named('check') {
