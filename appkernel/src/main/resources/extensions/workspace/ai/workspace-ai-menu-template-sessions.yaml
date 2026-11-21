@@ -14,7 +14,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-workspace: "ai"
     rbac.authorization.pudans.tolim.cn/ui-path: "/ai/sessions"
     rbac.authorization.pudans.tolim.cn/ui-label: "会话"
-    rbac.authorization.pudans.tolim.cn/ui-description: "查看 AI 会话与对话记录。"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看全站 AI 网关会话绑定。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:messages-square"
     rbac.authorization.pudans.tolim.cn/ui-group: "使用"
     rbac.authorization.pudans.tolim.cn/ui-order: "20"

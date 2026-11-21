@@ -7,7 +7,7 @@ import Link from "next/link";
 
 import { PageTransition } from "@/components/motion/page-transition";
 import { ThemeSwitch } from "@/components/theme-switch";
-import { BASE_PATH } from "@/lib/base-path";
+import { assetUrl } from "@/lib/asset-url";
 import { cn } from "@/lib/utils";
 
 const BRAND_NAME = "PUDANS";
@@ -64,7 +64,7 @@ export function AuthLayout({ variant = "auth", children }: AuthLayoutProps) {
         onPlay={() => setVideoPlaying(true)}
         onPause={() => setVideoPlaying(false)}
       >
-        <source src={`${BASE_PATH}login-bg.mp4`} type="video/mp4" />
+        <source src={assetUrl("login-bg.mp4")} type="video/mp4" />
       </video>
       <div
         aria-hidden="true"
@@ -81,7 +81,7 @@ export function AuthLayout({ variant = "auth", children }: AuthLayoutProps) {
           aria-label={BRAND_NAME}
           className="inline-flex min-w-0 items-center gap-2.5"
         >
-          <img src={`${BASE_PATH}brand/icon-small.svg`} alt="" className="size-8 shrink-0" />
+          <img src={assetUrl("brand/icon-small.svg")} alt="" className="size-8 shrink-0" />
           <span className="truncate text-sm leading-none font-bold tracking-[0.16em]">
             {BRAND_NAME}
           </span>

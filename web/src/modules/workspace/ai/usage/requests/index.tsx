@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Download, Loader2, RefreshCw } from "lucide-react";
@@ -39,13 +39,11 @@ import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 import { UsageCursorPagination } from "../components/usage-cursor-pagination";
 import { UsageKpiCards } from "../components/usage-kpi-cards";
 import { UsageRefreshToggle } from "../components/usage-refresh-toggle";
-import { UsageScopeToggle } from "../components/usage-scope-toggle";
 import {
   UsageErrorState,
   UsagePageNoPermission,
   UsageTableSkeleton,
 } from "../components/usage-state";
-import { useScopeChange, useUsageAdminAccess, useUsageScopeFallback } from "../lib/admin";
 import {
   fetchUsageHeatmap,
   fetchUsageRequestExport,
@@ -54,7 +52,7 @@ import {
   fetchUsageSpeed,
   resolveUsageApiError,
 } from "../lib/api";
-import type { UsageHeatmapMetric, UsageSpeedGroupBy } from "../lib/api";
+import type { UsageHeatmapMetric, UsageScope, UsageSpeedGroupBy } from "../lib/api";
 import { useCursorPager } from "../lib/cursor";
 import {
   buildUsageTotalsKpis,
@@ -62,12 +60,7 @@ import {
   resolveUsageCacheHitRate,
   usageExportFilename,
 } from "../lib/model";
-import {
-  usageRangeFromSearch,
-  usageRangeSearch,
-  usageScopeFromSearch,
-  useUsageUrlSearch,
-} from "../lib/url-state";
+import { usageRangeFromSearch, usageRangeSearch, useUsageUrlSearch } from "../lib/url-state";
 import { RequestDetailDialog } from "./components/request-detail-dialog";
 import { UsageRequestFilters } from "./components/request-filters";
 import { RequestHeatmap } from "./components/request-heatmap";
@@ -131,7 +124,11 @@ function statusBandClass(status: string): string {
   return "border-l-muted-foreground";
 }
 
-export function AiUsageRequestsView() {
+type AiUsageRequestsViewProps = {
+  scopeLock: UsageScope;
+};
+
+export function AiUsageRequestsView({ scopeLock }: AiUsageRequestsViewProps) {
   const allowedOperations = useAllowedOperations();
   const canView = allowedOperations.has("view");
   const canExport = allowedOperations.has("export");
@@ -146,6 +143,13 @@ export function AiUsageRequestsView() {
     [range, search],
   );
   const [draft, setDraft] = useState<UsageRequestFilterForm>(() => urlForm);
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setDraft(urlForm);
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, [urlForm]);
+
   const [pageSize, setPageSize] = useState(20);
   const [detailRequestId, setDetailRequestId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
@@ -155,10 +159,7 @@ export function AiUsageRequestsView() {
   const [chartMode, setChartMode] = useState<UsageTrendChartMode>("bar");
   const [speedGroupBy, setSpeedGroupBy] = useState<UsageSpeedGroupBy>("model");
   const [heatmapMetric, setHeatmapMetric] = useState<UsageHeatmapMetric>("requests");
-  const scope = usageScopeFromSearch(search);
-  const onScopeChange = useScopeChange(update);
-  const { isAdmin, isResolved: adminResolved } = useUsageAdminAccess();
-  const effectiveScope = isAdmin ? scope : "self";
+  const effectiveScope = scopeLock;
   const pager = useCursorPager();
   const resetPager = pager.reset;
 
@@ -228,14 +229,6 @@ export function AiUsageRequestsView() {
     retry: false,
     enabled: canView,
   });
-
-  useUsageScopeFallback(
-    scope,
-    isAdmin,
-    adminResolved,
-    onScopeChange,
-    requestsQuery.isError || sampleQuery.isError,
-  );
 
   const modeOptions = useMemo(
     () =>
@@ -401,7 +394,7 @@ export function AiUsageRequestsView() {
           <UsageRequestFilters
             form={draft}
             modeOptions={modeOptions}
-            disabled={requestsQuery.isFetching}
+            disabled={requestsQuery.isPending}
             isFiltered={isFiltered}
             onChange={updateDraft}
             onRangeChange={applyRange}
@@ -409,13 +402,6 @@ export function AiUsageRequestsView() {
             onReset={resetFilters}
           />
           <div className="flex flex-wrap items-end gap-4 border-t px-5 py-4">
-            {isAdmin ? (
-              <UsageScopeToggle
-                value={scope}
-                onChange={onScopeChange}
-                disabled={requestsQuery.isFetching}
-              />
-            ) : null}
             <div className="pb-1">
               <UsageRefreshToggle checked={autoRefresh} onCheckedChange={setAutoRefresh} />
             </div>
@@ -603,11 +589,10 @@ export function AiUsageRequestsView() {
                   </TableRow>
                 ) : (
                   items.map((request) => {
-                    const cacheRead = request.cacheReadTokens ?? request.cacheTokens;
                     const cacheHit = resolveUsageCacheHitRate({
                       cacheHitRate: request.cacheHitRate,
                       inputTokens: request.inputTokens ?? 0,
-                      cacheTokens: cacheRead ?? 0,
+                      cacheTokens: request.cacheTokens ?? 0,
                     });
                     return (
                       <TableRow
@@ -639,8 +624,7 @@ export function AiUsageRequestsView() {
                         <TableCell className="px-5 py-3 text-end text-sm tabular-nums">
                           <p>{formatTokenCount(request.totalTokens ?? undefined)}</p>
                           <p className="text-[10px] text-muted-foreground">
-                            读 {formatTokenCount(cacheRead ?? undefined)} · 写{" "}
-                            {formatTokenCount(request.cacheWriteTokens ?? undefined)}
+                            缓存 {formatTokenCount(request.cacheTokens ?? undefined)}
                           </p>
                         </TableCell>
                         <TableCell className="px-5 py-3 text-end text-xs tabular-nums">
@@ -660,9 +644,6 @@ export function AiUsageRequestsView() {
                           {request.retried ? (
                             <Badge variant="outline" className="mt-1">
                               重试
-                              {request.retryCount != null && request.retryCount > 0
-                                ? ` ×${request.retryCount}`
-                                : ""}
                             </Badge>
                           ) : null}
                         </TableCell>

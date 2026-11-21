@@ -3,5 +3,5 @@
 import { AiUsageContextView } from "@/modules/workspace/ai/usage/context";
 
 export default function AiUsageContextPage() {
-  return <AiUsageContextView />;
+  return <AiUsageContextView scopeLock="all" />;
 }

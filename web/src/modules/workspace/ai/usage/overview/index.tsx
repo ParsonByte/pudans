@@ -24,11 +24,10 @@ import { UsageDateRangeFilter } from "../components/usage-date-range";
 import { UsageKpiCards } from "../components/usage-kpi-cards";
 import { UsageModelStatsTable } from "../components/usage-model-stats-table";
 import { UsageRefreshToggle } from "../components/usage-refresh-toggle";
-import { UsageScopeToggle } from "../components/usage-scope-toggle";
 import { UsageErrorState, UsagePageNoPermission } from "../components/usage-state";
 import { UsageTokenChart, type UsageTokenChartMode } from "../components/usage-token-chart";
 import { UsageUnitTrendChart } from "../components/usage-unit-trend-chart";
-import { useScopeChange, useUsageAdminAccess, useUsageScopeFallback } from "../lib/admin";
+import { useUsageAdminAccess } from "../lib/admin";
 import {
   fetchKnowledgeBaseStats,
   fetchMemoryStats,
@@ -37,16 +36,10 @@ import {
   fetchUsageOverview,
   resolveUsageApiError,
 } from "../lib/api";
-import type { UsageBucket } from "../lib/api";
+import type { UsageBucket, UsageScope } from "../lib/api";
 import { buildUsageTotalsKpis, usageExportFilename, usageStatsDays } from "../lib/model";
-import {
-  usageRangeFromSearch,
-  usageRangeSearch,
-  usageScopeFromSearch,
-  useUsageUrlSearch,
-} from "../lib/url-state";
+import { usageRangeFromSearch, usageRangeSearch, useUsageUrlSearch } from "../lib/url-state";
 import { UsageClearDialog } from "./components/usage-clear-dialog";
-import { UsagePlanCard } from "./components/usage-plan-card";
 import { UsageRankingsTable } from "./components/usage-rankings";
 
 const OVERVIEW_CSV_HEADERS = [
@@ -69,7 +62,11 @@ function bucketFromSearch(value: unknown): UsageBucket {
   return value === "hour" || value === "week" ? value : "day";
 }
 
-export function AiUsageOverviewView() {
+type AiUsageOverviewViewProps = {
+  scopeLock: UsageScope;
+};
+
+export function AiUsageOverviewView({ scopeLock }: AiUsageOverviewViewProps) {
   const allowedOperations = useAllowedOperations();
   const canView = allowedOperations.has("view");
   const canExport = allowedOperations.has("export");
@@ -79,23 +76,21 @@ export function AiUsageOverviewView() {
   const { search, update } = useUsageUrlSearch();
   const range = useMemo(() => usageRangeFromSearch(search), [search]);
   const bucket = bucketFromSearch(search.bucket);
-  const scope = usageScopeFromSearch(search);
-  const onScopeChange = useScopeChange(update);
-  const { isAdmin, isResolved: adminResolved } = useUsageAdminAccess();
-  const effectiveScope = isAdmin ? scope : "self";
+  const { isAdmin: roleAdmin } = useUsageAdminAccess();
+  const isAdmin = scopeLock === "all" && roleAdmin;
   const [chartMode, setChartMode] = useState<UsageTokenChartMode>("area");
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [showRankings, setShowRankings] = useState(true);
   const [clearOpen, setClearOpen] = useState(false);
 
   const overviewQuery = useQuery({
-    queryKey: ["ai-usage-overview", range.from, range.to, bucket, effectiveScope],
+    queryKey: ["ai-usage-overview", range.from, range.to, bucket, scopeLock],
     queryFn: () =>
       fetchUsageOverview({
         from: range.from,
         to: range.to,
         bucket,
-        scope: effectiveScope,
+        scope: scopeLock,
       }),
     placeholderData: keepPreviousData,
     retry: false,
@@ -114,7 +109,7 @@ export function AiUsageOverviewView() {
     queryFn: fetchAiSetting,
     retry: false,
     staleTime: 5 * 60_000,
-    enabled: canView,
+    enabled: canView && isAdmin,
   });
   const statsDays = usageStatsDays(range.from, range.to);
   const unitStatsQuery = useQuery({
@@ -145,8 +140,6 @@ export function AiUsageOverviewView() {
     staleTime: 60_000,
     enabled: canView && isAdmin,
   });
-
-  useUsageScopeFallback(scope, isAdmin, adminResolved, onScopeChange, overviewQuery.isError);
 
   if (!canView) {
     return <UsagePageNoPermission title={PAGE_TITLE} />;
@@ -247,18 +240,21 @@ export function AiUsageOverviewView() {
               onChange={applyRange}
               disabled={overviewQuery.isFetching}
             />
-            {isAdmin ? (
-              <UsageScopeToggle
-                value={scope}
-                onChange={onScopeChange}
-                disabled={overviewQuery.isFetching}
-              />
-            ) : null}
             <div className="pb-1">
               <UsageRefreshToggle checked={autoRefresh} onCheckedChange={setAutoRefresh} />
             </div>
           </div>
         </ConsoleSection>
+
+        {overviewQuery.isError && overview ? (
+          <ConsoleSection>
+            <UsageErrorState
+              title="用量概览刷新失败"
+              message={resolveUsageApiError(overviewQuery.error)}
+              onRetry={() => void overviewQuery.refetch()}
+            />
+          </ConsoleSection>
+        ) : null}
 
         {overviewQuery.isError && !overview ? (
           <ConsoleSection>
@@ -445,42 +441,39 @@ export function AiUsageOverviewView() {
               </>
             ) : null}
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-              <ConsoleSection className="overflow-hidden">
-                <ConsoleSectionHeader
-                  title="用量排行"
-                  description="按 Token 占比展示前 10 名，低于 1% 的条目合并为“其他”；模型可查看只读权重系数。"
-                  action={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setShowRankings((current) => !current)}
-                    >
-                      {showRankings ? <EyeOff /> : <Eye />}
-                      {showRankings ? "隐藏排行" : "显示排行"}
-                    </Button>
-                  }
+            <ConsoleSection className="overflow-hidden">
+              <ConsoleSectionHeader
+                title="用量排行"
+                description="按 Token 占比展示前 10 名，低于 1% 的条目合并为“其他”；模型可查看只读权重系数。"
+                action={
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowRankings((current) => !current)}
+                  >
+                    {showRankings ? <EyeOff /> : <Eye />}
+                    {showRankings ? "隐藏排行" : "显示排行"}
+                  </Button>
+                }
+              />
+              {showRankings ? (
+                <UsageRankingsTable
+                  rankings={overview.rankings}
+                  totalTokens={overview.totals.totalTokens}
+                  models={modelsQuery.data ?? []}
+                  providersPath={providersPath}
+                  plansPath={plansPath}
+                  modelsLoading={modelsQuery.isPending}
+                  modelsError={modelsQuery.isError}
+                  billing={isAdmin ? settingsQuery.data?.spec.billing : undefined}
+                  billingLoading={isAdmin && settingsQuery.isPending}
+                  billingError={isAdmin && settingsQuery.isError}
                 />
-                {showRankings ? (
-                  <UsageRankingsTable
-                    rankings={overview.rankings}
-                    totalTokens={overview.totals.totalTokens}
-                    models={modelsQuery.data ?? []}
-                    providersPath={providersPath}
-                    plansPath={plansPath}
-                    modelsLoading={modelsQuery.isPending}
-                    modelsError={modelsQuery.isError}
-                    billing={settingsQuery.data?.spec.billing}
-                    billingLoading={settingsQuery.isPending}
-                    billingError={settingsQuery.isError}
-                  />
-                ) : (
-                  <ConsoleEmpty>排行已隐藏。</ConsoleEmpty>
-                )}
-              </ConsoleSection>
-              <UsagePlanCard />
-            </div>
+              ) : (
+                <ConsoleEmpty>排行已隐藏。</ConsoleEmpty>
+              )}
+            </ConsoleSection>
           </>
         ) : null}
 
@@ -490,7 +483,9 @@ export function AiUsageOverviewView() {
             range={range}
             onOpenChange={setClearOpen}
             onCleared={() => {
-              void queryClient.invalidateQueries({ queryKey: ["ai-usage"] });
+              void queryClient.invalidateQueries({
+                predicate: (query) => String(query.queryKey[0] ?? "").startsWith("ai-usage"),
+              });
             }}
           />
         ) : null}

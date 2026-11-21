@@ -14,8 +14,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.extension.api.ExtensionUtil;
 import cn.tolim.pudans.extension.api.InternalReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
 import cn.tolim.pudans.extension.api.Unstructured;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
@@ -62,6 +64,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
             return;
         }
 
+        var roleTemplates = new HashSet<String>();
         Flux.fromIterable(locations)
                 .doOnNext(location -> log.debug("尝试从位置 {} 初始化扩展资源", location))
                 .map(this::listResources)
@@ -71,6 +74,9 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
                 .map(resource -> new YamlUnstructuredLoader(resource).load())
                 .flatMapIterable(extensions -> extensions)
                 .doOnNext(extension -> {
+                    if (isRoleTemplate(extension)) {
+                        roleTemplates.add(extension.getMetadata().getName());
+                    }
                     if (log.isDebugEnabled()) {
                         log.debug(
                                 "正在初始化扩展资源：{}/{}",
@@ -87,7 +93,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
                                 extension.getMetadata().getName());
                     }
                 })
-                .then()
+                .then(Mono.fromRunnable(() -> pruneRoleTemplates(roleTemplates)))
                 .block(Duration.ofMinutes(1));
         eventPublisher.publishEvent(new ExtensionInitializedEvent(this));
     }
@@ -108,6 +114,35 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
     @Override
     public int getPhase() {
         return InitializationPhase.EXTENSION_RESOURCES.getPhase();
+    }
+
+    private static boolean isRoleTemplate(Unstructured extension) {
+        var metadata = extension.getMetadata();
+        var labels = metadata == null ? null : metadata.getLabels();
+        return Role.KIND.equals(extension.getKind())
+                && labels != null
+                && Boolean.parseBoolean(labels.get(Role.TEMPLATE_LABEL_NAME));
+    }
+
+    private void pruneRoleTemplates(Set<String> loadedTemplates) {
+        var options = ListOptions.builder()
+                .labelSelector()
+                .eq(Role.TEMPLATE_LABEL_NAME, Boolean.TRUE.toString())
+                .end()
+                .build();
+        var stale = extensionClient
+                .listAll(Role.class, options, ExtensionUtil.defaultSort())
+                .filter(role -> role.getMetadata() != null
+                        && !loadedTemplates.contains(role.getMetadata().getName()))
+                .collectList()
+                .block(Duration.ofSeconds(30));
+        if (CollectionUtils.isEmpty(stale)) {
+            return;
+        }
+        stale.forEach(role -> {
+            log.info("删除已从代码中移除的角色模板：{}", role.getMetadata().getName());
+            extensionClient.delete(role).block(Duration.ofSeconds(30));
+        });
     }
 
     private Mono<Unstructured> createOrUpdate(Unstructured extension) {

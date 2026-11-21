@@ -9,7 +9,7 @@ import {
   type JsonPatchOperation,
   listAll,
 } from "../../providers/lib/api";
-import type { PlanUsage, PlanVoucherBalance, PlanVoucherKind } from "../../usage/lib/api";
+import type { PlanUsage, PlanVoucherKind } from "../../usage/lib/api";
 
 const AI_PLAN_KIND = "AiPlan";
 
@@ -161,25 +161,6 @@ export type GrantVouchersResult = {
   userIds?: string[];
 };
 
-type PlanVoucherBalanceView = {
-  fiveHour: PlanVoucherBalance;
-  weekly: PlanVoucherBalance;
-};
-
-export type PlanVoucherHistoryItem = {
-  id: number;
-  requestId: string;
-  kind: PlanVoucherKind | string;
-  targetWindowKey: string;
-  windowKeyAfter: string;
-  usedAt: string;
-};
-
-type PlanVoucherHistoryQuery = {
-  limit: number;
-  beforeId?: number;
-};
-
 type PlanBindingCreateValues = {
   name: string;
   plan: string;
@@ -296,23 +277,6 @@ export async function fetchPlanUsageByUser(uid: string): Promise<PlanUsage> {
     `${AI_API_PREFIX}/aiplan/-/usage/${encodeURIComponent(uid)}`,
   );
   return response.data;
-}
-
-export async function fetchPlanVoucherBalance(): Promise<PlanVoucherBalanceView> {
-  const response = await axiosInstance.get<PlanVoucherBalanceView>(
-    `${AI_API_PREFIX}/aiplan/-/vouchers`,
-  );
-  return response.data;
-}
-
-export async function fetchPlanVoucherHistory(
-  query: PlanVoucherHistoryQuery,
-): Promise<PlanVoucherHistoryItem[]> {
-  const response = await axiosInstance.get<unknown>(
-    `${AI_API_PREFIX}/aiplan/-/vouchers/-/history`,
-    { params: query },
-  );
-  return Array.isArray(response.data) ? (response.data as PlanVoucherHistoryItem[]) : [];
 }
 
 async function fetchUserUid(username: string): Promise<string> {

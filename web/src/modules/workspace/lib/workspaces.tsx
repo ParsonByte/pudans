@@ -3,14 +3,14 @@ import type { ElementType } from "react";
 import { Icon } from "@iconify/react";
 
 import type { NavCollapsible, NavGroup, NavItem, Workspace } from "@/components/layout/types";
-import { BASE_PATH } from "@/lib/base-path";
+import { assetUrl } from "@/lib/asset-url";
 
 import type { Navigation, NavigationMenu } from "./permission-api";
 
 function navigationIcon(icon: string | undefined): ElementType {
   function NavigationIcon({ className }: { className?: string }) {
     if (icon && isImageIcon(icon)) {
-      return <img src={iconSource(icon)} alt="" className={className} aria-hidden="true" />;
+      return <img src={assetUrl(icon)} alt="" className={className} aria-hidden="true" />;
     }
     return <Icon icon={icon || "lucide:circle"} className={className} aria-hidden="true" />;
   }
@@ -20,13 +20,6 @@ function navigationIcon(icon: string | undefined): ElementType {
 
 function isImageIcon(icon: string): boolean {
   return icon.includes("/") || icon.startsWith("data:");
-}
-
-function iconSource(icon: string): string {
-  if (/^[a-z]+:\/\//i.test(icon) || icon.startsWith("data:")) {
-    return icon;
-  }
-  return `${BASE_PATH}${icon.replace(/^\/+/, "")}`;
 }
 
 export function buildWorkspaces(navigation: Navigation): Workspace[] {

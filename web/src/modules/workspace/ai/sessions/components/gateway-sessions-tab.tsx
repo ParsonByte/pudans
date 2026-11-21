@@ -104,7 +104,7 @@ export function GatewaySessionsTab({ canDelete }: GatewaySessionsTabProps) {
           <GatewaySessionTable sessions={items} canDelete={canDelete} onDelete={setDeleteTarget} />
         )}
 
-        {sessionsQuery.isSuccess && items.length > 0 ? (
+        {sessionsQuery.isSuccess && (items.length > 0 || pagination.page > 0) ? (
           <CursorPager
             page={pagination.page}
             pageSize={pagination.pageSize}

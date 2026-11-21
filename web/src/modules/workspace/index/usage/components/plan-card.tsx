@@ -29,8 +29,6 @@ import { formatBeijingDateTime } from "@/lib/date";
 import { cn } from "@/lib/utils";
 import { formatUnits } from "@/modules/workspace/ai/plans/lib/model";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
-import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
-
 import {
   type PlanUsage,
   type PlanUsageWindow,
@@ -40,12 +38,13 @@ import {
   redeemPlanVoucher,
   resolvePlanUsageApiError,
   resolvePlanVoucherApiError,
-} from "../../lib/api";
+} from "@/modules/workspace/ai/usage/lib/api";
 import {
   PLAN_VOUCHER_KIND_OPTIONS,
   planVoucherKindLabel,
   voucherResetPreview,
-} from "../../lib/model";
+} from "@/modules/workspace/ai/usage/lib/model";
+import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
 export function UsagePlanCard() {
   const allowedOperations = useAllowedOperations();

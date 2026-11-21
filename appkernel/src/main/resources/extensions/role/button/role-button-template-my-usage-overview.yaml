@@ -1,0 +1,47 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-my-usage-overview-view
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-my-usage-overview" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "default.usage.overview"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "view"
+    rbac.authorization.pudans.tolim.cn/ui-label: "查看我的用量概览"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看本人的总览、按天序列与排行。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["my-usage-overview:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aistats/usage"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-my-usage-overview-export
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-my-usage-overview" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "default.usage.overview"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "export"
+    rbac.authorization.pudans.tolim.cn/ui-label: "导出我的用量概览"
+    rbac.authorization.pudans.tolim.cn/ui-description: "导出本人筛选范围内的用量数据。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["my-usage-overview:export"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aistats/usage"
+    verbs:
+      - "get"
+      - "list"

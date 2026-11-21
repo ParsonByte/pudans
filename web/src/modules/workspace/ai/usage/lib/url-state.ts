@@ -2,7 +2,6 @@ import { useCallback, useMemo } from "react";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import type { UsageScope } from "./api";
 import {
   USAGE_RANGE_OPTIONS,
   type UsageDateRangeValue,
@@ -25,10 +24,6 @@ function textOf(value: unknown): string {
 
 export function usageTextParam(search: UsageUrlSearch, key: string): string {
   return textOf(search[key]);
-}
-
-export function usageScopeFromSearch(search: UsageUrlSearch): UsageScope {
-  return search.scope === "all" ? "all" : "self";
 }
 
 export function usageRangeFromSearch(search: UsageUrlSearch): UsageDateRangeValue {

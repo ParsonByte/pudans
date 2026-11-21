@@ -1,0 +1,57 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-my-plan-view
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-my-plan" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "default.usage.plan"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "view"
+    rbac.authorization.pudans.tolim.cn/ui-label: "查看我的套餐"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看本人套餐窗口用量与重置券余额。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["my-plan:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplan/usage"
+      - "aiplan/vouchers"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-my-plan-use-voucher
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-my-plan" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "default.usage.plan"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "use-voucher"
+    rbac.authorization.pudans.tolim.cn/ui-label: "使用重置券"
+    rbac.authorization.pudans.tolim.cn/ui-description: "使用 5 小时或周重置券提前重置当前窗口。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["my-plan:use-voucher"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplan/usage"
+      - "aiplan/vouchers"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aiplan/vouchers"
+    resourceNames:
+      - "-/use"
+    verbs:
+      - "create"

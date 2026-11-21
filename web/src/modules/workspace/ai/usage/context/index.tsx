@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 import { Download, Loader2, RefreshCw } from "lucide-react";
@@ -28,11 +28,9 @@ import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
 import { UsageDateRangeFilter } from "../components/usage-date-range";
 import { UsageKpiCards } from "../components/usage-kpi-cards";
-import { UsageScopeToggle } from "../components/usage-scope-toggle";
 import { UsageErrorState, UsagePageNoPermission } from "../components/usage-state";
-import { useScopeChange, useUsageAdminAccess, useUsageScopeFallback } from "../lib/admin";
 import { fetchUsageContext, fetchUsageContextGrid, resolveUsageApiError } from "../lib/api";
-import type { UsageContextBreakdown, UsageContextQuery } from "../lib/api";
+import type { UsageContextBreakdown, UsageContextQuery, UsageScope } from "../lib/api";
 import {
   type UsageDateRangeValue,
   type UsageKpiItem,
@@ -43,7 +41,6 @@ import {
 import {
   usageRangeFromSearch,
   usageRangeSearch,
-  usageScopeFromSearch,
   usageTextParam,
   useUsageUrlSearch,
 } from "../lib/url-state";
@@ -93,7 +90,11 @@ function contextExportRow(scope: string, entry: UsageContextBreakdown) {
   ];
 }
 
-export function AiUsageContextView() {
+type AiUsageContextViewProps = {
+  scopeLock: UsageScope;
+};
+
+export function AiUsageContextView({ scopeLock }: AiUsageContextViewProps) {
   const allowedOperations = useAllowedOperations();
   const canView = allowedOperations.has("view");
   const canExport = allowedOperations.has("export");
@@ -101,11 +102,15 @@ export function AiUsageContextView() {
   const range = useMemo(() => usageRangeFromSearch(search), [search]);
   const agentParam = usageTextParam(search, "agent");
   const modelFilter = usageTextParam(search, "model");
-  const scope = usageScopeFromSearch(search);
-  const onScopeChange = useScopeChange(update);
-  const { isAdmin, isResolved: adminResolved } = useUsageAdminAccess();
-  const effectiveScope = isAdmin ? scope : "self";
+  const effectiveScope = scopeLock;
   const [agentDraft, setAgentDraft] = useState(agentParam);
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setAgentDraft(agentParam);
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, [agentParam]);
+
   const [selectedRequestId, setSelectedRequestId] = useState<string | null>(null);
   const [detailRequestId, setDetailRequestId] = useState<string | null>(null);
 
@@ -145,8 +150,6 @@ export function AiUsageContextView() {
     retry: false,
     enabled: canView,
   });
-
-  useUsageScopeFallback(scope, isAdmin, adminResolved, onScopeChange, contextQuery.isError);
 
   const gridItems = useMemo(() => gridQuery.data?.items ?? [], [gridQuery.data]);
   const gridKpis = useMemo<UsageKpiItem[]>(() => {
@@ -284,7 +287,6 @@ export function AiUsageContextView() {
       <div className="flex flex-1 flex-col gap-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">{PAGE_TITLE}</h2>
             <p className="text-xs text-muted-foreground">
               拆解上下文 Token 构成，评估窗口利用率与 Agent、模型维度的上下文开销。
             </p>
@@ -381,13 +383,6 @@ export function AiUsageContextView() {
             </div>
           </form>
           <div className="flex flex-wrap items-end gap-4 border-t px-5 py-4">
-            {isAdmin ? (
-              <UsageScopeToggle
-                value={scope}
-                onChange={onScopeChange}
-                disabled={contextQuery.isFetching}
-              />
-            ) : null}
             <p className="pb-1.5 text-xs text-muted-foreground">
               窗口利用率按输入 Token 占窗口容量计算，输出 Token 不计入窗口。
             </p>
@@ -447,7 +442,11 @@ export function AiUsageContextView() {
                   description="20 × 20 共 400 格，每格代表一个请求；颜色表示窗口利用率健康度，悬停查看上下文构成。"
                 />
                 {gridQuery.isError ? (
-                  <ContextGridMethodology onRetry={retryGrid} />
+                  <UsageErrorState
+                    title="无法加载逐请求窗口网格"
+                    message={resolveUsageApiError(gridQuery.error)}
+                    onRetry={retryGrid}
+                  />
                 ) : gridQuery.isPending ? (
                   <div className="space-y-3 p-5">
                     <Skeleton className="h-[320px] w-full max-w-[720px]" />
@@ -506,21 +505,5 @@ export function AiUsageContextView() {
         ) : null}
       </div>
     </ConsolePage>
-  );
-}
-
-function ContextGridMethodology({ onRetry }: { onRetry: () => void }) {
-  return (
-    <div className="space-y-3 p-5">
-      <p className="text-sm text-muted-foreground">
-        服务端尚未提供逐请求上下文网格端点，无法绘制 400
-        格窗口图。本页不使用推算或伪造的逐请求数据；
-        下方上下文构成、窗口利用率与维度分布仍来自服务端聚合统计。
-      </p>
-      <ContextEstimationNote />
-      <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-        重试
-      </Button>
-    </div>
   );
 }

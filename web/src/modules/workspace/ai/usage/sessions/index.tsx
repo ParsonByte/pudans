@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Download, Loader2, RefreshCw } from "lucide-react";
@@ -40,13 +40,11 @@ import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 import { UsageCursorPagination } from "../components/usage-cursor-pagination";
 import { UsageDateRangeFilter } from "../components/usage-date-range";
 import { UsageKpiCards } from "../components/usage-kpi-cards";
-import { UsageScopeToggle } from "../components/usage-scope-toggle";
 import {
   UsageErrorState,
   UsagePageNoPermission,
   UsageTableSkeleton,
 } from "../components/usage-state";
-import { useScopeChange, useUsageAdminAccess, useUsageScopeFallback } from "../lib/admin";
 import {
   USAGE_SESSION_EXPORT_MAX_ROWS,
   fetchUsageSessions,
@@ -54,6 +52,7 @@ import {
   fetchUsageSessionsStats,
   resolveUsageApiError,
 } from "../lib/api";
+import type { UsageScope } from "../lib/api";
 import { useCursorPager } from "../lib/cursor";
 import {
   USAGE_SESSION_STATUS_OPTIONS,
@@ -63,12 +62,7 @@ import {
   sessionStatusLabel,
   usageExportFilename,
 } from "../lib/model";
-import {
-  usageRangeFromSearch,
-  usageRangeSearch,
-  usageScopeFromSearch,
-  useUsageUrlSearch,
-} from "../lib/url-state";
+import { usageRangeFromSearch, usageRangeSearch, useUsageUrlSearch } from "../lib/url-state";
 import { SessionActivityChart } from "./components/session-activity-chart";
 import { SessionDetailDialog } from "./components/session-detail-dialog";
 import { SessionHourHeatmap } from "./components/session-hour-heatmap";
@@ -106,7 +100,11 @@ const SESSION_CSV_HEADERS = [
   "lastActivityAt",
 ];
 
-export function AiUsageSessionsView() {
+type AiUsageSessionsViewProps = {
+  scopeLock: UsageScope;
+};
+
+export function AiUsageSessionsView({ scopeLock }: AiUsageSessionsViewProps) {
   const allowedOperations = useAllowedOperations();
   const canView = allowedOperations.has("view");
   const canExport = allowedOperations.has("export");
@@ -121,13 +119,17 @@ export function AiUsageSessionsView() {
     [range, search],
   );
   const [draft, setDraft] = useState<UsageSessionFilterForm>(() => urlForm);
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      setDraft(urlForm);
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, [urlForm]);
+
   const [pageSize, setPageSize] = useState(20);
   const [detailConversationId, setDetailConversationId] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
-  const scope = usageScopeFromSearch(search);
-  const onScopeChange = useScopeChange(update);
-  const { isAdmin, isResolved: adminResolved } = useUsageAdminAccess();
-  const effectiveScope = isAdmin ? scope : "self";
+  const effectiveScope = scopeLock;
   const pager = useCursorPager();
   const resetPager = pager.reset;
   const appliedQuery = useMemo(() => toUsageSessionQuery(urlForm), [urlForm]);
@@ -162,8 +164,6 @@ export function AiUsageSessionsView() {
     retry: false,
     enabled: canView && statsQuery.isError,
   });
-
-  useUsageScopeFallback(scope, isAdmin, adminResolved, onScopeChange, sessionsQuery.isError);
 
   const fallbackStats = useMemo(
     () => (fallbackQuery.data ? deriveUsageSessionStats(fallbackQuery.data.items) : undefined),
@@ -219,7 +219,7 @@ export function AiUsageSessionsView() {
           hint: sourceHint,
         },
         {
-          label: "缓存读 Token",
+          label: "缓存 Token",
           value: formatTokenCount(stats.totals.cacheReadTokens),
           hint: sourceHint,
         },
@@ -473,13 +473,6 @@ export function AiUsageSessionsView() {
             </div>
           </form>
           <div className="flex flex-wrap items-end gap-4 border-t px-5 py-4">
-            {isAdmin ? (
-              <UsageScopeToggle
-                value={scope}
-                onChange={onScopeChange}
-                disabled={sessionsQuery.isFetching}
-              />
-            ) : null}
             <p className="pb-1.5 text-xs text-muted-foreground">
               统计口径为服务端聚合；统计端点不可用时按最近会话样本估算。
             </p>
@@ -499,7 +492,7 @@ export function AiUsageSessionsView() {
             <UsageKpiCards items={kpiItems} loading={statsLoading} skeletonCount={7} />
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-              <ConsoleSection className="overflow-hidden">
+              <ConsoleSection>
                 <ConsoleSectionHeader
                   title="每日会话活跃"
                   description="按最后活动日期聚合的会话数与消息数。"

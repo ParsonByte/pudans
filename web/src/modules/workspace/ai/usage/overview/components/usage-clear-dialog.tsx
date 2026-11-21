@@ -1,12 +1,11 @@
 import { useMutation } from "@tanstack/react-query";
+import { addDays, format, parseISO } from "date-fns";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
 
 import { clearUsage, resolveUsageApiError } from "../../lib/api";
 import type { UsageDateRangeValue } from "../../lib/model";
-
-const CLEAR_CUTOFF_SUFFIX = "T23:59:59+08:00";
 
 type UsageClearDialogProps = {
   open: boolean;
@@ -17,8 +16,7 @@ type UsageClearDialogProps = {
 
 export function UsageClearDialog({ open, range, onOpenChange, onCleared }: UsageClearDialogProps) {
   const mutation = useMutation({
-    mutationFn: () =>
-      clearUsage({ before: new Date(`${range.to}${CLEAR_CUTOFF_SUFFIX}`).toISOString() }),
+    mutationFn: () => clearUsage({ before: format(addDays(parseISO(range.to), 1), "yyyy-MM-dd") }),
     onSuccess: (result) => {
       toast.success(
         `已清空用量：请求 ${result.requestsDeleted} 条，模型请求 ${result.modelRequestsDeleted} 条。`,
