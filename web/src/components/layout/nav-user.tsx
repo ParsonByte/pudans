@@ -27,6 +27,12 @@ const PROFILE_URL: NavUrl = "/profile";
 const SECURITY_URL: NavUrl = "/security";
 const IDENTITIES_URL: NavUrl = "/identity-providers";
 
+const ACCOUNT_LINKS = [
+  { href: PROFILE_URL, label: "个人设置", icon: UserRound },
+  { href: SECURITY_URL, label: "安全中心", icon: ShieldCheck },
+  { href: IDENTITIES_URL, label: "身份提供商", icon: Link2 },
+];
+
 type NavUserProps = {
   user: User;
   onSignOut?: () => void;
@@ -56,14 +62,7 @@ export function NavUser({ user, onSignOut }: NavUserProps) {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8">
-                {user.avatar ? <AvatarImage src={user.avatar} alt={user.name} /> : null}
-                <AvatarFallback className="">{initials}</AvatarFallback>
-              </Avatar>
-              <div className="grid flex-1 text-start text-sm leading-tight">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">@{user.email}</span>
-              </div>
+              <UserIdentity user={user} initials={initials} />
               <ChevronsUpDown className="ms-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
@@ -75,36 +74,19 @@ export function NavUser({ user, onSignOut }: NavUserProps) {
           >
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-start text-sm">
-                <Avatar className="h-8 w-8">
-                  {user.avatar ? <AvatarImage src={user.avatar} alt={user.name} /> : null}
-                  <AvatarFallback className="">{initials}</AvatarFallback>
-                </Avatar>
-                <div className="grid flex-1 text-start text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs">@{user.email}</span>
-                </div>
+                <UserIdentity user={user} initials={initials} />
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem asChild>
-                <Link href={PROFILE_URL}>
-                  <UserRound />
-                  个人设置
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={SECURITY_URL}>
-                  <ShieldCheck />
-                  安全中心
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href={IDENTITIES_URL}>
-                  <Link2 />
-                  身份提供商
-                </Link>
-              </DropdownMenuItem>
+              {ACCOUNT_LINKS.map((link) => (
+                <DropdownMenuItem key={link.href} asChild>
+                  <Link href={link.href}>
+                    <link.icon />
+                    {link.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuGroup>
             {onSignOut ? (
               <>
@@ -122,5 +104,20 @@ export function NavUser({ user, onSignOut }: NavUserProps) {
         ) : null}
       </SidebarMenuItem>
     </SidebarMenu>
+  );
+}
+
+function UserIdentity({ user, initials }: { user: User; initials: string }) {
+  return (
+    <>
+      <Avatar className="h-8 w-8">
+        {user.avatar ? <AvatarImage src={user.avatar} alt={user.name} /> : null}
+        <AvatarFallback>{initials}</AvatarFallback>
+      </Avatar>
+      <div className="grid flex-1 text-start text-sm leading-tight">
+        <span className="truncate font-semibold">{user.name}</span>
+        <span className="truncate text-xs">@{user.email}</span>
+      </div>
+    </>
   );
 }

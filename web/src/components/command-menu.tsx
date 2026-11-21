@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { type ElementType, type ReactNode, useCallback } from "react";
 
 import { ArrowRight, ChevronRight, Laptop, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -17,6 +17,27 @@ import {
 } from "@/components/ui/command";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSearch } from "@/context/search-provider";
+import { ConsoleState } from "@/modules/workspace/console/components/console-state";
+
+type ThemeCommand = {
+  value: string;
+  label: string;
+  icon: ElementType;
+  iconClassName?: string;
+};
+
+const THEME_COMMANDS: ThemeCommand[] = [
+  { value: "light", label: "浅色", icon: Sun },
+  { value: "dark", label: "深色", icon: Moon, iconClassName: "scale-90" },
+  { value: "system", label: "跟随系统", icon: Laptop },
+];
+
+type NavCommand = {
+  key: string;
+  value: string;
+  label: ReactNode;
+  url: string;
+};
 
 type CommandMenuProps = {
   navGroups?: NavGroup[];
@@ -41,61 +62,61 @@ export function CommandMenu({ navGroups = [] }: CommandMenuProps) {
         <CommandInput placeholder="输入命令或搜索..." />
         <CommandList>
           <ScrollArea type="hover" className="max-h-72 pe-1">
-            <CommandEmpty>未找到结果。</CommandEmpty>
+            <CommandEmpty>
+              <ConsoleState variant="empty" title="未找到结果。" className="min-h-0 px-0 py-6" />
+            </CommandEmpty>
             {navGroups.map((group) => (
               <CommandGroup key={group.title} heading={group.title}>
-                {group.items.map((navItem, index) => {
-                  if (navItem.url) {
-                    return (
-                      <CommandItem
-                        key={`${navItem.url}-${index}`}
-                        value={navItem.title}
-                        onSelect={() => {
-                          runCommand(() => router.push(navItem.url));
-                        }}
-                      >
-                        <div className="flex size-4 items-center justify-center">
-                          <ArrowRight className="size-2 text-muted-foreground/80" />
-                        </div>
-                        {navItem.title}
-                      </CommandItem>
-                    );
-                  }
-
-                  return navItem.items?.map((subItem, subIndex) => (
-                    <CommandItem
-                      key={`${navItem.title}-${subItem.url}-${subIndex}`}
-                      value={`${navItem.title}-${subItem.url}`}
-                      onSelect={() => {
-                        runCommand(() => router.push(subItem.url));
-                      }}
-                    >
-                      <div className="flex size-4 items-center justify-center">
-                        <ArrowRight className="size-2 text-muted-foreground/80" />
-                      </div>
-                      {navItem.title} <ChevronRight /> {subItem.title}
-                    </CommandItem>
-                  ));
-                })}
+                {navCommands(group).map((command) => (
+                  <CommandItem
+                    key={command.key}
+                    value={command.value}
+                    onSelect={() => {
+                      runCommand(() => router.push(command.url));
+                    }}
+                  >
+                    <div className="flex size-4 items-center justify-center">
+                      <ArrowRight className="size-2 text-muted-foreground/80" />
+                    </div>
+                    {command.label}
+                  </CommandItem>
+                ))}
               </CommandGroup>
             ))}
             {navGroups.length > 0 ? <CommandSeparator /> : null}
             <CommandGroup heading="主题">
-              <CommandItem onSelect={() => runCommand(() => setTheme("light"))}>
-                <Sun /> <span>浅色</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setTheme("dark"))}>
-                <Moon className="scale-90" />
-                <span>深色</span>
-              </CommandItem>
-              <CommandItem onSelect={() => runCommand(() => setTheme("system"))}>
-                <Laptop />
-                <span>跟随系统</span>
-              </CommandItem>
+              {THEME_COMMANDS.map((command) => (
+                <CommandItem
+                  key={command.value}
+                  onSelect={() => runCommand(() => setTheme(command.value))}
+                >
+                  <command.icon className={command.iconClassName} />
+                  <span>{command.label}</span>
+                </CommandItem>
+              ))}
             </CommandGroup>
           </ScrollArea>
         </CommandList>
       </Command>
     </CommandDialog>
   );
+}
+
+function navCommands(group: NavGroup): NavCommand[] {
+  return group.items.flatMap((item, index): NavCommand[] => {
+    if (item.url) {
+      return [{ key: `${item.url}-${index}`, value: item.title, label: item.title, url: item.url }];
+    }
+
+    return (item.items ?? []).map((subItem, subIndex) => ({
+      key: `${item.title}-${subItem.url}-${subIndex}`,
+      value: `${item.title}-${subItem.url}`,
+      label: (
+        <>
+          {item.title} <ChevronRight /> {subItem.title}
+        </>
+      ),
+      url: subItem.url,
+    }));
+  });
 }

@@ -10,12 +10,15 @@ import { getCookie } from "@/lib/cookies";
 import { cn } from "@/lib/utils";
 
 import { AppSidebar } from "./app-sidebar";
+import { ChatLayout } from "./chat/chat-layout";
 import type { SidebarData } from "./types";
 
 type AuthenticatedLayoutProps = Partial<SidebarData> & {
   onSignOut?: () => void;
   children: ReactNode;
 };
+
+const CHAT_CONVERSATION_PATH = "/chat";
 
 export function AuthenticatedLayout({
   user,
@@ -26,6 +29,11 @@ export function AuthenticatedLayout({
   children,
 }: AuthenticatedLayoutProps) {
   const defaultOpen = getCookie("sidebar_state") !== "false";
+  const activeWorkspace =
+    workspaces?.find((workspace) => workspace.id === activeWorkspaceId) ?? workspaces?.[0];
+  const sidebarContent = activeWorkspace?.paths.includes(CHAT_CONVERSATION_PATH) ? (
+    <ChatLayout />
+  ) : undefined;
 
   return (
     <SearchProvider navGroups={navGroups}>
@@ -39,6 +47,7 @@ export function AuthenticatedLayout({
               activeWorkspaceId={activeWorkspaceId}
               navGroups={navGroups}
               onSignOut={onSignOut}
+              sidebarContent={sidebarContent}
             />
             <SidebarInset
               className={cn(

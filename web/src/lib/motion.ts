@@ -6,7 +6,7 @@ export const MOTION_DURATION = {
   slow: 0.4,
 } as const;
 
-export const MOTION_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const MOTION_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export const pageVariants: Variants = {
   initial: { opacity: 0, y: 8 },

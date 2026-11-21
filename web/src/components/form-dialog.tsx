@@ -3,18 +3,10 @@ import type { FieldValues, UseFormReturn } from "react-hook-form";
 
 import { Loader2, Save, Undo2 } from "lucide-react";
 
-import { FloatingActionBar } from "@/components/floating-action-bar";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
-import { AutoScrollArea } from "./auto-scroll-area";
+import { DialogFormShell } from "./dialog-form-shell";
 
 type FormDialogProps<T extends FieldValues> = {
   open: boolean;
@@ -56,42 +48,25 @@ export function FormDialog<T extends FieldValues>({
   const formId = useId();
 
   return (
-    <Dialog
+    <DialogFormShell
       open={open}
       onOpenChange={(nextOpen) => {
         if (!nextOpen) {
           onClose();
         }
       }}
-    >
-      <DialogContent className={cn("flex max-h-[75vh] flex-col overflow-hidden", contentClassName)}>
-        <DialogHeader>
-          <div className="flex items-start gap-3 pe-8">
-            {icon ? (
-              <span className="flex size-10 shrink-0 items-center justify-center bg-muted">
-                {icon}
-              </span>
-            ) : null}
-            <div className="space-y-1">
-              <DialogTitle>{title}</DialogTitle>
-              {description ? <DialogDescription>{description}</DialogDescription> : null}
-            </div>
-          </div>
-          {headerActions ? <div>{headerActions}</div> : null}
-        </DialogHeader>
-
-        <AutoScrollArea maxHeightRatio={maxHeightRatio} fill={fill}>
-          <form
-            id={formId}
-            className={cn("space-y-6", formClassName)}
-            onSubmit={onSubmit}
-            noValidate
-          >
-            {children}
-          </form>
-        </AutoScrollArea>
-
-        <FloatingActionBar open={form.formState.isDirty} className="z-[60]">
+      title={title}
+      description={description}
+      icon={icon}
+      headerActions={headerActions}
+      maxHeightRatio={maxHeightRatio}
+      fill={fill}
+      contentClassName={contentClassName}
+      footerMode="dirty"
+      footerVisible={form.formState.isDirty}
+      footerClassName="z-[60]"
+      footer={
+        <>
           <Button type="button" variant="outline" disabled={isPending} onClick={() => form.reset()}>
             <Undo2 />
             {resetLabel}
@@ -100,9 +75,13 @@ export function FormDialog<T extends FieldValues>({
             {isPending ? <Loader2 className="animate-spin" /> : <Save />}
             {submitLabel}
           </Button>
-        </FloatingActionBar>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <form id={formId} className={cn("space-y-6", formClassName)} onSubmit={onSubmit} noValidate>
+        {children}
+      </form>
+    </DialogFormShell>
   );
 }
 

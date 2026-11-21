@@ -27,7 +27,13 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
-import type { NavCollapsible, NavGroup as NavGroupData, NavItem, NavLink } from "./types";
+import type {
+  BaseNavItem,
+  NavCollapsible,
+  NavGroup as NavGroupData,
+  NavItem,
+  NavLink,
+} from "./types";
 
 export function NavGroup({ title, items }: NavGroupData) {
   const { state, isMobile } = useSidebar();
@@ -59,6 +65,16 @@ function NavBadge({ children }: { children: ReactNode }) {
   return <Badge className="px-1 py-0 text-xs">{children}</Badge>;
 }
 
+function NavItemContent({ item }: { item: BaseNavItem }) {
+  return (
+    <>
+      {item.icon && <item.icon />}
+      <span>{item.title}</span>
+      {item.badge && <NavBadge>{item.badge}</NavBadge>}
+    </>
+  );
+}
+
 function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
   const { setOpenMobile } = useSidebar();
 
@@ -66,9 +82,7 @@ function SidebarMenuLink({ item, href }: { item: NavLink; href: string }) {
     <SidebarMenuItem>
       <SidebarMenuButton asChild isActive={checkIsActive(href, item)} tooltip={item.title}>
         <Link href={item.url} onClick={() => setOpenMobile(false)}>
-          {item.icon && <item.icon />}
-          <span>{item.title}</span>
-          {item.badge && <NavBadge>{item.badge}</NavBadge>}
+          <NavItemContent item={item} />
         </Link>
       </SidebarMenuButton>
     </SidebarMenuItem>
@@ -87,9 +101,7 @@ function SidebarMenuCollapsible({ item, href }: { item: NavCollapsible; href: st
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
           <SidebarMenuButton tooltip={item.title}>
-            {item.icon && <item.icon />}
-            <span>{item.title}</span>
-            {item.badge && <NavBadge>{item.badge}</NavBadge>}
+            <NavItemContent item={item} />
             <ChevronRight className="ms-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 rtl:rotate-180" />
           </SidebarMenuButton>
         </CollapsibleTrigger>
@@ -99,9 +111,7 @@ function SidebarMenuCollapsible({ item, href }: { item: NavCollapsible; href: st
               <SidebarMenuSubItem key={subItem.title}>
                 <SidebarMenuSubButton asChild isActive={checkIsActive(href, subItem)}>
                   <Link href={subItem.url} onClick={() => setOpenMobile(false)}>
-                    {subItem.icon && <subItem.icon />}
-                    <span>{subItem.title}</span>
-                    {subItem.badge && <NavBadge>{subItem.badge}</NavBadge>}
+                    <NavItemContent item={subItem} />
                   </Link>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
@@ -119,9 +129,7 @@ function SidebarMenuCollapsedDropdown({ item, href }: { item: NavCollapsible; hr
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton tooltip={item.title} isActive={checkIsActive(href, item)}>
-            {item.icon && <item.icon />}
-            <span>{item.title}</span>
-            {item.badge && <NavBadge>{item.badge}</NavBadge>}
+            <NavItemContent item={item} />
             <ChevronRight className="ms-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
