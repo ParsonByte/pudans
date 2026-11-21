@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.ai.team;
 
-import cn.tolim.pudans.contract.ai.resource.AiTeam;
+import cn.tolim.pudans.contract.ai.AiTeam;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository;
+import cn.tolim.pudans.core.extension.exception.ExtensionNotFoundException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.r2dbc.ai.stats.AiStatsRepository;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;

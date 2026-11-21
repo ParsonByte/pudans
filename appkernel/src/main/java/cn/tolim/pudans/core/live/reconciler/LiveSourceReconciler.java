@@ -6,10 +6,10 @@ import static cn.tolim.pudans.contract.extension.ExtensionUtil.isDeleted;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.removeFinalizers;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
 
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
-import cn.tolim.pudans.contract.live.resource.LiveSource;
-import cn.tolim.pudans.contract.live.resource.LiveSourceState;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveRecordingState;
+import cn.tolim.pudans.contract.live.LiveSource;
+import cn.tolim.pudans.contract.live.LiveSourceState;
 import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.controller.Controller;

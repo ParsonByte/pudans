@@ -12,10 +12,10 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import cn.tolim.pudans.contract.audit.resource.AuditRecord;
+import cn.tolim.pudans.contract.audit.AuditRecord;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.infra.properties.PudansProperties;
-import cn.tolim.pudans.infra.utils.PudansTime;
+import cn.tolim.pudans.core.infra.properties.PudansProperties;
+import cn.tolim.pudans.core.infra.utils.PudansTime;
 
 @Slf4j
 @Component

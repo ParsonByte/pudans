@@ -15,7 +15,7 @@ import cn.tolim.pudans.core.ai.runtime.SandboxProviderRegistry;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxErrors;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxExecResult;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxFile;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;

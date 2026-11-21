@@ -6,11 +6,11 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.infra.properties.PasskeyProperties;
-import cn.tolim.pudans.infra.setting.ParameterGroups;
-import cn.tolim.pudans.infra.webauthn.Passkeys;
-import cn.tolim.pudans.security.authentication.ExternalLogins;
-import cn.tolim.pudans.security.authentication.LoginRejectedException;
+import cn.tolim.pudans.core.infra.properties.PasskeyProperties;
+import cn.tolim.pudans.core.infra.setting.ParameterGroups;
+import cn.tolim.pudans.core.infra.webauthn.Passkeys;
+import cn.tolim.pudans.core.security.authentication.ExternalLogins;
+import cn.tolim.pudans.core.security.authentication.LoginRejectedException;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

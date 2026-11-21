@@ -4,8 +4,8 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.GatewaySession;
+import cn.tolim.pudans.core.infra.r2dbc.ai.gateway.AiGatewaySessionRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.GatewaySession;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;

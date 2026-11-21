@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.library;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiMcpServer;
+import cn.tolim.pudans.contract.ai.AiMcpServer;
 import cn.tolim.pudans.core.ai.library.instruction.Instructions;
 import cn.tolim.pudans.core.ai.library.mcp.McpClients;
 import cn.tolim.pudans.core.ai.library.mcp.McpServers;

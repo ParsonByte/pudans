@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.ai.library.mcp;
 
-import cn.tolim.pudans.contract.ai.resource.AiMcpServer;
+import cn.tolim.pudans.contract.ai.AiMcpServer;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.properties.PudansProperties;
 import dev.langchain4j.mcp.client.DefaultMcpClient;
 import dev.langchain4j.mcp.client.McpClient;
 import dev.langchain4j.mcp.client.transport.McpTransport;

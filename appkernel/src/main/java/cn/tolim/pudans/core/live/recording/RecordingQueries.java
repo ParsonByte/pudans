@@ -6,7 +6,7 @@ import static cn.tolim.pudans.contract.extension.index.query.Queries.greaterThan
 import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.lessThan;
 
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ListResult;
 import cn.tolim.pudans.contract.extension.PageRequestImpl;

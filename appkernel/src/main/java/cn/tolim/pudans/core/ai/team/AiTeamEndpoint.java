@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.team;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.ai.resource.AiTeam;
+import cn.tolim.pudans.contract.ai.AiTeam;
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;

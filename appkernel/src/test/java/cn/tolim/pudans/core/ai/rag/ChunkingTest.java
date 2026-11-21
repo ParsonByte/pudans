@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.rag;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.KnowledgeBase;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

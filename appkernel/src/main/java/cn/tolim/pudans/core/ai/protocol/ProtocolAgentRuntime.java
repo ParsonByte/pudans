@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.protocol;
 
-import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.AiAgent;
 import cn.tolim.pudans.core.ai.agent.GatewayChatContext;
 import cn.tolim.pudans.core.ai.agent.GatewayChatModel;
 import cn.tolim.pudans.core.ai.agent.GatewayRunState;

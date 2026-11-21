@@ -1,18 +1,18 @@
 package cn.tolim.pudans.core.ai.routing;
 
-import cn.tolim.pudans.contract.ai.resource.AiChatMode;
-import cn.tolim.pudans.contract.ai.resource.AiModel;
-import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.AiChatMode;
+import cn.tolim.pudans.contract.ai.AiModel;
+import cn.tolim.pudans.contract.ai.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.core.ai.config.ChatModes;
 import cn.tolim.pudans.core.ai.config.RouteGroups;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.gateway.AiTokenEstimator;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
-import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.properties.AiProperties;
+import cn.tolim.pudans.core.extension.exception.ExtensionNotFoundException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.properties.AiProperties;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;

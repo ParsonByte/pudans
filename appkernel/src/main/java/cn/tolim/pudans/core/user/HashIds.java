@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.user;
 
-import cn.tolim.pudans.infra.setting.ExtensionInitializedEvent;
-import cn.tolim.pudans.infra.setting.ParameterSettingChangedEvent;
-import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.core.infra.setting.ExtensionInitializedEvent;
+import cn.tolim.pudans.core.infra.setting.ParameterSettingChangedEvent;
+import cn.tolim.pudans.core.infra.setting.ParameterGroups;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Objects;

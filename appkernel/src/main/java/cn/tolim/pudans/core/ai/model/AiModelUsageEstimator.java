@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.model;
 
-import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.AiModel;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Map;

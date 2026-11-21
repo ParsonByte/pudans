@@ -7,10 +7,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.audit.resource.AuditRecord;
+import cn.tolim.pudans.contract.audit.AuditRecord;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.audit.AuditLog;
-import cn.tolim.pudans.infra.audit.AuditStore;
+import cn.tolim.pudans.core.infra.audit.AuditStore;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.endpoint;
 
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.memory.MemoryRecall;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
@@ -10,10 +10,10 @@ import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryInjection;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
 import cn.tolim.pudans.core.ai.team.Teams;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL2Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL3Repository;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL2Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL3Repository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

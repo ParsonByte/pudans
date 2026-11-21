@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.plan;
 
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import java.time.Instant;
 import org.springframework.http.HttpStatus;
 

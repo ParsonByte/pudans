@@ -1,0 +1,39 @@
+package cn.tolim.pudans.core.security.authentication.reconciler;
+
+import cn.tolim.pudans.contract.security.AuthProvider;
+import cn.tolim.pudans.contract.extension.ExtensionClient;
+import cn.tolim.pudans.contract.extension.controller.Controller;
+import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
+import cn.tolim.pudans.contract.extension.controller.Reconciler;
+import cn.tolim.pudans.core.infra.utils.ReactiveUtils;
+import cn.tolim.pudans.core.security.authentication.AuthProviders;
+import cn.tolim.pudans.core.security.authentication.AuthProviderUtils;
+import java.time.Duration;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+
+@Component
+@RequiredArgsConstructor
+public class AuthProviderReconciler implements Reconciler<Reconciler.Request> {
+    private static final Duration BLOCKING_TIMEOUT = ReactiveUtils.DEFAULT_TIMEOUT;
+    private final ExtensionClient client;
+    private final AuthProviders authProviders;
+
+    @Override
+    public Result reconcile(Request request) {
+        client.fetch(AuthProvider.class, request.name()).ifPresent(this::handlePrivileged);
+        return Result.doNotRetry();
+    }
+
+    @Override
+    public Controller setupWith(ControllerBuilder builder) {
+        return builder.extension(new AuthProvider()).build();
+    }
+
+    private void handlePrivileged(AuthProvider authProvider) {
+        if (AuthProviderUtils.isPrivileged(authProvider)) {
+            authProviders.enable(authProvider.getMetadata().getName()).block(BLOCKING_TIMEOUT);
+        }
+    }
+}

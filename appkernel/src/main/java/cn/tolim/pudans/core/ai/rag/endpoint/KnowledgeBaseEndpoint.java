@@ -4,7 +4,7 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.KnowledgeBase;
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ListResult;
@@ -16,9 +16,9 @@ import cn.tolim.pudans.core.ai.rag.KnowledgeBases;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseQueryLog;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalResult;
 import cn.tolim.pudans.core.ai.rag.RetrievalOptions;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.exception.UserNotFoundException;
-import cn.tolim.pudans.security.authorization.AuthorityUtils;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.UserNotFoundException;
+import cn.tolim.pudans.core.security.authorization.AuthorityUtils;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.Arrays;
 import java.util.List;

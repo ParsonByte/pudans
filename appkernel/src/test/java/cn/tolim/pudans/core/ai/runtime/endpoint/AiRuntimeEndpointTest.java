@@ -17,7 +17,7 @@ import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxExecResult;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxFile;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxLogEvent;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxState;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

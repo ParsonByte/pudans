@@ -8,13 +8,13 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
-import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.group.Groups;
-import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.core.infra.setting.ParameterGroups;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

@@ -6,12 +6,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.rbac.resource.UserGroup;
-import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
+import cn.tolim.pudans.contract.rbac.UserGroup;
+import cn.tolim.pudans.contract.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

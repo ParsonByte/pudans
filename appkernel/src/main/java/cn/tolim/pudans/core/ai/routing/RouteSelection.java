@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.routing;
 
-import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.AiModel;
 
 public record RouteSelection(String provider, String account, String model, AiModel.Tier tier) {
 

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.harness.skill;
 
-import cn.tolim.pudans.contract.ai.resource.AiSkill;
+import cn.tolim.pudans.contract.ai.AiSkill;
 import java.util.List;
 import org.springframework.util.StringUtils;
 

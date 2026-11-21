@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.routing;
 
-import cn.tolim.pudans.contract.ai.resource.AiModel;
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
-import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.AiModel;
+import cn.tolim.pudans.contract.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.AiRouteGroup;
 import java.util.List;
 import java.util.Set;
 import lombok.Builder;

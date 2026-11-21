@@ -7,7 +7,7 @@ import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.user.PersonalTokens;
-import cn.tolim.pudans.infra.setting.SecurityParameters;
+import cn.tolim.pudans.core.infra.setting.SecurityParameters;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;

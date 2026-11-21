@@ -20,8 +20,8 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.StoragePolicy;
+import cn.tolim.pudans.contract.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageIo;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
@@ -32,7 +32,7 @@ import cn.tolim.pudans.core.storage.driver.StorageReadResult;
 import cn.tolim.pudans.core.storage.driver.StorageSource;
 import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
 import cn.tolim.pudans.core.storage.driver.StorageTestResult;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 
 public class LocalStorageDriver implements StorageDriver {
 

@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.harness.workspace;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.core.infra.properties.PudansProperties;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

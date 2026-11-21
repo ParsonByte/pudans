@@ -4,10 +4,10 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.storage.resource.StorageFile;
-import cn.tolim.pudans.contract.storage.resource.StorageFileState;
+import cn.tolim.pudans.contract.storage.StorageFile;
+import cn.tolim.pudans.contract.storage.StorageFileState;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.provider.AiProviderFile;
 import cn.tolim.pudans.core.ai.provider.AiProviderFilePage;
@@ -15,8 +15,8 @@ import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekFilesClient;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProtocol;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProviderAccess;
 import cn.tolim.pudans.core.storage.StorageTransfer;
-import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.extension.exception.ExtensionNotFoundException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.fn.builders.parameter.Builder;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.rbac;
 
-import cn.tolim.pudans.security.authorization.AuthorityUtils;
+import cn.tolim.pudans.core.security.authorization.AuthorityUtils;
 
 public final class BuiltinEntities {
 

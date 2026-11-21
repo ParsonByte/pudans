@@ -4,12 +4,12 @@ import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import cn.tolim.pudans.contract.webhook.resource.Webhook;
+import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.AuditLog;
-import cn.tolim.pudans.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.core.infra.audit.AuditIdGenerator;
 import io.github.resilience4j.reactor.retry.RetryOperator;
 import io.github.resilience4j.retry.RetryConfig;
 import java.time.Duration;

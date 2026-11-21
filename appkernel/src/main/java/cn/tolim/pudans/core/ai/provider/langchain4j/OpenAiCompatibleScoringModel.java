@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.provider.langchain4j;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.ai.generation;
 
-import cn.tolim.pudans.contract.ai.resource.AiModel;
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
-import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
-import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.AiModel;
+import cn.tolim.pudans.contract.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.AiRouteGroup;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.config.RouteGroups;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
@@ -18,8 +18,8 @@ import cn.tolim.pudans.core.ai.routing.RouteEngine;
 import cn.tolim.pudans.core.ai.routing.RouteRequest;
 import cn.tolim.pudans.core.ai.routing.RouteSeat;
 import cn.tolim.pudans.core.ai.routing.RouteSelection;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.properties.AiProperties;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.properties.AiProperties;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;

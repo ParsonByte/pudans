@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.task;
 
-import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
 import cn.tolim.pudans.core.ai.memory.JevChangeType;
 import cn.tolim.pudans.core.ai.memory.JevGate;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
@@ -17,11 +17,11 @@ import cn.tolim.pudans.core.ai.memory.ai.JevClassification;
 import cn.tolim.pudans.core.ai.memory.ai.PersonaProfiling;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.core.ai.task.AiTaskHandler;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL2Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL3Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL2Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL3Repository;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;

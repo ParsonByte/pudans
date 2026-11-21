@@ -1,6 +1,6 @@
 package cn.tolim.pudans.event.user;
 
-import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.contract.user.UserConnection;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

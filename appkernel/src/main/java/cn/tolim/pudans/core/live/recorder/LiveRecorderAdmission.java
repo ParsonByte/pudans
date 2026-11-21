@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import cn.tolim.pudans.infra.properties.LiveProperties;
+import cn.tolim.pudans.core.infra.properties.LiveProperties;
 import jakarta.annotation.PreDestroy;
 import java.util.LinkedHashSet;
 import java.util.Map;

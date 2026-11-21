@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.plan;
 
-import cn.tolim.pudans.contract.ai.resource.AiPlan;
+import cn.tolim.pudans.contract.ai.AiPlan;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;

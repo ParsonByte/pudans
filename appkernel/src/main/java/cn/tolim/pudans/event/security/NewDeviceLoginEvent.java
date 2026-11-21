@@ -1,6 +1,6 @@
 package cn.tolim.pudans.event.security;
 
-import cn.tolim.pudans.contract.security.resource.Device;
+import cn.tolim.pudans.contract.security.Device;
 import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 

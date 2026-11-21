@@ -37,10 +37,10 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.user.resource.User;
-import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.contract.user.User;
+import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.rbac.resource.UserGroup;
+import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
@@ -51,16 +51,16 @@ import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.router.SortableRequest;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
 import cn.tolim.pudans.core.audit.AuditLog;
-import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.core.rbac.permission.UiPermissions;
 import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.core.user.FeishuAccounts;
 import cn.tolim.pudans.core.user.LocalAccounts;
 import cn.tolim.pudans.core.user.Connections;
-import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
-import cn.tolim.pudans.infra.setting.ParameterGroups;
-import cn.tolim.pudans.infra.utils.PudansTime;
+import cn.tolim.pudans.core.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.core.infra.setting.ParameterGroups;
+import cn.tolim.pudans.core.infra.utils.PudansTime;
 
 @Component
 @RequiredArgsConstructor

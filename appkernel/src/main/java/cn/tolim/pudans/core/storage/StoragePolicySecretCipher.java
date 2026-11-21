@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.storage;
 
 import org.springframework.stereotype.Component;
-import cn.tolim.pudans.infra.crypto.FileKeyCipher;
-import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.core.infra.crypto.FileKeyCipher;
+import cn.tolim.pudans.core.infra.properties.PudansProperties;
 
 @Component
 public class StoragePolicySecretCipher {

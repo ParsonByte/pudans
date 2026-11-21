@@ -18,9 +18,9 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ReactiveValueOperations;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.cache.ReactiveRedisCacheStore;
+import cn.tolim.pudans.core.infra.cache.ReactiveRedisCacheStore;
 
 @ExtendWith(MockitoExtension.class)
 class RbacCacheTest {

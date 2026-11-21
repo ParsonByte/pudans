@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.source;
 
-import cn.tolim.pudans.contract.live.resource.LiveSource;
+import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.core.live.recorder.LiveStoragePolicyResolver;

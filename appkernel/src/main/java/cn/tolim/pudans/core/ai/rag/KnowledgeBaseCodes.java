@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.rag;
 
-import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.KnowledgeBase;
 
 public final class KnowledgeBaseCodes {
 

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.gateway;
 
-import cn.tolim.pudans.contract.ai.resource.AiPlan;
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.AiPlan;
+import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import org.jspecify.annotations.Nullable;
 

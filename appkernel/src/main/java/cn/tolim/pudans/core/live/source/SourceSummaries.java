@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.live.source;
 
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
 
-import cn.tolim.pudans.contract.live.resource.LiveSource;
+import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveSourceSummary;

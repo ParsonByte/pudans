@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.protocol.agentprotocol;
 
 import cn.tolim.pudans.core.ai.harness.agent.AgentRun;
-import cn.tolim.pudans.infra.r2dbc.ai.protocol.AiAgentProtocolRunRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.protocol.AiAgentProtocolRunRepository;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;

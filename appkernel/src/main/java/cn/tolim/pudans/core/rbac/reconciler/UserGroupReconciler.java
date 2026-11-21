@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.rbac.reconciler;
 
-import cn.tolim.pudans.contract.rbac.resource.Role;
-import cn.tolim.pudans.contract.rbac.resource.UserGroup;
+import cn.tolim.pudans.contract.rbac.Role;
+import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.MetadataUtil;
 import cn.tolim.pudans.contract.extension.controller.Controller;

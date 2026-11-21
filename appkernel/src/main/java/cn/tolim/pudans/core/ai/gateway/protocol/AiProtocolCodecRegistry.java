@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.gateway.protocol;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.contract.ai.AiProvider;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.EnumMap;
 import java.util.Map;

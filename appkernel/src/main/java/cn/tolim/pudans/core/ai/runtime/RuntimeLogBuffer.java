@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.runtime;
 
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxLogEvent;
-import cn.tolim.pudans.infra.properties.AiProperties;
+import cn.tolim.pudans.core.infra.properties.AiProperties;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.ArrayList;

@@ -1,13 +1,13 @@
 package cn.tolim.pudans.core.user;
 
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.group.Groups;
-import cn.tolim.pudans.infra.audit.AuditIdGenerator;
-import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.core.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.core.infra.setting.ParameterGroups;
 import java.time.Instant;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;

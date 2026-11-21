@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.resolve;
 
-import cn.tolim.pudans.contract.live.resource.LivePlatform;
+import cn.tolim.pudans.contract.live.LivePlatform;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import java.net.URI;
 import java.util.Optional;

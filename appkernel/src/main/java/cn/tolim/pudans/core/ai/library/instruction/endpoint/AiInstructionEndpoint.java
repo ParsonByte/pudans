@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.library.instruction.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.ai.resource.AiInstruction;
+import cn.tolim.pudans.contract.ai.AiInstruction;
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.library.instruction.Instructions;

@@ -5,13 +5,13 @@ import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.ResolvedStoragePolicy;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
 import cn.tolim.pudans.core.storage.driver.StorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.StoragePolicyTypeDescriptor;
-import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.core.infra.properties.PudansProperties;
 import com.aliyun.oss.OSSClientBuilder;
 
 @Component

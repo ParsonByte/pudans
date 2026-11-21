@@ -1,12 +1,12 @@
 package cn.tolim.pudans.core.ai.gateway.session;
 
-import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.AiAgent;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.team.Teams;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.GatewaySession;
-import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.NewGatewaySession;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.r2dbc.ai.gateway.AiGatewaySessionRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.GatewaySession;
+import cn.tolim.pudans.core.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.NewGatewaySession;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;

@@ -18,18 +18,18 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.rbac.resource.UserGroup;
-import cn.tolim.pudans.contract.user.resource.User;
-import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.contract.rbac.UserGroup;
+import cn.tolim.pudans.contract.user.User;
+import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.group.Groups;
-import cn.tolim.pudans.infra.audit.AuditIdGenerator;
-import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.core.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.core.infra.setting.ParameterGroups;
 
 @Slf4j
 @Service

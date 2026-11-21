@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.webhook;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.core.infra.properties.PudansProperties;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyStore;

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.provider;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.contract.ai.AiProvider;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import java.net.URI;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;

@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.plan;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.ai.resource.AiPlan;
+import cn.tolim.pudans.contract.ai.AiPlan;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;

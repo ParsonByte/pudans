@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.live.resolve;
 
-import cn.tolim.pudans.contract.live.resource.LivePlatform;
+import cn.tolim.pudans.contract.live.LivePlatform;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
-import cn.tolim.pudans.infra.properties.LiveProperties;
+import cn.tolim.pudans.core.infra.properties.LiveProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
@@ -64,7 +64,7 @@ public class DouyinLiveRoomResolver {
                         .subscribeOn(Schedulers.boundedElastic()))
                 .timeout(properties.getResolve().getResponseTimeout().plusSeconds(5))
                 .onErrorResume(error -> {
-                    if (error instanceof cn.tolim.pudans.infra.exception.ApiException apiException) {
+                    if (error instanceof cn.tolim.pudans.core.infra.exception.ApiException apiException) {
                         return Mono.error(apiException);
                     }
                     log.warn("抖音直播间解析失败：platform={}，reason={}", LivePlatform.DOUYIN, error.getMessage());

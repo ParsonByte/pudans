@@ -9,8 +9,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.StoragePolicy;
+import cn.tolim.pudans.contract.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.ResolvedStoragePolicy;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
@@ -19,8 +19,8 @@ import cn.tolim.pudans.core.storage.driver.StorageDriverFactoryRegistry;
 import cn.tolim.pudans.core.storage.driver.StoragePolicyTypeDescriptor;
 import cn.tolim.pudans.core.storage.driver.local.LocalStorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.upyun.UpyunStorageDriverFactory;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.properties.PudansProperties;
 
 class StoragePolicyValidatorTest {
 

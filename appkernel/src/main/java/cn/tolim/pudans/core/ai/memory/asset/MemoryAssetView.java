@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.asset;
 
-import cn.tolim.pudans.contract.ai.resource.AiMemoryAsset;
+import cn.tolim.pudans.contract.ai.AiMemoryAsset;
 import java.util.List;
 
 public record MemoryAssetView(

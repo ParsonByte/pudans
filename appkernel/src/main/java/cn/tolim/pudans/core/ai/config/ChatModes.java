@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.ai.config;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
 
-import cn.tolim.pudans.contract.ai.resource.AiChatMode;
-import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.AiChatMode;
+import cn.tolim.pudans.contract.ai.AiRouteGroup;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import lombok.RequiredArgsConstructor;

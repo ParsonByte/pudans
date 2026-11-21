@@ -7,8 +7,8 @@ import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.memory.L1Deduplication;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
 import cn.tolim.pudans.core.ai.task.AiTaskHandlerRegistry;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.chat;
 
-import cn.tolim.pudans.contract.ai.resource.AiAgent;
-import cn.tolim.pudans.contract.ai.resource.AiSlashCommand;
-import cn.tolim.pudans.contract.ai.resource.AiSubagent;
+import cn.tolim.pudans.contract.ai.AiAgent;
+import cn.tolim.pudans.contract.ai.AiSlashCommand;
+import cn.tolim.pudans.contract.ai.AiSubagent;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import cn.tolim.pudans.core.ai.harness.compaction.CompactionConfig;

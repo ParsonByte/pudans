@@ -2,12 +2,12 @@ package cn.tolim.pudans.core.ai.memory.asset;
 
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
 import cn.tolim.pudans.core.ai.memory.L3Persona;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryAssetRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL2Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL3Repository;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryAssetRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL2Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL3Repository;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

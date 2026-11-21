@@ -3,14 +3,14 @@ package cn.tolim.pudans.core.ai.plan;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
 
-import cn.tolim.pudans.contract.ai.resource.AiPlanBinding;
+import cn.tolim.pudans.contract.ai.AiPlanBinding;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.rbac.group.Groups;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.utils.PudansTime;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.utils.PudansTime;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;

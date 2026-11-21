@@ -2,8 +2,8 @@ package cn.tolim.pudans.core.ai.config.endpoint;
 
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiChatMode;
-import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.AiChatMode;
+import cn.tolim.pudans.contract.ai.AiModel;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.config.ChatModes;
 import java.util.List;

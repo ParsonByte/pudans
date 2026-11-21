@@ -10,7 +10,7 @@ import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.protocol.ProtocolAgentRuntime;
 import cn.tolim.pudans.core.ai.protocol.agentprotocol.AgentProtocolRunStore.RunRecord;
 import cn.tolim.pudans.core.ai.protocol.agentprotocol.AgentProtocolRunStore.RunSnapshot;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.data.message.UserMessage;
 import java.util.List;

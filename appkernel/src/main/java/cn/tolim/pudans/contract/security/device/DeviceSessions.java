@@ -1,6 +1,6 @@
 package cn.tolim.pudans.contract.security.device;
 
-import cn.tolim.pudans.contract.security.resource.Device;
+import cn.tolim.pudans.contract.security.Device;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;

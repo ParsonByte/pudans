@@ -1,6 +1,6 @@
 package cn.tolim.pudans.contract.live.dto;
 
-import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
+import cn.tolim.pudans.contract.live.LiveRecordingState;
 import java.time.Instant;
 import java.util.List;
 

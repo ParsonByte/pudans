@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.plan;
 
-import cn.tolim.pudans.contract.ai.resource.AiPlan;
-import cn.tolim.pudans.infra.utils.PudansTime;
+import cn.tolim.pudans.contract.ai.AiPlan;
+import cn.tolim.pudans.core.infra.utils.PudansTime;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Duration;

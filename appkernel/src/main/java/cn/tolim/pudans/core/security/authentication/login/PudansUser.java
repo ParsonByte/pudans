@@ -1,0 +1,131 @@
+package cn.tolim.pudans.core.security.authentication.login;
+
+import cn.tolim.pudans.core.security.authentication.PudansUserDetailsContract;
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Objects;
+import org.springframework.security.core.CredentialsContainer;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.util.Assert;
+
+public class PudansUser implements PudansUserDetailsContract, CredentialsContainer, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private final UserDetails delegate;
+
+    private final boolean twoFactorAuthEnabled;
+
+    private String totpEncryptedSecret;
+
+    private String refreshToken;
+
+    public PudansUser(UserDetails delegate, boolean twoFactorAuthEnabled, String totpEncryptedSecret) {
+        Assert.notNull(delegate, "被委托的用户不能为空");
+        this.delegate = delegate;
+        this.twoFactorAuthEnabled = twoFactorAuthEnabled;
+        this.totpEncryptedSecret = totpEncryptedSecret;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return delegate.getAuthorities();
+    }
+
+    @Override
+    public String getPassword() {
+        return delegate.getPassword();
+    }
+
+    @Override
+    public String getUsername() {
+        return delegate.getUsername();
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return delegate.isAccountNonExpired();
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return delegate.isAccountNonLocked();
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return delegate.isCredentialsNonExpired();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return delegate.isEnabled();
+    }
+
+    @Override
+    public void eraseCredentials() {
+        if (delegate instanceof CredentialsContainer container) {
+            container.eraseCredentials();
+        }
+        this.totpEncryptedSecret = null;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof PudansUser user) {
+            return Objects.equals(this.delegate, user.delegate);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return this.delegate.hashCode();
+    }
+
+    @Override
+    public boolean isTwoFactorAuthEnabled() {
+        return this.twoFactorAuthEnabled;
+    }
+
+    @Override
+    public String getTotpEncryptedSecret() {
+        return this.totpEncryptedSecret;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public static class Builder {
+
+        private final UserDetails user;
+
+        private boolean twoFactorAuthEnabled;
+
+        private String totpEncryptedSecret;
+
+        public Builder(UserDetails user) {
+            this.user = user;
+        }
+
+        public Builder twoFactorAuthEnabled(boolean twoFactorAuthEnabled) {
+            this.twoFactorAuthEnabled = twoFactorAuthEnabled;
+            return this;
+        }
+
+        public Builder totpEncryptedSecret(String totpEncryptedSecret) {
+            this.totpEncryptedSecret = totpEncryptedSecret;
+            return this;
+        }
+
+        public PudansUserDetailsContract build() {
+            return new PudansUser(user, twoFactorAuthEnabled, totpEncryptedSecret);
+        }
+    }
+}

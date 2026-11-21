@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.routing.strategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.AiRouteGroup;
 import org.junit.jupiter.api.Test;
 
 class RouteStrategyRegistryTest {

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.user;
 
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.User;
 import java.util.Collection;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

@@ -7,7 +7,7 @@ import cn.tolim.pudans.core.ai.routing.circuit.RedisCircuitBreaker;
 import cn.tolim.pudans.core.ai.routing.classifier.ComplexityClassifier;
 import cn.tolim.pudans.core.ai.routing.classifier.HeuristicComplexityClassifier;
 import cn.tolim.pudans.core.ai.routing.strategy.RouteStrategyRegistry;
-import cn.tolim.pudans.infra.properties.AiProperties;
+import cn.tolim.pudans.core.infra.properties.AiProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

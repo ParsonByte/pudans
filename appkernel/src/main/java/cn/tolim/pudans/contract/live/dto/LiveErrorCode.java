@@ -1,6 +1,6 @@
 package cn.tolim.pudans.contract.live.dto;
 
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import org.springframework.http.HttpStatus;
 
 public enum LiveErrorCode {

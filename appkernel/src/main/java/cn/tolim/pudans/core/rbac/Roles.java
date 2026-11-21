@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.rbac;
 
-import cn.tolim.pudans.contract.rbac.resource.Role;
-import cn.tolim.pudans.contract.rbac.resource.RoleBinding;
-import cn.tolim.pudans.contract.rbac.resource.RoleBinding.Subject;
+import cn.tolim.pudans.contract.rbac.Role;
+import cn.tolim.pudans.contract.rbac.RoleBinding;
+import cn.tolim.pudans.contract.rbac.RoleBinding.Subject;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
