@@ -5,8 +5,8 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiChatMode;
 import cn.tolim.pudans.contract.ai.AiRouteGroup;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

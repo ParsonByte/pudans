@@ -1,12 +1,12 @@
 package cn.tolim.pudans.core.ai.library.command;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.ai.AiSlashCommand;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;

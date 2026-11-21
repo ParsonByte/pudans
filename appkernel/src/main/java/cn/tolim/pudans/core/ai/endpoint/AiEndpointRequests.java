@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.endpoint;
 
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.exception.UserNotFoundException;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.UserNotFoundException;
 import java.security.Principal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

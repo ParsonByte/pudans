@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.rag;
 
 import cn.tolim.pudans.contract.ai.KnowledgeBase;
-import cn.tolim.pudans.core.infra.r2dbc.ai.rag.AiKbChunkRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.rag.AiKbDocumentRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbChunkRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbDocumentRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;

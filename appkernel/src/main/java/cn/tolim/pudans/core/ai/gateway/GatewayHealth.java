@@ -1,18 +1,18 @@
 package cn.tolim.pudans.core.ai.gateway;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.ai.AiModel;
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiRouteGroup;
 import cn.tolim.pudans.contract.ai.AiSetting;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.infra.SystemVersionSupplier;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.api.SystemVersionSupplier;
 import cn.tolim.pudans.core.ai.config.AiSettings;
-import cn.tolim.pudans.core.infra.properties.AiProperties;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiChatRequestRepository;
+import cn.tolim.pudans.infra.properties.AiProperties;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiChatRequestRepository;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

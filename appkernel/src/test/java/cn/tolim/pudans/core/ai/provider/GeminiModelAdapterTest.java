@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.contract.ai.AiModel;
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelRequest;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;

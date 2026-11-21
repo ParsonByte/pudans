@@ -19,8 +19,8 @@ import org.springframework.data.redis.core.ReactiveValueOperations;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.rbac.Role;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.infra.cache.ReactiveRedisCacheStore;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.cache.ReactiveRedisCacheStore;
 
 @ExtendWith(MockitoExtension.class)
 class RbacCacheTest {
@@ -51,7 +51,7 @@ class RbacCacheTest {
     @Test
     void policyRuleWithMissingArraysIsSerializedWithoutNpe() {
         var role = new Role();
-        var metadata = new cn.tolim.pudans.contract.extension.Metadata();
+        var metadata = new cn.tolim.pudans.extension.api.Metadata();
         metadata.setName("role-a");
         role.setMetadata(metadata);
         role.setRules(List.of(new Role.PolicyRule(
@@ -70,7 +70,7 @@ class RbacCacheTest {
 
     @Test
     void roleDeserializedWithoutOptionalRuleFieldsIsSerializedWithoutNpe() {
-        var role = cn.tolim.pudans.contract.extension.Unstructured.OBJECT_MAPPER.convertValue(
+        var role = cn.tolim.pudans.extension.api.Unstructured.OBJECT_MAPPER.convertValue(
                 java.util.Map.of(
                         "apiVersion",
                         "pudans.tolim.cn/v1alpha1",
@@ -97,7 +97,7 @@ class RbacCacheTest {
     void cacheKeyIncludesTheRbacGeneration() {
         when(valueOperations.get("pudans:rbac:generation")).thenReturn(Mono.just("7"));
         var role = new Role();
-        var metadata = new cn.tolim.pudans.contract.extension.Metadata();
+        var metadata = new cn.tolim.pudans.extension.api.Metadata();
         metadata.setName("role-a");
         role.setMetadata(metadata);
         role.setRules(List.of(new Role.PolicyRule(

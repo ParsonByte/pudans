@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.properties.LiveProperties;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.properties.LiveProperties;
 
 // 分片落盘前的磁盘水位判定，只负责判断与拒绝，不删除任何已有文件
 @Slf4j

@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiAgent;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionBehavior;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionMode;
 import cn.tolim.pudans.core.ai.harness.skill.curator.InMemorySkillUsageStore;

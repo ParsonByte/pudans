@@ -16,8 +16,8 @@ import cn.tolim.pudans.contract.ai.AiAgent;
 import cn.tolim.pudans.contract.ai.AiChatMode;
 import cn.tolim.pudans.contract.ai.AiModel;
 import cn.tolim.pudans.contract.ai.AiSetting;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.ai.AiHook;
 import cn.tolim.pudans.core.ai.config.ChatModes;
 import cn.tolim.pudans.core.ai.config.AiSettings;
@@ -49,8 +49,8 @@ import cn.tolim.pudans.core.ai.rag.KnowledgeBaseAcl;
 import cn.tolim.pudans.core.ai.rag.KnowledgeRetrieval;
 import cn.tolim.pudans.core.ai.team.Teams;
 import cn.tolim.pudans.core.storage.StorageTransfer;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
@@ -506,7 +506,7 @@ class ChatCompletionsMemoryTaskTest {
     }
 
     private static AiGatewayResult gatewayResultWithToolCall() {
-        var arguments = cn.tolim.pudans.contract.infra.utils.JsonUtils.mapper()
+        var arguments = cn.tolim.pudans.infra.api.utils.JsonUtils.mapper()
                 .createObjectNode()
                 .put("name", "s1");
         return new AiGatewayResult(
@@ -531,7 +531,7 @@ class ChatCompletionsMemoryTaskTest {
                 "c1",
                 "skill",
                 null,
-                cn.tolim.pudans.contract.infra.utils.JsonUtils.mapper()
+                cn.tolim.pudans.infra.api.utils.JsonUtils.mapper()
                         .createObjectNode()
                         .put("name", "s1"),
                 "技能内容",

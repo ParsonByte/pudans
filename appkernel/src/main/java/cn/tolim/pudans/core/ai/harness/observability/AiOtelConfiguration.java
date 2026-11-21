@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.harness.observability;
 
-import cn.tolim.pudans.core.infra.properties.AiProperties;
+import cn.tolim.pudans.infra.properties.AiProperties;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;

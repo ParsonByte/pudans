@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.stats;
 
 import cn.tolim.pudans.core.ai.export.CsvSupport;
-import cn.tolim.pudans.core.infra.r2dbc.ai.stats.AiUsageRepository.RequestRow;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiUsageRepository.RequestRow;
 import org.jspecify.annotations.Nullable;
 
 final class UsageCsvExporter {

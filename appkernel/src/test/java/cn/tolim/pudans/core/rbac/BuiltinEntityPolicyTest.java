@@ -29,12 +29,12 @@ import cn.tolim.pudans.contract.ai.AiTeam;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.contract.extension.GroupVersionKind;
-import cn.tolim.pudans.contract.extension.JsonExtension;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.Unstructured;
-import cn.tolim.pudans.core.infra.exception.AccessDeniedException;
+import cn.tolim.pudans.extension.api.GroupVersionKind;
+import cn.tolim.pudans.extension.api.JsonExtension;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Unstructured;
+import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @ExtendWith(MockitoExtension.class)
@@ -258,7 +258,7 @@ class BuiltinEntityPolicyTest {
     void unstructuredUpdateIsConvertedAndStillGuarded() {
         when(client.get(User.class, NAME)).thenReturn(Mono.just(user("encoded-current", null)));
 
-        var unstructured = new cn.tolim.pudans.contract.extension.Unstructured(Map.of(
+        var unstructured = new cn.tolim.pudans.extension.api.Unstructured(Map.of(
                 "apiVersion", User.GROUP + "/" + User.VERSION,
                 "kind", User.KIND,
                 "metadata", Map.of("name", NAME),

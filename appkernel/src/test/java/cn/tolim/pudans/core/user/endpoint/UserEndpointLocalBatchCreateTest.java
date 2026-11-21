@@ -8,10 +8,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.user.LocalAccounts;
-import cn.tolim.pudans.core.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.infra.exception.DuplicateNameException;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.provider.endpoint;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
@@ -9,12 +9,12 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import cn.tolim.pudans.contract.ai.AiModel;
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.MetadataOperator;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.MetadataOperator;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
@@ -26,7 +26,7 @@ import cn.tolim.pudans.core.ai.model.AiModelRequest;
 import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChat;
 import cn.tolim.pudans.core.ai.rerank.Reranking;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Duration;
 import java.time.Instant;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.stats;
 
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import org.jspecify.annotations.Nullable;

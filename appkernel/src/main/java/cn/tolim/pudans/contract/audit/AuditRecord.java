@@ -7,8 +7,8 @@ import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
-import cn.tolim.pudans.contract.extension.AbstractExtension;
-import cn.tolim.pudans.contract.extension.GVK;
+import cn.tolim.pudans.extension.api.AbstractExtension;
+import cn.tolim.pudans.extension.api.GVK;
 
 @Data
 @EqualsAndHashCode(callSuper = true)

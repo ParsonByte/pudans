@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.harness.subagent;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;

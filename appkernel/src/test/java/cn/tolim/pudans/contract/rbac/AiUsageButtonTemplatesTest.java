@@ -2,8 +2,8 @@ package cn.tolim.pudans.contract.rbac;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.extension.Unstructured;
-import cn.tolim.pudans.core.infra.utils.YamlUnstructuredLoader;
+import cn.tolim.pudans.extension.api.Unstructured;
+import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;

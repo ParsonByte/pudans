@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.contract.ai.AiPlanBinding;
 import cn.tolim.pudans.core.ai.plan.PlanBindings;
 import cn.tolim.pudans.core.ai.plan.PlanResolution;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

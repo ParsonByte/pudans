@@ -10,12 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.contract.rbac.Role.PolicyRule;
-import cn.tolim.pudans.contract.extension.ExtensionClient;
-import cn.tolim.pudans.contract.extension.MetadataUtil;
-import cn.tolim.pudans.contract.extension.controller.Controller;
-import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
-import cn.tolim.pudans.contract.extension.controller.Reconciler;
-import cn.tolim.pudans.contract.extension.controller.Reconciler.Request;
+import cn.tolim.pudans.extension.api.ExtensionClient;
+import cn.tolim.pudans.extension.api.MetadataUtil;
+import cn.tolim.pudans.extension.api.controller.Controller;
+import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.api.controller.Reconciler;
+import cn.tolim.pudans.extension.api.controller.Reconciler.Request;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 

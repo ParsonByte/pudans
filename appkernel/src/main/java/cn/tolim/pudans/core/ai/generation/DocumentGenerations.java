@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.generation;
 import cn.tolim.pudans.core.ai.prompt.DocumentPrompts;
 import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.upload.StorageWriteRequest;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;

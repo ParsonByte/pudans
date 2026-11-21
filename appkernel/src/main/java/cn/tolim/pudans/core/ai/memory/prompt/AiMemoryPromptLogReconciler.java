@@ -1,12 +1,12 @@
 package cn.tolim.pudans.core.ai.memory.prompt;
 
 import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
-import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.controller.Controller;
-import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
-import cn.tolim.pudans.contract.extension.controller.ReactiveReconciler;
-import cn.tolim.pudans.contract.extension.controller.Reconciler;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryPromptLogRepository;
+import cn.tolim.pudans.extension.api.InternalReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.controller.Controller;
+import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.api.controller.ReactiveReconciler;
+import cn.tolim.pudans.extension.api.controller.Reconciler;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryPromptLogRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;

@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.rbac.permission;
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.core.rbac.RoleUiPermissions;
-import cn.tolim.pudans.core.security.authorization.AuthorityUtils;
+import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;

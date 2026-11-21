@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.core.infra.r2dbc.ai.team.AiTeamTaskRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.team.AiTeamTaskRepository;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;

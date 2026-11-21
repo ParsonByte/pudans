@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import cn.tolim.pudans.core.infra.properties.LiveProperties;
+import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;

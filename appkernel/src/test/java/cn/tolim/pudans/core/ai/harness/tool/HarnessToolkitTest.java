@@ -4,7 +4,7 @@ import static cn.tolim.pudans.core.ai.harness.tool.AsyncToolTestSupport.awaitTer
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;

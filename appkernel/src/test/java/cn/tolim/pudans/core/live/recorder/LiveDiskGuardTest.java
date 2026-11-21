@@ -18,8 +18,8 @@ import org.springframework.util.unit.DataSize;
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.properties.LiveProperties;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.properties.LiveProperties;
 
 @ExtendWith(MockitoExtension.class)
 class LiveDiskGuardTest {

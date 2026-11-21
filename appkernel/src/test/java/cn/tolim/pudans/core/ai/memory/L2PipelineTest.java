@@ -8,10 +8,10 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL2Repository;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL2Repository;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;

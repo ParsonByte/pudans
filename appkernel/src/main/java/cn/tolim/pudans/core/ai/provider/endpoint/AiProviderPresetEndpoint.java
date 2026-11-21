@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.provider.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.provider.preset.ProviderPresetCatalog;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;

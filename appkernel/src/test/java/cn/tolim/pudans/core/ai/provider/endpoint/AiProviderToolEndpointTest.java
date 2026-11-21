@@ -10,7 +10,7 @@ import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProviderAccess;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekToolsClient;
 import cn.tolim.pudans.core.storage.StorageTransfer;

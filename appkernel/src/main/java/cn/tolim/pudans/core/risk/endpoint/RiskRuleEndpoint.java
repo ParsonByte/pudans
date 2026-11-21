@@ -3,9 +3,9 @@ package cn.tolim.pudans.core.risk.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.extension.GroupVersion;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.api.GroupVersion;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.risk.RiskGuard;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;

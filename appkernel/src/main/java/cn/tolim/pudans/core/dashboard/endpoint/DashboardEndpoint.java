@@ -1,27 +1,27 @@
 package cn.tolim.pudans.core.dashboard.endpoint;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.api.index.query.Queries.in;
 
 import cn.tolim.pudans.contract.risk.RiskRule;
 import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.contract.audit.AuditRecord;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.infra.ParameterInfoGetter;
-import cn.tolim.pudans.contract.infra.SystemInfo;
+import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.api.GroupVersion;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.api.ParameterInfoGetter;
+import cn.tolim.pudans.infra.api.SystemInfo;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.core.risk.RiskRuleRegistry;
-import cn.tolim.pudans.core.infra.audit.AuditStore;
-import cn.tolim.pudans.core.infra.utils.PudansTime;
+import cn.tolim.pudans.infra.audit.AuditStore;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.Instant;
@@ -347,7 +347,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .onErrorReturn(Map.of());
     }
 
-    private Mono<Long> countNotDeleting(Class<? extends cn.tolim.pudans.contract.extension.Extension> type) {
+    private Mono<Long> countNotDeleting(Class<? extends cn.tolim.pudans.extension.api.Extension> type) {
         return client
                 .countBy(type, ListOptions.builder().andQuery(notDeleting()).build())
                 .onErrorReturn(0L);

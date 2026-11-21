@@ -7,7 +7,7 @@ import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import cn.tolim.pudans.core.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.properties.PudansProperties;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

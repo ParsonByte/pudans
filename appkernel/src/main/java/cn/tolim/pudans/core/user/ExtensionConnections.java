@@ -1,19 +1,19 @@
 package cn.tolim.pudans.core.user;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.contract.user.UserConnection.UserConnectionSpec;
 import cn.tolim.pudans.event.user.UserConnectionDisconnectedEvent;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.MetadataOperator;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.MetadataOperator;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.user.Connections;
-import cn.tolim.pudans.core.infra.exception.DuplicateNameException;
-import cn.tolim.pudans.core.infra.exception.OAuth2UserAlreadyBoundException;
+import cn.tolim.pudans.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.infra.exception.OAuth2UserAlreadyBoundException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

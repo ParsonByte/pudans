@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.harness.tool;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Duration;

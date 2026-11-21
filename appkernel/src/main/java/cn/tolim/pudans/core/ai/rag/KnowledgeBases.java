@@ -1,22 +1,22 @@
 package cn.tolim.pudans.core.ai.rag;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
 
 import cn.tolim.pudans.contract.ai.KnowledgeBase;
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ListResult;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ListResult;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.driver.StorageReadOptions;
 import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import cn.tolim.pudans.core.ai.rag.connector.ExternalRagRetriever;
-import cn.tolim.pudans.core.extension.exception.ExtensionNotFoundException;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.rag.AiKbChunkRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.rag.AiKbDocumentRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.rag.AiKbQueryLogRepository;
+import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbChunkRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbDocumentRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbQueryLogRepository;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;

@@ -8,7 +8,7 @@ import cn.tolim.pudans.core.ai.provider.AiProviderFile;
 import cn.tolim.pudans.core.ai.provider.AiProviderFilePage;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
 import cn.tolim.pudans.core.ai.provider.AiWebClientConfiguration;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;

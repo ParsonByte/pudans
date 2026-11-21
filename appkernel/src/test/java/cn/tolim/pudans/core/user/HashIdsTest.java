@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import cn.tolim.pudans.core.infra.setting.ParameterGroups;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
 import org.junit.jupiter.api.Test;
 
 class HashIdsTest {

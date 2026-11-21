@@ -8,9 +8,9 @@ import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.contract.ai.AiTeam;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.config.AiSettings;
-import cn.tolim.pudans.core.infra.exception.AccessDeniedException;
+import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -140,7 +140,7 @@ class TeamsTest {
 
     private static AiTeam team(String name, String userId) {
         var team = new AiTeam();
-        var metadata = new cn.tolim.pudans.contract.extension.Metadata();
+        var metadata = new cn.tolim.pudans.extension.api.Metadata();
         metadata.setName(name);
         team.setMetadata(metadata);
         team.getSpec().setDisplayName(name);
@@ -154,7 +154,7 @@ class TeamsTest {
 
     private static AiAgent agent(String name, String team, String owner, AiAgent.Visibility visibility) {
         var agent = new AiAgent();
-        var metadata = new cn.tolim.pudans.contract.extension.Metadata();
+        var metadata = new cn.tolim.pudans.extension.api.Metadata();
         metadata.setName(name);
         agent.setMetadata(metadata);
         agent.getSpec().setTeam(team);

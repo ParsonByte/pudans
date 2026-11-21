@@ -2,7 +2,7 @@ package cn.tolim.pudans.contract.ai;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.extension.Scheme;
+import cn.tolim.pudans.extension.api.Scheme;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

@@ -20,12 +20,12 @@ import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import cn.tolim.pudans.contract.audit.AuditRecord;
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.infra.audit.AuditIdGenerator;
-import cn.tolim.pudans.core.infra.audit.AuditStore;
-import cn.tolim.pudans.core.infra.utils.IpAddressUtils;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.infra.audit.AuditStore;
+import cn.tolim.pudans.infra.utils.IpAddressUtils;
 
 @Slf4j
 @Service

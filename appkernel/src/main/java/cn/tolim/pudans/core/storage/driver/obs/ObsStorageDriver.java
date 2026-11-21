@@ -28,7 +28,7 @@ import cn.tolim.pudans.core.storage.driver.StorageReadResult;
 import cn.tolim.pudans.core.storage.driver.StorageSource;
 import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
 import cn.tolim.pudans.core.storage.driver.StorageTestResult;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.obs.services.ObsClient;
 import com.obs.services.exception.ObsException;
 import com.obs.services.model.AbortMultipartUploadRequest;

@@ -2,11 +2,11 @@ package cn.tolim.pudans.core.ai.memory;
 
 import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import cn.tolim.pudans.core.ai.prompt.MemoryPrompts;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL3Repository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryRecallRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryRecallRepository.RecalledMemory;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL3Repository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryRecallRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryRecallRepository.RecalledMemory;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;

@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.provider.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.provider.ProviderModelSync;
 import cn.tolim.pudans.core.ai.provider.ProviderModelSync.SyncResult;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekModelsClient;

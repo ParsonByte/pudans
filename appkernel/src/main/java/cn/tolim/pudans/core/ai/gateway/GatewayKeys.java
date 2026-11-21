@@ -1,12 +1,12 @@
 package cn.tolim.pudans.core.ai.gateway;
 
 import cn.tolim.pudans.contract.ai.AiModel;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.security.PersonalAccessToken;
-import cn.tolim.pudans.core.extension.exception.ExtensionNotFoundException;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiChatRequestRepository;
-import cn.tolim.pudans.core.infra.utils.PudansTime;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.security.api.PersonalAccessToken;
+import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiChatRequestRepository;
+import cn.tolim.pudans.infra.utils.PudansTime;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.DayOfWeek;

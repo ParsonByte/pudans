@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
-import cn.tolim.pudans.core.infra.utils.PudansTime;
+import cn.tolim.pudans.infra.utils.PudansTime;
 
 @Component
 public class StoragePolicyPathGenerator {

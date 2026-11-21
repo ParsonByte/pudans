@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.lessThan;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.api.index.query.Queries.in;
+import static cn.tolim.pudans.extension.api.index.query.Queries.lessThan;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -22,14 +22,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.LiveRecordingState;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.live.alert.LiveAlerts;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.core.storage.StorageTransfer;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.properties.LiveProperties;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.properties.LiveProperties;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

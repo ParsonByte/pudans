@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.live.recorder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.core.infra.properties.LiveProperties;
+import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 

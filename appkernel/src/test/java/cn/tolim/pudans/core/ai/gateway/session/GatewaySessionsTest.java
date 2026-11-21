@@ -6,13 +6,13 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiAgent;
 import cn.tolim.pudans.contract.ai.AiSetting;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.team.Teams;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.gateway.AiGatewaySessionRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.GatewaySession;
-import cn.tolim.pudans.core.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.NewGatewaySession;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.GatewaySession;
+import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.NewGatewaySession;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

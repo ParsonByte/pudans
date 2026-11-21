@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.ai.generation;
 
 import cn.tolim.pudans.core.ai.task.AiTask;
-import cn.tolim.pudans.core.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
-import cn.tolim.pudans.core.infra.r2dbc.ai.task.AiTaskRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.task.AiTaskRepository.NewTask;
+import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
+import cn.tolim.pudans.infra.r2dbc.ai.task.AiTaskRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.task.AiTaskRepository.NewTask;
 import java.time.Instant;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

@@ -4,9 +4,9 @@ import cn.tolim.pudans.contract.ai.AiPlan;
 import cn.tolim.pudans.contract.ai.AiPlanBinding;
 import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.contract.rbac.UserGroupBinding;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.infra.r2dbc.ai.plan.PlanCounterRepository.PlanCounterRow;
-import cn.tolim.pudans.core.infra.r2dbc.ai.plan.UsageLedgerRepository.LedgerRow;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.infra.r2dbc.ai.plan.PlanCounterRepository.PlanCounterRow;
+import cn.tolim.pudans.infra.r2dbc.ai.plan.UsageLedgerRepository.LedgerRow;
 import java.time.Instant;
 
 final class PlanTestFixtures {

@@ -1,11 +1,11 @@
 package cn.tolim.pudans.core.ai.library.instruction;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
 
 import cn.tolim.pudans.contract.ai.AiInstruction;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;

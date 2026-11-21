@@ -4,7 +4,7 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
 import cn.tolim.pudans.core.ai.memory.MemoryStatus;
@@ -13,8 +13,8 @@ import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.MemoryRequestS
 import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.MemoryRequestType;
 import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.PipelineStats;
 import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.RebuildResult;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.MemoryRequestRecord;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.MemoryRequestRecord;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;

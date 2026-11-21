@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.webhook.reconciler;
 
 import cn.tolim.pudans.contract.webhook.Webhook;
-import cn.tolim.pudans.contract.extension.ExtensionClient;
-import cn.tolim.pudans.contract.extension.controller.Controller;
-import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
-import cn.tolim.pudans.contract.extension.controller.Reconciler;
+import cn.tolim.pudans.extension.api.ExtensionClient;
+import cn.tolim.pudans.extension.api.controller.Controller;
+import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.api.controller.Reconciler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;

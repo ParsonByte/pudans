@@ -7,17 +7,17 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
 
 import cn.tolim.pudans.contract.ai.AiAgent;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.conversation.Conversations;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.gateway.session.GatewaySessions;
 import cn.tolim.pudans.core.ai.team.Teams;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository.NewConversation;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.Message;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.MessageMetadata;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.NewConversation;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.MessageMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;

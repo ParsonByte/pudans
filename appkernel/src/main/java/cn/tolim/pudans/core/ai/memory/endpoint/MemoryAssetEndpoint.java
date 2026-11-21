@@ -6,8 +6,8 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 
 import cn.tolim.pudans.contract.ai.AiMemoryAsset;
 import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryLayers;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryAssets;
@@ -19,9 +19,9 @@ import cn.tolim.pudans.core.ai.memory.asset.MemoryL2Detail;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryL2Item;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryL3Content;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryLayerCounts;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.Message;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository.LogEntry;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository.LogEntry;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;

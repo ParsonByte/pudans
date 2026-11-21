@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.live.source;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
 
 import cn.tolim.pudans.contract.live.LiveSource;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveSourceSummary;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

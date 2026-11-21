@@ -5,7 +5,7 @@ import cn.tolim.pudans.core.ai.memory.ExtractedMemory;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
 import cn.tolim.pudans.core.ai.memory.SceneSegment;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;

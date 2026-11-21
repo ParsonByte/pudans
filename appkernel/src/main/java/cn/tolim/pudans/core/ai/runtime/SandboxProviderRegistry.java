@@ -1,11 +1,11 @@
 package cn.tolim.pudans.core.ai.runtime;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.ai.AiSandboxProvider;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.provider.AiProviderSecretCipher;
 import cn.tolim.pudans.core.ai.provider.AiWebClientConfiguration;
 import cn.tolim.pudans.core.ai.runtime.sandbox.AliyunSandboxAdapter;
@@ -15,7 +15,7 @@ import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxProviderAdapter;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxProviderConfig;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxRuntimeSettings;
 import cn.tolim.pudans.core.ai.runtime.sandbox.TencentSandboxAdapter;
-import cn.tolim.pudans.core.infra.properties.AiProperties;
+import cn.tolim.pudans.infra.properties.AiProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Qualifier;

@@ -1,18 +1,18 @@
 package cn.tolim.pudans.core.rbac;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
 
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.contract.rbac.Role.PolicyRule;
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.MetadataUtil;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.MetadataUtil;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.rbac.permission.PermissionDirectory;
 import cn.tolim.pudans.core.rbac.permission.UiPermissions;
-import cn.tolim.pudans.core.infra.exception.AccessDeniedException;
-import cn.tolim.pudans.core.security.authorization.AuthorityUtils;
+import cn.tolim.pudans.infra.exception.AccessDeniedException;
+import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.ArrayList;
 import java.util.Collection;

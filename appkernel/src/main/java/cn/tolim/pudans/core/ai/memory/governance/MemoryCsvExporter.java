@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.memory.governance;
 
 import cn.tolim.pudans.core.ai.export.CsvSupport;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.MemoryExportRow;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.MemoryExportRow;
 import java.math.BigDecimal;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;

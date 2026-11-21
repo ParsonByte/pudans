@@ -1,13 +1,13 @@
 package cn.tolim.pudans.core.ai.conversation;
 
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository.NewConversation;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.Message;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.MessageMetadata;
-import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.NewMessage;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.NewConversation;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.MessageMetadata;
+import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.NewMessage;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;

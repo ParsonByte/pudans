@@ -18,14 +18,14 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.contract.rbac.Role.PolicyRule;
-import cn.tolim.pudans.contract.extension.ConfigMap;
-import cn.tolim.pudans.contract.extension.Extension;
-import cn.tolim.pudans.contract.extension.ExtensionUtil;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.MetadataUtil;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.Watcher;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.extension.api.ConfigMap;
+import cn.tolim.pudans.extension.api.Extension;
+import cn.tolim.pudans.extension.api.ExtensionUtil;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.MetadataUtil;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Watcher;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 @Slf4j

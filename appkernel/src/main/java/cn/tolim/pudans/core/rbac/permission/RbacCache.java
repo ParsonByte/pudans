@@ -14,12 +14,12 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.rbac.Role;
-import cn.tolim.pudans.contract.extension.Extension;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.Watcher;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.infra.cache.ReactiveRedisCacheStore;
+import cn.tolim.pudans.extension.api.Extension;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Watcher;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.infra.cache.ReactiveRedisCacheStore;
 
 @Slf4j
 @Service

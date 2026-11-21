@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.security.api.PersonalAccessToken;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.user.PersonalTokens;
-import cn.tolim.pudans.core.infra.setting.SecurityParameters;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;

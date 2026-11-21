@@ -14,7 +14,7 @@ import cn.tolim.pudans.core.storage.driver.oss.OssStorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.qiniu.QiniuStorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.s3.S3StorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.upyun.UpyunStorageDriverFactory;
-import cn.tolim.pudans.core.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.properties.PudansProperties;
 
 class StorageDriverFactoryRegistryTest {
 

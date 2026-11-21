@@ -19,8 +19,8 @@ import cn.tolim.pudans.core.storage.driver.StorageDriverFactoryRegistry;
 import cn.tolim.pudans.core.storage.driver.StoragePolicyTypeDescriptor;
 import cn.tolim.pudans.core.storage.driver.local.LocalStorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.upyun.UpyunStorageDriverFactory;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.properties.PudansProperties;
 
 class StoragePolicyValidatorTest {
 

@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.library.mcp;
 
 import cn.tolim.pudans.contract.ai.AiMcpServer;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;

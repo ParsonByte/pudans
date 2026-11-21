@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.harness.team;
 
-import cn.tolim.pudans.core.infra.r2dbc.ai.team.AiTeamTaskRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.team.AiTeamTaskRepository;
 import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;

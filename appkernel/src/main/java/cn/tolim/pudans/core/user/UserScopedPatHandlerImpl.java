@@ -1,17 +1,17 @@
 package cn.tolim.pudans.core.user;
 
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 import static org.springframework.data.domain.Sort.Order.asc;
 import static org.springframework.data.domain.Sort.Order.desc;
 
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.security.api.PersonalAccessToken;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.user.PersonalTokens;
 import cn.tolim.pudans.core.user.UserScopedPatHandler;
-import cn.tolim.pudans.core.infra.exception.AccessDeniedException;
-import cn.tolim.pudans.core.infra.setting.SecurityParameters;
+import cn.tolim.pudans.infra.exception.AccessDeniedException;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;

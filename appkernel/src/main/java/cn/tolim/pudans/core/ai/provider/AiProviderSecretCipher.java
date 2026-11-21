@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.provider;
 
-import cn.tolim.pudans.core.infra.crypto.FileKeyCipher;
-import cn.tolim.pudans.core.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.crypto.FileKeyCipher;
+import cn.tolim.pudans.infra.properties.PudansProperties;
 import org.springframework.stereotype.Component;
 
 @Component

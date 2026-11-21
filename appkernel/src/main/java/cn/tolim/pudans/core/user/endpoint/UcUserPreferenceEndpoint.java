@@ -3,12 +3,12 @@ package cn.tolim.pudans.core.user.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.extension.ConfigMap;
-import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.ConfigMap;
+import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.api.GroupVersion;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.HashMap;
 import java.util.Objects;

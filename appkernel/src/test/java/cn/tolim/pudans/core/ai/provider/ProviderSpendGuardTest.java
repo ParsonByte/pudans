@@ -5,9 +5,9 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.stats.AiStatsRepository;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;

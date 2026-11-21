@@ -18,11 +18,11 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.contract.extension.ExtensionClient;
-import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ExtensionClient;
+import cn.tolim.pudans.extension.api.InternalReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 
 @ExtendWith(MockitoExtension.class)
 class SuperAdminResolverTest {
