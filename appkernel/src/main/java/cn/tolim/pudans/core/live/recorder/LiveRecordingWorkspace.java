@@ -87,7 +87,7 @@ public class LiveRecordingWorkspace {
         return listFiles(recordingDir(recordingName), "part-", ".ts");
     }
 
-    // 删除前用 realPath 校验目录必须位于工作目录下，且不跟随符号链接
+    // 删除前用 realPath 校验目录必须位于工作目录下，删除过程不跟随符号链接
     public void deleteRecordingDir(String recordingName) {
         var dir = recordingDir(recordingName);
         if (!Files.exists(dir, LinkOption.NOFOLLOW_LINKS)) {
@@ -95,7 +95,7 @@ public class LiveRecordingWorkspace {
         }
         try {
             var root = workDir().toRealPath();
-            var target = dir.toRealPath(LinkOption.NOFOLLOW_LINKS);
+            var target = dir.toRealPath();
             if (!target.startsWith(root) || target.equals(root)) {
                 throw new IllegalArgumentException("录制目录越界：" + dir);
             }
