@@ -70,6 +70,9 @@ public class BuiltinEntityPolicy {
         if (StorageFile.KIND.equals(kind)) {
             return Mono.error(denied("存储文件由存储服务管理，请使用文件接口。"));
         }
+        if (UserConnection.KIND.equals(kind)) {
+            return Mono.error(denied("身份连接只能通过身份绑定接口维护。"));
+        }
         if (Role.KIND.equals(kind)) {
             return checkMutation(kind, nameOf(extension))
                     .then(convert(extension, Role.class)
@@ -90,9 +93,6 @@ public class BuiltinEntityPolicy {
         if (PersonalAccessToken.KIND.equals(kind)) {
             return convert(extension, PersonalAccessToken.class).flatMap(this::checkPatCreate);
         }
-        if (UserConnection.KIND.equals(kind)) {
-            return convert(extension, UserConnection.class).flatMap(this::checkUserConnection);
-        }
         if (RoleBinding.KIND.equals(kind)) {
             return convert(extension, RoleBinding.class).flatMap(this::checkRoleBindingGrant);
         }
@@ -109,6 +109,9 @@ public class BuiltinEntityPolicy {
         }
         if (StoragePolicy.KIND.equals(kind)) {
             return checkStoragePolicyUpdate(name, extension);
+        }
+        if (UserConnection.KIND.equals(kind)) {
+            return Mono.error(denied("身份连接只能通过身份绑定接口维护。"));
         }
         if (Role.KIND.equals(kind)) {
             return checkMutation(kind, name)
@@ -129,9 +132,6 @@ public class BuiltinEntityPolicy {
         }
         if (PersonalAccessToken.KIND.equals(kind)) {
             return convert(extension, PersonalAccessToken.class).flatMap(this::checkPatUpdate);
-        }
-        if (UserConnection.KIND.equals(kind)) {
-            return convert(extension, UserConnection.class).flatMap(this::checkUserConnection);
         }
         if (RoleBinding.KIND.equals(kind)) {
             return convert(extension, RoleBinding.class).flatMap(this::checkRoleBindingGrant);
@@ -239,6 +239,9 @@ public class BuiltinEntityPolicy {
         }
         if (extension instanceof ConfigMap configMap) {
             return checkConfigMapDeletion(configMap);
+        }
+        if (extension instanceof UserConnection) {
+            return Mono.error(denied("身份连接只能通过身份解绑接口删除。"));
         }
         return Mono.empty();
     }
@@ -623,19 +626,6 @@ public class BuiltinEntityPolicy {
                     "用户的 spec.totpLastStep 只能通过专用认证接口修改。"));
         }
         return Mono.empty();
-    }
-
-    private Mono<Void> checkUserConnection(UserConnection connection) {
-        var spec = connection.getSpec();
-        if (spec == null
-                || !StringUtils.hasText(spec.getUsername())
-                || !StringUtils.hasText(spec.getRegistrationId())
-                || !StringUtils.hasText(spec.getProviderUserId())) {
-            return Mono.error(denied("身份连接的用户、提供方和提供方用户标识不能为空。"));
-        }
-        return currentUsername().flatMap(caller -> spec.getUsername().equals(caller)
-                ? Mono.empty()
-                : Mono.error(denied("只能创建或修改自己的身份连接。")));
     }
 
     private Mono<Void> checkRoleBindingGrant(RoleBinding binding) {

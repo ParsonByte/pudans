@@ -32,6 +32,8 @@ class SelfServiceRoleTemplateRulesTest {
         assertAllowed(template, HttpMethod.GET, API_PREFIX + "/userconnections/oidc/feishu/authorize-url");
         assertAllowed(template, HttpMethod.POST, API_PREFIX + "/userconnections/oidc/bind");
         assertAllowed(template, HttpMethod.DELETE, API_PREFIX + "/userconnections/oidc-987");
+        assertDenied(template, HttpMethod.POST, API_PREFIX + "/userconnections");
+        assertDenied(template, HttpMethod.GET, API_PREFIX + "/userconnections/oidc-987");
         assertDenied(template, HttpMethod.GET, API_PREFIX + "/userconnections/oidc/feishu/other-url");
     }
 

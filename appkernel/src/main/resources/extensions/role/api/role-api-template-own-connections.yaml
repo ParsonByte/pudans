@@ -10,13 +10,22 @@ rules:
       - "api.pudans.tolim.cn"
     resources:
       - "userconnections"
+    verbs:
+      - "list"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "userconnections/providers"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
       - "userconnections/bind"
     verbs:
       - "create"
-      - "get"
-      - "list"
-      - "delete"
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:
