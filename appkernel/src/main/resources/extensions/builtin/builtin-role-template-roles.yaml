@@ -49,6 +49,8 @@ metadata:
         "role-template-manage-configmaps",
         "role-template-manage-storage-policies",
         "role-template-manage-storage-files",
+        "role-template-manage-live-sources",
+        "role-template-manage-live-recordings",
         "role-template-apply-temproles",
         "role-template-approve-temproles",
         "role-template-view-temproles",
