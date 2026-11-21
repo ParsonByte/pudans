@@ -11,10 +11,11 @@ import cn.tolim.pudans.infra.setting.InitializationStateGetter;
 import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.authentication.AuthProviders;
 import cn.tolim.pudans.security.captcha.Captchas;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -137,77 +138,74 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                         provider.getSpec().getAuthenticationUrl(),
                         provider.getSpec().getHelpPage()))
                 .collectList()
-                .map(this::includeFeishu)
-                .map(this::includeConfiguredProviders)
+                .map(this::mergeConfiguredProviders)
                 .flatMap(views -> ServerResponse.ok().bodyValue(views));
     }
 
-    private List<LoginProviderView> includeConfiguredProviders(List<LoginProviderView> views) {
-        var providers = new ArrayList<>(views);
-        var names = new HashSet<>(providers.stream().map(LoginProviderView::name).toList());
+    private List<LoginProviderView> mergeConfiguredProviders(List<LoginProviderView> views) {
+        var providers = new LinkedHashMap<String, LoginProviderView>();
+        views.forEach(view -> providers.put(view.name(), view));
+        var configuredNames = new HashSet<String>();
+
         securitySettings.oauth2Providers().forEach(provider -> {
             var name = provider.getRegistrationId();
-            if (FEISHU_PROVIDER.equals(name) || !names.add(name)) {
+            if (FEISHU_PROVIDER.equals(name)) {
                 return;
             }
-            providers.add(new LoginProviderView(
+            configuredNames.add(name);
+            var existing = providers.get(name);
+            providers.put(name, new LoginProviderView(
                     name,
                     displayName(provider.getDisplayName(), name),
-                    provider.getLogo(),
+                    existing == null ? provider.getLogo() : existing.logo(),
                     "/oauth2/authorization/" + name,
-                    null));
+                    existing == null ? null : existing.helpPage()));
         });
         securitySettings.oidcProviders().forEach(provider -> {
             var name = provider.getRegistrationId();
-            if (FEISHU_PROVIDER.equals(name) || !names.add(name)) {
+            if (FEISHU_PROVIDER.equals(name)) {
                 return;
             }
-            providers.add(new LoginProviderView(
+            configuredNames.add(name);
+            var existing = providers.get(name);
+            providers.put(name, new LoginProviderView(
                     name,
                     displayName(provider.getDisplayName(), name),
-                    null,
+                    existing == null ? null : existing.logo(),
                     "/oauth2/authorization/" + name,
-                    null));
+                    existing == null ? null : existing.helpPage()));
         });
-        return providers.stream()
+        if (securitySettings.feishu().isConfigured()) {
+            configuredNames.add(FEISHU_PROVIDER);
+            var existing = providers.get(FEISHU_PROVIDER);
+            providers.put(FEISHU_PROVIDER, new LoginProviderView(
+                    FEISHU_PROVIDER,
+                    "飞书",
+                    existing == null ? null : existing.logo(),
+                    FEISHU_AUTHORIZATION_PATH,
+                    existing == null ? null : existing.helpPage()));
+        }
+
+        return providers.values().stream()
+                .filter(provider -> isReachable(provider, configuredNames))
                 .sorted(Comparator.comparing(LoginProviderView::displayName, String.CASE_INSENSITIVE_ORDER)
                         .thenComparing(LoginProviderView::name))
                 .toList();
     }
 
-    private static String displayName(String displayName, String fallback) {
-        return StringUtils.hasText(displayName) ? displayName : fallback;
+    private static boolean isReachable(LoginProviderView provider, Set<String> configuredNames) {
+        if (configuredNames.contains(provider.name())) {
+            return true;
+        }
+        var authenticationUrl = provider.authenticationUrl();
+        if (authenticationUrl == null) {
+            return false;
+        }
+        return !authenticationUrl.startsWith("/oauth2/authorization/");
     }
 
-    private List<LoginProviderView> includeFeishu(List<LoginProviderView> views) {
-        var providers = new ArrayList<>(views);
-        var feishuConfigured = securitySettings.feishu().isConfigured();
-        var feishuIndex = -1;
-
-        for (var index = 0; index < providers.size(); index++) {
-            if (FEISHU_PROVIDER.equals(providers.get(index).name())) {
-                feishuIndex = index;
-                break;
-            }
-        }
-
-        var existing = feishuIndex >= 0 ? providers.get(feishuIndex) : null;
-        var feishu = new LoginProviderView(
-                FEISHU_PROVIDER,
-                "飞书",
-                existing == null ? null : existing.logo(),
-                feishuConfigured ? FEISHU_AUTHORIZATION_PATH : null,
-                existing == null ? null : existing.helpPage());
-
-        if (feishuIndex >= 0) {
-            providers.set(feishuIndex, feishu);
-        } else {
-            providers.add(feishu);
-        }
-
-        return providers.stream()
-                .sorted(Comparator.comparing(LoginProviderView::displayName, String.CASE_INSENSITIVE_ORDER))
-                .toList();
+    private static String displayName(String displayName, String fallback) {
+        return StringUtils.hasText(displayName) ? displayName : fallback;
     }
 
     private Mono<ServerResponse> status(ServerRequest request) {
