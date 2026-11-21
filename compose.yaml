@@ -3,14 +3,3 @@ services:
     build: .
     expose:
       - "8090"
-
-  web:
-    build:
-      context: .
-      dockerfile: web/Dockerfile
-      args:
-        PUDANS_API_ORIGIN: http://api:8090
-    ports:
-      - "3000:3000"
-    depends_on:
-      - api

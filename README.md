@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="web/public/brand/icon-256.png" width="112" alt="Pudans">
-</p>
-
 <h1 align="center">Pudans</h1>
 
 <p align="center">
@@ -17,7 +13,6 @@
   <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue.svg"></a>
   <img alt="Java 25" src="https://img.shields.io/badge/Java-25-orange.svg">
   <img alt="Spring Boot 4.2" src="https://img.shields.io/badge/Spring_Boot-4.2-6DB33F.svg">
-  <img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB.svg">
   <img alt="PostgreSQL R2DBC" src="https://img.shields.io/badge/PostgreSQL-R2DBC-4169E1.svg">
 </p>
 
@@ -39,7 +34,7 @@
 
 Pudans is an enterprise identity and permission management platform with a built-in AI Console and AI gateway.
 
-It combines a reactive Spring Boot backend, an extension-resource model for users, roles, workspaces, menus and AI resources, and a React console for operating identity, permissions and AI traffic from one place.
+It combines a reactive Spring Boot backend, an extension-resource model for users, roles, workspaces, menus and AI resources, and HTTP APIs for operating identity, permissions and AI traffic from one place.
 
 ## Why Pudans
 
@@ -49,7 +44,7 @@ It combines a reactive Spring Boot backend, an extension-resource model for user
 - **Agent-native runtime.** The LangChain4j harness powers chat, tools, subagents and protocols with streaming, permissions, plan mode, compaction, durable state and a thread journal.
 - **Open agent protocols.** Expose agents over AG-UI, A2A and Agent Protocol alongside the OpenAI/Anthropic-compatible model gateway.
 - **Retrieval your way.** Local pgvector hybrid retrieval with PDF, Word, Tika and image parsers, or Dify, RAGFlow, Haystack and Bailian knowledge bases through external connectors.
-- **Reactive from day one.** WebFlux, R2DBC and Redis keep the request path non-blocking; the React console ships inside the backend jar.
+- **Reactive from day one.** WebFlux, R2DBC and Redis keep the request path non-blocking.
 
 ## AI Console
 
@@ -77,7 +72,7 @@ All routes live under `/apis/api.pudans.tolim.cn/v1alpha1`.
 
 | Protocol | Endpoint | Purpose |
 | --- | --- | --- |
-| AG-UI | `POST /aiagui/-/run` | SSE event stream for web frontends |
+| AG-UI | `POST /aiagui/-/run` | SSE event stream for clients |
 | A2A | `GET /aia2a/.well-known/agent.json`, `POST /aia2a` | Agent card and JSON-RPC task exchange |
 | Agent Protocol | `/aiagentprotocol/-/runs`, `/aiagentprotocol/-/threads/{threadId}/state` | Run lifecycle and thread state |
 | OpenAI / Anthropic / Gemini | `/aigateway/-/...` | Model-compatible gateway endpoints |
@@ -106,7 +101,7 @@ Browser / Agents
    PostgreSQL                    Redis
 ```
 
-The backend owns identity, permission decisions, extension reconciliation, AI routing, the agent harness, protocols and conversations. The frontend is a Next.js App Router app served by its own Node process; it proxies `/apis`, `/login` and `/logout` to the backend, which owns the compatibility APIs.
+The backend owns identity, permission decisions, extension reconciliation, AI routing, the agent harness, protocols and conversations, and exposes them over HTTP.
 
 ## Repository layout
 
@@ -120,18 +115,16 @@ The backend owns identity, permission decisions, extension reconciliation, AI ro
 | `api-docs/` | OpenAPI aggregation and validation |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
 | `gradle/libs.versions.toml` | Backend dependency version catalog |
-| `web/` | Next.js console, served as a standalone Node app |
 
 ## Quick start
 
 ### Requirements
 
 - JDK 25
-- Node.js 20.19 or newer with npm
 - PostgreSQL and Redis
-- Docker, optional but handy for the two services
+- Docker, optional but handy for local services
 
-The Gradle build installs the frontend dependencies, builds `web/` as a standalone Next.js server and packages the backend jar.
+The Gradle build packages the backend jar.
 
 ### 1. Start PostgreSQL and Redis
 
@@ -155,25 +148,15 @@ The defaults match `appkernel/src/main/resources/application.yaml`. Override the
 ./gradlew :appkernel:bootRun
 ```
 
-The backend starts on <http://localhost:8090>, creates or updates the PostgreSQL schema on startup and reconciles the extension resources. The console runs from the Next.js server in the next step.
+The backend starts on <http://localhost:8090>, creates or updates the PostgreSQL schema on startup and reconciles the extension resources.
 
-### 3. Frontend dev server (optional)
-
-```bash
-cd web
-npm install
-npm run dev
-```
-
-The Next.js dev server proxies `/apis`, `/login` and `/logout` to `http://localhost:8090`, so start the backend first. Open <http://localhost:3000>.
-
-### 4. Container deployment (optional)
+### 3. Container deployment (optional)
 
 ```bash
 docker compose up --build
 ```
 
-The `web` service serves the console on <http://localhost:3000> and proxies the API routes to the `api` service. `PUDANS_API_ORIGIN` is fixed when the web image is built.
+The `api` service exposes the backend on port `8090`.
 
 ## Configuration
 
@@ -209,17 +192,8 @@ Secrets belong in environment variables or local configuration; never commit the
 
 ```bash
 ./gradlew test                    # backend tests
-./gradlew build                   # backend and standalone web build
-./gradlew :web:standaloneWeb      # Next.js standalone server bundle
+./gradlew build                   # backend build
 ./gradlew :api-docs:validateOpenApiDocs
-```
-
-```bash
-cd web
-npm run lint
-npm run format:check
-npm run typecheck
-npm run build
 ```
 
 `make verify` runs the backend compile/test/OpenAPI gate plus `git diff --check`.

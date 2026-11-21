@@ -3,7 +3,6 @@
 ## Scope
 
 - Applies to every backend module, Gradle build file, dependency declaration and application configuration file.
-- Applies to the `web/` frontend project: its source code, package files, build configuration and dependencies.
 - Applies to new dependencies and changes to the runtime stack.
 
 ## Backend required
@@ -43,45 +42,9 @@
 - Memory and knowledge-base work uses the existing `StorageService` and `AuditService`. Do not add a second object-storage, audit or permission implementation.
 - Document parsing with Apache Tika/PDFBox is allowed only when the dependency is declared in the version catalog and executed on `Schedulers.boundedElastic()`; it must never run on the request path.
 
-## Frontend
-
-- The frontend lives in `web/` and is built by `web/build.gradle` as a standalone Next.js server (`output: 'standalone'`). The root Gradle build installs npm dependencies, builds the web app and packages the backend jar separately; the web service is the browser entry and proxies `/apis`, `/login` and `/logout` to `PUDANS_API_ORIGIN` (default `http://localhost:8090`). Node and npm are required for Gradle builds. Use npm with `web/package.json` and the committed `web/package-lock.json`; run `npm run dev` for local development and do not add another package manager or lockfile.
-- Frontend configuration is defined by `web/build.gradle`, `web/next.config.ts`, `web/postcss.config.mjs`, `web/tsconfig*.json`, `web/eslint.config.js`, `web/.prettierrc.json`, `web/knip.json` and `web/components.json`; keep it consistent with this rule.
-- Use Next.js 16 (App Router), React 19 and TypeScript 5.9, with Tailwind CSS v4 and the PostCSS plugin `@tailwindcss/postcss`. The rewrite destinations are fixed at build time; production images must receive `PUDANS_API_ORIGIN` during the web build.
-- Routing uses the Next.js App Router under `web/src/app`. Files that use hooks, browser APIs, Motion, GSAP or shadcn/ui components start with `"use client"`. Do not add another router.
-- Server state uses TanStack Query and requests go through Axios. Forms use React Hook Form with Zod schemas through `@hookform/resolvers`. Client global state uses Zustand; URL state uses `nuqs`. Do not add a second data-fetching, form, validation or state library.
-- Tables use TanStack Table, standard charts use ECharts and custom SVG visualizations use D3, graphs use Sigma with graphology layouts and community detection, Markdown uses `react-markdown` with `remark-gfm`, document previews use `docx-preview` with `xlsx` and `fflate`, and chat streaming uses the AI SDK (`ai` and `@ai-sdk/react`) with `@shadcn/helpers` types. The CLI-generated `web/src/components/ui/chart.tsx` remains Recharts-based and feature code must not add new Recharts usage. Dates use date-fns, icons use `lucide-react` (plus `@iconify/react` for icon sets Lucide does not cover), toasts use `sonner`, command menus use `cmdk`, highlighting uses `react-highlight-words`, QR codes use `qrcode.react`, and date picking uses `react-day-picker`. Transitions and motion are owned by the centralized motion layer (`src/components/motion`, `src/lib/motion.ts`, `src/lib/gsap.ts`) per `.agents/rules/shadcn.md`; feature components never add their own animation choreography.
-- Styling uses Tailwind CSS v4 through `@tailwindcss/postcss`, `tw-animate-css` for animation utilities, and the shadcn/ui theme tokens in `web/src/styles/_global.css`. Every component styles itself with those tokens only: hard-coded palette classes, raw hex/rgb/oklch colors and per-component theme overrides are prohibited; add a named token to `_global.css` when the core tokens do not cover a need. The shape is square (`--radius: 0rem`); components outside `components/ui` never add `rounded-*` utilities, and circular rendering is allowed only where a shadcn primitive itself defines it. Component variants use `class-variance-authority`; class names merge through `cn` (the `cn` package, re-exported by `@/lib/utils`). Use the `@/` alias for `web/src`; do not add another class-name or styling utility.
-- Lint with ESLint (`@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `@next/eslint-plugin-next`, `@tanstack/eslint-plugin-query`), format with Prettier (`@trivago/prettier-plugin-sort-imports`, `prettier-plugin-tailwindcss`), and detect unused files, exports and dependencies with Knip; do not bypass or weaken these checks.
-- Transient user feedback uses the global Sonner toaster: mount the shadcn `Toaster` from `web/src/components/ui/sonner.tsx` once in the root route and call `toast` from `sonner` for errors, successes, warnings and notices. Do not render inline alert banners, status strips or disabled button labels for transient messages.
-- Login method buttons use concise provider labels (`通行密钥`, `飞书`); do not append action wording such as 「使用…登录」.
-- Do not add mock, fake, demo, seeded or stubbed data anywhere in the repository, including development fixtures and preview data. Do not use `@faker-js/faker`.
-
-### shadcn/ui
-
-- The registry-first workflow, the `b1oVxsw5` preset and the Motion/GSAP animation policy are defined in `.agents/rules/shadcn.md` and executed with `.agents/skills/shadcn/SKILL.md`.
-- shadcn/ui is the only UI component library. Every UI primitive and interactive control must use the shadcn/ui components in `web/src/components/ui` (dialog, alert dialog, dropdown menu, select, tabs, tooltip, popover, checkbox, radio group, switch, scroll area, separator, avatar, label, collapsible, table and the rest); never reach for another library.
-- `web/src/components/ui` contains only components introduced through the shadcn CLI. When a required component is missing, run `npx shadcn@latest add <component>` from `web/`; never create, copy or hand-write a component file in that directory.
-- Pages, layouts and feature components may be written by hand, but they must compose the CLI-generated shadcn/ui components and must not re-implement UI primitives.
-- Do not import Radix primitives directly outside `web/src/components/ui`; use the shadcn/ui wrapper instead. If a wrapper does not exist yet, add it with the CLI first.
-- If a shadcn/ui component needs different behaviour, compose it in feature code; never edit the CLI-generated file and do not create a second component with the same responsibility.
-- Keep `web/components.json` and the theme variables in `web/src/styles/_global.css` as the single source of design tokens. Do not replace the theme with another design system or override components with inline-style theming.
-
-### Frontend prohibited
-
-- Do not introduce another component library such as MUI, Ant Design, Chakra UI or Bootstrap, and do not hand-create or hand-copy any file under `web/src/components/ui`; missing components are added with the shadcn CLI.
-- Do not edit, patch, reformat or manually restore any file under `web/src/components/ui`; the CLI is the only writer. Compose differences in feature code or add theme tokens to `web/src/styles/_global.css`.
-- Do not add a second router, data-fetching, form, validation, global-state or styling library. Do not add a parallel chart, graph, Markdown, document-preview or chat-transport implementation beyond the approved frontend stack.
-- Do not add a second notification library, and do not render inline alert banners for transient user feedback.
-- Do not add pnpm, yarn or bun lockfiles under `web/`.
-- Do not edit `.next/`, `web/dist/` or other generated output by hand.
-- Do not bundle the web app into the backend jar or serve UI assets from Spring Boot; the Next.js server is the web entry, with Spring Boot as the API backend.
-
 ## Dependency management
 
 - Declare every new backend dependency version in `gradle/libs.versions.toml`; reference it from a build file through a `libs.*` alias.
-- Declare frontend dependencies in `web/package.json` and lock them in `web/package-lock.json` with npm; do not add them to `gradle/libs.versions.toml`.
-- Keep TypeScript within the version range supported by `typescript-eslint`; upgrade TypeScript and the lint toolchain together.
 - For backend dependencies, raw coordinates are allowed only when Spring Boot or the platform BOM supplies the version; do not hard-code a version string in a build file.
 - State the purpose and overlap with existing dependencies when adding a dependency; for backend dependencies also state reactive compatibility.
 - Do not maintain two implementations of the same capability, such as two primary HTTP clients or two primary JSON libraries.
@@ -107,7 +70,4 @@
 
 - Run `./gradlew :appkernel:compileJava --console=plain` and `./gradlew :appkernel:test --console=plain`.
 - Run `./gradlew :api-docs:validateOpenApiDocs --console=plain`.
-- For frontend changes run, from `web/`: `npm run lint` (includes the style and motion guards), `npm run format:check`, `npm run typecheck` and `npm run build`.
-- Run `./gradlew build` and `./gradlew :web:standaloneWeb` to verify the backend build and the standalone web bundle; `docker compose build` verifies the two-service deployment.
-- Run `npx knip` from `web/` when dependencies, files or exports change.
-- Run `rg -n 'node|pnpm|npm|vite|react|typescript|pf4j|jdbc|jpa|hibernate|mybatis|jooq|flyway|liquibase' appkernel gradle platform --glob '!**/build/**'` and confirm frontend tooling has not leaked into backend modules; the frontend stack is allowed only under `web/`.
+- Run `./gradlew build` to verify the backend build; `docker compose build` verifies the container build.

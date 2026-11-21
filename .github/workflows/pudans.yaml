@@ -17,9 +17,6 @@ on:
 permissions:
   contents: read
 
-env:
-  NEXT_TELEMETRY_DISABLED: "1"
-
 concurrency:
   group: ${{github.workflow}} - ${{github.ref}}
   cancel-in-progress: true
@@ -65,21 +62,3 @@ jobs:
           path: appkernel/build/libs
           if-no-files-found: error
           retention-days: 1
-      - name: Upload Web Artifacts
-        if: github.repository == 'ParsonByte/pudans'
-        uses: actions/upload-artifact@v6
-        with:
-          name: pudans-web
-          path: web/.next/standalone
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  web-image:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Validate Compose
-        run: docker compose config --quiet
-      - name: Build Web Image
-        run: docker build -f web/Dockerfile -t pudans-web:ci .

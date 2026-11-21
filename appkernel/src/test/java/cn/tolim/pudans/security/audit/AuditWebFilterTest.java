@@ -117,7 +117,7 @@ class AuditWebFilterTest {
     }
 
     @Test
-    void frontendAssetsAreNotAudited() {
+    void assetRequestsAreNotAudited() {
         StepVerifier.create(filter.filter(
                         MockServerWebExchange.from(
                                 MockServerHttpRequest.get("/assets/roles-DYFfexQq.js").build()),
