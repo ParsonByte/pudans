@@ -6,7 +6,6 @@ import lombok.Setter;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
@@ -24,11 +23,9 @@ import reactor.core.publisher.Mono;
 
 class MapOAuth2AuthenticationFilter implements WebFilter {
 
-    private final Connections connections;
+    private final OAuth2ConnectionMapping connectionMapping;
 
     private final ServerSecurityContextRepository securityContextRepository;
-
-    private final OAuth2AuthenticationTokenCache authenticationCache;
 
     private final OAuth2AuthenticationSession authenticationSession;
 
@@ -43,12 +40,10 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
             ServerSecurityContextRepository securityContextRepository,
             Connections connections,
             OAuth2AuthenticationSession authenticationSession,
-            OAuth2AuthenticationTokenCache authenticationCache,
             ServerResponse.Context context) {
-        this.connections = connections;
+        this.connectionMapping = new OAuth2ConnectionMapping(connections);
         this.securityContextRepository = securityContextRepository;
         this.authenticationSession = authenticationSession;
-        this.authenticationCache = authenticationCache;
         this.context = context;
         var logoutHandler = new SecurityContextServerLogoutHandler();
         logoutHandler.setSecurityContextRepository(securityContextRepository);
@@ -61,10 +56,8 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
                 .mapNotNull(SecurityContext::getAuthentication)
                 .filter(authenticationTrustResolver::isAuthenticated)
                 .filter(authentication -> !(authentication instanceof OAuth2AuthenticationToken))
-                .doOnNext(
-
-                        authentication -> exchange.getAttributes().put(
-                                OAuth2LoginAttributes.PRE_AUTHENTICATION, authentication))
+                .doOnNext(authentication -> exchange.getAttributes().put(
+                        OAuth2LoginAttributes.PRE_AUTHENTICATION, authentication))
                 .then(chain.filter(exchange))
                 .then(Mono.defer(() -> securityContextRepository
                         .load(exchange)
@@ -72,46 +65,34 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
                         .mapNotNull(SecurityContext::getAuthentication)
                         .filter(OAuth2AuthenticationToken.class::isInstance)
                         .cast(OAuth2AuthenticationToken.class)
-                        .flatMap(oauth2Token -> {
-                            var registrationId = oauth2Token.getAuthorizedClientRegistrationId();
-                            var oauth2User = oauth2Token.getPrincipal();
-                            return connections
-                                    .updateUserConnectionIfPresent(registrationId, oauth2User)
-                                    .switchIfEmpty(Mono.defer(
-                                            () -> Mono.justOrEmpty(
-                                                            (Object) exchange.getAttribute(
-                                                                    OAuth2LoginAttributes.PRE_AUTHENTICATION))
-                                                    .filter(Authentication.class::isInstance)
-                                                    .cast(Authentication.class)
-                                                    .filter(authenticationTrustResolver::isAuthenticated)
-                                                    .flatMap(preAuth -> connections.createUserConnection(
-                                                            preAuth.getName(), registrationId, oauth2User))))
-                                    .switchIfEmpty(Mono.defer(() -> {
-
-                                        return authenticationCache
-                                                .saveToken(exchange, oauth2Token)
-                                                .then(Mono.defer(() -> {
-                                                    var webFilterExchange = new WebFilterExchange(exchange, chain);
-
-                                                    return logoutHandler.logout(webFilterExchange, oauth2Token);
-                                                }))
-                                                .then(Mono.defer(() -> ProblemDetailResponses.writeOrRedirect(
-                                                        exchange,
-                                                        context,
-                                                        HttpStatus.UNAUTHORIZED,
-                                                        "oauth2-connection-required",
-                                                        "请先绑定该第三方账号。",
-                                                        ProblemDetailResponses.SIGN_IN_PATH)))
-                                                .then(Mono.empty());
-                                    }))
-
-                                    .flatMap(connection -> authenticationSession.establish(
-                                            exchange, connection.getSpec().getUsername(), oauth2Token))
-                                    .onErrorResume(
-                                            AuthenticationException.class,
-                                            error -> OAuth2AuthenticationSession.rejectUnavailableAccount(
-                                                    exchange, context));
-                        })
+                        .flatMap(oauth2Token -> connectionMapping
+                                .map(exchange, oauth2Token)
+                                .flatMap(connection -> authenticationSession.establish(
+                                        exchange,
+                                        connection.getSpec().getUsername(),
+                                        oauth2Token))
+                                .onErrorResume(
+                                        OAuth2ConnectionMapping.ConnectionRequiredException.class,
+                                        error -> logoutAndRequireConnection(exchange, chain, oauth2Token))
+                                .onErrorResume(
+                                        AuthenticationException.class,
+                                        error -> OAuth2AuthenticationSession.rejectUnavailableAccount(
+                                                exchange, context)))
                         .then()));
+    }
+
+    private Mono<Void> logoutAndRequireConnection(
+            ServerWebExchange exchange, WebFilterChain chain, OAuth2AuthenticationToken token) {
+        var webFilterExchange = new WebFilterExchange(exchange, chain);
+        return logoutHandler
+                .logout(webFilterExchange, token)
+                .then(ProblemDetailResponses.writeOrRedirect(
+                        exchange,
+                        context,
+                        HttpStatus.UNAUTHORIZED,
+                        "oauth2-connection-required",
+                        "请先绑定该第三方账号。",
+                        ProblemDetailResponses.SIGN_IN_PATH))
+                .then();
     }
 }
