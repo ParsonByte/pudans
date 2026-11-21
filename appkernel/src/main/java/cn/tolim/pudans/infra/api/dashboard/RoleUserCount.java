@@ -1,4 +1,4 @@
-package cn.tolim.pudans.contract.dashboard.dto;
+package cn.tolim.pudans.infra.api.dashboard;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 

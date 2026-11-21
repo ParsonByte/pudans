@@ -1,4 +1,4 @@
-package cn.tolim.pudans.core.dashboard.endpoint;
+package cn.tolim.pudans.infra.dashboard.endpoint;
 
 import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
@@ -45,12 +45,12 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.dashboard.dto.DashboardOverview;
-import cn.tolim.pudans.contract.dashboard.dto.ActiveUser;
-import cn.tolim.pudans.contract.dashboard.dto.GlobalInfoSummary;
-import cn.tolim.pudans.contract.dashboard.dto.RecentOperation;
-import cn.tolim.pudans.contract.dashboard.dto.LoginTrendPoint;
-import cn.tolim.pudans.contract.dashboard.dto.RoleUserCount;
+import cn.tolim.pudans.infra.api.dashboard.DashboardOverview;
+import cn.tolim.pudans.infra.api.dashboard.ActiveUser;
+import cn.tolim.pudans.infra.api.dashboard.GlobalInfoSummary;
+import cn.tolim.pudans.infra.api.dashboard.RecentOperation;
+import cn.tolim.pudans.infra.api.dashboard.LoginTrendPoint;
+import cn.tolim.pudans.infra.api.dashboard.RoleUserCount;
 
 @Slf4j
 @Component
