@@ -1,6 +1,5 @@
 package cn.tolim.pudans.security.contract;
 
-import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.NOT_REQUIRED;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
 import cn.tolim.pudans.extension.contract.AbstractExtension;
@@ -66,9 +65,6 @@ public class AuthProvider extends AbstractExtension {
         private String authenticationUrl;
 
 
-        private String method = "GET";
-
-
         private boolean rememberMeSupport = false;
 
 
@@ -81,36 +77,8 @@ public class AuthProvider extends AbstractExtension {
 
         private String unbindUrl;
 
-
-        @Schema(requiredMode = NOT_REQUIRED)
-        private SettingRef settingRef;
-
-
-        @Schema(requiredMode = NOT_REQUIRED)
-        private ConfigMapRef configMapRef;
-
         public void setAuthType(@Nullable AuthType authType) {
             this.authType = (authType == null ? AuthType.OAUTH2 : authType);
         }
-    }
-
-    @Data
-    @ToString
-    public static class SettingRef {
-
-        @Schema(requiredMode = REQUIRED, minLength = 1)
-        private String name;
-
-
-        @Schema(requiredMode = REQUIRED, minLength = 1)
-        private String group;
-    }
-
-    @Data
-    @ToString
-    public static class ConfigMapRef {
-
-        @Schema(requiredMode = REQUIRED, minLength = 1)
-        private String name;
     }
 }
