@@ -296,7 +296,6 @@ class L1PipelineTest {
                 candidates,
                 101L,
                 MemoryScope.PRIVATE,
-                false,
                 l2Enabled,
                 l3Enabled,
                 personaState,

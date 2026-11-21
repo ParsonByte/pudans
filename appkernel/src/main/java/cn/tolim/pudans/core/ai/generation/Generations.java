@@ -24,7 +24,9 @@ import cn.tolim.pudans.core.ai.routing.RouteResolution;
 import cn.tolim.pudans.core.ai.routing.RouteSelection;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitFailure;
+import cn.tolim.pudans.core.ai.provider.ProviderProtocols;
 import cn.tolim.pudans.core.ai.team.TeamQuotas;
+import cn.tolim.pudans.core.ai.team.Teams;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
@@ -95,6 +97,8 @@ public class Generations {
 
     private final TeamQuotas teamQuotas;
 
+    private final Teams teams;
+
     private final ProviderSpendGuard providerSpendGuard;
 
     public Mono<AiGenerationResult> generate(AiGenerationCommand command) {
@@ -107,11 +111,35 @@ public class Generations {
         var idempotencyKey = StringUtils.hasText(command.idempotencyKey())
                 ? command.idempotencyKey()
                 : "gen-" + UUID.randomUUID();
-        return requestRepository
-                .findByUserAndIdempotency(command.userId(), idempotencyKey)
-                .map(AiGenerationResult::from)
-                .switchIfEmpty(Mono.defer(() -> resolve(command)
-                        .flatMap(resolved -> execute(command, resolved, idempotencyKey))));
+        return validateTeam(command)
+                .then(Mono.defer(() -> requestRepository
+                        .findByUserAndIdempotency(command.userId(), idempotencyKey)
+                        .map(AiGenerationResult::from)
+                        .switchIfEmpty(Mono.defer(() -> resolve(command)
+                                .flatMap(resolved -> execute(command, resolved, idempotencyKey))))));
+    }
+
+    private Mono<Void> validateTeam(AiGenerationCommand command) {
+        var teamId = command.teamId();
+        if (!StringUtils.hasText(teamId)) {
+            return Mono.empty();
+        }
+        if (StringUtils.hasText(command.agentId())) {
+            return teams.requireAgent(command.agentId(), command.userId())
+                    .flatMap(agent -> teamId.equals(agent.getSpec().getTeam())
+                            ? Mono.<Void>empty()
+                            : Mono.error(new ApiException(
+                                    HttpStatus.FORBIDDEN,
+                                    "ai-generation-team-forbidden",
+                                    "生成请求的团队与 Agent 所属团队不一致。")));
+        }
+        return teams.isMember(teamId, command.userId())
+                .flatMap(member -> Boolean.TRUE.equals(member)
+                        ? Mono.<Void>empty()
+                        : Mono.error(new ApiException(
+                                HttpStatus.FORBIDDEN,
+                                "ai-generation-team-forbidden",
+                                "无权使用该团队。")));
     }
 
     private Mono<Resolved> resolve(AiGenerationCommand command) {
@@ -381,7 +409,7 @@ public class Generations {
                             "ai-generation-circuit-open",
                             "供应商当前处于熔断冷却中。"));
         }
-        var protocol = candidate.provider().getSpec().getProtocol();
+        var protocol = ProviderProtocols.of(candidate.provider(), candidate.account());
         if (!adapterRegistry.supports(protocol, command.capability())) {
             return attempt(
                     command,
@@ -412,7 +440,7 @@ public class Generations {
         var model = resolved.model();
         var capability = command.capability();
         var adapter = adapterRegistry.require(
-                resolved.provider().getSpec().getProtocol(), capability);
+                ProviderProtocols.of(resolved.provider(), resolved.account()), capability);
         var free = resolved.provider().getSpec().isFree()
                 || resolved.account().getSpec().isFreePlan();
         var request = new AiModelRequest(

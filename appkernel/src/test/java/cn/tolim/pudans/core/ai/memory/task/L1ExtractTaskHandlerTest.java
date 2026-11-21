@@ -153,7 +153,6 @@ class L1ExtractTaskHandlerTest {
         assertThat(request.conversationId()).isEqualTo(CONVERSATION_ID);
         assertThat(request.lastMessageId()).isEqualTo(102L);
         assertThat(request.scope()).isEqualTo(MemoryScope.PRIVATE);
-        assertThat(request.orgCandidate()).isFalse();
         assertThat(request.l2Enabled()).isTrue();
         assertThat(request.l3Enabled()).isTrue();
         assertThat(request.prompt()).isEqualTo(MemoryPromptInput.none());

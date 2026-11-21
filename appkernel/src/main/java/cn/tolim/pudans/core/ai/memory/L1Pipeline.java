@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.ai.memory;
 
 import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
 import cn.tolim.pudans.core.ai.embedding.Embeddings;
+import cn.tolim.pudans.core.ai.memory.org.OrgCandidatePolicy;
 import cn.tolim.pudans.core.ai.memory.org.OrgCandidateTaskPayload;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository;
@@ -116,6 +117,7 @@ public class L1Pipeline {
         var content = hasText(decision.mergedContent()) ? decision.mergedContent() : extracted.content();
         var type = decision.mergedType() == null ? extracted.type() : decision.mergedType();
         var priority = decision.mergedPriority() == null ? extracted.priority() : decision.mergedPriority();
+        var orgCandidate = orgCandidate(extracted, content, type, priority);
         var dedupHash = l1Deduplication.dedupHash(request.context(), content);
         var messageIds = messageIds(extracted.sourceMessageIds());
         var sameHashTarget = targetRecordIds.stream()
@@ -137,7 +139,7 @@ public class L1Pipeline {
                     extracted.metadata(),
                     dedupHash,
                     request.scope(),
-                    request.orgCandidate(),
+                    orgCandidate,
                     target.version() + 1,
                     timestamps);
             var remainingTargetIds = targetRecordIds.stream()
@@ -163,13 +165,25 @@ public class L1Pipeline {
                 extracted.metadata(),
                 dedupHash,
                 request.scope(),
-                request.orgCandidate(),
+                orgCandidate,
                 version,
                 timestamps);
         return l1Repository
                 .insert(record)
                 .flatMap(inserted -> supersede(decision, targetRecordIds, inserted.id())
                         .flatMap(superseded -> writeGenerationLog(request, promptContext, inserted, superseded)));
+    }
+
+    private static boolean orgCandidate(
+            ExtractedMemory extracted, String content, MemoryType type, int priority) {
+        return OrgCandidatePolicy.isCandidate(new ExtractedMemory(
+                extracted.recordId(),
+                content,
+                type,
+                priority,
+                extracted.sceneName(),
+                extracted.sourceMessageIds(),
+                extracted.metadata()));
     }
 
     private Mono<Outcome> writeGenerationLog(
@@ -380,7 +394,6 @@ public class L1Pipeline {
             List<L1MemoryRecord> candidatePool,
             long lastMessageId,
             MemoryScope scope,
-            boolean orgCandidate,
             boolean l2Enabled,
             boolean l3Enabled,
             PersonaTrigger.State personaState,

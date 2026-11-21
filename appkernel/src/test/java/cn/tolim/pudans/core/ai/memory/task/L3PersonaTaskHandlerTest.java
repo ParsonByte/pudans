@@ -98,7 +98,7 @@ class L3PersonaTaskHandlerTest {
         when(conversationRepository.findById(CONVERSATION_ID)).thenReturn(Mono.just(conversation(40L)));
         when(memoryL3Repository.findByScope("team-a", "agent-a")).thenReturn(Mono.just(persona));
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.just(first, second));
-        when(memoryL1Repository.findActiveByScope("team-a", "agent-a", 0L, 100))
+        when(memoryL1Repository.findLatestActiveByScope("team-a", "agent-a", 100))
                 .thenReturn(Flux.fromIterable(newL1));
         when(memoryL1Repository.findByIds(List.of(55L, 56L))).thenReturn(Flux.fromIterable(newL1));
         when(jevAi.classify(eq("现有画像"), any())).thenReturn(Mono.just(JevChangeType.NEW_RULE));
@@ -151,7 +151,7 @@ class L3PersonaTaskHandlerTest {
         when(conversationRepository.findById(CONVERSATION_ID)).thenReturn(Mono.just(conversation(40L)));
         when(memoryL3Repository.findByScope("team-a", "agent-a")).thenReturn(Mono.empty());
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.empty());
-        when(memoryL1Repository.findActiveByScope("team-a", "agent-a", 0L, 100)).thenReturn(Flux.empty());
+        when(memoryL1Repository.findLatestActiveByScope("team-a", "agent-a", 100)).thenReturn(Flux.empty());
 
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
@@ -167,7 +167,7 @@ class L3PersonaTaskHandlerTest {
         when(conversationRepository.findById(CONVERSATION_ID)).thenReturn(Mono.just(conversation(40L)));
         when(memoryL3Repository.findByScope("team-a", "agent-a")).thenReturn(Mono.just(persona));
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.just(scene));
-        when(memoryL1Repository.findActiveByScope("team-a", "agent-a", 0L, 100))
+        when(memoryL1Repository.findLatestActiveByScope("team-a", "agent-a", 100))
                 .thenReturn(Flux.just(record(55L, "内容 55")));
 
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))

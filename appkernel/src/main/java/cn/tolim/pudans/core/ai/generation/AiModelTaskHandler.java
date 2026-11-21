@@ -6,6 +6,7 @@ import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
+import cn.tolim.pudans.core.ai.provider.ProviderProtocols;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import cn.tolim.pudans.core.ai.task.AiTask;
@@ -73,7 +74,7 @@ public class AiModelTaskHandler implements AiTaskHandler {
     private Mono<Void> poll(AiTask task, ModelRequestRow row, Resources resources) {
         var capability = AiModel.Capability.valueOf(row.capability());
         var adapter = adapterRegistry.require(
-                resources.provider().getSpec().getProtocol(), capability);
+                ProviderProtocols.of(resources.provider(), resources.account()), capability);
         var free = resources.provider().getSpec().isFree()
                 || resources.account().getSpec().isFreePlan();
         var estimate = estimate(row);

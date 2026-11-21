@@ -65,7 +65,7 @@ class L1PipelineOrgCandidateTest {
         stubStoredRecord(77L);
         when(taskRepository.insertIfAbsent(any())).thenReturn(Mono.just(true));
 
-        var result = service.process(request(true, false, false, null), storeAll()).block();
+        var result = service.process(request(false, false, false, null), storeAll()).block();
 
         assertThat(result).isNotNull();
         assertThat(result.stored()).hasSize(1);
@@ -86,7 +86,7 @@ class L1PipelineOrgCandidateTest {
     void doesNotScheduleOrgCandidateWithoutAStoredCandidate() {
         stubStoredRecord(77L);
 
-        var result = service.process(request(false, false, false, null), storeAll()).block();
+        var result = service.process(request(true, false, false, null), storeAll()).block();
 
         assertThat(result).isNotNull();
         assertThat(result.stored()).hasSize(1);
@@ -101,7 +101,7 @@ class L1PipelineOrgCandidateTest {
         when(taskRepository.insertIfAbsent(any())).thenReturn(Mono.just(true));
         var personaState = new PersonaTrigger.State(false, true, true, true, 1, 9, 10);
 
-        var result = service.process(request(true, true, true, personaState), storeAll()).block();
+        var result = service.process(request(false, true, true, personaState), storeAll()).block();
 
         assertThat(result).isNotNull();
         assertThat(result.scheduledTasks())
@@ -110,6 +110,39 @@ class L1PipelineOrgCandidateTest {
                         PipelineTaskType.L3_PERSONA,
                         PipelineTaskType.ORG_CANDIDATE);
         verify(taskRepository, times(3)).insertIfAbsent(any());
+    }
+
+    @Test
+    void marksOnlyQualifyingRecordsAsOrgCandidates() {
+        stubStoredRecord(77L);
+        when(taskRepository.insertIfAbsent(any())).thenReturn(Mono.just(true));
+        var request = new L1Pipeline.Request(
+                context(),
+                CONVERSATION_ID,
+                List.of(scene(
+                        "release",
+                        personalExtracted("m-persona", "personal preference"),
+                        extracted("m-rule", "durable workflow"))),
+                List.of(),
+                101L,
+                MemoryScope.PRIVATE,
+                false,
+                false,
+                null,
+                MemoryPromptInput.none(),
+                MemoryGenerationInput.empty());
+
+        var result = service.process(request, storeAll()).block();
+
+        assertThat(result).isNotNull();
+        assertThat(result.stored()).hasSize(2);
+        assertThat(result.stored())
+                .filteredOn(record -> record.content().equals("personal preference"))
+                .allSatisfy(record -> assertThat(record.orgCandidate()).isFalse());
+        assertThat(result.stored())
+                .filteredOn(record -> record.content().equals("durable workflow"))
+                .allSatisfy(record -> assertThat(record.orgCandidate()).isTrue());
+        assertThat(result.scheduledTasks()).contains(PipelineTaskType.ORG_CANDIDATE);
     }
 
     private void stubStoredRecord(long id) {
@@ -126,15 +159,15 @@ class L1PipelineOrgCandidateTest {
     }
 
     private static L1Pipeline.Request request(
-            boolean orgCandidate, boolean l2Enabled, boolean l3Enabled, PersonaTrigger.State personaState) {
+            boolean personal, boolean l2Enabled, boolean l3Enabled, PersonaTrigger.State personaState) {
+        var extracted = personal ? personalExtracted("m-new", "new content") : extracted("m-new", "new content");
         return new L1Pipeline.Request(
                 context(),
                 CONVERSATION_ID,
-                List.of(scene("release", extracted("m-new", "new content"))),
+                List.of(scene("release", extracted)),
                 List.of(),
                 101L,
                 MemoryScope.PRIVATE,
-                orgCandidate,
                 l2Enabled,
                 l3Enabled,
                 personaState,
@@ -153,5 +186,10 @@ class L1PipelineOrgCandidateTest {
     private static ExtractedMemory extracted(String recordId, String content) {
         return new ExtractedMemory(
                 recordId, content, MemoryType.WORK_METHOD, 80, "release", List.of("101"), Map.of());
+    }
+
+    private static ExtractedMemory personalExtracted(String recordId, String content) {
+        return new ExtractedMemory(
+                recordId, content, MemoryType.PERSONA, 95, "release", List.of("101"), Map.of());
     }
 }

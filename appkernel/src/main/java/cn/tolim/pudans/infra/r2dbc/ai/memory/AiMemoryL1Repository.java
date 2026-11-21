@@ -223,6 +223,24 @@ public class AiMemoryL1Repository {
                 .all();
     }
 
+    public Flux<L1MemoryRecord> findLatestActiveByScope(String teamId, String agentId, int limit) {
+        return databaseClient.sql("SELECT " + SELECT_COLUMNS + "\n" + """
+                         FROM ai_memory_l1
+                         WHERE team_id = :teamId
+                           AND agent_id = :agentId
+                           AND status = 'ACTIVE'
+                         ORDER BY id DESC
+                         LIMIT :limit
+                         """)
+                .bind("teamId", teamId)
+                .bind("agentId", agentId)
+                .bind("limit", limit)
+                .map((row, metadata) -> mapRecord(row))
+                .all()
+                .collectList()
+                .flatMapMany(records -> Flux.fromIterable(records.reversed()));
+    }
+
     public Flux<L1MemoryRecord> findOrgCandidates(String teamId, String agentId, long afterId, int limit) {
         return databaseClient.sql("SELECT " + SELECT_COLUMNS + "\n" + """
                          FROM ai_memory_l1
@@ -230,8 +248,8 @@ public class AiMemoryL1Repository {
                            AND agent_id = :agentId
                            AND org_candidate = TRUE
                            AND status = 'ACTIVE'
-                           AND id >= :afterId
-                         ORDER BY id
+                           AND id <= :afterId
+                         ORDER BY id DESC
                          LIMIT :limit
                          """)
                 .bind("teamId", teamId)
@@ -285,7 +303,7 @@ public class AiMemoryL1Repository {
     }
 
     public Mono<MemoryL1Item> updateContent(String teamId, String agentId, String userId, long id, String content) {
-        return databaseClient.sql("UPDATE ai_memory_l1" + """
+        return databaseClient.sql("UPDATE ai_memory_l1\n" + """
                          SET content = :content, version = version + 1, updated_at = now()
                          WHERE id = :id
                            AND team_id = :teamId
