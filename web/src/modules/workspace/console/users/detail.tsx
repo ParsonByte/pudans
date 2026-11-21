@@ -392,9 +392,11 @@ export function UserDetailView({ name }: UserDetailViewProps) {
                     </div>
                   )}
                 </div>
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">生效角色（含依赖）</p>
-                  <div className="flex flex-wrap gap-1">
+                <details className="space-y-2">
+                  <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
+                    展开 {effectiveRoles.length} 个生效角色（含依赖）
+                  </summary>
+                  <div className="mt-2 flex flex-wrap gap-1">
                     {effectiveRoles.map((roleName) => (
                       <Badge
                         key={roleName}
@@ -405,7 +407,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
                       </Badge>
                     ))}
                   </div>
-                </div>
+                </details>
               </div>
             )}
           </ConsoleSection>

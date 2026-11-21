@@ -45,26 +45,6 @@ export const SYSTEM_CONFIG_GROUPS: readonly SystemConfigGroup[] = [
     label: "存储",
     description: "存储策略与上传限制参数。",
   },
-  {
-    value: "basic",
-    label: "旧版站点（basic）",
-    description: "兼容旧版 basic 系统配置分组。",
-  },
-  {
-    value: "user",
-    label: "旧版用户（user）",
-    description: "兼容旧版 user 系统配置分组。",
-  },
-  {
-    value: "seo",
-    label: "旧版 SEO（seo）",
-    description: "兼容旧版 seo 系统配置分组。",
-  },
-  {
-    value: "authProvider",
-    label: "旧版登录提供方（authProvider）",
-    description: "兼容旧版 authProvider 登录提供方状态分组。",
-  },
 ];
 
 export const DEFAULT_SYSTEM_CONFIG_GROUP = SYSTEM_CONFIG_GROUPS[0].value;

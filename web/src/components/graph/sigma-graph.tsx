@@ -38,7 +38,7 @@ export function SigmaGraph({
       data-motion="enter"
       role="img"
       aria-label={ariaLabel}
-      className={cn("w-full overflow-hidden border bg-background", className)}
+      className={cn("w-full overflow-hidden border bg-background [--sigma-background-color:transparent]", className)}
       style={{ height }}
     >
       <SigmaCanvas

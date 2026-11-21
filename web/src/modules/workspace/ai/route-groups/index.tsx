@@ -115,6 +115,10 @@ export function AiRouteGroupsView() {
     }
     return map;
   }, [chatModes]);
+  const assignableGroups = useMemo(
+    () => routeGroups.filter((group) => !modeByGroup.has(group.metadata.name)),
+    [routeGroups, modeByGroup],
+  );
   const usable = useMemo(
     () => usableModels(models, providers, accounts),
     [models, providers, accounts],
@@ -315,7 +319,7 @@ export function AiRouteGroupsView() {
           <div className="flex flex-wrap items-start justify-between gap-3 border-b px-5 py-4">
             <div className="space-y-1">
               <h2 className="text-sm font-semibold">
-                当前路由组 <span className="text-muted-foreground">{routeGroups.length} 个</span>
+                当前路由组 <span className="text-muted-foreground">{assignableGroups.length} 个</span>
               </h2>
               <p className="text-xs text-muted-foreground">
                 默认组会接收没有显式指定路由组的请求。
@@ -331,10 +335,10 @@ export function AiRouteGroupsView() {
             </div>
           ) : routeGroupsQuery.isError ? (
             <p className="px-5 py-5 text-xs text-muted-foreground">无法加载路由组。</p>
-          ) : routeGroups.length === 0 ? (
+          ) : assignableGroups.length === 0 ? (
             <ConsoleEmpty>
               <span className="space-y-2">
-                <span className="block">还没有路由组。可以从模板新建，或者手动创建。</span>
+                <span className="block">还没有独立路由组。聊天模式占用的组只在上方展示。</span>
                 {canCreate ? (
                   <button
                     type="button"
@@ -348,7 +352,7 @@ export function AiRouteGroupsView() {
             </ConsoleEmpty>
           ) : (
             <div className="grid gap-3 px-5 py-5 sm:grid-cols-2 xl:grid-cols-3">
-              {routeGroups.map((group, index) => (
+              {assignableGroups.map((group, index) => (
                 <RouteGroupCard
                   key={group.metadata.name}
                   group={group}
@@ -362,7 +366,7 @@ export function AiRouteGroupsView() {
                   canDelete={canDelete}
                   canArrange={canUpdate && !arrangeMutation.isPending}
                   canMoveUp={index > 0}
-                  canMoveDown={index < routeGroups.length - 1}
+                  canMoveDown={index < assignableGroups.length - 1}
                   toggling={
                     toggleMutation.isPending &&
                     toggleMutation.variables?.metadata.name === group.metadata.name
