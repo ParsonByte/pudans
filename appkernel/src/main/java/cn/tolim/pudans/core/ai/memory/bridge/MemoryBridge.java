@@ -6,6 +6,7 @@ import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryInjection;
+import cn.tolim.pudans.core.ai.memory.MemoryScope;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
 import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.GatewaySession;
@@ -58,7 +59,9 @@ public class MemoryBridge {
                 .flatMap(scene -> l1Repository
                         .findByIds(scene.l1Ids())
                         .filter(memory -> session.teamId().equals(memory.context().teamId())
-                                && session.agentId().equals(memory.context().agentId()))
+                                && session.agentId().equals(memory.context().agentId())
+                                && (userId.equals(memory.context().userId())
+                                        || memory.scope() == MemoryScope.TEAM))
                         .collectList()
                         .map(memories -> new SceneDetail(scene, memories))));
     }

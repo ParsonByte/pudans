@@ -14,12 +14,18 @@ rules:
       - "aigateway/openai"
       - "aigateway/anthropic"
       - "aigateway/gemini"
-      - "aigateway/status"
       - "memorybridge/atomic"
       - "memorybridge/conversation"
       - "memorybridge/scenario"
     verbs:
       - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "aigateway/status"
+    verbs:
+      - "get"
+      - "list"
   - apiGroups:
       - "api.pudans.tolim.cn"
     resources:

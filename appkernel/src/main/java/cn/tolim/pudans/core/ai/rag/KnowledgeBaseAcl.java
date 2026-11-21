@@ -16,6 +16,18 @@ public class KnowledgeBaseAcl {
                 && canView(knowledgeBase, userId, roleNames, deptId);
     }
 
+    public boolean canWrite(KnowledgeBase knowledgeBase, String userId, Set<String> roleNames, String deptId) {
+        if (knowledgeBase == null || knowledgeBase.getSpec() == null) {
+            return false;
+        }
+        var spec = knowledgeBase.getSpec();
+        if (spec.getStatus() == KnowledgeBase.BaseStatus.DISABLED) {
+            return false;
+        }
+        return matches(userId, spec.getOwnerUserId())
+                || aclGrants(spec.getAcl(), userId, roleNames, deptId, true);
+    }
+
     // 管理界面需要看到已停用的知识库，以便重新启用。
     public boolean canView(KnowledgeBase knowledgeBase, String userId, Set<String> roleNames, String deptId) {
         if (knowledgeBase == null || knowledgeBase.getSpec() == null) {
@@ -31,11 +43,15 @@ public class KnowledgeBaseAcl {
         if (spec.getVisibility() == KnowledgeBase.Visibility.PRIVATE && matches(userId, spec.getOwnerUserId())) {
             return true;
         }
-        return aclGrantsRead(spec.getAcl(), userId, roleNames, deptId);
+        return aclGrants(spec.getAcl(), userId, roleNames, deptId, false);
     }
 
-    private static boolean aclGrantsRead(
-            List<KnowledgeBase.Acl> acl, String userId, Set<String> roleNames, String deptId) {
+    private static boolean aclGrants(
+            List<KnowledgeBase.Acl> acl,
+            String userId,
+            Set<String> roleNames,
+            String deptId,
+            boolean write) {
         if (acl == null || acl.isEmpty()) {
             return false;
         }
@@ -47,7 +63,10 @@ public class KnowledgeBaseAcl {
                     || entry.getPermission() == null) {
                 continue;
             }
-            // 写权限和管理权限同样包含读取权限
+            // 读权限接受任意 ACL 授权；写权限只接受 WRITE 与 ADMIN。
+            if (write && entry.getPermission() == KnowledgeBase.Permission.READ) {
+                continue;
+            }
             var granted = switch (entry.getSubjectType()) {
                 case USER -> matches(userId, entry.getSubjectId());
                 case ROLE -> roleNames != null && roleNames.contains(entry.getSubjectId());

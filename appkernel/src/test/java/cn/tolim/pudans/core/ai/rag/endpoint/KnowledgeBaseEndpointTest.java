@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.ai.rag.endpoint;
 
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -197,7 +198,7 @@ class KnowledgeBaseEndpointTest {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
         var result = ingestionResult(9);
-        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findWritable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
         when(knowledgeBases.uploadDocument(knowledgeBase, UID, "file-1", "manual.pdf"))
                 .thenReturn(Mono.just(result));
@@ -218,7 +219,7 @@ class KnowledgeBaseEndpointTest {
     void rejectsForbiddenDocumentUpload() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findWritable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
         when(knowledgeBases.uploadDocument(knowledgeBase, UID, "file-1", null))
                 .thenReturn(Mono.error(new ApiException(
@@ -278,7 +279,7 @@ class KnowledgeBaseEndpointTest {
     void deletesDocument() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findWritable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
         when(knowledgeBases.deleteDocument("kb-a", 9)).thenReturn(Mono.empty());
 
@@ -289,6 +290,24 @@ class KnowledgeBaseEndpointTest {
                 .isNoContent();
 
         verify(knowledgeBases).deleteDocument("kb-a", 9);
+    }
+
+    @Test
+    void hidesDocumentDeleteWithoutWriteAccess() {
+        authenticatedUser();
+        when(knowledgeBases.findWritable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+                .thenReturn(Mono.error(new ApiException(
+                        HttpStatus.NOT_FOUND,
+                        KnowledgeBases.CODE_KB_NOT_FOUND,
+                        "知识库不存在或无权访问。")));
+
+        client.delete()
+                .uri("/knowledgebases/kb-a/documents/9")
+                .exchange()
+                .expectStatus()
+                .isNotFound();
+
+        verify(knowledgeBases, never()).deleteDocument("kb-a", 9);
     }
 
     @Test
@@ -306,7 +325,7 @@ class KnowledgeBaseEndpointTest {
     void retriesFailedDocument() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findWritable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
         when(knowledgeBases.retryDocument(knowledgeBase, 9, UID)).thenReturn(Mono.just(document(9)));
 
@@ -326,7 +345,7 @@ class KnowledgeBaseEndpointTest {
     void reindexesKnowledgeBase() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findWritable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
         when(knowledgeBases.reindex(knowledgeBase, UID)).thenReturn(Mono.just(2L));
 

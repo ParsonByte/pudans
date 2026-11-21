@@ -241,7 +241,7 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
         return context().flatMap(context -> request.bodyToMono(DocumentUploadRequest.class)
                 .switchIfEmpty(Mono.error(invalidDocument("请求体不能为空。")))
                 .flatMap(body -> knowledgeBases
-                        .findReadable(name, context.uid(), context.roles(), null)
+                        .findWritable(name, context.uid(), context.roles(), null)
                         .flatMap(knowledgeBase -> knowledgeBases.uploadDocument(
                                 knowledgeBase, context.uid(), body.storageFileId(), body.fileName()))
                         .flatMap(result -> ServerResponse.ok().bodyValue(result))));
@@ -261,7 +261,7 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         var documentId = documentId(request);
         return context().flatMap(context -> knowledgeBases
-                .findReadable(name, context.uid(), context.roles(), null)
+                .findWritable(name, context.uid(), context.roles(), null)
                 .flatMap(knowledgeBase -> knowledgeBases.deleteDocument(
                         KnowledgeBaseCodes.codeOf(knowledgeBase), documentId))
                 .then(ServerResponse.noContent().build()));
@@ -271,7 +271,7 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         var documentId = documentId(request);
         return context().flatMap(context -> knowledgeBases
-                .findReadable(name, context.uid(), context.roles(), null)
+                .findWritable(name, context.uid(), context.roles(), null)
                 .flatMap(knowledgeBase -> knowledgeBases.retryDocument(
                         knowledgeBase, documentId, context.uid()))
                 .flatMap(document -> ServerResponse.ok().bodyValue(document)));
@@ -280,7 +280,7 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> reindex(ServerRequest request) {
         var name = request.pathVariable("name");
         return context().flatMap(context -> knowledgeBases
-                .findReadable(name, context.uid(), context.roles(), null)
+                .findWritable(name, context.uid(), context.roles(), null)
                 .flatMap(knowledgeBase -> knowledgeBases.reindex(knowledgeBase, context.uid()))
                 .flatMap(count -> ServerResponse.accepted().bodyValue(new ReindexResponse(count))));
     }

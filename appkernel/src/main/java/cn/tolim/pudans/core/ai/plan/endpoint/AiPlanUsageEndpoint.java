@@ -5,6 +5,9 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.plan.PlanUsage;
+import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
+import cn.tolim.pudans.infra.exception.ApiException;
+import org.springframework.http.HttpStatus;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.stereotype.Component;
@@ -22,6 +25,8 @@ public class AiPlanUsageEndpoint implements CustomEndpoint {
     private final PlanUsage planUsage;
 
     private final AiEndpointRequests requests;
+
+    private final UsageAccessResolver accessResolver;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -46,8 +51,15 @@ public class AiPlanUsageEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> userUsage(ServerRequest request) {
-        return planUsage
-                .usage(request.pathVariable("uid"))
-                .flatMap(view -> ServerResponse.ok().bodyValue(view));
+        var uid = request.pathVariable("uid");
+        return accessResolver.viewer(request).flatMap(viewer -> {
+            if (!uid.equals(viewer.userId()) && !viewer.admin()) {
+                return Mono.error(new ApiException(
+                        HttpStatus.FORBIDDEN,
+                        "ai-plan-usage-forbidden",
+                        "无权查看其他用户的套餐用量。"));
+            }
+            return planUsage.usage(uid).flatMap(view -> ServerResponse.ok().bodyValue(view));
+        });
     }
 }

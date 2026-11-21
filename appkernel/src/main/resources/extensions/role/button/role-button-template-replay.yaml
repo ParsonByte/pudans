@@ -20,3 +20,7 @@ rules:
       - "auditlogs/archive"
     verbs:
       - "create"
+  - nonResourceURLs:
+      - "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/archive"
+    verbs:
+      - "create"

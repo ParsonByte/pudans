@@ -16,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.extension.api.ExtensionClient;
 import cn.tolim.pudans.extension.api.ListOptions;
@@ -93,7 +95,8 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         var builtin = Boolean.parseBoolean(
                 MetadataUtil.nullSafeLabels(policy).get(BuiltinEntities.BUILTIN_LABEL));
         var referenced = Boolean.TRUE.equals(
-                fileRecords.existsByPolicy(name).blockOptional(LOOKUP_TIMEOUT).orElse(false));
+                        fileRecords.existsByPolicy(name).blockOptional(LOOKUP_TIMEOUT).orElse(false))
+                || referencedByLiveResources(name);
         if (builtin || policy.getSpec().isDefaultPolicy() || referenced) {
             policy.getMetadata().setDeletionTimestamp(null);
             var status = Optional.ofNullable(policy.getStatus()).orElseGet(StoragePolicy.Status::new);
@@ -108,6 +111,19 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         removeFinalizers(policy.getMetadata(), Set.of(FINALIZER));
         client.update(policy);
         log.info("存储策略 [{}] 已删除", name);
+    }
+
+    private boolean referencedByLiveResources(String name) {
+        var sourceOptions = ListOptions.builder()
+                .andQuery(equal("spec.storagePolicy", name))
+                .build();
+        if (!client.listAll(LiveSource.class, sourceOptions, defaultSort()).isEmpty()) {
+            return true;
+        }
+        var recordingOptions = ListOptions.builder()
+                .andQuery(equal("spec.storagePolicy", name))
+                .build();
+        return !client.listAll(LiveRecording.class, recordingOptions, defaultSort()).isEmpty();
     }
 
     private boolean encryptCredentials(StoragePolicy policy) {

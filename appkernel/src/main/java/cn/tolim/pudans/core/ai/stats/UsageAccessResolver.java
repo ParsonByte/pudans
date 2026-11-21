@@ -22,6 +22,8 @@ public class UsageAccessResolver {
 
     public static final String SCOPE_ALL = "all";
 
+    private static final String AI_ADMIN_ROLE = "role-template-ai-admin";
+
     private final AiEndpointRequests requests;
 
     public Mono<Viewer> viewer(ServerRequest request) {
@@ -36,7 +38,9 @@ public class UsageAccessResolver {
     }
 
     public static boolean isAdmin(Set<String> roles) {
-        return roles.contains(BuiltinEntities.SUPER_ROLE) || roles.contains(BuiltinEntities.SYSTEM_ADMIN_ROLE);
+        return roles.contains(BuiltinEntities.SUPER_ROLE)
+                || roles.contains(BuiltinEntities.SYSTEM_ADMIN_ROLE)
+                || roles.contains(AI_ADMIN_ROLE);
     }
 
     private static String scope(ServerRequest request) {

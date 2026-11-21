@@ -187,7 +187,8 @@ public class AuditStore {
     }
 
     private static Criteria criteria(AuditQuery query) {
-        var criteria = nonStaticRequests();
+        // 先放置恒真条件，确保 nonStaticRequests 的 OR 被整体括起后再与筛选条件合并。
+        var criteria = Criteria.where("id").isNotNull().and(nonStaticRequests());
         if (StringUtils.hasText(query.cursor())) {
             criteria = query.ascending()
                     ? criteria.and("id").greaterThan(query.cursor())
@@ -258,38 +259,65 @@ public class AuditStore {
 
     public Mono<Map<LocalDate, Long>> countPerDay(
             Instant since, String uid, String operation, String result) {
-        var criteria = Criteria.where("occurredAt")
-                .greaterThanOrEquals(toOffsetDateTime(since))
-                .and(nonStaticRequests());
+        var sql = new StringBuilder("""
+                        SELECT day, SUM(total) AS total FROM (
+                            SELECT (occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                                   COUNT(*) AS total
+                            FROM audit_record
+                            WHERE occurred_at >= :since
+                              AND (request_path IS NULL
+                                   OR (request_path NOT LIKE '/assets/%'
+                                       AND request_path NOT LIKE '/brand/%'
+                                       AND request_path NOT LIKE '/webjars/%'
+                                       AND request_path <> '/favicon.ico'))
+                        """);
+        var archiveSql = new StringBuilder("""
+                            UNION ALL
+                            SELECT (occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                                   COUNT(*) AS total
+                            FROM audit_record_archive
+                            WHERE occurred_at >= :since
+                              AND (request_path IS NULL
+                                   OR (request_path NOT LIKE '/assets/%'
+                                       AND request_path NOT LIKE '/brand/%'
+                                       AND request_path NOT LIKE '/webjars/%'
+                                       AND request_path <> '/favicon.ico'))
+                        """);
         if (StringUtils.hasText(uid)) {
-            criteria = criteria.and("uid").is(uid);
+            var condition = " AND uid = :uid";
+            sql.append(condition);
+            archiveSql.append(condition);
         }
         if (StringUtils.hasText(operation)) {
-            criteria = criteria.and("operation").is(operation);
+            var condition = " AND operation = :operation";
+            sql.append(condition);
+            archiveSql.append(condition);
         }
         if (StringUtils.hasText(result)) {
-            criteria = criteria.and("result").is(result);
+            var condition = " AND result = :result";
+            sql.append(condition);
+            archiveSql.append(condition);
         }
-        var pageable = PageRequest.of(0, MAX_GRAPH_SIZE, Sort.by(Sort.Direction.ASC, "id"));
-        var query = Query.query(criteria);
-        var active = entityOperations
-                .select(AuditRecordEntity.class)
-                .matching(query.with(pageable))
+        sql.append(" GROUP BY 1");
+        archiveSql.append(" GROUP BY 1");
+        sql.append(archiveSql).append(") grouped GROUP BY day ORDER BY day");
+        var spec = databaseClient.sql(sql.toString()).bind("since", toOffsetDateTime(since));
+        if (StringUtils.hasText(uid)) {
+            spec = spec.bind("uid", uid);
+        }
+        if (StringUtils.hasText(operation)) {
+            spec = spec.bind("operation", operation);
+        }
+        if (StringUtils.hasText(result)) {
+            spec = spec.bind("result", result);
+        }
+        return spec.map((row, metadata) -> {
+                    var day = Objects.requireNonNull(row.get("day", LocalDate.class));
+                    var total = row.get("total", Number.class);
+                    return Map.entry(day, total == null ? 0L : total.longValue());
+                })
                 .all()
-                .map(entity -> entity.toRecord(false));
-        var archived = entityOperations
-                .select(AuditArchiveEntity.class)
-                .matching(query.with(pageable))
-                .all()
-                .map(AuditArchiveEntity::toRecord);
-        return Flux.merge(active, archived)
-                .map(record -> record.getTimestamp() == null
-                        ? null
-                        : PudansTime.dateOf(record.getTimestamp()))
-                .filter(Objects::nonNull)
-                .collectList()
-                .map(days -> days.stream()
-                        .collect(Collectors.groupingBy(Function.identity(), Collectors.counting())));
+                .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 
     public Flux<AuditRecord> findRecent(int limit) {
