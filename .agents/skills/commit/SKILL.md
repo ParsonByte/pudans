@@ -34,7 +34,7 @@ Turn a set of changes into one or more commits whose messages are single-line Co
 6. Stage only the intended paths; never stage build output, `.env`, local config or lockfile noise that does not belong to the change.
 7. Commit with a single `-m`:
    ```bash
-   git commit -m "refactor: web consolidate packages and centralize api access"
+   git commit -m "refactor: consolidate api access in the backend"
    ```
 8. Verify the message is exactly one line:
    ```bash

@@ -1,5 +1,5 @@
 name: Setup Environment
-description: Setup environment to check and build Pudans.
+description: Setup the Java environment to check and build the Pudans backend.
 
 inputs:
   java-version:

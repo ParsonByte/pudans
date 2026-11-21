@@ -20,7 +20,7 @@ The existing `.agents/rules/development.md` and `.agents/skills/development/SKIL
 
 ## Reuse first and no redundancy (hard)
 
-- Before creating any class, function, component, configuration key or data-access method, search the whole repository by responsibility, naming, package path and callers. Use `.agents/skills/reuse-check/SKILL.md`.
+- Before creating any class, function, configuration key or data-access method, search the whole repository by responsibility, naming, package path and callers. Use `.agents/skills/reuse-check/SKILL.md`.
 - Reuse or extend an existing implementation when it fits. A parallel implementation of the same capability is forbidden.
 - Do not leave unused classes, methods, fields, constants, configuration keys, imports, branches, commented-out code, temporary files or duplicate implementations.
 - Change only files required by the task; do not refactor, rename or reformat unrelated code.
@@ -28,7 +28,7 @@ The existing `.agents/rules/development.md` and `.agents/skills/development/SKIL
 
 ## No mock data (hard)
 
-- Do not add mock, fake, demo, seeded or stubbed data anywhere in the repository, including UI fixtures, preview data and API responses. Build against real APIs and real configuration.
+- Do not add mock, fake, demo, seeded or stubbed data anywhere in the repository, including test fixtures and API responses. Build against real APIs and real configuration.
 - Backend tests may use Mockito mocks for collaborators, but they must not introduce fake product data.
 
 ## Remote operations (hard)
