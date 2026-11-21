@@ -1,4 +1,4 @@
-package cn.tolim.pudans.core.dashboard.endpoint;
+package cn.tolim.pudans.infra.dashboard.endpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
