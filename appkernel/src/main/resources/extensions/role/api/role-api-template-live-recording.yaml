@@ -1,0 +1,46 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-live-recordings
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Live"
+    rbac.authorization.pudans.tolim.cn/display-name: "Live Recording View"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "liverecordings"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-live-recordings
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-live-recordings" ]
+    rbac.authorization.pudans.tolim.cn/module: "Live"
+    rbac.authorization.pudans.tolim.cn/display-name: "Live Recording Manage"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "liverecordings/stop"
+      - "liverecordings/download-url"
+      - "liverecordings/retry"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "liverecordings"
+    resourceNames:
+      - "batch"
+    verbs:
+      - "delete"
