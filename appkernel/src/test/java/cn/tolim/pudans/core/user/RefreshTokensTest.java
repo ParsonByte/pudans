@@ -80,6 +80,7 @@ class RefreshTokensTest {
         when(groups.getRoleNamesByUsername("alice")).thenReturn(Flux.just("normal-role"));
         when(personalTokens.create(any(PersonalAccessToken.class), eq("alice"))).thenReturn(Mono.just(pat));
         when(personalTokens.generateToken(pat)).thenReturn(Mono.just("access-token"));
+        when(personalTokens.deleteExpired("alice")).thenReturn(Mono.just(0L));
         when(valueOperations.set(anyString(), eq("alice"), any(Duration.class)))
                 .thenReturn(Mono.just(true));
 
@@ -91,6 +92,8 @@ class RefreshTokensTest {
                     assertThat(result.refreshTokenTtlSeconds()).isEqualTo(3600);
                 })
                 .verifyComplete();
+
+        verify(personalTokens).deleteExpired("alice");
     }
 
     @Test
@@ -114,6 +117,7 @@ class RefreshTokensTest {
         when(groups.getRoleNamesByUsername("alice")).thenReturn(Flux.just("normal-role"));
         when(personalTokens.create(any(PersonalAccessToken.class), eq("alice"))).thenReturn(Mono.just(pat));
         when(personalTokens.generateToken(pat)).thenReturn(Mono.just("access-token"));
+        when(personalTokens.deleteExpired("alice")).thenReturn(Mono.just(0L));
         when(valueOperations.set(anyString(), eq("alice"), any(Duration.class)))
                 .thenReturn(Mono.just(true));
 

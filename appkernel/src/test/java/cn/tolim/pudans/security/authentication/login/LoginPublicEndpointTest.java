@@ -14,6 +14,7 @@ import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import cn.tolim.pudans.infra.setting.ParameterSettingSecretCipher;
 import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.authentication.AuthProviders;
+import cn.tolim.pudans.security.captcha.Captchas;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,9 @@ class LoginPublicEndpointTest {
 
     @Mock
     UiPermissions uiPermissions;
+
+    @Mock
+    Captchas captchas;
 
     @Mock
     ParameterSettingFetcher parameterSettingFetcher;
@@ -64,6 +68,7 @@ class LoginPublicEndpointTest {
                 accounts,
                 authProviders,
                 securitySettings,
+                captchas,
                 initializationStateGetter,
                 uiPermissions);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();

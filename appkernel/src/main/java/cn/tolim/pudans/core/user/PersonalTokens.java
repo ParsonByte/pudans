@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.user;
 
 import cn.tolim.pudans.security.api.PersonalAccessToken;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 
@@ -26,4 +27,10 @@ public interface PersonalTokens {
 
 
     Mono<String> generateToken(PersonalAccessToken pat);
+
+
+    Flux<PersonalAccessToken> list(String username);
+
+
+    Mono<Long> deleteExpired(String username);
 }

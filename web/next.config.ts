@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
       { source: "/sudo", destination: `${apiOrigin}/sudo` },
       { source: "/sudo/:path*", destination: `${apiOrigin}/sudo/:path*` },
       { source: "/login", destination: `${apiOrigin}/login` },
+      { source: "/challenges/:path*", destination: `${apiOrigin}/challenges/:path*` },
       { source: "/logout", destination: `${apiOrigin}/logout` },
     ];
   },

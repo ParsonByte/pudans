@@ -46,6 +46,10 @@ public class AvatarStorage {
 
     private static final long DEFAULT_AVATAR_MAX_SIZE = 2L * 1024 * 1024;
 
+    private static final int MAX_SOURCE_DIMENSION = 8192;
+
+    private static final long MAX_SOURCE_PIXELS = 16L * 1024 * 1024;
+
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of("png", "jpg", "jpeg", "webp");
 
     private final ParameterGroups parameterGroups;
@@ -60,7 +64,8 @@ public class AvatarStorage {
             var maxSize = maxSize(session);
             var dimension = dimension(session);
             return readBytes(file, maxSize)
-                    .map(bytes -> resize(bytes, dimension))
+                    .flatMap(bytes -> Mono.fromCallable(() -> resize(bytes, dimension))
+                            .subscribeOn(Schedulers.boundedElastic()))
                     .flatMap(bytes -> writeAvatar(user, session, bytes));
         });
     }
@@ -154,6 +159,7 @@ public class AvatarStorage {
     }
 
     private byte[] resize(byte[] sourceBytes, int dimension) {
+        validateSourceDimensions(sourceBytes);
         try {
             var source = ImageIO.read(new ByteArrayInputStream(sourceBytes));
             if (source == null) {
@@ -178,6 +184,45 @@ public class AvatarStorage {
                             HttpStatus.INTERNAL_SERVER_ERROR, "avatar-encode-failed", "PNG 编码不可用。");
                 }
                 return output.toByteArray();
+            }
+        } catch (IOException e) {
+            throw new ApiException(
+                    HttpStatus.BAD_REQUEST, "avatar-invalid-image", "无法读取头像。", e);
+        }
+    }
+
+    private static void validateSourceDimensions(byte[] sourceBytes) {
+        try (var input = ImageIO.createImageInputStream(new ByteArrayInputStream(sourceBytes))) {
+            if (input == null) {
+                throw new ApiException(
+                        HttpStatus.BAD_REQUEST, "avatar-invalid-image", "头像不是可读取的图片。");
+            }
+            var readers = ImageIO.getImageReaders(input);
+            if (!readers.hasNext()) {
+                throw new ApiException(
+                        HttpStatus.BAD_REQUEST, "avatar-invalid-image", "头像不是可读取的图片。");
+            }
+            var reader = readers.next();
+            try {
+                reader.setInput(input, true, true);
+                var width = reader.getWidth(0);
+                var height = reader.getHeight(0);
+                if (width <= 0
+                        || height <= 0
+                        || width > MAX_SOURCE_DIMENSION
+                        || height > MAX_SOURCE_DIMENSION
+                        || (long) width * height > MAX_SOURCE_PIXELS) {
+                    throw new ApiException(
+                            HttpStatus.BAD_REQUEST,
+                            "avatar-dimension-too-large",
+                            "头像尺寸过大，请使用不超过 "
+                                    + MAX_SOURCE_DIMENSION
+                                    + " 像素且总像素不超过 "
+                                    + MAX_SOURCE_PIXELS
+                                    + " 的图片。");
+                }
+            } finally {
+                reader.dispose();
             }
         } catch (IOException e) {
             throw new ApiException(

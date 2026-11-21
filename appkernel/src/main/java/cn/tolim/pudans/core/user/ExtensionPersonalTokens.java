@@ -3,6 +3,10 @@ package cn.tolim.pudans.core.user;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import cn.tolim.pudans.core.rbac.Roles;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+
+import cn.tolim.pudans.extension.api.ListOptions;
 import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.api.utils.JsonUtils;
@@ -32,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.AlternativeJdkIdGenerator;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.IdGenerator;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -203,6 +208,25 @@ class ExtensionPersonalTokens implements PersonalTokens {
         return client.fetch(PersonalAccessToken.class, patName)
                 .filter(pat -> Objects.equals(pat.getSpec().getUsername(), username))
                 .switchIfEmpty(Mono.error(() -> new NotFoundException("个人访问令牌不存在或已删除。")));
+    }
+
+    @Override
+    public Flux<PersonalAccessToken> list(String username) {
+        var options = ListOptions.builder()
+                .andQuery(equal("spec.username", username))
+                .build();
+        return client.listAll(PersonalAccessToken.class, options, defaultSort());
+    }
+
+    @Override
+    public Mono<Long> deleteExpired(String username) {
+        var now = clock.instant();
+        return list(username)
+                .filter(pat -> pat.getSpec() != null
+                        && pat.getSpec().getExpiresAt() != null
+                        && pat.getSpec().getExpiresAt().isBefore(now))
+                .flatMap(client::delete)
+                .count();
     }
 
     @Override

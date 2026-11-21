@@ -16,6 +16,7 @@ import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Service
 @RequiredArgsConstructor
@@ -38,27 +39,29 @@ public class LocalAccounts {
             String rawPassword,
             String avatar,
             String userGroup) {
-        return Mono.defer(() -> {
-                    var user = new User();
-                    var metadata = new Metadata();
-                    metadata.setName(username);
-                    user.setMetadata(metadata);
-                    var spec = new User.UserSpec();
-                    spec.setUid(AuditIdGenerator.next());
-                    spec.setDisplayName(StringUtils.hasText(displayName)
-                            ? displayName.trim()
-                            : username);
-                    spec.setEmail(StringUtils.hasText(email)
-                            ? email.trim().toLowerCase(Locale.ROOT)
-                            : null);
-                    spec.setAvatar(avatar);
-                    spec.setRegisteredAt(Instant.now());
-                    spec.setPassword(accounts.encryptPassword(rawPassword));
-                    spec.setEmailVerified(true);
-                    spec.setDisabled(false);
-                    user.setSpec(spec);
-                    return accounts.createUser(user);
-                })
+        return Mono.defer(() -> Mono.fromCallable(() -> accounts.encryptPassword(rawPassword))
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .flatMap(encodedPassword -> {
+                            var user = new User();
+                            var metadata = new Metadata();
+                            metadata.setName(username);
+                            user.setMetadata(metadata);
+                            var spec = new User.UserSpec();
+                            spec.setUid(AuditIdGenerator.next());
+                            spec.setDisplayName(StringUtils.hasText(displayName)
+                                    ? displayName.trim()
+                                    : username);
+                            spec.setEmail(StringUtils.hasText(email)
+                                    ? email.trim().toLowerCase(Locale.ROOT)
+                                    : null);
+                            spec.setAvatar(avatar);
+                            spec.setRegisteredAt(Instant.now());
+                            spec.setPassword(encodedPassword);
+                            spec.setEmailVerified(true);
+                            spec.setDisabled(false);
+                            user.setSpec(spec);
+                            return accounts.createUser(user);
+                        }))
                 .flatMap(user -> resolveGroup(userGroup)
                         .flatMap(group -> groups.assignUserGroup(username, group))
                         .thenReturn(user))
