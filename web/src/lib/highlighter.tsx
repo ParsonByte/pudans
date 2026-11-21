@@ -104,10 +104,3 @@ export async function loadHighlighter(language: string) {
     },
   };
 }
-
-// 每行返回一个 React 节点，未登记的语言返回 null。
-export async function highlightCode(code: string, language: string) {
-  const highlighter = await loadHighlighter(language);
-
-  return highlighter ? highlighter.highlight(code).lines : null;
-}
