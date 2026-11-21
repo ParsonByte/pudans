@@ -6,7 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.security.api.authentication.oauth2.PudansOAuth2AuthenticationToken;
+import cn.tolim.pudans.security.contract.authentication.oauth2.PudansOAuth2AuthenticationToken;
 import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.security.authentication.PudansUserDetails;
 import cn.tolim.pudans.security.authentication.login.PudansUser;

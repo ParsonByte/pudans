@@ -1,7 +1,7 @@
 package cn.tolim.pudans.extension.index;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.index.ValueIndexSpec;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.index.ValueIndexSpec;
 import java.io.Closeable;
 import java.util.List;
 

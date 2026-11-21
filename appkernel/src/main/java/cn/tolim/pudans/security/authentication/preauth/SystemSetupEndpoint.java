@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.preauth;
 
-import static cn.tolim.pudans.infra.api.ValidationUtils.validate;
+import static cn.tolim.pudans.infra.contract.ValidationUtils.validate;
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
@@ -10,13 +10,13 @@ import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
 import static org.springframework.web.reactive.function.server.RequestPredicates.contentType;
 
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.Unstructured;
-import cn.tolim.pudans.infra.api.ParameterSetting;
-import cn.tolim.pudans.infra.api.ValidationUtils;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.Unstructured;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ValidationUtils;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
 import cn.tolim.pudans.infra.exception.ProblemDetailFactory;
 import cn.tolim.pudans.infra.exception.RequestBodyValidationException;

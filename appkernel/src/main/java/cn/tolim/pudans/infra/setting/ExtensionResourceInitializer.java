@@ -15,10 +15,10 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.rbac.Role;
-import cn.tolim.pudans.extension.api.ExtensionUtil;
-import cn.tolim.pudans.extension.api.InternalReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.Unstructured;
+import cn.tolim.pudans.extension.contract.ExtensionUtil;
+import cn.tolim.pudans.extension.contract.InternalReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.Unstructured;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
 

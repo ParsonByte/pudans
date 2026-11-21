@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.jackson;
 
-import cn.tolim.pudans.security.api.authentication.oauth2.PudansOAuth2AuthenticationToken;
+import cn.tolim.pudans.security.contract.authentication.oauth2.PudansOAuth2AuthenticationToken;
 import cn.tolim.pudans.security.authentication.PudansUserDetails;
 import cn.tolim.pudans.security.authentication.login.PudansUser;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;

@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.utils.PudansTime;

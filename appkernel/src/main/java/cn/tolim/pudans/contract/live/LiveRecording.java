@@ -1,7 +1,7 @@
 package cn.tolim.pudans.contract.live;
 
-import cn.tolim.pudans.extension.api.AbstractExtension;
-import cn.tolim.pudans.extension.api.GVK;
+import cn.tolim.pudans.extension.contract.AbstractExtension;
+import cn.tolim.pudans.extension.contract.GVK;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;

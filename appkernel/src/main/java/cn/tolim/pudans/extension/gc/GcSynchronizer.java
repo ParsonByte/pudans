@@ -1,17 +1,17 @@
 package cn.tolim.pudans.extension.gc;
 
-import static cn.tolim.pudans.extension.api.index.query.Queries.isNull;
-import static cn.tolim.pudans.extension.api.index.query.Queries.not;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.isNull;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.not;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.Scheme;
-import cn.tolim.pudans.extension.api.SchemeManager;
-import cn.tolim.pudans.extension.api.Watcher;
-import cn.tolim.pudans.extension.api.controller.RequestQueue;
-import cn.tolim.pudans.extension.api.controller.Synchronizer;
-import cn.tolim.pudans.extension.api.router.selector.FieldSelector;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.Scheme;
+import cn.tolim.pudans.extension.contract.SchemeManager;
+import cn.tolim.pudans.extension.contract.Watcher;
+import cn.tolim.pudans.extension.contract.controller.RequestQueue;
+import cn.tolim.pudans.extension.contract.controller.Synchronizer;
+import cn.tolim.pudans.extension.contract.router.selector.FieldSelector;
 import cn.tolim.pudans.extension.event.SchemeAddedEvent;
 import java.util.List;
 import org.springframework.context.ApplicationListener;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.feishu;
 
-import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.security.authentication.ExternalLogins;
 import cn.tolim.pudans.security.authentication.LoginRejectedException;
 import cn.tolim.pudans.core.audit.AuditLog;

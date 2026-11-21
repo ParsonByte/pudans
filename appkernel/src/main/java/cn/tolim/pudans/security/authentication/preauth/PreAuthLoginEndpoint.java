@@ -3,7 +3,7 @@ package cn.tolim.pudans.security.authentication.preauth;
 import static cn.tolim.pudans.security.authentication.SecurityConstant.REMEMBER_ME_PARAMETER_NAME;
 import static org.springframework.web.reactive.function.server.RequestPredicates.path;
 
-import cn.tolim.pudans.security.api.AuthProvider;
+import cn.tolim.pudans.security.contract.AuthProvider;
 import cn.tolim.pudans.infra.utils.PudansUtils;
 import cn.tolim.pudans.security.authentication.AuthProviders;
 import cn.tolim.pudans.security.authentication.LoginParameterRequestCache;

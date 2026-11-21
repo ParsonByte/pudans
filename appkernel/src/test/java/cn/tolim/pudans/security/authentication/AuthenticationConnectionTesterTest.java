@@ -3,7 +3,7 @@ package cn.tolim.pudans.security.authentication;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.setting.ParameterSettingSensitiveFields;
 import cn.tolim.pudans.infra.setting.SecurityParameters;

@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.rbac;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.isDeleted;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.extension.api.index.query.Queries.in;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.isDeleted;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.in;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -16,12 +16,12 @@ import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.contract.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.InternalReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.MetadataUtil;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.InternalReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.MetadataUtil;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
 
 @Component

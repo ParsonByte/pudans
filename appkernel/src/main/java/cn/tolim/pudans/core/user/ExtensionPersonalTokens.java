@@ -3,14 +3,14 @@ package cn.tolim.pudans.core.user;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import cn.tolim.pudans.core.rbac.Roles;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
-import cn.tolim.pudans.security.api.PersonalAccessToken;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
+import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.user.PersonalTokens;
 import cn.tolim.pudans.infra.exception.NotFoundException;

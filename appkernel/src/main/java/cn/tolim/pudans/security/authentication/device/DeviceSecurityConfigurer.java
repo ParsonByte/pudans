@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.device;
 
-import cn.tolim.pudans.security.api.device.DeviceSessions;
+import cn.tolim.pudans.security.contract.device.DeviceSessions;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;

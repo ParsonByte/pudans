@@ -1,7 +1,7 @@
 package cn.tolim.pudans.infra.setting;
 
-import cn.tolim.pudans.infra.api.ExternalUrlSupplier;
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ExternalUrlSupplier;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.utils.ExternalUrlUtils;
 import java.net.MalformedURLException;

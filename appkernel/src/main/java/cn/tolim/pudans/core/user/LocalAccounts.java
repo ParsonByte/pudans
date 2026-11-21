@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.user;
 
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.group.Groups;

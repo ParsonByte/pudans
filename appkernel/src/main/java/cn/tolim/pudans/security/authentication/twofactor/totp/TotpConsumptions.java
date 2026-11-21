@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.authentication.twofactor.totp;
 
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.security.authentication.exception.TwoFactorAuthException;
 import java.time.Clock;
 import lombok.RequiredArgsConstructor;

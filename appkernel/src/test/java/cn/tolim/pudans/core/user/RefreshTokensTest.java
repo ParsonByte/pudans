@@ -9,8 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
-import cn.tolim.pudans.security.api.PersonalAccessToken;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
+import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.setting.ParameterGroups;

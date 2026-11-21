@@ -1,15 +1,15 @@
 package cn.tolim.pudans.security.authentication;
 
-import cn.tolim.pudans.security.api.AuthProvider;
+import cn.tolim.pudans.security.contract.AuthProvider;
 import cn.tolim.pudans.contract.user.UserConnection;
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.ExtensionUtil;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.MetadataUtil;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.index.query.Queries;
-import cn.tolim.pudans.infra.api.ParameterSetting;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.ExtensionUtil;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.MetadataUtil;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.index.query.Queries;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import java.time.Duration;

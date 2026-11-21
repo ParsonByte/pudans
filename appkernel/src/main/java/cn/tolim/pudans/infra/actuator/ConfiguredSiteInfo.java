@@ -1,7 +1,7 @@
 package cn.tolim.pudans.infra.actuator;
 
-import cn.tolim.pudans.infra.api.ExternalUrlSupplier;
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ExternalUrlSupplier;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import cn.tolim.pudans.infra.utils.PudansTime;
 import java.util.ArrayList;

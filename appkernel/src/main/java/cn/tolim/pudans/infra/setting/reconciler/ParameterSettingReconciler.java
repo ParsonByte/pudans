@@ -1,18 +1,18 @@
 package cn.tolim.pudans.infra.setting.reconciler;
 
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 import static cn.tolim.pudans.infra.utils.ParameterSettingUtils.mergeMap;
 import static java.util.Objects.requireNonNullElse;
 
-import cn.tolim.pudans.extension.api.ConfigMap;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.ExtensionMatcher;
-import cn.tolim.pudans.extension.api.ExtensionUtil;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.controller.Controller;
-import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
-import cn.tolim.pudans.extension.api.controller.Reconciler;
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.extension.contract.ConfigMap;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.ExtensionMatcher;
+import cn.tolim.pudans.extension.contract.ExtensionUtil;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.controller.Controller;
+import cn.tolim.pudans.extension.contract.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.contract.controller.Reconciler;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.setting.ParameterSettingChangedEvent;
 import cn.tolim.pudans.infra.utils.ParameterSettingUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;

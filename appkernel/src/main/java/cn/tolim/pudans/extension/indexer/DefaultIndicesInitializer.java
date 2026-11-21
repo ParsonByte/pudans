@@ -1,7 +1,7 @@
 package cn.tolim.pudans.extension.indexer;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.Scheme;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.Scheme;
 import cn.tolim.pudans.extension.ExtensionConverter;
 import cn.tolim.pudans.extension.ExtensionStoreUtil;
 import cn.tolim.pudans.extension.event.SchemeAddedEvent;

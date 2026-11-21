@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
-import cn.tolim.pudans.extension.api.ListResult;
+import cn.tolim.pudans.extension.contract.ListResult;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadPartUrl;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadedPart;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;

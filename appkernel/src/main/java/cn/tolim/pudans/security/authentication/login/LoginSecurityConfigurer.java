@@ -27,7 +27,7 @@ import cn.tolim.pudans.security.authentication.PudansUserDetailsContract;
 import cn.tolim.pudans.security.authentication.LoginFlowHandler;
 import cn.tolim.pudans.security.authentication.LoginParameterRequestCache;
 import cn.tolim.pudans.security.authentication.SecurityConstant;
-import cn.tolim.pudans.security.api.authentication.LoginCipher;
+import cn.tolim.pudans.security.contract.authentication.LoginCipher;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.authentication.LoginFailureHandler;

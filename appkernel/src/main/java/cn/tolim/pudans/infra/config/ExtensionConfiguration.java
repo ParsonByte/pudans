@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.config;
 
-import cn.tolim.pudans.extension.api.ExtensionClient;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
 import cn.tolim.pudans.extension.controller.DefaultControllerManager;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;

@@ -9,8 +9,8 @@ import static org.springframework.http.HttpStatus.FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import cn.tolim.pudans.contract.user.UserConnection;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.user.FeishuAccounts;
 import cn.tolim.pudans.infra.feishu.FeishuClient;

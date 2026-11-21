@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.setting;
 
-import cn.tolim.pudans.infra.api.SystemVersionSupplier;
+import cn.tolim.pudans.infra.contract.SystemVersionSupplier;
 import com.github.zafarkhaja.semver.Version;
 import java.util.Objects;
 import org.springframework.beans.factory.ObjectProvider;

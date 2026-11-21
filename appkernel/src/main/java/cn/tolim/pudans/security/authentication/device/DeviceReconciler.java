@@ -1,9 +1,9 @@
 package cn.tolim.pudans.security.authentication.device;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.addFinalizers;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.isDeleted;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.removeFinalizers;
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.addFinalizers;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.isDeleted;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.removeFinalizers;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -11,14 +11,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.session.ReactiveSessionRepository;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.security.api.Device;
-import cn.tolim.pudans.extension.api.InternalReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.controller.Controller;
-import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
-import cn.tolim.pudans.extension.api.controller.ReactiveReconciler;
-import cn.tolim.pudans.extension.api.controller.Reconciler;
-import cn.tolim.pudans.extension.api.router.selector.FieldSelector;
+import cn.tolim.pudans.security.contract.Device;
+import cn.tolim.pudans.extension.contract.InternalReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.controller.Controller;
+import cn.tolim.pudans.extension.contract.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.contract.controller.ReactiveReconciler;
+import cn.tolim.pudans.extension.contract.controller.Reconciler;
+import cn.tolim.pudans.extension.contract.router.selector.FieldSelector;
 
 @Component
 @RequiredArgsConstructor

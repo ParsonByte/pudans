@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.audit.AuditRecord;
-import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import java.time.Instant;

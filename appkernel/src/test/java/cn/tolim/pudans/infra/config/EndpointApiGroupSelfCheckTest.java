@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.GroupVersion;
-import cn.tolim.pudans.extension.api.SchemeManager;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.GroupVersion;
+import cn.tolim.pudans.extension.contract.SchemeManager;
 import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;

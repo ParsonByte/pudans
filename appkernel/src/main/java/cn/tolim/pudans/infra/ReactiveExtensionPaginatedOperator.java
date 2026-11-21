@@ -1,7 +1,7 @@
 package cn.tolim.pudans.infra;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.ListOptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

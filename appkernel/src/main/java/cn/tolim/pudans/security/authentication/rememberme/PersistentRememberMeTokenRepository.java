@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.rememberme;
 
-import cn.tolim.pudans.security.api.RememberMeToken;
+import cn.tolim.pudans.security.contract.RememberMeToken;
 import reactor.core.publisher.Mono;
 
 public interface PersistentRememberMeTokenRepository {

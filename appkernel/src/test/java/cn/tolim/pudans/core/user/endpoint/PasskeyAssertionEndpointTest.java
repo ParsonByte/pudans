@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.user.endpoint;
 
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.properties.PasskeyProperties;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 import cn.tolim.pudans.infra.webauthn.Passkeys;

@@ -3,10 +3,10 @@ package cn.tolim.pudans.security.authentication.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.security.api.AuthProvider;
-import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
-import cn.tolim.pudans.extension.api.ApiGroups;
-import cn.tolim.pudans.extension.api.GroupVersion;
+import cn.tolim.pudans.security.contract.AuthProvider;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.contract.ApiGroups;
+import cn.tolim.pudans.extension.contract.GroupVersion;
 import cn.tolim.pudans.security.authentication.AuthProviders;
 import cn.tolim.pudans.security.authentication.ListedAuthProvider;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;

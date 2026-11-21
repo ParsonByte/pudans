@@ -1,9 +1,9 @@
 package cn.tolim.pudans.extension.index;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.ListResult;
-import cn.tolim.pudans.extension.api.PageRequest;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.ListResult;
+import cn.tolim.pudans.extension.contract.PageRequest;
 import cn.tolim.pudans.extension.index.query.QueryVisitor;
 import java.util.ArrayList;
 import java.util.Collection;

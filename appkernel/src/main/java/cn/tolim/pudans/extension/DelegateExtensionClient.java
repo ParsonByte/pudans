@@ -7,16 +7,16 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
-import cn.tolim.pudans.extension.api.index.IndexedQueryEngine;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.InternalReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.ListResult;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.PageRequest;
-import cn.tolim.pudans.extension.api.GroupVersionKind;
-import cn.tolim.pudans.extension.api.Unstructured;
-import cn.tolim.pudans.extension.api.Watcher;
+import cn.tolim.pudans.extension.contract.index.IndexedQueryEngine;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.InternalReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.ListResult;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.PageRequest;
+import cn.tolim.pudans.extension.contract.GroupVersionKind;
+import cn.tolim.pudans.extension.contract.Unstructured;
+import cn.tolim.pudans.extension.contract.Watcher;
 
 @Component
 public class DelegateExtensionClient implements ExtensionClient {

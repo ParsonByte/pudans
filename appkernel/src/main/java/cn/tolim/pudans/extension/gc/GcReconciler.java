@@ -1,14 +1,14 @@
 package cn.tolim.pudans.extension.gc;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.SchemeManager;
-import cn.tolim.pudans.extension.api.controller.Controller;
-import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
-import cn.tolim.pudans.extension.api.controller.DefaultController;
-import cn.tolim.pudans.extension.api.controller.DefaultQueue;
-import cn.tolim.pudans.extension.api.controller.Reconciler;
-import cn.tolim.pudans.extension.api.controller.RequestQueue;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.SchemeManager;
+import cn.tolim.pudans.extension.contract.controller.Controller;
+import cn.tolim.pudans.extension.contract.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.contract.controller.DefaultController;
+import cn.tolim.pudans.extension.contract.controller.DefaultQueue;
+import cn.tolim.pudans.extension.contract.controller.Reconciler;
+import cn.tolim.pudans.extension.contract.controller.RequestQueue;
 import cn.tolim.pudans.extension.ExtensionConverter;
 import cn.tolim.pudans.extension.event.SchemeAddedEvent;
 import cn.tolim.pudans.extension.index.IndexEngine;

@@ -1,8 +1,8 @@
 package cn.tolim.pudans.extension.router;
 
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.JsonExtension;
-import cn.tolim.pudans.extension.api.Scheme;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.JsonExtension;
+import cn.tolim.pudans.extension.contract.Scheme;
 import java.util.Objects;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebInputException;

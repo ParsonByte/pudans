@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.security.api.authentication.LoginCipher;
+import cn.tolim.pudans.security.contract.authentication.LoginCipher;
 import cn.tolim.pudans.core.risk.RiskGuard;
 import cn.tolim.pudans.core.risk.RiskDecision;
 import cn.tolim.pudans.infra.setting.SecurityParameters;

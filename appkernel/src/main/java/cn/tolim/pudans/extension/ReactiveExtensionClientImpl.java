@@ -27,20 +27,20 @@ import reactor.util.retry.Retry;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.extension.index.IndexEngine;
-import cn.tolim.pudans.extension.api.index.IndexedQueryEngine;
+import cn.tolim.pudans.extension.contract.index.IndexedQueryEngine;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.infra.r2dbc.store.ReactiveExtensionStoreClient;
-import cn.tolim.pudans.extension.api.InternalReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.SchemeManager;
-import cn.tolim.pudans.extension.api.Extension;
-import cn.tolim.pudans.extension.api.ListResult;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.PageRequest;
-import cn.tolim.pudans.extension.api.GroupVersionKind;
-import cn.tolim.pudans.extension.api.ReservedLabels;
-import cn.tolim.pudans.extension.api.Unstructured;
-import cn.tolim.pudans.extension.api.JsonExtension;
-import cn.tolim.pudans.extension.api.Watcher;
+import cn.tolim.pudans.extension.contract.InternalReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.SchemeManager;
+import cn.tolim.pudans.extension.contract.Extension;
+import cn.tolim.pudans.extension.contract.ListResult;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.PageRequest;
+import cn.tolim.pudans.extension.contract.GroupVersionKind;
+import cn.tolim.pudans.extension.contract.ReservedLabels;
+import cn.tolim.pudans.extension.contract.Unstructured;
+import cn.tolim.pudans.extension.contract.JsonExtension;
+import cn.tolim.pudans.extension.contract.Watcher;
 
 @Slf4j
 @Component

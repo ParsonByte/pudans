@@ -1,7 +1,7 @@
 package cn.tolim.pudans.infra.config;
 
-import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
-import cn.tolim.pudans.extension.api.GroupVersion;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.contract.GroupVersion;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;

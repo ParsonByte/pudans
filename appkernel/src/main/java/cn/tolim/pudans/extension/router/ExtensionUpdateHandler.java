@@ -2,9 +2,9 @@ package cn.tolim.pudans.extension.router;
 
 import static cn.tolim.pudans.extension.router.ExtensionRouterFunctionFactory.PathPatternGenerator.buildExtensionPathPattern;
 
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.Scheme;
-import cn.tolim.pudans.extension.api.Unstructured;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.Scheme;
+import cn.tolim.pudans.extension.contract.Unstructured;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.extension.router.ExtensionRouterFunctionFactory.UpdateHandler;
 import org.springframework.http.MediaType;

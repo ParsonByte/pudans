@@ -15,7 +15,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.rbac.TempGrants;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;

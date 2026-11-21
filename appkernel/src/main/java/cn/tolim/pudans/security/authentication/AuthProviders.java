@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication;
 
-import cn.tolim.pudans.security.api.AuthProvider;
+import cn.tolim.pudans.security.contract.AuthProvider;
 import java.util.List;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

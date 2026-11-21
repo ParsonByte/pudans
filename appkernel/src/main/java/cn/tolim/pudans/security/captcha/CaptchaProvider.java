@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.captcha;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import reactor.core.publisher.Mono;
 
 public interface CaptchaProvider {

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.infra.setting;
 
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.UUID;

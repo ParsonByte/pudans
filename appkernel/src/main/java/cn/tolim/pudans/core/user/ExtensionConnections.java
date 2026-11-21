@@ -1,16 +1,16 @@
 package cn.tolim.pudans.core.user;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.contract.user.UserConnection.UserConnectionSpec;
 import cn.tolim.pudans.event.user.UserConnectionDisconnectedEvent;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.MetadataOperator;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.MetadataOperator;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
 import cn.tolim.pudans.infra.exception.OAuth2UserAlreadyBoundException;

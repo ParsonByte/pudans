@@ -3,7 +3,7 @@ package cn.tolim.pudans.security.authentication.oauth2;
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.TWO_FACTOR_AUTHENTICATED_ROLE_NAME;
 
-import cn.tolim.pudans.security.api.authentication.oauth2.PudansOAuth2AuthenticationToken;
+import cn.tolim.pudans.security.contract.authentication.oauth2.PudansOAuth2AuthenticationToken;
 import cn.tolim.pudans.security.authentication.PudansUserDetailsContract;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
 import org.springframework.security.core.Authentication;

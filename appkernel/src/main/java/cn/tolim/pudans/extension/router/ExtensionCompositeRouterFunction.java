@@ -1,7 +1,7 @@
 package cn.tolim.pudans.extension.router;
 
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.Scheme;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.Scheme;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.extension.event.SchemeAddedEvent;
 import cn.tolim.pudans.extension.event.SchemeRemovedEvent;

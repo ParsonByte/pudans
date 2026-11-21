@@ -6,11 +6,11 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.security.api.RememberMeToken;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.index.query.AndCondition;
-import cn.tolim.pudans.extension.api.index.query.IsNullCondition;
-import cn.tolim.pudans.extension.api.index.query.LessThanCondition;
+import cn.tolim.pudans.security.contract.RememberMeToken;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.index.query.AndCondition;
+import cn.tolim.pudans.extension.contract.index.query.IsNullCondition;
+import cn.tolim.pudans.extension.contract.index.query.LessThanCondition;
 import cn.tolim.pudans.infra.ReactiveExtensionPaginatedOperator;
 import java.time.Duration;
 import java.time.Instant;

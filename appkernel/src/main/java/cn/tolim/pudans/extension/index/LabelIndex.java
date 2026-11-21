@@ -2,7 +2,7 @@ package cn.tolim.pudans.extension.index;
 
 import static java.util.stream.Collectors.toUnmodifiableMap;
 
-import cn.tolim.pudans.extension.api.Extension;
+import cn.tolim.pudans.extension.contract.Extension;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;

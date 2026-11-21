@@ -1,7 +1,7 @@
 package cn.tolim.pudans.infra.audit;
 
 import cn.tolim.pudans.contract.audit.AuditRecord;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

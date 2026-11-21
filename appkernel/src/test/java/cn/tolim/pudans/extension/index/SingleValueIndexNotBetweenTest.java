@@ -3,11 +3,11 @@ package cn.tolim.pudans.extension.index;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.tolim.pudans.contract.audit.AuditRecord;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.index.IndexSpecs;
-import cn.tolim.pudans.extension.api.index.SingleValueIndexSpec;
-import cn.tolim.pudans.extension.api.index.query.BetweenCondition;
-import cn.tolim.pudans.extension.api.index.query.NotBetweenCondition;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.index.IndexSpecs;
+import cn.tolim.pudans.extension.contract.index.SingleValueIndexSpec;
+import cn.tolim.pudans.extension.contract.index.query.BetweenCondition;
+import cn.tolim.pudans.extension.contract.index.query.NotBetweenCondition;
 import org.junit.jupiter.api.Test;
 
 class SingleValueIndexNotBetweenTest {

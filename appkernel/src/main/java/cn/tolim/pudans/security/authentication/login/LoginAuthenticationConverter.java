@@ -2,7 +2,7 @@ package cn.tolim.pudans.security.authentication.login;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import cn.tolim.pudans.security.api.authentication.LoginCipher;
+import cn.tolim.pudans.security.contract.authentication.LoginCipher;
 import cn.tolim.pudans.core.risk.RiskGuard;
 import cn.tolim.pudans.core.risk.RiskScene;
 import cn.tolim.pudans.infra.setting.SecurityParameters;

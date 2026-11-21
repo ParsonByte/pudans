@@ -15,10 +15,10 @@
 | `contract` | Contract | Business data types only. No `@Component`, `@Service`, `@Repository`, `@Configuration` or `@Bean`; no IO |
 | `core` | Business implementation | Business domains only |
 | `event` | Events | Cross-layer events, split by domain |
-| `extension` | Subsystem | Extension engine plus its contracts in `extension/api` |
-| `infra` | Subsystem | Infrastructure plus its contracts in `infra/api` |
-| `security` | Subsystem | Security implementation plus its contracts in `security/api` |
-| `setting` | Subsystem | Settings implementation plus its contracts in `setting/api` |
+| `extension` | Subsystem | Extension engine plus its contracts in `extension/contract` |
+| `infra` | Subsystem | Infrastructure plus its contracts in `infra/contract` |
+| `security` | Subsystem | Security implementation plus its contracts in `security/contract` |
+| `setting` | Subsystem | Settings implementation plus its contracts in `setting/contract` |
 
 Adding an eighth top-level package requires changing this rule first; do not add one directly in code.
 
@@ -32,7 +32,7 @@ Current business domains (seven):
 audit  live  rbac  risk  storage  user  webhook
 ```
 
-Framework subsystems are not part of `core`. `extension`, `infra`, `security` and `setting` are top-level packages, and their contracts live in their own `api/` package, never in `contract`.
+Framework subsystems are not part of `core`. `extension`, `infra`, `security` and `setting` are top-level packages, and their contracts live in their own `contract/` package, never in the top-level `contract`.
 
 Adding a business domain means adding both `contract/<domain>` and `core/<domain>`. Adding a subsystem requires changing this rule first.
 
@@ -46,7 +46,7 @@ Adding a business domain means adding both `contract/<domain>` and `core/<domain
 | `core/<domain>/reconciler/` | Extension reconcilers; every `*Reconciler` belongs here |
 | `core/<domain>/<subdomain>/` | Domain-internal implementation such as `driver`, `gateway` or `memory` |
 | `core/<domain>/policy/` | Rule and policy objects, only when needed |
-| `<subsystem>/api/` | Interfaces and data types exposed by that subsystem |
+| `<subsystem>/contract/` | Interfaces and data types exposed by that subsystem |
 
 Each side carries only the roles its domain needs; do not create empty directories for symmetry. Apart from `dto/`, a business domain must not gain another intermediate directory.
 
@@ -56,7 +56,7 @@ Each side carries only the roles its domain needs; do not create empty directori
 2. No `resource/` intermediate directory; resource models sit at the root of `contract/<domain>/`.
 3. `contract` may contain only the seven business domain directories. It must not contain `extension`, `infra`, `security` or `setting`.
 4. A business domain root must not contain an `event` package, and the contract layer must not contain an `event` package; event definitions live in `event/<domain>/`. Internal subsystem events such as `extension/event` and `infra/event` are implementation detail and may stay.
-5. The contract layer must not hold behaviour interfaces. Domain SPI belongs to the implementation side: the domain root, or `<subsystem>/api/` for a subsystem.
+5. The top-level `contract` layer must not hold behaviour interfaces. Domain SPI belongs to the implementation side: the domain root, or `<subsystem>/contract/` for a subsystem.
 6. No `*ServiceImpl` suffix. Multiple implementations are expressed with a source prefix: `Extension*`, `Local*`, `Feishu*`, `Default*` or `Configured*`.
 7. No class name with a `Service` suffix. Name classes by responsibility, following the naming vocabulary below.
 
@@ -87,7 +87,7 @@ ls -d */
 diff <(ls contract) <(ls core)
 
 # every subsystem exposes its contract directory
-for p in extension infra security setting; do test -d "$p/api" || echo "missing $p/api"; done
+for p in extension infra security setting; do test -d "$p/contract" || echo "missing $p/contract"; done
 
 # the following commands must produce no output
 find . -type d -name service
@@ -119,10 +119,10 @@ core/              the same seven business domains
 ├── user/{endpoint,reconciler}
 └── webhook/{reconciler}
 
-extension/         extension engine + api/ contracts
-infra/             infrastructure + api/ contracts + dashboard/ console read model
-security/          security implementation + api/ contracts
-setting/           settings implementation + api/ contracts
+extension/         extension engine + contract/ contracts
+infra/             infrastructure + contract/ contracts + dashboard/ console read model
+security/          security implementation + contract/ contracts
+setting/           settings implementation + contract/ contracts
 
 event/
 ├── DomainEvent.java

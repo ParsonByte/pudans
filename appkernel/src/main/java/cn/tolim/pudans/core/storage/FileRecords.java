@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.storage;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
-import static cn.tolim.pudans.extension.api.index.query.Queries.lessThan;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.lessThan;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -11,11 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.ListResult;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.PageRequestImpl;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.ListResult;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.PageRequestImpl;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

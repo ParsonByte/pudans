@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.rbac.reconciler;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.isDeleted;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.isDeleted;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -12,12 +12,12 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.rbac.TempRoleBinding;
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.api.controller.Controller;
-import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
-import cn.tolim.pudans.extension.api.controller.ReactiveReconciler;
-import cn.tolim.pudans.extension.api.controller.Reconciler;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.controller.Controller;
+import cn.tolim.pudans.extension.contract.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.contract.controller.ReactiveReconciler;
+import cn.tolim.pudans.extension.contract.controller.Reconciler;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.TempGrants;

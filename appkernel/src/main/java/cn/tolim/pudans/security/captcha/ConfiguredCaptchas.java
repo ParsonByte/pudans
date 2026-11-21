@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.captcha;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.setting.ExtensionInitializedEvent;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 import java.util.List;

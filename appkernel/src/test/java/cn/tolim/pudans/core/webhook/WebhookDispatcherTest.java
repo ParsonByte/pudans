@@ -21,9 +21,9 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.contract.audit.AuditRecord;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.core.audit.AuditLog;
 
 @ExtendWith(MockitoExtension.class)

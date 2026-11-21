@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication;
 
-import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.core.webhook.OutboundRequestValidator;
 import cn.tolim.pudans.core.webhook.ValidatingAddressResolverGroup;
 import cn.tolim.pudans.infra.feishu.FeishuClient;

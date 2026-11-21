@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.storage.reconciler;
 
-import static cn.tolim.pudans.extension.api.ExtensionUtil.addFinalizers;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.isDeleted;
-import static cn.tolim.pudans.extension.api.ExtensionUtil.removeFinalizers;
-import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.addFinalizers;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.isDeleted;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.removeFinalizers;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -19,12 +19,12 @@ import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
-import cn.tolim.pudans.extension.api.ExtensionClient;
-import cn.tolim.pudans.extension.api.ListOptions;
-import cn.tolim.pudans.extension.api.MetadataUtil;
-import cn.tolim.pudans.extension.api.controller.Controller;
-import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
-import cn.tolim.pudans.extension.api.controller.Reconciler;
+import cn.tolim.pudans.extension.contract.ExtensionClient;
+import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.MetadataUtil;
+import cn.tolim.pudans.extension.contract.controller.Controller;
+import cn.tolim.pudans.extension.contract.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.contract.controller.Reconciler;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
 import cn.tolim.pudans.core.storage.StoragePolicyValidator;

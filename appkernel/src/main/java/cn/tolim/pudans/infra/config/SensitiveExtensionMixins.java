@@ -2,7 +2,7 @@ package cn.tolim.pudans.infra.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import cn.tolim.pudans.security.api.RememberMeToken;
+import cn.tolim.pudans.security.contract.RememberMeToken;
 import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;

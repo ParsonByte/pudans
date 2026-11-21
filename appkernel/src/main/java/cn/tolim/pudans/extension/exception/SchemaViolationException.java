@@ -1,7 +1,7 @@
 package cn.tolim.pudans.extension.exception;
 
-import cn.tolim.pudans.extension.api.GroupVersionKind;
-import cn.tolim.pudans.extension.api.exception.ExtensionException;
+import cn.tolim.pudans.extension.contract.GroupVersionKind;
+import cn.tolim.pudans.extension.contract.exception.ExtensionException;
 import org.openapi4j.core.validation.ValidationResults;
 import org.springframework.http.HttpStatus;
 

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.rbac;
 
 import cn.tolim.pudans.contract.rbac.Role;
-import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;

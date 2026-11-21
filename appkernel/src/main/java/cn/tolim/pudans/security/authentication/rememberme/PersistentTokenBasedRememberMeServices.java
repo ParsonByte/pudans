@@ -1,8 +1,8 @@
 package cn.tolim.pudans.security.authentication.rememberme;
 
-import cn.tolim.pudans.security.api.RememberMeToken;
-import cn.tolim.pudans.extension.api.Metadata;
-import cn.tolim.pudans.security.api.device.DeviceSessions;
+import cn.tolim.pudans.security.contract.RememberMeToken;
+import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.security.contract.device.DeviceSessions;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.security.authentication.LoginParameterRequestCache;
 import cn.tolim.pudans.security.authentication.SecurityConstant;
