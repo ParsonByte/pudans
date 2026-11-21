@@ -1,4 +1,4 @@
-import { format, parseISO, startOfWeek, subWeeks } from "date-fns";
+import { format, parseISO, startOfWeek, subDays, subWeeks } from "date-fns";
 
 import { beijingDateKey, serverToday } from "@/lib/date";
 
@@ -200,7 +200,11 @@ function average(values: readonly number[]): number | null {
 export function usageHeatmapWindow(): { from: string; to: string } {
   const today = parseISO(serverToday());
   const start = subWeeks(startOfWeek(today, { weekStartsOn: 1 }), HEATMAP_WEEKS - 1);
-  return { from: format(start, "yyyy-MM-dd"), to: format(today, "yyyy-MM-dd") };
+  const earliest = subDays(today, 365);
+  return {
+    from: format(start < earliest ? earliest : start, "yyyy-MM-dd"),
+    to: format(today, "yyyy-MM-dd"),
+  };
 }
 
 export function requestPageMedians(items: readonly UsageRequestItem[]): {
