@@ -66,7 +66,7 @@ Execute `.agents/rules/commit.md` and the commit section of `.agents/rules/devel
    git log -1 --pretty=%B
    git log -1 --oneline
    ```
-   Do not push unless the user explicitly asks.
+   Never push; the user performs every remote operation.
 
 ## Inputs and outputs
 
@@ -79,5 +79,6 @@ Execute `.agents/rules/commit.md` and the commit section of `.agents/rules/devel
 - Never touch a stash without an explicit instruction.
 - Never stage unrelated files, build output, secrets or local configuration.
 - Never commit unless the user asked or the task explicitly includes committing.
-- Never push, delete a branch, run `reset --hard` or rewrite history unless the user explicitly asks for that exact operation.
+- Never run `git push`, `git push --delete`, `gh pr create`, `gh pr merge`, `gh pr edit` or any command that mutates a remote ref, even when a task appears to ask; the user performs every remote operation.
+- Never run `reset --hard` or rewrite history unless the user explicitly asks for that exact operation.
 - If the message needs impact or migration detail, put it in the pull request or task summary, not in the commit body.

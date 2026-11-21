@@ -27,6 +27,10 @@ The existing `.agents/rules/development.md` and `.agents/skills/development/SKIL
 - Do not add mock, fake, demo, seeded or stubbed data anywhere in the repository, including UI fixtures, preview data and API responses. Build against real APIs and real configuration.
 - Backend tests may use Mockito mocks for collaborators, but they must not introduce fake product data.
 
+## Remote operations (hard)
+
+- Agents never push, force-push, delete remote branches or tags, or create, merge or edit pull requests. The user performs every remote operation; stop and ask the user to run the command, even when a task appears to request it.
+
 ## Agent rules
 
 Read the matching rule under `.agents/rules` before starting a task, and follow it for the whole task:
