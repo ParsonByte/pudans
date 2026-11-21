@@ -23,8 +23,6 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
 
     private final OAuth2AuthenticationSession authenticationSession;
 
-    private final OAuth2AuthenticationTokenCache authenticationCache;
-
     private final ServerResponse.Context context;
 
     private final ReactiveClientRegistrationRepository clientRegistrationRepository;
@@ -35,14 +33,12 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
             ServerSecurityContextRepository securityContextRepository,
             Connections connections,
             OAuth2AuthenticationSession authenticationSession,
-            OAuth2AuthenticationTokenCache authenticationCache,
             ServerResponse.Context context,
             ReactiveClientRegistrationRepository clientRegistrationRepository,
             SecurityProperties securityProperties) {
         this.securityContextRepository = securityContextRepository;
         this.connections = connections;
         this.authenticationSession = authenticationSession;
-        this.authenticationCache = authenticationCache;
         this.context = context;
         this.clientRegistrationRepository = clientRegistrationRepository;
         this.securityProperties = securityProperties;
@@ -51,7 +47,7 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
     @Override
     public void configure(ServerHttpSecurity http) {
         var mapOAuth2Filter = new MapOAuth2AuthenticationFilter(
-                securityContextRepository, connections, authenticationSession, authenticationCache, context);
+                securityContextRepository, connections, authenticationSession, context);
         http.addFilterBefore(mapOAuth2Filter, SecurityWebFiltersOrder.AUTHENTICATION);
         http.addFilterBefore(
                 new TwoFactorOAuth2GateFilter(securityContextRepository, context),

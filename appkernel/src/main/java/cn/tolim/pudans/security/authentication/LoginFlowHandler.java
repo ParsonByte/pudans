@@ -4,7 +4,6 @@ import static cn.tolim.pudans.security.authentication.SecurityConstant.USERNAME_
 
 import cn.tolim.pudans.security.contract.device.DeviceSessions;
 import cn.tolim.pudans.core.user.UserLoginOrLogoutProcessing;
-import cn.tolim.pudans.security.authentication.oauth2.OAuth2LoginFlowEnhancer;
 import cn.tolim.pudans.security.authentication.rememberme.RememberMeServices;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -24,15 +23,12 @@ public class LoginFlowHandler {
 
     private final LoginParameterRequestCache parameterRequestCache;
 
-    private final OAuth2LoginFlowEnhancer oauth2LoginFlowEnhancer;
-
     private final UserLoginOrLogoutProcessing userLoginOrLogoutProcessing;
 
     public Mono<Void> onLoginSuccess(ServerWebExchange exchange, Authentication successfulAuthentication) {
         return rememberMeServices
                 .loginSuccess(exchange, successfulAuthentication)
                 .then(deviceSessions.loginSuccess(exchange, successfulAuthentication))
-                .then(oauth2LoginFlowEnhancer.loginSuccess(exchange, successfulAuthentication))
                 .then(userLoginOrLogoutProcessing.loginProcessing(successfulAuthentication.getName()))
                 .then(parameterRequestCache.removeParameter(exchange, USERNAME_PARAMETER_NAME))
                 .then(parameterRequestCache.removeParameter(exchange, "email"));

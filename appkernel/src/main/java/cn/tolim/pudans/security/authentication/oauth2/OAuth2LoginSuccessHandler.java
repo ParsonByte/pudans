@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 
 final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
 
-    private final Connections connections;
+    private final OAuth2ConnectionMapping connectionMapping;
 
     private final OAuth2AuthenticationSession authenticationSession;
 
@@ -30,7 +30,7 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
             OAuth2AuthenticationSession authenticationSession,
             SecurityProperties securityProperties,
             ServerResponse.Context context) {
-        this.connections = connections;
+        this.connectionMapping = new OAuth2ConnectionMapping(connections);
         this.authenticationSession = authenticationSession;
         this.securityProperties = securityProperties;
         this.context = context;
@@ -48,17 +48,10 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
             WebFilterExchange webFilterExchange, Authentication authentication) {
         var exchange = webFilterExchange.getExchange();
         var oauth2 = (OAuth2AuthenticationToken) authentication;
-        var registrationId = oauth2.getAuthorizedClientRegistrationId();
-        var oauth2User = oauth2.getPrincipal();
-        var preAuthentication = exchange.getAttribute(OAuth2LoginAttributes.PRE_AUTHENTICATION);
-        var twoFactorSatisfied = OAuth2TwoFactorSupport.twoFactorSatisfied(preAuthentication);
-        return connections
-                .updateUserConnectionIfPresent(registrationId, oauth2User)
-                .switchIfEmpty(Mono.defer(() -> preAuthentication instanceof Authentication preAuth
-                        && preAuth.isAuthenticated()
-                        ? connections.createUserConnection(
-                                preAuth.getName(), registrationId, oauth2User)
-                        : Mono.error(OAuth2ConnectionRequiredException::new)))
+        var twoFactorSatisfied = OAuth2TwoFactorSupport.twoFactorSatisfied(
+                exchange.getAttribute(OAuth2LoginAttributes.PRE_AUTHENTICATION));
+        return connectionMapping
+                .map(exchange, oauth2)
                 .flatMap(connection -> authenticationSession.establishAndGetAuthentication(
                         exchange,
                         connection.getSpec().getUsername(),
@@ -74,7 +67,7 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
                                 ProblemDetailResponses.SIGN_IN_PATH)
                         : redirect(exchange, securityProperties.getPostLoginUrl()))
                 .onErrorResume(
-                        OAuth2ConnectionRequiredException.class,
+                        OAuth2ConnectionMapping.ConnectionRequiredException.class,
                         error -> ProblemDetailResponses.writeOrRedirect(
                                 exchange,
                                 context,
@@ -86,6 +79,4 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
                         AuthenticationException.class,
                         error -> OAuth2AuthenticationSession.rejectUnavailableAccount(exchange, context));
     }
-
-    private static final class OAuth2ConnectionRequiredException extends RuntimeException {}
 }
