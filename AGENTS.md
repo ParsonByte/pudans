@@ -6,7 +6,7 @@ Pudans is an enterprise identity and permission management platform. Backend: Ja
 
 This order is a hard requirement. If the required file has not been read, do not start the corresponding operation.
 
-1. Before changing code, tests or configuration: read `.agents/rules/development-repo.md`, `.agents/rules/reuse-and-cleanup.md`, `.agents/rules/testing.md`, `.agents/skills/development-repo/SKILL.md` and `.agents/skills/reuse-check/SKILL.md`.
+1. Before changing code, tests or configuration: read `.agents/rules/development-repo.md`, `.agents/rules/package-layout.md`, `.agents/rules/reuse-and-cleanup.md`, `.agents/rules/testing.md`, `.agents/skills/development-repo/SKILL.md` and `.agents/skills/reuse-check/SKILL.md`.
 2. Before staging or committing: read `.agents/rules/commit.md` and `.agents/skills/commit-repo/SKILL.md`.
 3. Before writing or changing a comment: read `.agents/rules/comments.md` and `.agents/skills/comments/SKILL.md`.
 4. Before adding, changing or animating any UI component: read `.agents/rules/shadcn.md` and `.agents/skills/shadcn/SKILL.md`.
@@ -44,6 +44,7 @@ Read the matching rule under `.agents/rules` before starting a task, and follow 
 | Tech stack | `.agents/rules/tech-stack.md` | Required versions, prohibited stacks, dependency and configuration rules; frontend stack and the CLI-only shadcn/ui component policy |
 | Development | `.agents/rules/development.md` | Branching, pre-commit checks, PRs, dependencies, secrets, review |
 | Development (repo) | `.agents/rules/development-repo.md` | Mandatory read order, reuse first, no redundancy, minimal diff |
+| Package layout | `.agents/rules/package-layout.md` | 顶层包、镜像规则、角色目录、禁止 service 目录与 Service 后缀 |
 | Reuse and cleanup | `.agents/rules/reuse-and-cleanup.md` | Search dimensions, decision tree, cleanup checklist |
 | Extensions | `.agents/rules/extensions.md` | Extension directory layout, template naming, menu and permission placement |
 | shadcn/ui | `.agents/rules/shadcn.md` | Registry-first CLI components, immutable `components/ui`, preset `b1oVxsw5`, token-only styling, Motion/GSAP |
@@ -73,6 +74,7 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | File | Purpose | Trigger | Mandatory |
 | --- | --- | --- | --- |
 | `.agents/rules/development-repo.md` | Development flow and hard reuse/no-redundancy rules | Before any code, test or configuration change | Yes |
+| `.agents/rules/package-layout.md` | 顶层包、镜像规则、角色目录与命名 | 新增或移动任何包、类、接口时 | Yes |
 | `.agents/rules/reuse-and-cleanup.md` | Search dimensions, decision tree and cleanup checklist | Before any new implementation and after implementation | Yes |
 | `.agents/rules/extensions.md` | Extension directory layout, template naming, menu and permission placement | Adding or changing a role, permission, workspace, menu or extension resource | Yes |
 | `.agents/rules/testing.md` | Test-first behaviour changes and test commands | Before changing behaviour and before commit | Yes |
@@ -99,8 +101,8 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | Path | Purpose |
 | --- | --- |
 | `appkernel/` | Backend core: identity, permissions and the extension mechanism |
-| `appkernel/src/main/java/cn/tolim/pudans/contract/core/extension/ai/` | AI extension resources: providers, accounts, models, route groups, chat modes, teams, agents, memory prompts and knowledge bases |
-| `appkernel/src/main/java/cn/tolim/pudans/core/ai/` | AI kernel: provider adapters, routing, gateway, memory, RAG, wallet and team services |
+| `appkernel/src/main/java/cn/tolim/pudans/contract/ai/resource/` | AI extension resources: providers, accounts, models, route groups, chat modes, teams, agents, memory prompts and knowledge bases |
+| `appkernel/src/main/java/cn/tolim/pudans/core/ai/` | AI kernel: provider adapters, routing, gateway, memory, RAG, plans and teams |
 | `appkernel/src/main/java/cn/tolim/pudans/infra/r2dbc/ai/` | AI R2DBC data access for conversations, gateway sessions, wallets, memory, tasks and knowledge-base chunks |
 | `appkernel/src/main/resources/extensions/` | YAML source of truth for roles, permissions, workspaces and menus; see `.agents/rules/extensions.md` |
 | `api-docs/` | OpenAPI aggregation and validation, no business code |
