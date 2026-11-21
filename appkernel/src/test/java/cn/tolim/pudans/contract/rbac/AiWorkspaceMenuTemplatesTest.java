@@ -39,7 +39,7 @@ class AiWorkspaceMenuTemplatesTest {
                 .filter(role -> Role.UI_TYPE_MENU.equals(annotation(role, Role.UI_TYPE_ANNO)))
                 .sorted(Comparator.comparingInt(menu -> order(menu)))
                 .toList();
-        assertThat(menus).hasSize(25);
+        assertThat(menus).hasSize(24);
         assertThat(menus)
                 .allSatisfy(menu -> {
                     assertThat(annotation(menu, Role.UI_WORKSPACE_ANNO)).isEqualTo("ai");

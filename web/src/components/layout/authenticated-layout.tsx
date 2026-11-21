@@ -39,7 +39,7 @@ export function AuthenticatedLayout({
     <SearchProvider navGroups={navGroups}>
       <TooltipProvider delayDuration={0}>
         <LayoutProvider>
-          <SidebarProvider defaultOpen={defaultOpen}>
+          <SidebarProvider defaultOpen={defaultOpen} className="h-svh overflow-hidden">
             <SkipToMain />
             <AppSidebar
               user={user}
@@ -52,6 +52,7 @@ export function AuthenticatedLayout({
             <SidebarInset
               className={cn(
                 "@container/content",
+                "h-svh overflow-y-auto",
                 "has-data-[layout=fixed]:h-svh",
                 "peer-data-[variant=inset]:has-data-[layout=fixed]:h-[calc(100svh-(var(--spacing)*4))]",
               )}
