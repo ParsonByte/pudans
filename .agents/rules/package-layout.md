@@ -1,95 +1,95 @@
-# 包布局规则
+# Package layout rule
 
-## 适用范围
+## Scope
 
-- 适用于 `appkernel/src/main/java/cn/tolim/pudans/` 下的全部包、类与接口。
-- 新增、移动或重命名任何包、类、接口之前，先按本规则确定目标位置；规则没有列出的目录角色一律不允许新建。
-- 一个实现放在哪一侧由本规则决定，不由调用方的便利决定。
+- Applies to every package, class and interface under `appkernel/src/main/java/cn/tolim/pudans/`.
+- Determine the target package from this rule before adding, moving or renaming anything. A directory role that is not listed here must not be created.
+- Which side an implementation belongs to is decided by this rule, not by caller convenience.
 
-## 顶层包（只有 7 个）
+## Top-level packages (exactly seven)
 
-`cn.tolim.pudans` 下只允许 `contract`、`core`、`event`、`extension`、`infra`、`security`、`setting` 七个包，加 `Application.java`。
+`cn.tolim.pudans` may contain only `contract`, `core`, `event`, `extension`, `infra`, `security` and `setting`, plus `Application.java`.
 
-| 顶层包 | 层 | 约束 |
+| Package | Layer | Constraint |
 | --- | --- | --- |
-| `contract` | 契约层 | 只放业务域的数据类型，禁止 `@Component`、`@Service`、`@Repository`、`@Configuration`、`@Bean`，禁止 IO |
-| `core` | 业务域实现层 | 只放业务域实现 |
-| `event` | 事件层 | 跨层事件，按域分子包 |
-| `extension` | 子系统 | 扩展引擎实现 + 契约在 `extension/api` |
-| `infra` | 子系统 | 基础设施实现 + 契约在 `infra/api` |
-| `security` | 子系统 | 安全实现 + 契约在 `security/api` |
-| `setting` | 子系统 | 设置实现 + 契约在 `setting/api` |
+| `contract` | Contract | Business data types only. No `@Component`, `@Service`, `@Repository`, `@Configuration` or `@Bean`; no IO |
+| `core` | Business implementation | Business domains only |
+| `event` | Events | Cross-layer events, split by domain |
+| `extension` | Subsystem | Extension engine plus its contracts in `extension/api` |
+| `infra` | Subsystem | Infrastructure plus its contracts in `infra/api` |
+| `security` | Subsystem | Security implementation plus its contracts in `security/api` |
+| `setting` | Subsystem | Settings implementation plus its contracts in `setting/api` |
 
-新增第 8 个顶层包必须先改本规则，不得在实现里直接加。
+Adding an eighth top-level package requires changing this rule first; do not add one directly in code.
 
-## 镜像规则（硬）
+## Mirror rule (hard)
 
-`contract/<域>` 与 `core/<域>` 一一对应，两侧域集合必须完全相同，且只包含业务域。
+`contract/<domain>` and `core/<domain>` map one to one. Both sides must contain exactly the same domain set, and that set contains business domains only.
 
-当前业务域（8 个）：
+Current business domains (eight):
 
 ```text
 ai  audit  live  rbac  risk  storage  user  webhook
 ```
 
-框架子系统不参与 `core`：`extension`、`infra`、`security`、`setting` 是顶层包，它们的契约放在各自包内的 `api/`，不放进 `contract`。
+Framework subsystems are not part of `core`. `extension`, `infra`, `security` and `setting` are top-level packages, and their contracts live in their own `api/` package, never in `contract`.
 
-新增业务域时同时加 `contract/<域>` 与 `core/<域>`；新增子系统必须先改本规则。
+Adding a business domain means adding both `contract/<domain>` and `core/<domain>`. Adding a subsystem requires changing this rule first.
 
-## 角色目录词表（封闭集合）
+## Role directory vocabulary (closed set)
 
-| 目录 | 职责 |
+| Directory | Responsibility |
 | --- | --- |
-| `contract/<域>/` | 资源模型（`Extension` 子类）直接放域根 |
-| `contract/<域>/dto/` | HTTP 请求、响应、视图 |
-| `core/<域>/endpoint/` | 路由与出入参绑定 |
-| `core/<域>/reconciler/` | 扩展资源协调器，所有 `*Reconciler` 必须在此 |
-| `core/<域>/<子域>/` | 领域内部实现，如 `driver`、`gateway`、`memory` |
-| `core/<域>/policy/` | 规则与策略对象，只有需要时出现 |
-| `<子系统>/api/` | 该子系统对外暴露的接口与数据类型 |
+| `contract/<domain>/` | Resource models (`Extension` subclasses) at the domain root |
+| `contract/<domain>/dto/` | HTTP request, response and view types |
+| `core/<domain>/endpoint/` | Routes and request binding |
+| `core/<domain>/reconciler/` | Extension reconcilers; every `*Reconciler` belongs here |
+| `core/<domain>/<subdomain>/` | Domain-internal implementation such as `driver`, `gateway` or `memory` |
+| `core/<domain>/policy/` | Rule and policy objects, only when needed |
+| `<subsystem>/api/` | Interfaces and data types exposed by that subsystem |
 
-每侧只出现该域需要的角色，不得为对称而建空目录。除 `dto/` 外不得在业务域下再插一层中间目录。
+Each side carries only the roles its domain needs; do not create empty directories for symmetry. Apart from `dto/`, a business domain must not gain another intermediate directory.
 
-## 硬性禁止
+## Hard prohibitions
 
-1. 任何包名不得叫 `service`，也不得出现 `service/` 目录。
-2. 不得出现 `resource/` 中间目录；资源模型直接放 `contract/<域>/` 根。
-3. `contract` 只能有 8 个业务域目录，不得出现 `extension`、`infra`、`security`、`setting`。
-4. 业务域的域根下不得有 `event` 包；契约层不得有 `event` 包；事件定义统一在 `event/<域>/`。子系统与其子域的内部事件（`extension/event`、`infra/event`、`core/ai/harness/event`）属于实现细节，允许保留。
-5. 契约层不得放行为接口；域级 SPI 属于实现侧，放对应域根或子系统 `api/`。
-6. 不得出现 `*ServiceImpl` 后缀类；多实现用来源前缀表达（`Extension*`、`Local*`、`Feishu*`、`Ai*`、`Default*`、`Configured*`）。
-7. 不得出现带 `Service` 后缀的类名；类名按职责命名（见命名词表）。
+1. No package may be named `service`, and no `service/` directory may exist.
+2. No `resource/` intermediate directory; resource models sit at the root of `contract/<domain>/`.
+3. `contract` may contain only the eight business domain directories. It must not contain `extension`, `infra`, `security` or `setting`.
+4. A business domain root must not contain an `event` package, and the contract layer must not contain an `event` package; event definitions live in `event/<domain>/`. Internal subsystem events such as `extension/event`, `infra/event` and `core/ai/harness/event` are implementation detail and may stay.
+5. The contract layer must not hold behaviour interfaces. Domain SPI belongs to the implementation side: the domain root, or `<subsystem>/api/` for a subsystem.
+6. No `*ServiceImpl` suffix. Multiple implementations are expressed with a source prefix: `Extension*`, `Local*`, `Feishu*`, `Ai*`, `Default*` or `Configured*`.
+7. No class name with a `Service` suffix. Name classes by responsibility, following the naming vocabulary below.
 
-违反任何一条都按缺陷处理，不是风格偏好。
+Violating any of these is a defect, not a style preference.
 
-## 命名词表（类名）
+## Naming vocabulary (classes)
 
-| 命名 | 用途 |
+| Naming | Use |
 | --- | --- |
-| 复数名词 | 聚合读写入口，如 `Accounts`、`Plans`、`Policies` |
-| `Catalog` / `Directory` | 只读清单 |
-| `Guard` | 判定与拦截 |
-| `Pipeline` | 分阶段处理 |
-| `Gateway` / `Resolver` / `Sync` | 出入站适配、解析、同步 |
-| `Log` / `Cache` / `Recovery` | 记录、缓存、恢复 |
-| `Keys` / `Tokens` / `Cipher` / `Secrets` | 凭证与密码学 |
-| 来源前缀 | `Extension*`、`Local*`、`Feishu*`、`Ai*`、`Default*`、`Configured*` |
+| Plural noun | Read and write entry point of an aggregate, such as `Accounts`, `Plans` or `Policies` |
+| `Catalog` / `Directory` | Read-only listing |
+| `Guard` | Decision and interception |
+| `Pipeline` | Staged processing |
+| `Gateway` / `Resolver` / `Sync` | Inbound and outbound adapters, resolution, synchronisation |
+| `Log` / `Cache` / `Recovery` | Records, caching, recovery |
+| `Keys` / `Tokens` / `Cipher` / `Secrets` | Credentials and cryptography |
+| Source prefix | `Extension*`, `Local*`, `Feishu*`, `Ai*`, `Default*` or `Configured*` |
 
-## 校验命令
+## Validation commands
 
 ```bash
 cd appkernel/src/main/java/cn/tolim/pudans
 
-# 顶层恰好 7 个包
+# exactly seven top-level packages
 ls -d */
 
-# 两侧业务域集合必须一致，必须无输出
+# both sides must match; output must be empty
 diff <(ls contract) <(ls core)
 
-# 每个子系统都必须有 api/ 契约目录
+# every subsystem exposes its contract directory
 for p in extension infra security setting; do test -d "$p/api" || echo "missing $p/api"; done
 
-# 以下命令必须无输出
+# the following commands must produce no output
 find . -type d -name service
 find . -type d -name resource
 find . -name '*ServiceImpl.java'
@@ -98,21 +98,21 @@ find ./contract -type d -name event
 for d in ai audit live rbac risk storage user webhook; do find ./core/$d -maxdepth 1 -type d -name event; done
 ```
 
-## 目录清单
+## Directory tree
 
 ```text
-contract/          只放业务域契约
-├── ai/            资源模型
+contract/          business contracts only
+├── ai/            resource models
 ├── audit/         AuditRecord
-├── live/          资源模型 + dto/
-├── rbac/          角色、绑定、用户组
+├── live/          resource models + dto/
+├── rbac/          roles, bindings, user groups
 ├── risk/          RiskRule + dto/
-├── storage/       存储资源
-├── user/          User、UserConnection
+├── storage/       storage resources
+├── user/          User, UserConnection
 └── webhook/       Webhook + dto/
 
-core/              与 contract 同名的 9 个业务域
-├── ai/<子域>/
+core/              the same eight business domains
+├── ai/<subdomain>/
 ├── audit/{endpoint}
 ├── live/{endpoint,reconciler,alert,monitor,recorder,recording,resolve,source}
 ├── rbac/{endpoint,reconciler,group,permission}
@@ -121,10 +121,10 @@ core/              与 contract 同名的 9 个业务域
 ├── user/{endpoint,reconciler}
 └── webhook/{reconciler}
 
-extension/         扩展引擎实现 + api/ 契约
-infra/             基础设施实现 + api/ 契约 + dashboard/ 控制台读模型
-security/          安全实现 + api/ 契约
-setting/           设置实现 + api/ 契约
+extension/         extension engine + api/ contracts
+infra/             infrastructure + api/ contracts + dashboard/ console read model
+security/          security implementation + api/ contracts
+setting/           settings implementation + api/ contracts
 
 event/
 ├── DomainEvent.java
