@@ -91,6 +91,60 @@ pudans:
       log-file: ${PUDANS_RUNTIME_LOG_FILE:/tmp/pudans-agent.log}
       tencent-data-plane-template: ${PUDANS_TENCENT_SANDBOX_DATA_PLANE:https://49983-%s.%s.tencentags.com}
       tencent-api-version: 2025-09-20
+  live:
+    resolve:
+      connect-timeout: 5s
+      response-timeout: 10s
+      max-html-bytes: 8MB
+      cache-ttl: 45s
+      offline-cache-ttl: 20s
+      lock-ttl: 15s
+      lock-wait: 2s
+      cooldown: 10m
+      max-cooldown: 1h
+      cookie: ${PUDANS_LIVE_DOUYIN_COOKIE:}
+    monitor:
+      tick: 5s
+      default-interval: 60s
+      min-interval: 30s
+      live-interval: 30s
+      max-per-tick: 20
+      resolve-concurrency: 4
+      failure-backoff: 1m
+      max-failure-backoff: 15m
+      error-threshold: 3
+      leader-ttl: 15s
+    recorder:
+      max-concurrent: 2
+      queue-capacity: 10
+      work-dir: ${pudans.work-dir}/live-recordings
+      segment-seconds: 30
+      merge:
+        interval: 1h
+        max-local-bytes: 6GB
+        max-local-segments: 360
+        max-pending-parts: 2
+      max-duration: 6h
+      read-timeout: 15s
+      stream-idle-timeout: 30s
+      max-retries: 5
+      retry-backoff: 1s
+      max-retry-backoff: 30s
+      retry-jitter: 0.2
+      upload-concurrency: 1
+      upload-retries: 3
+      finalize-timeout: 5m
+      min-free-disk-bytes: 8GB
+      stop-timeout: 30s
+      recovery-lock-ttl: 10m
+    retention:
+      days: ${PUDANS_LIVE_RETENTION_DAYS:7}
+      interval: 1h
+      batch-size: 100
+    alert:
+      dedupe: 10m
+      stream-interrupt-threshold: 60s
+      rate-limit-threshold: 3
   storage:
     cleanup-interval-seconds: ${PUDANS_STORAGE_CLEANUP_INTERVAL:300}
   webhook:
