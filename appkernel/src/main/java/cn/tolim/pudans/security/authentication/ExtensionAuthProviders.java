@@ -12,6 +12,7 @@ import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -29,6 +30,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -37,9 +39,13 @@ import reactor.util.retry.Retry;
 @Component
 @RequiredArgsConstructor
 public class ExtensionAuthProviders implements AuthProviders {
+
+    private static final String FEISHU_PROVIDER = "feishu";
+
     private final ReactiveExtensionClient client;
     private final ObjectProvider<ParameterSettingFetcher> environmentFetcherProvider;
     private final Connections connections;
+    private final SecurityParameters securitySettings;
 
     private static boolean supportsBinding(AuthProvider authProvider) {
         return BooleanUtils.TRUE.equals(
@@ -69,7 +75,32 @@ public class ExtensionAuthProviders implements AuthProviders {
     @Override
     public Mono<AuthProvider> enable(String name) {
         return client.get(AuthProvider.class, name)
-                .flatMap(authProvider -> updateAuthProviderEnabled(name, true).thenReturn(authProvider));
+                .flatMap(authProvider -> isAvailable(authProvider)
+                        ? updateAuthProviderEnabled(name, true).thenReturn(authProvider)
+                        : Mono.error(new ServerWebInputException(
+                                "登录提供方 [" + name + "] 没有可用的认证配置。")));
+    }
+
+    private boolean isAvailable(AuthProvider authProvider) {
+        if (AuthProvider.AuthType.FORM.equals(authProvider.getSpec().getAuthType())) {
+            return true;
+        }
+        if (isAutoConfigured(authProvider.getMetadata().getName())) {
+            return true;
+        }
+        var authenticationUrl = authProvider.getSpec().getAuthenticationUrl();
+        return StringUtils.isNotBlank(authenticationUrl)
+                && !authenticationUrl.startsWith("/oauth2/authorization/");
+    }
+
+    private boolean isAutoConfigured(String name) {
+        if (FEISHU_PROVIDER.equals(name)) {
+            return securitySettings.feishu().isConfigured();
+        }
+        return securitySettings.oauth2Providers().stream()
+                        .anyMatch(provider -> name.equals(provider.getRegistrationId()))
+                || securitySettings.oidcProviders().stream()
+                        .anyMatch(provider -> name.equals(provider.getRegistrationId()));
     }
 
     @Override
@@ -77,7 +108,10 @@ public class ExtensionAuthProviders implements AuthProviders {
         return client.get(AuthProvider.class, name)
 
                 .filter(authProvider -> !AuthProviderUtils.isPrivileged(authProvider))
-                .flatMap(authProvider -> updateAuthProviderEnabled(name, false).thenReturn(authProvider));
+                .flatMap(authProvider -> isAutoConfigured(name)
+                        ? Mono.<AuthProvider>error(new ServerWebInputException(
+                                "登录方式 [" + name + "] 由认证参数控制，请通过参数设置停用。"))
+                        : updateAuthProviderEnabled(name, false).thenReturn(authProvider));
     }
 
     @Override
@@ -107,6 +141,9 @@ public class ExtensionAuthProviders implements AuthProviders {
                                 if (state != null) {
                                     authProvider.setEnabled(state.isEnabled());
                                     authProvider.setPriority(state.getPriority());
+                                }
+                                if (isAutoConfigured(authProvider.getName())) {
+                                    authProvider.setEnabled(true);
                                 }
                             })
                             .sorted(Comparator.comparingInt(ListedAuthProvider::getPriority)

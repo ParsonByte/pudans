@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.core.rbac.permission.UiPermissions;
+import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.OidcProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
@@ -15,6 +16,7 @@ import cn.tolim.pudans.infra.setting.ParameterSettingSecretCipher;
 import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.authentication.AuthProviders;
 import cn.tolim.pudans.security.captcha.Captchas;
+import cn.tolim.pudans.security.contract.AuthProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,7 +63,6 @@ class LoginPublicEndpointTest {
                 parameterSettingSecretCipher,
                 new OidcProperties(),
                 feishuProperties);
-        when(authProviders.getEnabledProviders()).thenReturn(Flux.empty());
 
         var endpoint = new LoginPublicEndpoint(
                 new SecurityProperties(),
@@ -75,7 +76,9 @@ class LoginPublicEndpointTest {
     }
 
     @Test
-    void includesFeishuAsUnconfiguredWhenCredentialsAreMissing() {
+    void omitsFeishuWhenCredentialsAreMissing() {
+        when(authProviders.getEnabledProviders()).thenReturn(Flux.empty());
+
         webTestClient
                 .get()
                 .uri("/login/providers")
@@ -83,16 +86,35 @@ class LoginPublicEndpointTest {
                 .expectStatus()
                 .isOk()
                 .expectBody(LoginPublicEndpoint.LoginProviderView[].class)
-                .value(providers -> {
-                    assertThat(providers).hasSize(1);
-                    assertThat(providers[0].name()).isEqualTo("feishu");
-                    assertThat(providers[0].displayName()).isEqualTo("飞书");
-                    assertThat(providers[0].authenticationUrl()).isNull();
-                });
+                .value(providers -> assertThat(providers).isEmpty());
+    }
+
+    @Test
+    void omitsAProviderWithoutConfiguredAuthentication() {
+        var provider = new AuthProvider();
+        var metadata = new Metadata();
+        metadata.setName("missing");
+        provider.setMetadata(metadata);
+        var spec = new AuthProvider.AuthProviderSpec();
+        spec.setDisplayName("Missing");
+        spec.setAuthenticationUrl("/oauth2/authorization/missing");
+        spec.setAuthType(AuthProvider.AuthType.OAUTH2);
+        provider.setSpec(spec);
+        when(authProviders.getEnabledProviders()).thenReturn(Flux.just(provider));
+
+        webTestClient
+                .get()
+                .uri("/login/providers")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(LoginPublicEndpoint.LoginProviderView[].class)
+                .value(providers -> assertThat(providers).isEmpty());
     }
 
     @Test
     void includesFeishuAuthorizationUrlWhenConfigured() {
+        when(authProviders.getEnabledProviders()).thenReturn(Flux.empty());
         feishuProperties.setEnabled(true);
         feishuProperties.setAppId("app-id");
         feishuProperties.setAppSecret("app-secret");
