@@ -8,6 +8,7 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 
 import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.rbac.TempRoleBinding;
+import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.extension.api.ApiGroups;
 import cn.tolim.pudans.extension.api.GroupVersion;
@@ -105,24 +106,44 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> list(ServerRequest request) {
-        var options = ListOptions.builder().andQuery(notDeleting());
-        request.queryParam("username")
-                .filter(StringUtils::hasText)
-                .ifPresent(username -> options.andQuery(equal("spec.username", username)));
-        request.queryParam("status")
-                .filter(StringUtils::hasText)
-                .ifPresent(status -> options.andQuery(equal("spec.status", status)));
-        var page = request.queryParam("page").map(Integer::parseInt).orElse(1);
-        var size = request.queryParam("size").map(Integer::parseInt).orElse(50);
-        return client.listBy(TempRoleBinding.class, options.build(), PageRequestImpl.of(page, size, defaultSort()))
-                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+        return currentAuthentication().flatMap(authentication -> {
+            var options = ListOptions.builder().andQuery(notDeleting());
+            if (!isTemporaryRoleAdmin(authentication)) {
+                options.andQuery(equal("spec.username", authentication.getName()));
+            } else {
+                request.queryParam("username")
+                        .filter(StringUtils::hasText)
+                        .ifPresent(username -> options.andQuery(equal("spec.username", username)));
+            }
+            request.queryParam("status")
+                    .filter(StringUtils::hasText)
+                    .ifPresent(status -> options.andQuery(equal("spec.status", status)));
+            var page = request.queryParam("page").map(Integer::parseInt).orElse(1);
+            var size = request.queryParam("size").map(Integer::parseInt).orElse(50);
+            return client.listBy(
+                            TempRoleBinding.class,
+                            options.build(),
+                            PageRequestImpl.of(page, size, defaultSort()))
+                    .flatMap(result -> ServerResponse.ok().bodyValue(result));
+        });
     }
 
     private Mono<ServerResponse> get(ServerRequest request) {
-        return client.fetch(TempRoleBinding.class, request.pathVariable("name"))
+        return currentAuthentication().flatMap(authentication -> client
+                .fetch(TempRoleBinding.class, request.pathVariable("name"))
                 .switchIfEmpty(
                         Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "临时角色绑定不存在。")))
-                .flatMap(binding -> ServerResponse.ok().bodyValue(binding));
+                .filter(binding -> isTemporaryRoleAdmin(authentication)
+                        || authentication.getName().equals(binding.getSpec().getUsername()))
+                .switchIfEmpty(
+                        Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND, "临时角色绑定不存在。")))
+                .flatMap(binding -> ServerResponse.ok().bodyValue(binding)));
+    }
+
+    private static boolean isTemporaryRoleAdmin(Authentication authentication) {
+        var roles = AuthorityUtils.authoritiesToRoles(authentication.getAuthorities());
+        return roles.contains(BuiltinEntities.SUPER_ROLE)
+                || roles.contains(BuiltinEntities.SYSTEM_ADMIN_ROLE);
     }
 
     private Mono<ServerResponse> apply(ServerRequest request) {
@@ -259,6 +280,9 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
         }
         if (body.roleNames().stream().anyMatch(role -> !StringUtils.hasText(role))) {
             return Mono.error(new ServerWebInputException("roleNames 不能包含空值。"));
+        }
+        if (body.roleNames().stream().anyMatch(role -> role.contains("|") || role.contains("\u0000"))) {
+            return Mono.error(new ServerWebInputException("roleNames 不能包含非法字符。"));
         }
         var now = Instant.now();
         if (body.expiresAt() == null || !body.expiresAt().isAfter(now)) {

@@ -1,11 +1,13 @@
 package cn.tolim.pudans.core.ai.plan.endpoint;
 
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
+import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
 import cn.tolim.pudans.core.ai.plan.PlanUsage;
 import cn.tolim.pudans.core.ai.plan.PlanVouchers;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -43,7 +45,8 @@ class AiPlanUsageEndpointTest {
 
     @BeforeEach
     void setUp() {
-        var endpoint = new AiPlanUsageEndpoint(planUsage, new AiEndpointRequests(accounts));
+        var requests = new AiEndpointRequests(accounts);
+        var endpoint = new AiPlanUsageEndpoint(planUsage, requests, new UsageAccessResolver(requests));
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(PRINCIPAL)).build()))
@@ -73,17 +76,28 @@ class AiPlanUsageEndpointTest {
     }
 
     @Test
-    void returnsAUsersUsageByUid() {
-        when(planUsage.usage("uid-bob")).thenReturn(Mono.just(view()));
+    void hidesAnotherUsersUsageByUid() {
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
 
         client.get()
                 .uri("/aiplan/-/usage/uid-bob")
                 .exchange()
+                .expectStatus().isForbidden();
+
+        verifyNoInteractions(planUsage);
+    }
+
+    @Test
+    void returnsTheCurrentUsersUsageByUid() {
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(planUsage.usage(USER_ID)).thenReturn(Mono.just(view()));
+
+        client.get()
+                .uri("/aiplan/-/usage/" + USER_ID)
+                .exchange()
                 .expectStatus().isOk()
                 .expectBody()
                 .jsonPath("$.plan.name").isEqualTo("standard");
-
-        verify(planUsage).usage("uid-bob");
     }
 
     @Test
@@ -100,7 +114,9 @@ class AiPlanUsageEndpointTest {
 
     @Test
     void requiresAnAuthenticatedUser() {
-        var endpoint = new AiPlanUsageEndpoint(planUsage, new AiEndpointRequests(accounts));
+        var anonymousRequests = new AiEndpointRequests(accounts);
+        var endpoint = new AiPlanUsageEndpoint(
+                planUsage, anonymousRequests, new UsageAccessResolver(anonymousRequests));
         var anonymous = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
 
         anonymous.get()

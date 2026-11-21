@@ -11,12 +11,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.rbac.Role;
+import cn.tolim.pudans.contract.rbac.RoleBinding;
+import cn.tolim.pudans.contract.rbac.TempRoleBinding;
 import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.contract.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.ai.AiAgent;
@@ -36,6 +39,7 @@ import cn.tolim.pudans.core.ai.library.skill.Skills;
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
+import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.extension.api.ConfigMap;
 import cn.tolim.pudans.extension.api.Extension;
@@ -138,6 +142,15 @@ public class BuiltinEntityPolicy {
         if (PersonalAccessToken.KIND.equals(kind)) {
             return convert(extension, PersonalAccessToken.class).flatMap(this::checkPatCreate);
         }
+        if (UserConnection.KIND.equals(kind)) {
+            return convert(extension, UserConnection.class).flatMap(this::checkUserConnection);
+        }
+        if (RoleBinding.KIND.equals(kind)) {
+            return convert(extension, RoleBinding.class).flatMap(this::checkRoleBindingGrant);
+        }
+        if (TempRoleBinding.KIND.equals(kind)) {
+            return convert(extension, TempRoleBinding.class).flatMap(this::checkTempRoleBindingCreate);
+        }
         return Mono.empty();
     }
 
@@ -200,6 +213,15 @@ public class BuiltinEntityPolicy {
         }
         if (PersonalAccessToken.KIND.equals(kind)) {
             return convert(extension, PersonalAccessToken.class).flatMap(this::checkPatUpdate);
+        }
+        if (UserConnection.KIND.equals(kind)) {
+            return convert(extension, UserConnection.class).flatMap(this::checkUserConnection);
+        }
+        if (RoleBinding.KIND.equals(kind)) {
+            return convert(extension, RoleBinding.class).flatMap(this::checkRoleBindingGrant);
+        }
+        if (TempRoleBinding.KIND.equals(kind)) {
+            return convert(extension, TempRoleBinding.class).flatMap(this::checkTempRoleBindingUpdate);
         }
         return Mono.empty();
     }
@@ -459,6 +481,9 @@ public class BuiltinEntityPolicy {
 
     public Mono<Void> checkRoleMutation(String name) {
         return Mono.fromRunnable(() -> {
+            if (name != null && (name.contains("|") || name.contains("\u0000"))) {
+                throw denied("角色名称包含非法字符。");
+            }
             if (isBuiltinRole(name)) {
                 throw denied("内置角色 [" + name + "] 不可修改或删除。");
             }
@@ -509,7 +534,7 @@ public class BuiltinEntityPolicy {
     }
 
     private Mono<Void> checkUserGroupRoleRefs(UserGroup group) {
-        return Mono.fromRunnable(() -> {
+        return Mono.defer(() -> {
             var name = group.getMetadata() == null ? null : group.getMetadata().getName();
             var canonical = Optional.ofNullable(name).flatMap(builtinRoleDefinitions::group);
             var requested = roleRefNames(group);
@@ -518,24 +543,30 @@ public class BuiltinEntityPolicy {
                         .filter(this::isBuiltinRoleDefinition)
                         .findFirst();
                 if (builtinRole.isPresent()) {
-                    throw denied("自定义用户组不能绑定内置角色 [" + builtinRole.get() + "]。");
+                    return Mono.error(denied(
+                            "自定义用户组不能绑定内置角色 [" + builtinRole.get() + "]。"));
                 }
-                return;
+            } else {
+                var canonicalNames = canonicalRoleNames(canonical.get());
+                var missing = canonicalNames.stream()
+                        .filter(roleName -> !requested.contains(roleName))
+                        .findFirst();
+                if (missing.isPresent()) {
+                    return Mono.error(denied(
+                            "内置用户组不能移除内置角色 [" + missing.get() + "]。"));
+                }
+                var disallowed = requested.stream()
+                        .filter(this::isBuiltinRoleDefinition)
+                        .filter(roleName -> !canonicalNames.contains(roleName))
+                        .findFirst();
+                if (disallowed.isPresent()) {
+                    return Mono.error(denied(
+                            "内置用户组不能绑定内置角色 [" + disallowed.get() + "]。"));
+                }
             }
-            var canonicalNames = canonicalRoleNames(canonical.get());
-            var missing = canonicalNames.stream()
-                    .filter(roleName -> !requested.contains(roleName))
-                    .findFirst();
-            if (missing.isPresent()) {
-                throw denied("内置用户组不能移除内置角色 [" + missing.get() + "]。");
-            }
-            var disallowed = requested.stream()
-                    .filter(this::isBuiltinRoleDefinition)
-                    .filter(roleName -> !canonicalNames.contains(roleName))
-                    .findFirst();
-            if (disallowed.isPresent()) {
-                throw denied("内置用户组不能绑定内置角色 [" + disallowed.get() + "]。");
-            }
+            return requested.isEmpty()
+                    ? Mono.empty()
+                    : rolePermissionPolicy.checkGrant(Set.copyOf(requested));
         });
     }
 
@@ -672,7 +703,20 @@ public class BuiltinEntityPolicy {
             }
             return Mono.empty();
         })
-                .then(Mono.defer(() -> checkSystemAdminsGrant(groupName)));
+                .then(Mono.defer(() -> checkSystemAdminsGrant(groupName)))
+                .then(Mono.defer(() -> {
+                    if (builtinRoleDefinitions.group(groupName).isPresent()) {
+                        return Mono.empty();
+                    }
+                    return client.fetch(UserGroup.class, groupName)
+                            .switchIfEmpty(Mono.error(denied("用户组不存在。")))
+                            .flatMap(group -> {
+                                var roleNames = roleRefNames(group);
+                                return roleNames.isEmpty()
+                                        ? Mono.empty()
+                                        : rolePermissionPolicy.checkGrant(Set.copyOf(roleNames));
+                            });
+                }));
     }
 
     public Mono<Void> checkUserGroupRemoval(String username) {
@@ -776,7 +820,8 @@ public class BuiltinEntityPolicy {
                     if (!requestedReserved.isEmpty() && !requestedReserved.equals(existingReserved)) {
                         return Mono.<Void>error(denied("用户的保留标签为只读。"));
                     }
-                    return checkProtectedUserSecrets(user, existing);
+                    return checkProtectedUserSecrets(user, existing)
+                            .then(Mono.defer(() -> checkSuperAdminDisable(user, existing)));
                 });
     }
 
@@ -801,19 +846,160 @@ public class BuiltinEntityPolicy {
         return Mono.empty();
     }
 
-    private Mono<Void> checkPatCreate(PersonalAccessToken pat) {
-        if (pat.getSpec() == null || !pat.getSpec().isSudo()) {
+    private Mono<Void> checkUserConnection(UserConnection connection) {
+        var spec = connection.getSpec();
+        if (spec == null
+                || !StringUtils.hasText(spec.getUsername())
+                || !StringUtils.hasText(spec.getRegistrationId())
+                || !StringUtils.hasText(spec.getProviderUserId())) {
+            return Mono.error(denied("身份连接的用户、提供方和提供方用户标识不能为空。"));
+        }
+        return currentUsername().flatMap(caller -> spec.getUsername().equals(caller)
+                ? Mono.empty()
+                : Mono.error(denied("只能创建或修改自己的身份连接。")));
+    }
+
+    private Mono<Void> checkRoleBindingGrant(RoleBinding binding) {
+        var roleRef = binding.getRoleRef();
+        if (roleRef == null
+                || !Role.KIND.equals(roleRef.getKind())
+                || !StringUtils.hasText(roleRef.getName())) {
+            return Mono.error(denied("角色绑定必须引用角色。"));
+        }
+        if (BuiltinEntities.SUPER_ROLE.equals(roleRef.getName())) {
+            return Mono.error(denied("不能绑定超级管理员角色。"));
+        }
+        return rolePermissionPolicy.checkGrant(Set.of(roleRef.getName()));
+    }
+
+    private Mono<Void> checkTempRoleBindingCreate(TempRoleBinding binding) {
+        var spec = binding.getSpec();
+        if (spec == null) {
+            return Mono.error(denied("临时角色申请不能为空。"));
+        }
+        if (!TempRoleBinding.STATUS_PENDING.equals(spec.getStatus())) {
+            return Mono.error(denied("临时角色申请创建时必须处于待审批状态。"));
+        }
+        if (StringUtils.hasText(spec.getApprovedBy()) || spec.getApprovedAt() != null) {
+            return Mono.error(denied("不能预设审批信息。"));
+        }
+        return checkTempRoleNames(spec.getRoleNames());
+    }
+
+    private Mono<Void> checkTempRoleBindingUpdate(TempRoleBinding requested) {
+        return client.get(TempRoleBinding.class, nameOf(requested)).flatMap(existing -> {
+            var next = requested.getSpec();
+            var current = existing.getSpec();
+            if (next == null || current == null) {
+                return Mono.<Void>error(denied("临时角色申请不能为空。"));
+            }
+            if (!TempRoleBinding.STATUS_PENDING.equals(current.getStatus())) {
+                return Mono.<Void>error(denied("只能修改待审批的临时角色申请。"));
+            }
+            if (!TempRoleBinding.STATUS_PENDING.equals(next.getStatus())) {
+                return Mono.<Void>error(denied("临时角色申请状态只能由审批接口修改。"));
+            }
+            if (!Objects.equals(next.getUsername(), current.getUsername())
+                    || !Objects.equals(next.getRequestedBy(), current.getRequestedBy())) {
+                return Mono.<Void>error(denied("临时角色申请的申请人不可修改。"));
+            }
+            if (!Objects.equals(next.getApprovedBy(), current.getApprovedBy())
+                    || !Objects.equals(next.getApprovedAt(), current.getApprovedAt())
+                    || !Objects.equals(next.getApprovalAuditId(), current.getApprovalAuditId())
+                    || !Objects.equals(next.getRevokeAuditId(), current.getRevokeAuditId())) {
+                return Mono.<Void>error(denied("不能修改或预设审批信息。"));
+            }
+            return checkTempRoleNames(next.getRoleNames());
+        });
+    }
+
+    private static Mono<Void> checkTempRoleNames(List<String> roleNames) {
+        if (roleNames == null) {
             return Mono.empty();
         }
+        for (var roleName : roleNames) {
+            if (!StringUtils.hasText(roleName)) {
+                continue;
+            }
+            if (roleName.contains("|") || roleName.contains("\u0000")) {
+                return Mono.error(denied("角色名称包含非法字符。"));
+            }
+            if (TempRoleBinding.SUPER_ROLE_NAME.equals(roleName)) {
+                return Mono.error(denied("不能申请超级管理员角色。"));
+            }
+        }
+        return Mono.empty();
+    }
+
+    private Mono<Void> checkSuperAdminDisable(User requested, User existing) {
+        var name = requested.getMetadata() == null ? null : requested.getMetadata().getName();
+        var requestedSpec = requested.getSpec();
+        var existingSpec = existing.getSpec();
+        if (requestedSpec == null || existingSpec == null
+                || Objects.equals(requestedSpec.getDisabled(), existingSpec.getDisabled())) {
+            return Mono.empty();
+        }
+        return superAdminResolver.isCanonicalSuperAdmin(name).flatMap(superAdmin -> {
+            if (!Boolean.TRUE.equals(superAdmin)) {
+                return Mono.empty();
+            }
+            return currentRoles().flatMap(roles -> AuthorityUtils.containsSuperRole(roles)
+                    ? Mono.empty()
+                    : Mono.error(denied("只有超级管理员可以启用或禁用超级管理员账户。")));
+        });
+    }
+
+    public Mono<Void> checkUserPasswordReset(String username) {
+        return superAdminResolver.isCanonicalSuperAdmin(username).flatMap(superAdmin -> {
+            if (!Boolean.TRUE.equals(superAdmin)) {
+                return Mono.empty();
+            }
+            return currentRoles().flatMap(roles -> AuthorityUtils.containsSuperRole(roles)
+                    ? Mono.empty()
+                    : Mono.error(denied("只有超级管理员可以重置超级管理员密码。")));
+        });
+    }
+
+    private static Mono<String> currentUsername() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
-                .map(authentication -> AuthorityUtils.authoritiesToRoles(authentication.getAuthorities())
-                        .stream()
+                .map(Authentication::getName)
+                .filter(StringUtils::hasText)
+                .switchIfEmpty(Mono.error(denied("未认证。")));
+    }
+
+    private static Mono<Set<String>> currentRoles() {
+        return ReactiveSecurityContextHolder.getContext()
+                .map(SecurityContext::getAuthentication)
+                .map(authentication -> AuthorityUtils.authoritiesToRoles(authentication.getAuthorities()))
+                .defaultIfEmpty(Set.of());
+    }
+
+    private Mono<Void> checkPatCreate(PersonalAccessToken pat) {
+        var spec = pat.getSpec();
+        if (spec == null || !StringUtils.hasText(spec.getUsername())) {
+            return Mono.error(denied("个人访问令牌必须归属于当前用户。"));
+        }
+        var finalizers = pat.getMetadata() == null ? Set.<String>of() : nullSafe(pat.getMetadata().getFinalizers());
+        if (!finalizers.isEmpty()) {
+            return Mono.error(denied("不能为个人访问令牌设置 finalizer。"));
+        }
+        return currentUsername().flatMap(caller -> {
+            if (!caller.equals(spec.getUsername())) {
+                return Mono.<Void>error(denied("个人访问令牌只能归属于当前用户。"));
+            }
+            if (!spec.isSudo()) {
+                return Mono.empty();
+            }
+            return currentRoles().flatMap(roles -> {
+                var admin = roles.stream()
                         .anyMatch(role -> BuiltinEntities.SUPER_ROLE.equals(role)
-                                || BuiltinEntities.SYSTEM_ADMIN_ROLE.equals(role)))
-                .filter(Boolean::booleanValue)
-                .switchIfEmpty(Mono.error(denied("只有管理员可以创建带 sudo 能力的令牌。")))
-                .then();
+                                || BuiltinEntities.SYSTEM_ADMIN_ROLE.equals(role));
+                return admin
+                        ? Mono.empty()
+                        : Mono.<Void>error(denied("只有管理员可以创建带 sudo 能力的令牌。"));
+            });
+        });
     }
 
     private Mono<Void> checkPatUpdate(PersonalAccessToken requested) {
@@ -833,7 +1019,17 @@ public class BuiltinEntityPolicy {
                     || !Objects.equals(requestedSpec.getScopes(), existingSpec.getScopes())) {
                 return Mono.<Void>error(denied("PAT 的角色和 scope 不可修改。"));
             }
-            return Mono.empty();
+            if (!Objects.equals(requestedSpec.getTokenId(), existingSpec.getTokenId())
+                    || !Objects.equals(requestedSpec.getKeyVersion(), existingSpec.getKeyVersion())
+                    || requestedSpec.isRevoked() != existingSpec.isRevoked()
+                    || !Objects.equals(requestedSpec.getExpiresAt(), existingSpec.getExpiresAt())
+                    || !Objects.equals(requestedSpec.getRevokesAt(), existingSpec.getRevokesAt())
+                    || !Objects.equals(requestedSpec.getLastUsed(), existingSpec.getLastUsed())) {
+                return Mono.<Void>error(denied("PAT 的签名与生命周期字段不可修改。"));
+            }
+            return currentUsername().flatMap(caller -> caller.equals(existingSpec.getUsername())
+                    ? Mono.empty()
+                    : Mono.error(denied("只能修改自己的个人访问令牌。")));
         });
     }
 

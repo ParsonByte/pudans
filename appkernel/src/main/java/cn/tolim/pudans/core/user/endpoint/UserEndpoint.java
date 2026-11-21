@@ -676,7 +676,9 @@ public class UserEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> changePasswordForUser(ServerRequest request) {
-        return resolveName(request).flatMap(username -> changePassword(request, username, false));
+        return resolveName(request).flatMap(username -> builtinEntityPolicy
+                .checkUserPasswordReset(username)
+                .then(changePassword(request, username, false)));
     }
 
     private Mono<ServerResponse> changePassword(ServerRequest request, String username, boolean verifyOldPassword) {

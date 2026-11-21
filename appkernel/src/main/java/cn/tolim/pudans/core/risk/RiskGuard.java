@@ -78,7 +78,7 @@ public class RiskGuard {
         return redisTemplate
                 .execute(WINDOW_SCRIPT, List.of(windowKey(scene, subject)), args)
                 .next()
-                .map(value -> RiskDecision.parse(value, rule.getBlockSeconds()))
+                .map(value -> RiskDecision.parse(value, rule.blocking() ? rule.getBlockSeconds() : 0))
                 .defaultIfEmpty(RiskDecision.permit());
     }
 

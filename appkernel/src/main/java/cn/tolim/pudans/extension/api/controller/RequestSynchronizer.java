@@ -49,6 +49,8 @@ public class RequestSynchronizer implements Synchronizer<Request> {
         }
         log.info("正在启动请求({})同步器...", type);
         started = true;
+        // 先注册监听再执行全量快照，避免两者之间发生的变更被漏掉；队列按名称去重。
+        client.watch(this.watcher);
 
         if (syncAllOnStart) {
 
@@ -66,7 +68,6 @@ public class RequestSynchronizer implements Synchronizer<Request> {
                 names.forEach(name -> watcher.onAdd(new Request(name)));
             }
         }
-        client.watch(this.watcher);
         log.info("请求({})同步器已启动。", type);
     }
 

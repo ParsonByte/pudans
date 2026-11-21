@@ -7,6 +7,7 @@ import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import cn.tolim.pudans.contract.user.User;
+import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.extension.api.ExtensionUtil;
 import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
@@ -203,13 +204,13 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
         if (!StringUtils.hasText(sudoUsername)) {
             return Mono.just(patRoles == null ? List.of() : patRoles);
         }
-        return rolesOf(sudoUsername)
+        return rolesOf(pat.getSpec().getUsername())
                 .collectList()
-                .map(targetRoles -> {
-                    if (CollectionUtils.isEmpty(patRoles)) {
-                        return targetRoles;
-                    }
-                    return targetRoles.stream().filter(patRoles::contains).toList();
+                .zipWith(rolesOf(sudoUsername).collectList())
+                .map(tuple -> {
+                    var ownerRoles = tuple.getT1();
+                    var allowed = CollectionUtils.isEmpty(patRoles) ? ownerRoles : patRoles;
+                    return tuple.getT2().stream().filter(allowed::contains).toList();
                 });
     }
 
@@ -218,6 +219,19 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                         roleService.getRolesByUsername(username),
                         groups.getRoleNamesByUsername(username))
                 .distinct();
+    }
+
+    private Mono<Void> checkSudoTargetRoles(PersonalAccessToken pat, String sudoUsername) {
+        return rolesOf(sudoUsername)
+                .collectList()
+                .flatMap(targetRoles -> targetRoles.contains(BuiltinEntities.SUPER_ROLE)
+                        ? rolesOf(pat.getSpec().getUsername())
+                                .collectList()
+                                .flatMap(ownerRoles -> ownerRoles.contains(BuiltinEntities.SUPER_ROLE)
+                                        ? Mono.empty()
+                                        : Mono.error(new InvalidBearerTokenException(
+                                                "无权 sudo 为超级管理员。")))
+                        : Mono.empty());
     }
 
     private Mono<Void> checkSudo(PersonalAccessToken pat, @Nullable String sudoUsername) {
@@ -231,7 +245,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 .switchIfEmpty(Mono.error(() -> new InvalidBearerTokenException("sudo 目标用户不存在。")))
                 .flatMap(user -> Boolean.TRUE.equals(user.getSpec().getDisabled())
                         ? Mono.error(new InvalidBearerTokenException("sudo 目标用户已被禁用。"))
-                        : Mono.empty());
+                        : checkSudoTargetRoles(pat, sudoUsername));
     }
 
     private Mono<JwtAuthenticationToken> checkAndRebuild(JwtAuthenticationToken jat) {

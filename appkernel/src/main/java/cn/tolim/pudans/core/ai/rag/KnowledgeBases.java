@@ -92,6 +92,13 @@ public class KnowledgeBases {
                 .switchIfEmpty(Mono.error(notFound()));
     }
 
+    public Mono<KnowledgeBase> findWritable(
+            String name, String userId, Set<String> roleNames, @Nullable String deptId) {
+        return client.fetch(KnowledgeBase.class, name)
+                .filter(knowledgeBase -> knowledgeBaseAcl.canWrite(knowledgeBase, userId, roleNames, deptId))
+                .switchIfEmpty(Mono.error(notFound()));
+    }
+
     public Mono<KnowledgeBaseRetrievalResult> search(
             String userId,
             Set<String> roleNames,

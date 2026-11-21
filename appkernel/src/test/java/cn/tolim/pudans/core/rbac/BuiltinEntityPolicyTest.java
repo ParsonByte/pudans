@@ -14,9 +14,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.rbac.Role;
+import cn.tolim.pudans.contract.rbac.RoleBinding;
+import cn.tolim.pudans.contract.rbac.TempRoleBinding;
 import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.contract.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.ai.AiChatMode;
@@ -28,6 +33,8 @@ import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.contract.ai.AiTeam;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
+import cn.tolim.pudans.contract.user.UserConnection;
+import cn.tolim.pudans.security.api.PersonalAccessToken;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.extension.api.GroupVersionKind;
 import cn.tolim.pudans.extension.api.JsonExtension;
@@ -299,6 +306,8 @@ class BuiltinEntityPolicyTest {
 
     @Test
     void createUserGroupAllowsCustomRoles() {
+        when(rolePermissionPolicy.checkGrant(Set.of("custom-role"))).thenReturn(Mono.empty());
+
         StepVerifier.create(policy.checkCreate(
                         userGroupGvk(), userGroup("custom-group", "custom-role")))
                 .verifyComplete();
@@ -306,6 +315,9 @@ class BuiltinEntityPolicyTest {
 
     @Test
     void updateBuiltinGroupAllowsRetainingBuiltinRolesAndAddingCustomRoles() {
+        when(rolePermissionPolicy.checkGrant(Set.of("system-admin-role", "custom-role")))
+                .thenReturn(Mono.empty());
+
         StepVerifier.create(policy.checkUpdate(
                         userGroupGvk(),
                         "system-admins",
@@ -676,5 +688,150 @@ class BuiltinEntityPolicyTest {
         account.getSpec().setProvider("openai-primary");
         account.getSpec().setApiKey(apiKey);
         return account;
+    }
+
+    @Test
+    void createUserConnectionForAnotherUserIsDenied() {
+        var connection = userConnection("victim");
+
+        StepVerifier.create(authenticated(policy.checkCreate(userConnectionGvk(), connection), NAME))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void createUserConnectionForSelfIsAllowed() {
+        var connection = userConnection(NAME);
+
+        StepVerifier.create(authenticated(policy.checkCreate(userConnectionGvk(), connection), NAME))
+                .verifyComplete();
+    }
+
+    @Test
+    void roleBindingToSuperRoleIsDenied() {
+        var binding = new RoleBinding();
+        binding.setMetadata(metadataNamed("alice-super-binding"));
+        var roleRef = new RoleBinding.RoleRef();
+        roleRef.setKind(Role.KIND);
+        roleRef.setName(BuiltinEntities.SUPER_ROLE);
+        binding.setRoleRef(roleRef);
+
+        StepVerifier.create(policy.checkCreate(roleBindingGvk(), binding))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void roleNameWithDelimiterIsDenied() {
+        StepVerifier.create(policy.checkCreate(roleGvk(), role("x|super-role", null)))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void tempRoleBindingCannotActivateItselfThroughGenericUpdate() {
+        var existing = tempRoleBinding(TempRoleBinding.STATUS_PENDING, List.of("viewer"));
+        when(client.get(TempRoleBinding.class, "req-1")).thenReturn(Mono.just(existing));
+        var requested = tempRoleBinding(TempRoleBinding.STATUS_ACTIVE, List.of("viewer"));
+
+        StepVerifier.create(policy.checkUpdate(tempRoleBindingGvk(), "req-1", requested))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void tempRoleBindingCannotRequestSuperRoleThroughGenericUpdate() {
+        var existing = tempRoleBinding(TempRoleBinding.STATUS_PENDING, List.of("viewer"));
+        when(client.get(TempRoleBinding.class, "req-1")).thenReturn(Mono.just(existing));
+        var requested = tempRoleBinding(TempRoleBinding.STATUS_PENDING, List.of(BuiltinEntities.SUPER_ROLE));
+
+        StepVerifier.create(policy.checkUpdate(tempRoleBindingGvk(), "req-1", requested))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void patCreateForAnotherUserIsDenied() {
+        var pat = personalAccessToken("victim");
+
+        StepVerifier.create(authenticated(policy.checkCreate(personalAccessTokenGvk(), pat), NAME))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void patCreateForSelfIsAllowed() {
+        var pat = personalAccessToken(NAME);
+
+        StepVerifier.create(authenticated(policy.checkCreate(personalAccessTokenGvk(), pat), NAME))
+                .verifyComplete();
+    }
+
+    @Test
+    void resettingSuperAdminPasswordRequiresSuperRole() {
+        when(superAdminResolver.isCanonicalSuperAdmin("root")).thenReturn(Mono.just(true));
+
+        StepVerifier.create(authenticated(
+                        policy.checkUserPasswordReset("root"), NAME, BuiltinEntities.SYSTEM_ADMIN_ROLE))
+                .expectError(AccessDeniedException.class)
+                .verify();
+
+        StepVerifier.create(authenticated(
+                        policy.checkUserPasswordReset("root"), NAME, BuiltinEntities.SUPER_ROLE))
+                .verifyComplete();
+    }
+
+    private static <T> Mono<T> authenticated(Mono<T> mono, String username, String... roles) {
+        var authorities = Arrays.stream(roles)
+                .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
+                .toList();
+        var authentication = UsernamePasswordAuthenticationToken.authenticated(
+                username, "n/a", authorities);
+        return mono.contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication));
+    }
+
+    private static UserConnection userConnection(String username) {
+        var connection = new UserConnection();
+        connection.setMetadata(metadataNamed("connection-1"));
+        var spec = new UserConnection.UserConnectionSpec();
+        spec.setUsername(username);
+        spec.setRegistrationId("feishu");
+        spec.setProviderUserId("provider-user-1");
+        connection.setSpec(spec);
+        return connection;
+    }
+
+    private static TempRoleBinding tempRoleBinding(String status, List<String> roleNames) {
+        var binding = TempRoleBinding.apply(
+                NAME, roleNames, java.time.Instant.now().plusSeconds(600), "reason", "ticket", NAME);
+        binding.setMetadata(metadataNamed("req-1"));
+        binding.getSpec().setStatus(status);
+        return binding;
+    }
+
+    private static PersonalAccessToken personalAccessToken(String username) {
+        var pat = new PersonalAccessToken();
+        pat.setMetadata(metadataNamed("pat-1"));
+        pat.getSpec().setName("pat-1");
+        pat.getSpec().setUsername(username);
+        pat.getSpec().setTokenId("token-1");
+        return pat;
+    }
+
+    private static GroupVersionKind userConnectionGvk() {
+        return new GroupVersionKind(UserConnection.GROUP, UserConnection.VERSION, UserConnection.KIND);
+    }
+
+    private static GroupVersionKind roleBindingGvk() {
+        return new GroupVersionKind(RoleBinding.GROUP, RoleBinding.VERSION, RoleBinding.KIND);
+    }
+
+    private static GroupVersionKind tempRoleBindingGvk() {
+        return new GroupVersionKind(
+                TempRoleBinding.GROUP, TempRoleBinding.VERSION, TempRoleBinding.KIND);
+    }
+
+    private static GroupVersionKind personalAccessTokenGvk() {
+        return new GroupVersionKind("security.pudans.tolim.cn", "v1alpha1", PersonalAccessToken.KIND);
     }
 }
