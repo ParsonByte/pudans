@@ -12,15 +12,15 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.controller.Reconciler.Request;
-import cn.tolim.pudans.contract.security.device.DeviceService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.user.service.AnnouncementStateService;
-import cn.tolim.pudans.core.user.service.AvatarStorageService;
-import cn.tolim.pudans.core.user.service.HashIdService;
+import cn.tolim.pudans.contract.security.device.DeviceSessions;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.user.AnnouncementReads;
+import cn.tolim.pudans.core.user.AvatarStorage;
+import cn.tolim.pudans.core.user.HashIds;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,19 +32,19 @@ class UserReconcilerTest {
     InternalReactiveExtensionClient client;
 
     @Mock
-    DeviceService deviceService;
+    DeviceSessions deviceSessions;
 
     @Mock
     DomainEventPublisher domainEventPublisher;
 
     @Mock
-    AvatarStorageService avatarStorageService;
+    AvatarStorage avatarStorage;
 
     @Mock
-    HashIdService hashIdService;
+    HashIds hashIds;
 
     @Mock
-    AnnouncementStateService announcementStateService;
+    AnnouncementReads announcementReads;
 
     private UserReconciler reconciler;
 
@@ -52,11 +52,11 @@ class UserReconcilerTest {
     void setUp() {
         reconciler = new UserReconciler(
                 client,
-                deviceService,
+                deviceSessions,
                 domainEventPublisher,
-                avatarStorageService,
-                hashIdService,
-                announcementStateService);
+                avatarStorage,
+                hashIds,
+                announcementReads);
     }
 
     private static User user(String name) {

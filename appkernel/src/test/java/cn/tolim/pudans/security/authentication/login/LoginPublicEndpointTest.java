@@ -3,17 +3,17 @@ package cn.tolim.pudans.security.authentication.login;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.core.rbac.service.UiPermissionService;
+import cn.tolim.pudans.core.rbac.permission.UiPermissions;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.OidcProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
 import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import cn.tolim.pudans.infra.setting.ParameterSettingSecretCipher;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
-import cn.tolim.pudans.security.authentication.AuthProviderService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
+import cn.tolim.pudans.security.authentication.AuthProviders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,16 +26,16 @@ import reactor.core.publisher.Flux;
 class LoginPublicEndpointTest {
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     @Mock
-    AuthProviderService authProviderService;
+    AuthProviders authProviders;
 
     @Mock
     InitializationStateGetter initializationStateGetter;
 
     @Mock
-    UiPermissionService uiPermissionService;
+    UiPermissions uiPermissions;
 
     @Mock
     ParameterSettingFetcher parameterSettingFetcher;
@@ -45,27 +45,27 @@ class LoginPublicEndpointTest {
 
     private FeishuProperties feishuProperties;
 
-    private SecurityParameterSettingService securitySettings;
+    private SecurityParameters securitySettings;
 
     private WebTestClient webTestClient;
 
     @BeforeEach
     void setUp() {
         feishuProperties = new FeishuProperties();
-        securitySettings = new SecurityParameterSettingService(
+        securitySettings = new SecurityParameters(
                 parameterSettingFetcher,
                 parameterSettingSecretCipher,
                 new OidcProperties(),
                 feishuProperties);
-        when(authProviderService.getEnabledProviders()).thenReturn(Flux.empty());
+        when(authProviders.getEnabledProviders()).thenReturn(Flux.empty());
 
         var endpoint = new LoginPublicEndpoint(
                 new SecurityProperties(),
-                userService,
-                authProviderService,
+                accounts,
+                authProviders,
                 securitySettings,
                 initializationStateGetter,
-                uiPermissionService);
+                uiPermissions);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 

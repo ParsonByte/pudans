@@ -3,9 +3,9 @@ package cn.tolim.pudans.core.ai.plan.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.core.ai.plan.PlanBindingService;
-import cn.tolim.pudans.core.ai.plan.PlanResolutionService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.ai.plan.PlanBindings;
+import cn.tolim.pudans.core.ai.plan.PlanResolution;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
@@ -22,9 +22,9 @@ public class AiPlanBindingEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiPlanBindingV1alpha1";
 
-    private final PlanBindingService bindingService;
+    private final PlanBindings bindingService;
 
-    private final PlanResolutionService resolutionService;
+    private final PlanResolution resolutionService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -35,8 +35,8 @@ public class AiPlanBindingEndpoint implements CustomEndpoint {
                         .tag(TAG)
                         .requestBody(requestBodyBuilder()
                                 .required(true)
-                                .implementation(PlanBindingService.BulkBindRequest.class))
-                        .response(responseBuilder().implementation(PlanBindingService.BulkBindResult.class)))
+                                .implementation(PlanBindings.BulkBindRequest.class))
+                        .response(responseBuilder().implementation(PlanBindings.BulkBindResult.class)))
                 .GET("/aiplanbindings/-/resolve/{uid}", this::resolve, builder -> builder
                         .operationId("resolveAiPlanBinding")
                         .description("Preview the plan that a user currently resolves to.")
@@ -46,7 +46,7 @@ public class AiPlanBindingEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> bulk(ServerRequest request) {
-        return request.bodyToMono(PlanBindingService.BulkBindRequest.class)
+        return request.bodyToMono(PlanBindings.BulkBindRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
                 .flatMap(bindingService::bulk)
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));

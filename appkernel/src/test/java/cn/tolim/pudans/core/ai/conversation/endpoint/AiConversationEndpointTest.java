@@ -6,15 +6,15 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.conversation.AiConversationService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.conversation.Conversations;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.team.Teams;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.NewConversation;
@@ -45,16 +45,16 @@ class AiConversationEndpointTest {
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
 
     @Mock
-    AiConversationService conversationService;
+    Conversations conversationService;
 
     @Mock
-    AiTeamService teamService;
+    Teams teamService;
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     private WebTestClient client;
 
@@ -64,7 +64,7 @@ class AiConversationEndpointTest {
                 conversationService,
                 teamService,
                 settingService,
-                new AiEndpointRequests(userService),
+                new AiEndpointRequests(accounts),
                 new com.fasterxml.jackson.databind.ObjectMapper());
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
@@ -74,7 +74,7 @@ class AiConversationEndpointTest {
 
     @Test
     void listsConversationsWithDefaultPaging() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(conversationService.list(USER_ID, Long.MAX_VALUE, 20)).thenReturn(Flux.just(conversation()));
 
         client.get()
@@ -91,7 +91,7 @@ class AiConversationEndpointTest {
 
     @Test
     void appliesTheConversationLimitAndCursor() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(conversationService.list(USER_ID, 42L, 50)).thenReturn(Flux.empty());
 
         client.get()
@@ -122,7 +122,7 @@ class AiConversationEndpointTest {
 
     @Test
     void createsAConversationWithTheDefaultAgent() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(settingService.defaults()).thenReturn(Mono.just(new AiSetting.Defaults()));
         when(teamService.requireAgent("default", USER_ID)).thenReturn(Mono.just(agent("default", "default")));
         when(conversationService.createOrGet(any(NewConversation.class))).thenReturn(Mono.just(conversation()));
@@ -152,7 +152,7 @@ class AiConversationEndpointTest {
 
     @Test
     void createsAConversationWithAnExplicitAgent() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(teamService.requireAgent("research", USER_ID)).thenReturn(Mono.just(agent("research", "team-x")));
         when(conversationService.createOrGet(any(NewConversation.class))).thenReturn(Mono.just(conversation()));
 
@@ -173,7 +173,7 @@ class AiConversationEndpointTest {
 
     @Test
     void getsAnOwnedConversation() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(conversationService.requireOwned(7L, USER_ID)).thenReturn(Mono.just(conversation()));
 
         client.get()
@@ -186,7 +186,7 @@ class AiConversationEndpointTest {
 
     @Test
     void returnsForbiddenForAnotherOwnersConversation() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(conversationService.requireOwned(7L, USER_ID))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.FORBIDDEN, "ai-conversation-forbidden", "无权访问该会话。")));
@@ -207,7 +207,7 @@ class AiConversationEndpointTest {
 
     @Test
     void softDeletesAnOwnedConversation() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(conversationService.requireOwned(7L, USER_ID)).thenReturn(Mono.just(conversation()));
         when(conversationService.delete(conversation())).thenReturn(Mono.empty());
 
@@ -219,7 +219,7 @@ class AiConversationEndpointTest {
 
     @Test
     void listsMessagesWithTheDefaultCursor() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(conversationService.requireOwned(7L, USER_ID)).thenReturn(Mono.just(conversation()));
         when(conversationService.history(conversation(), 0L, 50)).thenReturn(Flux.just(message()));
         when(conversationService.metadata(conversation())).thenReturn(Flux.empty());
@@ -237,7 +237,7 @@ class AiConversationEndpointTest {
 
     @Test
     void appliesTheMessageCursorAndLimit() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(conversationService.requireOwned(7L, USER_ID)).thenReturn(Mono.just(conversation()));
         when(conversationService.history(conversation(), 12L, 100)).thenReturn(Flux.empty());
         when(conversationService.metadata(conversation())).thenReturn(Flux.empty());

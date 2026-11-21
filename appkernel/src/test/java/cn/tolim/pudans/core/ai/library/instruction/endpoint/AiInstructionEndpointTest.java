@@ -3,12 +3,12 @@ package cn.tolim.pudans.core.ai.library.instruction.endpoint;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.ai.AiInstruction;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiInstruction;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.instruction.InstructionService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.instruction.Instructions;
+import cn.tolim.pudans.core.ai.team.Teams;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,10 +23,10 @@ import reactor.core.publisher.Mono;
 class AiInstructionEndpointTest {
 
     @Mock
-    InstructionService instructionService;
+    Instructions instructions;
 
     @Mock
-    AiTeamService teamService;
+    Teams teamService;
 
     @Mock
     AiEndpointRequests requests;
@@ -36,7 +36,7 @@ class AiInstructionEndpointTest {
     @BeforeEach
     void setUp() {
         client = WebTestClient.bindToRouterFunction(
-                        new AiInstructionEndpoint(instructionService, teamService, requests).endpoint())
+                        new AiInstructionEndpoint(instructions, teamService, requests).endpoint())
                 .build();
     }
 
@@ -44,7 +44,7 @@ class AiInstructionEndpointTest {
     void listsInstructionsForAnOwnedAgent() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
         when(teamService.requireAgent("agent-a", "alice")).thenReturn(Mono.just(agent("agent-a")));
-        when(instructionService.byAgent("agent-a")).thenReturn(Flux.just(instruction("shared-a")));
+        when(instructions.byAgent("agent-a")).thenReturn(Flux.just(instruction("shared-a")));
 
         client.get()
                 .uri("/aiinstructions/-/by-agent?agent=agent-a")

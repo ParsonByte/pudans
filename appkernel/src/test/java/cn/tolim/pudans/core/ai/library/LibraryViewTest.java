@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.ai.library;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMcpServer;
-import cn.tolim.pudans.core.ai.library.instruction.InstructionService;
-import cn.tolim.pudans.core.ai.library.mcp.McpClientService;
-import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
-import cn.tolim.pudans.core.ai.library.skill.SkillService;
+import cn.tolim.pudans.contract.ai.resource.AiMcpServer;
+import cn.tolim.pudans.core.ai.library.instruction.Instructions;
+import cn.tolim.pudans.core.ai.library.mcp.McpClients;
+import cn.tolim.pudans.core.ai.library.mcp.McpServers;
+import cn.tolim.pudans.core.ai.library.skill.Skills;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,13 +22,13 @@ import reactor.test.StepVerifier;
 class LibraryViewTest {
 
     @Mock
-    McpServerService mcpServerService;
+    McpServers mcpServerService;
 
     @Mock
-    SkillService skillService;
+    Skills skillService;
 
     @Mock
-    InstructionService instructionService;
+    Instructions instructionService;
 
     LibraryView view;
 
@@ -39,9 +39,9 @@ class LibraryViewTest {
 
     @Test
     void composesMcpSkillsAndInstructionsIntoASnapshot() {
-        var catalog = new McpServerService.McpToolCatalog(List.of(
-                new McpServerService.McpToolDefinition("mcp.a.search", "a", "search", null, null)));
-        var summary = new SkillService.SkillSummary("skill-a", "Skill A", "描述", "内容");
+        var catalog = new McpServers.McpToolCatalog(List.of(
+                new McpServers.McpToolDefinition("mcp.a.search", "a", "search", null, null)));
+        var summary = new Skills.SkillSummary("skill-a", "Skill A", "描述", "内容");
         when(mcpServerService.toolCatalog("agent-a")).thenReturn(Mono.just(catalog));
         when(skillService.skillsForAgent("agent-a")).thenReturn(Flux.just(summary));
         when(instructionService.systemSections("agent-a")).thenReturn(Mono.just("规则"));
@@ -57,10 +57,10 @@ class LibraryViewTest {
 
     @Test
     void exposesMcpServerViewsAndCalls() {
-        var serverView = new McpServerService.McpServerView(
+        var serverView = new McpServers.McpServerView(
                 "a", "A", null, AiMcpServer.Transport.HTTP, true,
                 AiMcpServer.Health.HEALTHY, 0, List.of(), null);
-        var call = new McpClientService.McpToolCallResult("ok", false);
+        var call = new McpClients.McpToolCallResult("ok", false);
         when(mcpServerService.byAgent("agent-a")).thenReturn(Flux.just(serverView));
         when(mcpServerService.callTool("agent-a", "mcp.a.search", null)).thenReturn(Mono.just(call));
 

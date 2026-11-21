@@ -6,7 +6,7 @@ import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.ResolvedStoragePolicy;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;

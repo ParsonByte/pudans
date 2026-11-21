@@ -3,13 +3,13 @@ package cn.tolim.pudans.core.user.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.infra.properties.PasskeyProperties;
-import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
-import cn.tolim.pudans.infra.webauthn.PasskeyService;
-import cn.tolim.pudans.security.authentication.ExternalLoginCompletionService;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.infra.webauthn.Passkeys;
+import cn.tolim.pudans.security.authentication.ExternalLogins;
 import cn.tolim.pudans.security.authentication.LoginRejectedException;
 import java.util.List;
 import java.util.Map;
@@ -31,13 +31,13 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
 
     private static final String CHALLENGE_ATTRIBUTE = PasskeyAssertionEndpoint.class.getName() + ".CHALLENGE";
 
-    private final PasskeyService passkeyService;
+    private final Passkeys passkeyService;
 
-    private final ParameterSettingGroupService parameterSettingGroupService;
+    private final ParameterGroups parameterGroups;
 
     private final PasskeyProperties properties;
 
-    private final ExternalLoginCompletionService externalLoginCompletionService;
+    private final ExternalLogins externalLogins;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -69,7 +69,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
     }
 
     private Mono<Boolean> passkeyLoginEnabled() {
-        return parameterSettingGroupService
+        return parameterGroups
                 .getSession()
                 .map(session -> !Boolean.FALSE.equals(session.getPasskeyLoginEnabled()))
                 .defaultIfEmpty(true);
@@ -122,7 +122,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                 .flatMap(challenge -> request.bodyToMono(String.class)
                         .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                         .flatMap(json -> passkeyService.verifyAssertion(json, challenge)))
-                .flatMap(result -> externalLoginCompletionService.complete(
+                .flatMap(result -> externalLogins.complete(
                         request.exchange(), result.username(), "passkey"))
                 .flatMap(completion -> ServerResponse.ok()
                         .bodyValue(completion.twoFactorRequired()

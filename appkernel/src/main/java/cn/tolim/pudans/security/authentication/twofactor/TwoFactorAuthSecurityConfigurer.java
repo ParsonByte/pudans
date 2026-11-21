@@ -3,8 +3,8 @@ package cn.tolim.pudans.security.authentication.twofactor;
 import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
 
 import cn.tolim.pudans.security.authentication.LoginFlowHandler;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.risk.service.RiskControlService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.risk.RiskGuard;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import org.springframework.core.annotation.Order;
@@ -29,11 +29,11 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
 
     private final ServerRequestCache serverRequestCache;
 
-    private final RiskControlService riskControlService;
+    private final RiskGuard riskGuard;
 
     private final TotpAuthenticationFailureHandler failureHandler;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     private final SecurityProperties securityProperties;
 
@@ -42,17 +42,17 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
             TwoFactorAuthenticationManager twoFactorAuthenticationManager,
             LoginFlowHandler loginFlowHandler,
             ServerRequestCache serverRequestCache,
-            RiskControlService riskControlService,
+            RiskGuard riskGuard,
             TotpAuthenticationFailureHandler failureHandler,
-            AuditService auditService,
+            AuditLog auditLog,
             SecurityProperties securityProperties) {
         this.securityContextRepository = securityContextRepository;
         this.twoFactorAuthenticationManager = twoFactorAuthenticationManager;
         this.loginFlowHandler = loginFlowHandler;
         this.serverRequestCache = serverRequestCache;
-        this.riskControlService = riskControlService;
+        this.riskGuard = riskGuard;
         this.failureHandler = failureHandler;
-        this.auditService = auditService;
+        this.auditLog = auditLog;
         this.securityProperties = securityProperties;
     }
 
@@ -61,12 +61,12 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
         var filter = new AuthenticationWebFilter(twoFactorAuthenticationManager);
         filter.setRequiresAuthenticationMatcher(pathMatchers(HttpMethod.POST, "/challenges/two-factor/*"));
         filter.setSecurityContextRepository(securityContextRepository);
-        filter.setServerAuthenticationConverter(new TwoFactorCodeAuthenticationConverter(riskControlService));
+        filter.setServerAuthenticationConverter(new TwoFactorCodeAuthenticationConverter(riskGuard));
         filter.setAuthenticationSuccessHandler(
                 new TotpAuthenticationSuccessHandler(
                         loginFlowHandler,
                         serverRequestCache,
-                        auditService,
+                        auditLog,
                         securityProperties.getPostLoginUrl()));
         filter.setAuthenticationFailureHandler(failureHandler);
         http.addFilterAt(filter, SecurityWebFiltersOrder.AUTHENTICATION);

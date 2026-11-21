@@ -5,14 +5,14 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.Device;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.security.resource.Device;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.router.selector.FieldSelector;
-import cn.tolim.pudans.contract.security.device.DeviceService;
+import cn.tolim.pudans.contract.security.device.DeviceSessions;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.security.Principal;
@@ -41,7 +41,7 @@ import reactor.core.publisher.Mono;
 public class DeviceEndpoint implements CustomEndpoint {
     private final ReactiveExtensionClient client;
     private final ReactiveFindByIndexNameSessionRepository<?> sessionRepository;
-    private final DeviceService deviceService;
+    private final DeviceSessions deviceSessions;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -72,7 +72,7 @@ public class DeviceEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> revokeDevice(ServerRequest request) {
         final var deviceId = request.pathVariable("deviceId");
         return principalName()
-                .flatMap(principalName -> deviceService.revoke(principalName, deviceId))
+                .flatMap(principalName -> deviceSessions.revoke(principalName, deviceId))
                 .then(ServerResponse.noContent().build());
     }
 

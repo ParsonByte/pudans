@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.ai.provider.supplier.deepseek;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolException;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.AiProviderFile;
 import cn.tolim.pudans.core.ai.provider.AiProviderFilePage;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
@@ -45,7 +45,7 @@ public class DeepSeekFilesClient extends AbstractDeepSeekClient {
     public DeepSeekFilesClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            AiProviderAccountService accountService) {
+            ProviderAccounts accountService) {
         super(webClient, mapper, accountService, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
     }
 

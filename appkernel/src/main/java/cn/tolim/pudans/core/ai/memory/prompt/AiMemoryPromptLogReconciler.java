@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.prompt;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
 import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.controller.Controller;
 import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;

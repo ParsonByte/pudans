@@ -16,19 +16,19 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
-import cn.tolim.pudans.contract.core.extension.ai.AiChatMode;
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.contract.core.extension.ai.AiTeam;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.contract.rbac.resource.UserGroup;
+import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
+import cn.tolim.pudans.contract.ai.resource.AiChatMode;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.resource.AiTeam;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
 import cn.tolim.pudans.contract.extension.JsonExtension;
 import cn.tolim.pudans.contract.extension.Metadata;
@@ -52,7 +52,7 @@ class BuiltinEntityPolicyTest {
     RolePermissionPolicy rolePermissionPolicy;
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     private final BuiltinRoleDefinitions builtinRoleDefinitions = new BuiltinRoleDefinitions();
 
@@ -61,7 +61,7 @@ class BuiltinEntityPolicyTest {
     @BeforeEach
     void setUp() {
         policy = new BuiltinEntityPolicy(
-                client, superAdminResolver, builtinRoleDefinitions, rolePermissionPolicy, userService);
+                client, superAdminResolver, builtinRoleDefinitions, rolePermissionPolicy, accounts);
     }
 
     private static GroupVersionKind userGvk() {

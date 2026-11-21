@@ -9,8 +9,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.UserConnection;
-import cn.tolim.pudans.core.user.service.UserConnectionService;
+import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.security.authentication.PudansUserDetails;
 import cn.tolim.pudans.security.authentication.login.PudansUser;
@@ -47,7 +47,7 @@ class OAuth2LoginSuccessHandlerTest {
     private static final String USERNAME = "alice";
 
     @Mock
-    UserConnectionService connectionService;
+    Connections connectionService;
 
     @Mock
     OAuth2AuthenticationSession authenticationSession;

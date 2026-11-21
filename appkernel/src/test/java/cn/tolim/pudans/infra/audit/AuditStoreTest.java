@@ -30,7 +30,7 @@ import org.springframework.transaction.ReactiveTransactionManager;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
 import cn.tolim.pudans.contract.extension.Metadata;
 
 @ExtendWith(MockitoExtension.class)

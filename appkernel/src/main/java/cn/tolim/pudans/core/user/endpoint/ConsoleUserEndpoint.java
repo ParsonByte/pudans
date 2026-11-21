@@ -2,8 +2,8 @@ package cn.tolim.pudans.core.user.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
@@ -26,10 +26,10 @@ import reactor.core.publisher.Mono;
 @Component
 class ConsoleUserEndpoint implements CustomEndpoint {
 
-    private final UserService userService;
+    private final Accounts accounts;
 
-    ConsoleUserEndpoint(UserService userService) {
-        this.userService = userService;
+    ConsoleUserEndpoint(Accounts accounts) {
+        this.accounts = accounts;
     }
 
     @Override
@@ -70,7 +70,7 @@ class ConsoleUserEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> handleEnableUser(ServerRequest request) {
-        return userService
+        return accounts
                 .enable(request.pathVariable("username"))
                 .switchIfEmpty(Mono.error(
                         () -> new UnsatisfiedAttributeValueException("用户不存在或已启用。")))
@@ -87,7 +87,7 @@ class ConsoleUserEndpoint implements CustomEndpoint {
                 .filter(currentUsername -> !Objects.equals(currentUsername, username))
                 .switchIfEmpty(Mono.error(
                         () -> new UnsatisfiedAttributeValueException("不能禁用当前登录的用户。")))
-                .then(Mono.defer(() -> userService.disable(username)))
+                .then(Mono.defer(() -> accounts.disable(username)))
                 .switchIfEmpty(Mono.error(
                         () -> new UnsatisfiedAttributeValueException("用户不存在或已禁用。")))
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user)));

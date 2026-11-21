@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.security.captcha.CaptchaService;
+import cn.tolim.pudans.security.captcha.Captchas;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -16,16 +16,16 @@ import reactor.test.StepVerifier;
 class PasswordRecoveryEndpointTest {
 
     @Mock
-    PasswordRecoveryService passwordRecoveryService;
+    PasswordRecovery passwordRecovery;
 
     @Mock
-    CaptchaService captchaService;
+    Captchas captchas;
 
     @Test
     void rejectsSendCodeWhenRecoveryCaptchaFails() {
-        when(captchaService.recoveryEnabled()).thenReturn(Mono.just(true));
-        when(captchaService.verify("c1", "wrong")).thenReturn(Mono.just(false));
-        var endpoint = new PasswordRecoveryEndpoint(passwordRecoveryService, captchaService);
+        when(captchas.recoveryEnabled()).thenReturn(Mono.just(true));
+        when(captchas.verify("c1", "wrong")).thenReturn(Mono.just(false));
+        var endpoint = new PasswordRecoveryEndpoint(passwordRecovery, captchas);
 
         StepVerifier.create(endpoint.sendCode(
                         new PasswordRecoveryEndpoint.SendCodeRequest("alice@example.com", "c1", "wrong")))
@@ -38,9 +38,9 @@ class PasswordRecoveryEndpointTest {
 
     @Test
     void skipsCaptchaWhenRecoveryCaptchaIsDisabled() {
-        when(captchaService.recoveryEnabled()).thenReturn(Mono.just(false));
-        when(passwordRecoveryService.sendCode("alice@example.com")).thenReturn(Mono.empty());
-        var endpoint = new PasswordRecoveryEndpoint(passwordRecoveryService, captchaService);
+        when(captchas.recoveryEnabled()).thenReturn(Mono.just(false));
+        when(passwordRecovery.sendCode("alice@example.com")).thenReturn(Mono.empty());
+        var endpoint = new PasswordRecoveryEndpoint(passwordRecovery, captchas);
 
         StepVerifier.create(endpoint.sendCode(
                         new PasswordRecoveryEndpoint.SendCodeRequest("alice@example.com", null, null)))

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.audit;
 
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

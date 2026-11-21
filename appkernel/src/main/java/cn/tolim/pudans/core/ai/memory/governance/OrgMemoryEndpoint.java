@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.memory.governance;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
@@ -23,7 +23,7 @@ public class OrgMemoryEndpoint implements CustomEndpoint {
 
     private static final String TAG = "OrgMemoryV1alpha1";
 
-    private final OrgMemoryService service;
+    private final OrgMemory service;
 
     private final AiEndpointRequests requests;
 
@@ -109,7 +109,7 @@ public class OrgMemoryEndpoint implements CustomEndpoint {
         } catch (NumberFormatException error) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
-                    MemoryGovernanceService.CODE_REQUEST_INVALID,
+                    MemoryGovernance.CODE_REQUEST_INVALID,
                     "组织记忆标识格式不正确。");
         }
     }

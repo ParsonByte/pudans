@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.gateway.session;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.gateway.AiGatewaySessionRepository.GatewaySession;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.rbac;
 
-import cn.tolim.pudans.contract.core.extension.rbac.Role.PolicyRule;
+import cn.tolim.pudans.contract.rbac.resource.Role.PolicyRule;
 import java.util.Arrays;
 import java.util.Collection;
 

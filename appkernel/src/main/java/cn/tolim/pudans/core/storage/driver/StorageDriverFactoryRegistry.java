@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
 
 @Component
 public class StorageDriverFactoryRegistry {

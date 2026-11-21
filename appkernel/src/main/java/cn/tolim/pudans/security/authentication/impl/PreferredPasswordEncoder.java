@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.impl;
 
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import java.util.HashMap;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -16,7 +16,7 @@ public class PreferredPasswordEncoder implements PasswordEncoder {
 
     public static final String BCRYPT_ENCODING_ID = "bcrypt";
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     private final PasswordEncoder argon2;
 
@@ -24,7 +24,7 @@ public class PreferredPasswordEncoder implements PasswordEncoder {
 
     private final DelegatingPasswordEncoder delegating;
 
-    public PreferredPasswordEncoder(SecurityParameterSettingService securitySettings) {
+    public PreferredPasswordEncoder(SecurityParameters securitySettings) {
         this.securitySettings = securitySettings;
         this.argon2 = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
         this.bcrypt = new BCryptPasswordEncoder();

@@ -7,19 +7,19 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolCodecRegistry;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiResponseEncoders;
 import cn.tolim.pudans.core.ai.gateway.protocol.GeminiGatewayCodec;
-import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService.PlanSummary;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService.UsageView;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService.WindowUsage;
+import cn.tolim.pudans.core.ai.plan.PlanQuotas;
+import cn.tolim.pudans.core.ai.plan.PlanUsage;
+import cn.tolim.pudans.core.ai.plan.PlanUsage.PlanSummary;
+import cn.tolim.pudans.core.ai.plan.PlanUsage.UsageView;
+import cn.tolim.pudans.core.ai.plan.PlanUsage.WindowUsage;
 import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
@@ -44,16 +44,16 @@ import reactor.core.publisher.Mono;
 class AiGatewayEndpointTest {
 
     @Mock
-    AiGatewayService gatewayService;
+    AiGateway gatewayService;
 
     @Mock
     AiEndpointRequests requests;
 
     @Mock
-    AiGatewayStatusService statusService;
+    GatewayHealth statusService;
 
     @Mock
-    PlanUsageService planUsageService;
+    PlanUsage planUsage;
 
     private WebTestClient client;
 
@@ -61,7 +61,7 @@ class AiGatewayEndpointTest {
     void setUp() {
         var mapper = new ObjectMapper();
         lenient().when(requests.userId(any(), anyString(), anyString())).thenReturn(Mono.just("user-1"));
-        lenient().when(planUsageService.usage("user-1")).thenReturn(Mono.empty());
+        lenient().when(planUsage.usage("user-1")).thenReturn(Mono.empty());
         var endpoint = new AiGatewayEndpoint(
                 new AiProtocolCodecRegistry(mapper),
                 gatewayService,
@@ -69,7 +69,7 @@ class AiGatewayEndpointTest {
                 new GeminiGatewayCodec(mapper),
                 statusService,
                 requests,
-                planUsageService);
+                planUsage);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(principal())).build()))
@@ -166,7 +166,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void exposesGatewayStatus() {
-        when(statusService.status()).thenReturn(Mono.just(new AiGatewayStatusService.Status(
+        when(statusService.status()).thenReturn(Mono.just(new GatewayHealth.Status(
                 true,
                 "http://localhost/aigateway",
                 List.of(AiProvider.Protocol.OPENAI_CHAT, AiProvider.Protocol.GEMINI),
@@ -230,7 +230,7 @@ class AiGatewayEndpointTest {
     @Test
     void addsPlanUsageHeadersToACompletedResponse() {
         when(gatewayService.complete(any())).thenReturn(Mono.just(result()));
-        when(planUsageService.usage("user-1")).thenReturn(Mono.just(usage()));
+        when(planUsage.usage("user-1")).thenReturn(Mono.just(usage()));
 
         client.post()
                 .uri("/aigateway/-/openai/v1/chat/completions")
@@ -267,7 +267,7 @@ class AiGatewayEndpointTest {
     void mapsPlanQuotaExhaustionToOpenAiInsufficientQuota() {
         when(gatewayService.complete(any())).thenReturn(Mono.error(new ApiException(
                 HttpStatus.TOO_MANY_REQUESTS,
-                PlanQuotaService.CODE_QUOTA_EXCEEDED,
+                PlanQuotas.CODE_QUOTA_EXCEEDED,
                 "5 小时窗口额度不足。")));
 
         client.post()
@@ -280,7 +280,7 @@ class AiGatewayEndpointTest {
                 .expectStatus().isEqualTo(HttpStatus.TOO_MANY_REQUESTS)
                 .expectBody()
                 .jsonPath("$.error.type").isEqualTo("insufficient_quota")
-                .jsonPath("$.error.code").isEqualTo(PlanQuotaService.CODE_QUOTA_EXCEEDED);
+                .jsonPath("$.error.code").isEqualTo(PlanQuotas.CODE_QUOTA_EXCEEDED);
     }
 
     private static UsageView usage() {
@@ -302,7 +302,7 @@ class AiGatewayEndpointTest {
                         Instant.parse("2026-11-16T16:00:00Z"),
                         Instant.parse("2026-11-23T16:00:00Z"),
                         "ACTIVE"),
-                new PlanUsageService.RateLimit(4, 120),
+                new PlanUsage.RateLimit(4, 120),
                 null);
     }
 
@@ -315,7 +315,7 @@ class AiGatewayEndpointTest {
                 new GeminiGatewayCodec(mapper),
                 statusService,
                 requests,
-                planUsageService);
+                planUsage);
         return WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(principal)).build()))

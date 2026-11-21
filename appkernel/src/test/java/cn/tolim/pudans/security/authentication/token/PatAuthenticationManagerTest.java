@@ -9,13 +9,13 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
-import cn.tolim.pudans.infra.setting.MasterKeyService;
+import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.infra.setting.MasterKeys;
 import java.util.Base64;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,19 +41,19 @@ class PatAuthenticationManagerTest {
     ReactiveAuthenticationManager delegate;
 
     @Mock
-    RoleService roleService;
+    Roles roles;
 
     @Mock
-    UserGroupService userGroupService;
+    Groups groups;
 
     @Mock
-    MasterKeyService masterKeyService;
+    MasterKeys masterKeys;
 
     private PatAuthenticationManager manager;
 
     @BeforeEach
     void setUp() {
-        manager = new PatAuthenticationManager(client, delegate, roleService, userGroupService, masterKeyService);
+        manager = new PatAuthenticationManager(client, delegate, roles, groups, masterKeys);
     }
 
     private static User user(String username) {
@@ -78,15 +78,15 @@ class PatAuthenticationManagerTest {
         spec.setTokenId("token-id");
         pat.setSpec(spec);
 
-        when(masterKeyService.matches(eq("token-id"), eq("secret"), any())).thenReturn(true);
+        when(masterKeys.matches(eq("token-id"), eq("secret"), any())).thenReturn(true);
         when(client.fetch(PersonalAccessToken.class, "pat-1")).thenReturn(Mono.just(pat));
         when(client.fetch(User.class, "alice")).thenReturn(Mono.just(user("alice")));
         when(client.fetch(User.class, "bob")).thenReturn(Mono.just(user("bob")));
-        when(roleService.getRolesByUsername("alice")).thenReturn(Flux.just("normal-role"));
-        when(userGroupService.getRoleNamesByUsername(anyString())).thenReturn(Flux.empty());
-        when(roleService.getRolesByUsername("bob"))
+        when(roles.getRolesByUsername("alice")).thenReturn(Flux.just("normal-role"));
+        when(groups.getRoleNamesByUsername(anyString())).thenReturn(Flux.empty());
+        when(roles.getRolesByUsername("bob"))
                 .thenReturn(Flux.just("normal-role", "system-admin-role"));
-        when(roleService.contains(anyCollection(), anyList())).thenReturn(Mono.just(true));
+        when(roles.contains(anyCollection(), anyList())).thenReturn(Mono.just(true));
         when(client.update(pat)).thenReturn(Mono.just(pat));
 
         var token = PersonalAccessToken.PAT_TOKEN_PREFIX + Base64.getUrlEncoder()
@@ -121,12 +121,12 @@ class PatAuthenticationManagerTest {
         spec.setTokenId("token-2");
         pat.setSpec(spec);
 
-        when(masterKeyService.matches(eq("token-2"), eq("secret"), any())).thenReturn(true);
+        when(masterKeys.matches(eq("token-2"), eq("secret"), any())).thenReturn(true);
         when(client.fetch(PersonalAccessToken.class, "pat-2")).thenReturn(Mono.just(pat));
         when(client.fetch(User.class, "carol")).thenReturn(Mono.just(user("carol")));
-        when(roleService.getRolesByUsername("carol")).thenReturn(Flux.empty());
-        when(userGroupService.getRoleNamesByUsername("carol")).thenReturn(Flux.just("gateway-role"));
-        when(roleService.contains(anyCollection(), anyList()))
+        when(roles.getRolesByUsername("carol")).thenReturn(Flux.empty());
+        when(groups.getRoleNamesByUsername("carol")).thenReturn(Flux.just("gateway-role"));
+        when(roles.contains(anyCollection(), anyList()))
                 .thenAnswer(invocation -> Mono.just(invocation.<java.util.Collection<String>>getArgument(0)
                         .contains("gateway-role")));
         when(client.update(pat)).thenReturn(Mono.just(pat));

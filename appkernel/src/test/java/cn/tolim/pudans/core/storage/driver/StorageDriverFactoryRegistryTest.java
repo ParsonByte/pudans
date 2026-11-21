@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Path;
 import java.util.List;
 import org.junit.jupiter.api.Test;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.cos.CosStorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.local.LocalStorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.obs.ObsStorageDriverFactory;

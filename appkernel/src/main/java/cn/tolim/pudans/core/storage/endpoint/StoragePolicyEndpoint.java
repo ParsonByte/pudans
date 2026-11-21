@@ -14,12 +14,12 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
-import cn.tolim.pudans.core.storage.OneDriveOAuthService;
-import cn.tolim.pudans.core.storage.StoragePolicyService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
+import cn.tolim.pudans.core.storage.OneDriveOAuth;
+import cn.tolim.pudans.core.storage.Policies;
 import cn.tolim.pudans.core.storage.StoragePolicyValidator;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.driver.StorageDriverFactoryRegistry;
 import cn.tolim.pudans.core.storage.driver.StorageTestResult;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -31,13 +31,13 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
 
     private final StoragePolicyValidator validator;
 
-    private final StoragePolicyService policyService;
+    private final Policies policyService;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     private final StorageDriverFactoryRegistry registry;
 
-    private final OneDriveOAuthService oneDriveOAuthService;
+    private final OneDriveOAuth oneDriveOAuth;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -74,15 +74,15 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
                 .GET("/storagepolicies/{name}/oauth/authorize", this::oauthAuthorize, builder -> builder.operationId("authorizeStoragePolicyOAuth")
                         .description("Build the OneDrive authorization URL for a storage policy.")
                         .tag(tag)
-                        .response(responseBuilder().implementation(OneDriveOAuthService.OAuthUrl.class)))
+                        .response(responseBuilder().implementation(OneDriveOAuth.OAuthUrl.class)))
                 .GET("/storagepolicies/-/oauth/callback", this::oauthCallback, builder -> builder.operationId("callbackStoragePolicyOAuth")
                         .description("Complete the OneDrive authorization code flow.")
                         .tag(tag)
-                        .response(responseBuilder().implementation(OneDriveOAuthService.OAuthStatus.class)))
+                        .response(responseBuilder().implementation(OneDriveOAuth.OAuthStatus.class)))
                 .GET("/storagepolicies/{name}/oauth/status", this::oauthStatus, builder -> builder.operationId("getStoragePolicyOAuthStatus")
                         .description("Get the OneDrive authorization status of a storage policy.")
                         .tag(tag)
-                        .response(responseBuilder().implementation(OneDriveOAuthService.OAuthStatus.class)))
+                        .response(responseBuilder().implementation(OneDriveOAuth.OAuthStatus.class)))
                 .GET("/storagepolicies/{name}/oauth/root", this::oauthRoot, builder -> builder.operationId("resolveStoragePolicyOAuthRoot")
                         .description("Resolve a SharePoint site URL to a OneDrive drive ID.")
                         .tag(tag)
@@ -102,7 +102,7 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> test(ServerRequest request) {
         var name = request.pathVariable("name");
-        return storageService
+        return storageTransfer
                 .test(name)
                 .flatMap(result -> policyService.recordTestResult(name, result).thenReturn(result))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
@@ -112,12 +112,12 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return request.bodyToMono(CorsRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
-                .flatMap(body -> storageService.configureCors(name, body.origins()))
+                .flatMap(body -> storageTransfer.configureCors(name, body.origins()))
                 .then(ServerResponse.status(HttpStatus.NO_CONTENT).build());
     }
 
     private Mono<ServerResponse> oauthAuthorize(ServerRequest request) {
-        return oneDriveOAuthService
+        return oneDriveOAuth
                 .authorizeUrl(request.pathVariable("name"))
                 .flatMap(url -> ServerResponse.ok().bodyValue(url));
     }
@@ -136,11 +136,11 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
         var state = request.queryParam("state").filter(StringUtils::hasText)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.BAD_REQUEST, "storage-onedrive-state-missing", "缺少 OneDrive 授权状态。"));
-        return oneDriveOAuthService.callback(code, state).flatMap(status -> ServerResponse.ok().bodyValue(status));
+        return oneDriveOAuth.callback(code, state).flatMap(status -> ServerResponse.ok().bodyValue(status));
     }
 
     private Mono<ServerResponse> oauthStatus(ServerRequest request) {
-        return oneDriveOAuthService
+        return oneDriveOAuth
                 .status(request.pathVariable("name"))
                 .flatMap(status -> ServerResponse.ok().bodyValue(status));
     }
@@ -149,7 +149,7 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
         var url = request.queryParam("url").filter(StringUtils::hasText)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.BAD_REQUEST, "storage-onedrive-site-required", "SharePoint 站点地址不能为空。"));
-        return oneDriveOAuthService
+        return oneDriveOAuth
                 .resolveRoot(request.pathVariable("name"), url)
                 .map(driveId -> java.util.Map.of("driveId", driveId))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));

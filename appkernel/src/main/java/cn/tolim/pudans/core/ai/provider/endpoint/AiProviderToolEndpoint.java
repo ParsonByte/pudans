@@ -4,14 +4,14 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProviderAccess;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekToolsClient;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -55,7 +55,7 @@ public class AiProviderToolEndpoint implements CustomEndpoint {
 
     private final DeepSeekToolsClient toolsClient;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -197,7 +197,7 @@ public class AiProviderToolEndpoint implements CustomEndpoint {
         if (!StringUtils.hasText(storageFileId)) {
             return Mono.error(invalid("存储文件标识不能为空。"));
         }
-        return storageService
+        return storageTransfer
                 .getFile(storageFileId)
                 .onErrorMap(ExtensionNotFoundException.class, error -> fileNotFound())
                 .switchIfEmpty(Mono.error(fileNotFound()))
@@ -205,7 +205,7 @@ public class AiProviderToolEndpoint implements CustomEndpoint {
                     if (file.getSpec() == null || file.getSpec().getState() != StorageFileState.ACTIVE) {
                         return Mono.error(fileNotFound());
                     }
-                    return storageService
+                    return storageTransfer
                             .readBytes(file.getMetadata().getName(), maxBytes)
                             .onErrorMap(DataBufferLimitException.class, error -> tooLarge())
                             .filter(content -> content.length > 0)

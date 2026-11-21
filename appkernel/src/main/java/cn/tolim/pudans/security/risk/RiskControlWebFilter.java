@@ -20,16 +20,16 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.contract.risk.RiskAlert;
-import cn.tolim.pudans.core.risk.service.RiskControlService;
-import cn.tolim.pudans.core.risk.service.RiskDecision;
-import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
-import cn.tolim.pudans.core.risk.service.RiskScene;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.contract.risk.dto.RiskAlert;
+import cn.tolim.pudans.core.risk.RiskGuard;
+import cn.tolim.pudans.core.risk.RiskDecision;
+import cn.tolim.pudans.core.risk.RiskRuleRegistry;
+import cn.tolim.pudans.core.risk.RiskScene;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
@@ -48,7 +48,7 @@ public class RiskControlWebFilter implements WebFilter {
 
     private static final String RISK_RESOURCE_TYPE = "RiskControl";
 
-    private final RiskControlService riskControlService;
+    private final RiskGuard riskGuard;
 
     private final RiskRuleRegistry riskRuleRegistry;
 
@@ -56,7 +56,7 @@ public class RiskControlWebFilter implements WebFilter {
 
     private final ReactiveExtensionClient client;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     private final FeishuAlertNotifier alertNotifier;
 
@@ -91,7 +91,7 @@ public class RiskControlWebFilter implements WebFilter {
                         && authentication.isAuthenticated()
                         && !(authentication instanceof AnonymousAuthenticationToken))
                 .map(authentication -> {
-                    exchange.getAttributes().put(AuditService.USERNAME_ATTRIBUTE, authentication.getName());
+                    exchange.getAttributes().put(AuditLog.USERNAME_ATTRIBUTE, authentication.getName());
                     var roles = AuthorityUtils.authoritiesToRoles(authentication.getAuthorities());
                     return new Actor(AuthorityUtils.containsSuperRole(roles));
                 })
@@ -110,11 +110,11 @@ public class RiskControlWebFilter implements WebFilter {
             banScenes.add(RiskScene.LOGIN_FAILURE);
         }
         banScenes.addAll(riskRuleRegistry.enabledScenes());
-        return riskControlService
+        return riskGuard
                 .firstBannedScene(banScenes, ip)
                 .map(scene -> new PreCheck(
                         false, scene, new RiskDecision(false, 0L, Duration.ZERO, Duration.ZERO)))
-                .switchIfEmpty(Mono.defer(() -> riskControlService
+                .switchIfEmpty(Mono.defer(() -> riskGuard
                         .evaluate(RiskScene.REQUEST_FLOOD, ip)
                         .map(decision -> decision.allowed()
                                 ? PreCheck.pass()
@@ -145,7 +145,7 @@ public class RiskControlWebFilter implements WebFilter {
     }
 
     private Mono<Void> recordFailure(String scene, String ip, ServerWebExchange exchange) {
-        return riskControlService
+        return riskGuard
                 .evaluate(scene, ip)
                 .flatMap(decision -> decision.allowed() ? Mono.empty() : escalate(scene, ip, decision, exchange))
                 .onErrorResume(error -> {
@@ -156,11 +156,11 @@ public class RiskControlWebFilter implements WebFilter {
 
     private Mono<Void> escalate(String scene, String ip, RiskDecision decision, ServerWebExchange exchange) {
         var banned = !decision.blockFor().isZero();
-        var ban = banned ? riskControlService.ban(scene, ip, decision.blockFor()) : Mono.empty();
+        var ban = banned ? riskGuard.ban(scene, ip, decision.blockFor()) : Mono.empty();
         return ban.then(banned
                         ? audit(exchange, ip, scene, decision, "DENIED", "RISK_BLOCKED")
                         : Mono.empty())
-                .then(riskControlService
+                .then(riskGuard
                         .markAlerted(
                                 scene,
                                 ip,
@@ -180,9 +180,9 @@ public class RiskControlWebFilter implements WebFilter {
         var decision = pre.decision();
         var ban = decision.blockFor().isZero()
                 ? Mono.empty()
-                : riskControlService.ban(pre.scene(), ip, decision.blockFor());
+                : riskGuard.ban(pre.scene(), ip, decision.blockFor());
         return ban.then(audit(exchange, ip, pre.scene(), decision, "DENIED", "RISK_BLOCKED"))
-                .then(riskControlService
+                .then(riskGuard
                         .markAlerted(
                                 pre.scene(),
                                 ip,
@@ -206,16 +206,16 @@ public class RiskControlWebFilter implements WebFilter {
             String result,
             String operation) {
         return actorIdentity(exchange).flatMap(identity -> Mono.fromRunnable(() -> {
-            var traceId = AuditService.traceId(exchange);
-            exchange.getResponse().getHeaders().set(AuditService.TRACE_ID_HEADER, traceId);
-            var traceFlowId = (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE);
+            var traceId = AuditLog.traceId(exchange);
+            exchange.getResponse().getHeaders().set(AuditLog.TRACE_ID_HEADER, traceId);
+            var traceFlowId = (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE);
             var syntheticFlow = traceFlowId == null || traceFlowId.isBlank();
             if (syntheticFlow) {
                 traceFlowId = AuditIdGenerator.next();
-                exchange.getAttributes().put(AuditService.TRACE_FLOW_ID_ATTRIBUTE, traceFlowId);
+                exchange.getAttributes().put(AuditLog.TRACE_FLOW_ID_ATTRIBUTE, traceFlowId);
             }
-            var parentAuditId = (String) exchange.getAttributes().get(AuditService.AUDIT_ID_ATTRIBUTE);
-            var record = auditService.newRecord(traceId, identity.uid(), operation);
+            var parentAuditId = (String) exchange.getAttributes().get(AuditLog.AUDIT_ID_ATTRIBUTE);
+            var record = auditLog.newRecord(traceId, identity.uid(), operation);
             record.setTraceFlowId(traceFlowId);
             if (syntheticFlow) {
                 record.markSyntheticFlow();
@@ -236,13 +236,13 @@ public class RiskControlWebFilter implements WebFilter {
             }
             record.setContext(context);
             record.setActionSnapshot(JsonUtils.objectToJson(context));
-            auditService.record(record);
+            auditLog.record(record);
         }));
     }
 
     private Mono<ActorIdentity> actorIdentity(ServerWebExchange exchange) {
-        var uid = (String) exchange.getAttributes().get(AuditService.UID_ATTRIBUTE);
-        var username = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
+        var uid = (String) exchange.getAttributes().get(AuditLog.UID_ATTRIBUTE);
+        var username = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
         if (StringUtils.hasText(uid)) {
             return Mono.just(new ActorIdentity(uid, StringUtils.hasText(username) ? username : null));
         }
@@ -256,7 +256,7 @@ public class RiskControlWebFilter implements WebFilter {
                             StringUtils.hasText(userId) ? userId : username, username);
                 })
                 .doOnNext(identity ->
-                        exchange.getAttributes().put(AuditService.UID_ATTRIBUTE, identity.uid()))
+                        exchange.getAttributes().put(AuditLog.UID_ATTRIBUTE, identity.uid()))
                 .defaultIfEmpty(new ActorIdentity(username, username))
                 .onErrorResume(error -> {
                     log.warn("无法解析风险事件触发用户 [{}]", username, error);
@@ -282,14 +282,14 @@ public class RiskControlWebFilter implements WebFilter {
         payload.put("subject", ip);
         payload.put("count", decision.count());
         payload.put("path", exchange.getRequest().getPath().value());
-        var username = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
+        var username = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
         if (StringUtils.hasText(username)) {
             payload.put("username", username);
         }
         domainEventPublisher.publish(
                 "risk.alert",
                 payload,
-                (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
+                (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
         alertNotifier.send(alert).subscribe();
     }
 
@@ -301,14 +301,14 @@ public class RiskControlWebFilter implements WebFilter {
         payload.put("count", decision.count());
         payload.put("path", exchange.getRequest().getPath().value());
         payload.put("blockSeconds", decision.blockFor().toSeconds());
-        var username = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
+        var username = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
         if (StringUtils.hasText(username)) {
             payload.put("username", username);
         }
         domainEventPublisher.publish(
                 "risk.blocked",
                 payload,
-                (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
+                (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
     private Mono<Void> reject(ServerWebExchange exchange, RiskDecision decision) {

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication;
 
-import cn.tolim.pudans.core.user.service.UserLoginOrLogoutProcessing;
+import cn.tolim.pudans.core.user.UserLoginOrLogoutProcessing;
 import java.util.ArrayList;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationContext;

@@ -7,18 +7,18 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.conversation.AiConversationService;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.conversation.Conversations;
 import cn.tolim.pudans.core.ai.memory.DedupDecision;
 import cn.tolim.pudans.core.ai.memory.ExtractedMemory;
-import cn.tolim.pudans.core.ai.memory.L1DedupService;
-import cn.tolim.pudans.core.ai.memory.L1PipelineService;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication;
+import cn.tolim.pudans.core.ai.memory.L1Pipeline;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
 import cn.tolim.pudans.core.ai.memory.SceneSegment;
 import cn.tolim.pudans.core.ai.memory.ai.ExtractionOutcome;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryConflictAiService;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryExtractionAiService;
+import cn.tolim.pudans.core.ai.memory.ai.MemoryConflict;
+import cn.tolim.pudans.core.ai.memory.ai.MemoryExtraction;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
@@ -53,7 +53,7 @@ class L1ExtractTaskHandlerOrgCandidateTest {
     AiConversationRepository conversationRepository;
 
     @Mock
-    AiConversationService conversationService;
+    Conversations conversationService;
 
     @Mock
     AiMessageRepository messageRepository;
@@ -68,16 +68,16 @@ class L1ExtractTaskHandlerOrgCandidateTest {
     AiMemoryL3Repository memoryL3Repository;
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     @Mock
-    MemoryExtractionAiService extractionAi;
+    MemoryExtraction extractionAi;
 
     @Mock
-    MemoryConflictAiService conflictAi;
+    MemoryConflict conflictAi;
 
     @Mock
-    L1PipelineService pipelineService;
+    L1Pipeline pipelineService;
 
     private L1ExtractTaskHandler handler;
 
@@ -93,7 +93,7 @@ class L1ExtractTaskHandlerOrgCandidateTest {
                 settingService,
                 extractionAi,
                 conflictAi,
-                new L1DedupService(),
+                new L1Deduplication(),
                 pipelineService);
     }
 
@@ -118,7 +118,7 @@ class L1ExtractTaskHandlerOrgCandidateTest {
         assertThat(request.orgCandidate()).isFalse();
     }
 
-    private L1PipelineService.Request captureRequest(ExtractedMemory extracted) {
+    private L1Pipeline.Request captureRequest(ExtractedMemory extracted) {
         var messages = List.of(message(101L));
         var conversation = conversation();
         when(conversationRepository.findById(CONVERSATION_ID)).thenReturn(Mono.just(conversation));
@@ -135,12 +135,12 @@ class L1ExtractTaskHandlerOrgCandidateTest {
         when(memoryL3Repository.findByScope("team-a", "agent-a")).thenReturn(Mono.empty());
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.empty());
         when(pipelineService.process(any(), any()))
-                .thenReturn(Mono.just(new L1PipelineService.Result(List.of(), List.of(), 101L, 0, List.of())));
+                .thenReturn(Mono.just(new L1Pipeline.Result(List.of(), List.of(), 101L, 0, List.of())));
         when(conversationService.reducePending(conversation, 1)).thenReturn(Mono.just(1));
 
         StepVerifier.create(handler.handle(task())).verifyComplete();
 
-        var captor = ArgumentCaptor.forClass(L1PipelineService.Request.class);
+        var captor = ArgumentCaptor.forClass(L1Pipeline.Request.class);
         verify(pipelineService).process(captor.capture(), any());
         return captor.getValue();
     }

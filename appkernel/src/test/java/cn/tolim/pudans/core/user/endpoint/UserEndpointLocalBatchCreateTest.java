@@ -7,10 +7,10 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.user.service.LocalUserService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.user.LocalAccounts;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
 import java.util.List;
 import java.util.Map;
@@ -27,29 +27,29 @@ import reactor.core.publisher.Mono;
 class UserEndpointLocalBatchCreateTest {
 
     @Mock
-    LocalUserService localUserService;
+    LocalAccounts localAccounts;
 
     @Mock
-    AuditService auditService;
+    AuditLog auditLog;
 
     private WebTestClient webTestClient;
 
     @BeforeEach
     void setUp() {
         var endpoint = new UserEndpoint(
-                null, null, null, null, null, auditService, null, null, null, null, localUserService, null);
+                null, null, null, null, null, auditLog, null, null, null, null, localAccounts, null);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
     @Test
     void reportsCreatedAndFailedUsersPerItem() {
-        when(localUserService.create(
+        when(localAccounts.create(
                         eq("alice"), isNull(), isNull(), eq("secret123"), isNull(), isNull()))
                 .thenReturn(Mono.just(user("alice")));
-        when(localUserService.create(
+        when(localAccounts.create(
                         eq("bob"), isNull(), isNull(), eq("secret123"), isNull(), isNull()))
                 .thenReturn(Mono.error(new DuplicateNameException("用户名 bob 已存在，请更换用户名后重试。")));
-        when(auditService.recordChild(
+        when(auditLog.recordChild(
                         any(),
                         isNull(),
                         eq("BATCH_CREATE_USER"),
@@ -105,7 +105,7 @@ class UserEndpointLocalBatchCreateTest {
                 .jsonPath("$.failures[0].index")
                 .isEqualTo(1);
 
-        verifyNoInteractions(localUserService);
+        verifyNoInteractions(localAccounts);
     }
 
     @Test

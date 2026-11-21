@@ -17,12 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecordingState;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
-import cn.tolim.pudans.core.live.recording.LiveRecordingStatusService;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
+import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -46,7 +46,7 @@ public class LiveRecordingRecovery {
 
     private final ReactiveExtensionClient client;
 
-    private final LiveRecordingStatusService statusService;
+    private final RecordingStatus statusService;
 
     private final LiveRecorderRegistry registry;
 

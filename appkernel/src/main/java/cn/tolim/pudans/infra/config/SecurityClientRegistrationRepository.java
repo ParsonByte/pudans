@@ -2,7 +2,7 @@ package cn.tolim.pudans.infra.config;
 
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.infra.properties.OidcProperties;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
@@ -14,14 +14,14 @@ import reactor.core.publisher.Mono;
 
 final class SecurityClientRegistrationRepository implements ReactiveClientRegistrationRepository {
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
-    SecurityClientRegistrationRepository(SecurityParameterSettingService securitySettings) {
+    SecurityClientRegistrationRepository(SecurityParameters securitySettings) {
         this.securitySettings = securitySettings;
     }
 
     static List<ClientRegistration> registrations(
-            SecurityParameterSettingService securitySettings) {
+            SecurityParameters securitySettings) {
         var registrations = new ArrayList<ClientRegistration>();
         securitySettings.oauth2Providers().forEach(provider -> {
             if (isCompleteOAuth2(provider)) {

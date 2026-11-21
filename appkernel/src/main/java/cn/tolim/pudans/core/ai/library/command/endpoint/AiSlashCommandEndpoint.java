@@ -4,12 +4,12 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSlashCommand;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiSlashCommand;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
-import cn.tolim.pudans.core.ai.library.command.SlashCommandService.ResolvedSlashCommand;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.command.SlashCommands;
+import cn.tolim.pudans.core.ai.library.command.SlashCommands.ResolvedSlashCommand;
+import cn.tolim.pudans.core.ai.team.Teams;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.fn.builders.parameter.Builder;
@@ -28,11 +28,11 @@ public class AiSlashCommandEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiSlashCommandV1alpha1";
 
-    private final SlashCommandService slashCommandService;
+    private final SlashCommands slashCommands;
 
     private final AiEndpointRequests requests;
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -58,7 +58,7 @@ public class AiSlashCommandEndpoint implements CustomEndpoint {
                 .userId(request)
                 .flatMapMany(userId -> teamService
                         .requireAgent(agentName, userId)
-                        .thenMany(slashCommandService.byAgent(agentName)))
+                        .thenMany(slashCommands.byAgent(agentName)))
                 .collectList()
                 .flatMap(commands -> ServerResponse.ok().bodyValue(commands));
     }
@@ -77,7 +77,7 @@ public class AiSlashCommandEndpoint implements CustomEndpoint {
                             .userId(request)
                             .flatMap(userId -> teamService
                                     .requireAgent(body.agent(), userId)
-                                    .then(slashCommandService.resolve(body.agent(), body.text())))
+                                    .then(slashCommands.resolve(body.agent(), body.text())))
                             .flatMap(resolved -> ServerResponse.ok().bodyValue(resolved));
                 });
     }

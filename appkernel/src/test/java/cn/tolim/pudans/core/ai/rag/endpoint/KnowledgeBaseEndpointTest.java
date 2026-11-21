@@ -4,15 +4,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ListResult;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.rag.DocumentStatus;
 import cn.tolim.pudans.core.ai.rag.IngestionResult;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseDocument;
-import cn.tolim.pudans.core.ai.rag.KnowledgeBaseManagementService;
+import cn.tolim.pudans.core.ai.rag.KnowledgeBases;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseQueryLog;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalResult;
 import cn.tolim.pudans.core.ai.rag.RetrievalOptions;
@@ -45,16 +45,16 @@ class KnowledgeBaseEndpointTest {
     private static final String AI_USER_ROLE = "role-template-ai-user";
 
     @Mock
-    KnowledgeBaseManagementService managementService;
+    KnowledgeBases managementService;
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new KnowledgeBaseEndpoint(managementService, userService);
+        var endpoint = new KnowledgeBaseEndpoint(managementService, accounts);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter(authenticatedAs(USERNAME, "ROLE_" + AI_USER_ROLE))
                 .build();
@@ -100,7 +100,7 @@ class KnowledgeBaseEndpointTest {
         when(managementService.findVisible("kb-private", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.NOT_FOUND,
-                        KnowledgeBaseManagementService.CODE_KB_NOT_FOUND,
+                        KnowledgeBases.CODE_KB_NOT_FOUND,
                         "知识库不存在或无权访问。")));
 
         client.get()
@@ -223,7 +223,7 @@ class KnowledgeBaseEndpointTest {
         when(managementService.uploadDocument(knowledgeBase, UID, "file-1", null))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.FORBIDDEN,
-                        KnowledgeBaseManagementService.CODE_FORBIDDEN,
+                        KnowledgeBases.CODE_FORBIDDEN,
                         "存储文件不属于当前用户。")));
 
         client.post()
@@ -368,7 +368,7 @@ class KnowledgeBaseEndpointTest {
         var user = new User();
         user.getSpec().setUid(UID);
         user.getSpec().setDisplayName(USERNAME);
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user));
     }
 
     private static WebFilter authenticatedAs(String username, String... authorities) {

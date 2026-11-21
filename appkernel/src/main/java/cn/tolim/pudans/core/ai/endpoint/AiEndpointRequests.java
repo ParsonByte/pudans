@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.endpoint;
 
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.exception.UserNotFoundException;
 import java.security.Principal;
@@ -18,7 +18,7 @@ public class AiEndpointRequests {
 
     private static final String CODE_AUTH_REQUIRED = "ai-auth-required";
 
-    private final UserService userService;
+    private final Accounts accounts;
 
     public Mono<String> userId(ServerRequest request) {
         return userId(request, CODE_AUTH_REQUIRED, "缺少有效的用户认证信息。");
@@ -28,7 +28,7 @@ public class AiEndpointRequests {
         return request
                 .principal()
                 .map(Principal::getName)
-                .flatMap(userService::getUser)
+                .flatMap(accounts::getUser)
                 .map(user -> user.getSpec().getUid())
                 .switchIfEmpty(Mono.error(authRequired(code, message)))
                 .onErrorMap(UserNotFoundException.class, error -> authRequired(code, message));

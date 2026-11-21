@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.library.mcp;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMcpServer;
+import cn.tolim.pudans.contract.ai.resource.AiMcpServer;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -169,7 +169,7 @@ public class McpClientFactory {
         } catch (IOException error) {
             throw new ApiException(
                     HttpStatus.BAD_GATEWAY,
-                    McpClientService.CODE_STDIO_FAILED,
+                    McpClients.CODE_STDIO_FAILED,
                     "无法创建 MCP STDIO 工作目录。",
                     error);
         }
@@ -177,6 +177,6 @@ public class McpClientFactory {
     }
 
     private static ApiException invalid(String message) {
-        return new ApiException(HttpStatus.BAD_REQUEST, McpClientService.CODE_INVALID, message);
+        return new ApiException(HttpStatus.BAD_REQUEST, McpClients.CODE_INVALID, message);
     }
 }

@@ -7,7 +7,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
 import cn.tolim.pudans.infra.exception.ApiException;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.json.JsonMapper;

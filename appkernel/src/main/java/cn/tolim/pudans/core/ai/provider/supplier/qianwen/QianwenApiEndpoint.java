@@ -4,13 +4,13 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.core.ai.provider.supplier.qianwen.QianwenApiClient.ProxyResponse;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -52,7 +52,7 @@ public class QianwenApiEndpoint implements CustomEndpoint {
 
     private final QianwenApiClient client;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     private final ObjectMapper mapper;
 
@@ -156,7 +156,7 @@ public class QianwenApiEndpoint implements CustomEndpoint {
     }
 
     private Mono<StoredFile> storage(String storageFileId) {
-        return storageService
+        return storageTransfer
                 .getFile(storageFileId)
                 .onErrorMap(ExtensionNotFoundException.class, error -> fileNotFound())
                 .switchIfEmpty(Mono.error(fileNotFound()))
@@ -164,7 +164,7 @@ public class QianwenApiEndpoint implements CustomEndpoint {
                     if (file.getSpec() == null || file.getSpec().getState() != StorageFileState.ACTIVE) {
                         return Mono.error(fileNotFound());
                     }
-                    return storageService
+                    return storageTransfer
                             .readBytes(file.getMetadata().getName(), MAX_FILE_BYTES)
                             .onErrorMap(DataBufferLimitException.class, error -> tooLarge())
                             .filter(content -> content.length > 0)

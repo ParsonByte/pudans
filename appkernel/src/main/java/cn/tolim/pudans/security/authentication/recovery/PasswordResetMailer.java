@@ -3,7 +3,7 @@ package cn.tolim.pudans.security.authentication.recovery;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
-import cn.tolim.pudans.infra.setting.MailSettingsService;
+import cn.tolim.pudans.infra.setting.MailSettings;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ public class PasswordResetMailer {
 
     private final Environment environment;
 
-    private final MailSettingsService mailSettingsService;
+    private final MailSettings mailSettings;
 
     @PostConstruct
     void warnIfLogCodesEnabledOutsideDev() {
@@ -42,9 +42,9 @@ public class PasswordResetMailer {
 
     public Mono<Void> sendCode(String email, String code) {
         var options = pudansProperties.getSecurity().getPasswordReset();
-        return mailSettingsService.isConfigured().flatMap(configured -> {
+        return mailSettings.isConfigured().flatMap(configured -> {
             if (Boolean.TRUE.equals(configured)) {
-                return mailSettingsService.sendPasswordResetCode(
+                return mailSettings.sendPasswordResetCode(
                         email, code, options.getCodeTtl().toMinutes());
             }
             return sendWithFallbackSender(email, code, options);

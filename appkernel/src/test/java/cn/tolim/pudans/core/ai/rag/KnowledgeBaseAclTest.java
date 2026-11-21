@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.rag;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 

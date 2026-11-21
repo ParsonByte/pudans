@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.extension.index.IndexEngine;
 import cn.tolim.pudans.contract.extension.index.IndexedQueryEngine;

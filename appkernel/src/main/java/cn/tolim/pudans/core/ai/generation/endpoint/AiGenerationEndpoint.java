@@ -4,13 +4,13 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.generation.AiDocumentGenerationService;
+import cn.tolim.pudans.core.ai.generation.DocumentGenerations;
 import cn.tolim.pudans.core.ai.generation.AiGenerationCommand;
 import cn.tolim.pudans.core.ai.generation.AiGenerationResult;
-import cn.tolim.pudans.core.ai.generation.AiGenerationService;
+import cn.tolim.pudans.core.ai.generation.Generations;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
@@ -40,9 +40,9 @@ public class AiGenerationEndpoint implements CustomEndpoint {
 
     private static final int MAX_LIMIT = 100;
 
-    private final AiGenerationService generationService;
+    private final Generations generationService;
 
-    private final AiDocumentGenerationService documentService;
+    private final DocumentGenerations documentService;
 
     private final AiModelRequestRepository requestRepository;
 
@@ -68,7 +68,7 @@ public class AiGenerationEndpoint implements CustomEndpoint {
                         .description("Generate a Markdown or HTML document and store it as a file.")
                         .tag(TAG)
                         .requestBody(requestBodyBuilder().required(true).implementation(DocumentBody.class))
-                        .response(responseBuilder().implementation(AiDocumentGenerationService.Result.class)))
+                        .response(responseBuilder().implementation(DocumentGenerations.Result.class)))
                 .GET("/aigenerations/{requestId}", this::get, builder -> builder
                         .operationId("getAiGeneration")
                         .description("Get a generation request and its result.")
@@ -97,7 +97,7 @@ public class AiGenerationEndpoint implements CustomEndpoint {
                                 HttpStatus.BAD_REQUEST,
                                 "ai-document-generation-invalid",
                                 "请求体不能为空。")))
-                        .flatMap(body -> documentService.generate(new AiDocumentGenerationService.Command(
+                        .flatMap(body -> documentService.generate(new DocumentGenerations.Command(
                                 userId,
                                 body.title(),
                                 body.prompt(),
@@ -145,7 +145,7 @@ public class AiGenerationEndpoint implements CustomEndpoint {
     public record DocumentBody(
             @Nullable String title,
             String prompt,
-            AiDocumentGenerationService.@Nullable Format format,
+            DocumentGenerations.@Nullable Format format,
             @Nullable String routeGroup) {}
 
     public record GenerationBody(

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.sudo;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.user.resource.User;
 import reactor.core.publisher.Mono;
 
 

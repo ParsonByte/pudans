@@ -1,15 +1,15 @@
 package cn.tolim.pudans.security.authentication.login;
 
-import cn.tolim.pudans.contract.core.extension.AuthProvider;
-import cn.tolim.pudans.contract.core.user.service.UserService;
-import cn.tolim.pudans.core.rbac.service.UiPermissionService;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.security.resource.AuthProvider;
+import cn.tolim.pudans.core.user.Accounts;
+import cn.tolim.pudans.core.rbac.permission.UiPermissions;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
-import cn.tolim.pudans.security.authentication.AuthProviderService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
+import cn.tolim.pudans.security.authentication.AuthProviders;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -41,15 +41,15 @@ public class LoginPublicEndpoint implements CustomEndpoint {
 
     private final SecurityProperties securityProperties;
 
-    private final UserService userService;
+    private final Accounts accounts;
 
-    private final AuthProviderService authProviderService;
+    private final AuthProviders authProviders;
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     private final InitializationStateGetter initializationStateGetter;
 
-    private final UiPermissionService uiPermissionService;
+    private final UiPermissions uiPermissionService;
 
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
@@ -90,7 +90,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
 
     private Mono<SessionView> signedInSession(Authentication authentication) {
         var username = authentication.getName();
-        var user = userService
+        var user = accounts
                 .getUser(username)
                 .map(found -> new SessionView(
                         true,
@@ -123,7 +123,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> providers(ServerRequest request) {
-        return authProviderService
+        return authProviders
                 .getEnabledProviders()
                 .filter(provider -> !AuthProvider.AuthType.FORM.equals(provider.getSpec().getAuthType()))
                 .filter(provider -> StringUtils.hasText(provider.getSpec().getAuthenticationUrl()))

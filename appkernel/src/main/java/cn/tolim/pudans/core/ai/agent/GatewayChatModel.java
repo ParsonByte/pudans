@@ -1,11 +1,11 @@
 package cn.tolim.pudans.core.ai.agent;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayInvocation;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayResult;
-import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
+import cn.tolim.pudans.core.ai.gateway.AiGateway;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
@@ -29,18 +29,18 @@ import java.util.Objects;
 
 public class GatewayChatModel implements ChatModel {
 
-    private final AiGatewayService gatewayService;
+    private final AiGateway gatewayService;
 
     private final GatewayChatContext context;
 
     private final GatewayRunState state;
 
-    public GatewayChatModel(AiGatewayService gatewayService, GatewayChatContext context) {
+    public GatewayChatModel(AiGateway gatewayService, GatewayChatContext context) {
         this(gatewayService, context, new GatewayRunState());
     }
 
     public GatewayChatModel(
-            AiGatewayService gatewayService, GatewayChatContext context, GatewayRunState state) {
+            AiGateway gatewayService, GatewayChatContext context, GatewayRunState state) {
         this.gatewayService = Objects.requireNonNull(gatewayService, "AI 网关服务不能为空");
         this.context = Objects.requireNonNull(context, "Agent 上下文不能为空");
         this.state = Objects.requireNonNull(state, "Agent 运行状态不能为空");

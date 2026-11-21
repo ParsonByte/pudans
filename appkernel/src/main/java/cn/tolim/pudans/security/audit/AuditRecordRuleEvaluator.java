@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.audit;
 
 import cn.tolim.pudans.contract.infra.ParameterSetting;
-import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -12,10 +12,10 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AuditRecordRuleEvaluator {
 
-    private final ParameterSettingGroupService parameterSettingGroupService;
+    private final ParameterGroups parameterGroups;
 
     public Mono<Boolean> shouldRecord(String operation, String resourceType) {
-        return parameterSettingGroupService
+        return parameterGroups
                 .getAudit()
                 .map(audit -> evaluate(audit.getAuditRecordRules(), operation, resourceType))
                 .defaultIfEmpty(true)

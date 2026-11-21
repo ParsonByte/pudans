@@ -19,12 +19,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.Webhook;
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
+import cn.tolim.pudans.contract.webhook.resource.Webhook;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 
 @ExtendWith(MockitoExtension.class)
 class WebhookDispatcherTest {
@@ -36,7 +36,7 @@ class WebhookDispatcherTest {
     WebhookSecretCipher secretCipher;
 
     @Mock
-    AuditService auditService;
+    AuditLog auditLog;
 
     private WebhookEventBus eventBus;
 
@@ -73,7 +73,7 @@ class WebhookDispatcherTest {
                 .thenReturn(Flux.just(hook));
         when(client.fetch(eq(Webhook.class), eq("hook-1"))).thenReturn(Mono.just(hook));
         when(client.update(any(Webhook.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(auditService.newRecord(anyString(), anyString(), anyString())).thenAnswer(invocation -> {
+        when(auditLog.newRecord(anyString(), anyString(), anyString())).thenAnswer(invocation -> {
             var record = new AuditRecord();
             var metadata = new Metadata();
             metadata.setName("webhook-audit");
@@ -85,7 +85,7 @@ class WebhookDispatcherTest {
         });
         eventBus = new WebhookEventBus();
         dispatcher = new WebhookDispatcher(
-                eventBus, client, secretCipher, auditService, new OutboundRequestValidator());
+                eventBus, client, secretCipher, auditLog, new OutboundRequestValidator());
         dispatcher.afterPropertiesSet();
     }
 
@@ -107,7 +107,7 @@ class WebhookDispatcherTest {
         emitEvent();
 
         var captor = ArgumentCaptor.forClass(AuditRecord.class);
-        verify(auditService, timeout(5_000)).record(captor.capture());
+        verify(auditLog, timeout(5_000)).record(captor.capture());
         var record = captor.getValue();
         assertThat(record.getOperation()).isEqualTo("WEBHOOK_DELIVER");
         assertThat(record.getResult()).isEqualTo("FAILURE");
@@ -127,7 +127,7 @@ class WebhookDispatcherTest {
         emitEvent();
 
         var captor = ArgumentCaptor.forClass(AuditRecord.class);
-        verify(auditService, timeout(5_000)).record(captor.capture());
+        verify(auditLog, timeout(5_000)).record(captor.capture());
         assertThat(captor.getValue().getResult()).isEqualTo("FAILURE");
         assertThat((String) captor.getValue().getContext().get("message"))
                 .contains("不可路由");

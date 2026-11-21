@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.ai.agent;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayEvent;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayInvocation;
-import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
+import cn.tolim.pudans.core.ai.gateway.AiGateway;
 import cn.tolim.pudans.core.ai.gateway.AiStreamEvent;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
@@ -40,14 +40,14 @@ import reactor.core.publisher.Flux;
 
 public class GatewayStreamingChatModel implements StreamingChatModel {
 
-    private final AiGatewayService gatewayService;
+    private final AiGateway gatewayService;
 
     private final GatewayChatContext context;
 
     private final GatewayRunState state;
 
     public GatewayStreamingChatModel(
-            AiGatewayService gatewayService, GatewayChatContext context, GatewayRunState state) {
+            AiGateway gatewayService, GatewayChatContext context, GatewayRunState state) {
         this.gatewayService = Objects.requireNonNull(gatewayService, "AI 网关服务不能为空");
         this.context = Objects.requireNonNull(context, "Agent 上下文不能为空");
         this.state = Objects.requireNonNull(state, "Agent 运行状态不能为空");

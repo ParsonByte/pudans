@@ -1,10 +1,10 @@
 package cn.tolim.pudans.security.authentication.twofactor;
 
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.risk.service.RiskControlService;
-import cn.tolim.pudans.core.risk.service.RiskDecision;
-import cn.tolim.pudans.core.risk.service.RiskScene;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.risk.RiskGuard;
+import cn.tolim.pudans.core.risk.RiskDecision;
+import cn.tolim.pudans.core.risk.RiskScene;
 import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import cn.tolim.pudans.security.authentication.exception.TooManyRequestsException;
@@ -30,16 +30,16 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
 
     static final String INVALID_TOTP_CODE = "invalid-totp-code";
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
-    private final RiskControlService riskControlService;
+    private final RiskGuard riskGuard;
 
     private final DomainEventPublisher domainEventPublisher;
 
     private final ServerResponse.Context context;
 
     private static Mono<String> currentUsername(ServerWebExchange exchange) {
-        var attribute = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
+        var attribute = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .filter(authentication -> authentication != null && authentication.isAuthenticated())
@@ -81,7 +81,7 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
 
     private Mono<Boolean> escalate(ServerWebExchange exchange) {
         return subject(exchange)
-                .flatMap(subject -> riskControlService
+                .flatMap(subject -> riskGuard
                         .evaluate(RiskScene.TOTP_ATTEMPT, subject)
                         .flatMap(decision -> decision.allowed()
                                 ? Mono.just(false)
@@ -91,14 +91,14 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
     private Mono<Boolean> handleBreach(ServerWebExchange exchange, String subject, RiskDecision decision) {
         var ban = decision.blockFor().isZero()
                 ? Mono.empty()
-                : riskControlService.ban(RiskScene.TOTP_ATTEMPT, subject, decision.blockFor());
+                : riskGuard.ban(RiskScene.TOTP_ATTEMPT, subject, decision.blockFor());
         var context = new LinkedHashMap<String, Object>();
         context.put("scene", RiskScene.TOTP_ATTEMPT);
         context.put("subject", subject);
         context.put("count", decision.count());
         context.put("blockSeconds", decision.blockFor().toSeconds());
         return ban
-                .then(auditService.recordChild(
+                .then(auditLog.recordChild(
                         exchange,
                         null,
                         "RISK_BLOCKED",
@@ -117,7 +117,7 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
             context.put("method", "totp");
             context.put("reason", exception.getClass().getSimpleName());
             publishLoginFailure(exchange, username, exception);
-            return auditService.recordChild(
+            return auditLog.recordChild(
                     exchange,
                     null,
                     "TOTP_LOGIN_FAILED",
@@ -139,6 +139,6 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
         domainEventPublisher.publish(
                 "user.login.failed",
                 payload,
-                (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
+                (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 }

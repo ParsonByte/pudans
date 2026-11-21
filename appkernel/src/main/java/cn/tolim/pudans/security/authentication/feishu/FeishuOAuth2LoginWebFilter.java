@@ -1,16 +1,16 @@
 package cn.tolim.pudans.security.authentication.feishu;
 
 import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.security.authentication.ExternalLoginCompletionService;
+import cn.tolim.pudans.security.authentication.ExternalLogins;
 import cn.tolim.pudans.security.authentication.LoginRejectedException;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.user.service.FeishuUserService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.user.FeishuAccounts;
 import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService.FeishuSettings;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
+import cn.tolim.pudans.infra.setting.SecurityParameters.FeishuSettings;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -42,13 +42,13 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     static final String BIND_ATTRIBUTE = FeishuOAuth2LoginWebFilter.class.getName() + ".BIND";
     private static final String BIND_QUERY_PARAMETER = "bind";
     private static final String BIND_RESULT_PATH = "/identity-providers";
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     private final FeishuClient feishuClient;
 
-    private final FeishuUserService feishuUserService;
+    private final FeishuAccounts feishuAccounts;
 
-    private final ExternalLoginCompletionService externalLoginCompletionService;
+    private final ExternalLogins externalLogins;
 
     private final DomainEventPublisher domainEventPublisher;
 
@@ -111,7 +111,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 })
                 .then(redirect(exchange, location))
                 .then(Mono.fromRunnable(() -> exchange.getAttributes()
-                        .put(AuditService.OPERATION_ATTRIBUTE, bind ? "BIND" : "LOGIN")));
+                        .put(AuditLog.OPERATION_ATTRIBUTE, bind ? "BIND" : "LOGIN")));
     }
 
     private Mono<Void> callback(ServerWebExchange exchange) {
@@ -138,11 +138,11 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                     return feishuClient
                             .exchangeCode(code)
                             .flatMap(token -> feishuClient.fetchUserInfo(token.accessToken()))
-                            .flatMap(userInfo -> feishuUserService
+                            .flatMap(userInfo -> feishuAccounts
                                     .findConnection(userInfo.unionId())
-                                    .switchIfEmpty(Mono.defer(() -> feishuUserService.findConnection(
+                                    .switchIfEmpty(Mono.defer(() -> feishuAccounts.findConnection(
                                             userInfo.openId())))
-                                    .flatMap(connection -> feishuUserService.syncProfile(
+                                    .flatMap(connection -> feishuAccounts.syncProfile(
                                                     connection.getSpec().getUsername(),
                                                     userInfo.name(),
                                                     userInfo.email(),
@@ -164,12 +164,12 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> bindIdentity(ServerWebExchange exchange, String code) {
-        exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "BIND");
+        exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "BIND");
         return currentUsername(exchange)
                 .flatMap(username -> feishuClient
                         .exchangeCode(code)
                         .flatMap(token -> feishuClient.fetchUserInfo(token.accessToken()))
-                        .flatMap(userInfo -> feishuUserService.bindConnection(
+                        .flatMap(userInfo -> feishuAccounts.bindConnection(
                                 username,
                                 providerUserId(userInfo),
                                 userInfo.name(),
@@ -192,7 +192,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
 
     private Mono<Void> bindFailure(ServerWebExchange exchange, Throwable error) {
         log.warn("飞书身份绑定失败", error);
-        exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
+        exchange.getAttributes().put(AuditLog.RESULT_ATTRIBUTE, "DENIED");
         var message = StringUtils.hasText(error.getMessage()) ? error.getMessage() : "请稍后重试。";
         return ProblemDetailResponses.writeOrRedirect(
                 exchange,
@@ -216,7 +216,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> establish(ServerWebExchange exchange, String username) {
-        return externalLoginCompletionService
+        return externalLogins
                 .complete(exchange, username, "feishu")
                 .flatMap(result -> result.twoFactorRequired()
                         ? twoFactorRequired(exchange)
@@ -234,9 +234,9 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> loginRejected(ServerWebExchange exchange, String reason) {
-        exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
-        exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
-        exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
+        exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "LOGIN");
+        exchange.getAttributes().put(AuditLog.RESULT_ATTRIBUTE, "DENIED");
+        exchange.getAttributes().put(AuditLog.CONTEXT_ATTRIBUTE, reason);
         return ProblemDetailResponses.writeOrRedirect(
                 exchange,
                 context,
@@ -251,9 +251,9 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private Mono<Void> loginFailure(ServerWebExchange exchange, String reason) {
-        exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
-        exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
-        exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, reason);
+        exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "LOGIN");
+        exchange.getAttributes().put(AuditLog.RESULT_ATTRIBUTE, "DENIED");
+        exchange.getAttributes().put(AuditLog.CONTEXT_ATTRIBUTE, reason);
         publishLoginFailure(exchange, reason);
         return ProblemDetailResponses.writeOrRedirect(
                 exchange,
@@ -289,7 +289,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
     }
 
     private void publishLoginFailure(ServerWebExchange exchange, String reason) {
-        var username = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
+        var username = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", username == null ? "anonymous" : username);
         payload.put("method", "feishu");
@@ -298,7 +298,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         domainEventPublisher.publish(
                 "user.login.failed",
                 payload,
-                (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
+                (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
     private String resolveRedirectUri(ServerWebExchange exchange, String configured) {

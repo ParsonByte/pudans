@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.ai.library.hook.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiHook;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiHook;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.hook.HookService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.hook.Hooks;
+import cn.tolim.pudans.core.ai.team.Teams;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
@@ -31,11 +31,11 @@ public class AiHookEndpoint implements CustomEndpoint {
     private static final String EVENT_PARSE_MESSAGE =
             "event 必须是 SESSION_START、USER_PROMPT_SUBMIT、PRE_TOOL_USE、POST_TOOL_USE 或 SESSION_END。";
 
-    private final HookService hookService;
+    private final Hooks hookService;
 
     private final AiEndpointRequests requests;
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {

@@ -8,19 +8,19 @@ import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
-import cn.tolim.pudans.contract.core.extension.user.UserConnection;
+import cn.tolim.pudans.contract.user.resource.UserConnection;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.user.service.FeishuUserService;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.user.FeishuAccounts;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.FeishuProperties;
 import cn.tolim.pudans.infra.properties.OidcProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.setting.ParameterSettingFetcher;
 import cn.tolim.pudans.infra.setting.ParameterSettingSecretCipher;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
-import cn.tolim.pudans.security.authentication.ExternalLoginCompletionService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
+import cn.tolim.pudans.security.authentication.ExternalLogins;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,10 +47,10 @@ class FeishuOAuth2LoginWebFilterTest {
     FeishuClient feishuClient;
 
     @Mock
-    FeishuUserService feishuUserService;
+    FeishuAccounts feishuAccounts;
 
     @Mock
-    ExternalLoginCompletionService externalLoginCompletionService;
+    ExternalLogins externalLogins;
 
     @Mock
     DomainEventPublisher domainEventPublisher;
@@ -68,7 +68,7 @@ class FeishuOAuth2LoginWebFilterTest {
     @BeforeEach
     void setUp() {
         properties = new FeishuProperties();
-        var securitySettings = new SecurityParameterSettingService(
+        var securitySettings = new SecurityParameters(
                 parameterSettingFetcher,
                 parameterSettingSecretCipher,
                 new OidcProperties(),
@@ -79,8 +79,8 @@ class FeishuOAuth2LoginWebFilterTest {
         filter = new FeishuOAuth2LoginWebFilter(
                 securitySettings,
                 feishuClient,
-                feishuUserService,
-                externalLoginCompletionService,
+                feishuAccounts,
+                externalLogins,
                 domainEventPublisher,
                 new SecurityProperties(),
                 context);
@@ -106,7 +106,7 @@ class FeishuOAuth2LoginWebFilterTest {
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(UNAUTHORIZED);
         assertThat(exchange.getResponse().getBodyAsString().block())
                 .contains("feishu_not_configured");
-        verifyNoInteractions(feishuClient, feishuUserService, externalLoginCompletionService);
+        verifyNoInteractions(feishuClient, feishuAccounts, externalLogins);
     }
 
     @Test
@@ -125,7 +125,7 @@ class FeishuOAuth2LoginWebFilterTest {
         assertThat(location).isNotNull();
         assertThat(location.getPath()).isEqualTo("/sign-in");
         assertThat(location.getQuery()).contains("code=feishu_not_configured");
-        verifyNoInteractions(feishuClient, feishuUserService, externalLoginCompletionService);
+        verifyNoInteractions(feishuClient, feishuAccounts, externalLogins);
     }
 
     @Test
@@ -172,11 +172,11 @@ class FeishuOAuth2LoginWebFilterTest {
         spec.setUsername("alice");
         spec.setProviderUserId("union-1");
         connection.setSpec(spec);
-        when(feishuUserService.findConnection("union-1")).thenReturn(Mono.just(connection));
-        when(feishuUserService.syncProfile("alice", "Alice", "alice@example.com", null, null))
+        when(feishuAccounts.findConnection("union-1")).thenReturn(Mono.just(connection));
+        when(feishuAccounts.syncProfile("alice", "Alice", "alice@example.com", null, null))
                 .thenReturn(Mono.empty());
-        when(externalLoginCompletionService.complete(exchange, "alice", "feishu"))
-                .thenReturn(Mono.just(new ExternalLoginCompletionService.LoginCompletionResult(false, "alice")));
+        when(externalLogins.complete(exchange, "alice", "feishu"))
+                .thenReturn(Mono.just(new ExternalLogins.LoginCompletionResult(false, "alice")));
 
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 
@@ -201,7 +201,7 @@ class FeishuOAuth2LoginWebFilterTest {
         lenient().when(feishuClient.fetchUserInfo("token-1"))
                 .thenReturn(Mono.just(new FeishuClient.FeishuUserInfo(
                         "open-1", "union-1", "Alice", "alice@example.com", null, null)));
-        when(feishuUserService.bindConnection("alice", "union-1", "Alice", "alice@example.com", null, null))
+        when(feishuAccounts.bindConnection("alice", "union-1", "Alice", "alice@example.com", null, null))
                 .thenReturn(Mono.just(new UserConnection()));
         var authentication = UsernamePasswordAuthenticationToken.authenticated(
                 "alice", "n/a", List.of(new SimpleGrantedAuthority("ROLE_authenticated")));
@@ -238,6 +238,6 @@ class FeishuOAuth2LoginWebFilterTest {
         var location = exchange.getResponse().getHeaders().getLocation();
         assertThat(location).isNotNull();
         assertThat(location.toString()).contains("app_id=app-id");
-        verifyNoInteractions(feishuClient, feishuUserService, externalLoginCompletionService);
+        verifyNoInteractions(feishuClient, feishuAccounts, externalLogins);
     }
 }

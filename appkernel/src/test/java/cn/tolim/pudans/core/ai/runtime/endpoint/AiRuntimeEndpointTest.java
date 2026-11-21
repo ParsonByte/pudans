@@ -9,8 +9,8 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService;
-import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService.RuntimeView;
+import cn.tolim.pudans.core.ai.runtime.AgentRuntimes;
+import cn.tolim.pudans.core.ai.runtime.AgentRuntimes.RuntimeView;
 import cn.tolim.pudans.core.ai.runtime.SandboxProviderRegistry.ProviderInfo;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxErrors;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxExecResult;
@@ -39,7 +39,7 @@ class AiRuntimeEndpointTest {
     private static final Instant NOW = Instant.parse("2026-11-19T00:00:00Z");
 
     @Mock
-    AgentRuntimeService runtimeService;
+    AgentRuntimes runtimeService;
 
     @Mock
     AiEndpointRequests requests;

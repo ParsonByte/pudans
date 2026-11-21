@@ -4,13 +4,13 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.user.service.AvatarStorageService;
+import cn.tolim.pudans.core.user.AvatarStorage;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.MediaType;
@@ -27,11 +27,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UserAvatarEndpoint implements CustomEndpoint {
 
-    private final UserService userService;
+    private final Accounts accounts;
 
     private final ReactiveExtensionClient client;
 
-    private final AvatarStorageService avatarStorageService;
+    private final AvatarStorage avatarStorage;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -60,7 +60,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
                                 return Mono.error(
                                         new ServerWebInputException("需要名为 file 的 multipart 文件字段。"));
                             }
-                            return avatarStorageService.store(user, filePart);
+                            return avatarStorage.store(user, filePart);
                         })
                         .flatMap(url -> updateAvatar(user, url)))
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user, true)));
@@ -68,7 +68,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> delete(ServerRequest request) {
         return currentUser()
-                .flatMap(user -> avatarStorageService.deleteForUser(user).thenReturn(user))
+                .flatMap(user -> avatarStorage.deleteForUser(user).thenReturn(user))
                 .flatMap(user -> updateAvatar(user, null))
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user, true)));
     }
@@ -83,7 +83,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
                 .mapNotNull(SecurityContext::getAuthentication)
                 .map(org.springframework.security.core.Authentication::getName)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("未认证")))
-                .flatMap(userService::getUser);
+                .flatMap(accounts::getUser);
     }
 
     @Override

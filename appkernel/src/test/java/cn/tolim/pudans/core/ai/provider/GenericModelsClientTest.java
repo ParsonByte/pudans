@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.provider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import org.junit.jupiter.api.Test;
 
 class GenericModelsClientTest {

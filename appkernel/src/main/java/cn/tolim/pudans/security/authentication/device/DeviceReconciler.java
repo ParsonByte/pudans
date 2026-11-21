@@ -11,7 +11,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.session.ReactiveSessionRepository;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.Device;
+import cn.tolim.pudans.contract.security.resource.Device;
 import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.controller.Controller;

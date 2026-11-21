@@ -2,9 +2,9 @@ package cn.tolim.pudans.core.ai.plan.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService;
+import cn.tolim.pudans.core.ai.plan.PlanUsage;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.stereotype.Component;
@@ -19,7 +19,7 @@ public class AiPlanUsageEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiPlanV1alpha1";
 
-    private final PlanUsageService usageService;
+    private final PlanUsage usageService;
 
     private final AiEndpointRequests requests;
 
@@ -30,12 +30,12 @@ public class AiPlanUsageEndpoint implements CustomEndpoint {
                         .operationId("getAiPlanUsage")
                         .description("Get the current user's plan windows and reset voucher totals.")
                         .tag(TAG)
-                        .response(responseBuilder().implementation(PlanUsageService.UsageView.class)))
+                        .response(responseBuilder().implementation(PlanUsage.UsageView.class)))
                 .GET("/aiplan/-/usage/{uid}", this::userUsage, builder -> builder
                         .operationId("getAiPlanUsageByUser")
                         .description("Get a specific user's plan windows and reset voucher totals.")
                         .tag(TAG)
-                        .response(responseBuilder().implementation(PlanUsageService.UsageView.class)))
+                        .response(responseBuilder().implementation(PlanUsage.UsageView.class)))
                 .build();
     }
 

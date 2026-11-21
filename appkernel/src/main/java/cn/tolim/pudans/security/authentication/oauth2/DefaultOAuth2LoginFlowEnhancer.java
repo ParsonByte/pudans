@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.oauth2;
 
-import cn.tolim.pudans.core.user.service.UserConnectionService;
+import cn.tolim.pudans.core.user.Connections;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class DefaultOAuth2LoginFlowEnhancer implements OAuth2LoginFlowEnhancer {
 
-    private final UserConnectionService connectionService;
+    private final Connections connectionService;
 
     private final OAuth2AuthenticationTokenCache oauth2TokenCache;
 
@@ -23,7 +23,7 @@ public class DefaultOAuth2LoginFlowEnhancer implements OAuth2LoginFlowEnhancer {
     private final AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
 
     public DefaultOAuth2LoginFlowEnhancer(
-            UserConnectionService connectionService,
+            Connections connectionService,
             OAuth2AuthenticationTokenCache oauth2TokenCache,
             OAuth2BindIntent bindIntent) {
         this.connectionService = connectionService;

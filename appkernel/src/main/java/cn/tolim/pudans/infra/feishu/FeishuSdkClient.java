@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.feishu;
 
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import com.lark.oapi.Client;
 import com.lark.oapi.core.request.RequestOptions;
 import com.lark.oapi.core.response.TenantAccessTokenResp;
@@ -25,15 +25,15 @@ import reactor.core.scheduler.Schedulers;
 @Component
 public class FeishuSdkClient {
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     private final AtomicReference<CachedClient> cachedClient = new AtomicReference<>();
 
-    public FeishuSdkClient(SecurityParameterSettingService securitySettings) {
+    public FeishuSdkClient(SecurityParameters securitySettings) {
         this.securitySettings = securitySettings;
     }
 
-    private Client client(SecurityParameterSettingService.FeishuSettings settings) {
+    private Client client(SecurityParameters.FeishuSettings settings) {
         return client(settings.appId(), settings.appSecret());
     }
 

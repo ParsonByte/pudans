@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
-import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
+import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import dev.langchain4j.rag.query.Query;
 import java.util.List;
 import java.util.Set;
@@ -22,10 +22,10 @@ import reactor.core.publisher.Mono;
 class KnowledgeBaseContentRetrieverTest {
 
     @Mock
-    KnowledgeBaseRetrievalService retrievalService;
+    KnowledgeRetrieval retrievalService;
 
     @Mock
-    AiEmbeddingService embeddingService;
+    Embeddings embeddingService;
 
     private KnowledgeBaseContentRetriever retriever;
 

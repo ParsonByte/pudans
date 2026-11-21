@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory;
 
-import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryAssetBindingResolver;
 import cn.tolim.pudans.core.ai.prompt.MemoryPrompts;
 import java.util.Objects;
@@ -12,9 +12,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AiMemoryContextBuilder {
 
-    private final AiMemoryRecallService recallService;
+    private final MemoryRecall recallService;
 
-    private final AiSettingService settingService;
+    private final AiSettings settingService;
 
     private final MemoryAssetBindingResolver bindingResolver;
 

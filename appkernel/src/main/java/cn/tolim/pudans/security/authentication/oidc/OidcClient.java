@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.authentication.oidc;
 
 import cn.tolim.pudans.infra.properties.OidcProperties;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class OidcClient {
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     private final WebClient webClient = WebClient.builder().build();
 

@@ -6,13 +6,13 @@ import static cn.tolim.pudans.security.authorization.AuthorityUtils.AUTHENTICATE
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.ExtensionUtil;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
-import cn.tolim.pudans.infra.setting.MasterKeyService;
+import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.infra.setting.MasterKeys;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import com.nimbusds.jwt.JWTClaimNames;
 import java.time.Clock;
@@ -48,25 +48,25 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
 
     private final ReactiveExtensionClient client;
 
-    private final RoleService roleService;
+    private final Roles roleService;
 
-    private final UserGroupService userGroupService;
+    private final Groups groups;
 
-    private final MasterKeyService masterKeyService;
+    private final MasterKeys masterKeys;
 
     private Clock clock;
 
     public PatAuthenticationManager(
             ReactiveExtensionClient client,
             ReactiveAuthenticationManager delegate,
-            RoleService roleService,
-            UserGroupService userGroupService,
-            MasterKeyService masterKeyService) {
+            Roles roleService,
+            Groups groups,
+            MasterKeys masterKeys) {
         this.client = client;
         this.delegate = delegate;
         this.roleService = roleService;
-        this.userGroupService = userGroupService;
-        this.masterKeyService = masterKeyService;
+        this.groups = groups;
+        this.masterKeys = masterKeys;
         this.clock = Clock.systemDefaultZone();
     }
 
@@ -85,7 +85,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
     }
 
     private boolean secretMatches(PersonalAccessToken pat, String secret) {
-        return masterKeyService.matches(
+        return masterKeys.matches(
                 pat.getSpec().getTokenId(), secret, pat.getSpec().getKeyVersion());
     }
 
@@ -114,7 +114,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 .map(t -> Strings.CS.removeStart(t.getToken(), PAT_TOKEN_PREFIX))
                 .flatMap(token -> {
                     if (token.indexOf('.') >= 0) {
-                        if (masterKeyService.currentVersion() != 0) {
+                        if (masterKeys.currentVersion() != 0) {
                             return Mono.error(new InvalidBearerTokenException(
                                     "主密钥轮换后，旧版个人访问令牌已失效。"));
                         }
@@ -216,7 +216,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
     private Flux<String> rolesOf(String username) {
         return Flux.concat(
                         roleService.getRolesByUsername(username),
-                        userGroupService.getRoleNamesByUsername(username))
+                        groups.getRoleNamesByUsername(username))
                 .distinct();
     }
 

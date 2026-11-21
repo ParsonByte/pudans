@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.ai.team;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiTeam;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiTeam;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.MediaType;
@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AiTeamEndpoint implements CustomEndpoint {
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {

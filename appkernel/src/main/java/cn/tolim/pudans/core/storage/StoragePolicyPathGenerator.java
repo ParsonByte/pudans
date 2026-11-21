@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
 import cn.tolim.pudans.infra.utils.PudansTime;
 
 @Component

@@ -2,9 +2,9 @@ package cn.tolim.pudans.core.ai.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreakerConfig;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitFailure;
 import cn.tolim.pudans.core.ai.routing.circuit.InMemoryCircuitBreaker;

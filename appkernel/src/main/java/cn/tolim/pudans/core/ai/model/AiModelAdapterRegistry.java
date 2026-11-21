@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.model;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;

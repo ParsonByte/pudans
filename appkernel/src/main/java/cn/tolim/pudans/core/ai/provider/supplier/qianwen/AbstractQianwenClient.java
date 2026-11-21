@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.provider.supplier.qianwen;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
 import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -22,7 +22,7 @@ abstract class AbstractQianwenClient {
 
     protected final ObjectMapper mapper;
 
-    protected final AiProviderAccountService accountService;
+    protected final ProviderAccounts accountService;
 
     private final WebClient webClient;
 
@@ -33,7 +33,7 @@ abstract class AbstractQianwenClient {
     protected AbstractQianwenClient(
             WebClient webClient,
             ObjectMapper mapper,
-            AiProviderAccountService accountService,
+            ProviderAccounts accountService,
             String errorCode,
             String defaultError) {
         this.webClient = Objects.requireNonNull(webClient, "AI WebClient 不能为空");

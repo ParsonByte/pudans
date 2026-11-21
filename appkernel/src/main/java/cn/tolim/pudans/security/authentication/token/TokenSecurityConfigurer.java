@@ -1,10 +1,10 @@
 package cn.tolim.pudans.security.authentication.token;
 
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.security.authentication.CryptoService;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
-import cn.tolim.pudans.infra.setting.MasterKeyService;
+import cn.tolim.pudans.contract.security.authentication.LoginCipher;
+import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.infra.setting.MasterKeys;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.annotation.Order;
@@ -23,22 +23,22 @@ import static org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder.w
 @RequiredArgsConstructor
 class TokenSecurityConfigurer implements SecurityConfigurer {
 
-    private final CryptoService cryptoService;
+    private final LoginCipher loginCipher;
 
     private final ReactiveExtensionClient client;
 
-    private final RoleService roleService;
+    private final Roles roles;
 
-    private final UserGroupService userGroupService;
+    private final Groups groups;
 
-    private final MasterKeyService masterKeyService;
+    private final MasterKeys masterKeys;
 
     @Override
     public void configure(ServerHttpSecurity http) {
         var jwtDecoder =
-                withJwkSource(signedJWT -> Flux.just(cryptoService.getJwk())).build();
+                withJwkSource(signedJWT -> Flux.just(loginCipher.getJwk())).build();
         var tokenAuthenticationManager =
-                new TokenAuthenticationManager(client, jwtDecoder, roleService, userGroupService, masterKeyService);
+                new TokenAuthenticationManager(client, jwtDecoder, roles, groups, masterKeys);
 
         var entryPoint = new BearerTokenServerAuthenticationEntryPoint();
         var failureHandler = new ServerAuthenticationEntryPointFailureHandler(entryPoint);

@@ -4,16 +4,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.chat.AiChatCompletionResult;
-import cn.tolim.pudans.core.ai.chat.AiChatService;
+import cn.tolim.pudans.core.ai.chat.ChatCompletions;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.chat.AiChatStreamEvent;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.rag.Citation;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.security.Principal;
@@ -35,20 +35,20 @@ import reactor.core.publisher.Mono;
 class AiChatEndpointTest {
 
     @Mock
-    AiChatService chatService;
+    ChatCompletions chatService;
 
     @Mock
     AiEndpointRequests requests;
 
     @Mock
-    StorageService storageService;
+    StorageTransfer storageTransfer;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         when(requests.userId(any(), anyString(), anyString())).thenReturn(Mono.just("user-1"));
-        var endpoint = new AiChatEndpoint(chatService, requests, storageService, new ObjectMapper());
+        var endpoint = new AiChatEndpoint(chatService, requests, storageTransfer, new ObjectMapper());
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(principal())).build()))
@@ -173,7 +173,7 @@ class AiChatEndpointTest {
 
     @Test
     void uploadsAnImageAttachment() {
-        when(storageService.upload(any())).thenReturn(Mono.just(storageFile()));
+        when(storageTransfer.upload(any())).thenReturn(Mono.just(storageFile()));
         var builder = new MultipartBodyBuilder();
         builder.part("file", new ByteArrayResource(new byte[] {1, 2, 3}))
                 .filename("image.png")
@@ -194,7 +194,7 @@ class AiChatEndpointTest {
 
     @Test
     void uploadsADocumentAttachment() {
-        when(storageService.upload(any())).thenReturn(Mono.just(storageFile("notes.pdf", "application/pdf")));
+        when(storageTransfer.upload(any())).thenReturn(Mono.just(storageFile("notes.pdf", "application/pdf")));
         var builder = new MultipartBodyBuilder();
         builder.part("file", new ByteArrayResource(new byte[] {1, 2, 3}))
                 .filename("notes.pdf")

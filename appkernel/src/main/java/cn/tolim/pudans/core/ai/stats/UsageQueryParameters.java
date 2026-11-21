@@ -16,10 +16,10 @@ public final class UsageQueryParameters {
         return intValue(
                 request,
                 "limit",
-                AiUsageService.DEFAULT_LIMIT,
+                AiUsage.DEFAULT_LIMIT,
                 1,
-                AiUsageService.MAX_LIMIT,
-                "limit 必须在 1 到 " + AiUsageService.MAX_LIMIT + " 之间。",
+                AiUsage.MAX_LIMIT,
+                "limit 必须在 1 到 " + AiUsage.MAX_LIMIT + " 之间。",
                 "limit 必须是整数。");
     }
 
@@ -49,7 +49,7 @@ public final class UsageQueryParameters {
     public static long beforeId(ServerRequest request) {
         var value = request.queryParam("beforeId").map(String::trim).filter(StringUtils::hasText).orElse(null);
         if (value == null) {
-            return AiUsageService.NO_CURSOR;
+            return AiUsage.NO_CURSOR;
         }
         try {
             return Long.parseLong(value);

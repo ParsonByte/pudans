@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication;
 
-import cn.tolim.pudans.contract.core.extension.AuthProvider;
+import cn.tolim.pudans.contract.security.resource.AuthProvider;
 import cn.tolim.pudans.contract.extension.MetadataUtil;
 import org.apache.commons.lang3.BooleanUtils;
 

@@ -2,10 +2,10 @@ package cn.tolim.pudans.core.audit.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.stereotype.Component;
@@ -43,13 +43,13 @@ public class UserNavigationEndpoint implements CustomEndpoint {
                         throw new ServerWebInputException("页面路径必须是以 / 开头的相对路径。");
                     }
                     var exchange = request.exchange();
-                    exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "NAVIGATION");
-                    exchange.getAttributes().put(AuditService.RESOURCE_TYPE_ATTRIBUTE, "Page");
-                    exchange.getAttributes().put(AuditService.RESOURCE_NAME_ATTRIBUTE, path);
-                    exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "SUCCESS");
-                    var auditId = (String) exchange.getAttributes().get(AuditService.AUDIT_ID_ATTRIBUTE);
+                    exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "NAVIGATION");
+                    exchange.getAttributes().put(AuditLog.RESOURCE_TYPE_ATTRIBUTE, "Page");
+                    exchange.getAttributes().put(AuditLog.RESOURCE_NAME_ATTRIBUTE, path);
+                    exchange.getAttributes().put(AuditLog.RESULT_ATTRIBUTE, "SUCCESS");
+                    var auditId = (String) exchange.getAttributes().get(AuditLog.AUDIT_ID_ATTRIBUTE);
                     var traceFlowId =
-                            (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE);
+                            (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE);
                     return ServerResponse.ok().bodyValue(new NavigationResult(auditId, traceFlowId));
                 });
     }

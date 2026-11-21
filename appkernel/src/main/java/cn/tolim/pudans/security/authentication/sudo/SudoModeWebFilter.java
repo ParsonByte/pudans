@@ -32,15 +32,15 @@ class SudoModeWebFilter implements WebFilter {
     static final String SUDO_CODE_PATH = "/sudo/code";
     static final String SUDO_CONFIRM_PATH = "/sudo/confirm";
 
-    private final SudoService sudoService;
+    private final SudoChallenges sudoChallenges;
     private final ServerResponse.Context responseContext;
     private final List<HttpMessageReader<?>> messageReaders;
     private final RouterFunction<ServerResponse> sudoRoutes;
     private final ServerWebExchangeMatcher sudoProtocolMatcher;
     private final ServerWebExchangeMatcher sensitiveMatcher;
 
-    SudoModeWebFilter(SudoService sudoService, ServerResponse.Context responseContext) {
-        this.sudoService = sudoService;
+    SudoModeWebFilter(SudoChallenges sudoChallenges, ServerResponse.Context responseContext) {
+        this.sudoChallenges = sudoChallenges;
         this.responseContext = responseContext;
         this.messageReaders = HandlerStrategies.withDefaults().messageReaders();
         this.sudoRoutes = RouterFunctions.route()
@@ -105,7 +105,7 @@ class SudoModeWebFilter implements WebFilter {
     }
 
     private Mono<ServerResponse> getStatus(ServerRequest request) {
-        return sudoService
+        return sudoChallenges
                 .status(request.exchange())
                 .flatMap(status -> ServerResponse.ok().bodyValue(status));
     }
@@ -113,7 +113,7 @@ class SudoModeWebFilter implements WebFilter {
     private Mono<ServerResponse> sendCode(ServerRequest request) {
         return request.formData()
                 .map(form -> requiredFormValue(form, "method"))
-                .flatMap(sudoService::sendCode)
+                .flatMap(sudoChallenges::sendCode)
                 .then(ServerResponse.noContent().build());
     }
 
@@ -122,7 +122,7 @@ class SudoModeWebFilter implements WebFilter {
                 .flatMap(form -> {
                     var method = requiredFormValue(form, "method");
                     var code = requiredFormValue(form, "code");
-                    return sudoService.confirm(method, code, request.exchange());
+                    return sudoChallenges.confirm(method, code, request.exchange());
                 })
                 .then(ServerResponse.noContent().build());
     }
@@ -133,6 +133,6 @@ class SudoModeWebFilter implements WebFilter {
                 // 令牌认证同样需要安全确认，避免持令牌绕过 sudo 直接改密或管理令牌
                 .filter(authentication -> authentication.isAuthenticated()
                         && !(authentication instanceof AnonymousAuthenticationToken))
-                .flatMap(auth -> sudoService.requireSudo(exchange, auth.getName()));
+                .flatMap(auth -> sudoChallenges.requireSudo(exchange, auth.getName()));
     }
 }

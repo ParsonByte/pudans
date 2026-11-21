@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.harness.team;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.team.Teams;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -13,7 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TeamRuntimeRegistryTest {
 
     @Mock
-    AiTeamService teamService;
+    Teams teamService;
 
     @Test
     void reusesOneRuntimePerTeam() {

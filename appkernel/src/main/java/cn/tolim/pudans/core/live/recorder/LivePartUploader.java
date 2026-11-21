@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_RECORDING_NOT_READY;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STORAGE_FAILED;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STORAGE_POLICY_INVALID;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_RECORDING_NOT_READY;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STORAGE_FAILED;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STORAGE_POLICY_INVALID;
 
 import java.io.IOException;
 import java.nio.channels.Channels;
@@ -19,13 +19,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.PartState;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
-import cn.tolim.pudans.core.live.recording.LiveRecordingStatusService;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
+import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.core.storage.StoragePolicyValidator;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadedPart;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
@@ -59,13 +59,13 @@ public class LivePartUploader {
 
     private static final Duration RETRY_MAX_BACKOFF = Duration.ofSeconds(4);
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     private final StorageDriverResolver driverResolver;
 
     private final StoragePolicyValidator storagePolicyValidator;
 
-    private final LiveRecordingStatusService statusService;
+    private final RecordingStatus statusService;
 
     private final LiveProperties properties;
 
@@ -99,7 +99,7 @@ public class LivePartUploader {
             LiveRecording recording, LiveRecording.Part part, Path file, StoragePolicy policy, long size) {
         var chunkSize = storagePolicyValidator.chunkSize(policy);
         if (size <= chunkSize) {
-            return storageService.upload(writeRequest(recording, part, file, policy, size));
+            return storageTransfer.upload(writeRequest(recording, part, file, policy, size));
         }
         return driverResolver.driver(policy).flatMap(driver -> {
             if (!driver.capabilities().contains(StorageCapability.MULTIPART_UPLOAD)) {
@@ -113,10 +113,10 @@ public class LivePartUploader {
 
     private Mono<StorageFile> multipartUpload(
             LiveRecording recording, LiveRecording.Part part, Path file, StoragePolicy policy, long size) {
-        return storageService.initiateUpload(uploadRequest(recording, part, policy, size)).flatMap(ticket -> uploadParts(
+        return storageTransfer.initiateUpload(uploadRequest(recording, part, policy, size)).flatMap(ticket -> uploadParts(
                         ticket, file, size)
-                .flatMap(parts -> storageService.completeUpload(ticket.fileId(), parts))
-                .onErrorResume(error -> storageService
+                .flatMap(parts -> storageTransfer.completeUpload(ticket.fileId(), parts))
+                .onErrorResume(error -> storageTransfer
                         .abortUpload(ticket.fileId())
                         .onErrorResume(abortError -> Mono.empty())
                         .then(Mono.error(error))));
@@ -129,7 +129,7 @@ public class LivePartUploader {
                     var offset = (long) (number - 1) * ticket.chunkSize();
                     var length = Math.min(ticket.chunkSize(), size - offset);
                     var body = Flux.defer(() -> readSlice(file, offset, length));
-                    return storageService.putPart(ticket.fileId(), number, length, body);
+                    return storageTransfer.putPart(ticket.fileId(), number, length, body);
                 })
                 .collectList();
     }

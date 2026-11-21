@@ -8,19 +8,19 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
+import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import cn.tolim.pudans.core.ai.embedding.EmbeddingBatch;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
-import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
-import cn.tolim.pudans.core.ai.rerank.AiRerankService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChat;
+import cn.tolim.pudans.core.ai.rerank.Reranking;
 import cn.tolim.pudans.core.ai.rerank.RerankResult;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,19 +42,19 @@ class AiProviderEndpointTest {
     ReactiveExtensionClient client;
 
     @Mock
-    LangChain4jChatService chatService;
+    LangChain4jChat chatService;
 
     @Mock
-    AiEmbeddingService embeddingService;
+    Embeddings embeddingService;
 
     @Mock
     AiModelAdapterRegistry modelAdapters;
 
     @Mock
-    AiRerankService rerankService;
+    Reranking rerankService;
 
     @Mock
-    AiProviderAccountService accountService;
+    ProviderAccounts accountService;
 
     private WebTestClient webClient;
 

@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 class MemoryMaintenanceSchedulerTest {
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     @Mock
     AiMemoryL1Repository l1Repository;

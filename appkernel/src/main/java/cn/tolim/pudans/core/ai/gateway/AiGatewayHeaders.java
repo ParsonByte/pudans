@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.gateway;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.util.StringUtils;

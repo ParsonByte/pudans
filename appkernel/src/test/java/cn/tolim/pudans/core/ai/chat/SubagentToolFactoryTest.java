@@ -4,14 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSubagent;
+import cn.tolim.pudans.contract.ai.resource.AiSubagent;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.agent.GatewayChatContext;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayMeta;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayResult;
-import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
+import cn.tolim.pudans.core.ai.gateway.AiGateway;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
@@ -19,8 +19,8 @@ import cn.tolim.pudans.core.ai.harness.agent.InMemoryAgentStateStore;
 import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import cn.tolim.pudans.core.ai.harness.journal.InMemoryThreadJournalStore;
 import cn.tolim.pudans.core.ai.harness.subagent.SubagentTools;
-import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
-import cn.tolim.pudans.core.ai.library.skill.SkillService;
+import cn.tolim.pudans.core.ai.library.mcp.McpServers;
+import cn.tolim.pudans.core.ai.library.skill.Skills;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.util.List;
@@ -35,13 +35,13 @@ import reactor.test.StepVerifier;
 class SubagentToolFactoryTest {
 
     @Mock
-    AiGatewayService gatewayService;
+    AiGateway gatewayService;
 
     @Mock
-    SkillService skillService;
+    Skills skills;
 
     @Mock
-    McpServerService mcpServerService;
+    McpServers mcpServers;
 
     @Test
     void buildsSubagentToolsThatDelegateThroughTheGateway() {
@@ -49,12 +49,12 @@ class SubagentToolFactoryTest {
                 gatewayService,
                 new InMemoryAgentStateStore(),
                 new InMemoryThreadJournalStore(),
-                skillService,
+                skills,
                 new cn.tolim.pudans.core.ai.harness.skill.curator.InMemorySkillUsageStore(),
-                mcpServerService);
-        when(skillService.byNames(any())).thenReturn(Mono.just(List.of()));
-        when(mcpServerService.toolCatalogFor(any()))
-                .thenReturn(Mono.just(new McpServerService.McpToolCatalog(List.of())));
+                mcpServers);
+        when(skills.byNames(any())).thenReturn(Mono.just(List.of()));
+        when(mcpServers.toolCatalogFor(any()))
+                .thenReturn(Mono.just(new McpServers.McpToolCatalog(List.of())));
         when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
         var tools = factory.create(context(), List.of(subagent())).block();
 

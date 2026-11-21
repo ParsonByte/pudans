@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.ai.plan;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
-import cn.tolim.pudans.contract.core.extension.ai.AiPlanBinding;
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.ai.resource.AiPlan;
+import cn.tolim.pudans.contract.ai.resource.AiPlanBinding;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.infra.r2dbc.ai.plan.PlanCounterRepository.PlanCounterRow;
 import cn.tolim.pudans.infra.r2dbc.ai.plan.UsageLedgerRepository.LedgerRow;

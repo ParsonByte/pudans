@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.oauth2;
 
-import cn.tolim.pudans.core.user.service.UserConnectionService;
+import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import org.springframework.core.annotation.Order;
@@ -19,7 +19,7 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
 
     private final ServerSecurityContextRepository securityContextRepository;
 
-    private final UserConnectionService connectionService;
+    private final Connections connectionService;
 
     private final OAuth2AuthenticationSession authenticationSession;
 
@@ -33,7 +33,7 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
 
     public OAuth2SecurityConfigurer(
             ServerSecurityContextRepository securityContextRepository,
-            UserConnectionService connectionService,
+            Connections connectionService,
             OAuth2AuthenticationSession authenticationSession,
             OAuth2AuthenticationTokenCache authenticationCache,
             ServerResponse.Context context,

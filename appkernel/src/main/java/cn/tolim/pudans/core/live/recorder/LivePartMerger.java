@@ -1,15 +1,15 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_MERGE_FAILED;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STORAGE_BACKLOG;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STORAGE_FAILED;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_MERGE_FAILED;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STORAGE_BACKLOG;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STORAGE_FAILED;
 
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.PartState;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
-import cn.tolim.pudans.core.live.recording.LiveRecordingStatusService;
+import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import jakarta.annotation.PreDestroy;
@@ -47,7 +47,7 @@ public class LivePartMerger {
 
     private final LivePartManifest partManifest;
 
-    private final LiveRecordingStatusService statusService;
+    private final RecordingStatus statusService;
 
     private final LivePartUploader uploader;
 
@@ -65,7 +65,7 @@ public class LivePartMerger {
             LiveRecordingWorkspace workspace,
             LiveSegmentManifest segmentManifest,
             LivePartManifest partManifest,
-            LiveRecordingStatusService statusService,
+            RecordingStatus statusService,
             LivePartUploader uploader,
             LiveStoragePolicyResolver policyResolver,
             LiveProperties properties,

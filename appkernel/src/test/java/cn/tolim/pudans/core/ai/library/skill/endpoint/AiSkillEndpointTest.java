@@ -3,13 +3,13 @@ package cn.tolim.pudans.core.ai.library.skill.endpoint;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.ai.AiSkill;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiSkill;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.harness.skill.curator.SkillCuratorService;
-import cn.tolim.pudans.core.ai.library.skill.SkillService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.harness.skill.curator.SkillPromotion;
+import cn.tolim.pudans.core.ai.library.skill.Skills;
+import cn.tolim.pudans.core.ai.team.Teams;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,30 +25,30 @@ import reactor.core.publisher.Mono;
 class AiSkillEndpointTest {
 
     @Mock
-    SkillService skillService;
+    Skills skills;
 
     @Mock
-    AiTeamService teamService;
+    Teams teamService;
 
     @Mock
     AiEndpointRequests requests;
 
     @Mock
-    SkillCuratorService curatorService;
+    SkillPromotion curatorService;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         client = WebTestClient.bindToRouterFunction(
-                        new AiSkillEndpoint(skillService, teamService, requests, curatorService).endpoint())
+                        new AiSkillEndpoint(skills, teamService, requests, curatorService).endpoint())
                 .build();
     }
 
     @Test
     void importsASkillDraft() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
-        when(skillService.importFromUrl("https://example.com/SKILL.md", "main"))
+        when(skills.importFromUrl("https://example.com/SKILL.md", "main"))
                 .thenReturn(Mono.just(skill("release")));
 
         client.post()
@@ -67,7 +67,7 @@ class AiSkillEndpointTest {
     void listsSkillsForAnOwnedAgent() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
         when(teamService.requireAgent("agent-a", "alice")).thenReturn(Mono.just(agent("agent-a")));
-        when(skillService.byAgent("agent-a")).thenReturn(Flux.just(skill("release")));
+        when(skills.byAgent("agent-a")).thenReturn(Flux.just(skill("release")));
 
         client.get()
                 .uri("/aiskills/-/by-agent?agent=agent-a")

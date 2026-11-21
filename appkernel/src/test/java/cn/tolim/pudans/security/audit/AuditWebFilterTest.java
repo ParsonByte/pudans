@@ -22,13 +22,13 @@ import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 
 @ExtendWith(MockitoExtension.class)
 class AuditWebFilterTest {
 
     @Mock
-    AuditService auditService;
+    AuditLog auditLog;
 
     @Mock
     ReactiveExtensionClient client;
@@ -43,7 +43,7 @@ class AuditWebFilterTest {
         lenient()
                 .when(ruleEvaluator.shouldRecord(anyString(), anyString()))
                 .thenReturn(Mono.just(true));
-        filter = new AuditWebFilter(auditService, client, ruleEvaluator);
+        filter = new AuditWebFilter(auditLog, client, ruleEvaluator);
     }
 
     private static WebFilterChain chain() {
@@ -61,37 +61,37 @@ class AuditWebFilterTest {
     void upstreamFlowIdIsNotOverwritten() {
         var exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get("/api/v1/users").build());
-        exchange.getAttributes().put(AuditService.TRACE_FLOW_ID_ATTRIBUTE, "flow-from-risk-filter");
+        exchange.getAttributes().put(AuditLog.TRACE_FLOW_ID_ATTRIBUTE, "flow-from-risk-filter");
 
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 
-        assertThat(exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE))
+        assertThat(exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE))
                 .isEqualTo("flow-from-risk-filter");
-        verify(auditService)
+        verify(auditLog)
                 .record(same(exchange), anyString(), anyString(), any(), anyString(), anyLong(), anyMap());
     }
 
     @Test
     void inheritedHeaderIsUsedWhenNoFlowIdExistsYet() {
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/users")
-                .header(AuditService.TRACE_FLOW_ID_HEADER, "flow-from-header")
+                .header(AuditLog.TRACE_FLOW_ID_HEADER, "flow-from-header")
                 .build());
 
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 
-        assertThat(exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE))
+        assertThat(exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE))
                 .isEqualTo("flow-from-header");
     }
 
     @Test
     void oversizedHeaderIsTruncatedBeforeItIsStored() {
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/users")
-                .header(AuditService.TRACE_FLOW_ID_HEADER, "x".repeat(500))
+                .header(AuditLog.TRACE_FLOW_ID_HEADER, "x".repeat(500))
                 .build());
 
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 
-        assertThat((String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE))
+        assertThat((String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE))
                 .hasSize(64);
     }
 
@@ -103,7 +103,7 @@ class AuditWebFilterTest {
 
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 
-        verifyNoInteractions(auditService);
+        verifyNoInteractions(auditLog);
     }
 
     @Test
@@ -113,7 +113,7 @@ class AuditWebFilterTest {
 
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 
-        verifyNoInteractions(auditService);
+        verifyNoInteractions(auditLog);
     }
 
     @Test
@@ -134,7 +134,7 @@ class AuditWebFilterTest {
                         chain()))
                 .verifyComplete();
 
-        verifyNoInteractions(auditService);
+        verifyNoInteractions(auditLog);
     }
 
     @Test
@@ -151,9 +151,9 @@ class AuditWebFilterTest {
     void navigationAttributesOverrideTheApiResource() {
         var exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.post("/api/v1/usernavigations").build());
-        exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "NAVIGATION");
-        exchange.getAttributes().put(AuditService.RESOURCE_TYPE_ATTRIBUTE, "Page");
-        exchange.getAttributes().put(AuditService.RESOURCE_NAME_ATTRIBUTE, "/console/users");
+        exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "NAVIGATION");
+        exchange.getAttributes().put(AuditLog.RESOURCE_TYPE_ATTRIBUTE, "Page");
+        exchange.getAttributes().put(AuditLog.RESOURCE_NAME_ATTRIBUTE, "/console/users");
 
         assertThat(AuditWebFilter.resourceType(exchange)).isEqualTo("Page");
         assertThat(AuditWebFilter.resourceName(exchange)).isEqualTo("/console/users");

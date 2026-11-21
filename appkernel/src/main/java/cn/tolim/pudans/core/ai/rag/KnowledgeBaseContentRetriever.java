@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.rag;
 
-import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
+import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import cn.tolim.pudans.core.ai.prompt.ChatPrompts;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.rag.content.Content;
@@ -15,17 +15,17 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public final class KnowledgeBaseContentRetriever implements ContentRetriever {
 
-    private final KnowledgeBaseRetrievalService retrievalService;
+    private final KnowledgeRetrieval retrievalService;
 
-    private final AiEmbeddingService embeddingService;
+    private final Embeddings embeddingService;
 
     private final RagContext context;
 
     private volatile List<Citation> citations = List.of();
 
     public KnowledgeBaseContentRetriever(
-            KnowledgeBaseRetrievalService retrievalService,
-            AiEmbeddingService embeddingService,
+            KnowledgeRetrieval retrievalService,
+            Embeddings embeddingService,
             RagContext context) {
         this.retrievalService = Objects.requireNonNull(retrievalService, "知识库检索服务不能为空");
         this.embeddingService = Objects.requireNonNull(embeddingService, "嵌入服务不能为空");

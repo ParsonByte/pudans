@@ -8,14 +8,14 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
-import cn.tolim.pudans.contract.core.extension.rbac.Role.PolicyRule;
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.contract.rbac.resource.Role.PolicyRule;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.rbac.service.PermissionCatalogService;
+import cn.tolim.pudans.core.rbac.permission.PermissionDirectory;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import java.util.Arrays;
@@ -42,21 +42,21 @@ import reactor.test.StepVerifier;
 class RolePermissionPolicyTest {
 
     @Mock
-    RoleService roleService;
+    Roles roleService;
 
     @Mock
     ReactiveExtensionClient client;
 
     @Mock
-    PermissionCatalogService permissionCatalogService;
+    PermissionDirectory permissionDirectory;
 
     private RolePermissionPolicy policy;
 
     @BeforeEach
     void setUp() {
-        policy = new RolePermissionPolicy(roleService, client, permissionCatalogService);
+        policy = new RolePermissionPolicy(roleService, client, permissionDirectory);
         lenient()
-                .when(permissionCatalogService.expand(anyList()))
+                .when(permissionDirectory.expand(anyList()))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         lenient()
                 .when(client.listAll(eq(Role.class), any(ListOptions.class), any(Sort.class)))

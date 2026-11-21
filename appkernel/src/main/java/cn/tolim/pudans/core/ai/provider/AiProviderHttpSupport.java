@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.provider;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;

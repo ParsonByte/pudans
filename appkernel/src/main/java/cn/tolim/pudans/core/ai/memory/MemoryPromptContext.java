@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
 import java.util.Objects;
 
 public record MemoryPromptContext(

@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import reactor.core.publisher.Flux;
@@ -20,28 +20,28 @@ import reactor.core.publisher.Mono;
 class StorageCleanupTaskTest {
 
     @Mock
-    StorageFileService fileService;
+    FileRecords fileService;
 
     @Mock
-    StorageUploadService uploadService;
+    Uploads uploadService;
 
     @Mock
-    StorageService storageService;
+    StorageTransfer storageTransfer;
 
     @Test
     void abortsExpiredUploadsAndPurgesExpiredTrash() {
-        var task = new StorageCleanupTask(fileService, uploadService, storageService, new PudansProperties());
+        var task = new StorageCleanupTask(fileService, uploadService, storageTransfer, new PudansProperties());
         when(fileService.listExpiredUploads(any(Instant.class), eq(100)))
                 .thenReturn(Flux.just(file("upload-1")));
         when(fileService.listExpiredTrash(any(Instant.class), eq(100)))
                 .thenReturn(Flux.just(file("trash-1")));
         when(uploadService.abort("upload-1")).thenReturn(Mono.empty());
-        when(storageService.purge("trash-1")).thenReturn(Mono.empty());
+        when(storageTransfer.purge("trash-1")).thenReturn(Mono.empty());
 
         task.cleanup().block();
 
         verify(uploadService).abort("upload-1");
-        verify(storageService).purge("trash-1");
+        verify(storageTransfer).purge("trash-1");
     }
 
     private static StorageFile file(String name) {

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.memory;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class MemoryMaintenanceScheduler implements SmartLifecycle {
 
     private static final Duration DECAY_INTERVAL = Duration.ofHours(1);
 
-    private final AiSettingService settingService;
+    private final AiSettings settingService;
 
     private final AiMemoryL1Repository l1Repository;
 

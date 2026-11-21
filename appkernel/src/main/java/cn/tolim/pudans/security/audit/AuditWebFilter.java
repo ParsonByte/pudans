@@ -13,10 +13,10 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.audit.TraceContext;
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.infra.trace.TraceContext;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.security.web.StaticRequestPaths;
 
 @Slf4j
@@ -29,7 +29,7 @@ public class AuditWebFilter implements WebFilter {
 
     private static final int MAX_ID_LENGTH = 64;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     private final ReactiveExtensionClient client;
 
@@ -46,38 +46,38 @@ public class AuditWebFilter implements WebFilter {
             return chain.filter(exchange);
         }
         var start = System.currentTimeMillis();
-        var traceId = AuditService.traceId(exchange);
+        var traceId = AuditLog.traceId(exchange);
         var inheritedFlowId = truncate(
-                exchange.getRequest().getHeaders().getFirst(AuditService.TRACE_FLOW_ID_HEADER), MAX_ID_LENGTH);
-        var existingFlowId = (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE);
+                exchange.getRequest().getHeaders().getFirst(AuditLog.TRACE_FLOW_ID_HEADER), MAX_ID_LENGTH);
+        var existingFlowId = (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE);
         var traceFlowId = existingFlowId != null && !existingFlowId.isBlank()
                 ? existingFlowId
                 : inheritedFlowId == null || inheritedFlowId.isBlank()
                         ? cn.tolim.pudans.infra.audit.AuditIdGenerator.next()
                         : inheritedFlowId;
         var rootAuditId = cn.tolim.pudans.infra.audit.AuditIdGenerator.next();
-        var trail = new cn.tolim.pudans.core.audit.service.AuditTrail(traceFlowId, rootAuditId);
-        exchange.getAttributes().putIfAbsent(AuditService.TRACE_FLOW_ID_ATTRIBUTE, traceFlowId);
-        exchange.getAttributes().put(AuditService.AUDIT_ID_ATTRIBUTE, rootAuditId);
-        exchange.getAttributes().put(AuditService.STEP_INDEX_ATTRIBUTE, 1);
-        exchange.getAttributes().put(AuditService.AUDIT_TRAIL_ATTRIBUTE, trail);
+        var trail = new cn.tolim.pudans.core.audit.AuditTrail(traceFlowId, rootAuditId);
+        exchange.getAttributes().putIfAbsent(AuditLog.TRACE_FLOW_ID_ATTRIBUTE, traceFlowId);
+        exchange.getAttributes().put(AuditLog.AUDIT_ID_ATTRIBUTE, rootAuditId);
+        exchange.getAttributes().put(AuditLog.STEP_INDEX_ATTRIBUTE, 1);
+        exchange.getAttributes().put(AuditLog.AUDIT_TRAIL_ATTRIBUTE, trail);
         var inheritedParent = truncate(
-                exchange.getRequest().getHeaders().getFirst(AuditService.PARENT_AUDIT_ID_HEADER), MAX_ID_LENGTH);
+                exchange.getRequest().getHeaders().getFirst(AuditLog.PARENT_AUDIT_ID_HEADER), MAX_ID_LENGTH);
         if (inheritedParent != null && !inheritedParent.isBlank()) {
-            exchange.getAttributes().put(AuditService.PARENT_AUDIT_ID_ATTRIBUTE, inheritedParent);
+            exchange.getAttributes().put(AuditLog.PARENT_AUDIT_ID_ATTRIBUTE, inheritedParent);
         }
-        exchange.getResponse().getHeaders().set(AuditService.TRACE_ID_HEADER, traceId);
-        exchange.getResponse().getHeaders().set(AuditService.TRACE_FLOW_ID_HEADER, traceFlowId);
+        exchange.getResponse().getHeaders().set(AuditLog.TRACE_ID_HEADER, traceId);
+        exchange.getResponse().getHeaders().set(AuditLog.TRACE_FLOW_ID_HEADER, traceFlowId);
         return chain.filter(exchange)
                 .contextWrite(context -> context.put(
-                                cn.tolim.pudans.core.audit.service.AuditTrail.class, trail)
+                                cn.tolim.pudans.core.audit.AuditTrail.class, trail)
                         .put(TraceContext.TRACE_FLOW_ID_CONTEXT_KEY, traceFlowId))
                 .then(Mono.defer(() -> write(exchange, start, null)))
                 .onErrorResume(error -> write(exchange, start, error).then(Mono.error(error)));
     }
 
     private Mono<Void> write(ServerWebExchange exchange, long start, Throwable error) {
-        var username = (String) exchange.getAttributes().get(AuditService.USERNAME_ATTRIBUTE);
+        var username = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
         var uidMono = username == null
                 ? Mono.just("anonymous")
                 : client.fetch(User.class, username)
@@ -93,9 +93,9 @@ public class AuditWebFilter implements WebFilter {
                     if (!Boolean.TRUE.equals(record)) {
                         return Mono.empty();
                     }
-                    exchange.getAttributes().put(AuditService.UID_ATTRIBUTE, uid);
+                    exchange.getAttributes().put(AuditLog.UID_ATTRIBUTE, uid);
                     try {
-                        auditService.record(
+                        auditLog.record(
                                 exchange,
                                 operation,
                                 type,
@@ -115,13 +115,13 @@ public class AuditWebFilter implements WebFilter {
     }
 
     private static String resolvedOperation(ServerWebExchange exchange) {
-        var overridden = (String) exchange.getAttributes().get(AuditService.OPERATION_ATTRIBUTE);
+        var overridden = (String) exchange.getAttributes().get(AuditLog.OPERATION_ATTRIBUTE);
         return overridden != null ? overridden : operation(exchange);
     }
 
     private static String result(ServerWebExchange exchange, Throwable error) {
         var status = exchange.getResponse().getStatusCode();
-        var overriddenResult = (String) exchange.getAttributes().get(AuditService.RESULT_ATTRIBUTE);
+        var overriddenResult = (String) exchange.getAttributes().get(AuditLog.RESULT_ATTRIBUTE);
         if (overriddenResult != null) {
             return overriddenResult;
         }
@@ -148,15 +148,15 @@ public class AuditWebFilter implements WebFilter {
         if (username != null) {
             context.put("username", username);
         }
-        var patOwner = exchange.getAttributes().get(AuditService.PAT_OWNER_ATTRIBUTE);
+        var patOwner = exchange.getAttributes().get(AuditLog.PAT_OWNER_ATTRIBUTE);
         if (patOwner != null) {
             context.put("patOwner", patOwner);
         }
-        var sudoUser = exchange.getAttributes().get(AuditService.SUDO_USER_ATTRIBUTE);
+        var sudoUser = exchange.getAttributes().get(AuditLog.SUDO_USER_ATTRIBUTE);
         if (sudoUser != null) {
             context.put("sudoUser", sudoUser);
         }
-        var extra = exchange.getAttributes().get(AuditService.CONTEXT_ATTRIBUTE);
+        var extra = exchange.getAttributes().get(AuditLog.CONTEXT_ATTRIBUTE);
         if (extra != null) {
             context.put("reason", extra);
         }
@@ -215,7 +215,7 @@ public class AuditWebFilter implements WebFilter {
     }
 
     static String resourceType(ServerWebExchange exchange) {
-        var overridden = overriddenAttribute(exchange, AuditService.RESOURCE_TYPE_ATTRIBUTE);
+        var overridden = overriddenAttribute(exchange, AuditLog.RESOURCE_TYPE_ATTRIBUTE);
         if (overridden != null) {
             return overridden;
         }
@@ -244,7 +244,7 @@ public class AuditWebFilter implements WebFilter {
     }
 
     static String resourceName(ServerWebExchange exchange) {
-        var overridden = overriddenAttribute(exchange, AuditService.RESOURCE_NAME_ATTRIBUTE);
+        var overridden = overriddenAttribute(exchange, AuditLog.RESOURCE_NAME_ATTRIBUTE);
         if (overridden != null) {
             return overridden;
         }

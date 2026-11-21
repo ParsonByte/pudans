@@ -3,10 +3,10 @@ package cn.tolim.pudans.core.user.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.core.user.service.RefreshTokenService;
+import cn.tolim.pudans.core.user.RefreshTokens;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.stereotype.Component;
@@ -20,7 +20,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AuthTokenEndpoint implements CustomEndpoint {
 
-    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokens refreshTokens;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -31,7 +31,7 @@ public class AuthTokenEndpoint implements CustomEndpoint {
                         .description("Rotate a refresh token and issue a new access token.")
                         .tag(tag)
                         .requestBody(requestBodyBuilder().required(true).implementation(RefreshRequest.class))
-                        .response(responseBuilder().implementation(RefreshTokenService.RefreshResult.class)))
+                        .response(responseBuilder().implementation(RefreshTokens.RefreshResult.class)))
                 .build();
     }
 
@@ -42,7 +42,7 @@ public class AuthTokenEndpoint implements CustomEndpoint {
                     if (body.refreshToken() == null || body.refreshToken().isBlank()) {
                         return Mono.error(new ServerWebInputException("refreshToken 为必填项。"));
                     }
-                    return refreshTokenService.rotate(body.refreshToken());
+                    return refreshTokens.rotate(body.refreshToken());
                 })
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }

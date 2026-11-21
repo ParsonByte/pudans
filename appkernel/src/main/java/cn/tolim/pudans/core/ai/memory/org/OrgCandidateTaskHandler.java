@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.memory.org;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.memory.L1DedupService;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
 import cn.tolim.pudans.core.ai.memory.MemoryHashes;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
@@ -33,9 +33,9 @@ public class OrgCandidateTaskHandler implements AiTaskHandler {
 
     private final AiOrgMemoryRepository orgMemoryRepository;
 
-    private final L1DedupService dedupService;
+    private final L1Deduplication dedupService;
 
-    private final AiSettingService settingService;
+    private final AiSettings settingService;
 
     @Override
     public String taskType() {

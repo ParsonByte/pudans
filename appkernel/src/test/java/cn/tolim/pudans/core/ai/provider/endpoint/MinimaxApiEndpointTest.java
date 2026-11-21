@@ -6,15 +6,15 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxApiClient;
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxProviderAccess;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -39,7 +39,7 @@ class MinimaxApiEndpointTest {
     MinimaxApiClient client;
 
     @Mock
-    StorageService storageService;
+    StorageTransfer storageTransfer;
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
@@ -47,7 +47,7 @@ class MinimaxApiEndpointTest {
 
     @BeforeEach
     void setUp() {
-        var endpoint = new MinimaxApiEndpoint(access, client, storageService, mapper);
+        var endpoint = new MinimaxApiEndpoint(access, client, storageTransfer, mapper);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -97,8 +97,8 @@ class MinimaxApiEndpointTest {
         var file = storedFile();
         when(access.requireProvider("provider-a")).thenReturn(Mono.just(provider));
         when(access.requireAccount(provider)).thenReturn(Mono.just(account));
-        when(storageService.getFile("storage-1")).thenReturn(Mono.just(file));
-        when(storageService.readBytes(eq("storage-1"), anyInt()))
+        when(storageTransfer.getFile("storage-1")).thenReturn(Mono.just(file));
+        when(storageTransfer.readBytes(eq("storage-1"), anyInt()))
                 .thenReturn(Mono.just("video".getBytes(StandardCharsets.UTF_8)));
         var uploadResponse = mapper.createObjectNode();
         uploadResponse.putObject("file").put("file_id", 1);

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.rag;
 
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
+import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -20,17 +20,17 @@ public final class KnowledgeBaseRetrievalTool {
 
     private static final String NO_RESULT = "知识库未检索到相关内容。";
 
-    private final KnowledgeBaseRetrievalService retrievalService;
+    private final KnowledgeRetrieval retrievalService;
 
-    private final AiEmbeddingService embeddingService;
+    private final Embeddings embeddingService;
 
     private final RagContext context;
 
     private volatile List<Citation> citations = List.of();
 
     public KnowledgeBaseRetrievalTool(
-            KnowledgeBaseRetrievalService retrievalService,
-            AiEmbeddingService embeddingService,
+            KnowledgeRetrieval retrievalService,
+            Embeddings embeddingService,
             RagContext context) {
         this.retrievalService = Objects.requireNonNull(retrievalService, "知识库检索服务不能为空");
         this.embeddingService = Objects.requireNonNull(embeddingService, "嵌入服务不能为空");

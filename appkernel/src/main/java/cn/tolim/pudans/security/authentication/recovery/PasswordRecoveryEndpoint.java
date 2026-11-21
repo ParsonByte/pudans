@@ -3,7 +3,7 @@ package cn.tolim.pudans.security.authentication.recovery;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
 import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.security.captcha.CaptchaService;
+import cn.tolim.pudans.security.captcha.Captchas;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,16 +27,16 @@ import reactor.core.publisher.Mono;
 @Tag(name = "PasswordRecoveryV1alpha1", description = "Password recovery endpoints.")
 public class PasswordRecoveryEndpoint {
 
-    private final PasswordRecoveryService passwordRecoveryService;
+    private final PasswordRecovery passwordRecovery;
 
-    private final CaptchaService captchaService;
+    private final Captchas captchas;
 
     @PostMapping("/send-code")
     @Operation(operationId = "SendPasswordRecoveryCode", summary = "Send a password recovery code.")
     @ApiResponse(responseCode = "204", description = "No Content")
     public Mono<ResponseEntity<Void>> sendCode(@Valid @RequestBody SendCodeRequest request) {
         return requireRecoveryCaptcha(request.captchaChallengeId(), request.captchaAnswer())
-                .then(Mono.defer(() -> passwordRecoveryService.sendCode(request.email())))
+                .then(Mono.defer(() -> passwordRecovery.sendCode(request.email())))
                 .thenReturn(ResponseEntity.noContent().build());
     }
 
@@ -45,17 +45,17 @@ public class PasswordRecoveryEndpoint {
     @ApiResponse(responseCode = "204", description = "No Content")
     public Mono<ResponseEntity<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         return requireRecoveryCaptcha(request.captchaChallengeId(), request.captchaAnswer())
-                .then(Mono.defer(() -> passwordRecoveryService.resetPassword(
+                .then(Mono.defer(() -> passwordRecovery.resetPassword(
                         request.email(), request.code(), request.newPassword())))
                 .thenReturn(ResponseEntity.noContent().build());
     }
 
     private Mono<Void> requireRecoveryCaptcha(String challengeId, String answer) {
-        return captchaService.recoveryEnabled().flatMap(enabled -> {
+        return captchas.recoveryEnabled().flatMap(enabled -> {
             if (!Boolean.TRUE.equals(enabled)) {
                 return Mono.empty();
             }
-            return captchaService
+            return captchas
                     .verify(challengeId, answer)
                     .flatMap(verified -> Boolean.TRUE.equals(verified)
                             ? Mono.empty()

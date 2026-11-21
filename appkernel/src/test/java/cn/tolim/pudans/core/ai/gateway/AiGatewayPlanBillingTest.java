@@ -12,31 +12,31 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiPlan;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.conversation.AiConversationService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.conversation.Conversations;
 import cn.tolim.pudans.core.ai.gateway.agent.AiAgentAdapterRegistry;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.gateway.ir.AiRequestParams;
-import cn.tolim.pudans.core.ai.gateway.session.AiGatewaySessionService;
+import cn.tolim.pudans.core.ai.gateway.session.GatewaySessions;
 import cn.tolim.pudans.core.ai.memory.AiMemoryContextBuilder;
 import cn.tolim.pudans.core.ai.memory.task.MemoryTaskScheduler;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
-import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
-import cn.tolim.pudans.core.ai.plan.PlanResolutionService;
+import cn.tolim.pudans.core.ai.plan.PlanQuotas;
+import cn.tolim.pudans.core.ai.plan.PlanResolution;
 import cn.tolim.pudans.core.ai.plan.PlanUsageSnapshot;
 import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
-import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChatService;
-import cn.tolim.pudans.core.ai.routing.AiRouteResolutionService;
+import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChat;
+import cn.tolim.pudans.core.ai.routing.RouteResolution;
 import cn.tolim.pudans.core.ai.plan.PlanQuotaExceededException;
 import cn.tolim.pudans.core.ai.plan.PlanWindowKind;
 import cn.tolim.pudans.core.ai.routing.RouteOutcome;
@@ -46,7 +46,7 @@ import cn.tolim.pudans.core.ai.routing.RouteSelection;
 import cn.tolim.pudans.core.ai.routing.RouteTrace;
 import cn.tolim.pudans.core.ai.routing.SunkRouteRegistry;
 import cn.tolim.pudans.core.ai.routing.circuit.CircuitBreaker;
-import cn.tolim.pudans.core.ai.team.AiTeamQuotaService;
+import cn.tolim.pudans.core.ai.team.TeamQuotas;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.AiProperties;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiChatRequestRepository;
@@ -82,19 +82,19 @@ class AiGatewayPlanBillingTest {
     ReactiveExtensionClient client;
 
     @Mock
-    LangChain4jChatService chatService;
+    LangChain4jChat chatService;
 
     @Mock
-    AiRouteResolutionService routeResolutionService;
+    RouteResolution routeResolutionService;
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     @Mock
-    AiGatewaySessionService sessionService;
+    GatewaySessions sessionService;
 
     @Mock
-    AiConversationService conversationService;
+    Conversations conversationService;
 
     @Mock
     AiAgentAdapterRegistry agentAdapterRegistry;
@@ -103,10 +103,10 @@ class AiGatewayPlanBillingTest {
     AiMemoryContextBuilder memoryContextBuilder;
 
     @Mock
-    PlanResolutionService planResolutionService;
+    PlanResolution planResolution;
 
     @Mock
-    PlanQuotaService planQuotaService;
+    PlanQuotas planQuotas;
 
     @Mock
     AiChatRequestRepository chatRequestRepository;
@@ -121,18 +121,18 @@ class AiGatewayPlanBillingTest {
     ProviderSpendGuard providerSpendGuard;
 
     @Mock
-    AiTeamQuotaService teamQuotaService;
+    TeamQuotas teamQuotaService;
 
     @Mock
-    AiGatewayKeyService keyService;
+    GatewayKeys keyService;
 
-    private AiGatewayService service;
+    private AiGateway service;
 
     @BeforeEach
     void setUp() {
         var properties = new AiProperties();
         properties.getGateway().setInjectionEnabled(false);
-        service = new AiGatewayService(
+        service = new AiGateway(
                 client,
                 chatService,
                 routeResolutionService,
@@ -141,8 +141,8 @@ class AiGatewayPlanBillingTest {
                 conversationService,
                 agentAdapterRegistry,
                 memoryContextBuilder,
-                planResolutionService,
-                planQuotaService,
+                planResolution,
+                planQuotas,
                 chatRequestRepository,
                 memoryTaskScheduler,
                 circuitBreaker,
@@ -156,19 +156,19 @@ class AiGatewayPlanBillingTest {
         lenient().when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
         lenient().when(sessionService.bind(any())).thenReturn(Mono.just(session()));
         lenient().when(keyService.authorize(any(), any()))
-                .thenReturn(Mono.just(AiGatewayKeyService.Access.unrestricted()));
+                .thenReturn(Mono.just(GatewayKeys.Access.unrestricted()));
         lenient().when(keyService.acquire(any()))
                 .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
         lenient().when(keyService.release(any())).thenReturn(Mono.empty());
         lenient().when(conversationService.requireOwned(11L, "user-1")).thenReturn(Mono.just(conversation()));
         lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
         lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
-        lenient().when(planResolutionService.resolve("user-1")).thenReturn(Mono.just(resolved(spec -> {})));
+        lenient().when(planResolution.resolve("user-1")).thenReturn(Mono.just(resolved(spec -> {})));
         lenient()
-                .when(planQuotaService.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
+                .when(planQuotas.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
                 .thenReturn(Mono.just(reserveResult()));
-        lenient().when(planQuotaService.settle(anyString(), anyLong(), any())).thenReturn(Mono.just(settleResult()));
-        lenient().when(planQuotaService.release(anyString())).thenReturn(Mono.just(releaseResult()));
+        lenient().when(planQuotas.settle(anyString(), anyLong(), any())).thenReturn(Mono.just(settleResult()));
+        lenient().when(planQuotas.release(anyString())).thenReturn(Mono.just(releaseResult()));
         lenient().when(chatRequestRepository.createChatRequest(any())).thenReturn(Mono.empty());
         lenient().when(chatRequestRepository.completeChatRequest(any())).thenReturn(Mono.empty());
     }
@@ -184,7 +184,7 @@ class AiGatewayPlanBillingTest {
                 .verifyComplete();
 
         var planCaptor = ArgumentCaptor.forClass(AiPlan.class);
-        verify(planQuotaService)
+        verify(planQuotas)
                 .reserve(
                         eq(REQUEST_ID),
                         eq("user-1"),
@@ -197,7 +197,7 @@ class AiGatewayPlanBillingTest {
         verify(teamQuotaService).check("team-a", BigDecimal.valueOf(ESTIMATED_UNITS));
 
         var snapshotCaptor = ArgumentCaptor.forClass(PlanUsageSnapshot.class);
-        verify(planQuotaService).settle(eq(REQUEST_ID), eq(ACTUAL_UNITS), snapshotCaptor.capture());
+        verify(planQuotas).settle(eq(REQUEST_ID), eq(ACTUAL_UNITS), snapshotCaptor.capture());
         var snapshot = snapshotCaptor.getValue();
         assertThat(snapshot.provider()).isEqualTo("provider-a");
         assertThat(snapshot.providerAccount()).isEqualTo("account-a");
@@ -229,8 +229,8 @@ class AiGatewayPlanBillingTest {
                 .expectError(ApiException.class)
                 .verify();
 
-        verify(planQuotaService).release(REQUEST_ID);
-        verify(planQuotaService, never()).settle(anyString(), anyLong(), any());
+        verify(planQuotas).release(REQUEST_ID);
+        verify(planQuotas, never()).settle(anyString(), anyLong(), any());
     }
 
     @Test
@@ -243,11 +243,11 @@ class AiGatewayPlanBillingTest {
                 .expectNextCount(1)
                 .verifyComplete();
 
-        verify(planResolutionService, never()).resolve(anyString());
-        verify(planQuotaService, never())
+        verify(planResolution, never()).resolve(anyString());
+        verify(planQuotas, never())
                 .reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any());
-        verify(planQuotaService, never()).settle(anyString(), anyLong(), any());
-        verify(planQuotaService, never()).release(anyString());
+        verify(planQuotas, never()).settle(anyString(), anyLong(), any());
+        verify(planQuotas, never()).release(anyString());
         verify(teamQuotaService, never()).check(any(), any());
         verify(providerSpendGuard).check(any(), any(), any());
     }
@@ -262,9 +262,9 @@ class AiGatewayPlanBillingTest {
                 .expectNextCount(1)
                 .verifyComplete();
 
-        verify(planQuotaService, never())
+        verify(planQuotas, never())
                 .reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any());
-        verify(planQuotaService, never()).settle(anyString(), anyLong(), any());
+        verify(planQuotas, never()).settle(anyString(), anyLong(), any());
 
         var completionCaptor = ArgumentCaptor.forClass(ChatCompletion.class);
         verify(chatRequestRepository).completeChatRequest(completionCaptor.capture());
@@ -274,7 +274,7 @@ class AiGatewayPlanBillingTest {
     @Test
     void rejectsWeeklyExhaustionWithoutDowngrade() {
         stubProviderA(false);
-        when(planQuotaService.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
+        when(planQuotas.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
                 .thenReturn(Mono.error(quotaError(PlanWindowKind.WEEKLY)));
 
         StepVerifier.create(service.complete(invocation(AiPlan.BillingScope.USER)))
@@ -282,7 +282,7 @@ class AiGatewayPlanBillingTest {
                     assertThat(error).isInstanceOf(ApiException.class);
                     var api = (ApiException) error;
                     assertThat(api.getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
-                    assertThat(api.getCode()).isEqualTo(PlanQuotaService.CODE_QUOTA_EXCEEDED);
+                    assertThat(api.getCode()).isEqualTo(PlanQuotas.CODE_QUOTA_EXCEEDED);
                 })
                 .verify();
 
@@ -292,21 +292,21 @@ class AiGatewayPlanBillingTest {
 
     @Test
     void downgradesOnceWhenTheFiveHourWindowIsExhausted() {
-        when(planResolutionService.resolve("user-1")).thenReturn(Mono.just(resolved(spec -> {
+        when(planResolution.resolve("user-1")).thenReturn(Mono.just(resolved(spec -> {
             spec.getFallback().setOnFiveHourExhausted(AiPlan.FallbackAction.DOWNGRADE);
             spec.getFallback().setDowngradeRouteGroup("cheap-group");
         })));
         var selectionA = selectionA();
         var selectionB = selectionB();
         when(routeResolutionService.resolve(any())).thenAnswer(call -> {
-            var input = call.getArgument(0, AiRouteResolutionService.Input.class);
+            var input = call.getArgument(0, RouteResolution.Input.class);
             return Mono.just("cheap-group".equals(input.routeGroupCode())
                     ? resolution("cheap-group", selectionB)
                     : resolution("group-a", selectionA));
         });
         stubProvider("provider-a", "account-a", "model-a", provider("provider-a", false));
         stubProvider("provider-b", "account-b", "model-b", provider("provider-b", false));
-        when(planQuotaService.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
+        when(planQuotas.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
                 .thenReturn(Mono.error(quotaError(PlanWindowKind.FIVE_HOUR)))
                 .thenReturn(Mono.just(reserveResult()));
         when(chatService.chat(any(), any(), any(), any(), any())).thenReturn(Mono.just(response()));
@@ -315,14 +315,14 @@ class AiGatewayPlanBillingTest {
                 .assertNext(result -> assertThat(result.meta().provider()).isEqualTo("provider-b"))
                 .verifyComplete();
 
-        verify(planQuotaService, times(2))
+        verify(planQuotas, times(2))
                 .reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any());
         verify(chatService, times(1)).chat(any(), any(), any(), any(), any());
     }
 
     @Test
     void deniesModelsOutsidePlanAccess() {
-        when(planResolutionService.resolve("user-1"))
+        when(planResolution.resolve("user-1"))
                 .thenReturn(Mono.just(resolved(spec -> spec.getAccess().setModels(List.of("model-b")))));
         stubProviderA(false);
 
@@ -336,13 +336,13 @@ class AiGatewayPlanBillingTest {
                 .verify();
 
         verify(chatService, never()).chat(any(), any(), any(), any(), any());
-        verify(planQuotaService, never())
+        verify(planQuotas, never())
                 .reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any());
     }
 
     @Test
     void deniesFeaturesOutsidePlanAccess() {
-        when(planResolutionService.resolve("user-1")).thenReturn(
+        when(planResolution.resolve("user-1")).thenReturn(
                 Mono.just(resolved(spec -> spec.getAccess().setFeatures(List.of(AiPlan.Feature.AGENT)))));
         stubProviderA(false);
 
@@ -365,8 +365,8 @@ class AiGatewayPlanBillingTest {
                 .thenCancel()
                 .verify();
 
-        verify(planQuotaService, timeout(2000)).release(REQUEST_ID);
-        verify(planQuotaService, never()).settle(anyString(), anyLong(), any());
+        verify(planQuotas, timeout(2000)).release(REQUEST_ID);
+        verify(planQuotas, never()).settle(anyString(), anyLong(), any());
     }
 
     private void stubProviderA(boolean free) {
@@ -383,28 +383,28 @@ class AiGatewayPlanBillingTest {
         lenient().when(client.get(AiModel.class, modelName)).thenReturn(Mono.just(model(modelName, providerName)));
     }
 
-    private static PlanResolutionService.ResolvedPlan resolved(Consumer<AiPlan.Spec> customizer) {
+    private static PlanResolution.ResolvedPlan resolved(Consumer<AiPlan.Spec> customizer) {
         var plan = new AiPlan();
         plan.setMetadata(metadata("standard"));
         plan.getSpec().setDisplayName("标准套餐");
         plan.getSpec().getQuota().getFiveHour().setLimit(3_000_000);
         plan.getSpec().getQuota().getWeekly().setLimit(20_000_000);
         customizer.accept(plan.getSpec());
-        return new PlanResolutionService.ResolvedPlan(
+        return new PlanResolution.ResolvedPlan(
                 "standard", "标准套餐", "User/user-1", plan);
     }
 
-    private static PlanQuotaService.ReserveResult reserveResult() {
-        return new PlanQuotaService.ReserveResult(
+    private static PlanQuotas.ReserveResult reserveResult() {
+        return new PlanQuotas.ReserveResult(
                 REQUEST_ID, "user-1", "standard", ESTIMATED_UNITS, "five-hour-1", "weekly-1", false);
     }
 
-    private static PlanQuotaService.SettleResult settleResult() {
-        return new PlanQuotaService.SettleResult(REQUEST_ID, ACTUAL_UNITS, false);
+    private static PlanQuotas.SettleResult settleResult() {
+        return new PlanQuotas.SettleResult(REQUEST_ID, ACTUAL_UNITS, false);
     }
 
-    private static PlanQuotaService.ReleaseResult releaseResult() {
-        return new PlanQuotaService.ReleaseResult(REQUEST_ID, true);
+    private static PlanQuotas.ReleaseResult releaseResult() {
+        return new PlanQuotas.ReleaseResult(REQUEST_ID, true);
     }
 
     private static PlanQuotaExceededException quotaError(PlanWindowKind kind) {
@@ -435,7 +435,7 @@ class AiGatewayPlanBillingTest {
                 scope);
     }
 
-    private static AiRouteResolutionService.Resolution resolution(String group, RouteSelection selection) {
+    private static RouteResolution.Resolution resolution(String group, RouteSelection selection) {
         var routeGroup = new AiRouteGroup();
         routeGroup.setMetadata(metadata(group));
         var plan = new RoutePlan(
@@ -453,7 +453,7 @@ class AiGatewayPlanBillingTest {
                         RouteOutcome.SELECTED,
                         List.of()));
         var request = RouteRequest.builder().promptTokens(1000).maxOutputTokens(128).build();
-        return new AiRouteResolutionService.Resolution(routeGroup, null, request, plan, List.of());
+        return new RouteResolution.Resolution(routeGroup, null, request, plan, List.of());
     }
 
     private static RouteSelection selectionA() {

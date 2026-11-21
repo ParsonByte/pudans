@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.rag.connector;
 
-import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
 import cn.tolim.pudans.core.ai.provider.AiWebClientConfiguration;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;

@@ -4,13 +4,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.ai.AiEnvironmentVariable;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiEnvironmentVariable;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariableService;
-import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariableService.MaskedEnvironmentVariable;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariables;
+import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariables.MaskedEnvironmentVariable;
+import cn.tolim.pudans.core.ai.team.Teams;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,13 +26,13 @@ import reactor.core.publisher.Mono;
 class AiEnvironmentVariableEndpointTest {
 
     @Mock
-    EnvironmentVariableService environmentVariableService;
+    EnvironmentVariables environmentVariables;
 
     @Mock
     AiEndpointRequests requests;
 
     @Mock
-    AiTeamService teamService;
+    Teams teamService;
 
     private WebTestClient client;
 
@@ -41,14 +41,14 @@ class AiEnvironmentVariableEndpointTest {
         lenient().when(requests.userId(any())).thenReturn(Mono.just("user-1"));
         lenient().when(teamService.requireAgent(any(), any())).thenReturn(Mono.just(new AiAgent()));
         client = WebTestClient.bindToRouterFunction(new AiEnvironmentVariableEndpoint(
-                                environmentVariableService, requests, teamService)
+                                environmentVariables, requests, teamService)
                         .endpoint())
                 .build();
     }
 
     @Test
     void listsMaskedVariablesWithoutTheirValues() {
-        when(environmentVariableService.maskedByAgent("agent-a"))
+        when(environmentVariables.maskedByAgent("agent-a"))
                 .thenReturn(Flux.just(new MaskedEnvironmentVariable(
                         "env-1", "FEISHU_TOKEN", true, "飞书令牌", true, List.of("agent-a"))));
 
@@ -64,7 +64,7 @@ class AiEnvironmentVariableEndpointTest {
 
     @Test
     void setsTheVariableValue() {
-        when(environmentVariableService.updateValue("env-1", "secret", false))
+        when(environmentVariables.updateValue("env-1", "secret", false))
                 .thenReturn(Mono.just(variable("secret")));
 
         client.post()
@@ -80,7 +80,7 @@ class AiEnvironmentVariableEndpointTest {
 
     @Test
     void clearsTheVariableValue() {
-        when(environmentVariableService.updateValue("env-1", null, true))
+        when(environmentVariables.updateValue("env-1", null, true))
                 .thenReturn(Mono.just(variable(null)));
 
         client.post()

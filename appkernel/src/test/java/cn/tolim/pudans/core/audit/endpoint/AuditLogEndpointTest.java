@@ -7,9 +7,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -27,13 +27,13 @@ import reactor.core.publisher.Mono;
 class AuditLogEndpointTest {
 
     @Mock
-    AuditService auditService;
+    AuditLog auditLog;
 
     private WebTestClient webTestClient;
 
     @BeforeEach
     void setUp() {
-        webTestClient = WebTestClient.bindToRouterFunction(new AuditLogEndpoint(auditService).endpoint())
+        webTestClient = WebTestClient.bindToRouterFunction(new AuditLogEndpoint(auditLog).endpoint())
                 .build();
     }
 
@@ -96,7 +96,7 @@ class AuditLogEndpointTest {
 
     @Test
     void pageAllowsTheDeepestSupportedPage() {
-        when(auditService.page(any(), eq(1000), eq(10)))
+        when(auditLog.page(any(), eq(1000), eq(10)))
                 .thenReturn(Mono.just(new AuditStore.AuditPageResult(List.of(), 0L)));
 
         webTestClient
@@ -236,7 +236,7 @@ class AuditLogEndpointTest {
     @Test
     void journeyPagePaginatesUsersAndReturnsAggregateCounts() {
         var base = Instant.parse("2026-11-18T01:00:00Z");
-        when(auditService.query(any()))
+        when(auditLog.query(any()))
                 .thenReturn(Flux.just(
                         page("page-a", "u1", base.plusSeconds(1), "/console/roles"),
                         record(
@@ -281,7 +281,7 @@ class AuditLogEndpointTest {
                 .jsonPath("$.truncated")
                 .isEqualTo(false);
 
-        verify(auditService, times(2)).query(any());
+        verify(auditLog, times(2)).query(any());
     }
 
     @Test
@@ -315,7 +315,7 @@ class AuditLogEndpointTest {
     @Test
     void summaryJourneyPageOmitsStepsButKeepsAggregateCounts() {
         var base = Instant.parse("2026-11-18T01:00:00Z");
-        when(auditService.query(any()))
+        when(auditLog.query(any()))
                 .thenReturn(Flux.just(
                         page("page-a", "u1", base.plusSeconds(1), "/console/roles"),
                         record(
@@ -348,12 +348,12 @@ class AuditLogEndpointTest {
                 .jsonPath("$.actionCount")
                 .isEqualTo(1);
 
-        verify(auditService, times(1)).query(any());
+        verify(auditLog, times(1)).query(any());
     }
 
     @Test
     void journeysStreamsTheWholeScanLimitWithoutReportingTruncation() {
-        when(auditService.query(any())).thenReturn(Flux.fromIterable(journeyScanRecords(20_000)));
+        when(auditLog.query(any())).thenReturn(Flux.fromIterable(journeyScanRecords(20_000)));
 
         webTestClient
                 .get()
@@ -376,7 +376,7 @@ class AuditLogEndpointTest {
 
     @Test
     void journeysReportsTruncationWhenTheScanLimitIsExceeded() {
-        when(auditService.query(any())).thenReturn(Flux.fromIterable(journeyScanRecords(20_001)));
+        when(auditLog.query(any())).thenReturn(Flux.fromIterable(journeyScanRecords(20_001)));
 
         webTestClient
                 .get()

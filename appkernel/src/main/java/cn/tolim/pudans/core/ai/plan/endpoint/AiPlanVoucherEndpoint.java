@@ -4,10 +4,10 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.plan.PlanVoucherKind;
-import cn.tolim.pudans.core.ai.plan.PlanVoucherService;
+import cn.tolim.pudans.core.ai.plan.PlanVouchers;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ public class AiPlanVoucherEndpoint implements CustomEndpoint {
 
     private static final long MAX_CURSOR = Long.MAX_VALUE;
 
-    private final PlanVoucherService voucherService;
+    private final PlanVouchers voucherService;
 
     private final AiEndpointRequests requests;
 
@@ -43,19 +43,19 @@ public class AiPlanVoucherEndpoint implements CustomEndpoint {
                         .operationId("getAiPlanVouchers")
                         .description("Get the current user's reset voucher balance.")
                         .tag(TAG)
-                        .response(responseBuilder().implementation(PlanVoucherService.VoucherBalance.class)))
+                        .response(responseBuilder().implementation(PlanVouchers.VoucherBalance.class)))
                 .POST("/aiplan/-/vouchers/use", this::use, builder -> builder
                         .operationId("useAiPlanVoucher")
                         .description("Consume a reset voucher and reset the target window.")
                         .tag(TAG)
                         .requestBody(requestBodyBuilder().required(true).implementation(UseRequest.class))
-                        .response(responseBuilder().implementation(PlanVoucherService.VoucherUseResult.class)))
+                        .response(responseBuilder().implementation(PlanVouchers.VoucherUseResult.class)))
                 .POST("/aiplan/-/vouchers/grant", this::grant, builder -> builder
                         .operationId("grantAiPlanVouchers")
                         .description("Grant reset vouchers to users or user groups.")
                         .tag(TAG)
                         .requestBody(requestBodyBuilder().required(true).implementation(GrantRequest.class))
-                        .response(responseBuilder().implementation(PlanVoucherService.GrantResult.class)))
+                        .response(responseBuilder().implementation(PlanVouchers.GrantResult.class)))
                 .GET("/aiplan/-/vouchers/-/history", this::history, builder -> builder
                         .operationId("listAiPlanVoucherHistory")
                         .description("List the current user's reset voucher usage history.")
@@ -65,7 +65,7 @@ public class AiPlanVoucherEndpoint implements CustomEndpoint {
                         .parameter(parameterBuilder().in(ParameterIn.QUERY).name("beforeId").required(false)
                                 .description("Return records whose id is lower than this cursor."))
                         .response(responseBuilder()
-                                .implementationArray(PlanVoucherService.VoucherUseRecord.class)))
+                                .implementationArray(PlanVouchers.VoucherUseRecord.class)))
                 .build();
     }
 

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.provider;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -27,12 +27,12 @@ public class GeminiMediaClient {
 
     private final ObjectMapper mapper;
 
-    private final AiProviderAccountService accountService;
+    private final ProviderAccounts accountService;
 
     public GeminiMediaClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            AiProviderAccountService accountService) {
+            ProviderAccounts accountService) {
         this.webClient = Objects.requireNonNull(webClient, "AI WebClient 不能为空");
         this.mapper = Objects.requireNonNull(mapper, "ObjectMapper 不能为空");
         this.accountService = Objects.requireNonNull(accountService, "供应商账号服务不能为空");

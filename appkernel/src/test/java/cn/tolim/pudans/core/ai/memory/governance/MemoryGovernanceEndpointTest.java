@@ -4,17 +4,17 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryScope;
 import cn.tolim.pudans.core.ai.memory.MemoryStatus;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
-import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernanceService.MemoryRequestType;
-import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernanceService.PipelineStats;
-import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernanceService.PipelineTaskType;
+import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.MemoryRequestType;
+import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.PipelineStats;
+import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.PipelineTaskType;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.MemoryRequestRecord;
 import java.security.Principal;
@@ -45,16 +45,16 @@ class MemoryGovernanceEndpointTest {
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
 
     @Mock
-    MemoryGovernanceService service;
+    MemoryGovernance service;
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new MemoryGovernanceEndpoint(service, new AiEndpointRequests(userService));
+        var endpoint = new MemoryGovernanceEndpoint(service, new AiEndpointRequests(accounts));
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(PRINCIPAL)).build()))
@@ -90,7 +90,7 @@ class MemoryGovernanceEndpointTest {
 
     @Test
     void freezesARecordWithTheCurrentActor() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.freeze(7L, USER_ID)).thenReturn(Mono.just(memory(7L, MemoryStatus.FROZEN)));
 
         client.post()
@@ -103,7 +103,7 @@ class MemoryGovernanceEndpointTest {
 
     @Test
     void deletesARecordWithTheQueryReason() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.delete(7L, "stale", USER_ID)).thenReturn(Mono.just(memory(7L, MemoryStatus.DELETED)));
 
         client.delete()
@@ -119,7 +119,7 @@ class MemoryGovernanceEndpointTest {
     @Test
     void submitsACorrectionRequest() {
         var request = request(5L, "PENDING");
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.createRequest(
                         USER_ID, "L1:7", MemoryRequestType.DELETE, "这条记忆不准确，需要删除", null))
                 .thenReturn(Mono.just(request));
@@ -138,12 +138,12 @@ class MemoryGovernanceEndpointTest {
 
     @Test
     void returnsForbiddenForAnotherUsersMemory() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.createRequest(
                         USER_ID, "L1:7", MemoryRequestType.DELETE, "这条记忆不准确，需要删除", null))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.FORBIDDEN,
-                        MemoryGovernanceService.CODE_FORBIDDEN,
+                        MemoryGovernance.CODE_FORBIDDEN,
                         "只能对自己的记忆提交申请。")));
 
         client.post()
@@ -158,7 +158,7 @@ class MemoryGovernanceEndpointTest {
     @Test
     void returnsNotFoundForAMissingRecord() {
         when(service.get(9L)).thenReturn(Mono.error(new ApiException(
-                HttpStatus.NOT_FOUND, MemoryGovernanceService.CODE_NOT_FOUND, "记忆不存在。")));
+                HttpStatus.NOT_FOUND, MemoryGovernance.CODE_NOT_FOUND, "记忆不存在。")));
 
         client.get()
                 .uri("/memoryrecords/9")
@@ -178,7 +178,7 @@ class MemoryGovernanceEndpointTest {
 
     @Test
     void rejectsAnUnknownRequestType() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
 
         client.post()
                 .uri("/memories/L1:7/correction-request")
@@ -192,7 +192,7 @@ class MemoryGovernanceEndpointTest {
 
     @Test
     void listsTheCurrentUsersRequests() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.listRequests(USER_ID, null, Long.MAX_VALUE, 20)).thenReturn(Flux.just(request(5L, "PENDING")));
 
         client.get()
@@ -206,7 +206,7 @@ class MemoryGovernanceEndpointTest {
 
     @Test
     void approvesARequestWithAComment() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.approve(5L, USER_ID, "确认删除")).thenReturn(Mono.just(request(5L, "APPROVED")));
 
         client.post()
@@ -259,9 +259,9 @@ class MemoryGovernanceEndpointTest {
 
     @Test
     void rebuildsMemoryRecordsAndReturnsAccepted() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.rebuild(7L, "team-a", "agent-a", "L2", 42L, USER_ID))
-                .thenReturn(Mono.just(new MemoryGovernanceService.RebuildResult("L2", true)));
+                .thenReturn(Mono.just(new MemoryGovernance.RebuildResult("L2", true)));
 
         client.post()
                 .uri("/memoryrecords/-/rebuild")
@@ -279,11 +279,11 @@ class MemoryGovernanceEndpointTest {
 
     @Test
     void rejectsARebuildWithAnInvalidLevel() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.rebuild(7L, null, null, "L4", null, USER_ID))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.BAD_REQUEST,
-                        MemoryGovernanceService.CODE_REQUEST_INVALID,
+                        MemoryGovernance.CODE_REQUEST_INVALID,
                         "重建层级不合法。")));
 
         client.post()

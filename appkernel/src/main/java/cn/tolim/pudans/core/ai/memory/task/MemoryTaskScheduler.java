@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.task;
 
-import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryPipelineTask;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
@@ -22,7 +22,7 @@ public class MemoryTaskScheduler {
 
     private final AiMemoryTaskRepository taskRepository;
 
-    private final AiSettingService settingService;
+    private final AiSettings settingService;
 
     public Mono<Void> enqueueExtraction(Conversation conversation, String userId, long lastMessageId) {
         return settingService

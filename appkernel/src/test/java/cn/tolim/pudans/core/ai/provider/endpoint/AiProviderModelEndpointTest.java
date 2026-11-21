@@ -4,12 +4,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.GenericModelsClient;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekModelsClient;
 import java.util.List;
@@ -29,7 +29,7 @@ class AiProviderModelEndpointTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiProviderAccountService accountService;
+    ProviderAccounts accountService;
 
     @Mock
     DeepSeekModelsClient modelsClient;
@@ -41,7 +41,7 @@ class AiProviderModelEndpointTest {
 
     @BeforeEach
     void setUp() {
-        var syncService = new cn.tolim.pudans.core.ai.provider.AiProviderModelSyncService(
+        var syncService = new cn.tolim.pudans.core.ai.provider.ProviderModelSync(
                 client, accountService, modelsClient, genericModelsClient);
         var endpoint = new AiProviderModelEndpoint(syncService);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();

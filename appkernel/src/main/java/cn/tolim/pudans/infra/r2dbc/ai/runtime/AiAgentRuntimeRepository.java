@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.r2dbc.ai.runtime;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSandboxProvider;
+import cn.tolim.pudans.contract.ai.resource.AiSandboxProvider;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxState;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiR2dbcBindings;
 import io.r2dbc.spi.Row;

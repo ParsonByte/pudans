@@ -16,15 +16,15 @@ import cn.tolim.pudans.core.ai.memory.JevGate;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
 import cn.tolim.pudans.core.ai.memory.L3Persona;
-import cn.tolim.pudans.core.ai.memory.L3PipelineService;
+import cn.tolim.pudans.core.ai.memory.L3Pipeline;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptInput;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptResolver;
 import cn.tolim.pudans.core.ai.memory.MemoryScope;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
 import cn.tolim.pudans.core.ai.memory.PersonaTrigger;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryJevAiService;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryPersonaAiService;
+import cn.tolim.pudans.core.ai.memory.ai.JevClassification;
+import cn.tolim.pudans.core.ai.memory.ai.PersonaProfiling;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
@@ -65,13 +65,13 @@ class L3PersonaTaskHandlerTest {
     AiMemoryL3Repository memoryL3Repository;
 
     @Mock
-    MemoryJevAiService jevAi;
+    JevClassification jevAi;
 
     @Mock
-    MemoryPersonaAiService personaAi;
+    PersonaProfiling personaAi;
 
     @Mock
-    L3PipelineService pipelineService;
+    L3Pipeline pipelineService;
 
     private L3PersonaTaskHandler handler;
 
@@ -106,7 +106,7 @@ class L3PersonaTaskHandlerTest {
                         "scene-1", "场景一摘要", "内容 55\n内容 56"))))
                 .thenReturn(Mono.just(generated));
         when(pipelineService.process(any(), any(), any())).thenReturn(Mono.just(
-                new L3PipelineService.Result(
+                new L3Pipeline.Result(
                         PersonaTrigger.Reason.NONE,
                         new JevDecision(JevDecisionType.DEFERRED, JevChangeType.NONE, "none"),
                         "",
@@ -116,9 +116,9 @@ class L3PersonaTaskHandlerTest {
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
 
-        var requestCaptor = ArgumentCaptor.forClass(L3PipelineService.Request.class);
+        var requestCaptor = ArgumentCaptor.forClass(L3Pipeline.Request.class);
         var classifierCaptor = ArgumentCaptor.forClass(JevGate.ChangeClassifier.class);
-        var generatorCaptor = ArgumentCaptor.forClass(L3PipelineService.PersonaGenerator.class);
+        var generatorCaptor = ArgumentCaptor.forClass(L3Pipeline.PersonaGenerator.class);
         verify(pipelineService).process(requestCaptor.capture(), classifierCaptor.capture(), generatorCaptor.capture());
         var request = requestCaptor.getValue();
         assertThat(request.teamId()).isEqualTo("team-a");
@@ -263,7 +263,7 @@ class L3PersonaTaskHandlerTest {
         return new L3Persona(null, "team-a", "agent-a", Map.of(), text, 3, 2, BigDecimal.ONE, refreshedAt);
     }
 
-    private static L3PipelineService.GeneratedPersona generated(String text) {
-        return new L3PipelineService.GeneratedPersona(Map.of(), text, 2, 2, BigDecimal.ONE);
+    private static L3Pipeline.GeneratedPersona generated(String text) {
+        return new L3Pipeline.GeneratedPersona(Map.of(), text, 2, 2, BigDecimal.ONE);
     }
 }

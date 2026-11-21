@@ -6,18 +6,18 @@ import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.rbac.TempRoleBinding;
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.rbac.resource.TempRoleBinding;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.PageRequestImpl;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.rbac.service.TempRoleService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.rbac.TempGrants;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import java.time.Duration;
@@ -49,11 +49,11 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
-    private final TempRoleService tempRoleService;
+    private final TempGrants tempGrants;
 
-    private final RoleService roleService;
+    private final Roles roleService;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     private final DomainEventPublisher domainEventPublisher;
 
@@ -132,7 +132,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                         .flatMap(body -> validateApply(body, authentication))
                         .flatMap(binding -> client
                                 .create(binding)
-                                .flatMap(created -> auditService
+                                .flatMap(created -> auditLog
                                         .recordChild(
                                                 request.exchange(),
                                                 null,
@@ -185,8 +185,8 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
         spec.setApprovedBy(authentication.getName());
         spec.setApprovedAt(Instant.now());
         return client.update(binding)
-                .flatMap(updated -> tempRoleService.grant(updated).thenReturn(updated))
-                .flatMap(updated -> auditService
+                .flatMap(updated -> tempGrants.grant(updated).thenReturn(updated))
+                .flatMap(updated -> auditLog
                         .recordChild(
                                 request.exchange(),
                                 null,
@@ -209,7 +209,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
         payload.put("status", spec.getStatus());
         payload.put("expiresAt", spec.getExpiresAt() == null ? null : spec.getExpiresAt().toString());
         domainEventPublisher.publish(
-                type, payload, (String) request.exchange().getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
+                type, payload, (String) request.exchange().getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
     private Mono<ServerResponse> revoke(ServerRequest request) {
@@ -233,8 +233,8 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                             }
                             spec.setStatus(TempRoleBinding.STATUS_REVOKED);
                             return client.update(binding)
-                                    .flatMap(updated -> tempRoleService.revoke(updated).thenReturn(updated))
-                                    .flatMap(updated -> auditService
+                                    .flatMap(updated -> tempGrants.revoke(updated).thenReturn(updated))
+                                    .flatMap(updated -> auditLog
                                             .recordChild(
                                                     request.exchange(),
                                                     null,

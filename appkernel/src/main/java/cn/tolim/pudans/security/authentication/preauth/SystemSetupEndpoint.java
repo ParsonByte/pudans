@@ -9,7 +9,7 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
 import static org.springframework.web.reactive.function.server.RequestPredicates.contentType;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.audit;
 
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import org.springframework.core.Ordered;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
@@ -28,15 +28,15 @@ public class AuthenticatedUserWebFilter implements WebFilter, Ordered {
     }
 
     private void capture(ServerWebExchange exchange, Authentication authentication) {
-        exchange.getAttributes().put(AuditService.USERNAME_ATTRIBUTE, authentication.getName());
+        exchange.getAttributes().put(AuditLog.USERNAME_ATTRIBUTE, authentication.getName());
         if (authentication instanceof JwtAuthenticationToken jwtAuthentication) {
             var patOwner = jwtAuthentication.getToken().getClaimAsString("pat_owner");
             if (patOwner != null) {
-                exchange.getAttributes().put(AuditService.PAT_OWNER_ATTRIBUTE, patOwner);
+                exchange.getAttributes().put(AuditLog.PAT_OWNER_ATTRIBUTE, patOwner);
             }
             var sudoUser = jwtAuthentication.getToken().getClaimAsString("sudo_user");
             if (sudoUser != null) {
-                exchange.getAttributes().put(AuditService.SUDO_USER_ATTRIBUTE, sudoUser);
+                exchange.getAttributes().put(AuditLog.SUDO_USER_ATTRIBUTE, sudoUser);
             }
         }
     }

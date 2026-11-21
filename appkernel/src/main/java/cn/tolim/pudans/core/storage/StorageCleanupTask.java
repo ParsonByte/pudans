@@ -19,11 +19,11 @@ public class StorageCleanupTask {
 
     private static final int BATCH_SIZE = 100;
 
-    private final StorageFileService fileService;
+    private final FileRecords fileService;
 
-    private final StorageUploadService uploadService;
+    private final Uploads uploadService;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     private final PudansProperties properties;
 
@@ -50,7 +50,7 @@ public class StorageCleanupTask {
                         }))
                 .thenMany(fileService
                         .listExpiredTrash(now, BATCH_SIZE)
-                        .concatMap(file -> storageService.purge(file.getMetadata().getName())
+                        .concatMap(file -> storageTransfer.purge(file.getMetadata().getName())
                                 .onErrorResume(error -> {
                                     log.warn("清理回收站文件 [{}] 失败", file.getMetadata().getName(), error);
                                     return Mono.empty();

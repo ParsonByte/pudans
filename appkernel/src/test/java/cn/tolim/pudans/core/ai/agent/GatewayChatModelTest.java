@@ -10,7 +10,7 @@ import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayInvocation;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayMeta;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayResult;
-import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
+import cn.tolim.pudans.core.ai.gateway.AiGateway;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
@@ -31,7 +31,7 @@ import reactor.core.publisher.Mono;
 
 class GatewayChatModelTest {
 
-    private final AiGatewayService gatewayService = mock(AiGatewayService.class);
+    private final AiGateway gatewayService = mock(AiGateway.class);
 
     @Test
     void mapsTheChatRequestToTheGatewayAndBack() {

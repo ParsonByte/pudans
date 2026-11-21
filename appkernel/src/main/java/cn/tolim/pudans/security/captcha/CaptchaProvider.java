@@ -7,7 +7,7 @@ public interface CaptchaProvider {
 
     String type();
 
-    Mono<CaptchaService.CaptchaChallenge> challenge(ParameterSetting.Captcha config);
+    Mono<Captchas.CaptchaChallenge> challenge(ParameterSetting.Captcha config);
 
     Mono<Boolean> verify(String challengeId, String answer);
 }

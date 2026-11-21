@@ -16,8 +16,8 @@ public class NoneCaptchaProvider implements CaptchaProvider {
     }
 
     @Override
-    public Mono<CaptchaService.CaptchaChallenge> challenge(ParameterSetting.Captcha config) {
-        return Mono.just(new CaptchaService.CaptchaChallenge(UUID.randomUUID().toString(), "", 0));
+    public Mono<Captchas.CaptchaChallenge> challenge(ParameterSetting.Captcha config) {
+        return Mono.just(new Captchas.CaptchaChallenge(UUID.randomUUID().toString(), "", 0));
     }
 
     @Override

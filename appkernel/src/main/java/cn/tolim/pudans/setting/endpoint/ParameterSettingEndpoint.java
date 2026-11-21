@@ -5,12 +5,12 @@ import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
-import cn.tolim.pudans.infra.setting.MailSettingsService;
-import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import cn.tolim.pudans.infra.setting.MailSettings;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
 import cn.tolim.pudans.security.authentication.AuthenticationConnectionTester;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
@@ -33,9 +33,9 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
 
     private static final String GROUP_PARAMETER = "group";
 
-    private final ParameterSettingGroupService groupService;
+    private final ParameterGroups groupService;
 
-    private final MailSettingsService mailSettingsService;
+    private final MailSettings mailSettings;
 
     private final AuthenticationConnectionTester connectionTester;
 
@@ -137,7 +137,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                     if (body.to() == null || !ValidationUtils.EMAIL_PATTERN.matcher(body.to()).matches()) {
                         return Mono.error(new ServerWebInputException("to 必须是有效的邮箱地址。"));
                     }
-                    return mailSettingsService.sendTest(body.to()).then(ServerResponse.noContent().build());
+                    return mailSettings.sendTest(body.to()).then(ServerResponse.noContent().build());
                 });
     }
 

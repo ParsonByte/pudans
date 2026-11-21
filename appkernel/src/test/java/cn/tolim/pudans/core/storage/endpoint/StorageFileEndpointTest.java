@@ -9,10 +9,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.download.DownloadUrl;
 import reactor.core.publisher.Mono;
 
@@ -20,19 +20,19 @@ import reactor.core.publisher.Mono;
 class StorageFileEndpointTest {
 
     @Mock
-    StorageService storageService;
+    StorageTransfer storageTransfer;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new StorageFileEndpoint(storageService);
+        var endpoint = new StorageFileEndpoint(storageTransfer);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
     @Test
     void movesAFileToTheRecycleBin() {
-        when(storageService.trash("file-1")).thenReturn(Mono.just(file(StorageFileState.TRASHED)));
+        when(storageTransfer.trash("file-1")).thenReturn(Mono.just(file(StorageFileState.TRASHED)));
 
         client.post()
                 .uri("/storagefiles/file-1/trash")
@@ -46,7 +46,7 @@ class StorageFileEndpointTest {
 
     @Test
     void restoresAFile() {
-        when(storageService.restore("file-1")).thenReturn(Mono.just(file(StorageFileState.ACTIVE)));
+        when(storageTransfer.restore("file-1")).thenReturn(Mono.just(file(StorageFileState.ACTIVE)));
 
         client.post()
                 .uri("/storagefiles/file-1/restore")
@@ -60,7 +60,7 @@ class StorageFileEndpointTest {
 
     @Test
     void purgesAFile() {
-        when(storageService.purge("file-1")).thenReturn(Mono.empty());
+        when(storageTransfer.purge("file-1")).thenReturn(Mono.empty());
 
         client.delete()
                 .uri("/storagefiles/file-1/purge")
@@ -71,7 +71,7 @@ class StorageFileEndpointTest {
 
     @Test
     void createsADownloadUrl() {
-        when(storageService.downloadUrl("file-1", null))
+        when(storageTransfer.downloadUrl("file-1", null))
                 .thenReturn(Mono.just(new DownloadUrl(
                         "https://pudans.example.com/apis/api.pudans.tolim.cn/v1alpha1/storagefiles/file-1/content?token=token",
                         Instant.now().plusSeconds(300))));

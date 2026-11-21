@@ -6,11 +6,11 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService;
-import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService.RuntimeView;
-import cn.tolim.pudans.core.ai.runtime.AgentRuntimeService.SnapshotView;
+import cn.tolim.pudans.core.ai.runtime.AgentRuntimes;
+import cn.tolim.pudans.core.ai.runtime.AgentRuntimes.RuntimeView;
+import cn.tolim.pudans.core.ai.runtime.AgentRuntimes.SnapshotView;
 import cn.tolim.pudans.core.ai.runtime.SandboxProviderRegistry;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxErrors;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxExecResult;
@@ -44,7 +44,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
 
     private static final int MAX_LIST_LIMIT = 100;
 
-    private final AgentRuntimeService runtimeService;
+    private final AgentRuntimes runtimeService;
 
     private final AiEndpointRequests requests;
 

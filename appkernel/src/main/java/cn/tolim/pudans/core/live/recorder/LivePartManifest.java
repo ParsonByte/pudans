@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;

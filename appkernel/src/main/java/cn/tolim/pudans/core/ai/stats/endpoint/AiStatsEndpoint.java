@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.ai.stats.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.core.ai.stats.AiStatsService;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryDetail;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryPage;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryQuery;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.ai.stats.AiStats;
+import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryDetail;
+import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryPage;
+import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryQuery;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
 import cn.tolim.pudans.core.ai.stats.UsageQueryParameters;
 import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.KnowledgeBaseStatsRow;
@@ -28,7 +28,7 @@ public class AiStatsEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiStatsV1alpha1";
 
-    private final AiStatsService statsService;
+    private final AiStats statsService;
 
     private final UsageAccessResolver accessResolver;
 
@@ -40,7 +40,7 @@ public class AiStatsEndpoint implements CustomEndpoint {
                         .description("Aggregated routing and billing statistics.")
                         .tag(TAG)
                         .parameter(daysParameter())
-                        .response(responseBuilder().implementation(AiStatsService.RoutingStats.class)))
+                        .response(responseBuilder().implementation(AiStats.RoutingStats.class)))
                 .GET("/aistats/-/routing/live", this::routingLive, builder -> builder
                         .operationId("getAiRoutingLive")
                         .description("Live routing overview with recent gateway requests.")
@@ -51,7 +51,7 @@ public class AiStatsEndpoint implements CustomEndpoint {
                                 .name("limit")
                                 .required(false)
                                 .description("Recent request limit (1-200, default 20)."))
-                        .response(responseBuilder().implementation(AiStatsService.RoutingLive.class)))
+                        .response(responseBuilder().implementation(AiStats.RoutingLive.class)))
                 .GET("/aistats/-/routing/history", this::routingHistory, builder -> builder
                         .operationId("listAiRoutingHistory")
                         .description("Paginated routing history with route traces.")
@@ -79,14 +79,14 @@ public class AiStatsEndpoint implements CustomEndpoint {
                         .description("Daily usage units by model.")
                         .tag(TAG)
                         .parameter(daysParameter())
-                        .response(responseBuilder().implementation(AiStatsService.PointStats.class)))
+                        .response(responseBuilder().implementation(AiStats.PointStats.class)))
                 .GET("/aistats/-/points", this::units, builder -> builder
                         .operationId("getAiPointStats")
                         .description("Deprecated: use /aistats/-/units instead.")
                         .deprecated(true)
                         .tag(TAG)
                         .parameter(daysParameter())
-                        .response(responseBuilder().implementation(AiStatsService.PointStats.class)))
+                        .response(responseBuilder().implementation(AiStats.PointStats.class)))
                 .GET("/aistats/-/memory", this::memory, builder -> builder
                         .operationId("getAiMemoryStats")
                         .description("Memory record counts by layer.")
@@ -102,7 +102,7 @@ public class AiStatsEndpoint implements CustomEndpoint {
                         .description("Model request counts, usage units and media units by model and capability.")
                         .tag(TAG)
                         .parameter(daysParameter())
-                        .response(responseBuilder().implementation(AiStatsService.ModelStats.class)))
+                        .response(responseBuilder().implementation(AiStats.ModelStats.class)))
                 .build();
     }
 

@@ -4,13 +4,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.ai.AiSlashCommand;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiSlashCommand;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.command.SlashCommandService;
-import cn.tolim.pudans.core.ai.library.command.SlashCommandService.ResolvedSlashCommand;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.command.SlashCommands;
+import cn.tolim.pudans.core.ai.library.command.SlashCommands.ResolvedSlashCommand;
+import cn.tolim.pudans.core.ai.team.Teams;
 import cn.tolim.pudans.infra.exception.ApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,13 +27,13 @@ import reactor.core.publisher.Mono;
 class AiSlashCommandEndpointTest {
 
     @Mock
-    SlashCommandService slashCommandService;
+    SlashCommands slashCommands;
 
     @Mock
     AiEndpointRequests requests;
 
     @Mock
-    AiTeamService teamService;
+    Teams teamService;
 
     private WebTestClient client;
 
@@ -42,14 +42,14 @@ class AiSlashCommandEndpointTest {
         lenient().when(requests.userId(any())).thenReturn(Mono.just("user-1"));
         lenient().when(teamService.requireAgent(any(), any())).thenReturn(Mono.just(new AiAgent()));
         client = WebTestClient.bindToRouterFunction(
-                        new AiSlashCommandEndpoint(slashCommandService, requests, teamService)
+                        new AiSlashCommandEndpoint(slashCommands, requests, teamService)
                                 .endpoint())
                 .build();
     }
 
     @Test
     void listsSlashCommandsBoundToTheAgent() {
-        when(slashCommandService.byAgent("agent-a")).thenReturn(Flux.just(command()));
+        when(slashCommands.byAgent("agent-a")).thenReturn(Flux.just(command()));
 
         client.get()
                 .uri("/aislashcommands/-/by-agent?agent=agent-a")
@@ -62,7 +62,7 @@ class AiSlashCommandEndpointTest {
 
     @Test
     void resolvesASlashCommand() {
-        when(slashCommandService.resolve("agent-a", "/review src"))
+        when(slashCommands.resolve("agent-a", "/review src"))
                 .thenReturn(Mono.just(new ResolvedSlashCommand("review", "Review src")));
 
         client.post()
@@ -98,10 +98,10 @@ class AiSlashCommandEndpointTest {
 
     @Test
     void mapsAnUnknownCommandToNotFound() {
-        when(slashCommandService.resolve("agent-a", "/missing"))
+        when(slashCommands.resolve("agent-a", "/missing"))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.NOT_FOUND,
-                        SlashCommandService.CODE_COMMAND_NOT_FOUND,
+                        SlashCommands.CODE_COMMAND_NOT_FOUND,
                         "未知斜杠命令：missing")));
 
         client.post()

@@ -3,17 +3,17 @@ package cn.tolim.pudans.core.ai.gateway;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiPlan;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolCodecRegistry;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiResponseEncoders;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiStreamEncoder;
 import cn.tolim.pudans.core.ai.gateway.protocol.GeminiGatewayCodec;
-import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService;
+import cn.tolim.pudans.core.ai.plan.PlanQuotas;
+import cn.tolim.pudans.core.ai.plan.PlanUsage;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -44,17 +44,17 @@ public class AiGatewayEndpoint implements CustomEndpoint {
 
     private final AiProtocolCodecRegistry codecRegistry;
 
-    private final AiGatewayService gatewayService;
+    private final AiGateway gatewayService;
 
     private final AiResponseEncoders responseEncoders;
 
     private final GeminiGatewayCodec geminiCodec;
 
-    private final AiGatewayStatusService statusService;
+    private final GatewayHealth statusService;
 
     private final AiEndpointRequests requests;
 
-    private final PlanUsageService planUsageService;
+    private final PlanUsage planUsage;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -209,14 +209,14 @@ public class AiGatewayEndpoint implements CustomEndpoint {
         if (invocation.usageScope() != AiPlan.BillingScope.USER) {
             return Mono.just(new HttpHeaders());
         }
-        return planUsageService
+        return planUsage
                 .usage(invocation.userId())
                 .map(this::planHeaders)
                 .onErrorResume(error -> Mono.just(new HttpHeaders()))
                 .switchIfEmpty(Mono.just(new HttpHeaders()));
     }
 
-    private HttpHeaders planHeaders(PlanUsageService.UsageView usage) {
+    private HttpHeaders planHeaders(PlanUsage.UsageView usage) {
         var headers = new HttpHeaders();
         if (usage.plan() != null) {
             headers.set("X-Plan-Name", StringUtils.hasText(usage.plan().displayName())
@@ -229,7 +229,7 @@ public class AiGatewayEndpoint implements CustomEndpoint {
     }
 
     private static void windowHeaders(
-            HttpHeaders headers, String prefix, PlanUsageService.WindowUsage window) {
+            HttpHeaders headers, String prefix, PlanUsage.WindowUsage window) {
         headers.set(prefix + "-Limit", Long.toString(window.limit()));
         headers.set(prefix + "-Remaining", Long.toString(window.remaining()));
         if (window.endsAt() != null) {
@@ -241,7 +241,7 @@ public class AiGatewayEndpoint implements CustomEndpoint {
         if (protocol != AiProvider.Protocol.OPENAI_CHAT
                 || !(error instanceof ApiException api)
                 || api.getStatusCode().value() != HttpStatus.TOO_MANY_REQUESTS.value()
-                || !PlanQuotaService.CODE_QUOTA_EXCEEDED.equals(api.getCode())) {
+                || !PlanQuotas.CODE_QUOTA_EXCEEDED.equals(api.getCode())) {
             return Mono.error(error);
         }
         var body = new LinkedHashMap<String, Object>();
@@ -291,7 +291,7 @@ public class AiGatewayEndpoint implements CustomEndpoint {
     }
 
     private static String openAiErrorType(String code) {
-        return PlanQuotaService.CODE_QUOTA_EXCEEDED.equals(code) ? "insufficient_quota" : code;
+        return PlanQuotas.CODE_QUOTA_EXCEEDED.equals(code) ? "insufficient_quota" : code;
     }
 
     private static String metaModel(AiGatewayInvocation invocation) {

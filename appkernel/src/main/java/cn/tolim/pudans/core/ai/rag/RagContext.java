@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.rag;
 
-import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;

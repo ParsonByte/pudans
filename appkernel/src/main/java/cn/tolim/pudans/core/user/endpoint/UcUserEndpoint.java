@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.user.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
+import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +34,9 @@ class UcUserEndpoint implements CustomEndpoint {
 
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
-    private final UserService userService;
+    private final Accounts accounts;
 
-    private final UserGroupService userGroupService;
+    private final Groups groups;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -66,14 +66,14 @@ class UcUserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> me(ServerRequest request) {
         return authenticated()
                 .map(Authentication::getName)
-                .flatMap(userService::getUser)
+                .flatMap(accounts::getUser)
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user)));
     }
 
     private Mono<ServerResponse> permissions(ServerRequest request) {
         return authenticated()
                 .map(Authentication::getName)
-                .flatMap(username -> userGroupService
+                .flatMap(username -> groups
                         .getRoleNamesByUsername(username)
                         .collectList()
                         .map(roles -> new UserPermissionVo(username, roles)))
@@ -85,13 +85,13 @@ class UcUserEndpoint implements CustomEndpoint {
                 .map(Authentication::getName)
                 .flatMap(username -> request.bodyToMono(ChangeMyPasswordRequest.class)
                         .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为空")))
-                        .flatMap(changeRequest -> userService.getUser(username).flatMap(user -> {
+                        .flatMap(changeRequest -> accounts.getUser(username).flatMap(user -> {
                             var passwordSet = StringUtils.hasText(user.getSpec().getPassword());
                             var verifyPassword = passwordSet
                                     ? verifyOldPassword(username, changeRequest.oldPassword())
                                     : Mono.just(true);
                             return verifyPassword.flatMap(ignored ->
-                                    userService.updateWithRawPassword(username, changeRequest.password()));
+                                    accounts.updateWithRawPassword(username, changeRequest.password()));
                         })))
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user)));
     }
@@ -101,7 +101,7 @@ class UcUserEndpoint implements CustomEndpoint {
             return Mono.error(new UnsatisfiedAttributeValueException(
                     "旧密码为必填项。"));
         }
-        return userService
+        return accounts
                 .confirmPassword(username, oldPassword)
                 .filter(Boolean::booleanValue)
                 .switchIfEmpty(Mono.error(new UnsatisfiedAttributeValueException(

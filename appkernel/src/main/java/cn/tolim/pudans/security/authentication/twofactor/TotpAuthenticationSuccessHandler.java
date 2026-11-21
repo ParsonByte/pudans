@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.authentication.twofactor;
 
 import cn.tolim.pudans.security.authentication.LoginFlowHandler;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.security.authentication.oauth2.OAuth2LoginAttributes;
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -22,15 +22,15 @@ public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuc
 
     private final ServerAuthenticationSuccessHandler successHandler;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     public TotpAuthenticationSuccessHandler(
             LoginFlowHandler loginEnhancer,
             ServerRequestCache serverRequestCache,
-            AuditService auditService,
+            AuditLog auditLog,
             String postLoginUrl) {
         this.loginEnhancer = loginEnhancer;
-        this.auditService = auditService;
+        this.auditLog = auditLog;
         var successHandler = new RedirectServerAuthenticationSuccessHandler(postLoginUrl);
         successHandler.setRequestCache(serverRequestCache);
         this.successHandler = successHandler;
@@ -67,7 +67,7 @@ public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuc
         var exchange = webFilterExchange.getExchange();
         return loginEnhancer
                 .onLoginSuccess(exchange, authentication)
-                .then(Mono.defer(() -> auditService.recordChild(
+                .then(Mono.defer(() -> auditLog.recordChild(
                         exchange,
                         null,
                         "TOTP_LOGIN_SUCCESS",

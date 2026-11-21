@@ -4,11 +4,11 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import cn.tolim.pudans.infra.utils.PudansTime;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -49,7 +49,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
     private static final long PAGE_DUPLICATE_WINDOW_MS = 10_000;
     private static final String DEFAULT_ORDER = "desc";
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -328,7 +328,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         var limit = intParam(request, "limit", DEFAULT_LIMIT, 1, MAX_LIMIT);
         var ascending = isAscending(request);
         var query = auditQuery(request, request.queryParam("cursor").orElse(null), limit + 1, ascending);
-        return auditService
+        return auditLog
                 .query(query)
                 .take(limit + 1L)
                 .collectList()
@@ -351,7 +351,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                     "分页深度超出上限，page 与 size 的乘积不能超过 " + AuditStore.MAX_PAGE_RECORDS + "。"));
         }
         var query = auditQuery(request, null, size, isAscending(request));
-        return auditService
+        return auditLog
                 .page(query, page, size)
                 .map(result -> {
                     var items = result.items();
@@ -370,11 +370,11 @@ public class AuditLogEndpoint implements CustomEndpoint {
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
         var summary = Boolean.parseBoolean(request.queryParam("summary").orElse("false"));
         var query = auditQuery(request, null, size, isAscending(request));
-        return auditService
+        return auditLog
                 .traceFlows(query, page, size)
                 .flatMap(result -> Flux.fromIterable(result.traceFlowIds())
                         .concatMap(traceFlowId ->
-                                auditService.findByTraceFlowId(traceFlowId).collectList())
+                                auditLog.findByTraceFlowId(traceFlowId).collectList())
                         .map(records -> toTraceSummary(records, !summary))
                         .collectList()
                         .map(items -> new AuditTracePage(
@@ -387,7 +387,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
         var summary = Boolean.parseBoolean(request.queryParam("summary").orElse("false"));
         var scan = new JourneyScan((int) Math.min(MAX_JOURNEY_RECORDS, (long) page * size));
-        return auditService
+        return auditLog
                 .query(auditQuery(request, null, MAX_JOURNEY_RECORDS + 1, false))
                 .filter(AuditLogEndpoint::isJourneyUid)
                 .reduce(scan, (current, record) -> current.add(record))
@@ -402,7 +402,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         // 首页条目缺少明细时补查一次，保证返回的足迹仍带完整步骤。
         var uids = scan.missingDetailUids(page, size);
         var limits = scan.recordCounts(uids);
-        return auditService
+        return auditLog
                 .query(auditQuery(request, null, MAX_JOURNEY_RECORDS + 1, false))
                 .filter(record -> uids.contains(record.getUid()))
                 .take(MAX_JOURNEY_RECORDS)
@@ -873,7 +873,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> archiveStats(ServerRequest request) {
-        return auditService
+        return auditLog
                 .archiveStats()
                 .map(stats -> new AuditArchiveStats(
                         stats.activeCount(),
@@ -886,7 +886,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
         var query = auditQuery(request, null, size, false);
-        return auditService
+        return auditLog
                 .archivePage(query, page, size)
                 .map(result -> {
                     var items = result.items();
@@ -910,7 +910,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                     if (body.before().isAfter(Instant.now())) {
                         return Mono.error(new ServerWebInputException("归档截止时间不能晚于当前时间。"));
                     }
-                    return auditService
+                    return auditLog
                             .archiveBefore(body.before())
                             .map(count -> new AuditArchiveResult(count, body.before()));
                 })
@@ -932,7 +932,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         }
         var from = PudansTime.startOfDay(date);
         var to = from.plus(Duration.ofDays(1));
-        return auditService
+        return auditLog
                 .findByUidBetween(uid, from, to)
                 .collectList()
                 .map(records -> toGraph(uid, date, records))
@@ -941,13 +941,13 @@ public class AuditLogEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> trace(ServerRequest request) {
         var auditId = request.pathVariable("auditId");
-        return auditService
+        return auditLog
                 .findById(auditId)
                 .switchIfEmpty(Mono.error(new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "审计记录 [" + auditId + "] 不存在。")))
                 .flatMap(focus -> {
                     Flux<AuditRecord> steps = StringUtils.hasText(focus.getTraceFlowId())
-                            ? auditService.findByTraceFlowId(focus.getTraceFlowId())
+                            ? auditLog.findByTraceFlowId(focus.getTraceFlowId())
                             : Flux.just(focus);
                     return steps.collectList().map(list -> toTrace(auditId, list));
                 })
@@ -956,7 +956,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> replay(ServerRequest request) {
         var traceFlowId = request.pathVariable("traceFlowId");
-        return auditService
+        return auditLog
                 .findByTraceFlowId(traceFlowId)
                 .collectList()
                 .flatMap(records -> {

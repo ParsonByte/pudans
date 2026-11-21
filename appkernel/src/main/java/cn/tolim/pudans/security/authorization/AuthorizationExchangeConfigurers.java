@@ -1,9 +1,9 @@
 package cn.tolim.pudans.security.authorization;
 
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.TempRoleService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.rbac.TempGrants;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
 import org.springframework.context.annotation.Bean;
@@ -26,7 +26,7 @@ class AuthorizationExchangeConfigurers {
     @Bean
     @Order(0)
     SecurityConfigurer apiAuthorizationConfigurer(
-            RoleService roleService, TempRoleService tempRoleService, AuditService auditService) {
+            Roles roles, TempGrants tempGrants, AuditLog auditLog) {
         return http -> http.authorizeExchange(spec -> spec.pathMatchers(ApiGroups.SETUP_PATH)
                 .permitAll()
                 .pathMatchers(
@@ -55,7 +55,7 @@ class AuthorizationExchangeConfigurers {
                         HttpMethod.DELETE, ApiGroups.API_PREFIX + "/storagefiles/*/upload")
                 .permitAll()
                 .pathMatchers(ApiGroups.API_ROOT + "/**", "/actuator/**")
-                .access(new RequestInfoAuthorizationManager(roleService, tempRoleService, auditService)));
+                .access(new RequestInfoAuthorizationManager(roles, tempGrants, auditLog)));
     }
 
     @Bean

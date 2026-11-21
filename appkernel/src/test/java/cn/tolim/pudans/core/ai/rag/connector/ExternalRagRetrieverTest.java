@@ -6,10 +6,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.rag.RetrievalOptions;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +29,7 @@ class ExternalRagRetrieverTest {
     ExternalRagConnectorResolver connectorResolver;
 
     @Mock
-    AiProviderAccountService accountService;
+    ProviderAccounts accountService;
 
     @Mock
     ExternalRagConnector connector;

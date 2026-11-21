@@ -1,8 +1,8 @@
 package cn.tolim.pudans.security.authorization;
 
-import cn.tolim.pudans.contract.core.user.service.RoleService;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.TempRoleService;
+import cn.tolim.pudans.core.rbac.Roles;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.rbac.TempGrants;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -18,8 +18,8 @@ public class RequestInfoAuthorizationManager implements ReactiveAuthorizationMan
     private final AuthorizationRuleResolver ruleResolver;
 
     public RequestInfoAuthorizationManager(
-            RoleService roleService, TempRoleService tempRoleService, AuditService auditService) {
-        this.ruleResolver = new DefaultRuleResolver(roleService, tempRoleService, auditService);
+            Roles roles, TempGrants tempGrants, AuditLog auditLog) {
+        this.ruleResolver = new DefaultRuleResolver(roles, tempGrants, auditLog);
     }
 
     @Override

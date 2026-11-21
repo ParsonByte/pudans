@@ -12,13 +12,13 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @RequiredArgsConstructor
 class SudoSecurityConfigurer implements SecurityConfigurer {
 
-    private final SudoService sudoService;
+    private final SudoChallenges sudoChallenges;
 
     private final ServerResponse.Context responseContext;
 
     @Override
     public void configure(ServerHttpSecurity http) {
         http.addFilterAfter(
-                new SudoModeWebFilter(sudoService, responseContext), SecurityWebFiltersOrder.ANONYMOUS_AUTHENTICATION);
+                new SudoModeWebFilter(sudoChallenges, responseContext), SecurityWebFiltersOrder.ANONYMOUS_AUTHENTICATION);
     }
 }

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.exception;
 
-import cn.tolim.pudans.contract.core.extension.user.UserConnection;
+import cn.tolim.pudans.contract.user.resource.UserConnection;
 import org.springframework.web.server.ServerWebInputException;
 
 

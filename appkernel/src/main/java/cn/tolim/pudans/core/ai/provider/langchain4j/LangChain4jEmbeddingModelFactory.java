@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.provider.langchain4j;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolException;
 import dev.langchain4j.community.model.dashscope.QwenEmbeddingModel;
 import dev.langchain4j.model.embedding.EmbeddingModel;

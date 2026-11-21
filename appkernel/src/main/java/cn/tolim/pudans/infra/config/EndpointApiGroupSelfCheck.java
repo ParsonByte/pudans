@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.config;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.SchemeManager;
 import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;

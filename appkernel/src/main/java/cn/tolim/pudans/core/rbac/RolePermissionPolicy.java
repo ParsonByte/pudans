@@ -2,15 +2,15 @@ package cn.tolim.pudans.core.rbac;
 
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
-import cn.tolim.pudans.contract.core.extension.rbac.Role.PolicyRule;
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.contract.rbac.resource.Role.PolicyRule;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.MetadataUtil;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.rbac.service.PermissionCatalogService;
-import cn.tolim.pudans.core.rbac.service.UiPermissionService;
+import cn.tolim.pudans.core.rbac.permission.PermissionDirectory;
+import cn.tolim.pudans.core.rbac.permission.UiPermissions;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -33,11 +33,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class RolePermissionPolicy {
 
-    private final RoleService roleService;
+    private final Roles roles;
 
     private final ReactiveExtensionClient client;
 
-    private final PermissionCatalogService permissionCatalogService;
+    private final PermissionDirectory permissionDirectory;
 
     public Mono<Void> checkCreate(Role requested) {
         return actorContext()
@@ -134,15 +134,15 @@ public class RolePermissionPolicy {
         if (roleNames.isEmpty()) {
             return Mono.just(EffectivePermissions.empty());
         }
-        var rules = roleService
+        var rules = roles
                 .listDependenciesFlux(roleNames)
                 .flatMapIterable(role -> nullSafe(role.getRules()))
                 .collectList();
-        var uiPermissions = roleService
+        var uiPermissions = roles
                 .listPermissions(roleNames)
                 .flatMapIterable(RoleUiPermissions::of)
                 .collectList()
-                .flatMap(permissionCatalogService::expand)
+                .flatMap(permissionDirectory::expand)
                 .map(LinkedHashSet::new);
         return Mono.zip(rules, uiPermissions)
                 .map(permissions -> new EffectivePermissions(permissions.getT2(), permissions.getT1()));
@@ -155,13 +155,13 @@ public class RolePermissionPolicy {
             dependencyNames.addAll(aggregatedNames);
             var dependencyRules = dependencyNames.isEmpty()
                     ? Mono.just(List.<PolicyRule>of())
-                    : roleService
+                    : roles
                             .listDependenciesFlux(dependencyNames)
                             .flatMapIterable(role -> nullSafe(role.getRules()))
                             .collectList();
             var dependencyUiPermissions = dependencyNames.isEmpty()
                     ? Mono.just(List.<String>of())
-                    : roleService
+                    : roles
                             .listPermissions(dependencyNames)
                             .flatMapIterable(RoleUiPermissions::of)
                             .collectList();
@@ -171,7 +171,7 @@ public class RolePermissionPolicy {
                         rules.addAll(dependencies.getT1());
                         var uiPermissions = new LinkedHashSet<>(RoleUiPermissions.of(requested));
                         uiPermissions.addAll(dependencies.getT2());
-                        return permissionCatalogService
+                        return permissionDirectory
                                 .expand(List.copyOf(uiPermissions))
                                 .map(expanded ->
                                         new EffectivePermissions(new LinkedHashSet<>(expanded), rules));
@@ -222,7 +222,7 @@ public class RolePermissionPolicy {
 
     private static Mono<Void> validate(EffectivePermissions requested, EffectivePermissions allowed) {
         var allUiPermissionsGranted =
-                allowed.uiPermissions().contains(UiPermissionService.ALL_UI_PERMISSIONS);
+                allowed.uiPermissions().contains(UiPermissions.ALL_UI_PERMISSIONS);
         if (!allUiPermissionsGranted && !allowed.uiPermissions().containsAll(requested.uiPermissions())) {
             return Mono.error(denied());
         }

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.generation;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiPlan;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiPlan;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;

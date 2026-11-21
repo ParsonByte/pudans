@@ -3,9 +3,9 @@ package cn.tolim.pudans.core.ai.provider.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.core.ai.provider.AiProviderModelSyncService;
-import cn.tolim.pudans.core.ai.provider.AiProviderModelSyncService.SyncResult;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.ai.provider.ProviderModelSync;
+import cn.tolim.pudans.core.ai.provider.ProviderModelSync.SyncResult;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekModelsClient;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class AiProviderModelEndpoint implements CustomEndpoint {
 
     private static final String CODE_UNSUPPORTED = "ai-provider-models-unsupported";
 
-    private final AiProviderModelSyncService modelSyncService;
+    private final ProviderModelSync modelSyncService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {

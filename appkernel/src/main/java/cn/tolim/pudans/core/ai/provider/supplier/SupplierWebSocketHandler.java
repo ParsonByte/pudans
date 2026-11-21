@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.provider.supplier;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
 import java.net.URI;
 import java.util.function.UnaryOperator;
@@ -21,7 +21,7 @@ public class SupplierWebSocketHandler implements WebSocketHandler {
 
     private final SupplierWebSocketAccess access;
 
-    private final AiProviderAccountService accountService;
+    private final ProviderAccounts accountService;
 
     private final UnaryOperator<String> pathNormalizer;
 
@@ -32,7 +32,7 @@ public class SupplierWebSocketHandler implements WebSocketHandler {
     public SupplierWebSocketHandler(
             String supplierSegment,
             SupplierWebSocketAccess access,
-            AiProviderAccountService accountService,
+            ProviderAccounts accountService,
             UnaryOperator<String> pathNormalizer) {
         this.access = access;
         this.accountService = accountService;

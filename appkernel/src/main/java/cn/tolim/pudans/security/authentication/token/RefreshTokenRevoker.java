@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.token;
 
-import cn.tolim.pudans.core.user.service.RefreshTokenService;
+import cn.tolim.pudans.core.user.RefreshTokens;
 import cn.tolim.pudans.event.user.PasswordChangedEvent;
 import cn.tolim.pudans.infra.utils.ReactiveUtils;
 import java.time.Duration;
@@ -21,7 +21,7 @@ public class RefreshTokenRevoker implements ServerLogoutHandler {
 
     private static final Duration BLOCKING_TIMEOUT = ReactiveUtils.DEFAULT_TIMEOUT;
 
-    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokens refreshTokens;
 
     @Override
     public Mono<Void> logout(WebFilterExchange exchange, Authentication authentication) {
@@ -39,6 +39,6 @@ public class RefreshTokenRevoker implements ServerLogoutHandler {
     }
 
     private Mono<Void> revoke(String username) {
-        return refreshTokenService.revokeAll(username).then();
+        return refreshTokens.revokeAll(username).then();
     }
 }

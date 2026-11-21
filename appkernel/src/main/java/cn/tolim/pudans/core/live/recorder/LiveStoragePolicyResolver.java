@@ -1,17 +1,17 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STORAGE_POLICY_INVALID;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STORAGE_POLICY_MISSING;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STORAGE_POLICY_INVALID;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STORAGE_POLICY_MISSING;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
-import cn.tolim.pudans.core.storage.StoragePolicyService;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
+import cn.tolim.pudans.core.storage.Policies;
 import cn.tolim.pudans.infra.exception.ApiException;
 import reactor.core.publisher.Mono;
 
@@ -21,12 +21,12 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class LiveStoragePolicyResolver {
 
-    private final StoragePolicyService storagePolicyService;
+    private final Policies policies;
 
     // 指定策略名为空时取默认策略，未配置默认策略抛 LIVE_STORAGE_POLICY_MISSING
     public Mono<StoragePolicy> resolve(String storagePolicyName) {
         if (!StringUtils.hasText(storagePolicyName)) {
-            return storagePolicyService
+            return policies
                     .defaultPolicy()
                     .onErrorResume(error -> {
                         log.warn("录制未找到可用的默认存储策略：{}", error.getMessage());
@@ -34,7 +34,7 @@ public class LiveStoragePolicyResolver {
                     })
                     .flatMap(this::requireRecordable);
         }
-        return storagePolicyService
+        return policies
                 .get(storagePolicyName)
                 .onErrorResume(error -> {
                     if (isNotFound(error)) {

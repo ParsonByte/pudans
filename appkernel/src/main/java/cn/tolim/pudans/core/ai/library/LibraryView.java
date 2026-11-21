@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.ai.library;
 
-import cn.tolim.pudans.core.ai.library.instruction.InstructionService;
-import cn.tolim.pudans.core.ai.library.mcp.McpClientService;
-import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
-import cn.tolim.pudans.core.ai.library.skill.SkillService;
+import cn.tolim.pudans.core.ai.library.instruction.Instructions;
+import cn.tolim.pudans.core.ai.library.mcp.McpClients;
+import cn.tolim.pudans.core.ai.library.mcp.McpServers;
+import cn.tolim.pudans.core.ai.library.skill.Skills;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,26 +17,26 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class LibraryView {
 
-    private final McpServerService mcpServerService;
+    private final McpServers mcpServerService;
 
-    private final SkillService skillService;
+    private final Skills skillService;
 
-    private final InstructionService instructionService;
+    private final Instructions instructionService;
 
-    public Flux<McpServerService.McpServerView> mcpServers(String agentName) {
+    public Flux<McpServers.McpServerView> mcpServers(String agentName) {
         return mcpServerService.byAgent(agentName);
     }
 
-    public Mono<McpServerService.McpToolCatalog> mcpTools(String agentName) {
+    public Mono<McpServers.McpToolCatalog> mcpTools(String agentName) {
         return mcpServerService.toolCatalog(agentName);
     }
 
-    public Mono<McpClientService.McpToolCallResult> callMcpTool(
+    public Mono<McpClients.McpToolCallResult> callMcpTool(
             String agentName, String exposedName, @Nullable JsonNode arguments) {
         return mcpServerService.callTool(agentName, exposedName, arguments);
     }
 
-    public Flux<SkillService.SkillSummary> skills(String agentName) {
+    public Flux<Skills.SkillSummary> skills(String agentName) {
         return skillService.skillsForAgent(agentName);
     }
 
@@ -47,14 +47,14 @@ public class LibraryView {
     public Mono<Snapshot> snapshot(String agentName) {
         return Mono.zip(
                         mcpTools(agentName)
-                                .defaultIfEmpty(new McpServerService.McpToolCatalog(List.of())),
+                                .defaultIfEmpty(new McpServers.McpToolCatalog(List.of())),
                         skills(agentName).collectList(),
                         instructions(agentName))
                 .map(tuple -> new Snapshot(tuple.getT1(), tuple.getT2(), tuple.getT3()));
     }
 
     public record Snapshot(
-            McpServerService.McpToolCatalog mcpTools,
-            List<SkillService.SkillSummary> skills,
+            McpServers.McpToolCatalog mcpTools,
+            List<Skills.SkillSummary> skills,
             String instructions) {}
 }

@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono;
 class ParameterGarbageCollectorTest {
 
     @Mock
-    ParameterSettingGroupService parameterSettingGroupService;
+    ParameterGroups parameterGroups;
 
     @Mock
     ParameterSettingTempPathResolver tempPathResolver;
@@ -41,7 +41,7 @@ class ParameterGarbageCollectorTest {
         when(tempPathResolver.resolve()).thenReturn(Mono.just(tempDir));
 
         var collector = new ParameterGarbageCollector(
-                parameterSettingGroupService, tempPathResolver, rememberTokenCleaner);
+                parameterGroups, tempPathResolver, rememberTokenCleaner);
         var deleted = collector.cleanTempFiles();
 
         assertThat(deleted).isEqualTo(1);
@@ -71,7 +71,7 @@ class ParameterGarbageCollectorTest {
         when(tempPathResolver.resolve()).thenReturn(Mono.just(tempDir.resolve("missing")));
 
         var collector = new ParameterGarbageCollector(
-                parameterSettingGroupService, tempPathResolver, rememberTokenCleaner);
+                parameterGroups, tempPathResolver, rememberTokenCleaner);
 
         assertThat(collector.cleanTempFiles()).isZero();
     }

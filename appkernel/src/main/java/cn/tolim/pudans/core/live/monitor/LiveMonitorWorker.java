@@ -1,14 +1,14 @@
 package cn.tolim.pudans.core.live.monitor;
 
-import cn.tolim.pudans.contract.core.extension.live.LiveSource;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
-import cn.tolim.pudans.contract.live.LiveRoomInfo;
-import cn.tolim.pudans.core.live.alert.LiveAlertService;
-import cn.tolim.pudans.core.live.recording.LiveRecordingService;
+import cn.tolim.pudans.contract.live.resource.LiveSource;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
+import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
+import cn.tolim.pudans.core.live.alert.LiveAlerts;
+import cn.tolim.pudans.core.live.recording.Recordings;
 import cn.tolim.pudans.core.live.resolve.LiveResolveCache;
-import cn.tolim.pudans.core.live.resolve.LiveResolveService;
+import cn.tolim.pudans.core.live.resolve.RoomResolver;
 import cn.tolim.pudans.core.live.source.LiveSourceRegistry;
-import cn.tolim.pudans.core.live.source.LiveSourceStatusService;
+import cn.tolim.pudans.core.live.source.SourceStatus;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import jakarta.annotation.PostConstruct;
@@ -34,15 +34,15 @@ public class LiveMonitorWorker {
 
     private final LiveSourceRegistry registry;
 
-    private final LiveSourceStatusService statusService;
+    private final SourceStatus statusService;
 
-    private final LiveResolveService resolveService;
+    private final RoomResolver resolveService;
 
-    private final LiveRecordingService recordingService;
+    private final Recordings recordingService;
 
     private final LiveResolveCache resolveCache;
 
-    private final LiveAlertService alertService;
+    private final LiveAlerts alertService;
 
     private final LiveMetrics metrics;
 

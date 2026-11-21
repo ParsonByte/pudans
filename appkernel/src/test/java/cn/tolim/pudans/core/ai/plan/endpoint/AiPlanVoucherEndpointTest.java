@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.ai.plan.endpoint;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.plan.PlanVoucherKind;
-import cn.tolim.pudans.core.ai.plan.PlanVoucherService;
+import cn.tolim.pudans.core.ai.plan.PlanVouchers;
 import java.security.Principal;
 import java.time.Instant;
 import java.util.List;
@@ -33,16 +33,16 @@ class AiPlanVoucherEndpointTest {
     private static final Instant USED_AT = Instant.parse("2026-11-18T10:00:00Z");
 
     @Mock
-    PlanVoucherService voucherService;
+    PlanVouchers voucherService;
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new AiPlanVoucherEndpoint(voucherService, new AiEndpointRequests(userService));
+        var endpoint = new AiPlanVoucherEndpoint(voucherService, new AiEndpointRequests(accounts));
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(PRINCIPAL)).build()))
@@ -51,11 +51,11 @@ class AiPlanVoucherEndpointTest {
 
     @Test
     void returnsTheCurrentUsersVoucherBalance() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(voucherService.balance(USER_ID))
-                .thenReturn(Mono.just(new PlanVoucherService.VoucherBalance(
-                        new PlanVoucherService.Balance(3, 1, 2),
-                        new PlanVoucherService.Balance(1, 0, 1))));
+                .thenReturn(Mono.just(new PlanVouchers.VoucherBalance(
+                        new PlanVouchers.Balance(3, 1, 2),
+                        new PlanVouchers.Balance(1, 0, 1))));
 
         client.get()
                 .uri("/aiplan/-/vouchers")
@@ -70,9 +70,9 @@ class AiPlanVoucherEndpointTest {
 
     @Test
     void consumesAVoucherForTheCurrentUser() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(voucherService.use("req-1", USER_ID, PlanVoucherKind.FIVE_HOUR_RESET))
-                .thenReturn(Mono.just(new PlanVoucherService.VoucherUseResult(
+                .thenReturn(Mono.just(new PlanVouchers.VoucherUseResult(
                         "req-1",
                         PlanVoucherKind.FIVE_HOUR_RESET,
                         false,
@@ -110,7 +110,7 @@ class AiPlanVoucherEndpointTest {
     void grantsVouchersToUsersAndGroups() {
         when(voucherService.grant(
                         PlanVoucherKind.WEEKLY_RESET, 2, List.of(USER_ID), List.of("rd")))
-                .thenReturn(Mono.just(new PlanVoucherService.GrantResult(
+                .thenReturn(Mono.just(new PlanVouchers.GrantResult(
                         PlanVoucherKind.WEEKLY_RESET, 2, List.of(USER_ID))));
 
         client.post()
@@ -130,9 +130,9 @@ class AiPlanVoucherEndpointTest {
 
     @Test
     void listsHistoryWithDefaultPaging() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(voucherService.history(USER_ID, Long.MAX_VALUE, 20))
-                .thenReturn(Flux.just(new PlanVoucherService.VoucherUseRecord(
+                .thenReturn(Flux.just(new PlanVouchers.VoucherUseRecord(
                         7L,
                         "req-1",
                         "FIVE_HOUR_RESET",
@@ -153,7 +153,7 @@ class AiPlanVoucherEndpointTest {
 
     @Test
     void appliesTheHistoryCursorAndLimit() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(voucherService.history(USER_ID, 9L, 100)).thenReturn(Flux.empty());
 
         client.get()
@@ -176,7 +176,7 @@ class AiPlanVoucherEndpointTest {
 
     @Test
     void requiresAnAuthenticatedUser() {
-        var endpoint = new AiPlanVoucherEndpoint(voucherService, new AiEndpointRequests(userService));
+        var endpoint = new AiPlanVoucherEndpoint(voucherService, new AiEndpointRequests(accounts));
         var anonymous = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
 
         anonymous.get()

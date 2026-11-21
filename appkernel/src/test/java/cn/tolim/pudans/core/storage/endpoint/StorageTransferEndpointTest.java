@@ -19,10 +19,10 @@ import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadedPart;
 import cn.tolim.pudans.core.storage.driver.StorageObject;
 import cn.tolim.pudans.core.storage.driver.StorageReadOptions;
@@ -36,19 +36,19 @@ import reactor.core.publisher.Mono;
 class StorageTransferEndpointTest {
 
     @Mock
-    StorageService storageService;
+    StorageTransfer storageTransfer;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new StorageTransferEndpoint(storageService);
+        var endpoint = new StorageTransferEndpoint(storageTransfer);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
     @Test
     void initiatesAnUpload() {
-        when(storageService.initiateUpload(any()))
+        when(storageTransfer.initiateUpload(any()))
                 .thenReturn(Mono.just(new UploadTicket(
                         "file-1",
                         "local",
@@ -76,7 +76,7 @@ class StorageTransferEndpointTest {
 
     @Test
     void issuesAnUploadToken() {
-        when(storageService.issueUploadToken("file-1")).thenReturn(Mono.just("new-token"));
+        when(storageTransfer.issueUploadToken("file-1")).thenReturn(Mono.just("new-token"));
 
         client.post()
                 .uri("/storagefiles/file-1/upload/token")
@@ -90,8 +90,8 @@ class StorageTransferEndpointTest {
 
     @Test
     void rejectsAnUnsatisfiableRange() {
-        when(storageService.getFile("file-1")).thenReturn(Mono.just(file()));
-        when(storageService.sourceUrl(eq("file-1"), any(StorageSourceOptions.class))).thenReturn(Mono.empty());
+        when(storageTransfer.getFile("file-1")).thenReturn(Mono.just(file()));
+        when(storageTransfer.sourceUrl(eq("file-1"), any(StorageSourceOptions.class))).thenReturn(Mono.empty());
 
         client.get()
                 .uri("/storagefiles/file-1/content?token=token")
@@ -100,7 +100,7 @@ class StorageTransferEndpointTest {
                 .expectStatus()
                 .isEqualTo(416);
 
-        verify(storageService, never()).open(eq("file-1"), any());
+        verify(storageTransfer, never()).open(eq("file-1"), any());
     }
 
     @Test
@@ -110,9 +110,9 @@ class StorageTransferEndpointTest {
         var buffer = DefaultDataBufferFactory.sharedInstance.wrap(ByteBuffer.wrap(content));
         var read = new StorageReadResult(
                 new StorageObject("uploads/a.txt", 4, Instant.now(), "etag"), 0, 3, 4, Flux.just(buffer));
-        when(storageService.getFile("file-1")).thenReturn(Mono.just(file));
-        when(storageService.sourceUrl(eq("file-1"), any(StorageSourceOptions.class))).thenReturn(Mono.empty());
-        when(storageService.open(eq("file-1"), any(StorageReadOptions.class))).thenReturn(Mono.just(read));
+        when(storageTransfer.getFile("file-1")).thenReturn(Mono.just(file));
+        when(storageTransfer.sourceUrl(eq("file-1"), any(StorageSourceOptions.class))).thenReturn(Mono.empty());
+        when(storageTransfer.open(eq("file-1"), any(StorageReadOptions.class))).thenReturn(Mono.just(read));
 
         client.get()
                 .uri("/storagefiles/file-1/content?token=token")
@@ -124,12 +124,12 @@ class StorageTransferEndpointTest {
                 .expectBody(String.class)
                 .isEqualTo("data");
 
-        verify(storageService).verifyDownload("token", "file-1");
+        verify(storageTransfer).verifyDownload("token", "file-1");
     }
 
     @Test
     void uploadsAFilePart() {
-        when(storageService.putPart(eq("file-1"), eq(1), anyLong(), any()))
+        when(storageTransfer.putPart(eq("file-1"), eq(1), anyLong(), any()))
                 .thenReturn(Mono.just(new UploadedPart(1, "etag", 4)));
 
         client.put()
@@ -143,12 +143,12 @@ class StorageTransferEndpointTest {
                 .jsonPath("$.partNumber")
                 .isEqualTo(1);
 
-        verify(storageService).verifyUpload("token", "file-1");
+        verify(storageTransfer).verifyUpload("token", "file-1");
     }
 
     @Test
     void completesAnUpload() {
-        when(storageService.completeUpload(eq("file-1"), any())).thenReturn(Mono.just(file()));
+        when(storageTransfer.completeUpload(eq("file-1"), any())).thenReturn(Mono.just(file()));
 
         client.post()
                 .uri("/storagefiles/file-1/upload/complete?token=token")
@@ -161,7 +161,7 @@ class StorageTransferEndpointTest {
                 .jsonPath("$.metadata.name")
                 .isEqualTo("file-1");
 
-        verify(storageService).verifyUpload("token", "file-1");
+        verify(storageTransfer).verifyUpload("token", "file-1");
     }
 
     private static StorageFile file() {

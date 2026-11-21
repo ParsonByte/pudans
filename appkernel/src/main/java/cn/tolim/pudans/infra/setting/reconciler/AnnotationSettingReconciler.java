@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.setting.reconciler;
 
-import cn.tolim.pudans.contract.core.extension.AnnotationSetting;
+import cn.tolim.pudans.contract.setting.resource.AnnotationSetting;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.GroupKind;
 import cn.tolim.pudans.contract.extension.MetadataUtil;

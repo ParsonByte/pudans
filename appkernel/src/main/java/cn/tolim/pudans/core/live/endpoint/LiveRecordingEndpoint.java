@@ -4,26 +4,26 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecordingState;
-import cn.tolim.pudans.contract.core.extension.live.PartState;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
+import cn.tolim.pudans.contract.live.resource.PartState;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
-import cn.tolim.pudans.contract.live.BatchDeleteItem;
-import cn.tolim.pudans.contract.live.BatchDeleteRequest;
-import cn.tolim.pudans.contract.live.LiveRecordingDownload;
-import cn.tolim.pudans.contract.live.LiveRecordingDownloadRequest;
-import cn.tolim.pudans.contract.live.LiveRecordingPage;
-import cn.tolim.pudans.contract.live.LiveRecordingQuery;
-import cn.tolim.pudans.contract.live.LiveRecordingRetry;
-import cn.tolim.pudans.contract.live.LiveRecordingView;
-import cn.tolim.pudans.contract.live.PartDownload;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.live.recording.LiveRecordingQueryService;
-import cn.tolim.pudans.core.live.recording.LiveRecordingService;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
+import cn.tolim.pudans.contract.live.dto.BatchDeleteItem;
+import cn.tolim.pudans.contract.live.dto.BatchDeleteRequest;
+import cn.tolim.pudans.contract.live.dto.LiveRecordingDownload;
+import cn.tolim.pudans.contract.live.dto.LiveRecordingDownloadRequest;
+import cn.tolim.pudans.contract.live.dto.LiveRecordingPage;
+import cn.tolim.pudans.contract.live.dto.LiveRecordingQuery;
+import cn.tolim.pudans.contract.live.dto.LiveRecordingRetry;
+import cn.tolim.pudans.contract.live.dto.LiveRecordingView;
+import cn.tolim.pudans.contract.live.dto.PartDownload;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.live.recording.RecordingQueries;
+import cn.tolim.pudans.core.live.recording.Recordings;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.driver.StorageSource;
 import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
 import java.time.Duration;
@@ -55,15 +55,15 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
 
     private static final int MAX_DOWNLOAD_PARTS = 100;
 
-    private final LiveRecordingService recordingService;
+    private final Recordings recordingService;
 
-    private final LiveRecordingQueryService queryService;
+    private final RecordingQueries queryService;
 
     private final ReactiveExtensionClient client;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -221,10 +221,10 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
 
     private Mono<PartDownload> toDownload(LiveRecording.Part part, Duration ttl) {
         var options = new StorageSourceOptions(true, part.getFilename(), ttl);
-        return storageService
+        return storageTransfer
                 .sourceUrl(part.getStorageFile(), options)
                 .map(source -> toDirectDownload(part, ttl, source))
-                .switchIfEmpty(Mono.defer(() -> storageService
+                .switchIfEmpty(Mono.defer(() -> storageTransfer
                         .downloadUrl(part.getStorageFile(), ttl)
                         .map(url -> new PartDownload(
                                 part.getIndex(),
@@ -284,7 +284,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
         var snapshot = new LinkedHashMap<String, Object>();
         snapshot.put("state", recording.getStatus().getState());
         snapshot.put("stopRequestedAt", recording.getStatus().getStopRequestedAt());
-        return auditService
+        return auditLog
                 .recordChild(
                         request.exchange(),
                         null,
@@ -304,7 +304,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
         var snapshot = new LinkedHashMap<String, Object>();
         snapshot.put("recording", result.recording());
         snapshot.put("mode", result.mode());
-        return auditService
+        return auditLog
                 .recordChild(
                         request.exchange(),
                         null,
@@ -328,7 +328,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                     if (item.code() != null) {
                         snapshot.put("code", item.code());
                     }
-                    return auditService
+                    return auditLog
                             .recordChild(
                                     request.exchange(),
                                     null,

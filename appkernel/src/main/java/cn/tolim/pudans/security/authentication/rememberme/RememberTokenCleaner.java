@@ -4,7 +4,7 @@ import static cn.tolim.pudans.contract.extension.index.query.Queries.and;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.isNull;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.lessThan;
 
-import cn.tolim.pudans.contract.core.extension.RememberMeToken;
+import cn.tolim.pudans.contract.security.resource.RememberMeToken;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.router.selector.FieldSelector;
 import cn.tolim.pudans.infra.ReactiveExtensionPaginatedOperator;

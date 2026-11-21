@@ -16,27 +16,27 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.ai.AiChatMode;
-import cn.tolim.pudans.contract.core.extension.ai.AiInstruction;
-import cn.tolim.pudans.contract.core.extension.ai.AiMcpServer;
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.contract.core.extension.ai.AiSkill;
-import cn.tolim.pudans.contract.core.extension.ai.AiTeam;
-import cn.tolim.pudans.core.ai.library.instruction.InstructionService;
-import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
-import cn.tolim.pudans.core.ai.library.skill.SkillService;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.contract.rbac.resource.UserGroup;
+import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiChatMode;
+import cn.tolim.pudans.contract.ai.resource.AiInstruction;
+import cn.tolim.pudans.contract.ai.resource.AiMcpServer;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.resource.AiSkill;
+import cn.tolim.pudans.contract.ai.resource.AiTeam;
+import cn.tolim.pudans.core.ai.library.instruction.Instructions;
+import cn.tolim.pudans.core.ai.library.mcp.McpServers;
+import cn.tolim.pudans.core.ai.library.skill.Skills;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
@@ -64,7 +64,7 @@ public class BuiltinEntityPolicy {
 
     private final RolePermissionPolicy rolePermissionPolicy;
 
-    private final UserService userService;
+    private final Accounts accounts;
 
     public boolean isBuiltinRole(String name) {
         return BuiltinEntities.SUPER_ROLE.equals(name)
@@ -100,13 +100,13 @@ public class BuiltinEntityPolicy {
                     .then(convert(extension, AiAgent.class).flatMap(this::checkAiAgentReferences));
         }
         if (AiMcpServer.KIND.equals(kind)) {
-            return convert(extension, AiMcpServer.class).flatMap(McpServerService::validate);
+            return convert(extension, AiMcpServer.class).flatMap(McpServers::validate);
         }
         if (AiSkill.KIND.equals(kind)) {
-            return convert(extension, AiSkill.class).flatMap(SkillService::validate);
+            return convert(extension, AiSkill.class).flatMap(Skills::validate);
         }
         if (AiInstruction.KIND.equals(kind)) {
-            return convert(extension, AiInstruction.class).flatMap(InstructionService::validate);
+            return convert(extension, AiInstruction.class).flatMap(Instructions::validate);
         }
         if (AiProviderAccount.KIND.equals(kind)) {
             return convert(extension, AiProviderAccount.class)
@@ -167,13 +167,13 @@ public class BuiltinEntityPolicy {
             return convert(extension, AiAgent.class).flatMap(this::checkAiAgentReferences);
         }
         if (AiMcpServer.KIND.equals(kind)) {
-            return convert(extension, AiMcpServer.class).flatMap(McpServerService::validate);
+            return convert(extension, AiMcpServer.class).flatMap(McpServers::validate);
         }
         if (AiSkill.KIND.equals(kind)) {
-            return convert(extension, AiSkill.class).flatMap(SkillService::validate);
+            return convert(extension, AiSkill.class).flatMap(Skills::validate);
         }
         if (AiInstruction.KIND.equals(kind)) {
-            return convert(extension, AiInstruction.class).flatMap(InstructionService::validate);
+            return convert(extension, AiInstruction.class).flatMap(Instructions::validate);
         }
         if (AiModel.KIND.equals(kind)) {
             return convert(extension, AiModel.class).flatMap(this::checkAiModelReferences);
@@ -324,7 +324,7 @@ public class BuiltinEntityPolicy {
         if (BuiltinEntities.SYSTEM_USER.equals(uid)) {
             return Mono.empty();
         }
-        return userService
+        return accounts
                 .getUserByUid(uid)
                 .switchIfEmpty(Mono.error(denied(label + " [" + uid + "] 不存在。")))
                 .then();

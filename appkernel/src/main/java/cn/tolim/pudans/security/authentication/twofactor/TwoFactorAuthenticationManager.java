@@ -3,7 +3,7 @@ package cn.tolim.pudans.security.authentication.twofactor;
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.TWO_FACTOR_AUTHENTICATED_ROLE_NAME;
 
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.security.authentication.PudansUserDetailsContract;
 import cn.tolim.pudans.security.authentication.exception.TwoFactorAuthException;
 import cn.tolim.pudans.security.authentication.twofactor.totp.TotpTwoFactorVerifier;
@@ -29,7 +29,7 @@ public class TwoFactorAuthenticationManager implements ReactiveAuthenticationMan
 
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
-    private final UserService userService;
+    private final Accounts accounts;
 
     private final TotpTwoFactorVerifier totpVerifier;
 
@@ -54,7 +54,7 @@ public class TwoFactorAuthenticationManager implements ReactiveAuthenticationMan
         if (!TotpTwoFactorVerifier.TYPE.equalsIgnoreCase(token.getType())) {
             return Mono.error(new TwoFactorAuthException("不支持的双重验证类型 " + token.getType()));
         }
-        return userService
+        return accounts
                 .getUser(previous.getName())
                 .flatMap(user -> totpVerifier.verify(user, token.getCode()).timeout(TIMEOUT))
                 .flatMap(valid -> {

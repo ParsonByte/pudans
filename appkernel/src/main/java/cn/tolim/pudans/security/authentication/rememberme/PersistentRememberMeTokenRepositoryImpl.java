@@ -3,7 +3,7 @@ package cn.tolim.pudans.security.authentication.rememberme;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
 
-import cn.tolim.pudans.contract.core.extension.RememberMeToken;
+import cn.tolim.pudans.contract.security.resource.RememberMeToken;
 import cn.tolim.pudans.contract.extension.ExtensionUtil;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;

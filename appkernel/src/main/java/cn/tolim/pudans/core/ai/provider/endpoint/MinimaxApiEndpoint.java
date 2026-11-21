@@ -4,16 +4,16 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.core.ai.provider.AiProviderJsonSupport;
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxApiClient;
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxProtocol;
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxProviderAccess;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -55,7 +55,7 @@ public class MinimaxApiEndpoint implements CustomEndpoint {
 
     private final MinimaxApiClient client;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     private final ObjectMapper mapper;
 
@@ -348,7 +348,7 @@ public class MinimaxApiEndpoint implements CustomEndpoint {
     }
 
     private Mono<StoredFile> storage(String storageFileId, int maxBytes) {
-        return storageService
+        return storageTransfer
                 .getFile(storageFileId)
                 .onErrorMap(ExtensionNotFoundException.class, error -> fileNotFound())
                 .switchIfEmpty(Mono.error(fileNotFound()))
@@ -356,7 +356,7 @@ public class MinimaxApiEndpoint implements CustomEndpoint {
                     if (file.getSpec() == null || file.getSpec().getState() != StorageFileState.ACTIVE) {
                         return Mono.error(fileNotFound());
                     }
-                    return storageService
+                    return storageTransfer
                             .readBytes(file.getMetadata().getName(), maxBytes)
                             .onErrorMap(DataBufferLimitException.class, error -> tooLarge())
                             .filter(content -> content.length > 0)

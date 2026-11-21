@@ -2,10 +2,10 @@ package cn.tolim.pudans.core.ai.config.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiChatMode;
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.core.ai.config.AiChatModeService;
+import cn.tolim.pudans.contract.ai.resource.AiChatMode;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.ai.config.ChatModes;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -22,7 +22,7 @@ public class AiChatModeEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiChatModeV1alpha1";
 
-    private final AiChatModeService chatModeService;
+    private final ChatModes chatModeService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {

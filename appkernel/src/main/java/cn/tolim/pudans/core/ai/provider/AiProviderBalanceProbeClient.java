@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.provider;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -46,12 +46,12 @@ public class AiProviderBalanceProbeClient {
 
     private final ObjectMapper mapper;
 
-    private final AiProviderAccountService accountService;
+    private final ProviderAccounts accountService;
 
     public AiProviderBalanceProbeClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            AiProviderAccountService accountService) {
+            ProviderAccounts accountService) {
         this.webClient = webClient;
         this.mapper = mapper;
         this.accountService = accountService;
