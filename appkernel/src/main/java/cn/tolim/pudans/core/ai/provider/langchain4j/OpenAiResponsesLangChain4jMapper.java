@@ -189,10 +189,15 @@ public final class OpenAiResponsesLangChain4jMapper extends LangChain4jChatMappe
         }
         if (usage instanceof OpenAiTokenUsage openai) {
             var details = openai.inputTokensDetails();
+            var cached = details == null ? null : details.cachedTokens();
+            // OpenAI 的 prompt_tokens 已包含缓存读取，计费与命中率需要使用未缓存输入。
+            var input = cached == null
+                    ? openai.inputTokenCount()
+                    : Math.max(0, openai.inputTokenCount() - cached);
             return new AiTokenUsage(
-                    openai.inputTokenCount(),
+                    input,
                     openai.outputTokenCount(),
-                    details == null ? null : details.cachedTokens(),
+                    cached,
                     details == null ? null : details.cacheWriteTokens());
         }
         return new AiTokenUsage(usage.inputTokenCount(), usage.outputTokenCount(), null, null);

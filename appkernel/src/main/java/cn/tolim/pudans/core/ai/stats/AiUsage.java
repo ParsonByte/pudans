@@ -353,20 +353,28 @@ public class AiUsage {
         var window = UsageWindow.of(query.from(), query.to(), clock);
         var agent = text(query.agent());
         var model = text(query.model());
+        var provider = text(query.provider());
+        var status = text(query.status());
+        var routeGroup = text(query.routeGroup());
+        var q = text(query.q());
         return Mono.zip(
                         repository.sessionStatsTotals(
-                                window.fromAt(), window.toAt(), agent, model, viewer.all(), viewer.userId()),
+                                window.fromAt(), window.toAt(), agent, model, provider, status, routeGroup, q,
+                                viewer.all(), viewer.userId()),
                         repository
                                 .sessionStatsSessions(
-                                        window.fromAt(), window.toAt(), agent, model, viewer.all(), viewer.userId())
+                                        window.fromAt(), window.toAt(), agent, model, provider, status, routeGroup, q,
+                                        viewer.all(), viewer.userId())
                                 .collectList(),
                         repository
                                 .sessionStatsDaily(
-                                        window.fromAt(), window.toAt(), agent, model, viewer.all(), viewer.userId())
+                                        window.fromAt(), window.toAt(), agent, model, provider, status, routeGroup, q,
+                                        viewer.all(), viewer.userId())
                                 .collectList(),
                         repository
                                 .sessionStatsHours(
-                                        window.fromAt(), window.toAt(), agent, model, viewer.all(), viewer.userId())
+                                        window.fromAt(), window.toAt(), agent, model, provider, status, routeGroup, q,
+                                        viewer.all(), viewer.userId())
                                 .collectList())
                 .map(tuple -> assembleSessionStats(
                         tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4()));
@@ -1331,7 +1339,11 @@ public class AiUsage {
             @Nullable LocalDate from,
             @Nullable LocalDate to,
             @Nullable String agent,
-            @Nullable String model) {}
+            @Nullable String model,
+            @Nullable String provider,
+            @Nullable String status,
+            @Nullable String routeGroup,
+            @Nullable String q) {}
 
     public record GridQuery(
             @Nullable LocalDate from,

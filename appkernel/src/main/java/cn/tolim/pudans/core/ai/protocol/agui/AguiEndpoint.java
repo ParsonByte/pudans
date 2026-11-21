@@ -11,6 +11,7 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.data.message.UserMessage;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -87,8 +89,15 @@ public class AguiEndpoint implements CustomEndpoint {
         return Flux.create(sink -> {
             var converter = new AguiEventConverter(input.threadId(), input.runId());
             run.onEvent(event -> converter.convert(event).forEach(agui -> send(sink, agui)));
-            sink.onCancel(run::cancel);
-            run.result().subscribe(
+            var executionRef = new AtomicReference<Disposable>();
+            sink.onCancel(() -> {
+                run.cancel();
+                var disposable = executionRef.get();
+                if (disposable != null) {
+                    disposable.dispose();
+                }
+            });
+            executionRef.set(run.result().subscribe(
                     result -> {
                         converter.finish(result.content()).forEach(agui -> send(sink, agui));
                         sink.complete();
@@ -96,7 +105,7 @@ public class AguiEndpoint implements CustomEndpoint {
                     error -> {
                         converter.fail(error.getMessage(), CODE_RUN_FAILED).forEach(agui -> send(sink, agui));
                         sink.complete();
-                    });
+                    }));
         }, FluxSink.OverflowStrategy.BUFFER);
     }
 

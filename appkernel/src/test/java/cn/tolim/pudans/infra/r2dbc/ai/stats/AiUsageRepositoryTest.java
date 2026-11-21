@@ -370,7 +370,7 @@ class AiUsageRepositoryTest {
                 "2026-11-19", 2, 125, 2000, new BigDecimal("0.50"), 180)));
 
         StepVerifier.create(repository.sessionStatsDaily(
-                        FROM, TO, "agent-a", "deepseek-chat", false, "user-1"))
+                        FROM, TO, "agent-a", "deepseek-chat", "", "", "", "", false, "user-1"))
                 .expectNextCount(1)
                 .verifyComplete();
 
@@ -378,6 +378,9 @@ class AiUsageRepositoryTest {
         verify(databaseClient).sql(sql.capture());
         assertThat(sql.getValue())
                 .contains("generate_series")
+                .contains(":provider")
+                .contains(":routeGroup")
+                .contains(":qPattern")
                 .contains("INTERVAL '5 minutes'")
                 .contains("date_trunc('day',")
                 .contains("AT TIME ZONE 'Asia/Shanghai'");

@@ -582,6 +582,10 @@ public class AiUsageRepository {
             Instant toAt,
             String agent,
             String model,
+            String provider,
+            String status,
+            String routeGroup,
+            String q,
             boolean all,
             String userId) {
         return databaseClient.sql("""
@@ -600,6 +604,28 @@ public class AiUsageRepository {
                                     AND rm.created_at < :toAt
                                     AND rm.selected_model = :model
                               ))
+                              AND (:provider = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rf
+                                  WHERE rf.conversation_id = c.id
+                                    AND rf.created_at >= :fromAt
+                                    AND rf.created_at < :toAt
+                                    AND rf.selected_provider = :provider
+                              ))
+                              AND (:status = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rs
+                                  WHERE rs.conversation_id = c.id
+                                    AND rs.created_at >= :fromAt
+                                    AND rs.created_at < :toAt
+                                    AND rs.status = :status
+                              ))
+                              AND (:routeGroup = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rg
+                                  WHERE rg.conversation_id = c.id
+                                    AND rg.created_at >= :fromAt
+                                    AND rg.created_at < :toAt
+                                    AND rg.route_group = :routeGroup
+                              ))
+                              AND (:q = '' OR c.title ILIKE :qPattern OR c.session_key ILIKE :qPattern)
                         ),
                         requests AS (
                             SELECT r.conversation_id,
@@ -611,6 +637,9 @@ public class AiUsageRepository {
                             WHERE r.created_at >= :fromAt
                               AND r.created_at < :toAt
                               AND (:model = '' OR r.selected_model = :model)
+                              AND (:provider = '' OR r.selected_provider = :provider)
+                              AND (:status = '' OR r.status = :status)
+                              AND (:routeGroup = '' OR r.route_group = :routeGroup)
                             GROUP BY r.conversation_id
                         ),
                         messages AS (
@@ -629,6 +658,9 @@ public class AiUsageRepository {
                             WHERE r.created_at >= :fromAt
                               AND r.created_at < :toAt
                               AND (:model = '' OR r.selected_model = :model)
+                              AND (:provider = '' OR r.selected_provider = :provider)
+                              AND (:status = '' OR r.status = :status)
+                              AND (:routeGroup = '' OR r.route_group = :routeGroup)
                             UNION ALL
                             SELECT m.conversation_id, m.created_at
                             FROM ai_message m
@@ -670,6 +702,11 @@ public class AiUsageRepository {
                 .bind("userId", userId)
                 .bind("agent", agent)
                 .bind("model", model)
+                .bind("provider", provider)
+                .bind("status", status)
+                .bind("routeGroup", routeGroup)
+                .bind("q", q)
+                .bind("qPattern", pattern(q))
                 .map((row, metadata) -> mapSessionStatsTotals(row))
                 .one();
     }
@@ -679,6 +716,10 @@ public class AiUsageRepository {
             Instant toAt,
             String agent,
             String model,
+            String provider,
+            String status,
+            String routeGroup,
+            String q,
             boolean all,
             String userId) {
         return databaseClient.sql("""
@@ -697,6 +738,28 @@ public class AiUsageRepository {
                                     AND rm.created_at < :toAt
                                     AND rm.selected_model = :model
                               ))
+                              AND (:provider = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rf
+                                  WHERE rf.conversation_id = c.id
+                                    AND rf.created_at >= :fromAt
+                                    AND rf.created_at < :toAt
+                                    AND rf.selected_provider = :provider
+                              ))
+                              AND (:status = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rs
+                                  WHERE rs.conversation_id = c.id
+                                    AND rs.created_at >= :fromAt
+                                    AND rs.created_at < :toAt
+                                    AND rs.status = :status
+                              ))
+                              AND (:routeGroup = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rg
+                                  WHERE rg.conversation_id = c.id
+                                    AND rg.created_at >= :fromAt
+                                    AND rg.created_at < :toAt
+                                    AND rg.route_group = :routeGroup
+                              ))
+                              AND (:q = '' OR c.title ILIKE :qPattern OR c.session_key ILIKE :qPattern)
                         ),
                         requests AS (
                             SELECT conversation_id,
@@ -710,6 +773,9 @@ public class AiUsageRepository {
                             WHERE r.created_at >= :fromAt
                               AND r.created_at < :toAt
                               AND (:model = '' OR r.selected_model = :model)
+                              AND (:provider = '' OR r.selected_provider = :provider)
+                              AND (:status = '' OR r.status = :status)
+                              AND (:routeGroup = '' OR r.route_group = :routeGroup)
                             GROUP BY conversation_id
                         ),
                         messages AS (
@@ -740,6 +806,11 @@ public class AiUsageRepository {
                 .bind("userId", userId)
                 .bind("agent", agent)
                 .bind("model", model)
+                .bind("provider", provider)
+                .bind("status", status)
+                .bind("routeGroup", routeGroup)
+                .bind("q", q)
+                .bind("qPattern", pattern(q))
                 .map((row, metadata) -> mapSessionStats(row))
                 .all();
     }
@@ -749,6 +820,10 @@ public class AiUsageRepository {
             Instant toAt,
             String agent,
             String model,
+            String provider,
+            String status,
+            String routeGroup,
+            String q,
             boolean all,
             String userId) {
         return databaseClient.sql("""
@@ -767,6 +842,28 @@ public class AiUsageRepository {
                                     AND rm.created_at < :toAt
                                     AND rm.selected_model = :model
                               ))
+                              AND (:provider = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rf
+                                  WHERE rf.conversation_id = c.id
+                                    AND rf.created_at >= :fromAt
+                                    AND rf.created_at < :toAt
+                                    AND rf.selected_provider = :provider
+                              ))
+                              AND (:status = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rs
+                                  WHERE rs.conversation_id = c.id
+                                    AND rs.created_at >= :fromAt
+                                    AND rs.created_at < :toAt
+                                    AND rs.status = :status
+                              ))
+                              AND (:routeGroup = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rg
+                                  WHERE rg.conversation_id = c.id
+                                    AND rg.created_at >= :fromAt
+                                    AND rg.created_at < :toAt
+                                    AND rg.route_group = :routeGroup
+                              ))
+                              AND (:q = '' OR c.title ILIKE :qPattern OR c.session_key ILIKE :qPattern)
                         ),
                         request_events AS (
                             SELECT r.conversation_id, r.created_at
@@ -775,6 +872,9 @@ public class AiUsageRepository {
                             WHERE r.created_at >= :fromAt
                               AND r.created_at < :toAt
                               AND (:model = '' OR r.selected_model = :model)
+                              AND (:provider = '' OR r.selected_provider = :provider)
+                              AND (:status = '' OR r.status = :status)
+                              AND (:routeGroup = '' OR r.route_group = :routeGroup)
                         ),
                         message_events AS (
                             SELECT m.conversation_id, m.created_at
@@ -831,6 +931,9 @@ public class AiUsageRepository {
                             WHERE r.created_at >= :fromAt
                               AND r.created_at < :toAt
                               AND (:model = '' OR r.selected_model = :model)
+                              AND (:provider = '' OR r.selected_provider = :provider)
+                              AND (:status = '' OR r.status = :status)
+                              AND (:routeGroup = '' OR r.route_group = :routeGroup)
                             GROUP BY day
                         ),
                         active_by_day AS (
@@ -862,6 +965,11 @@ public class AiUsageRepository {
                 .bind("userId", userId)
                 .bind("agent", agent)
                 .bind("model", model)
+                .bind("provider", provider)
+                .bind("status", status)
+                .bind("routeGroup", routeGroup)
+                .bind("q", q)
+                .bind("qPattern", pattern(q))
                 .map((row, metadata) -> mapSessionStatsDaily(row))
                 .all();
     }
@@ -871,6 +979,10 @@ public class AiUsageRepository {
             Instant toAt,
             String agent,
             String model,
+            String provider,
+            String status,
+            String routeGroup,
+            String q,
             boolean all,
             String userId) {
         return databaseClient.sql("""
@@ -889,6 +1001,28 @@ public class AiUsageRepository {
                                     AND rm.created_at < :toAt
                                     AND rm.selected_model = :model
                               ))
+                              AND (:provider = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rf
+                                  WHERE rf.conversation_id = c.id
+                                    AND rf.created_at >= :fromAt
+                                    AND rf.created_at < :toAt
+                                    AND rf.selected_provider = :provider
+                              ))
+                              AND (:status = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rs
+                                  WHERE rs.conversation_id = c.id
+                                    AND rs.created_at >= :fromAt
+                                    AND rs.created_at < :toAt
+                                    AND rs.status = :status
+                              ))
+                              AND (:routeGroup = '' OR EXISTS (
+                                  SELECT 1 FROM ai_chat_request rg
+                                  WHERE rg.conversation_id = c.id
+                                    AND rg.created_at >= :fromAt
+                                    AND rg.created_at < :toAt
+                                    AND rg.route_group = :routeGroup
+                              ))
+                              AND (:q = '' OR c.title ILIKE :qPattern OR c.session_key ILIKE :qPattern)
                         ),
                         events AS (
                             SELECT r.conversation_id, r.created_at
@@ -897,6 +1031,9 @@ public class AiUsageRepository {
                             WHERE r.created_at >= :fromAt
                               AND r.created_at < :toAt
                               AND (:model = '' OR r.selected_model = :model)
+                              AND (:provider = '' OR r.selected_provider = :provider)
+                              AND (:status = '' OR r.status = :status)
+                              AND (:routeGroup = '' OR r.route_group = :routeGroup)
                             UNION ALL
                             SELECT m.conversation_id, m.created_at
                             FROM ai_message m
@@ -917,6 +1054,11 @@ public class AiUsageRepository {
                 .bind("userId", userId)
                 .bind("agent", agent)
                 .bind("model", model)
+                .bind("provider", provider)
+                .bind("status", status)
+                .bind("routeGroup", routeGroup)
+                .bind("q", q)
+                .bind("qPattern", pattern(q))
                 .map((row, metadata) -> mapSessionStatsHour(row))
                 .all();
     }

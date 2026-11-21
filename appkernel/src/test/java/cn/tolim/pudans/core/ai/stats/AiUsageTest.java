@@ -574,10 +574,10 @@ class AiUsageTest {
 
     @Test
     void sessionStatsAssemblesTotalsSeriesModelsAndShape() {
-        when(repository.sessionStatsTotals(FROM_AT, TO_AT, "", "", false, USER_ID))
+        when(repository.sessionStatsTotals(FROM_AT, TO_AT, "", "", "", "", "", "", false, USER_ID))
                 .thenReturn(Mono.just(new SessionStatsTotalsRow(
                         2, 8.4, 12.6, 2000, new BigDecimal("0.50"), 300, 180)));
-        when(repository.sessionStatsSessions(FROM_AT, TO_AT, "", "", false, USER_ID))
+        when(repository.sessionStatsSessions(FROM_AT, TO_AT, "", "", "", "", "", "", false, USER_ID))
                 .thenReturn(Flux.just(
                         new SessionStatsRow(
                                 1L, "短会话", "agent-a", "model-a", 5, 2, 600,
@@ -585,13 +585,13 @@ class AiUsageTest {
                         new SessionStatsRow(
                                 2L, "长会话", "agent-a", null, 120, 30, 1400,
                                 new BigDecimal("0.40"), 200, NOW.minusSeconds(60))));
-        when(repository.sessionStatsDaily(FROM_AT, TO_AT, "", "", false, USER_ID))
+        when(repository.sessionStatsDaily(FROM_AT, TO_AT, "", "", "", "", "", "", false, USER_ID))
                 .thenReturn(Flux.just(new SessionStatsDailyRow(
                         "2026-11-19", 2, 125, 2000, new BigDecimal("0.50"), 180)));
-        when(repository.sessionStatsHours(FROM_AT, TO_AT, "", "", false, USER_ID))
+        when(repository.sessionStatsHours(FROM_AT, TO_AT, "", "", "", "", "", "", false, USER_ID))
                 .thenReturn(Flux.just(new SessionStatsHourRow(9, 2), new SessionStatsHourRow(10, 1)));
 
-        StepVerifier.create(service.sessionStats(new SessionStatsQuery(null, null, null, null), SELF))
+        StepVerifier.create(service.sessionStats(new SessionStatsQuery(null, null, null, null, null, null, null, null), SELF))
                 .assertNext(stats -> {
                     assertThat(stats.totals().sessions()).isEqualTo(2);
                     assertThat(stats.totals().medianMessages()).isEqualTo(8);

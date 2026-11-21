@@ -67,7 +67,7 @@ class LangChain4jChatTest {
 
         assertThat(result).isNotNull();
         assertThat(result.finishReason()).isEqualTo("stop");
-        assertThat(result.usage()).isEqualTo(new AiTokenUsage(10, 20, 4, null));
+        assertThat(result.usage()).isEqualTo(new AiTokenUsage(6, 20, 4, null));
         assertThat(result.message().parts())
                 .filteredOn(AiContentPart.Text.class::isInstance)
                 .singleElement()
@@ -129,7 +129,7 @@ class LangChain4jChatTest {
         assertThat(events).hasSize(2);
         assertThat(events.get(0).content()).isEqualTo("Hel");
         assertThat(events.get(1).finishReason()).isEqualTo("stop");
-        assertThat(events.get(1).usage()).isEqualTo(new AiTokenUsage(10, 20, 4, null));
+        assertThat(events.get(1).usage()).isEqualTo(new AiTokenUsage(6, 20, 4, null));
     }
 
     @Test

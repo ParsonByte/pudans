@@ -116,6 +116,8 @@ public class AiConversationEndpoint implements CustomEndpoint {
                                 .description("Return messages whose id is greater than this cursor."))
                         .parameter(parameterBuilder().in(ParameterIn.QUERY).name("limit").required(false)
                                 .description("Page size (1-200, default 50)."))
+                        .parameter(parameterBuilder().in(ParameterIn.QUERY).name("latest").required(false)
+                                .description("When true, return the newest messages instead of the oldest."))
                         .response(responseBuilder().implementationArray(MessageView.class)))
                 .POST("/conversations/{name}/branch", this::branch, builder -> builder
                         .operationId("branchAiConversation")
@@ -202,10 +204,12 @@ public class AiConversationEndpoint implements CustomEndpoint {
         var conversationId = conversationId(request);
         var afterId = AiEndpointRequests.longParam(request, "afterId", 0L, 0L, MAX_CURSOR);
         var limit = AiEndpointRequests.intParam(request, "limit", DEFAULT_MESSAGE_LIMIT, 1, MAX_MESSAGE_LIMIT);
+        var latest = Boolean.parseBoolean(request.queryParam("latest").orElse("false"));
         return requests.userId(request)
                 .flatMap(userId -> conversationService.requireOwned(conversationId, userId))
-                .flatMap(conversation -> conversationService
-                        .history(conversation, afterId, limit)
+                .flatMap(conversation -> (latest
+                                ? conversationService.recentHistory(conversation, limit)
+                                : conversationService.history(conversation, afterId, limit))
                         .collectList()
                         .flatMap(messages -> conversationService
                                 .metadata(conversation)

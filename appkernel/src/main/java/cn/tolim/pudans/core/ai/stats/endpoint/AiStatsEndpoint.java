@@ -163,7 +163,11 @@ public class AiStatsEndpoint implements CustomEndpoint {
     private static int days(ServerRequest request) {
         var value = request.queryParam("days").orElse("14");
         try {
-            return Integer.parseInt(value);
+            var parsed = Integer.parseInt(value);
+            if (parsed < 1 || parsed > 90) {
+                throw new ServerWebInputException("days 必须在 1 到 90 之间。");
+            }
+            return parsed;
         } catch (NumberFormatException error) {
             throw new ServerWebInputException("days 必须是整数。");
         }

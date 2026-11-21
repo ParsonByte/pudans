@@ -169,7 +169,7 @@ class OpenAiLangChain4jMapperTest {
         assertThat(mapped.id()).isEqualTo("chatcmpl-1");
         assertThat(mapped.model()).isEqualTo("gpt-4.1");
         assertThat(mapped.finishReason()).isEqualTo("tool_calls");
-        assertThat(mapped.usage()).isEqualTo(new AiTokenUsage(10, 20, 4, 2));
+        assertThat(mapped.usage()).isEqualTo(new AiTokenUsage(6, 20, 4, 2));
         assertThat(mapped.message().parts())
                 .anySatisfy(part -> assertThat(part)
                         .isInstanceOfSatisfying(AiContentPart.Thinking.class, thinking ->

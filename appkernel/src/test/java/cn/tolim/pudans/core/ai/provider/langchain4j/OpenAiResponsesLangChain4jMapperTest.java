@@ -103,6 +103,6 @@ class OpenAiResponsesLangChain4jMapperTest {
         assertThat(mapped.id()).isEqualTo("resp-1");
         assertThat(mapped.model()).isEqualTo("gpt-4.1");
         assertThat(mapped.finishReason()).isEqualTo("stop");
-        assertThat(mapped.usage()).isEqualTo(new AiTokenUsage(10, 20, 4, 2));
+        assertThat(mapped.usage()).isEqualTo(new AiTokenUsage(6, 20, 4, 2));
     }
 }
