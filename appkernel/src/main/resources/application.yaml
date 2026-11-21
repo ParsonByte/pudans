@@ -58,39 +58,6 @@ spring:
 
 pudans:
   work-dir: ${PUDANS_WORK_DIR:${user.home}/.pudans}
-  ai:
-    enabled: ${PUDANS_AI_ENABLED:true}
-    worker:
-      poll-interval: 1s
-      batch-size: 20
-      max-concurrency: 4
-      lock-ttl: 5m
-    web-client:
-      connect-timeout: 5s
-      response-timeout: 300s
-      max-in-memory-size: 16MB
-    routing:
-      health-threshold: 60
-      circuit:
-        failure-threshold: 5
-        success-threshold: 3
-        open-duration: 30s
-        max-open-duration: 5m
-        max-latency-millis: 60000
-    gateway:
-      enabled: true
-      injection-enabled: true
-    embedding:
-      dimension: 1536
-    runtime:
-      gateway-url: ${PUDANS_GATEWAY_URL:http://127.0.0.1:8090/apis/api.pudans.tolim.cn/v1alpha1/aigateway}
-      log-buffer-size: 500
-      lock-seconds: 60
-      request-timeout-seconds: 60
-      log-poll-seconds: 2
-      log-file: ${PUDANS_RUNTIME_LOG_FILE:/tmp/pudans-agent.log}
-      tencent-data-plane-template: ${PUDANS_TENCENT_SANDBOX_DATA_PLANE:https://49983-%s.%s.tencentags.com}
-      tencent-api-version: 2025-09-20
   live:
     resolve:
       connect-timeout: 5s
