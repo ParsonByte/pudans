@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import { IconFeishu } from "@/assets/custom/icon-feishu";
 import { ActivityBarChart } from "@/components/activity-bar-chart";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { MarkdownContent } from "@/components/content/markdown";
 import { InfoRow } from "@/components/info-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,13 +32,20 @@ import {
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import { roleDisplayName } from "@/modules/workspace/console/roles/lib/role-model";
+import { useRoles } from "@/modules/workspace/console/roles/lib/use-roles";
 import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { ChangeGroupDialog } from "./components/change-group-dialog";
 import { EditUserDialog } from "./components/edit-user-dialog";
 import { ResetPasswordDialog } from "./components/reset-password-dialog";
 import { UserAvatar } from "./components/user-avatar";
-import { fetchUserActivity, fetchUserConnections, resolveUserApiError } from "./lib/api";
+import {
+  fetchUserActivity,
+  fetchUserConnections,
+  fetchUserPermissions,
+  resolveUserApiError,
+} from "./lib/api";
 import { formatUserDateTime } from "./lib/format";
 
 const PROVIDER_LABELS: Record<string, string> = {
@@ -76,6 +84,12 @@ export function UserDetailView({ name }: UserDetailViewProps) {
     queryFn: async () => (await apiClient.user.getUserGroup({ name })).data,
     retry: false,
   });
+  const permissionsQuery = useQuery({
+    queryKey: ["user-permissions", name],
+    queryFn: () => fetchUserPermissions(name),
+    retry: false,
+  });
+  const rolesQuery = useRoles();
   const connectionsQuery = useQuery({
     queryKey: ["user-connections", name],
     queryFn: () => fetchUserConnections(name),
@@ -99,6 +113,13 @@ export function UserDetailView({ name }: UserDetailViewProps) {
   const displayName = spec?.displayName || username;
   const disabled = Boolean(spec?.disabled);
   const connections = connectionsQuery.data ?? [];
+  const roles = rolesQuery.data ?? [];
+  const assignedRoles = permissionsQuery.data?.roles ?? [];
+  const effectiveRoles = permissionsQuery.data?.permissions ?? [];
+  const roleLabel = (roleName: string) => {
+    const role = roles.find((candidate) => candidate.metadata.name === roleName);
+    return role ? roleDisplayName(role) : roleName;
+  };
   const loginProviders = loginProvidersQuery.data ?? [];
   const activityPoints = activityQuery.data ?? [];
   const totalActivity = activityPoints.reduce((sum, point) => sum + (point.count ?? 0), 0);
@@ -287,7 +308,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
           {spec?.bio ? (
             <div className="border-t px-5 py-4">
               <p className="mb-2 text-xs font-medium text-muted-foreground">个人简介</p>
-              <p className="text-sm whitespace-pre-wrap">{spec.bio}</p>
+              <MarkdownContent content={spec.bio} />
             </div>
           ) : null}
         </ConsoleSection>
@@ -331,6 +352,61 @@ export function UserDetailView({ name }: UserDetailViewProps) {
               </div>
             ) : (
               <ConsoleEmpty>该用户没有绑定用户组。</ConsoleEmpty>
+            )}
+          </ConsoleSection>
+
+          <ConsoleSection>
+            <ConsoleSectionHeader
+              title="权限"
+              description="通过用户组和直接绑定获得的角色。"
+              action={
+                permissionsQuery.isSuccess ? (
+                  <span className="text-xs text-muted-foreground">
+                    {effectiveRoles.length} 个生效角色
+                  </span>
+                ) : null
+              }
+            />
+            {permissionsQuery.isPending ? (
+              <div className="space-y-3 p-5">
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-12 w-full" />
+              </div>
+            ) : permissionsQuery.isError ? (
+              <ConsoleEmpty>{resolveUserApiError(permissionsQuery.error)}</ConsoleEmpty>
+            ) : assignedRoles.length === 0 && effectiveRoles.length === 0 ? (
+              <ConsoleEmpty>该用户没有分配任何角色。</ConsoleEmpty>
+            ) : (
+              <div className="space-y-4 p-5">
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">已分配角色</p>
+                  {assignedRoles.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">无直接分配的角色。</p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {assignedRoles.map((roleName) => (
+                        <Badge key={roleName} variant="secondary" title={roleName}>
+                          {roleLabel(roleName)}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">生效角色（含依赖）</p>
+                  <div className="flex flex-wrap gap-1">
+                    {effectiveRoles.map((roleName) => (
+                      <Badge
+                        key={roleName}
+                        variant={assignedRoles.includes(roleName) ? "secondary" : "outline"}
+                        title={roleName}
+                      >
+                        {roleLabel(roleName)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
             )}
           </ConsoleSection>
 

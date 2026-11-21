@@ -3,12 +3,11 @@ import { type FieldErrors, type Resolver, useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Save, Undo2 } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
-import { FloatingActionBar } from "@/components/floating-action-bar";
 import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 import { resolveParameterSettingError, updateParameterGroup } from "../lib/parameter-api";
+import { SettingsFormShell } from "./settings-form-shell";
 
 type ServerFormValues = {
   tempPath: string;
@@ -132,17 +132,15 @@ export function ServerSettingsForm({ data }: ServerSettingsFormProps) {
     },
   );
 
-  const formId = "server-parameter-form";
   const errors = form.formState.errors;
 
   return (
     <>
-      <form
-        id={formId}
+      <SettingsFormShell
+        form={form}
         onSubmit={onSubmit}
-        className="max-w-3xl space-y-8 md:pl-10"
-        aria-busy={mutation.isPending}
-        noValidate
+        isPending={mutation.isPending}
+        className="md:pl-10"
       >
         <ServerField
           label="临时路径"
@@ -249,23 +247,7 @@ export function ServerSettingsForm({ data }: ServerSettingsFormProps) {
             {...form.register("gcCron")}
           />
         </ServerField>
-
-        <FloatingActionBar open={form.formState.isDirty}>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={mutation.isPending}
-            onClick={() => form.reset()}
-          >
-            <Undo2 />
-            撤销更改
-          </Button>
-          <Button type="submit" form={formId} disabled={mutation.isPending}>
-            {mutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-            保存更改
-          </Button>
-        </FloatingActionBar>
-      </form>
+      </SettingsFormShell>
 
       <ConfirmDialog
         open={rotateOpen}

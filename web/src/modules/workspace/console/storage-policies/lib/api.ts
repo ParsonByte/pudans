@@ -76,6 +76,12 @@ export type StoragePolicyTypeDescriptor = {
   capabilities: string[];
 };
 
+export type StoragePolicyPatchOperation = {
+  op: "add" | "replace" | "remove";
+  path: string;
+  value?: unknown;
+};
+
 type StoragePolicyListResponse = {
   items?: StoragePolicyItem[];
   total?: number;
@@ -124,6 +130,13 @@ export async function fetchStoragePolicies(page = 1, size = 10): Promise<Storage
   };
 }
 
+export async function fetchStoragePolicy(name: string): Promise<StoragePolicyItem> {
+  const response = await axiosInstance.get<StoragePolicyItem>(
+    `${API_PREFIX}/storagepolicies/${encodeURIComponent(name)}`,
+  );
+  return response.data;
+}
+
 export async function fetchStoragePolicyTypes(): Promise<StoragePolicyTypeDescriptor[]> {
   const response = await axiosInstance.get<StoragePolicyTypeDescriptor[]>(
     `${API_PREFIX}/storagepolicies/-/types`,
@@ -143,6 +156,18 @@ export async function updateStoragePolicy(policy: StoragePolicyItem): Promise<St
   const response = await axiosInstance.put<StoragePolicyItem>(
     `${API_PREFIX}/storagepolicies/${encodeURIComponent(policy.metadata.name)}`,
     policy,
+  );
+  return response.data;
+}
+
+export async function patchStoragePolicy(
+  name: string,
+  operations: StoragePolicyPatchOperation[],
+): Promise<StoragePolicyItem> {
+  const response = await axiosInstance.patch<StoragePolicyItem>(
+    `${API_PREFIX}/storagepolicies/${encodeURIComponent(name)}`,
+    operations,
+    { headers: { "Content-Type": "application/json-patch+json" } },
   );
   return response.data;
 }

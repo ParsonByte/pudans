@@ -1,29 +1,32 @@
-import { type FormEvent, useState } from "react";
+import { useState } from "react";
+import { type Resolver, useForm } from "react-hook-form";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { apiClient } from "@pudans-dev/api-client";
 import { useMutation } from "@tanstack/react-query";
-import { Loader2, Mail, Send } from "lucide-react";
+import { Mail } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { FormDialog } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 import { resolveParameterSettingError } from "../lib/parameter-api";
 
+const mailTestSchema = z.object({
+  recipient: z.email("请输入有效的收件邮箱。"),
+});
+
+type MailTestValues = z.infer<typeof mailTestSchema>;
+
 export function MailTestDialog() {
   const [open, setOpen] = useState(false);
-  const [recipient, setRecipient] = useState("");
+  const form = useForm<MailTestValues>({
+    resolver: zodResolver(mailTestSchema) as Resolver<MailTestValues>,
+    defaultValues: { recipient: "" },
+  });
 
   const mutation = useMutation({
     mutationFn: (to: string) =>
@@ -32,7 +35,7 @@ export function MailTestDialog() {
       }),
     onSuccess: () => {
       toast.success("测试邮件已发送，请查收。");
-      setRecipient("");
+      form.reset();
       setOpen(false);
     },
     onError: (error) => {
@@ -40,73 +43,51 @@ export function MailTestDialog() {
     },
   });
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const value = recipient.trim();
+  const onSubmit = form.handleSubmit(
+    (values) => mutation.mutate(values.recipient.trim()),
+    (errors) => toast.error(errors.recipient?.message ?? "请检查填写内容。"),
+  );
 
-    if (!z.email().safeParse(value).success) {
-      toast.error("请输入有效的收件邮箱。");
-      return;
-    }
-
-    mutation.mutate(value);
+  const handleClose = () => {
+    setOpen(false);
+    mutation.reset();
   };
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(nextOpen) => {
-        setOpen(nextOpen);
-
-        if (!nextOpen) {
-          mutation.reset();
-        }
-      }}
-    >
-      <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
-          <Mail />
-          发送测试邮件
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
-        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
-          <DialogHeader>
-            <DialogTitle>发送测试邮件</DialogTitle>
-            <DialogDescription>
-              使用已保存的 SMTP 配置向指定邮箱发送一封测试邮件，可用于验证发信配置是否正确。
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2">
-            <Label htmlFor="mail-test-recipient">收件邮箱</Label>
-            <Input
-              id="mail-test-recipient"
-              type="email"
-              autoComplete="email"
-              placeholder="输入接收测试邮件的邮箱"
-              value={recipient}
-              onChange={(event) => setRecipient(event.target.value)}
-              disabled={mutation.isPending}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={mutation.isPending}
-              onClick={() => setOpen(false)}
-            >
-              取消
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? <Loader2 className="animate-spin" /> : <Send />}
-              发送
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Button type="button" variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Mail />
+        发送测试邮件
+      </Button>
+      <FormDialog
+        open={open}
+        onClose={handleClose}
+        icon={<Mail />}
+        title="发送测试邮件"
+        description="使用已保存的 SMTP 配置向指定邮箱发送一封测试邮件，可用于验证发信配置是否正确。"
+        form={form}
+        onSubmit={onSubmit}
+        isPending={mutation.isPending}
+        contentClassName="sm:max-w-md"
+        maxHeightRatio={0.4}
+        submitLabel="发送"
+        resetLabel="清空"
+      >
+        <FormField
+          label="收件邮箱"
+          htmlFor="mail-test-recipient"
+          error={form.formState.errors.recipient?.message}
+        >
+          <Input
+            id="mail-test-recipient"
+            type="email"
+            autoComplete="email"
+            placeholder="输入接收测试邮件的邮箱"
+            disabled={mutation.isPending}
+            {...form.register("recipient")}
+          />
+        </FormField>
+      </FormDialog>
+    </>
   );
 }

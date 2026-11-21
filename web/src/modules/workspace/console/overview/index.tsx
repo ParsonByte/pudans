@@ -1,11 +1,12 @@
 import { apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, RefreshCw, TriangleAlert } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ConsolePage, ConsoleSection } from "@/modules/workspace/console/components/console-page";
+import { ConsolePage } from "@/modules/workspace/console/components/console-page";
+import { ConsoleState } from "@/modules/workspace/console/components/console-state";
 import { fetchRiskEventTrend } from "@/modules/workspace/console/risk/lib/api";
 
 import { ActiveUserRanking } from "./components/active-user-ranking";
@@ -14,6 +15,8 @@ import { LoginTrend } from "./components/login-trend";
 import { RecentOperations } from "./components/recent-operations";
 import { RoleDistribution } from "./components/role-distribution";
 import { StatGrid } from "./components/stat-grid";
+
+const PAGE_DESCRIPTION = "工作区运行状态、活跃用户与最近审计活动。";
 
 export function ConsoleOverviewView() {
   const overviewQuery = useQuery({
@@ -29,9 +32,22 @@ export function ConsoleOverviewView() {
     staleTime: 30_000,
   });
 
+  const pageActions = (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={() => void overviewQuery.refetch()}
+      disabled={overviewQuery.isFetching}
+    >
+      {overviewQuery.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+      刷新
+    </Button>
+  );
+
   if (overviewQuery.isPending) {
     return (
-      <ConsolePage title="面板首页">
+      <ConsolePage title="面板首页" description={PAGE_DESCRIPTION} actions={pageActions}>
         <OverviewSkeleton />
       </ConsolePage>
     );
@@ -39,25 +55,14 @@ export function ConsoleOverviewView() {
 
   if (!overviewQuery.data) {
     return (
-      <ConsolePage title="面板首页">
-        <ConsoleSection className="flex min-h-72 flex-col items-center justify-center gap-4 p-8 text-center">
-          <span className="flex size-10 items-center justify-center bg-destructive/10 text-destructive">
-            <TriangleAlert className="size-5" />
-          </span>
-          <div className="space-y-1">
-            <h2 className="text-sm font-semibold">概览加载失败</h2>
-            <p className="text-xs text-muted-foreground">请检查网络或登录状态后重试。</p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => void overviewQuery.refetch()}
-            disabled={overviewQuery.isFetching}
-          >
-            {overviewQuery.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-            重新加载
-          </Button>
-        </ConsoleSection>
+      <ConsolePage title="面板首页" description={PAGE_DESCRIPTION} actions={pageActions}>
+        <ConsoleState
+          wrapper
+          variant="error"
+          title="概览加载失败"
+          description="请检查网络或登录状态后重试。"
+          onRetry={() => void overviewQuery.refetch()}
+        />
       </ConsolePage>
     );
   }
@@ -65,7 +70,7 @@ export function ConsoleOverviewView() {
   const overview = overviewQuery.data;
 
   return (
-    <ConsolePage title="面板首页">
+    <ConsolePage title="面板首页" description={PAGE_DESCRIPTION} actions={pageActions}>
       <Tabs defaultValue="overview" className="gap-4">
         <TabsList>
           <TabsTrigger value="overview">概览</TabsTrigger>
@@ -96,7 +101,6 @@ export function ConsoleOverviewView() {
 function OverviewSkeleton() {
   return (
     <div className="space-y-6">
-      <Skeleton className="h-8 w-40" />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }, (_, index) => (
           <Skeleton key={index} className="h-28" />

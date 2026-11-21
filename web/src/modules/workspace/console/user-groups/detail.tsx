@@ -1,17 +1,35 @@
 import { useMemo, useState } from "react";
 
-import { type Role, apiClient } from "@pudans-dev/api-client";
+import { type Role, type UserGroupBinding, apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Lock, Pencil, RefreshCw, ShieldCheck, Trash2, UsersRound } from "lucide-react";
+import {
+  ArrowLeft,
+  Lock,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+  UsersRound,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { MarkdownContent } from "@/components/content/markdown";
 import { DataTablePagination } from "@/components/data-table";
 import { InfoRow } from "@/components/info-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -40,10 +58,13 @@ import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permi
 import { USER_GROUPS_QUERY_KEY } from "@/modules/workspace/lib/user-groups";
 
 import { EditUserGroupDialog } from "./components/edit-user-group-dialog";
+import { UserGroupRoleBindingDialog } from "./components/role-binding-dialog";
 import {
+  deleteGroupRoleBinding,
   fetchGroupRoleBindings,
   fetchMembershipBindings,
   resolveUserGroupApiError,
+  resolveUserGroupBindingApiError,
 } from "./lib/api";
 import {
   isBuiltinUserGroup,
@@ -77,6 +98,12 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
   const canDelete = allowedOperations.has("delete");
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [roleBindingForm, setRoleBindingForm] = useState<{ binding?: UserGroupBinding } | null>(
+    null,
+  );
+  const [roleBindingDeleteTarget, setRoleBindingDeleteTarget] = useState<UserGroupBinding | null>(
+    null,
+  );
   const [memberPage, setMemberPage] = useState(1);
   const [memberSize, setMemberSize] = useState(10);
 
@@ -159,6 +186,26 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
     return roles;
   }, [rolesQuery.data]);
 
+  const roleBindingsByRole = useMemo(() => {
+    const bindings = new Map<string, UserGroupBinding>();
+    for (const binding of roleBindingsQuery.data ?? []) {
+      const roleName = binding.roleRef?.kind === "Role" ? binding.roleRef.name : undefined;
+      if (roleName && !bindings.has(roleName)) {
+        bindings.set(roleName, binding);
+      }
+    }
+    return bindings;
+  }, [roleBindingsQuery.data]);
+
+  const bindingRoleLabel = (binding: UserGroupBinding | null): string => {
+    const roleName = binding?.roleRef?.name;
+    if (!roleName) {
+      return "—";
+    }
+    const role = roleByName.get(roleName);
+    return role ? roleDisplayName(role) : roleName;
+  };
+
   const boundRoleNames = useMemo(() => {
     const names = new Set(group ? userGroupRoleNames(group) : []);
     for (const roleName of roleBindingNames(roleBindingsQuery.data ?? [], name)) {
@@ -202,6 +249,23 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
     onError: (error) => {
       setDeleteConfirmOpen(false);
       toast.error(resolveUserGroupApiError(error));
+    },
+  });
+
+  const roleBindingDeleteMutation = useMutation({
+    mutationFn: async (binding: UserGroupBinding) => deleteGroupRoleBinding(binding.metadata.name),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["user-group"] }),
+        queryClient.invalidateQueries({ queryKey: USER_GROUPS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: ["user-permissions"] }),
+      ]);
+      setRoleBindingDeleteTarget(null);
+      toast.success("角色绑定已删除。");
+    },
+    onError: (error) => {
+      setRoleBindingDeleteTarget(null);
+      toast.error(resolveUserGroupBindingApiError(error));
     },
   });
 
@@ -320,7 +384,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
           {group.description ? (
             <div className="border-t px-5 py-4">
               <p className="mb-2 text-xs font-medium text-muted-foreground">描述</p>
-              <p className="text-sm whitespace-pre-wrap">{group.description}</p>
+              <MarkdownContent content={group.description} />
             </div>
           ) : null}
         </ConsoleSection>
@@ -330,9 +394,24 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
             title="绑定角色"
             description="用户组通过这些角色获得权限。"
             action={
-              !rolesPending && boundRoleNames.length > 0 ? (
-                <span className="text-xs text-muted-foreground">共 {boundRoleNames.length} 个</span>
-              ) : null
+              <div className="flex flex-wrap items-center gap-2">
+                {!rolesPending && boundRoleNames.length > 0 ? (
+                  <span className="text-xs text-muted-foreground">
+                    共 {boundRoleNames.length} 个
+                  </span>
+                ) : null}
+                {canUpdate && !superAdmins ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRoleBindingForm({})}
+                  >
+                    <Plus />
+                    添加绑定
+                  </Button>
+                ) : null}
+              </div>
             }
           />
           {roleBindingsQuery.isError ? (
@@ -357,6 +436,7 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
               <div className="divide-y">
                 {boundRoleNames.map((roleName) => {
                   const role = roleByName.get(roleName);
+                  const roleBinding = roleBindingsByRole.get(roleName);
 
                   return (
                     <div key={roleName} className="flex items-start gap-3 px-5 py-3">
@@ -385,6 +465,36 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
                           </p>
                         )}
                       </div>
+                      {canUpdate && !superAdmins && roleBinding ? (
+                        <DropdownMenu modal={false}>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              className="size-8 shrink-0 p-0 data-[state=open]:bg-muted"
+                              aria-label="角色绑定操作"
+                            >
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              onSelect={() => setRoleBindingForm({ binding: roleBinding })}
+                            >
+                              <Pencil />
+                              编辑绑定
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              variant="destructive"
+                              onSelect={() => setRoleBindingDeleteTarget(roleBinding)}
+                            >
+                              <Trash2 />
+                              删除绑定
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      ) : null}
                     </div>
                   );
                 })}
@@ -494,6 +604,16 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
       </div>
 
       {editOpen ? <EditUserGroupDialog group={group} onClose={() => setEditOpen(false)} /> : null}
+      {roleBindingForm ? (
+        <UserGroupRoleBindingDialog
+          key={roleBindingForm.binding?.metadata.name ?? "create"}
+          groupName={name}
+          groupDisplayName={displayName}
+          binding={roleBindingForm.binding}
+          boundRoleNames={boundRoleNames}
+          onClose={() => setRoleBindingForm(null)}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={deleteConfirmOpen}
@@ -504,6 +624,28 @@ export function UserGroupDetailView({ name }: UserGroupDetailViewProps) {
         destructive
         isLoading={deleteMutation.isPending}
         handleConfirm={() => deleteMutation.mutate()}
+      />
+      <ConfirmDialog
+        open={Boolean(roleBindingDeleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRoleBindingDeleteTarget(null);
+          }
+        }}
+        title="删除角色绑定"
+        desc={
+          roleBindingDeleteTarget
+            ? `确定删除「${displayName}」绑定的「${bindingRoleLabel(roleBindingDeleteTarget)}」角色？成员用户将失去该角色，此操作无法恢复。`
+            : ""
+        }
+        confirmText="删除"
+        destructive
+        isLoading={roleBindingDeleteMutation.isPending}
+        handleConfirm={() => {
+          if (roleBindingDeleteTarget) {
+            roleBindingDeleteMutation.mutate(roleBindingDeleteTarget);
+          }
+        }}
       />
     </ConsolePage>
   );

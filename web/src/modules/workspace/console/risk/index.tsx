@@ -6,31 +6,24 @@ import {
   Ban,
   Loader2,
   Pencil,
+  Plus,
   RefreshCw,
   ShieldAlert,
   ShieldCheck,
+  Trash2,
   Unlock,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import {
   DataTableFacetedFilter,
   DataTablePagination,
   DataTableToolbar,
   LongText,
 } from "@/components/data-table";
-import { InfoRow } from "@/components/info-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import {
   Table,
@@ -41,22 +34,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatBeijingDateTimeSeconds } from "@/lib/date";
-import {
-  ConsoleEmpty,
-  ConsolePage,
-  ConsoleSection,
-} from "@/modules/workspace/console/components/console-page";
+import { ConsolePage, ConsoleSection } from "@/modules/workspace/console/components/console-page";
 import { ConsoleStat } from "@/modules/workspace/console/components/console-stat";
+import {
+  ConsoleState,
+  ConsoleTableSkeleton,
+} from "@/modules/workspace/console/components/console-state";
 import { formatAuditTime } from "@/modules/workspace/console/overview/lib/format";
 import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
+import { CreateRiskRuleDialog } from "./components/create-risk-rule-dialog";
 import { EditRiskRuleDialog } from "./components/edit-risk-rule-dialog";
+import { RiskEventDetailDialog } from "./components/risk-event-detail-dialog";
 import {
   type RiskBanItem,
   type RiskEventItem,
   type RiskRuleItem,
   type RiskUnbanItem,
+  deleteRiskRule,
   fetchRiskBans,
   fetchRiskEvents,
   fetchRiskRules,
@@ -67,15 +62,11 @@ import {
   unbanRiskSubject,
   updateRiskRule,
 } from "./lib/api";
+import { EVENT_LABELS, eventActorLabel, resolveEventStatus } from "./lib/risk-events";
 
 const ACTION_LABELS: Record<string, string> = {
   BLOCK: "拦截",
   ALERT: "仅告警",
-};
-
-const EVENT_LABELS: Record<string, string> = {
-  RISK_BLOCKED: "拦截",
-  RISK_ALERT: "告警",
 };
 
 const EMPTY_RULES: RiskRuleItem[] = [];
@@ -89,9 +80,13 @@ const EMPTY_UNBANS: RiskUnbanItem[] = [];
 export function RiskView() {
   const queryClient = useQueryClient();
   const allowedOperations = useAllowedOperations();
+  const canCreate = allowedOperations.has("create");
   const canUpdate = allowedOperations.has("update");
+  const canDelete = allowedOperations.has("delete");
   const canUnban = allowedOperations.has("unban");
   const [editTarget, setEditTarget] = useState<RiskRuleItem | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<RiskRuleItem | null>(null);
   const [eventSearch, setEventSearch] = useState("");
   const [eventSceneFilters, setEventSceneFilters] = useState<string[]>([]);
   const [eventUserFilters, setEventUserFilters] = useState<string[]>([]);
@@ -236,6 +231,20 @@ export function RiskView() {
     onError: (error) => toast.error(resolveRiskApiError(error)),
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (rule: RiskRuleItem) => deleteRiskRule(rule.metadata.name),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["risk-rules"] });
+      await queryClient.invalidateQueries({ queryKey: ["risk-events"] });
+      setDeleteTarget(null);
+      toast.success("风险规则已删除。");
+    },
+    onError: (error) => {
+      setDeleteTarget(null);
+      toast.error(resolveRiskApiError(error));
+    },
+  });
+
   const unbanMutation = useMutation({
     mutationFn: ({ scene, subject }: { scene: string; subject: string }) =>
       unbanRiskSubject(scene, subject),
@@ -271,6 +280,12 @@ export function RiskView() {
     <ConsolePage title="风险">
       <div className="flex flex-1 flex-col gap-4 sm:gap-6">
         <div className="flex flex-wrap items-center justify-end gap-2">
+          {canCreate ? (
+            <Button type="button" onClick={() => setCreateOpen(true)}>
+              <Plus />
+              新建规则
+            </Button>
+          ) : null}
           <Button type="button" variant="outline" onClick={refresh} disabled={refreshing}>
             {refreshing ? <Loader2 className="animate-spin" /> : <RefreshCw />}
             刷新
@@ -294,15 +309,20 @@ export function RiskView() {
           <TabsContent value="rules" className="flex flex-1 flex-col gap-4">
             <ConsoleSection>
               {rulesQuery.isPending ? (
-                <TableSkeleton rows={6} />
+                <Table>
+                  <TableBody>
+                    <ConsoleTableSkeleton columns={6} rows={6} cellClassName="px-5 py-3" />
+                  </TableBody>
+                </Table>
               ) : rulesQuery.isError ? (
-                <ErrorState
+                <ConsoleState
+                  variant="error"
                   title="无法加载风险规则"
-                  message={resolveRiskApiError(rulesQuery.error)}
+                  description={resolveRiskApiError(rulesQuery.error)}
                   onRetry={() => void rulesQuery.refetch()}
                 />
               ) : rules.length === 0 ? (
-                <ConsoleEmpty>暂无可用的风险规则。</ConsoleEmpty>
+                <ConsoleState variant="empty" title="暂无可用的风险规则。" />
               ) : (
                 <>
                   <Table>
@@ -373,19 +393,33 @@ export function RiskView() {
                               </div>
                             </TableCell>
                             <TableCell className="px-5 py-3 text-end">
-                              {canUpdate ? (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => setEditTarget(rule)}
-                                >
-                                  <Pencil />
-                                  编辑
-                                </Button>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">—</span>
-                              )}
+                              <div className="flex items-center justify-end gap-1">
+                                {canUpdate ? (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setEditTarget(rule)}
+                                  >
+                                    <Pencil />
+                                    编辑
+                                  </Button>
+                                ) : null}
+                                {canDelete ? (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    aria-label={`删除 ${riskRuleDisplayName(rule)}`}
+                                    onClick={() => setDeleteTarget(rule)}
+                                  >
+                                    <Trash2 />
+                                  </Button>
+                                ) : null}
+                                {!canUpdate && !canDelete ? (
+                                  <span className="text-sm text-muted-foreground">—</span>
+                                ) : null}
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
@@ -450,17 +484,23 @@ export function RiskView() {
             />
             <ConsoleSection>
               {eventsQuery.isPending ? (
-                <TableSkeleton rows={6} />
+                <Table>
+                  <TableBody>
+                    <ConsoleTableSkeleton columns={10} rows={6} cellClassName="px-5 py-3" />
+                  </TableBody>
+                </Table>
               ) : eventsQuery.isError ? (
-                <ErrorState
+                <ConsoleState
+                  variant="error"
                   title="无法加载风险事件"
-                  message={resolveRiskApiError(eventsQuery.error)}
+                  description={resolveRiskApiError(eventsQuery.error)}
                   onRetry={() => void eventsQuery.refetch()}
                 />
               ) : filteredEvents.length === 0 ? (
-                <ConsoleEmpty>
-                  {events.length === 0 ? "最近 7 天没有风险事件。" : "没有匹配的风险事件。"}
-                </ConsoleEmpty>
+                <ConsoleState
+                  variant="empty"
+                  title={events.length === 0 ? "最近 7 天没有风险事件。" : "没有匹配的风险事件。"}
+                />
               ) : (
                 <Table>
                   <TableHeader>
@@ -573,15 +613,20 @@ export function RiskView() {
           <TabsContent value="bans" className="flex flex-1 flex-col gap-4">
             <ConsoleSection>
               {bansQuery.isPending ? (
-                <TableSkeleton rows={4} />
+                <Table>
+                  <TableBody>
+                    <ConsoleTableSkeleton columns={5} rows={4} cellClassName="px-5 py-3" />
+                  </TableBody>
+                </Table>
               ) : bansQuery.isError ? (
-                <ErrorState
+                <ConsoleState
+                  variant="error"
                   title="无法加载封禁对象"
-                  message={resolveRiskApiError(bansQuery.error)}
+                  description={resolveRiskApiError(bansQuery.error)}
                   onRetry={() => void bansQuery.refetch()}
                 />
               ) : bans.length === 0 ? (
-                <ConsoleEmpty>当前没有活跃的风险封禁。</ConsoleEmpty>
+                <ConsoleState variant="empty" title="当前没有活跃的风险封禁。" />
               ) : (
                 <>
                   <Table>
@@ -654,9 +699,34 @@ export function RiskView() {
         </Tabs>
       </div>
 
+      {createOpen ? <CreateRiskRuleDialog onClose={() => setCreateOpen(false)} /> : null}
+
       {editTarget ? (
         <EditRiskRuleDialog rule={editTarget} onClose={() => setEditTarget(null)} />
       ) : null}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+        title="删除风险规则"
+        desc={
+          deleteTarget
+            ? `确定删除「${riskRuleDisplayName(deleteTarget)}」吗？删除后该场景不再参与风险判定。`
+            : ""
+        }
+        destructive
+        isLoading={deleteMutation.isPending}
+        confirmText={deleteMutation.isPending ? "删除中…" : "确认删除"}
+        handleConfirm={() => {
+          if (deleteTarget) {
+            deleteMutation.mutate(deleteTarget);
+          }
+        }}
+      />
 
       <RiskEventDetailDialog
         event={detailTarget}
@@ -676,198 +746,6 @@ export function RiskView() {
       />
     </ConsolePage>
   );
-}
-
-type RiskEventDetailDialogProps = {
-  event: RiskEventItem | null;
-  status: RiskEventStatus | null;
-  sceneLabel: string;
-  canUnban: boolean;
-  isUnbanning: boolean;
-  onUnban: () => void;
-  onClose: () => void;
-};
-
-function RiskEventDetailDialog({
-  event,
-  status,
-  sceneLabel,
-  canUnban,
-  isUnbanning,
-  onUnban,
-  onClose,
-}: RiskEventDetailDialogProps) {
-  return (
-    <Dialog
-      open={Boolean(event)}
-      onOpenChange={(open) => {
-        if (!open) {
-          onClose();
-        }
-      }}
-    >
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>风险事件详情</DialogTitle>
-          <DialogDescription>
-            {event ? `${formatExactTime(event.timestamp)} · ${event.auditId}` : ""}
-          </DialogDescription>
-        </DialogHeader>
-        {event ? (
-          <>
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={event.operation === "RISK_BLOCKED" ? "destructive" : "secondary"}>
-                {EVENT_LABELS[event.operation] ?? event.operation}
-              </Badge>
-              {status ? <Badge variant={status.variant}>{status.label}</Badge> : null}
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InfoRow label="触发用户" value={eventActorLabel(event)} />
-              <InfoRow
-                label="对象"
-                value={<span className="font-mono text-xs">{event.subject || "—"}</span>}
-              />
-              <InfoRow label="场景" value={`${sceneLabel}（${event.scene}）`} />
-              <InfoRow label="请求方法" value={event.requestMethod || "—"} />
-              <InfoRow
-                label="路径"
-                value={<span className="font-mono text-xs">{event.path || "—"}</span>}
-                className="sm:col-span-2"
-              />
-              <InfoRow label="触发次数" value={event.count} />
-              <InfoRow label="结果" value={event.result || "—"} />
-              {event.blockSeconds > 0 ? (
-                <InfoRow label="封禁时长" value={`${event.blockSeconds} 秒`} />
-              ) : null}
-              {status?.banUntil ? (
-                <InfoRow label="封禁到期" value={formatExactTime(status.banUntil)} />
-              ) : null}
-              {status?.unbanAt ? (
-                <InfoRow label="解禁时间" value={formatExactTime(status.unbanAt)} />
-              ) : null}
-              <InfoRow
-                label="审计 ID"
-                value={<span className="font-mono text-xs">{event.auditId}</span>}
-              />
-              {event.traceId ? (
-                <InfoRow
-                  label="Trace ID"
-                  value={<span className="font-mono text-xs">{event.traceId}</span>}
-                />
-              ) : null}
-            </div>
-          </>
-        ) : null}
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            关闭
-          </Button>
-          {event && status?.key === "active" && canUnban ? (
-            <Button type="button" variant="destructive" disabled={isUnbanning} onClick={onUnban}>
-              {isUnbanning ? <Loader2 className="animate-spin" /> : <Unlock />}
-              解除封禁
-            </Button>
-          ) : null}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function TableSkeleton({ rows }: { rows: number }) {
-  return (
-    <div className="space-y-3 p-5">
-      {Array.from({ length: rows }, (_, index) => (
-        <Skeleton key={index} className="h-10 w-full" />
-      ))}
-    </div>
-  );
-}
-
-function ErrorState({
-  title,
-  message,
-  onRetry,
-}: {
-  title: string;
-  message: string;
-  onRetry: () => void;
-}) {
-  return (
-    <div className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
-      <ShieldAlert className="size-8 text-muted-foreground" />
-      <div className="space-y-1">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground">{message}</p>
-      </div>
-      <Button variant="outline" size="sm" onClick={onRetry}>
-        重试
-      </Button>
-    </div>
-  );
-}
-
-function eventActorLabel(event: RiskEventItem | undefined): string {
-  if (!event) {
-    return "—";
-  }
-  return event.username || (event.uid && event.uid !== "anonymous" ? event.uid : "匿名");
-}
-
-type RiskEventStatusKey = "active" | "unbanned" | "expired" | "alert";
-
-type RiskEventStatus = {
-  key: RiskEventStatusKey;
-  label: string;
-  variant: "destructive" | "secondary" | "outline";
-  banUntil?: string;
-  unbanAt?: string;
-};
-
-const STATUS_META: Record<
-  RiskEventStatusKey,
-  { label: string; variant: "destructive" | "secondary" | "outline" }
-> = {
-  active: { label: "封禁中", variant: "destructive" },
-  unbanned: { label: "已解禁", variant: "secondary" },
-  expired: { label: "已到期", variant: "outline" },
-  alert: { label: "仅告警", variant: "outline" },
-};
-
-function resolveEventStatus(
-  event: RiskEventItem,
-  activeBanKeys: ReadonlySet<string>,
-  unbans: readonly RiskUnbanItem[],
-  latestBlockByKey: ReadonlyMap<string, string>,
-): RiskEventStatus {
-  if (event.operation !== "RISK_BLOCKED" || event.blockSeconds <= 0) {
-    return { key: "alert", ...STATUS_META.alert };
-  }
-  const key = `${event.scene}:${event.subject}`;
-  const isLatestBlock = latestBlockByKey.get(key) === event.auditId;
-  const banUntilMs = new Date(event.timestamp).getTime() + event.blockSeconds * 1000;
-  const banUntil = Number.isFinite(banUntilMs) ? new Date(banUntilMs).toISOString() : undefined;
-  const unban = unbans.find(
-    (item) =>
-      item.scene === event.scene &&
-      item.subject === event.subject &&
-      item.timestamp >= event.timestamp,
-  );
-
-  if (isLatestBlock && activeBanKeys.has(key)) {
-    return { key: "active", ...STATUS_META.active, banUntil };
-  }
-  if (unban) {
-    return { key: "unbanned", ...STATUS_META.unbanned, banUntil, unbanAt: unban.timestamp };
-  }
-  if (isLatestBlock && Number.isFinite(banUntilMs) && Date.now() < banUntilMs) {
-    return { key: "active", ...STATUS_META.active, banUntil };
-  }
-  return { key: "expired", ...STATUS_META.expired, banUntil };
-}
-
-function formatExactTime(value?: string): string {
-  return formatBeijingDateTimeSeconds(value);
 }
 
 function formatRemaining(seconds: number): string {

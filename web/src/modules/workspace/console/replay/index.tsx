@@ -10,17 +10,8 @@ import { DataTablePagination, LongText } from "@/components/data-table";
 import { DateTimePicker } from "@/components/date-time-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -44,14 +35,18 @@ import {
   auditResourceLabel,
 } from "@/modules/workspace/console/audit/lib/audit-labels";
 import {
-  ConsoleEmpty,
   ConsolePage,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
 import { ConsoleStat } from "@/modules/workspace/console/components/console-stat";
+import {
+  ConsoleState,
+  ConsoleTableSkeleton,
+} from "@/modules/workspace/console/components/console-state";
 import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
+import { ReplayArchiveDialog } from "./components/replay-archive-dialog";
 import { ReplayPlayer } from "./components/replay-player";
 import {
   type ArchivedLogFilters,
@@ -311,15 +306,20 @@ export function ReplayView() {
                 }
               />
               {flowQuery.isError ? (
-                <ConsoleEmpty>无法加载回溯链路，请检查筛选条件后重试。</ConsoleEmpty>
+                <ConsoleState
+                  variant="error"
+                  title="无法加载回溯链路"
+                  description="请检查筛选条件后重试。"
+                  onRetry={() => void flowQuery.refetch()}
+                />
               ) : flowQuery.isPending ? (
-                <div className="space-y-3 p-5">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
+                <Table>
+                  <TableBody>
+                    <ConsoleTableSkeleton columns={7} rows={3} cellClassName="px-5 py-3" />
+                  </TableBody>
+                </Table>
               ) : flows.length === 0 ? (
-                <ConsoleEmpty>当前条件下没有可回溯链路。</ConsoleEmpty>
+                <ConsoleState variant="empty" title="当前条件下没有可回溯链路。" />
               ) : (
                 <Table>
                   <TableHeader>
@@ -410,7 +410,7 @@ export function ReplayView() {
               {selectedFlowId ? (
                 <ReplayPlayer key={selectedFlowId} traceFlowId={selectedFlowId} />
               ) : (
-                <ConsoleEmpty>请先在「回溯查询」中选择一条链路。</ConsoleEmpty>
+                <ConsoleState variant="empty" title="请先在「回溯查询」中选择一条链路。" />
               )}
             </ConsoleSection>
           </TabsContent>
@@ -483,15 +483,20 @@ export function ReplayView() {
                 </div>
               </div>
               {archiveQuery.isError ? (
-                <ConsoleEmpty>无法加载归档内容，请稍后重试。</ConsoleEmpty>
+                <ConsoleState
+                  variant="error"
+                  title="无法加载归档内容"
+                  description="请稍后重试。"
+                  onRetry={() => void archiveQuery.refetch()}
+                />
               ) : archiveQuery.isPending ? (
-                <div className="space-y-3 p-5">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
+                <Table>
+                  <TableBody>
+                    <ConsoleTableSkeleton columns={7} rows={3} cellClassName="px-5 py-3" />
+                  </TableBody>
+                </Table>
               ) : archivedLogs.length === 0 ? (
-                <ConsoleEmpty>当前没有匹配的归档记录。</ConsoleEmpty>
+                <ConsoleState variant="empty" title="当前没有匹配的归档记录。" />
               ) : (
                 <Table>
                   <TableHeader>
@@ -575,39 +580,14 @@ export function ReplayView() {
         </Tabs>
       </div>
 
-      <Dialog open={archiveOpen} onOpenChange={setArchiveOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>发起归档</DialogTitle>
-            <DialogDescription>
-              将截止时间之前的审计记录移入归档表，归档后可继续查询和回放。
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="archive-cutoff">归档截止时间</Label>
-            <DateTimePicker id="archive-cutoff" value={cutoff} onChange={setCutoff} />
-            <p className="text-xs text-muted-foreground">早于该时间的活跃审计记录会被移入归档。</p>
-          </div>
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setArchiveOpen(false)}
-              disabled={archiveMutation.isPending}
-            >
-              取消
-            </Button>
-            <Button
-              type="button"
-              onClick={() => archiveMutation.mutate()}
-              disabled={archiveMutation.isPending || !cutoff}
-            >
-              {archiveMutation.isPending ? <Loader2 className="animate-spin" /> : <Archive />}
-              确认归档
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReplayArchiveDialog
+        open={archiveOpen}
+        cutoff={cutoff}
+        pending={archiveMutation.isPending}
+        onCutoffChange={setCutoff}
+        onConfirm={() => archiveMutation.mutate()}
+        onClose={() => setArchiveOpen(false)}
+      />
 
       <AuditLogDetailDialog record={detailTarget} onClose={() => setDetailTarget(null)} />
     </ConsolePage>

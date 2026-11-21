@@ -523,30 +523,29 @@ export function UserGroupsView() {
     data: pageGroups,
   });
 
-  return (
-    <ConsolePage title="用户组">
-      <div className="flex flex-1 flex-col gap-4 sm:gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-2xl font-bold tracking-tight">用户组列表</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void groupsQuery.refetch()}
-              disabled={groupsQuery.isFetching}
-            >
-              {groupsQuery.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-              刷新
-            </Button>
-            {canCreate ? (
-              <Button type="button" onClick={() => setCreateOpen(true)}>
-                <Plus />
-                创建用户组
-              </Button>
-            ) : null}
-          </div>
-        </div>
+  const pageActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => void groupsQuery.refetch()}
+        disabled={groupsQuery.isFetching}
+      >
+        {groupsQuery.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+        刷新
+      </Button>
+      {canCreate ? (
+        <Button type="button" onClick={() => setCreateOpen(true)}>
+          <Plus />
+          创建用户组
+        </Button>
+      ) : null}
+    </div>
+  );
 
+  return (
+    <ConsolePage title="用户组" description="管理用户组、成员与绑定角色。" actions={pageActions}>
+      <div className="flex flex-1 flex-col gap-4 sm:gap-6">
         <DataTableToolbar
           searchPlaceholder="筛选用户组..."
           searchValue={search}

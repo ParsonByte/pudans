@@ -12,7 +12,7 @@ import {
   auditOperationLabel,
   auditResourceLabel,
 } from "@/modules/workspace/console/audit/lib/audit-labels";
-import { ConsoleEmpty } from "@/modules/workspace/console/components/console-page";
+import { ConsoleState } from "@/modules/workspace/console/components/console-state";
 
 import { type JourneyItem } from "../lib/api";
 
@@ -87,7 +87,7 @@ export function JourneyChain({ journey, onSelectRecord }: JourneyChainProps) {
       ) : null}
 
       {steps.length === 0 ? (
-        <ConsoleEmpty>该用户没有可展示的活动步骤。</ConsoleEmpty>
+        <ConsoleState variant="empty" title="该用户没有可展示的活动步骤。" />
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-2 border-b px-5 py-2">

@@ -11,6 +11,7 @@ import {
   updateParameterGroup,
 } from "@/modules/workspace/console/settings/lib/parameter-api";
 
+import { AuthProviderSection } from "./components/auth-provider-section";
 import { AddIdentityCard, IdentityCard } from "./components/identity-card";
 import type { IdentityKind } from "./components/identity-icon";
 import { PolicyDialog } from "./components/policy-dialog";
@@ -60,10 +61,13 @@ type IdentityItem =
 export function IdentityProviderView() {
   return (
     <ConsolePage title="身份提供商">
-      <ParameterGroupPanel
-        group={AUTHENTICATION_PANEL}
-        render={(data) => <IdentityProviderContent data={data} />}
-      />
+      <div className="space-y-8">
+        <ParameterGroupPanel
+          group={AUTHENTICATION_PANEL}
+          render={(data) => <IdentityProviderContent data={data} />}
+        />
+        <AuthProviderSection />
+      </div>
     </ConsolePage>
   );
 }

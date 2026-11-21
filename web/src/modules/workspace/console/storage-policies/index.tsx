@@ -5,6 +5,7 @@ import { Loader2, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { ContentPreviewButton } from "@/components/content/content-preview";
 import { DataTablePagination } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import {
 } from "@/modules/workspace/console/components/console-page";
 import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
+import { PolicyDetailDialog } from "./components/policy-detail-dialog";
 import { PolicyDialog } from "./components/policy-dialog";
 import { StorageTypeIcon } from "./components/type-icon";
 import { TypePickerDialog } from "./components/type-picker-dialog";
@@ -52,6 +54,7 @@ export function StoragePoliciesView() {
   const [createType, setCreateType] = useState<StoragePolicyType | null>(null);
   const [editing, setEditing] = useState<StoragePolicyItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StoragePolicyItem | null>(null);
+  const [detailTarget, setDetailTarget] = useState<StoragePolicyItem | null>(null);
   const [page, setPage] = useState(1);
   const [size, setSize] = useState(10);
 
@@ -155,6 +158,7 @@ export function StoragePoliciesView() {
                 canDelete={canDelete}
                 onEdit={() => setEditing(policy)}
                 onDelete={() => setDeleteTarget(policy)}
+                onDetail={() => setDetailTarget(policy)}
               />
             ))}
 
@@ -217,6 +221,15 @@ export function StoragePoliciesView() {
         />
       ) : null}
 
+      {detailTarget ? (
+        <PolicyDetailDialog
+          policy={detailTarget}
+          descriptor={descriptors.get(detailTarget.spec.type)}
+          canUpdate={canUpdate}
+          onClose={() => setDetailTarget(null)}
+        />
+      ) : null}
+
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => {
@@ -250,6 +263,7 @@ function PolicyCard({
   canDelete,
   onEdit,
   onDelete,
+  onDetail,
 }: {
   policy: StoragePolicyItem;
   descriptor?: StoragePolicyTypeDescriptor;
@@ -257,6 +271,7 @@ function PolicyCard({
   canDelete: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  onDetail: () => void;
 }) {
   const type = policy.spec.type;
   const ready = policy.status?.ready !== false;
@@ -311,6 +326,7 @@ function PolicyCard({
           {policy.metadata.name}
         </span>
         <div className="flex items-center gap-2">
+          <ContentPreviewButton label="查看存储策略详情" onClick={onDetail} />
           {canUpdate ? (
             <Button type="button" variant="outline" size="sm" onClick={onEdit}>
               <Pencil />

@@ -9,6 +9,7 @@ import { z } from "zod";
 
 import { FormDialog } from "@/components/form-dialog";
 import { PasswordInput } from "@/components/password-input";
+import { useSudo } from "@/components/sudo/sudo-provider";
 import { Label } from "@/components/ui/label";
 
 import { resolveUserApiError } from "../lib/api";
@@ -32,6 +33,7 @@ const resetPasswordSchema = z
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 export function ResetPasswordDialog({ name, onClose }: ResetPasswordDialogProps) {
+  const { requireSudo } = useSudo();
   const form = useForm<ResetPasswordValues>({
     resolver: zodResolver(resetPasswordSchema) as Resolver<ResetPasswordValues>,
     defaultValues: { password: "", confirmPassword: "" },
@@ -39,6 +41,7 @@ export function ResetPasswordDialog({ name, onClose }: ResetPasswordDialogProps)
 
   const mutation = useMutation({
     mutationFn: async (values: ResetPasswordValues) => {
+      await requireSudo();
       await apiClient.user.changeUserPassword({
         name,
         passwordRequest: { password: values.password },

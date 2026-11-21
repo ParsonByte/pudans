@@ -16,17 +16,20 @@ import Link from "next/link";
 import { ActivityBarChart } from "@/components/activity-bar-chart";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { serverToday } from "@/lib/date";
 import {
-  ConsoleEmpty,
   ConsolePage,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
 import { ConsoleStat } from "@/modules/workspace/console/components/console-stat";
+import {
+  ConsoleBlockSkeleton,
+  ConsoleState,
+} from "@/modules/workspace/console/components/console-state";
 import { useMenuPath } from "@/modules/workspace/lib/permissions";
 
+import { AuditGraphPanel } from "./components/audit-graph-panel";
 import { AuditLogDetailDialog } from "./components/audit-log-detail-dialog";
 import { AuditResultBadge } from "./components/audit-result-badge";
 import {
@@ -96,16 +99,13 @@ export function AuditView() {
         </div>
 
         {auditQuery.isError ? (
-          <ConsoleSection className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
-            <ShieldAlert className="size-8 text-muted-foreground" />
-            <div className="space-y-1">
-              <p className="text-sm font-medium">无法加载审计日志</p>
-              <p className="text-xs text-muted-foreground">请检查网络或登录状态后重试。</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => void auditQuery.refetch()}>
-              重试
-            </Button>
-          </ConsoleSection>
+          <ConsoleState
+            variant="error"
+            title="无法加载审计日志"
+            description="请检查网络或登录状态后重试。"
+            onRetry={() => void auditQuery.refetch()}
+            wrapper
+          />
         ) : (
           <>
             <ConsoleSection>
@@ -119,11 +119,9 @@ export function AuditView() {
                 }
               />
               {auditQuery.isPending ? (
-                <div className="p-5">
-                  <Skeleton className="h-64 w-full" />
-                </div>
+                <ConsoleBlockSkeleton rows={1} className="p-5" itemClassName="h-64 w-full" />
               ) : volume.length === 0 ? (
-                <ConsoleEmpty>今日暂无审计事件。</ConsoleEmpty>
+                <ConsoleState variant="empty" title="今日暂无审计事件。" />
               ) : (
                 <ActivityBarChart
                   points={volume}
@@ -134,6 +132,8 @@ export function AuditView() {
               )}
             </ConsoleSection>
 
+            <AuditGraphPanel suggestedUid={records.find((record) => record.uid)?.uid} />
+
             <ConsoleSection>
               <ConsoleSectionHeader
                 title="最近事件"
@@ -141,13 +141,13 @@ export function AuditView() {
                 action={<Badge variant="secondary">{recent.length} 条</Badge>}
               />
               {auditQuery.isPending ? (
-                <div className="space-y-3 p-5">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
+                <ConsoleBlockSkeleton
+                  rows={3}
+                  className="space-y-3 p-5"
+                  itemClassName="h-12 w-full"
+                />
               ) : recent.length === 0 ? (
-                <ConsoleEmpty>暂无审计记录。</ConsoleEmpty>
+                <ConsoleState variant="empty" title="暂无审计记录。" />
               ) : (
                 <ul className="divide-y">
                   {recent.map((record) => (
