@@ -1,16 +1,9 @@
 import { z } from "zod";
 
-import { BASE_PATH } from "@/lib/base-path";
+import { assetUrl } from "@/lib/asset-url";
 
 export type ParameterGroupKey =
-  | "site"
-  | "session"
-  | "captcha"
-  | "mail"
-  | "audit"
-  | "server"
-  | "system-config"
-  | "extension-resources";
+  "site" | "session" | "captcha" | "mail" | "audit" | "server" | "extension-resources";
 
 type ParameterFieldKind =
   | "text"
@@ -38,6 +31,7 @@ export type ParameterField = {
   kind: ParameterFieldKind;
   section?: string;
   defaultValue?: string;
+  previewFallback?: string;
   width?: "sm" | "md";
   required?: boolean;
   maxLength?: number;
@@ -88,12 +82,11 @@ const CAPTCHA_PROVIDERS = [
   { value: "none", label: "关闭验证" },
 ] as const;
 
-const BRAND_BASE = BASE_PATH;
-const DEFAULT_LOGO_DARK = `${BRAND_BASE}brand/logo-dark.svg`;
-const DEFAULT_LOGO_LIGHT = `${BRAND_BASE}brand/logo-light.svg`;
-const DEFAULT_FAVICON = `${BRAND_BASE}brand/icon-small.svg`;
-const DEFAULT_ICON_MEDIUM = `${BRAND_BASE}brand/icon-medium.svg`;
-const DEFAULT_ICON_LARGE = `${BRAND_BASE}brand/icon-large.svg`;
+const DEFAULT_LOGO_DARK = assetUrl("brand/logo-dark.svg");
+const DEFAULT_LOGO_LIGHT = assetUrl("brand/logo-light.svg");
+const DEFAULT_FAVICON = assetUrl("brand/icon-small.svg");
+const DEFAULT_ICON_MEDIUM = assetUrl("brand/icon-medium.svg");
+const DEFAULT_ICON_LARGE = assetUrl("brand/icon-large.svg");
 
 export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
   {
@@ -150,7 +143,7 @@ export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
         label: "黑暗模式 Logo",
         kind: "url",
         section: "Logo",
-        defaultValue: DEFAULT_LOGO_DARK,
+        previewFallback: DEFAULT_LOGO_DARK,
         maxLength: 2048,
         hint: "黑暗模式下展示的 Logo 地址。",
       },
@@ -159,7 +152,7 @@ export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
         label: "日间模式 Logo",
         kind: "url",
         section: "Logo",
-        defaultValue: DEFAULT_LOGO_LIGHT,
+        previewFallback: DEFAULT_LOGO_LIGHT,
         maxLength: 2048,
         hint: "日间模式下展示的 Logo 地址。",
       },
@@ -168,7 +161,7 @@ export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
         label: "小图标",
         kind: "url",
         section: "Logo",
-        defaultValue: DEFAULT_FAVICON,
+        previewFallback: DEFAULT_FAVICON,
         maxLength: 2048,
         hint: "小图标地址，ico 或 svg 格式；也会用于浏览器标签、书签等位置。",
       },
@@ -177,7 +170,7 @@ export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
         label: "中图标",
         kind: "url",
         section: "Logo",
-        defaultValue: DEFAULT_ICON_MEDIUM,
+        previewFallback: DEFAULT_ICON_MEDIUM,
         maxLength: 2048,
         hint: "192x192 的中图标地址，png 格式。",
       },
@@ -186,7 +179,7 @@ export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
         label: "大图标",
         kind: "url",
         section: "Logo",
-        defaultValue: DEFAULT_ICON_LARGE,
+        previewFallback: DEFAULT_ICON_LARGE,
         maxLength: 2048,
         hint: "512x512 的大图标地址，png 格式；也会用于 iOS 客户端切换站点。",
       },
@@ -455,12 +448,6 @@ export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
     key: "server",
     label: "服务器设置",
     description: "临时路径、站点标识、密钥、令牌有效期与垃圾回收参数。",
-    fields: [],
-  },
-  {
-    key: "system-config",
-    label: "系统配置",
-    description: "直接读写 /systemconfigs 分组，用于兼容旧版配置字段。",
     fields: [],
   },
   {

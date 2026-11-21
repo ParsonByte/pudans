@@ -4,14 +4,15 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useSessionContext } from "@/modules/auth/lib/session-context";
 import { ConsolePage } from "@/modules/workspace/console/components/console-page";
 import { ParameterGroupPanel } from "@/modules/workspace/console/settings/components/parameter-group-panel";
 import {
   resolveParameterSettingError,
   updateParameterGroup,
 } from "@/modules/workspace/console/settings/lib/parameter-api";
+import { hasUiPermission } from "@/modules/workspace/lib/permissions";
 
-import { AuthProviderSection } from "./components/auth-provider-section";
 import { AddIdentityCard, IdentityCard } from "./components/identity-card";
 import type { IdentityKind } from "./components/identity-icon";
 import { PolicyDialog } from "./components/policy-dialog";
@@ -66,7 +67,6 @@ export function IdentityProviderView() {
           group={AUTHENTICATION_PANEL}
           render={(data) => <IdentityProviderContent data={data} />}
         />
-        <AuthProviderSection />
       </div>
     </ConsolePage>
   );
@@ -74,6 +74,8 @@ export function IdentityProviderView() {
 
 function IdentityProviderContent({ data }: { data: Record<string, unknown> }) {
   const queryClient = useQueryClient();
+  const { session } = useSessionContext();
+  const canManage = hasUiPermission(session.uiPermissions, "auth-providers:manage");
   const [target, setTarget] = useState<EditTarget | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
@@ -117,7 +119,10 @@ function IdentityProviderContent({ data }: { data: Record<string, unknown> }) {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 xl:grid-cols-2">
+      {!canManage ? (
+        <p className="text-xs text-muted-foreground">只读：需要身份提供商管理权限才能修改。</p>
+      ) : null}
+      <fieldset disabled={!canManage} className="grid gap-4 xl:grid-cols-2">
         {items.map((item) =>
           item.type === "card" ? (
             <IdentityCard
@@ -133,7 +138,7 @@ function IdentityProviderContent({ data }: { data: Record<string, unknown> }) {
             <AddIdentityCard key={item.key} label={item.label} onClick={item.onClick} />
           ),
         )}
-      </div>
+      </fieldset>
 
       {target?.type === "totp" ? (
         <PolicyDialog

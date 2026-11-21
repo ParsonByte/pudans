@@ -295,9 +295,15 @@ export function PolicyDialog({
   const saveMutation = useMutation({
     mutationFn: async (values: PolicyFormValues) => {
       const next = toPolicyItem(policy, values);
-      const validation = await validateStoragePolicy(next);
-      if (!validation.valid) {
-        throw new ValidationError(validation.errors.join(" "));
+      const credentialsChanged = Boolean(
+        values.accessKey || values.secretKey || values.token || values.clientSecret,
+      );
+      // 编辑时留空凭据表示保留服务端已有值，先跳过对空凭据的校验。
+      if (mode === "create" || credentialsChanged) {
+        const validation = await validateStoragePolicy(next);
+        if (!validation.valid) {
+          throw new ValidationError(validation.errors.join(" "));
+        }
       }
       return mode === "create" ? createStoragePolicy(next) : updateStoragePolicy(next);
     },

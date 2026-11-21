@@ -39,7 +39,7 @@ export function EditUserDialog({ name, bio, onClose }: EditUserDialogProps) {
       await apiClient.user.updateUser({
         name,
         updateProfileRequest: {
-          bio: values.bio || undefined,
+          bio: values.bio.trim(),
         },
       });
     },

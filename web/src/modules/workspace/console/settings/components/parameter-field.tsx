@@ -178,7 +178,7 @@ export function ParameterFieldControl({
               />
               <LogoPreview
                 url={typeof controlledField.value === "string" ? controlledField.value : ""}
-                fallback={field.defaultValue}
+                fallback={field.previewFallback}
                 label={field.label}
               />
             </div>
