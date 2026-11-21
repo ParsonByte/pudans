@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="web/public/brand/icon-256.png" width="112" alt="Pudans">
-</p>
-
 <h1 align="center">Pudans</h1>
 
 <p align="center">
@@ -17,7 +13,6 @@
   <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue.svg"></a>
   <img alt="Java 25" src="https://img.shields.io/badge/Java-25-orange.svg">
   <img alt="Spring Boot 4.2" src="https://img.shields.io/badge/Spring_Boot-4.2-6DB33F.svg">
-  <img alt="React 19" src="https://img.shields.io/badge/React-19-61DAFB.svg">
   <img alt="PostgreSQL R2DBC" src="https://img.shields.io/badge/PostgreSQL-R2DBC-4169E1.svg">
 </p>
 
@@ -39,17 +34,17 @@
 
 Pudans 是一个企业身份与权限管理平台，内置 AI Console 与 AI 网关。
 
-它将响应式 Spring Boot 后端、以扩展资源（Extension Resource）描述的用户 / 角色 / 工作区 / 菜单 / AI 资源模型，以及用于统一操作身份、权限与 AI 流量的 React 控制台结合在一起。
+它将响应式 Spring Boot 后端、以扩展资源（Extension Resource）描述的用户 / 角色 / 工作区 / 菜单 / AI 资源模型，以及统一的身份、权限与 AI 流量 HTTP 接口结合在一起。
 
 ## 为什么选择 Pudans
 
 - **不只是登录。** 用户、用户组、角色、权限、工作区、菜单、审计记录与风险规则共享同一套扩展资源模型。
-- **在同一个控制台里管理 AI。** 注册供应商与账号、发现模型、在多个账号之间路由，并实时观察请求，无需离开管理界面。
+- **统一管理 AI。** 注册供应商与账号、发现模型、在多个账号之间路由，并实时观察请求，无需额外组件。
 - **真实对话。** 支持思考过程、Markdown 与多模态附件的流式对话，记忆与检索全部基于真实 API。
 - **Agent 原生运行时。** LangChain4j Harness 统一承载对话、工具、子代理与协议，支持流式输出、权限、计划模式、上下文压缩、持久状态与线程日志。
 - **开放的 Agent 协议。** 在 OpenAI / Anthropic 兼容网关之外，同时提供 AG-UI、A2A 与 Agent Protocol。
 - **灵活的检索方式。** 本地 pgvector 混合检索支持 PDF、Word、Tika 与图片解析，也可通过外部连接器接入 Dify、RAGFlow、Haystack 与百炼知识库。
-- **响应式优先。** WebFlux、R2DBC 与 Redis 保证请求链路非阻塞；React 控制台直接打包进后端 jar。
+- **响应式优先。** WebFlux、R2DBC 与 Redis 保证请求链路非阻塞。
 
 ## AI 控制台
 
@@ -77,7 +72,7 @@ Pudans 的 AI 能力运行在 LangChain4j Agent Harness 上，而不是独立的
 
 | 协议 | 端点 | 用途 |
 | --- | --- | --- |
-| AG-UI | `POST /aiagui/-/run` | 面向 Web 前端的 SSE 事件流 |
+| AG-UI | `POST /aiagui/-/run` | 面向客户端的 SSE 事件流 |
 | A2A | `GET /aia2a/.well-known/agent.json`、`POST /aia2a` | Agent Card 与 JSON-RPC 任务交互 |
 | Agent Protocol | `/aiagentprotocol/-/runs`、`/aiagentprotocol/-/threads/{threadId}/state` | 运行生命周期与线程状态 |
 | OpenAI / Anthropic / Gemini | `/aigateway/-/...` | 模型兼容网关端点 |
@@ -106,7 +101,7 @@ Pudans 的 AI 能力运行在 LangChain4j Agent Harness 上，而不是独立的
    PostgreSQL                    Redis
 ```
 
-后端负责身份、权限决策、扩展资源协调、AI 路由、Agent Harness、协议与对话；前端是构建进后端 jar 的 React SPA，因此一次部署即可同时提供控制台与兼容接口。
+后端负责身份、权限决策、扩展资源协调、AI 路由、Agent Harness、协议与对话，并通过 HTTP 对外提供兼容接口。
 
 ## 仓库结构
 
@@ -120,18 +115,16 @@ Pudans 的 AI 能力运行在 LangChain4j Agent Harness 上，而不是独立的
 | `api-docs/` | OpenAPI 聚合与校验 |
 | `platform/appkernel/` | 后端依赖约束（BOM） |
 | `gradle/libs.versions.toml` | 后端依赖版本目录 |
-| `web/` | Next.js 控制台，以独立 Node 服务运行 |
 
 ## 快速开始
 
 ### 环境要求
 
 - JDK 25
-- Node.js 20.19 或更高版本，以及 npm
 - 可访问的 PostgreSQL 与 Redis
 - Docker（可选，便于启动依赖服务）
 
-Gradle 构建会安装前端依赖、把 `web/` 构建为独立的 Next.js 服务，并打包后端 jar。
+Gradle 构建会打包后端 jar。
 
 ### 1. 启动 PostgreSQL 与 Redis
 
@@ -155,25 +148,15 @@ docker run -d --name pudans-redis -p 6379:6379 redis:latest
 ./gradlew :appkernel:bootRun
 ```
 
-后端在 <http://localhost:8090> 启动，创建或更新 PostgreSQL 表结构，并协调扩展资源。控制台由下一步的 Next.js 服务提供。
+后端在 <http://localhost:8090> 启动，创建或更新 PostgreSQL 表结构，并协调扩展资源。
 
-### 3. 启动前端开发服务器（可选）
-
-```bash
-cd web
-npm install
-npm run dev
-```
-
-Next.js 开发服务器会把 `/apis`、`/login` 和 `/logout` 代理到 `http://localhost:8090`，请先启动后端。访问 <http://localhost:3000>。
-
-### 4. 容器部署（可选）
+### 3. 容器部署（可选）
 
 ```bash
 docker compose up --build
 ```
 
-`web` 服务在 <http://localhost:3000> 提供控制台，并把 API 路由代理到 `api` 服务。`PUDANS_API_ORIGIN` 在构建 Web 镜像时固化。
+`api` 服务在 `8090` 端口暴露后端。
 
 ## 配置
 
@@ -209,17 +192,8 @@ docker compose up --build
 
 ```bash
 ./gradlew test                    # 后端测试
-./gradlew build                   # 后端与独立前端构建
-./gradlew :web:standaloneWeb      # Next.js 独立服务产物
+./gradlew build                   # 后端构建
 ./gradlew :api-docs:validateOpenApiDocs
-```
-
-```bash
-cd web
-npm run lint
-npm run format:check
-npm run typecheck
-npm run build
 ```
 
 `make verify` 会执行后端编译 / 测试 / OpenAPI 校验，以及 `git diff --check`。

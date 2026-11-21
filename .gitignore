@@ -4,7 +4,6 @@ logs/
 
 .gradle
 build/
-/appkernel/src/main/resources/static/
 out/
 !gradle/wrapper/gradle-wrapper.jar
 bin/
