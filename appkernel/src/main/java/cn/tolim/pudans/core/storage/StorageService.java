@@ -139,6 +139,24 @@ public class StorageService {
         });
     }
 
+    public Mono<Void> purgeObjectFirst(String fileId) {
+        return fileService.fetch(fileId).flatMap(file -> {
+            if (file.getSpec().getState() == StorageFileState.UPLOADING) {
+                return uploadService.abort(fileId);
+            }
+            // 先删除对象再删除记录，保证重试时还能定位到存储对象
+            return driverResolver
+                    .driver(file.getSpec().getPolicy())
+                    .flatMap(driver -> driver.delete(List.of(file.getSpec().getStorageKey())))
+                    .onErrorResume(error -> {
+                        log.warn("删除存储对象失败 [{}]", file.getSpec().getStorageKey(), error);
+                        return Mono.error(new ApiException(
+                                HttpStatus.BAD_GATEWAY, "storage-object-delete-failed", "删除存储对象失败。"));
+                    })
+                    .then(fileService.delete(file));
+        });
+    }
+
     public Mono<DownloadUrl> downloadUrl(String fileId, Duration ttl) {
         return downloadService.downloadUrl(fileId, ttl);
     }
