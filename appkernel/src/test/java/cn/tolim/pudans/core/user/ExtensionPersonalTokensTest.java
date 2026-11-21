@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
