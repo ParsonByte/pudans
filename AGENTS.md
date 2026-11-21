@@ -14,7 +14,7 @@ This order is a hard requirement. If the required file has not been read, do not
 1. Before changing code, tests or configuration: read `.agents/rules/development-repo.md`, `.agents/rules/package-layout.md`, `.agents/rules/reuse-and-cleanup.md`, `.agents/rules/testing.md`, `.agents/skills/development-repo/SKILL.md` and `.agents/skills/reuse-check/SKILL.md`.
 2. Before staging or committing: read `.agents/rules/commit.md` and `.agents/skills/commit-repo/SKILL.md`.
 3. Before writing or changing a comment: read `.agents/rules/comments.md` and `.agents/skills/comments/SKILL.md`.
-5. Before adding or changing a role, permission, workspace, menu or extension resource: read `.agents/rules/extensions.md`.
+4. Before adding or changing a role, permission, workspace, menu or extension resource: read `.agents/rules/extensions.md`.
 
 The existing `.agents/rules/development.md` and `.agents/skills/development/SKILL.md` remain authoritative for branches, pull requests and merges.
 
