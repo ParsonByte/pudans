@@ -36,7 +36,7 @@ class ExtensionPersonalTokensTest {
     ReactiveExtensionClient client;
 
     @Mock
-    ReactiveUserDetailsService userDetailsService;
+    ReactiveUserDetailsService reactiveUserDetailsService;
 
     @Mock
     MasterKeys masterKeys;
@@ -45,7 +45,7 @@ class ExtensionPersonalTokensTest {
 
     @BeforeEach
     void setUp() {
-        service = new ExtensionPersonalTokens(roles, client, userDetailsService, masterKeys);
+        service = new ExtensionPersonalTokens(roles, client, reactiveUserDetailsService, masterKeys);
     }
 
     private static UserDetails user(String role) {
@@ -68,7 +68,7 @@ class ExtensionPersonalTokensTest {
 
     @Test
     void nonAdminCannotCreateASudoToken() {
-        when(userDetailsService.findByUsername("alice"))
+        when(reactiveUserDetailsService.findByUsername("alice"))
                 .thenReturn(Mono.just(user(BuiltinEntities.NORMAL_ROLE)));
 
         StepVerifier.create(service.create(request(true), "alice"))
@@ -78,7 +78,7 @@ class ExtensionPersonalTokensTest {
 
     @Test
     void adminCanCreateASudoToken() {
-        when(userDetailsService.findByUsername("alice"))
+        when(reactiveUserDetailsService.findByUsername("alice"))
                 .thenReturn(Mono.just(user(BuiltinEntities.SYSTEM_ADMIN_ROLE)));
         when(client.create(any(PersonalAccessToken.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -90,7 +90,7 @@ class ExtensionPersonalTokensTest {
 
     @Test
     void copiesTheGatewaySpecIntoTheStoredToken() {
-        when(userDetailsService.findByUsername("alice"))
+        when(reactiveUserDetailsService.findByUsername("alice"))
                 .thenReturn(Mono.just(user(BuiltinEntities.SYSTEM_ADMIN_ROLE)));
         when(client.create(any(PersonalAccessToken.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -116,7 +116,7 @@ class ExtensionPersonalTokensTest {
 
     @Test
     void rejectsMoreThanFiveGatewayLimits() {
-        when(userDetailsService.findByUsername("alice"))
+        when(reactiveUserDetailsService.findByUsername("alice"))
                 .thenReturn(Mono.just(user(BuiltinEntities.SYSTEM_ADMIN_ROLE)));
         var request = request(false);
         var gateway = new PersonalAccessToken.Gateway();

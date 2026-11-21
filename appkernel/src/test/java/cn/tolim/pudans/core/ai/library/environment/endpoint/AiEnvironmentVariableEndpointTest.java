@@ -32,16 +32,16 @@ class AiEnvironmentVariableEndpointTest {
     AiEndpointRequests requests;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         lenient().when(requests.userId(any())).thenReturn(Mono.just("user-1"));
-        lenient().when(teamService.requireAgent(any(), any())).thenReturn(Mono.just(new AiAgent()));
+        lenient().when(teams.requireAgent(any(), any())).thenReturn(Mono.just(new AiAgent()));
         client = WebTestClient.bindToRouterFunction(new AiEnvironmentVariableEndpoint(
-                                environmentVariables, requests, teamService)
+                                environmentVariables, requests, teams)
                         .endpoint())
                 .build();
     }

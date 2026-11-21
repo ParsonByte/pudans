@@ -30,7 +30,7 @@ public class AiSubagentEndpoint implements CustomEndpoint {
 
     private final AiEndpointRequests requests;
 
-    private final Teams teamService;
+    private final Teams teams;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -48,7 +48,7 @@ public class AiSubagentEndpoint implements CustomEndpoint {
         var agentName = requiredQuery(request, "agent");
         return requests
                 .userId(request)
-                .flatMapMany(userId -> teamService
+                .flatMapMany(userId -> teams
                         .requireAgent(agentName, userId)
                         .thenMany(subagentService.byAgent(agentName)))
                 .collectList()

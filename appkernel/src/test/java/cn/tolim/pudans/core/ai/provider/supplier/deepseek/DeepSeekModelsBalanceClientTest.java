@@ -52,11 +52,11 @@ class DeepSeekModelsBalanceClientTest {
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
-    private final ProviderAccounts accountService = mock(ProviderAccounts.class);
+    private final ProviderAccounts providerAccounts = mock(ProviderAccounts.class);
 
     @Test
     void listsModels() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var models = modelsClient(json(MODELS_BODY))
                 .list(provider(AiProvider.Protocol.DEEPSEEK), account())
@@ -79,7 +79,7 @@ class DeepSeekModelsBalanceClientTest {
 
     @Test
     void queriesBalance() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var balance = balanceClient(json(BALANCE_BODY))
                 .get(provider(AiProvider.Protocol.DEEPSEEK), account())
@@ -96,11 +96,11 @@ class DeepSeekModelsBalanceClientTest {
     }
 
     private DeepSeekModelsClient modelsClient(ClientResponse response) {
-        return new DeepSeekModelsClient(webClient(response), mapper, accountService);
+        return new DeepSeekModelsClient(webClient(response), mapper, providerAccounts);
     }
 
     private DeepSeekBalanceClient balanceClient(ClientResponse response) {
-        return new DeepSeekBalanceClient(webClient(response), mapper, accountService);
+        return new DeepSeekBalanceClient(webClient(response), mapper, providerAccounts);
     }
 
     private static WebClient webClient(ClientResponse response) {

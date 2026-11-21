@@ -36,9 +36,9 @@ public class OneDriveOAuth {
 
     private static final Duration STATE_TTL = Duration.ofMinutes(10);
 
-    private final Policies policyService;
+    private final Policies policies;
 
-    private final TransferTokens tokenService;
+    private final TransferTokens transferTokens;
 
     private final ExternalUrlSupplier externalUrl;
 
@@ -50,14 +50,14 @@ public class OneDriveOAuth {
 
     @Autowired
     public OneDriveOAuth(
-            Policies policyService,
-            TransferTokens tokenService,
+            Policies policies,
+            TransferTokens transferTokens,
             ExternalUrlSupplier externalUrl,
             StorageDriverResolver driverResolver,
             StoragePolicySecretCipher secretCipher) {
         this(
-                policyService,
-                tokenService,
+                policies,
+                transferTokens,
                 externalUrl,
                 driverResolver,
                 secretCipher,
@@ -65,14 +65,14 @@ public class OneDriveOAuth {
     }
 
     OneDriveOAuth(
-            Policies policyService,
-            TransferTokens tokenService,
+            Policies policies,
+            TransferTokens transferTokens,
             ExternalUrlSupplier externalUrl,
             StorageDriverResolver driverResolver,
             StoragePolicySecretCipher secretCipher,
             WebClient webClient) {
-        this.policyService = policyService;
-        this.tokenService = tokenService;
+        this.policies = policies;
+        this.transferTokens = transferTokens;
         this.externalUrl = externalUrl;
         this.driverResolver = driverResolver;
         this.secretCipher = secretCipher;
@@ -80,10 +80,10 @@ public class OneDriveOAuth {
     }
 
     public Mono<OAuthUrl> authorizeUrl(String policyName) {
-        return policyService.get(policyName).map(policy -> {
+        return policies.get(policyName).map(policy -> {
             ensureOneDrive(policy);
             var redirectUri = callbackUri();
-            var state = tokenService.signOAuthState(policyName, STATE_TTL);
+            var state = transferTokens.signOAuthState(policyName, STATE_TTL);
             var url = AUTHORIZE_URL.formatted(tenant(policy))
                     + "?client_id=" + encode(clientId(policy))
                     + "&response_type=code"
@@ -96,8 +96,8 @@ public class OneDriveOAuth {
     }
 
     public Mono<OAuthStatus> callback(String code, String state) {
-        var policyName = tokenService.verifyOAuthState(state);
-        return policyService.get(policyName).flatMap(policy -> {
+        var policyName = transferTokens.verifyOAuthState(state);
+        return policies.get(policyName).flatMap(policy -> {
             ensureOneDrive(policy);
             var credentials = policy.getSpec().getCredentials();
             if (credentials == null || !StringUtils.hasText(credentials.getClientSecret())) {
@@ -122,7 +122,7 @@ public class OneDriveOAuth {
                     .map(this::refreshToken)
                     .flatMap(refreshToken -> {
                         credentials.setToken(secretCipher.encrypt(refreshToken));
-                        return policyService.update(policy);
+                        return policies.update(policy);
                     })
                     .doOnNext(updated -> driverResolver.evict(policyName))
                     .map(updated -> new OAuthStatus(policyName, true, "OneDrive 授权成功。"))
@@ -137,7 +137,7 @@ public class OneDriveOAuth {
     }
 
     public Mono<OAuthStatus> status(String policyName) {
-        return policyService.get(policyName).map(policy -> {
+        return policies.get(policyName).map(policy -> {
             ensureOneDrive(policy);
             var credentials = policy.getSpec().getCredentials();
             var configured = credentials != null && StringUtils.hasText(credentials.getToken());
@@ -149,7 +149,7 @@ public class OneDriveOAuth {
     }
 
     public Mono<String> resolveRoot(String policyName, String siteUrl) {
-        return policyService.get(policyName).flatMap(policy -> {
+        return policies.get(policyName).flatMap(policy -> {
             ensureOneDrive(policy);
             var credentials = policy.getSpec().getCredentials();
             if (credentials == null

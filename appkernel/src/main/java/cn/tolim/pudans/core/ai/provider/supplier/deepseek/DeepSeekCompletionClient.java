@@ -39,8 +39,8 @@ public class DeepSeekCompletionClient extends AbstractDeepSeekClient {
     public DeepSeekCompletionClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService) {
-        super(webClient, mapper, accountService, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
+            ProviderAccounts providerAccounts) {
+        super(webClient, mapper, providerAccounts, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
     }
 
     public Mono<AiCompletionResult> complete(
@@ -60,7 +60,7 @@ public class DeepSeekCompletionClient extends AbstractDeepSeekClient {
 
     public Flux<AiCompletionChunk> stream(
             AiProvider provider, AiProviderAccount account, AiModel model, AiCompletionRequest request) {
-        return Flux.defer(() -> accountService
+        return Flux.defer(() -> providerAccounts
                         .apiKey(account)
                         .defaultIfEmpty("")
                         .flatMapMany(apiKey -> webClient()

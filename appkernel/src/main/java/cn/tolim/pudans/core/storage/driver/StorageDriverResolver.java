@@ -19,7 +19,7 @@ import reactor.core.scheduler.Schedulers;
 @Service
 public class StorageDriverResolver {
 
-    private final Policies policyService;
+    private final Policies policies;
 
     private final StorageDriverFactoryRegistry registry;
 
@@ -32,22 +32,22 @@ public class StorageDriverResolver {
     private final Object lock = new Object();
 
     public StorageDriverResolver(
-            Policies policyService,
+            Policies policies,
             StorageDriverFactoryRegistry registry,
             StoragePolicySecretCipher secretCipher,
             StoragePolicyValidator validator) {
-        this.policyService = policyService;
+        this.policies = policies;
         this.registry = registry;
         this.secretCipher = secretCipher;
         this.validator = validator;
     }
 
     public Mono<StorageDriver> driver(String policyName) {
-        return policyService.requireReady(policyName).flatMap(this::driver);
+        return policies.requireReady(policyName).flatMap(this::driver);
     }
 
     public Mono<StorageDriver> defaultDriver() {
-        return policyService.defaultPolicy().flatMap(this::driver);
+        return policies.defaultPolicy().flatMap(this::driver);
     }
 
     public Mono<StorageDriver> driver(StoragePolicy policy) {

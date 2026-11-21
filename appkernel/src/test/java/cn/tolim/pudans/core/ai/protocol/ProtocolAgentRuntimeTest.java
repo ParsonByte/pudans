@@ -44,13 +44,13 @@ import reactor.test.StepVerifier;
 class ProtocolAgentRuntimeTest {
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
-    AgentContext agentContextService;
+    AgentContext agentContext;
 
     @Mock
-    ChatTools toolService;
+    ChatTools chatTools;
 
     @Mock
     SubagentToolFactory subagentToolFactory;
@@ -65,13 +65,13 @@ class ProtocolAgentRuntimeTest {
     HarnessObservability harnessObservability;
 
     @Mock
-    AiGateway gatewayService;
+    AiGateway aiGateway;
 
     @Test
     void runsTheAgentWithPersistentStateAndJournal() {
         var agent = agent();
-        when(teamService.requireAgent("agent-a", "user-1")).thenReturn(Mono.just(agent));
-        when(agentContextService.build(agent)).thenReturn(Mono.just(new AgentContext.Context(
+        when(teams.requireAgent("agent-a", "user-1")).thenReturn(Mono.just(agent));
+        when(agentContext.build(agent)).thenReturn(Mono.just(new AgentContext.Context(
                 "", List.of(), List.of(), List.of(), List.of(), Map.of())));
         when(subagentToolFactory.create(any(), any())).thenReturn(
                 Mono.just(new SubagentTools(new SubagentRuntime())));
@@ -79,18 +79,18 @@ class ProtocolAgentRuntimeTest {
                 .thenReturn(new HarnessToolkit());
         when(mcpServers.decorateToolkit(any(), any()))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
+        when(aiGateway.complete(any())).thenReturn(Mono.just(gatewayResult()));
         var stateStore = new InMemoryAgentStateStore();
         var journalStore = new InMemoryThreadJournalStore();
         var runtime = new ProtocolAgentRuntime(
-                teamService,
-                agentContextService,
-                toolService,
+                teams,
+                agentContext,
+                chatTools,
                 subagentToolFactory,
                 harnessToolkitFactory,
                 mcpServers,
                 harnessObservability,
-                gatewayService,
+                aiGateway,
                 stateStore,
                 journalStore);
 

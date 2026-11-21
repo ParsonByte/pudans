@@ -27,7 +27,7 @@ public class AiMcpServerEndpoint implements CustomEndpoint {
 
     private final McpServers mcpServers;
 
-    private final Teams teamService;
+    private final Teams teams;
 
     private final AiEndpointRequests requests;
 
@@ -55,7 +55,7 @@ public class AiMcpServerEndpoint implements CustomEndpoint {
         var agentName = agent(request);
         return requests
                 .userId(request)
-                .flatMap(userId -> teamService.requireAgent(agentName, userId))
+                .flatMap(userId -> teams.requireAgent(agentName, userId))
                 .flatMapMany(agent -> mcpServers.byAgent(agent.getMetadata().getName()))
                 .collectList()
                 .flatMap(views -> ServerResponse.ok().bodyValue(views));

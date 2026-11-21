@@ -47,9 +47,9 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
 
     private static final int MAX_LIMIT = 200;
 
-    private final MemoryAssets assetService;
+    private final MemoryAssets memoryAssets;
 
-    private final MemoryLayers layerService;
+    private final MemoryLayers memoryLayers;
 
     private final AiEndpointRequests requests;
 
@@ -219,7 +219,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         }
         return requests
                 .userId(request)
-                .flatMap(userId -> assetService.list(
+                .flatMap(userId -> memoryAssets.list(
                         userId,
                         query(request, "team"),
                         scope,
@@ -236,7 +236,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
                 .flatMap(body -> {
                     var spec = body.resolveSpec();
                     var metadata = body.metadata();
-                    return requests.userId(request).flatMap(userId -> assetService.create(
+                    return requests.userId(request).flatMap(userId -> memoryAssets.create(
                             userId,
                             new MemoryAssets.CreateCommand(
                                     metadata == null ? body.name() : metadata.getName(),
@@ -258,7 +258,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return requests
                 .userId(request)
-                .flatMap(userId -> assetService.detail(userId, name, query(request, "team")))
+                .flatMap(userId -> memoryAssets.detail(userId, name, query(request, "team")))
                 .flatMap(asset -> ServerResponse.ok().bodyValue(asset));
     }
 
@@ -267,7 +267,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         return request
                 .bodyToMono(PatchRequest.class)
                 .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
-                .flatMap(body -> requests.userId(request).flatMap(userId -> assetService.patch(
+                .flatMap(body -> requests.userId(request).flatMap(userId -> memoryAssets.patch(
                         userId,
                         name,
                         query(request, "team"),
@@ -285,7 +285,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         var clear = booleanParam(request, "clear");
         return requests
                 .userId(request)
-                .flatMap(userId -> assetService.delete(userId, name, query(request, "team"), clear))
+                .flatMap(userId -> memoryAssets.delete(userId, name, query(request, "team"), clear))
                 .flatMap(counts -> ServerResponse.ok().bodyValue(counts));
     }
 
@@ -293,7 +293,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return requests
                 .userId(request)
-                .flatMap(userId -> assetService.layerCounts(userId, name, query(request, "team")))
+                .flatMap(userId -> memoryAssets.layerCounts(userId, name, query(request, "team")))
                 .flatMap(counts -> ServerResponse.ok().bodyValue(counts));
     }
 
@@ -307,26 +307,26 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         var to = instantParam(request, "to");
         var keyword = query(request, "q");
         return requests.userId(request).flatMap(userId -> switch (layer) {
-            case "L0" -> layerService
+            case "L0" -> memoryLayers
                     .listL0(userId, name, team, beforeId, from, to, keyword, limit)
                     .collectList()
                     .flatMap(items -> ServerResponse.ok().bodyValue(items));
-            case "L1" -> layerService
+            case "L1" -> memoryLayers
                     .listL1(userId, name, team, beforeId, from, to, keyword, limit)
                     .collectList()
                     .flatMap(items -> ServerResponse.ok().bodyValue(items));
             case "L2" -> {
                 var path = query(request, "path");
                 yield path == null
-                        ? layerService
+                        ? memoryLayers
                                 .listL2(userId, name, team, beforeId, limit)
                                 .collectList()
                                 .flatMap(items -> ServerResponse.ok().bodyValue(items))
-                        : layerService
+                        : memoryLayers
                                 .detailL2(userId, name, team, path)
                                 .flatMap(item -> ServerResponse.ok().bodyValue(item));
             }
-            case "L3" -> layerService
+            case "L3" -> memoryLayers
                     .detailL3(userId, name, team)
                     .flatMap(persona -> ServerResponse.ok().bodyValue(persona));
             default -> Mono.error(invalid("layer 必须是 L0、L1、L2 或 L3。"));
@@ -340,7 +340,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
                 .bodyToMono(ContentRequest.class)
                 .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
                 .flatMap(body -> requests.userId(request).flatMap(userId ->
-                        layerService.updateL1(userId, name, query(request, "team"), id, body.content())))
+                        memoryLayers.updateL1(userId, name, query(request, "team"), id, body.content())))
                 .flatMap(item -> ServerResponse.ok().bodyValue(item));
     }
 
@@ -350,7 +350,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         return request
                 .bodyToMono(L2UpdateRequest.class)
                 .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
-                .flatMap(body -> requests.userId(request).flatMap(userId -> layerService.updateL2(
+                .flatMap(body -> requests.userId(request).flatMap(userId -> memoryLayers.updateL2(
                         userId, name, query(request, "team"), id, body.path(), body.content(), body.summary())))
                 .flatMap(item -> ServerResponse.ok().bodyValue(item));
     }
@@ -361,7 +361,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
                 .bodyToMono(ContentRequest.class)
                 .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
                 .flatMap(body -> requests.userId(request).flatMap(userId ->
-                        layerService.updateL3(userId, name, query(request, "team"), body.content())))
+                        memoryLayers.updateL3(userId, name, query(request, "team"), body.content())))
                 .flatMap(persona -> ServerResponse.ok().bodyValue(persona));
     }
 
@@ -370,7 +370,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         return request
                 .bodyToMono(L0DeleteRequest.class)
                 .defaultIfEmpty(new L0DeleteRequest(null, null))
-                .flatMap(body -> requests.userId(request).flatMap(userId -> layerService.deleteL0(
+                .flatMap(body -> requests.userId(request).flatMap(userId -> memoryLayers.deleteL0(
                         userId, name, query(request, "team"), body.messageIds(), body.sessionIds())))
                 .flatMap(count -> ServerResponse.ok().bodyValue(count));
     }
@@ -381,7 +381,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
                 .bodyToMono(L1DeleteRequest.class)
                 .defaultIfEmpty(new L1DeleteRequest(null))
                 .flatMap(body -> requests.userId(request).flatMap(userId ->
-                        layerService.deleteL1(userId, name, query(request, "team"), body.ids())))
+                        memoryLayers.deleteL1(userId, name, query(request, "team"), body.ids())))
                 .flatMap(count -> ServerResponse.ok().bodyValue(count));
     }
 
@@ -389,7 +389,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return requests
                 .userId(request)
-                .flatMap(userId -> assetService.clear(userId, name, query(request, "team")))
+                .flatMap(userId -> memoryAssets.clear(userId, name, query(request, "team")))
                 .flatMap(counts -> ServerResponse.ok().bodyValue(counts));
     }
 
@@ -399,7 +399,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
                 .bodyToMono(BindingRequest.class)
                 .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
                 .flatMap(body -> requests.userId(request).flatMap(userId ->
-                        assetService.bind(userId, name, query(request, "team"), body.agent())))
+                        memoryAssets.bind(userId, name, query(request, "team"), body.agent())))
                 .flatMap(asset -> ServerResponse.ok().bodyValue(asset));
     }
 
@@ -408,7 +408,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         var agent = request.pathVariable("agent");
         return requests
                 .userId(request)
-                .flatMap(userId -> assetService.unbind(userId, name, query(request, "team"), agent))
+                .flatMap(userId -> memoryAssets.unbind(userId, name, query(request, "team"), agent))
                 .flatMap(asset -> ServerResponse.ok().bodyValue(asset));
     }
 
@@ -417,7 +417,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         return request
                 .bodyToMono(ImportRequest.class)
                 .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
-                .flatMap(body -> requests.userId(request).flatMap(userId -> assetService.importMessages(
+                .flatMap(body -> requests.userId(request).flatMap(userId -> memoryAssets.importMessages(
                         userId,
                         name,
                         query(request, "team"),
@@ -437,7 +437,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
                 .userId(request)
                 .flatMap(userId -> ServerResponse.ok()
                         .body(
-                                assetService.generationLogs(
+                                memoryAssets.generationLogs(
                                         userId, name, query(request, "team"), layer, status, from, to, beforeId, limit),
                                 LogEntry.class));
     }
@@ -446,7 +446,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
         var id = longPathVariable(request, "id");
         return requests
                 .userId(request)
-                .flatMap(userId -> assetService.generationLog(userId, id))
+                .flatMap(userId -> memoryAssets.generationLog(userId, id))
                 .flatMap(entry -> ServerResponse.ok().bodyValue(entry));
     }
 

@@ -36,32 +36,32 @@ import reactor.core.publisher.Mono;
 class DownloadsTest {
 
     @Mock
-    FileRecords fileService;
+    FileRecords fileRecords;
 
     @Mock
     StorageDriverResolver driverResolver;
 
     @Mock
-    TransferTokens tokenService;
+    TransferTokens transferTokens;
 
     @Mock
-    ParameterGroups settingsService;
+    ParameterGroups parameterGroups;
 
     @Mock
-    Policies policyService;
+    Policies policies;
 
     private Downloads service;
 
     @BeforeEach
     void setUp() {
-        service = new Downloads(fileService, driverResolver, tokenService, settingsService, policyService);
+        service = new Downloads(fileRecords, driverResolver, transferTokens, parameterGroups, policies);
     }
 
     @Test
     void createsADownloadUrl() {
-        when(fileService.get("file-1")).thenReturn(Mono.just(activeFile()));
-        when(settingsService.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
-        when(tokenService.signDownload(eq("file-1"), any(Duration.class))).thenReturn("token");
+        when(fileRecords.get("file-1")).thenReturn(Mono.just(activeFile()));
+        when(parameterGroups.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
+        when(transferTokens.signDownload(eq("file-1"), any(Duration.class))).thenReturn("token");
 
         var result = service.downloadUrl("file-1", null).block();
 
@@ -71,8 +71,8 @@ class DownloadsTest {
 
     @Test
     void buildsAPresignedSourceUrl() {
-        when(fileService.get("file-1")).thenReturn(Mono.just(activeFile()));
-        when(policyService.get("local")).thenReturn(Mono.just(policy(false)));
+        when(fileRecords.get("file-1")).thenReturn(Mono.just(activeFile()));
+        when(policies.get("local")).thenReturn(Mono.just(policy(false)));
         var driver = mock(StorageDriver.class);
         when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
         when(driver.capabilities()).thenReturn(java.util.Set.of(StorageCapability.PRESIGNED_SOURCE));
@@ -89,7 +89,7 @@ class DownloadsTest {
 
     @Test
     void opensAFile() {
-        when(fileService.get("file-1")).thenReturn(Mono.just(activeFile()));
+        when(fileRecords.get("file-1")).thenReturn(Mono.just(activeFile()));
         var driver = mock(StorageDriver.class);
         when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
         var expected = new StorageReadResult(

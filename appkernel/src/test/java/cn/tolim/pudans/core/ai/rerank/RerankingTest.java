@@ -41,7 +41,7 @@ class RerankingTest {
     ReactiveExtensionClient client;
 
     @Mock
-    ProviderAccounts accountService;
+    ProviderAccounts providerAccounts;
 
     @Mock
     LangChain4jScoringModelFactory scoringModelFactory;
@@ -58,7 +58,7 @@ class RerankingTest {
         var provider = provider(AiProvider.Protocol.OPENAI_CHAT, true);
         stubProvider(provider);
         stubSupported(provider);
-        when(accountService.firstEnabled(PROVIDER_NAME)).thenReturn(Mono.just(account("enabled-account", true)));
+        when(providerAccounts.firstEnabled(PROVIDER_NAME)).thenReturn(Mono.just(account("enabled-account", true)));
         stubScoring(0.9, 0.4);
 
         StepVerifier.create(service.rerank(MODEL_NAME, "安装", List.of("a", "b"), 2))
@@ -72,7 +72,7 @@ class RerankingTest {
 
         verify(client).get(AiModel.class, MODEL_NAME);
         verify(client).get(AiProvider.class, PROVIDER_NAME);
-        verify(accountService).firstEnabled(PROVIDER_NAME);
+        verify(providerAccounts).firstEnabled(PROVIDER_NAME);
     }
 
     @Test
@@ -155,7 +155,7 @@ class RerankingTest {
         var provider = provider(AiProvider.Protocol.OPENAI_CHAT, true);
         stubProvider(provider);
         stubSupported(provider);
-        when(accountService.firstEnabled(PROVIDER_NAME)).thenReturn(Mono.empty());
+        when(providerAccounts.firstEnabled(PROVIDER_NAME)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.rerank(MODEL_NAME, "查询", List.of("a"), 1))
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-rerank-account-missing"))
@@ -177,7 +177,7 @@ class RerankingTest {
     @Test
     void mapsUpstreamFailuresToBadGateway() {
         stubTarget();
-        when(accountService.apiKey(any())).thenReturn(Mono.just("api-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("api-key"));
         when(scoringModelFactory.create(any(), eq("api-key"), eq(MODEL_CODE))).thenReturn(scoringModel);
         when(scoringModel.scoreAll(anyList(), anyString()))
                 .thenThrow(new IllegalStateException("boom"));
@@ -212,7 +212,7 @@ class RerankingTest {
         var provider = provider(AiProvider.Protocol.OPENAI_CHAT, true);
         stubProvider(provider);
         stubSupported(provider);
-        when(accountService.firstEnabled(PROVIDER_NAME)).thenReturn(Mono.just(account("account-a", true)));
+        when(providerAccounts.firstEnabled(PROVIDER_NAME)).thenReturn(Mono.just(account("account-a", true)));
     }
 
     private void stubSupported(AiProvider provider) {
@@ -220,7 +220,7 @@ class RerankingTest {
     }
 
     private void stubScoring(double... scores) {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("api-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("api-key"));
         when(scoringModelFactory.create(any(), eq("api-key"), eq(MODEL_CODE))).thenReturn(scoringModel);
         when(scoringModel.scoreAll(anyList(), anyString())).thenReturn(Response.from(asList(scores)));
     }

@@ -56,7 +56,7 @@ public class L3PersonaTaskHandler implements AiTaskHandler {
 
     private final PersonaProfiling personaAi;
 
-    private final L3Pipeline pipelineService;
+    private final L3Pipeline l3Pipeline;
 
     @Override
     public String taskType() {
@@ -181,7 +181,7 @@ public class L3PersonaTaskHandler implements AiTaskHandler {
                 newL1.size(),
                 MemoryTaskPayloads.PERSONA_THRESHOLD);
         return Mono.zip(labels, generated)
-                .flatMap(precomputed -> pipelineService.process(
+                .flatMap(precomputed -> l3Pipeline.process(
                         new L3Pipeline.Request(
                                 teamId,
                                 agentId,

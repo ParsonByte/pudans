@@ -36,13 +36,13 @@ class MemoryPromptSettingsTest {
     AiMemoryPromptLogRepository logRepository;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     private MemoryPromptSettings service;
 
     @BeforeEach
     void setUp() {
-        service = new MemoryPromptSettings(client, new MemoryPromptResolver(), logRepository, teamService);
+        service = new MemoryPromptSettings(client, new MemoryPromptResolver(), logRepository, teams);
     }
 
     @Test
@@ -107,7 +107,7 @@ class MemoryPromptSettingsTest {
         var bindingName =
                 cn.tolim.pudans.core.ai.memory.asset.MemoryAssetNames.bindingName("L3", "TEAM", "team-a", null);
         var binding = binding(bindingName, "prompt-1", AiMemoryPrompt.Layer.L3);
-        when(teamService.getTeam("team-a")).thenReturn(Mono.just(team("team-a")));
+        when(teams.getTeam("team-a")).thenReturn(Mono.just(team("team-a")));
         when(client.get(AiMemoryPromptBinding.class, bindingName))
                 .thenReturn(Mono.just(binding));
         when(client.delete(binding)).thenReturn(Mono.just(binding));

@@ -17,12 +17,12 @@ class SwitchUserConfigurer implements SecurityConfigurer {
 
     private static final String IMPERSONATION_FAILED = "impersonation-failed";
 
-    private final ReactiveUserDetailsService userDetailsService;
+    private final ReactiveUserDetailsService reactiveUserDetailsService;
 
     private final ServerResponse.Context context;
 
-    SwitchUserConfigurer(ReactiveUserDetailsService userDetailsService, ServerResponse.Context context) {
-        this.userDetailsService = userDetailsService;
+    SwitchUserConfigurer(ReactiveUserDetailsService reactiveUserDetailsService, ServerResponse.Context context) {
+        this.reactiveUserDetailsService = reactiveUserDetailsService;
         this.context = context;
     }
 
@@ -39,7 +39,7 @@ class SwitchUserConfigurer implements SecurityConfigurer {
                 HttpStatus.UNAUTHORIZED,
                 IMPERSONATION_FAILED,
                 "用户模拟失败。");
-        var filter = new SwitchUserWebFilter(userDetailsService, successHandler, failureHandler);
+        var filter = new SwitchUserWebFilter(reactiveUserDetailsService, successHandler, failureHandler);
         http.addFilterAfter(filter, SecurityWebFiltersOrder.AUTHORIZATION);
     }
 }

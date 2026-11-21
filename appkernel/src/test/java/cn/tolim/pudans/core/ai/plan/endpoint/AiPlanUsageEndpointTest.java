@@ -34,7 +34,7 @@ class AiPlanUsageEndpointTest {
     private static final Instant ENDS_AT = Instant.parse("2026-11-18T14:00:00Z");
 
     @Mock
-    PlanUsage usageService;
+    PlanUsage planUsage;
 
     @Mock
     Accounts accounts;
@@ -43,7 +43,7 @@ class AiPlanUsageEndpointTest {
 
     @BeforeEach
     void setUp() {
-        var endpoint = new AiPlanUsageEndpoint(usageService, new AiEndpointRequests(accounts));
+        var endpoint = new AiPlanUsageEndpoint(planUsage, new AiEndpointRequests(accounts));
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(PRINCIPAL)).build()))
@@ -53,7 +53,7 @@ class AiPlanUsageEndpointTest {
     @Test
     void returnsTheCurrentUsersUsage() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.usage(USER_ID)).thenReturn(Mono.just(view()));
+        when(planUsage.usage(USER_ID)).thenReturn(Mono.just(view()));
 
         client.get()
                 .uri("/aiplan/-/usage")
@@ -74,7 +74,7 @@ class AiPlanUsageEndpointTest {
 
     @Test
     void returnsAUsersUsageByUid() {
-        when(usageService.usage("uid-bob")).thenReturn(Mono.just(view()));
+        when(planUsage.usage("uid-bob")).thenReturn(Mono.just(view()));
 
         client.get()
                 .uri("/aiplan/-/usage/uid-bob")
@@ -83,13 +83,13 @@ class AiPlanUsageEndpointTest {
                 .expectBody()
                 .jsonPath("$.plan.name").isEqualTo("standard");
 
-        verify(usageService).usage("uid-bob");
+        verify(planUsage).usage("uid-bob");
     }
 
     @Test
     void reportsAMissingPlan() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.usage(USER_ID)).thenReturn(Mono.error(new ApiException(
+        when(planUsage.usage(USER_ID)).thenReturn(Mono.error(new ApiException(
                 HttpStatus.FORBIDDEN, "ai-plan-missing", "当前用户未分配 AI 套餐。")));
 
         client.get()
@@ -100,7 +100,7 @@ class AiPlanUsageEndpointTest {
 
     @Test
     void requiresAnAuthenticatedUser() {
-        var endpoint = new AiPlanUsageEndpoint(usageService, new AiEndpointRequests(accounts));
+        var endpoint = new AiPlanUsageEndpoint(planUsage, new AiEndpointRequests(accounts));
         var anonymous = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
 
         anonymous.get()

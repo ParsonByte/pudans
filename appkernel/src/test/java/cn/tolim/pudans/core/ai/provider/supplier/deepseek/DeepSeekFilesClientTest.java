@@ -60,13 +60,13 @@ class DeepSeekFilesClientTest {
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
-    private final ProviderAccounts accountService = mock(ProviderAccounts.class);
+    private final ProviderAccounts providerAccounts = mock(ProviderAccounts.class);
 
     private final AtomicReference<ClientRequest> captured = new AtomicReference<>();
 
     @Test
     void uploadsMultipartFile() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var file = client(json(FILE_BODY))
                 .upload(provider(AiProvider.Protocol.DEEPSEEK), account(), "report.pdf",
@@ -103,7 +103,7 @@ class DeepSeekFilesClientTest {
 
     @Test
     void listsFilesWithPagination() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         AiProviderFilePage page = client(json(PAGE_BODY))
                 .list(provider(AiProvider.Protocol.DEEPSEEK), account(), 5, "desc", "file-api-1", "user_data")
@@ -128,7 +128,7 @@ class DeepSeekFilesClientTest {
 
     @Test
     void getsFile() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var file = client(json(FILE_BODY))
                 .get(provider(AiProvider.Protocol.DEEPSEEK), account(), "file-api-1")
@@ -143,7 +143,7 @@ class DeepSeekFilesClientTest {
 
     @Test
     void deletesFile() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         client(json("{\"id\":\"file-api-1\",\"object\":\"file\",\"deleted\":true}"))
                 .delete(provider(AiProvider.Protocol.DEEPSEEK), account(), "file-api-1")
@@ -156,7 +156,7 @@ class DeepSeekFilesClientTest {
 
     @Test
     void mapsUpstreamErrors() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
         var response = ClientResponse.create(HttpStatus.BAD_REQUEST)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .body("{\"error\":{\"message\":\"file invalid\"}}")
@@ -174,7 +174,7 @@ class DeepSeekFilesClientTest {
 
     @Test
     void rejectsFileResponseWithoutId() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         assertThatThrownBy(() -> client(json("{\"filename\":\"a.pdf\"}"))
                         .get(provider(AiProvider.Protocol.DEEPSEEK), account(), "file-api-1")
@@ -191,6 +191,6 @@ class DeepSeekFilesClientTest {
             return Mono.just(response);
         };
         return new DeepSeekFilesClient(
-                WebClient.builder().exchangeFunction(exchange).build(), mapper, accountService);
+                WebClient.builder().exchangeFunction(exchange).build(), mapper, providerAccounts);
     }
 }

@@ -121,33 +121,33 @@ public class ChatCompletions {
 
     private static final int MAX_INLINE_TEXT_BYTES = 1024 * 1024;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
-    private final ChatModes chatModeService;
+    private final ChatModes chatModes;
 
-    private final Teams teamService;
+    private final Teams teams;
 
-    private final Conversations conversationService;
+    private final Conversations conversations;
 
     private final ReactiveExtensionClient client;
 
     private final KnowledgeBaseAcl knowledgeBaseAcl;
 
-    private final KnowledgeRetrieval retrievalService;
+    private final KnowledgeRetrieval knowledgeRetrieval;
 
-    private final Embeddings embeddingService;
+    private final Embeddings embeddings;
 
     private final AiMemoryContextBuilder memoryContextBuilder;
 
-    private final AiGateway gatewayService;
+    private final AiGateway aiGateway;
 
     private final MemoryTaskScheduler memoryTaskScheduler;
 
     private final StorageTransfer storageTransfer;
 
-    private final AgentContext agentContextService;
+    private final AgentContext agentContext;
 
-    private final ChatTools toolService;
+    private final ChatTools chatTools;
 
     private final SlashCommands slashCommands;
 
@@ -178,7 +178,7 @@ public class ChatCompletions {
                                         round.model(),
                                         round.usage() == null ? null : round.usage().outputTokens(),
                                         round.metadata())
-                                .flatMap(message -> conversationService
+                                .flatMap(message -> conversations
                                         .markPending(prepared.conversation(), 2)
                                         .then(enqueueExtraction(prepared, message))
                                         .then(dispatchSessionEnd(prepared))
@@ -388,9 +388,9 @@ public class ChatCompletions {
                         .map(toolkit -> HarnessAgent.builder()
                                 .name(prepared.agentName())
                                 .systemPrompt(systemText(prepared.messages()))
-                                .chatModel(new GatewayChatModel(gatewayService, context, state))
+                                .chatModel(new GatewayChatModel(aiGateway, context, state))
                                 .streamingChatModel(new GatewayStreamingChatModel(
-                                        gatewayService, context, state))
+                                        aiGateway, context, state))
                                 .toolkit(toolkit)
                                 .stateStore(store)
                                 .journalStore(journalStore)
@@ -436,7 +436,7 @@ public class ChatCompletions {
                 request.name(),
                 LangChain4jToolMapper.arguments(request.arguments()),
                 null);
-        var outcome = toolService.execute(prepared.userId(), prepared.agent(), call).block();
+        var outcome = chatTools.execute(prepared.userId(), prepared.agent(), call).block();
         if (outcome == null) {
             throw new IllegalStateException("工具执行返回空结果。");
         }
@@ -557,7 +557,7 @@ public class ChatCompletions {
                         modelName(result, state),
                         usage == null ? null : usage.outputTokens(),
                         roundMetadata(turn.thinking(), outcomes))
-                .flatMap(message -> conversationService
+                .flatMap(message -> conversations
                         .markPending(prepared.conversation(), 2)
                         .then(enqueueExtraction(prepared, message))
                         .then(dispatchSessionEnd(prepared))
@@ -680,14 +680,14 @@ public class ChatCompletions {
     }
 
     private Mono<Prepared> prepare(AiChatCommand command) {
-        return settingService.spec().flatMap(setting -> resolveMode(command.request().mode(), setting)
+        return aiSettings.spec().flatMap(setting -> resolveMode(command.request().mode(), setting)
                 .flatMap(mode -> resolveConversation(command, mode, setting)
                         .flatMap(conversationState -> resolveUserContent(command, conversationState)
                                 .flatMap(userContent -> dispatchHook(
                                                 conversationState.agent().getMetadata().getName(),
                                                 AiHook.Event.USER_PROMPT_SUBMIT,
                                                 Map.of("prompt", userContent))
-                                        .then(agentContextService.build(conversationState.agent()))
+                                        .then(agentContext.build(conversationState.agent()))
                                         .flatMap(context -> dispatchSessionStart(
                                                         conversationState.agent().getMetadata().getName(),
                                                         conversationState.conversation().id())
@@ -826,7 +826,7 @@ public class ChatCompletions {
         if (!StringUtils.hasText(name)) {
             return Mono.error(new ApiException(HttpStatus.NOT_FOUND, CODE_MODE_NOT_FOUND, "未配置对话模式。"));
         }
-        return chatModeService
+        return chatModes
                 .get(name)
                 .onErrorMap(
                         ExtensionNotFoundException.class,
@@ -840,11 +840,11 @@ public class ChatCompletions {
     private Mono<ConversationState> resolveConversation(
             AiChatCommand command, AiChatMode mode, AiSetting.Spec setting) {
         if (command.request().conversationId() != null) {
-            return conversationService
+            return conversations
                     .requireOwned(command.request().conversationId(), command.userId())
                     .flatMap(conversation -> ensureConversationScope(command, conversation)
                             .flatMap(agent -> (command.request().isRegenerate()
-                                            ? conversationService.deleteLastAssistant(conversation)
+                                            ? conversations.deleteLastAssistant(conversation)
                                             : Mono.<Void>empty())
                                     .then(history(conversation, setting))
                                     .map(history -> new ConversationState(conversation, agent, history))));
@@ -854,7 +854,7 @@ public class ChatCompletions {
                     HttpStatus.BAD_REQUEST, CODE_REQUEST_INVALID, "重试需要指定已有的会话。"));
         }
         return resolveAgent(command.request().agentId(), command.request().teamId(), setting, command.userId())
-                .flatMap(agent -> conversationService
+                .flatMap(agent -> conversations
                         .createOrGet(new NewConversation(
                                 GatewaySessions.DEFAULT_SPACE,
                                 command.userId(),
@@ -879,7 +879,7 @@ public class ChatCompletions {
                 && !command.request().teamId().equals(conversation.teamId())) {
             return Mono.error(new ApiException(HttpStatus.FORBIDDEN, CODE_TEAM_FORBIDDEN, "无权访问该团队。"));
         }
-        return teamService.requireAgent(conversation.agentId(), command.userId());
+        return teams.requireAgent(conversation.agentId(), command.userId());
     }
 
     private Mono<AiAgent> resolveAgent(
@@ -888,7 +888,7 @@ public class ChatCompletions {
         var agentName = StringUtils.hasText(requestedAgent)
                 ? requestedAgent
                 : StringUtils.hasText(defaults.getAgent()) ? defaults.getAgent() : Teams.DEFAULT_AGENT;
-        return teamService.requireAgent(agentName, userId).flatMap(agent -> {
+        return teams.requireAgent(agentName, userId).flatMap(agent -> {
             if (StringUtils.hasText(requestedTeam) && !requestedTeam.equals(agent.getSpec().getTeam())) {
                 return Mono.error(new ApiException(
                         HttpStatus.FORBIDDEN, CODE_TEAM_FORBIDDEN, "无权访问该团队。"));
@@ -900,7 +900,7 @@ public class ChatCompletions {
     private Mono<List<Message>> history(Conversation conversation, AiSetting.Spec setting) {
         var prompt = setting.getPrompt() == null ? new AiSetting.Prompt() : setting.getPrompt();
         var limit = Math.max(2, Math.min(DEFAULT_HISTORY_LIMIT, prompt.getHistoryWindowTurns() * 2));
-        return conversationService.recentHistory(conversation, limit).collectList();
+        return conversations.recentHistory(conversation, limit).collectList();
     }
 
     private Mono<RagContext> ragContext(
@@ -1022,9 +1022,9 @@ public class ChatCompletions {
         var agenticRetrieval = retrievalSetting.isAgenticEnabled() && !rag.isEmpty();
         var retriever = rag.isEmpty() || agenticRetrieval
                 ? null
-                : new KnowledgeBaseContentRetriever(retrievalService, embeddingService, rag);
+                : new KnowledgeBaseContentRetriever(knowledgeRetrieval, embeddings, rag);
         var knowledgeTool = agenticRetrieval
-                ? new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, rag)
+                ? new KnowledgeBaseRetrievalTool(knowledgeRetrieval, embeddings, rag)
                 : null;
         var prepared = new Prepared(
                 command.userId(),
@@ -1049,7 +1049,7 @@ public class ChatCompletions {
                 context.teamTools());
         var appendUser = command.request().isRegenerate()
                 ? Mono.<Message>empty()
-                : conversationService.appendUserMessage(
+                : conversations.appendUserMessage(
                         state.conversation(),
                         turnIndex,
                         0,
@@ -1222,7 +1222,7 @@ public class ChatCompletions {
             String modelCode,
             Integer outputTokens,
             @Nullable JsonNode metadata) {
-        return conversationService.appendAssistantMessage(
+        return conversations.appendAssistantMessage(
                 conversation, turnIndex, 1, content, requestId, modelCode, outputTokens, metadata);
     }
 

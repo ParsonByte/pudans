@@ -54,9 +54,9 @@ public class KnowledgeBases {
 
     private final KnowledgeBaseAcl knowledgeBaseAcl;
 
-    private final KnowledgeRetrieval retrievalService;
+    private final KnowledgeRetrieval knowledgeRetrieval;
 
-    private final KnowledgeIngestion ingestionService;
+    private final KnowledgeIngestion knowledgeIngestion;
 
     private final AiKbDocumentRepository documentRepository;
 
@@ -66,7 +66,7 @@ public class KnowledgeBases {
 
     private final StorageTransfer storageTransfer;
 
-    private final Embeddings embeddingService;
+    private final Embeddings embeddings;
 
     public Flux<KnowledgeBase> listReadable(String userId, Set<String> roleNames, @Nullable String deptId) {
         return client.listAll(KnowledgeBase.class, ListOptions.builder().build(), defaultSort())
@@ -104,7 +104,7 @@ public class KnowledgeBases {
                         || kbCodes.contains(KnowledgeBaseCodes.codeOf(knowledgeBase)))
                 .collectList()
                 .flatMap(knowledgeBases -> queryEmbedding(knowledgeBases, query)
-                        .flatMap(queryEmbedding -> retrievalService.retrieve(new KnowledgeBaseRetrievalRequest(
+                        .flatMap(queryEmbedding -> knowledgeRetrieval.retrieve(new KnowledgeBaseRetrievalRequest(
                                 userId,
                                 null,
                                 query,
@@ -121,7 +121,7 @@ public class KnowledgeBases {
         if (knowledgeBases.stream().allMatch(ExternalRagRetriever::isExternal)) {
             return Mono.just(new float[0]);
         }
-        return embeddingService.embedOne(query).onErrorResume(error -> {
+        return embeddings.embedOne(query).onErrorResume(error -> {
             log.warn("知识库查询向量生成失败，降级为关键词检索。", error);
             return Mono.just(new float[0]);
         });
@@ -261,7 +261,7 @@ public class KnowledgeBases {
                 input.checksum(),
                 userId,
                 input.content());
-        return ingestionService
+        return knowledgeIngestion
                 .ingest(knowledgeBase, request)
                 .onErrorMap(
                         IllegalArgumentException.class,

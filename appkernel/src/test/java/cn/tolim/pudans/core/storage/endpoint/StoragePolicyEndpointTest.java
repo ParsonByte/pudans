@@ -26,7 +26,7 @@ class StoragePolicyEndpointTest {
     StoragePolicyValidator validator;
 
     @Mock
-    Policies policyService;
+    Policies policies;
 
     @Mock
     StorageTransfer storageTransfer;
@@ -42,7 +42,7 @@ class StoragePolicyEndpointTest {
     @BeforeEach
     void setUp() {
         var endpoint = new StoragePolicyEndpoint(
-                validator, policyService, storageTransfer, registry, oneDriveOAuth);
+                validator, policies, storageTransfer, registry, oneDriveOAuth);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 

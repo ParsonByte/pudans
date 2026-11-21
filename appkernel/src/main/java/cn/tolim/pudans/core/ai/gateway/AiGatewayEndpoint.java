@@ -44,13 +44,13 @@ public class AiGatewayEndpoint implements CustomEndpoint {
 
     private final AiProtocolCodecRegistry codecRegistry;
 
-    private final AiGateway gatewayService;
+    private final AiGateway aiGateway;
 
     private final AiResponseEncoders responseEncoders;
 
     private final GeminiGatewayCodec geminiCodec;
 
-    private final GatewayHealth statusService;
+    private final GatewayHealth gatewayHealth;
 
     private final AiEndpointRequests requests;
 
@@ -124,7 +124,7 @@ public class AiGatewayEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> status(ServerRequest request) {
-        return statusService
+        return gatewayHealth
                 .status()
                 .flatMap(status -> ServerResponse.ok()
                         .contentType(MediaType.APPLICATION_JSON)
@@ -164,7 +164,7 @@ public class AiGatewayEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> complete(AiGatewayInvocation invocation) {
-        return gatewayService
+        return aiGateway
                 .complete(invocation)
                 .flatMap(result -> {
                     var encoder = responseEncoders.require(invocation.protocol());
@@ -181,7 +181,7 @@ public class AiGatewayEndpoint implements CustomEndpoint {
         var usage = new AtomicReference<AiTokenUsage>();
         var body = Flux.defer(() -> {
             var streamEncoder = new AtomicReference<AiStreamEncoder>();
-            return gatewayService.stream(invocation).concatMap(event -> {
+            return aiGateway.stream(invocation).concatMap(event -> {
                 if (event instanceof AiGatewayEvent.Meta meta) {
                     var created = encoder.stream(invocation.requestId(), meta.meta().model(), null);
                     streamEncoder.set(created);

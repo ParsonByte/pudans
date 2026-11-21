@@ -15,9 +15,9 @@ public class QianwenWebSocketConfiguration {
 
     @Bean
     SupplierWebSocketHandler qianwenWebSocketHandler(
-            QianwenProviderAccess access, ProviderAccounts accountService) {
+            QianwenProviderAccess access, ProviderAccounts providerAccounts) {
         return new SupplierWebSocketHandler(
-                "qianwen", access, accountService, QianwenProtocol::normalizeWebSocketPath);
+                "qianwen", access, providerAccounts, QianwenProtocol::normalizeWebSocketPath);
     }
 
     @Bean

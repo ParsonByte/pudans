@@ -35,7 +35,7 @@ import reactor.test.StepVerifier;
 class SubagentToolFactoryTest {
 
     @Mock
-    AiGateway gatewayService;
+    AiGateway aiGateway;
 
     @Mock
     Skills skills;
@@ -46,7 +46,7 @@ class SubagentToolFactoryTest {
     @Test
     void buildsSubagentToolsThatDelegateThroughTheGateway() {
         var factory = new SubagentToolFactory(
-                gatewayService,
+                aiGateway,
                 new InMemoryAgentStateStore(),
                 new InMemoryThreadJournalStore(),
                 skills,
@@ -55,7 +55,7 @@ class SubagentToolFactoryTest {
         when(skills.byNames(any())).thenReturn(Mono.just(List.of()));
         when(mcpServers.toolCatalogFor(any()))
                 .thenReturn(Mono.just(new McpServers.McpToolCatalog(List.of())));
-        when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
+        when(aiGateway.complete(any())).thenReturn(Mono.just(gatewayResult()));
         var tools = factory.create(context(), List.of(subagent())).block();
 
         assertThat(tools).isNotNull();

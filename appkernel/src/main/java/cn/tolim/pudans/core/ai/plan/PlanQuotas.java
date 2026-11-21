@@ -41,7 +41,7 @@ public class PlanQuotas {
 
     private final UsageLedgerRepository ledgerRepository;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final PlanWindowClock windowClock;
 
@@ -51,13 +51,13 @@ public class PlanQuotas {
     public PlanQuotas(
             PlanCounterRepository counterRepository,
             UsageLedgerRepository ledgerRepository,
-            AiSettings settingService,
+            AiSettings aiSettings,
             PlanWindowClock windowClock,
             ReactiveTransactionManager transactionManager) {
         this(
                 counterRepository,
                 ledgerRepository,
-                settingService,
+                aiSettings,
                 windowClock,
                 TransactionalOperator.create(transactionManager));
     }
@@ -65,12 +65,12 @@ public class PlanQuotas {
     PlanQuotas(
             PlanCounterRepository counterRepository,
             UsageLedgerRepository ledgerRepository,
-            AiSettings settingService,
+            AiSettings aiSettings,
             PlanWindowClock windowClock,
             TransactionalOperator transactionalOperator) {
         this.counterRepository = counterRepository;
         this.ledgerRepository = ledgerRepository;
-        this.settingService = settingService;
+        this.aiSettings = aiSettings;
         this.windowClock = windowClock;
         this.transactionalOperator = transactionalOperator;
     }
@@ -138,7 +138,7 @@ public class PlanQuotas {
     }
 
     public Mono<SweepResult> sweepExpired() {
-        return settingService
+        return aiSettings
                 .spec()
                 .map(spec -> spec.getBilling() == null ? new AiSetting.Billing() : spec.getBilling())
                 .defaultIfEmpty(new AiSetting.Billing())

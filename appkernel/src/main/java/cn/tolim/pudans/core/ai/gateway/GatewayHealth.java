@@ -34,7 +34,7 @@ public class GatewayHealth {
 
     private final ReactiveExtensionClient client;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final AiChatRequestRepository chatRequestRepository;
 
@@ -44,7 +44,7 @@ public class GatewayHealth {
 
     public Mono<Status> status() {
         return Mono.zip(
-                        settingService.spec().defaultIfEmpty(new AiSetting.Spec()),
+                        aiSettings.spec().defaultIfEmpty(new AiSetting.Spec()),
                         routeGroups(),
                         models(),
                         chatRequestRepository

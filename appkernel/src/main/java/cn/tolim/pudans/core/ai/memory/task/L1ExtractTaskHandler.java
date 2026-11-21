@@ -55,7 +55,7 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
 
     private final AiConversationRepository conversationRepository;
 
-    private final Conversations conversationService;
+    private final Conversations conversations;
 
     private final AiMessageRepository messageRepository;
 
@@ -65,15 +65,15 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
 
     private final AiMemoryL3Repository memoryL3Repository;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final MemoryExtraction extractionAi;
 
     private final MemoryConflict conflictAi;
 
-    private final L1Deduplication dedupService;
+    private final L1Deduplication l1Deduplication;
 
-    private final L1Pipeline pipelineService;
+    private final L1Pipeline l1Pipeline;
 
     @Override
     public String taskType() {
@@ -93,7 +93,7 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
     }
 
     private Mono<Void> extract(AiTask task, Conversation conversation) {
-        return settingService.spec().flatMap(setting -> {
+        return aiSettings.spec().flatMap(setting -> {
             var memory = setting.getMemory() == null ? new AiSetting.Memory() : setting.getMemory();
             var afterCursor = conversation.l1CursorMessageId() == null ? 0L : conversation.l1CursorMessageId();
             return extractBatches(task, conversation, memory, afterCursor, 0);
@@ -155,7 +155,7 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
                         .flatMap(decisions ->
                                 runPipeline(conversation, memory, messages, context, outcome, pool, decisions))
                         .then())
-                .then(conversationService.reducePending(conversation, messages.size()).then());
+                .then(conversations.reducePending(conversation, messages.size()).then());
     }
 
     private Mono<List<DedupDecision>> conflictDecisions(
@@ -175,7 +175,7 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
 
     private List<ExistingMemory> prioritized(
             MemoryContext context, ExtractedMemory memory, List<ExistingMemory> existing) {
-        var hash = dedupService.dedupHash(context, memory.content());
+        var hash = l1Deduplication.dedupHash(context, memory.content());
         return Stream.concat(
                         existing.stream().filter(candidate -> hash.equals(candidate.dedupHash())),
                         existing.stream().filter(candidate -> !hash.equals(candidate.dedupHash())))
@@ -234,7 +234,7 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
                             outcome.modelCode(),
                             "conversation:" + conversation.id(),
                             "l1:" + lastMessageId));
-            return pipelineService.process(request, (systemPrompt, candidates) -> decisions);
+            return l1Pipeline.process(request, (systemPrompt, candidates) -> decisions);
         });
     }
 

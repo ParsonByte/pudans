@@ -51,7 +51,7 @@ class AiGenerationRecorderTest {
     PlanQuotas planQuotas;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     AiMetrics metrics;
@@ -128,7 +128,7 @@ class AiGenerationRecorderTest {
     }
 
     private void stubBilling() {
-        lenient().when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        lenient().when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
     }
 
     private static AiModelResponse response(int images) {

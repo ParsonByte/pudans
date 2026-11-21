@@ -63,7 +63,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
 
     private static final String CLEAR_RESOURCE_TYPE = "AiUsage";
 
-    private final AiUsage usageService;
+    private final AiUsage aiUsage;
 
     private final UsageAccessResolver accessResolver;
 
@@ -223,7 +223,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
         var query = overviewQuery(request);
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.overview(query, viewer))
+                .flatMap(viewer -> aiUsage.overview(query, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -234,7 +234,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
                 UsageQueryParameters.text(request, "metric"));
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.heatmap(query, viewer))
+                .flatMap(viewer -> aiUsage.heatmap(query, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -245,7 +245,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
                 UsageQueryParameters.text(request, "groupBy"));
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.speed(query, viewer))
+                .flatMap(viewer -> aiUsage.speed(query, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -255,7 +255,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
         var limit = UsageQueryParameters.limit(request);
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.requests(query, beforeId, limit, viewer))
+                .flatMap(viewer -> aiUsage.requests(query, beforeId, limit, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -266,14 +266,14 @@ public class AiUsageEndpoint implements CustomEndpoint {
                 .flatMap(viewer -> ServerResponse.ok()
                         .contentType(CSV_MEDIA_TYPE)
                         .header(HttpHeaders.CONTENT_DISPOSITION, CSV_DISPOSITION)
-                        .body(usageService.export(query, viewer), String.class));
+                        .body(aiUsage.export(query, viewer), String.class));
     }
 
     private Mono<ServerResponse> requestDetail(ServerRequest request) {
         var requestId = request.pathVariable("requestId");
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.request(requestId, viewer))
+                .flatMap(viewer -> aiUsage.request(requestId, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -283,7 +283,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
         var limit = UsageQueryParameters.limit(request);
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.sessions(query, beforeId, limit, viewer))
+                .flatMap(viewer -> aiUsage.sessions(query, beforeId, limit, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -295,7 +295,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
                 UsageQueryParameters.text(request, "model"));
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.sessionStats(query, viewer))
+                .flatMap(viewer -> aiUsage.sessionStats(query, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -303,7 +303,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
         var conversationId = conversationId(request);
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.session(conversationId, viewer))
+                .flatMap(viewer -> aiUsage.session(conversationId, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -311,7 +311,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
         var query = contextQuery(request);
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.context(query, viewer))
+                .flatMap(viewer -> aiUsage.context(query, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -331,7 +331,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
                         "limit 必须是整数。"));
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> usageService.contextGrid(query, viewer))
+                .flatMap(viewer -> aiUsage.contextGrid(query, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -343,7 +343,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
                     var body = tuple.getT1();
                     var viewer = tuple.getT2();
                     var query = new ClearQuery(body.beforeDate(), body.provider(), body.model());
-                    return usageService
+                    return aiUsage
                             .clear(query, viewer)
                             .doOnNext(result -> recordClear(request, viewer, query, result))
                             .flatMap(result -> ServerResponse.ok().bodyValue(result));

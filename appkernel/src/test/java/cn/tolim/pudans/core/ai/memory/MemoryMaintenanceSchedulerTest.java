@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 class MemoryMaintenanceSchedulerTest {
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     AiMemoryL1Repository l1Repository;
@@ -31,9 +31,9 @@ class MemoryMaintenanceSchedulerTest {
         memory.setDecayMinScore(20);
         memory.setDecayStaleDays(30);
         spec.setMemory(memory);
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
         when(l1Repository.applyDecay(2, 20, 30)).thenReturn(Mono.just(5L));
-        var scheduler = new MemoryMaintenanceScheduler(settingService, l1Repository);
+        var scheduler = new MemoryMaintenanceScheduler(aiSettings, l1Repository);
 
         assertThat(scheduler.decayOnce().block()).isEqualTo(5L);
 

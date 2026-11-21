@@ -40,15 +40,15 @@ import reactor.core.publisher.Flux;
 
 public class GatewayStreamingChatModel implements StreamingChatModel {
 
-    private final AiGateway gatewayService;
+    private final AiGateway aiGateway;
 
     private final GatewayChatContext context;
 
     private final GatewayRunState state;
 
     public GatewayStreamingChatModel(
-            AiGateway gatewayService, GatewayChatContext context, GatewayRunState state) {
-        this.gatewayService = Objects.requireNonNull(gatewayService, "AI 网关服务不能为空");
+            AiGateway aiGateway, GatewayChatContext context, GatewayRunState state) {
+        this.aiGateway = Objects.requireNonNull(aiGateway, "AI 网关服务不能为空");
         this.context = Objects.requireNonNull(context, "Agent 上下文不能为空");
         this.state = Objects.requireNonNull(state, "Agent 运行状态不能为空");
     }
@@ -85,7 +85,7 @@ public class GatewayStreamingChatModel implements StreamingChatModel {
             var thinking = new StringBuilder();
             var calls = new LinkedHashMap<Integer, ToolCallState>();
             var usage = new AtomicReference<AiTokenUsage>();
-            return Flux.from(gatewayService.stream(invocation)).concatMap(event -> switch (event) {
+            return Flux.from(aiGateway.stream(invocation)).concatMap(event -> switch (event) {
                 case AiGatewayEvent.Meta meta -> {
                     state.recordMeta(meta.meta());
                     yield Flux.empty();

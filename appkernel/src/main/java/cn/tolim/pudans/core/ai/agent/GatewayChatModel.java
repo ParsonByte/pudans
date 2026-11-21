@@ -29,19 +29,19 @@ import java.util.Objects;
 
 public class GatewayChatModel implements ChatModel {
 
-    private final AiGateway gatewayService;
+    private final AiGateway aiGateway;
 
     private final GatewayChatContext context;
 
     private final GatewayRunState state;
 
-    public GatewayChatModel(AiGateway gatewayService, GatewayChatContext context) {
-        this(gatewayService, context, new GatewayRunState());
+    public GatewayChatModel(AiGateway aiGateway, GatewayChatContext context) {
+        this(aiGateway, context, new GatewayRunState());
     }
 
     public GatewayChatModel(
-            AiGateway gatewayService, GatewayChatContext context, GatewayRunState state) {
-        this.gatewayService = Objects.requireNonNull(gatewayService, "AI 网关服务不能为空");
+            AiGateway aiGateway, GatewayChatContext context, GatewayRunState state) {
+        this.aiGateway = Objects.requireNonNull(aiGateway, "AI 网关服务不能为空");
         this.context = Objects.requireNonNull(context, "Agent 上下文不能为空");
         this.state = Objects.requireNonNull(state, "Agent 运行状态不能为空");
     }
@@ -66,7 +66,7 @@ public class GatewayChatModel implements ChatModel {
                 context.agentName(),
                 context.conversationId(),
                 context.modelOverride());
-        AiGatewayResult result = gatewayService.complete(invocation).block();
+        AiGatewayResult result = aiGateway.complete(invocation).block();
         if (result == null) {
             throw new IllegalStateException("AI 网关返回空响应。");
         }

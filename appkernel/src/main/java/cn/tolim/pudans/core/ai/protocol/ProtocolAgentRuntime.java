@@ -42,11 +42,11 @@ public class ProtocolAgentRuntime {
 
     private static final String AGENT_SOURCE = "pudans-protocol";
 
-    private final Teams teamService;
+    private final Teams teams;
 
-    private final AgentContext agentContextService;
+    private final AgentContext agentContext;
 
-    private final ChatTools toolService;
+    private final ChatTools chatTools;
 
     private final SubagentToolFactory subagentToolFactory;
 
@@ -56,7 +56,7 @@ public class ProtocolAgentRuntime {
 
     private final HarnessObservability harnessObservability;
 
-    private final AiGateway gatewayService;
+    private final AiGateway aiGateway;
 
     private final AgentStateStore stateStore;
 
@@ -66,9 +66,9 @@ public class ProtocolAgentRuntime {
         var agentName = StringUtils.hasText(request.agentName())
                 ? request.agentName()
                 : Teams.DEFAULT_AGENT;
-        return teamService
+        return teams
                 .requireAgent(agentName, request.userId())
-                .flatMap(agent -> agentContextService.build(agent).flatMap(context -> {
+                .flatMap(agent -> agentContext.build(agent).flatMap(context -> {
                     var state = new GatewayRunState();
                     var gatewayContext = gatewayContext(request, agent);
                     var toolkit = toolkit(request.userId(), agent, context);
@@ -80,9 +80,9 @@ public class ProtocolAgentRuntime {
                                             .name(agent.getMetadata().getName())
                                             .systemPrompt(systemPrompt(request, agent, context))
                                             .chatModel(new GatewayChatModel(
-                                                    gatewayService, gatewayContext, state))
+                                                    aiGateway, gatewayContext, state))
                                             .streamingChatModel(new GatewayStreamingChatModel(
-                                                    gatewayService, gatewayContext, state))
+                                                    aiGateway, gatewayContext, state))
                                             .toolkit(decorated)
                                             .stateStore(stateStore)
                                             .journalStore(journalStore)
@@ -148,7 +148,7 @@ public class ProtocolAgentRuntime {
                 request.name(),
                 arguments == null ? null : arguments,
                 null);
-        var outcome = toolService.execute(userId, agent, call).block();
+        var outcome = chatTools.execute(userId, agent, call).block();
         if (outcome == null) {
             throw new IllegalStateException("工具执行返回空结果。");
         }

@@ -42,7 +42,7 @@ public class AiMemoryPromptEndpoint implements CustomEndpoint {
 
     private final MemoryPromptResolver resolver;
 
-    private final MemoryPromptSettings settingService;
+    private final MemoryPromptSettings memoryPromptSettings;
 
     private final AiEndpointRequests requests;
 
@@ -102,11 +102,11 @@ public class AiMemoryPromptEndpoint implements CustomEndpoint {
         var agent = query(request, "agent");
         var layer = optionalLayer(query(request, "layer"));
         if (layer == null) {
-            return settingService
+            return memoryPromptSettings
                     .settings(team, agent)
                     .flatMap(settings -> ServerResponse.ok().bodyValue(settings));
         }
-        return settingService
+        return memoryPromptSettings
                 .settings(layer, team, agent)
                 .flatMap(resolved -> ServerResponse.ok().bodyValue(resolved));
     }
@@ -117,7 +117,7 @@ public class AiMemoryPromptEndpoint implements CustomEndpoint {
                 .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
                 .flatMap(body -> requests
                         .userId(request)
-                        .flatMap(actor -> settingService.set(actor, new MemoryPromptSettings.SetCommand(
+                        .flatMap(actor -> memoryPromptSettings.set(actor, new MemoryPromptSettings.SetCommand(
                                 body.name(),
                                 body.layer(),
                                 body.targetType(),
@@ -134,7 +134,7 @@ public class AiMemoryPromptEndpoint implements CustomEndpoint {
         var beforeId = AiEndpointRequests.longParam(request, "beforeId", Long.MAX_VALUE, 1, Long.MAX_VALUE);
         var limit = AiEndpointRequests.intParam(request, "limit", 50, 1, 200);
         return ServerResponse.ok()
-                .body(settingService.logs(promptId, from, to, beforeId, limit), MemoryPromptLog.class);
+                .body(memoryPromptSettings.logs(promptId, from, to, beforeId, limit), MemoryPromptLog.class);
     }
 
     private static AiMemoryPrompt.Layer layer(String value) {

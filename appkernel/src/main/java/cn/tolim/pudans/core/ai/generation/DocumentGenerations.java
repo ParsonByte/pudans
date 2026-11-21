@@ -33,7 +33,7 @@ public class DocumentGenerations {
 
     private static final String CODE_INVALID = "ai-document-generation-invalid";
 
-    private final TextGenerations textGenerationService;
+    private final TextGenerations textGenerations;
 
     private final StorageTransfer storageTransfer;
 
@@ -67,7 +67,7 @@ public class DocumentGenerations {
         var format = command.format() == null ? Format.MARKDOWN : command.format();
         var title = StringUtils.hasText(command.title()) ? command.title() : "文档";
         var requestId = "doc-" + UUID.randomUUID();
-        return textGenerationService
+        return textGenerations
                 .generate(new GenerationRequest(
                         command.routeGroup(), systemPrompt(format), command.prompt(), MAX_OUTPUT_TOKENS, TEMPERATURE))
                 .flatMap(result -> {

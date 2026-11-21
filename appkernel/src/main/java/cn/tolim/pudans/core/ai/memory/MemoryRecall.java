@@ -38,7 +38,7 @@ public class MemoryRecall {
 
     private final MemoryPromptResolver promptResolver;
 
-    private final @Nullable Embeddings embeddingService;
+    private final @Nullable Embeddings embeddings;
 
     private final @Nullable AiOrgMemoryRepository orgMemoryRepository;
 
@@ -60,14 +60,14 @@ public class MemoryRecall {
             AiMemoryRecallRepository recallRepository,
             AiMemoryL3Repository personaRepository,
             MemoryPromptResolver promptResolver,
-            @Nullable Embeddings embeddingService,
+            @Nullable Embeddings embeddings,
             @Nullable AiOrgMemoryRepository orgMemoryRepository,
             @Value(PREPEND_BUDGET_KEY) int prependBudget,
             @Value(APPEND_BUDGET_KEY) int appendBudget) {
         this.recallRepository = Objects.requireNonNull(recallRepository, "recallRepository");
         this.personaRepository = Objects.requireNonNull(personaRepository, "personaRepository");
         this.promptResolver = Objects.requireNonNull(promptResolver, "promptResolver");
-        this.embeddingService = embeddingService;
+        this.embeddings = embeddings;
         this.orgMemoryRepository = orgMemoryRepository;
         if (prependBudget < 1 || appendBudget < 1) {
             throw new IllegalArgumentException("字符预算必须大于 0");
@@ -156,10 +156,10 @@ public class MemoryRecall {
     }
 
     private Mono<float[]> embeddingQuery(String query) {
-        if (embeddingService == null || query.isEmpty()) {
+        if (embeddings == null || query.isEmpty()) {
             return Mono.empty();
         }
-        return embeddingService
+        return embeddings
                 .embedOne(query)
                 .onErrorResume(error -> {
                     log.debug("记忆召回嵌入不可用，回退关键词召回：{}", error.getMessage());

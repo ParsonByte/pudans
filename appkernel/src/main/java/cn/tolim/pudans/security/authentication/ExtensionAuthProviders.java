@@ -39,7 +39,7 @@ import reactor.util.retry.Retry;
 public class ExtensionAuthProviders implements AuthProviders {
     private final ReactiveExtensionClient client;
     private final ObjectProvider<ParameterSettingFetcher> environmentFetcherProvider;
-    private final Connections connectionService;
+    private final Connections connections;
 
     private static boolean supportsBinding(AuthProvider authProvider) {
         return BooleanUtils.TRUE.equals(
@@ -148,7 +148,7 @@ public class ExtensionAuthProviders implements AuthProviders {
     Flux<UserConnection> listMyConnections() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> securityContext.getAuthentication().getName())
-                .flatMapMany(connectionService::listConnections);
+                .flatMapMany(connections::listConnections);
     }
 
     private ListedAuthProvider convertTo(AuthProvider authProvider) {

@@ -33,13 +33,13 @@ class QianwenModelAdapterTest {
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
-    private final ProviderAccounts accountService = mock(ProviderAccounts.class);
+    private final ProviderAccounts providerAccounts = mock(ProviderAccounts.class);
 
     private final AtomicReference<ClientRequest> captured = new AtomicReference<>();
 
     @Test
     void submitsSpeechRecognitionTasksAsynchronously() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"output":{"task_id":"task-asr","task_status":"PENDING"}}
                 """));
@@ -70,7 +70,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void pollsSpeechRecognitionTranscriptionFiles() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapterFor(request -> {
             captured.set(request);
             if (request.url().toString().contains("/api/v1/tasks/")) {
@@ -101,7 +101,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void generatesMusicThroughTheAudioEndpoint() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"output":{"audio":{"url":"https://cdn.example.com/music.mp3"}},
                  "usage":{"duration":120}}
@@ -131,7 +131,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void generatesImagesThroughMultimodalGeneration() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"request_id":"req-1","output":{"choices":[
                   {"message":{"content":[{"image":"https://img.example.com/1.png"}]}}
@@ -168,7 +168,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void submitsVideoTasksAsynchronously() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"request_id":"req-2","output":{"task_id":"task-1","task_status":"PENDING"}}
                 """));
@@ -202,7 +202,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void submitsThreeDTasksWithSingleImage() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"output":{"task_id":"task-3d","task_status":"PENDING"}}
                 """));
@@ -232,7 +232,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void padsThreeDMultiImageInputsToFourViews() throws Exception {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"output":{"task_id":"task-3d","task_status":"PENDING"}}
                 """));
@@ -263,7 +263,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void pollsThreeDTasksAndReturnsModelUrl() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"output":{"task_id":"task-3d","task_status":"SUCCEEDED","results":[
                   {"model_url":"https://cdn.example.com/model.glb",
@@ -292,7 +292,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void reportsFailedTasks() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"output":{"task_id":"task-x","task_status":"FAILED","message":"参数错误"}}
                 """));
@@ -312,7 +312,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void understandsVideosWithTextOutput() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"request_id":"req-v","output":{"choices":[
                   {"message":{"content":[{"text":"视频里有一只猫"}]}}
@@ -345,7 +345,7 @@ class QianwenModelAdapterTest {
 
     @Test
     void synthesizesSpeechWithTheAudioEndpoint() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var adapter = adapter(json("""
                 {"request_id":"req-s","output":{"audio":{
                   "url":"https://cdn.example.com/speech.wav","duration":1.2
@@ -388,7 +388,7 @@ class QianwenModelAdapterTest {
     private QianwenModelAdapter adapterFor(ExchangeFunction exchange) {
         var webClient = WebClient.builder().exchangeFunction(exchange).build();
         return new QianwenModelAdapter(
-                new QianwenApiClient(webClient, mapper, accountService), mapper);
+                new QianwenApiClient(webClient, mapper, providerAccounts), mapper);
     }
 
     private static ClientResponse json(String body) {

@@ -37,19 +37,19 @@ class LiveMonitorWorkerTest {
     LiveSourceRegistry registry;
 
     @Mock
-    SourceStatus statusService;
+    SourceStatus sourceStatus;
 
     @Mock
-    RoomResolver resolveService;
+    RoomResolver roomResolver;
 
     @Mock
-    Recordings recordingService;
+    Recordings recordings;
 
     @Mock
     LiveResolveCache resolveCache;
 
     @Mock
-    LiveAlerts alertService;
+    LiveAlerts liveAlerts;
 
     @Mock
     LiveMetrics metrics;
@@ -61,11 +61,11 @@ class LiveMonitorWorkerTest {
         return new LiveMonitorWorker(
                 new LiveProperties(),
                 registry,
-                statusService,
-                resolveService,
-                recordingService,
+                sourceStatus,
+                roomResolver,
+                recordings,
                 resolveCache,
-                alertService,
+                liveAlerts,
                 metrics,
                 lease);
     }
@@ -113,7 +113,7 @@ class LiveMonitorWorkerTest {
         StepVerifier.create(worker().tick()).verifyComplete();
 
         verify(registry, never()).snapshotDue(any(), anyInt());
-        verifyNoInteractions(resolveService, recordingService, alertService);
+        verifyNoInteractions(roomResolver, recordings, liveAlerts);
     }
 
     @Test
@@ -123,20 +123,20 @@ class LiveMonitorWorkerTest {
         var liveSource = source(true);
         when(lease.renew()).thenReturn(Mono.just(true));
         when(registry.snapshotDue(any(), anyInt())).thenReturn(List.of(snapshot));
-        when(resolveService.resolve(LivePlatform.DOUYIN, "123456789", true))
+        when(roomResolver.resolve(LivePlatform.DOUYIN, "123456789", true))
                 .thenReturn(Mono.just(info));
-        when(statusService.applyLive("douyin-123456789", info)).thenReturn(Mono.just(liveSource));
-        when(recordingService.start(liveSource, info, true, "monitor"))
+        when(sourceStatus.applyLive("douyin-123456789", info)).thenReturn(Mono.just(liveSource));
+        when(recordings.start(liveSource, info, true, "monitor"))
                 .thenReturn(Mono.just(recording("recording-1")));
-        when(statusService.markRecording("douyin-123456789", "recording-1"))
+        when(sourceStatus.markRecording("douyin-123456789", "recording-1"))
                 .thenReturn(Mono.just(liveSource));
 
         StepVerifier.create(worker().tick()).verifyComplete();
 
         verify(registry).release("douyin-123456789");
-        verify(statusService).applyLive("douyin-123456789", info);
-        verify(recordingService).start(liveSource, info, true, "monitor");
-        verify(statusService).markRecording("douyin-123456789", "recording-1");
+        verify(sourceStatus).applyLive("douyin-123456789", info);
+        verify(recordings).start(liveSource, info, true, "monitor");
+        verify(sourceStatus).markRecording("douyin-123456789", "recording-1");
         verify(metrics).monitorTick(any(Duration.class));
     }
 
@@ -147,13 +147,13 @@ class LiveMonitorWorkerTest {
         var liveSource = source(false);
         when(lease.renew()).thenReturn(Mono.just(true));
         when(registry.snapshotDue(any(), anyInt())).thenReturn(List.of(snapshot));
-        when(resolveService.resolve(LivePlatform.DOUYIN, "123456789", true))
+        when(roomResolver.resolve(LivePlatform.DOUYIN, "123456789", true))
                 .thenReturn(Mono.just(info));
-        when(statusService.applyLive("douyin-123456789", info)).thenReturn(Mono.just(liveSource));
+        when(sourceStatus.applyLive("douyin-123456789", info)).thenReturn(Mono.just(liveSource));
 
         StepVerifier.create(worker().tick()).verifyComplete();
 
         verify(registry).release("douyin-123456789");
-        verifyNoInteractions(recordingService);
+        verifyNoInteractions(recordings);
     }
 }

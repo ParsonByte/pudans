@@ -47,8 +47,8 @@ public class DeepSeekToolsClient extends AbstractDeepSeekClient {
     public DeepSeekToolsClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService) {
-        super(webClient, mapper, accountService, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
+            ProviderAccounts providerAccounts) {
+        super(webClient, mapper, providerAccounts, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
     }
 
     public Mono<SearchResult> search(AiProvider provider, AiProviderAccount account, SearchRequest request) {
@@ -141,7 +141,7 @@ public class DeepSeekToolsClient extends AbstractDeepSeekClient {
             String voiceId,
             String format,
             Boolean filterMarkdown) {
-        return Flux.defer(() -> accountService
+        return Flux.defer(() -> providerAccounts
                         .apiKey(account)
                         .defaultIfEmpty("")
                         .flatMapMany(apiKey -> {

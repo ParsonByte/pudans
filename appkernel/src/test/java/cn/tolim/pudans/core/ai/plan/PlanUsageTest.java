@@ -28,13 +28,13 @@ class PlanUsageTest {
     private static final long WEEKLY_LIMIT = 20_000_000L;
 
     @Mock
-    PlanResolution resolutionService;
+    PlanResolution planResolution;
 
     @Mock
     PlanCounterRepository counterRepository;
 
     @Mock
-    PlanVouchers voucherService;
+    PlanVouchers planVouchers;
 
     private PlanWindowClock windowClock;
 
@@ -51,14 +51,14 @@ class PlanUsageTest {
         windowClock = new PlanWindowClock();
         windowClock.setClock(Clock.fixed(PlanTestFixtures.NOW, ZoneOffset.UTC));
         service = new PlanUsage(
-                resolutionService, counterRepository, voucherService, windowClock);
+                planResolution, counterRepository, planVouchers, windowClock);
         plan = PlanTestFixtures.plan("standard");
         fiveWindow = PlanTestFixtures.activeFiveHour(0, 0);
         weekWindow = PlanTestFixtures.activeWeek();
         var resolved = new PlanResolution.ResolvedPlan(
                 "standard", "套餐 standard", "User/" + UID, plan);
-        when(resolutionService.resolve(UID)).thenReturn(Mono.just(resolved));
-        when(voucherService.totals(UID, plan))
+        when(planResolution.resolve(UID)).thenReturn(Mono.just(resolved));
+        when(planVouchers.totals(UID, plan))
                 .thenReturn(Mono.just(new PlanVouchers.VoucherBalance(
                         new PlanVouchers.Balance(2, 0, 2),
                         new PlanVouchers.Balance(1, 0, 1))));

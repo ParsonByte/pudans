@@ -31,15 +31,15 @@ public class OpenAiMediaClient {
 
     private final ObjectMapper mapper;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     public OpenAiMediaClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService) {
+            ProviderAccounts providerAccounts) {
         this.webClient = Objects.requireNonNull(webClient, "AI WebClient 不能为空");
         this.mapper = Objects.requireNonNull(mapper, "ObjectMapper 不能为空");
-        this.accountService = Objects.requireNonNull(accountService, "供应商账号服务不能为空");
+        this.providerAccounts = Objects.requireNonNull(providerAccounts, "供应商账号服务不能为空");
     }
 
     public Mono<JsonNode> generateImage(
@@ -49,7 +49,7 @@ public class OpenAiMediaClient {
 
     public Mono<byte[]> synthesize(
             AiProvider provider, AiProviderAccount account, JsonNode body) {
-        return Mono.defer(() -> accountService.apiKey(account)
+        return Mono.defer(() -> providerAccounts.apiKey(account)
                 .defaultIfEmpty("")
                 .flatMap(apiKey -> webClient
                         .post()
@@ -71,7 +71,7 @@ public class OpenAiMediaClient {
             String contentType,
             byte[] content,
             Map<String, String> fields) {
-        return Mono.defer(() -> accountService.apiKey(account)
+        return Mono.defer(() -> providerAccounts.apiKey(account)
                 .defaultIfEmpty("")
                 .flatMap(apiKey -> {
                     var body = new MultipartBodyBuilder();
@@ -97,7 +97,7 @@ public class OpenAiMediaClient {
 
     private Mono<JsonNode> postJson(
             AiProvider provider, AiProviderAccount account, String path, JsonNode body) {
-        return Mono.defer(() -> accountService.apiKey(account)
+        return Mono.defer(() -> providerAccounts.apiKey(account)
                 .defaultIfEmpty("")
                 .flatMap(apiKey -> webClient
                         .post()

@@ -33,7 +33,7 @@ class AiPlanVoucherEndpointTest {
     private static final Instant USED_AT = Instant.parse("2026-11-18T10:00:00Z");
 
     @Mock
-    PlanVouchers voucherService;
+    PlanVouchers planVouchers;
 
     @Mock
     Accounts accounts;
@@ -42,7 +42,7 @@ class AiPlanVoucherEndpointTest {
 
     @BeforeEach
     void setUp() {
-        var endpoint = new AiPlanVoucherEndpoint(voucherService, new AiEndpointRequests(accounts));
+        var endpoint = new AiPlanVoucherEndpoint(planVouchers, new AiEndpointRequests(accounts));
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(PRINCIPAL)).build()))
@@ -52,7 +52,7 @@ class AiPlanVoucherEndpointTest {
     @Test
     void returnsTheCurrentUsersVoucherBalance() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(voucherService.balance(USER_ID))
+        when(planVouchers.balance(USER_ID))
                 .thenReturn(Mono.just(new PlanVouchers.VoucherBalance(
                         new PlanVouchers.Balance(3, 1, 2),
                         new PlanVouchers.Balance(1, 0, 1))));
@@ -71,7 +71,7 @@ class AiPlanVoucherEndpointTest {
     @Test
     void consumesAVoucherForTheCurrentUser() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(voucherService.use("req-1", USER_ID, PlanVoucherKind.FIVE_HOUR_RESET))
+        when(planVouchers.use("req-1", USER_ID, PlanVoucherKind.FIVE_HOUR_RESET))
                 .thenReturn(Mono.just(new PlanVouchers.VoucherUseResult(
                         "req-1",
                         PlanVoucherKind.FIVE_HOUR_RESET,
@@ -93,7 +93,7 @@ class AiPlanVoucherEndpointTest {
                 .jsonPath("$.duplicate").isEqualTo(false)
                 .jsonPath("$.windowKeyAfter").isEqualTo("5h:2026-11-18T10:00:00Z");
 
-        verify(voucherService).use("req-1", USER_ID, PlanVoucherKind.FIVE_HOUR_RESET);
+        verify(planVouchers).use("req-1", USER_ID, PlanVoucherKind.FIVE_HOUR_RESET);
     }
 
     @Test
@@ -108,7 +108,7 @@ class AiPlanVoucherEndpointTest {
 
     @Test
     void grantsVouchersToUsersAndGroups() {
-        when(voucherService.grant(
+        when(planVouchers.grant(
                         PlanVoucherKind.WEEKLY_RESET, 2, List.of(USER_ID), List.of("rd")))
                 .thenReturn(Mono.just(new PlanVouchers.GrantResult(
                         PlanVoucherKind.WEEKLY_RESET, 2, List.of(USER_ID))));
@@ -124,14 +124,14 @@ class AiPlanVoucherEndpointTest {
                 .jsonPath("$.count").isEqualTo(2)
                 .jsonPath("$.userIds[0]").isEqualTo(USER_ID);
 
-        verify(voucherService)
+        verify(planVouchers)
                 .grant(PlanVoucherKind.WEEKLY_RESET, 2, List.of(USER_ID), List.of("rd"));
     }
 
     @Test
     void listsHistoryWithDefaultPaging() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(voucherService.history(USER_ID, Long.MAX_VALUE, 20))
+        when(planVouchers.history(USER_ID, Long.MAX_VALUE, 20))
                 .thenReturn(Flux.just(new PlanVouchers.VoucherUseRecord(
                         7L,
                         "req-1",
@@ -148,13 +148,13 @@ class AiPlanVoucherEndpointTest {
                 .jsonPath("$[0].id").isEqualTo(7)
                 .jsonPath("$[0].kind").isEqualTo("FIVE_HOUR_RESET");
 
-        verify(voucherService).history(USER_ID, Long.MAX_VALUE, 20);
+        verify(planVouchers).history(USER_ID, Long.MAX_VALUE, 20);
     }
 
     @Test
     void appliesTheHistoryCursorAndLimit() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(voucherService.history(USER_ID, 9L, 100)).thenReturn(Flux.empty());
+        when(planVouchers.history(USER_ID, 9L, 100)).thenReturn(Flux.empty());
 
         client.get()
                 .uri("/aiplan/-/vouchers/-/history?limit=100&beforeId=9")
@@ -163,7 +163,7 @@ class AiPlanVoucherEndpointTest {
                 .expectBody()
                 .json("[]");
 
-        verify(voucherService).history(USER_ID, 9L, 100);
+        verify(planVouchers).history(USER_ID, 9L, 100);
     }
 
     @Test
@@ -176,7 +176,7 @@ class AiPlanVoucherEndpointTest {
 
     @Test
     void requiresAnAuthenticatedUser() {
-        var endpoint = new AiPlanVoucherEndpoint(voucherService, new AiEndpointRequests(accounts));
+        var endpoint = new AiPlanVoucherEndpoint(planVouchers, new AiEndpointRequests(accounts));
         var anonymous = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
 
         anonymous.get()

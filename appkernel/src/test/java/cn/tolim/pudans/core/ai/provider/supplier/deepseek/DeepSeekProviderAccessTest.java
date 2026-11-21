@@ -29,7 +29,7 @@ class DeepSeekProviderAccessTest {
     ReactiveExtensionClient client;
 
     @Mock
-    ProviderAccounts accountService;
+    ProviderAccounts providerAccounts;
 
     @InjectMocks
     DeepSeekProviderAccess access;
@@ -78,7 +78,7 @@ class DeepSeekProviderAccessTest {
         var provider = provider(AiProvider.Protocol.DEEPSEEK);
         provider.setMetadata(metadata("upstream"));
         var account = account();
-        when(accountService.firstEnabled("upstream")).thenReturn(Mono.just(account));
+        when(providerAccounts.firstEnabled("upstream")).thenReturn(Mono.just(account));
 
         StepVerifier.create(access.requireAccount(provider))
                 .expectNext(account)

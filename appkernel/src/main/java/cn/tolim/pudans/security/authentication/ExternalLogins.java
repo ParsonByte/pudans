@@ -25,7 +25,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ExternalLogins {
 
-    private final ReactiveUserDetailsService userDetailsService;
+    private final ReactiveUserDetailsService reactiveUserDetailsService;
 
     private final ServerSecurityContextRepository securityContextRepository;
 
@@ -34,7 +34,7 @@ public class ExternalLogins {
     private final DomainEventPublisher domainEventPublisher;
 
     public Mono<LoginCompletionResult> complete(ServerWebExchange exchange, String username, String method) {
-        return userDetailsService
+        return reactiveUserDetailsService
                 .findByUsername(username)
                 .switchIfEmpty(Mono.error(new LoginRejectedException("account_not_found")))
                 .flatMap(userDetails ->

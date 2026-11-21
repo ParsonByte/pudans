@@ -59,13 +59,13 @@ class DeepSeekCompletionClientTest {
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
-    private final ProviderAccounts accountService = mock(ProviderAccounts.class);
+    private final ProviderAccounts providerAccounts = mock(ProviderAccounts.class);
 
     private final AtomicReference<ClientRequest> captured = new AtomicReference<>();
 
     @Test
     void completesWithFimEndpoint() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var result = client(json(RESPONSE_BODY))
                 .complete(provider(AiProvider.Protocol.DEEPSEEK), account(),
@@ -100,7 +100,7 @@ class DeepSeekCompletionClientTest {
 
     @Test
     void streamsFimChunksUntilDone() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var chunks = client(sse(CHUNK_ONE, CHUNK_END, "[DONE]"))
                 .stream(provider(AiProvider.Protocol.DEEPSEEK), account(),
@@ -125,6 +125,6 @@ class DeepSeekCompletionClientTest {
             return Mono.just(response);
         };
         return new DeepSeekCompletionClient(
-                WebClient.builder().exchangeFunction(exchange).build(), mapper, accountService);
+                WebClient.builder().exchangeFunction(exchange).build(), mapper, providerAccounts);
     }
 }

@@ -32,7 +32,7 @@ public class AiPlanVoucherEndpoint implements CustomEndpoint {
 
     private static final long MAX_CURSOR = Long.MAX_VALUE;
 
-    private final PlanVouchers voucherService;
+    private final PlanVouchers planVouchers;
 
     private final AiEndpointRequests requests;
 
@@ -71,7 +71,7 @@ public class AiPlanVoucherEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> balance(ServerRequest request) {
         return requests.userId(request)
-                .flatMap(voucherService::balance)
+                .flatMap(planVouchers::balance)
                 .flatMap(balance -> ServerResponse.ok().bodyValue(balance));
     }
 
@@ -83,7 +83,7 @@ public class AiPlanVoucherEndpoint implements CustomEndpoint {
                         return Mono.error(new ServerWebInputException("requestId 与 kind 不能为空。"));
                     }
                     return requests.userId(request).flatMap(userId ->
-                            voucherService.use(body.requestId(), userId, body.kind()));
+                            planVouchers.use(body.requestId(), userId, body.kind()));
                 })
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
@@ -91,7 +91,7 @@ public class AiPlanVoucherEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> grant(ServerRequest request) {
         return request.bodyToMono(GrantRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
-                .flatMap(body -> voucherService.grant(
+                .flatMap(body -> planVouchers.grant(
                         body.kind(), body.count(), body.userIds(), body.groupNames()))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
@@ -100,7 +100,7 @@ public class AiPlanVoucherEndpoint implements CustomEndpoint {
         var limit = AiEndpointRequests.intParam(request, "limit", DEFAULT_LIMIT, 1, MAX_LIMIT);
         var beforeId = AiEndpointRequests.longParam(request, "beforeId", MAX_CURSOR, 1, MAX_CURSOR);
         return requests.userId(request)
-                .flatMap(userId -> voucherService.history(userId, beforeId, limit).collectList())
+                .flatMap(userId -> planVouchers.history(userId, beforeId, limit).collectList())
                 .flatMap(rows -> ServerResponse.ok().bodyValue(rows));
     }
 

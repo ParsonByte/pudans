@@ -17,14 +17,14 @@ public class RouteGroups {
 
     private final ReactiveExtensionClient client;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     public Mono<AiRouteGroup> get(String code) {
         return client.get(AiRouteGroup.class, code);
     }
 
     public Mono<AiRouteGroup> defaultGroup() {
-        return settingService.spec().flatMap(spec -> {
+        return aiSettings.spec().flatMap(spec -> {
             if (spec != null && StringUtils.hasText(spec.getDefaultRouteGroup())) {
                 return get(spec.getDefaultRouteGroup());
             }

@@ -35,13 +35,13 @@ public class PlanBindings {
 
     private final ReactiveExtensionClient client;
 
-    private final PlanCatalog catalogService;
+    private final PlanCatalog planCatalog;
 
     private final Groups groups;
 
     private final Accounts accounts;
 
-    private final PlanResolution resolutionService;
+    private final PlanResolution planResolution;
 
     private Clock clock = PudansTime.systemClock();
 
@@ -62,7 +62,7 @@ public class PlanBindings {
             return Mono.error(invalid("生效开始时间必须早于结束时间。"));
         }
         var subjects = new LinkedHashSet<>(request.subjects());
-        return catalogService
+        return planCatalog
                 .requireEnabled(request.plan())
                 .flatMap(plan -> validateSubjects(subjects)
                         .then(Mono.defer(() -> Flux.fromIterable(subjects)
@@ -75,7 +75,7 @@ public class PlanBindings {
                                         request.effectiveTo()))
                                 .collectList())))
                 .map(bindings -> new BulkBindResult(request.plan(), bindings))
-                .doOnNext(result -> resolutionService.invalidateAll());
+                .doOnNext(result -> planResolution.invalidateAll());
     }
 
     private Mono<Void> validateSubjects(LinkedHashSet<BindingSubject> subjects) {

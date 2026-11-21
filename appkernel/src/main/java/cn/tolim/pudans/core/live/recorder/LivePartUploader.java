@@ -65,7 +65,7 @@ public class LivePartUploader {
 
     private final StoragePolicyValidator storagePolicyValidator;
 
-    private final RecordingStatus statusService;
+    private final RecordingStatus recordingStatus;
 
     private final LiveProperties properties;
 
@@ -80,7 +80,7 @@ public class LivePartUploader {
         }
         var name = recording.getMetadata().getName();
         var index = part.getIndex();
-        return statusService
+        return recordingStatus
                 .mutatePart(name, index, uploading -> {
                     uploading.setState(PartState.UPLOADING);
                     uploading.setErrorCode(null);
@@ -152,7 +152,7 @@ public class LivePartUploader {
     private Mono<LiveRecording.Part> markUploaded(
             String name, int index, StorageFile stored, Path file, long size) {
         var storageFile = stored.getMetadata().getName();
-        return statusService
+        return recordingStatus
                 .mutatePart(name, index, uploaded -> {
                     uploaded.setState(PartState.UPLOADED);
                     uploaded.setStorageFile(storageFile);
@@ -172,7 +172,7 @@ public class LivePartUploader {
                 : LIVE_STORAGE_FAILED.name();
         log.warn("录制成品上传失败 [{}#{}]：{}", name, index, error.getMessage());
         var failure = error instanceof ApiException ? error : LIVE_STORAGE_FAILED.exception();
-        return statusService
+        return recordingStatus
                 .mutatePart(name, index, failed -> {
                     failed.setState(PartState.FAILED);
                     failed.setErrorCode(code);

@@ -40,7 +40,7 @@ class OAuth2AuthenticationSessionTest {
     private static final String REGISTRATION_ID = "feishu";
 
     @Mock
-    ReactiveUserDetailsService userDetailsService;
+    ReactiveUserDetailsService reactiveUserDetailsService;
 
     @Mock
     ServerSecurityContextRepository securityContextRepository;
@@ -55,7 +55,7 @@ class OAuth2AuthenticationSessionTest {
     @BeforeEach
     void setUp() {
         session = new OAuth2AuthenticationSession(
-                userDetailsService, securityContextRepository, loginFlowHandler);
+                reactiveUserDetailsService, securityContextRepository, loginFlowHandler);
         exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/login/oauth2/code/feishu").build());
     }
 
@@ -88,7 +88,7 @@ class OAuth2AuthenticationSessionTest {
 
     @Test
     void disabledAccountCannotEstablishASession() {
-        when(userDetailsService.findByUsername("bob")).thenReturn(Mono.just(disabledUser("bob")));
+        when(reactiveUserDetailsService.findByUsername("bob")).thenReturn(Mono.just(disabledUser("bob")));
 
         StepVerifier.create(session.establishAndGetAuthentication(exchange, "bob", originalToken(), false))
                 .expectError(DisabledException.class)
@@ -100,7 +100,7 @@ class OAuth2AuthenticationSessionTest {
 
     @Test
     void unknownAccountCannotEstablishASession() {
-        when(userDetailsService.findByUsername("ghost")).thenReturn(Mono.empty());
+        when(reactiveUserDetailsService.findByUsername("ghost")).thenReturn(Mono.empty());
 
         StepVerifier.create(session.establishAndGetAuthentication(exchange, "ghost", originalToken(), false))
                 .expectError(UsernameNotFoundException.class)
@@ -111,7 +111,7 @@ class OAuth2AuthenticationSessionTest {
 
     @Test
     void twoFactorUserWithAnUnsatisfiedFlagReceivesAChallenge() {
-        when(userDetailsService.findByUsername("mfa")).thenReturn(Mono.just(user("mfa", true)));
+        when(reactiveUserDetailsService.findByUsername("mfa")).thenReturn(Mono.just(user("mfa", true)));
         var saved = givenSavedContext();
 
         StepVerifier.create(session.establishAndGetAuthentication(exchange, "mfa", originalToken(), false))
@@ -124,7 +124,7 @@ class OAuth2AuthenticationSessionTest {
 
     @Test
     void twoFactorUserWithASatisfiedFlagObtainsTheFullSession() {
-        when(userDetailsService.findByUsername("mfa")).thenReturn(Mono.just(user("mfa", true)));
+        when(reactiveUserDetailsService.findByUsername("mfa")).thenReturn(Mono.just(user("mfa", true)));
         var saved = givenSavedContext();
         when(loginFlowHandler.onLoginSuccess(any(), any())).thenReturn(Mono.empty());
 
@@ -139,7 +139,7 @@ class OAuth2AuthenticationSessionTest {
 
     @Test
     void userWithoutTwoFactorObtainsTheFullSession() {
-        when(userDetailsService.findByUsername("alice")).thenReturn(Mono.just(user("alice", false)));
+        when(reactiveUserDetailsService.findByUsername("alice")).thenReturn(Mono.just(user("alice", false)));
         var saved = givenSavedContext();
         when(loginFlowHandler.onLoginSuccess(any(), any())).thenReturn(Mono.empty());
 

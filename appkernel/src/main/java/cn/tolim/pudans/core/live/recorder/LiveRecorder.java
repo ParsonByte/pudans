@@ -29,7 +29,7 @@ public class LiveRecorder {
 
     private final LiveProperties properties;
 
-    private final RecordingStatus statusService;
+    private final RecordingStatus recordingStatus;
 
     private final LiveRecorderRegistry registry;
 
@@ -43,7 +43,7 @@ public class LiveRecorder {
 
     private final LiveStreamOpener opener;
 
-    private final RoomResolver resolveService;
+    private final RoomResolver roomResolver;
 
     private final LiveDiskGuard diskGuard;
 
@@ -59,13 +59,13 @@ public class LiveRecorder {
         var name = recording.getMetadata().getName();
         var task = new LiveRecorderTask(
                 properties,
-                statusService,
+                recordingStatus,
                 registry,
                 merger,
                 workspace,
                 segmentManifest,
                 opener,
-                resolveService,
+                roomResolver,
                 diskGuard,
                 backoff,
                 policyResolver,
@@ -77,10 +77,10 @@ public class LiveRecorder {
         if (result == LiveRecorderAdmission.Admission.REJECTED) {
             registry.unregister(name);
             log.warn("录制并发与队列均已满，拒绝创建 [{}]", name);
-            return statusService.fail(name, LIVE_RECORDING_LIMIT_REACHED, LIVE_RECORDING_LIMIT_REACHED.message());
+            return recordingStatus.fail(name, LIVE_RECORDING_LIMIT_REACHED, LIVE_RECORDING_LIMIT_REACHED.message());
         }
         if (result == LiveRecorderAdmission.Admission.QUEUED) {
-            return statusService.mutate(name, status -> status.setMessage("等待录制槽位"));
+            return recordingStatus.mutate(name, status -> status.setMessage("等待录制槽位"));
         }
         return Mono.just(recording);
     }
@@ -92,12 +92,12 @@ public class LiveRecorder {
                 admission.cancel(name);
                 registry.unregister(name);
                 yield clearRemoteKeys(name)
-                        .then(statusService.transition(name, LiveRecordingState.CANCELED, "排队中被取消"));
+                        .then(recordingStatus.transition(name, LiveRecordingState.CANCELED, "排队中被取消"));
             }
             case RECORDING -> requestStopSignal(name, requestedBy)
-                    .then(statusService.mutate(name, status -> status.setStopRequestedAt(Instant.now())))
+                    .then(recordingStatus.mutate(name, status -> status.setStopRequestedAt(Instant.now())))
                     .flatMap(updated -> registry.requestStop(name).thenReturn(updated))
-                    .flatMap(updated -> statusService.transition(name, LiveRecordingState.FINALIZING, "收到停止请求"))
+                    .flatMap(updated -> recordingStatus.transition(name, LiveRecordingState.FINALIZING, "收到停止请求"))
                     .doOnNext(updated -> scheduleStopWatchdog(name));
             case FINALIZING -> requestStopSignal(name, requestedBy)
                     .thenReturn(recording)
@@ -132,7 +132,7 @@ public class LiveRecorder {
                     }
                 })
                 .subscribeOn(Schedulers.boundedElastic())
-                .then(statusService.findRequired(name));
+                .then(recordingStatus.findRequired(name));
     }
 
     private void scheduleStopWatchdog(String name) {
@@ -144,7 +144,7 @@ public class LiveRecorder {
                     log.warn("录制停止超时，强制关闭拉流器 [{}]", name);
                     return registry
                             .forceStop(name)
-                            .then(statusService.fail(name, LIVE_STOP_TIMEOUT, LIVE_STOP_TIMEOUT.message()))
+                            .then(recordingStatus.fail(name, LIVE_STOP_TIMEOUT, LIVE_STOP_TIMEOUT.message()))
                             .then();
                 })
                 .subscribe(ignored -> {}, error -> log.warn("停止看门狗执行失败 [{}]：{}", name, error.getMessage()));

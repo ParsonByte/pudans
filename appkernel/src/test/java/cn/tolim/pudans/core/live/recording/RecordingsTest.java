@@ -38,19 +38,19 @@ class RecordingsTest {
     private ReactiveExtensionClient client;
 
     @Mock
-    private RecordingStatus statusService;
+    private RecordingStatus recordingStatus;
 
     @Mock
     private LiveStoragePolicyResolver policyResolver;
 
     @Mock
-    private LiveRecorder recorderService;
+    private LiveRecorder liveRecorder;
 
     @Mock
     private LiveRecorderRegistry registry;
 
     @Mock
-    private RoomResolver resolveService;
+    private RoomResolver roomResolver;
 
     @InjectMocks
     private Recordings service;
@@ -58,7 +58,7 @@ class RecordingsTest {
     @Test
     void retryRejectsActiveRecording() {
         var recording = recording(LiveRecordingState.RECORDING);
-        when(statusService.findRequired("rec-1")).thenReturn(Mono.just(recording));
+        when(recordingStatus.findRequired("rec-1")).thenReturn(Mono.just(recording));
 
         StepVerifier.create(service.retry("rec-1", null, "tester"))
                 .expectErrorSatisfies(error -> assertCode(error, LIVE_RECORDING_ACTIVE))
@@ -68,7 +68,7 @@ class RecordingsTest {
     @Test
     void retryRejectsTerminalRecordingWithoutFailure() {
         var recording = recording(LiveRecordingState.COMPLETED);
-        when(statusService.findRequired("rec-1")).thenReturn(Mono.just(recording));
+        when(recordingStatus.findRequired("rec-1")).thenReturn(Mono.just(recording));
 
         StepVerifier.create(service.retry("rec-1", null, "tester"))
                 .expectErrorSatisfies(error -> assertCode(error, LIVE_RECORDING_NOT_READY))
@@ -78,8 +78,8 @@ class RecordingsTest {
     @Test
     void retryRejectsUnknownMode() {
         var recording = recording(LiveRecordingState.FAILED);
-        when(statusService.findRequired("rec-1")).thenReturn(Mono.just(recording));
-        when(recorderService.hasLocalData(recording)).thenReturn(true);
+        when(recordingStatus.findRequired("rec-1")).thenReturn(Mono.just(recording));
+        when(liveRecorder.hasLocalData(recording)).thenReturn(true);
 
         StepVerifier.create(service.retry("rec-1", "SOMETHING", "tester"))
                 .expectErrorSatisfies(error -> assertCode(error, LIVE_INVALID_ARGUMENT))
@@ -89,8 +89,8 @@ class RecordingsTest {
     @Test
     void retryRejectsUploadWithoutLocalData() {
         var recording = recording(LiveRecordingState.FAILED);
-        when(statusService.findRequired("rec-1")).thenReturn(Mono.just(recording));
-        when(recorderService.hasLocalData(recording)).thenReturn(false);
+        when(recordingStatus.findRequired("rec-1")).thenReturn(Mono.just(recording));
+        when(liveRecorder.hasLocalData(recording)).thenReturn(false);
 
         StepVerifier.create(service.retry("rec-1", "upload", "tester"))
                 .expectErrorSatisfies(error -> assertCode(error, LIVE_RECORDING_NOT_READY))
@@ -108,11 +108,11 @@ class RecordingsTest {
         part.setSize(1024L);
         part.setSegmentCount(60);
         recording.getStatus().setParts(new ArrayList<>(List.of(part)));
-        when(statusService.findRequired("rec-1")).thenReturn(Mono.just(recording));
-        when(recorderService.hasLocalData(recording)).thenReturn(true);
-        when(recorderService.resumeUpload(recording)).thenReturn(Mono.just(recording));
-        when(statusService.mutate(eq("rec-1"), any())).thenReturn(Mono.just(recording));
-        when(statusService.transition("rec-1", LiveRecordingState.COMPLETED, "续传完成"))
+        when(recordingStatus.findRequired("rec-1")).thenReturn(Mono.just(recording));
+        when(liveRecorder.hasLocalData(recording)).thenReturn(true);
+        when(liveRecorder.resumeUpload(recording)).thenReturn(Mono.just(recording));
+        when(recordingStatus.mutate(eq("rec-1"), any())).thenReturn(Mono.just(recording));
+        when(recordingStatus.transition("rec-1", LiveRecordingState.COMPLETED, "续传完成"))
                 .thenReturn(Mono.just(recording));
 
         StepVerifier.create(service.retry("rec-1", "upload", "tester"))
@@ -126,8 +126,8 @@ class RecordingsTest {
     @Test
     void retryStreamRequiresExistingSource() {
         var recording = recording(LiveRecordingState.FAILED);
-        when(statusService.findRequired("rec-1")).thenReturn(Mono.just(recording));
-        when(recorderService.hasLocalData(recording)).thenReturn(false);
+        when(recordingStatus.findRequired("rec-1")).thenReturn(Mono.just(recording));
+        when(liveRecorder.hasLocalData(recording)).thenReturn(false);
         when(client.fetch(LiveSource.class, "douyin-1")).thenReturn(Mono.empty());
 
         StepVerifier.create(service.retry("rec-1", "stream", "tester"))

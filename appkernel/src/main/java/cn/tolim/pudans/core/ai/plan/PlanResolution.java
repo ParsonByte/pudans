@@ -49,9 +49,9 @@ public class PlanResolution {
 
     private final ReactiveExtensionClient client;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
-    private final PlanCatalog catalogService;
+    private final PlanCatalog planCatalog;
 
     private final Cache<String, ResolvedPlan> cache = CacheBuilder.newBuilder()
             .expireAfterWrite(CACHE_TTL)
@@ -91,7 +91,7 @@ public class PlanResolution {
     }
 
     private Mono<AiSetting.Billing> billing() {
-        return settingService
+        return aiSettings
                 .spec()
                 .map(spec -> spec.getBilling() == null ? new AiSetting.Billing() : spec.getBilling())
                 .defaultIfEmpty(new AiSetting.Billing());
@@ -132,9 +132,9 @@ public class PlanResolution {
         var ordered = new ArrayList<AiPlanBinding>(direct);
         ordered.addAll(grouped);
         return Flux.fromIterable(ordered)
-                .concatMap(binding -> catalogService
+                .concatMap(binding -> planCatalog
                         .find(binding.getSpec().getPlan())
-                        .filter(catalogService::usable)
+                        .filter(planCatalog::usable)
                         .map(plan -> resolved(plan, matchedBy(uid, binding))))
                 .next();
     }
@@ -144,9 +144,9 @@ public class PlanResolution {
                 || !StringUtils.hasText(billing.getDefaultPlan())) {
             return missing();
         }
-        return catalogService
+        return planCatalog
                 .find(billing.getDefaultPlan())
-                .filter(catalogService::usable)
+                .filter(planCatalog::usable)
                 .map(plan -> resolved(plan, "DefaultPlan"))
                 .switchIfEmpty(Mono.defer(PlanResolution::missing));
     }

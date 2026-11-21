@@ -21,9 +21,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class MemoryBridge {
 
-    private final GatewaySessions sessionService;
+    private final GatewaySessions gatewaySessions;
 
-    private final MemoryRecall recallService;
+    private final MemoryRecall memoryRecall;
 
     private final AiMemoryL1Repository l1Repository;
 
@@ -34,7 +34,7 @@ public class MemoryBridge {
     public Mono<List<MemoryInjection.Ref>> atomicSearch(
             String userId, String agentSource, String sessionKey, String query, int limit) {
         return session(userId, agentSource, sessionKey)
-                .flatMap(session -> recallService
+                .flatMap(session -> memoryRecall
                         .build(context(session), query, limit, 0)
                         .map(injection -> injection.refs().stream().limit(limit).toList()));
     }
@@ -64,7 +64,7 @@ public class MemoryBridge {
     }
 
     private Mono<GatewaySession> session(String userId, String agentSource, String sessionKey) {
-        return sessionService.requireSession(userId, agentSource, sessionKey);
+        return gatewaySessions.requireSession(userId, agentSource, sessionKey);
     }
 
     private static MemoryContext context(GatewaySession session) {

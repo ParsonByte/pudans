@@ -34,7 +34,7 @@ public class Reranking {
 
     private final ReactiveExtensionClient client;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     private final LangChain4jScoringModelFactory scoringModelFactory;
 
@@ -76,7 +76,7 @@ public class Reranking {
         if (!StringUtils.hasText(modelCode)) {
             return Mono.error(modelMissing(null));
         }
-        return accountService
+        return providerAccounts
                 .apiKey(account)
                 .defaultIfEmpty("")
                 .map(apiKey -> scoringModelFactory.create(provider, apiKey, modelCode))
@@ -105,7 +105,7 @@ public class Reranking {
                                 if (!scoringModelFactory.supports(protocol)) {
                                     return Mono.error(protocolUnsupported(protocol));
                                 }
-                                return accountService
+                                return providerAccounts
                                         .firstEnabled(providerName)
                                         .switchIfEmpty(Mono.error(accountMissing(providerName)))
                                         .map(account -> new RerankTarget(provider, account, model));

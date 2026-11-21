@@ -73,9 +73,9 @@ public class Generations {
 
     private final ReactiveExtensionClient client;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
-    private final RouteResolution routeResolutionService;
+    private final RouteResolution routeResolution;
 
     private final AiModelAdapterRegistry adapterRegistry;
 
@@ -85,7 +85,7 @@ public class Generations {
 
     private final PlanQuotas planQuotas;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final AiGenerationRecorder recorder;
 
@@ -93,7 +93,7 @@ public class Generations {
 
     private final CircuitBreaker circuitBreaker;
 
-    private final TeamQuotas teamQuotaService;
+    private final TeamQuotas teamQuotas;
 
     private final ProviderSpendGuard providerSpendGuard;
 
@@ -132,7 +132,7 @@ public class Generations {
                                 List.of()));
             });
         }
-        return routeResolutionService
+        return routeResolution
                 .resolveCapability(new RouteResolution.CapabilityInput(
                         command.routeGroup(),
                         Set.of(command.capability()),
@@ -154,7 +154,7 @@ public class Generations {
         return client.get(AiProvider.class, providerName)
                 .filter(provider -> provider.getSpec() != null && provider.getSpec().isEnabled())
                 .switchIfEmpty(Mono.error(invalid("模型所属供应商不可用。")))
-                .flatMap(provider -> accountService
+                .flatMap(provider -> providerAccounts
                         .firstEnabled(providerName)
                         .switchIfEmpty(Mono.error(new ApiException(
                                 HttpStatus.BAD_GATEWAY, CODE_NO_ACCOUNT, "供应商没有可用账号。")))
@@ -170,7 +170,7 @@ public class Generations {
 
     private Mono<AiGenerationResult> execute(
             AiGenerationCommand command, Resolved resolved, String idempotencyKey) {
-        return settingService
+        return aiSettings
                 .spec()
                 .map(spec -> spec.getBilling() == null ? new AiSetting.Billing() : spec.getBilling())
                 .defaultIfEmpty(new AiSetting.Billing())
@@ -206,7 +206,7 @@ public class Generations {
         var planId = reserved && config.getMetadata() != null ? config.getMetadata().getName() : null;
         var guard = providerSpendGuard
                 .check(resolved.provider(), resolved.account(), estimatedUnits)
-                .then(config == null ? Mono.empty() : teamQuotaService.check(command.teamId(), estimatedUnits));
+                .then(config == null ? Mono.empty() : teamQuotas.check(command.teamId(), estimatedUnits));
         var hold = guard.then(reserved
                 ? planQuotas
                         .reserve(

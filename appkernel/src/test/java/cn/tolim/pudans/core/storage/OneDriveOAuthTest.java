@@ -31,10 +31,10 @@ import reactor.core.publisher.Mono;
 class OneDriveOAuthTest {
 
     @Mock
-    Policies policyService;
+    Policies policies;
 
     @Mock
-    TransferTokens tokenService;
+    TransferTokens transferTokens;
 
     @Mock
     ExternalUrlSupplier externalUrl;
@@ -54,14 +54,14 @@ class OneDriveOAuthTest {
     void setUp() {
         var webClient = WebClient.builder().exchangeFunction(exchangeFunction).build();
         service = new OneDriveOAuth(
-                policyService, tokenService, externalUrl, driverResolver, secretCipher, webClient);
+                policies, transferTokens, externalUrl, driverResolver, secretCipher, webClient);
     }
 
     @Test
     void buildsTheAuthorizeUrl() {
         var policy = policy(true);
-        when(policyService.get("od")).thenReturn(Mono.just(policy));
-        when(tokenService.signOAuthState(eq("od"), any(Duration.class))).thenReturn("state-token");
+        when(policies.get("od")).thenReturn(Mono.just(policy));
+        when(transferTokens.signOAuthState(eq("od"), any(Duration.class))).thenReturn("state-token");
         when(externalUrl.get()).thenReturn(URI.create("https://pudans.example.com"));
 
         var result = service.authorizeUrl("od").block();
@@ -78,7 +78,7 @@ class OneDriveOAuthTest {
 
     @Test
     void reportsConfiguredAuthorization() {
-        when(policyService.get("od")).thenReturn(Mono.just(policy(true)));
+        when(policies.get("od")).thenReturn(Mono.just(policy(true)));
 
         var result = service.status("od").block();
 
@@ -88,7 +88,7 @@ class OneDriveOAuthTest {
 
     @Test
     void reportsMissingAuthorization() {
-        when(policyService.get("od")).thenReturn(Mono.just(policy(false)));
+        when(policies.get("od")).thenReturn(Mono.just(policy(false)));
 
         var result = service.status("od").block();
 
@@ -99,11 +99,11 @@ class OneDriveOAuthTest {
     @Test
     void storesTheRefreshTokenEncrypted() {
         var policy = policy(true);
-        when(tokenService.verifyOAuthState("state")).thenReturn("od");
-        when(policyService.get("od")).thenReturn(Mono.just(policy));
+        when(transferTokens.verifyOAuthState("state")).thenReturn("od");
+        when(policies.get("od")).thenReturn(Mono.just(policy));
         when(secretCipher.decrypt("client-secret")).thenReturn("client-secret");
         when(secretCipher.encrypt("new-refresh")).thenReturn("enc:new-refresh");
-        when(policyService.update(policy)).thenReturn(Mono.just(policy));
+        when(policies.update(policy)).thenReturn(Mono.just(policy));
         when(externalUrl.get()).thenReturn(URI.create("https://pudans.example.com"));
         when(exchangeFunction.exchange(any()))
                 .thenReturn(Mono.just(response("{\"refresh_token\":\"new-refresh\"}")));
@@ -119,7 +119,7 @@ class OneDriveOAuthTest {
     @Test
     void resolvesTheDriveIdFromTheSite() {
         var policy = policy(true);
-        when(policyService.get("od")).thenReturn(Mono.just(policy));
+        when(policies.get("od")).thenReturn(Mono.just(policy));
         when(secretCipher.decrypt(anyString())).thenAnswer(invocation -> invocation.getArgument(0));
         when(exchangeFunction.exchange(any()))
                 .thenReturn(

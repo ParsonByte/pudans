@@ -19,7 +19,7 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
 
     private final ServerSecurityContextRepository securityContextRepository;
 
-    private final Connections connectionService;
+    private final Connections connections;
 
     private final OAuth2AuthenticationSession authenticationSession;
 
@@ -33,14 +33,14 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
 
     public OAuth2SecurityConfigurer(
             ServerSecurityContextRepository securityContextRepository,
-            Connections connectionService,
+            Connections connections,
             OAuth2AuthenticationSession authenticationSession,
             OAuth2AuthenticationTokenCache authenticationCache,
             ServerResponse.Context context,
             ReactiveClientRegistrationRepository clientRegistrationRepository,
             SecurityProperties securityProperties) {
         this.securityContextRepository = securityContextRepository;
-        this.connectionService = connectionService;
+        this.connections = connections;
         this.authenticationSession = authenticationSession;
         this.authenticationCache = authenticationCache;
         this.context = context;
@@ -51,7 +51,7 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
     @Override
     public void configure(ServerHttpSecurity http) {
         var mapOAuth2Filter = new MapOAuth2AuthenticationFilter(
-                securityContextRepository, connectionService, authenticationSession, authenticationCache, context);
+                securityContextRepository, connections, authenticationSession, authenticationCache, context);
         http.addFilterBefore(mapOAuth2Filter, SecurityWebFiltersOrder.AUTHENTICATION);
         http.addFilterBefore(
                 new TwoFactorOAuth2GateFilter(securityContextRepository, context),
@@ -61,6 +61,6 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
                 .authorizedClientRepository(new WebSessionServerOAuth2AuthorizedClientRepository())
                 .loginPage("/login")
                 .authenticationSuccessHandler(new OAuth2LoginSuccessHandler(
-                        connectionService, authenticationSession, securityProperties, context)));
+                        connections, authenticationSession, securityProperties, context)));
     }
 }

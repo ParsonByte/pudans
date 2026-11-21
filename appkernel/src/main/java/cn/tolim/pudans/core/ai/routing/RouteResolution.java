@@ -45,13 +45,13 @@ public class RouteResolution {
 
     private static final int MAX_FALLBACK_DEPTH = 3;
 
-    private final ChatModes chatModeService;
+    private final ChatModes chatModes;
 
-    private final RouteGroups routeGroupService;
+    private final RouteGroups routeGroups;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
-    private final RouteCandidates candidateService;
+    private final RouteCandidates routeCandidates;
 
     private final RouteEngine routeEngine;
 
@@ -104,7 +104,7 @@ public class RouteResolution {
                 .filter(StringUtils::hasText)
                 .distinct()
                 .filter(name -> !visited.contains(name))
-                .concatMap(name -> routeGroupService
+                .concatMap(name -> routeGroups
                         .get(name)
                         .filter(candidate -> candidate.getSpec() != null && candidate.getSpec().isEnabled())
                         .flatMap(candidate -> {
@@ -203,7 +203,7 @@ public class RouteResolution {
             return Mono.error(new ApiException(
                     HttpStatus.BAD_REQUEST, CODE_GROUP_MISSING, "路由组不可用。"));
         }
-        return candidateService
+        return routeCandidates
                 .expand(
                         group,
                         Set.of(AiModel.Capability.CHAT),
@@ -225,9 +225,9 @@ public class RouteResolution {
         var requested = StringUtils.hasText(modeCode);
         var code = requested
                 ? Mono.just(modeCode)
-                : settingService.spec().flatMap(spec -> Mono.justOrEmpty(spec.getDefaultChatMode()));
+                : aiSettings.spec().flatMap(spec -> Mono.justOrEmpty(spec.getDefaultChatMode()));
         return code.filter(StringUtils::hasText)
-                .flatMap(chatModeService::get)
+                .flatMap(chatModes::get)
                 .onErrorMap(
                         ExtensionNotFoundException.class,
                         error -> new ApiException(
@@ -250,7 +250,7 @@ public class RouteResolution {
             return Mono.error(new ApiException(
                     HttpStatus.BAD_REQUEST, CODE_GROUP_MISSING, "路由组不可用。"));
         }
-        return candidateService
+        return routeCandidates
                 .expand(
                         group,
                         input.capabilities(),
@@ -289,13 +289,13 @@ public class RouteResolution {
 
     private Mono<AiRouteGroup> resolveGroup(@Nullable String routeGroupCode, @Nullable AiChatMode mode) {
         if (StringUtils.hasText(routeGroupCode)) {
-            return routeGroupService.get(routeGroupCode);
+            return routeGroups.get(routeGroupCode);
         }
         var modeGroup = mode == null || mode.getSpec() == null ? null : mode.getSpec().getRouteGroup();
         if (StringUtils.hasText(modeGroup)) {
-            return routeGroupService.get(modeGroup);
+            return routeGroups.get(modeGroup);
         }
-        return routeGroupService
+        return routeGroups
                 .defaultGroup()
                 .onErrorMap(
                         IllegalStateException.class,

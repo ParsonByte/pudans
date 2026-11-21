@@ -12,7 +12,7 @@ public class TeamRuntimeRegistry {
 
     private final ConcurrentMap<String, TeamRuntime> runtimes = new ConcurrentHashMap<>();
 
-    private final Teams teamService;
+    private final Teams teams;
 
     private final TeamTaskStore taskStore;
 
@@ -22,6 +22,6 @@ public class TeamRuntimeRegistry {
         }
         var name = teamName.trim();
         return runtimes.computeIfAbsent(
-                name, key -> new TeamRuntime(key, new AiTeamAccessPolicy(teamService), taskStore));
+                name, key -> new TeamRuntime(key, new AiTeamAccessPolicy(teams), taskStore));
     }
 }

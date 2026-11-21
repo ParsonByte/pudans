@@ -39,7 +39,7 @@ class AiRuntimeEndpointTest {
     private static final Instant NOW = Instant.parse("2026-11-19T00:00:00Z");
 
     @Mock
-    AgentRuntimes runtimeService;
+    AgentRuntimes agentRuntimes;
 
     @Mock
     AiEndpointRequests requests;
@@ -49,13 +49,13 @@ class AiRuntimeEndpointTest {
     @BeforeEach
     void setUp() {
         lenient().when(requests.userId(any())).thenReturn(Mono.just(USER));
-        var endpoint = new AiRuntimeEndpoint(runtimeService, requests, JsonUtils.mapper());
+        var endpoint = new AiRuntimeEndpoint(agentRuntimes, requests, JsonUtils.mapper());
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
     @Test
     void listsRuntimesWithThePagingParameters() {
-        when(runtimeService.list(USER, 123L, 5))
+        when(agentRuntimes.list(USER, 123L, 5))
                 .thenReturn(Flux.just(view(SandboxState.RUNNING, "sb-1")));
 
         client.get()
@@ -70,7 +70,7 @@ class AiRuntimeEndpointTest {
 
     @Test
     void getsASingleRuntime() {
-        when(runtimeService.get("agent-1", USER)).thenReturn(Mono.just(view(SandboxState.STOPPED, null)));
+        when(agentRuntimes.get("agent-1", USER)).thenReturn(Mono.just(view(SandboxState.STOPPED, null)));
 
         client.get()
                 .uri("/airuntimes/agent-1")
@@ -83,7 +83,7 @@ class AiRuntimeEndpointTest {
 
     @Test
     void listsSandboxProviders() {
-        when(runtimeService.providers()).thenReturn(Flux.just(new ProviderInfo(
+        when(agentRuntimes.providers()).thenReturn(Flux.just(new ProviderInfo(
                 "ALIYUN",
                 "阿里云沙箱",
                 "cn-hangzhou",
@@ -103,7 +103,7 @@ class AiRuntimeEndpointTest {
 
     @Test
     void startsASandbox() {
-        when(runtimeService.start("agent-1", USER)).thenReturn(Mono.just(view(SandboxState.RUNNING, "sb-1")));
+        when(agentRuntimes.start("agent-1", USER)).thenReturn(Mono.just(view(SandboxState.RUNNING, "sb-1")));
 
         client.post()
                 .uri("/airuntimes/agent-1/start")
@@ -116,7 +116,7 @@ class AiRuntimeEndpointTest {
 
     @Test
     void returnsTheLockConflictCodeAsAConflict() {
-        when(runtimeService.start("agent-1", USER)).thenReturn(Mono.error(
+        when(agentRuntimes.start("agent-1", USER)).thenReturn(Mono.error(
                 new ApiException(HttpStatus.CONFLICT, SandboxErrors.LOCKED, "运行时正在被其他操作占用。")));
 
         client.post()
@@ -127,7 +127,7 @@ class AiRuntimeEndpointTest {
 
     @Test
     void stopsASandbox() {
-        when(runtimeService.stop("agent-1", USER)).thenReturn(Mono.just(view(SandboxState.STOPPED, null)));
+        when(agentRuntimes.stop("agent-1", USER)).thenReturn(Mono.just(view(SandboxState.STOPPED, null)));
 
         client.post()
                 .uri("/airuntimes/agent-1/stop")
@@ -139,7 +139,7 @@ class AiRuntimeEndpointTest {
 
     @Test
     void restartsASandbox() {
-        when(runtimeService.restart("agent-1", USER)).thenReturn(Mono.just(view(SandboxState.RUNNING, "sb-2")));
+        when(agentRuntimes.restart("agent-1", USER)).thenReturn(Mono.just(view(SandboxState.RUNNING, "sb-2")));
 
         client.post()
                 .uri("/airuntimes/agent-1/restart")
@@ -151,19 +151,19 @@ class AiRuntimeEndpointTest {
 
     @Test
     void deletesARuntime() {
-        when(runtimeService.delete("agent-1", USER)).thenReturn(Mono.empty());
+        when(agentRuntimes.delete("agent-1", USER)).thenReturn(Mono.empty());
 
         client.delete()
                 .uri("/airuntimes/agent-1")
                 .exchange()
                 .expectStatus().isNoContent();
 
-        verify(runtimeService).delete("agent-1", USER);
+        verify(agentRuntimes).delete("agent-1", USER);
     }
 
     @Test
     void executesACommand() {
-        when(runtimeService.exec("agent-1", USER, "echo", List.of("hello"), "/workspace", 30))
+        when(agentRuntimes.exec("agent-1", USER, "echo", List.of("hello"), "/workspace", 30))
                 .thenReturn(Mono.just(new SandboxExecResult(0, "hello\n", "", 12)));
 
         client.post()
@@ -181,7 +181,7 @@ class AiRuntimeEndpointTest {
 
     @Test
     void readsAFile() {
-        when(runtimeService.readFile("agent-1", USER, "/workspace/a.txt"))
+        when(agentRuntimes.readFile("agent-1", USER, "/workspace/a.txt"))
                 .thenReturn(Mono.just(new SandboxFile("/workspace/a.txt", "utf-8", "hello", 5)));
 
         client.get()
@@ -201,12 +201,12 @@ class AiRuntimeEndpointTest {
                 .exchange()
                 .expectStatus().isBadRequest();
 
-        verifyNoInteractions(runtimeService);
+        verifyNoInteractions(agentRuntimes);
     }
 
     @Test
     void writesAFile() {
-        when(runtimeService.writeFile("agent-1", USER, "/workspace/a.txt", "utf-8", "hello"))
+        when(agentRuntimes.writeFile("agent-1", USER, "/workspace/a.txt", "utf-8", "hello"))
                 .thenReturn(Mono.empty());
 
         client.post()
@@ -218,12 +218,12 @@ class AiRuntimeEndpointTest {
                 .exchange()
                 .expectStatus().isNoContent();
 
-        verify(runtimeService).writeFile("agent-1", USER, "/workspace/a.txt", "utf-8", "hello");
+        verify(agentRuntimes).writeFile("agent-1", USER, "/workspace/a.txt", "utf-8", "hello");
     }
 
     @Test
     void streamsLogEvents() {
-        when(runtimeService.logs("agent-1", USER, false, null))
+        when(agentRuntimes.logs("agent-1", USER, false, null))
                 .thenReturn(Flux.just(new SandboxLogEvent(NOW, "stdout", "hello")));
 
         client.get()

@@ -51,14 +51,14 @@ class ChatToolsSubagentTest {
 
     private final Hooks hooks = mock(Hooks.class);
 
-    private final AiGateway gatewayService = mock(AiGateway.class);
+    private final AiGateway aiGateway = mock(AiGateway.class);
 
-    private final AgentRuntimes runtimeService = mock(AgentRuntimes.class);
+    private final AgentRuntimes agentRuntimes = mock(AgentRuntimes.class);
 
     private final cn.tolim.pudans.core.ai.harness.workspace.Workspaces workspaces =
             mock(cn.tolim.pudans.core.ai.harness.workspace.Workspaces.class);
 
-    private final MemoryViews memoryViewService = mock(MemoryViews.class);
+    private final MemoryViews memoryViews = mock(MemoryViews.class);
 
     private final cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository memoryRepository =
             mock(cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository.class);
@@ -68,10 +68,10 @@ class ChatToolsSubagentTest {
             skills,
             subagents,
             hooks,
-            gatewayService,
-            runtimeService,
+            aiGateway,
+            agentRuntimes,
             workspaces,
-            memoryViewService,
+            memoryViews,
             memoryRepository);
 
     @org.junit.jupiter.api.io.TempDir
@@ -117,11 +117,11 @@ class ChatToolsSubagentTest {
     @Test
     void readsWritesAndReportsRuntimeFilesThroughTools() {
         when(hooks.dispatch(any(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
-        when(runtimeService.readFile("agent-a", "user-1", "/tmp/a"))
+        when(agentRuntimes.readFile("agent-a", "user-1", "/tmp/a"))
                 .thenReturn(Mono.just(new SandboxFile("/tmp/a", "utf-8", "hi", 2)));
-        when(runtimeService.writeFile("agent-a", "user-1", "/tmp/a", "utf-8", "next"))
+        when(agentRuntimes.writeFile("agent-a", "user-1", "/tmp/a", "utf-8", "next"))
                 .thenReturn(Mono.empty());
-        when(runtimeService.status("agent-a", "user-1"))
+        when(agentRuntimes.status("agent-a", "user-1"))
                 .thenReturn(Mono.just(new SandboxStatus(SandboxState.RUNNING, "ok")));
 
         var read = service
@@ -169,7 +169,7 @@ class ChatToolsSubagentTest {
     @Test
     void searchesAndAddsLongTermMemory() {
         when(hooks.dispatch(any(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
-        when(memoryViewService.search("user-1", "team-a", "agent-a", "部署", 5))
+        when(memoryViews.search("user-1", "team-a", "agent-a", "部署", 5))
                 .thenReturn(Mono.just(List.of(new MemoryInjection.Ref(
                         1L, "record-1", "生产环境部署在东京", MemoryType.WORK_FACT, "部署", 0.9))));
         var search = service
@@ -210,7 +210,7 @@ class ChatToolsSubagentTest {
         var captured = new AtomicReference<AiGatewayInvocation>();
         when(hooks.dispatch(any(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
         when(subagents.resolve("agent-a", "helper")).thenReturn(Mono.just(subagent()));
-        when(gatewayService.complete(any())).thenAnswer(invocation -> {
+        when(aiGateway.complete(any())).thenAnswer(invocation -> {
             captured.set(invocation.getArgument(0));
             return Mono.just(result());
         });

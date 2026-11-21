@@ -21,31 +21,31 @@ import reactor.core.publisher.Mono;
 @Service
 public class Downloads {
 
-    private final FileRecords fileService;
+    private final FileRecords fileRecords;
 
     private final StorageDriverResolver driverResolver;
 
-    private final TransferTokens tokenService;
+    private final TransferTokens transferTokens;
 
     private final ParameterGroups parameterGroups;
 
-    private final Policies policyService;
+    private final Policies policies;
 
     public Downloads(
-            FileRecords fileService,
+            FileRecords fileRecords,
             StorageDriverResolver driverResolver,
-            TransferTokens tokenService,
+            TransferTokens transferTokens,
             ParameterGroups parameterGroups,
-            Policies policyService) {
-        this.fileService = fileService;
+            Policies policies) {
+        this.fileRecords = fileRecords;
         this.driverResolver = driverResolver;
-        this.tokenService = tokenService;
+        this.transferTokens = transferTokens;
         this.parameterGroups = parameterGroups;
-        this.policyService = policyService;
+        this.policies = policies;
     }
 
     public Mono<DownloadUrl> downloadUrl(String fileId, Duration requestedTtl) {
-        return fileService.get(fileId).flatMap(file -> {
+        return fileRecords.get(fileId).flatMap(file -> {
             ensureActive(file);
             return parameterGroups
                     .getStorage()
@@ -63,7 +63,7 @@ public class Downloads {
                             ttl = defaultTtl;
                         }
                         var expiresAt = Instant.now().plus(ttl);
-                        var token = tokenService.signDownload(fileId, ttl);
+                        var token = transferTokens.signDownload(fileId, ttl);
                         var url = ApiGroups.API_PREFIX
                                 + "/storagefiles/"
                                 + fileId
@@ -75,7 +75,7 @@ public class Downloads {
     }
 
     public Mono<StorageReadResult> open(String fileId, StorageReadOptions options) {
-        return fileService.get(fileId).flatMap(file -> {
+        return fileRecords.get(fileId).flatMap(file -> {
             ensureActive(file);
             return driverResolver
                     .driver(file.getSpec().getPolicy())
@@ -84,9 +84,9 @@ public class Downloads {
     }
 
     public Mono<StorageSource> sourceUrl(String fileId, StorageSourceOptions options) {
-        return fileService.get(fileId).flatMap(file -> {
+        return fileRecords.get(fileId).flatMap(file -> {
             ensureActive(file);
-            return policyService.get(file.getSpec().getPolicy()).flatMap(policy -> {
+            return policies.get(file.getSpec().getPolicy()).flatMap(policy -> {
                 if (policy.getSpec().isProxyDownload()) {
                     return Mono.empty();
                 }
@@ -102,7 +102,7 @@ public class Downloads {
     }
 
     public void verify(String token, String fileId) {
-        tokenService.verifyDownload(token, fileId);
+        transferTokens.verifyDownload(token, fileId);
     }
 
     private void ensureActive(StorageFile file) {

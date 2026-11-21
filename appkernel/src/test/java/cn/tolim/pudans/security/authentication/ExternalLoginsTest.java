@@ -35,7 +35,7 @@ import reactor.test.StepVerifier;
 class ExternalLoginsTest {
 
     @Mock
-    ReactiveUserDetailsService userDetailsService;
+    ReactiveUserDetailsService reactiveUserDetailsService;
 
     @Mock
     ServerSecurityContextRepository securityContextRepository;
@@ -53,7 +53,7 @@ class ExternalLoginsTest {
     @BeforeEach
     void setUp() {
         service = new ExternalLogins(
-                userDetailsService, securityContextRepository, loginFlowHandler, domainEventPublisher);
+                reactiveUserDetailsService, securityContextRepository, loginFlowHandler, domainEventPublisher);
         exchange = MockServerWebExchange.from(MockServerHttpRequest.post("/login").build());
     }
 
@@ -71,7 +71,7 @@ class ExternalLoginsTest {
 
     @Test
     void disabledUserIsRejectedBeforeAnySessionIsCreated() {
-        when(userDetailsService.findByUsername("disabled"))
+        when(reactiveUserDetailsService.findByUsername("disabled"))
                 .thenReturn(Mono.just(user("disabled", true, false)));
 
         StepVerifier.create(service.complete(exchange, "disabled", "passkey"))
@@ -93,7 +93,7 @@ class ExternalLoginsTest {
     @Test
     void twoFactorUserReceivesAChallengeInsteadOfAFullSession() {
         var savedContext = new AtomicReference<SecurityContext>();
-        when(userDetailsService.findByUsername("mfa")).thenReturn(Mono.just(user("mfa", false, true)));
+        when(reactiveUserDetailsService.findByUsername("mfa")).thenReturn(Mono.just(user("mfa", false, true)));
         when(securityContextRepository.save(any(), any())).thenAnswer(invocation -> {
             savedContext.set(invocation.getArgument(1));
             return Mono.empty();
@@ -114,7 +114,7 @@ class ExternalLoginsTest {
     @Test
     void normalUserCompletesTheLoginFlow() {
         var savedContext = new AtomicReference<SecurityContext>();
-        when(userDetailsService.findByUsername("alice")).thenReturn(Mono.just(user("alice", false, false)));
+        when(reactiveUserDetailsService.findByUsername("alice")).thenReturn(Mono.just(user("alice", false, false)));
         when(securityContextRepository.save(any(), any())).thenAnswer(invocation -> {
             savedContext.set(invocation.getArgument(1));
             return Mono.empty();

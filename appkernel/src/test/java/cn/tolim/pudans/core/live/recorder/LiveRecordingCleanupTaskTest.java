@@ -49,7 +49,7 @@ class LiveRecordingCleanupTaskTest {
     private StorageTransfer storageTransfer;
 
     @Mock
-    private RecordingStatus statusService;
+    private RecordingStatus recordingStatus;
 
     @Mock
     private LiveRecordingWorkspace workspace;
@@ -61,7 +61,7 @@ class LiveRecordingCleanupTaskTest {
     private LiveMetrics metrics;
 
     @Mock
-    private LiveAlerts alertService;
+    private LiveAlerts liveAlerts;
 
     @TempDir
     private Path tempDir;
@@ -75,7 +75,7 @@ class LiveRecordingCleanupTaskTest {
         properties = new LiveProperties();
         properties.getRecorder().setWorkDir(tempDir.toString());
         task = new LiveRecordingCleanupTask(
-                client, storageTransfer, statusService, workspace, redisTemplate, properties, metrics, alertService);
+                client, storageTransfer, recordingStatus, workspace, redisTemplate, properties, metrics, liveAlerts);
     }
 
     @Test
@@ -131,8 +131,8 @@ class LiveRecordingCleanupTaskTest {
         when(storageTransfer.purgeObjectFirst("storage-c"))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.BAD_GATEWAY, "storage-object-delete-failed", "删除存储对象失败")));
-        when(statusService.mutate(eq("live-c"), any())).thenReturn(Mono.just(failing));
-        when(alertService.alert(eq("live.cleanup.failed"), eq("live-c"), any())).thenReturn(Mono.empty());
+        when(recordingStatus.mutate(eq("live-c"), any())).thenReturn(Mono.just(failing));
+        when(liveAlerts.alert(eq("live.cleanup.failed"), eq("live-c"), any())).thenReturn(Mono.empty());
         when(workspace.recordingDir(anyString())).thenAnswer(invocation -> tempDir.resolve((String) invocation.getArgument(0)));
 
         var deleted = task.cleanupRetention().block();
@@ -142,7 +142,7 @@ class LiveRecordingCleanupTaskTest {
         verify(client, never()).delete(failing);
         verify(client).delete(succeeding);
         var mutation = ArgumentCaptor.forClass(Consumer.class);
-        verify(statusService).mutate(eq("live-c"), mutation.capture());
+        verify(recordingStatus).mutate(eq("live-c"), mutation.capture());
         var status = failing.getStatus();
         status.setCleanupAttempts(0);
         mutation.getValue().accept(status);

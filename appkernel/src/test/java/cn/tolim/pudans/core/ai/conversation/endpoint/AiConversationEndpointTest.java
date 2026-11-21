@@ -48,10 +48,10 @@ class AiConversationEndpointTest {
     Conversations conversationService;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     Accounts accounts;
@@ -62,8 +62,8 @@ class AiConversationEndpointTest {
     void setUp() {
         var endpoint = new AiConversationEndpoint(
                 conversationService,
-                teamService,
-                settingService,
+                teams,
+                aiSettings,
                 new AiEndpointRequests(accounts),
                 new com.fasterxml.jackson.databind.ObjectMapper());
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
@@ -123,8 +123,8 @@ class AiConversationEndpointTest {
     @Test
     void createsAConversationWithTheDefaultAgent() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(settingService.defaults()).thenReturn(Mono.just(new AiSetting.Defaults()));
-        when(teamService.requireAgent("default", USER_ID)).thenReturn(Mono.just(agent("default", "default")));
+        when(aiSettings.defaults()).thenReturn(Mono.just(new AiSetting.Defaults()));
+        when(teams.requireAgent("default", USER_ID)).thenReturn(Mono.just(agent("default", "default")));
         when(conversationService.createOrGet(any(NewConversation.class))).thenReturn(Mono.just(conversation()));
 
         client.post()
@@ -153,7 +153,7 @@ class AiConversationEndpointTest {
     @Test
     void createsAConversationWithAnExplicitAgent() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(teamService.requireAgent("research", USER_ID)).thenReturn(Mono.just(agent("research", "team-x")));
+        when(teams.requireAgent("research", USER_ID)).thenReturn(Mono.just(agent("research", "team-x")));
         when(conversationService.createOrGet(any(NewConversation.class))).thenReturn(Mono.just(conversation()));
 
         client.post()
@@ -168,7 +168,7 @@ class AiConversationEndpointTest {
         assertThat(captor.getValue().agentId()).isEqualTo("research");
         assertThat(captor.getValue().teamId()).isEqualTo("team-x");
         assertThat(captor.getValue().routeGroup()).isEqualTo("pro-group");
-        verify(settingService, never()).defaults();
+        verify(aiSettings, never()).defaults();
     }
 
     @Test

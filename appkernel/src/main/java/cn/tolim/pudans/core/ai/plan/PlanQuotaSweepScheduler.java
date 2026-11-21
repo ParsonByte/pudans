@@ -17,14 +17,14 @@ public class PlanQuotaSweepScheduler implements SmartLifecycle {
 
     private static final Duration SWEEP_INTERVAL = Duration.ofMinutes(5);
 
-    private final PlanQuotas quotaService;
+    private final PlanQuotas planQuotas;
 
     private volatile boolean running;
 
     private Disposable sweep;
 
     Mono<PlanQuotas.SweepResult> sweepOnce() {
-        return quotaService.sweepExpired();
+        return planQuotas.sweepExpired();
     }
 
     @Override

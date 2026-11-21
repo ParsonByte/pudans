@@ -57,7 +57,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
 
     private final Recordings recordingService;
 
-    private final RecordingQueries queryService;
+    private final RecordingQueries recordingQueries;
 
     private final ReactiveExtensionClient client;
 
@@ -98,7 +98,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> query(ServerRequest request) {
         return Mono.fromCallable(() -> parseQuery(request))
-                .flatMap(queryService::query)
+                .flatMap(recordingQueries::query)
                 .map(result -> new LiveRecordingPage(
                         result.getItems().stream().map(LiveRecordingEndpoint::toView).toList(),
                         result.getTotal(),

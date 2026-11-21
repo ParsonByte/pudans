@@ -35,7 +35,7 @@ import reactor.core.publisher.Mono;
 class AiChatEndpointTest {
 
     @Mock
-    ChatCompletions chatService;
+    ChatCompletions chatCompletions;
 
     @Mock
     AiEndpointRequests requests;
@@ -48,7 +48,7 @@ class AiChatEndpointTest {
     @BeforeEach
     void setUp() {
         when(requests.userId(any(), anyString(), anyString())).thenReturn(Mono.just("user-1"));
-        var endpoint = new AiChatEndpoint(chatService, requests, storageTransfer, new ObjectMapper());
+        var endpoint = new AiChatEndpoint(chatCompletions, requests, storageTransfer, new ObjectMapper());
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(principal())).build()))
@@ -57,7 +57,7 @@ class AiChatEndpointTest {
 
     @Test
     void completesAChatRequest() {
-        when(chatService.complete(any())).thenReturn(Mono.just(result()));
+        when(chatCompletions.complete(any())).thenReturn(Mono.just(result()));
 
         client.post()
                 .uri("/chats/-/completions")
@@ -76,7 +76,7 @@ class AiChatEndpointTest {
 
     @Test
     void streamsChatEvents() {
-        when(chatService.stream(any())).thenReturn(Flux.just(
+        when(chatCompletions.stream(any())).thenReturn(Flux.just(
                 new AiChatStreamEvent.Meta(new AiChatCompletionResult.StreamMeta(
                         "req-1", 7L, "fast", "fast-group", "provider-a", "account-a", "gpt-test",
                         "CHEAP", "default", "default", "session-1")),
@@ -110,7 +110,7 @@ class AiChatEndpointTest {
 
     @Test
     void confirmsAPendingToolCall() {
-        when(chatService.confirm("user-1", "run-1", "call-1", true)).thenReturn(true);
+        when(chatCompletions.confirm("user-1", "run-1", "call-1", true)).thenReturn(true);
 
         client.post()
                 .uri("/chats/-/tool-confirmations")
@@ -124,7 +124,7 @@ class AiChatEndpointTest {
 
     @Test
     void submitsAnExternalToolResult() {
-        when(chatService.submitExternalResult("user-1", "run-1", "call-1", "外部结果", false))
+        when(chatCompletions.submitExternalResult("user-1", "run-1", "call-1", "外部结果", false))
                 .thenReturn(true);
 
         client.post()
@@ -139,7 +139,7 @@ class AiChatEndpointTest {
 
     @Test
     void interruptsARun() {
-        when(chatService.interrupt("user-1", "run-1")).thenReturn(true);
+        when(chatCompletions.interrupt("user-1", "run-1")).thenReturn(true);
 
         client.post()
                 .uri("/chats/-/runs/run-1/interrupt")
@@ -149,7 +149,7 @@ class AiChatEndpointTest {
 
     @Test
     void reportsAnUnknownToolConfirmation() {
-        when(chatService.confirm("user-1", "run-1", "call-1", false)).thenReturn(false);
+        when(chatCompletions.confirm("user-1", "run-1", "call-1", false)).thenReturn(false);
 
         client.post()
                 .uri("/chats/-/tool-confirmations")

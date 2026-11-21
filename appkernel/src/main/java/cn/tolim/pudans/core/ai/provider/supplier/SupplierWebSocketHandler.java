@@ -21,7 +21,7 @@ public class SupplierWebSocketHandler implements WebSocketHandler {
 
     private final SupplierWebSocketAccess access;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     private final UnaryOperator<String> pathNormalizer;
 
@@ -32,10 +32,10 @@ public class SupplierWebSocketHandler implements WebSocketHandler {
     public SupplierWebSocketHandler(
             String supplierSegment,
             SupplierWebSocketAccess access,
-            ProviderAccounts accountService,
+            ProviderAccounts providerAccounts,
             UnaryOperator<String> pathNormalizer) {
         this.access = access;
-        this.accountService = accountService;
+        this.providerAccounts = providerAccounts;
         this.pathNormalizer = pathNormalizer;
         this.pathPattern = Pattern.compile("^" + Pattern.quote(ApiGroups.API_PREFIX)
                 + "/aiproviders/([^/]+)/" + Pattern.quote(supplierSegment) + "/ws/?(.*)$");
@@ -54,7 +54,7 @@ public class SupplierWebSocketHandler implements WebSocketHandler {
                 .requireProvider(providerName)
                 .flatMap(provider -> access
                         .requireAccount(provider)
-                        .flatMap(account -> accountService
+                        .flatMap(account -> providerAccounts
                                 .apiKey(account)
                                 .defaultIfEmpty("")
                                 .flatMap(apiKey -> proxy(session, provider, path, uri.getRawQuery(), apiKey))));

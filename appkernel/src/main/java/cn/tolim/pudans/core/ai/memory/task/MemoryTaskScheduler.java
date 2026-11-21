@@ -22,10 +22,10 @@ public class MemoryTaskScheduler {
 
     private final AiMemoryTaskRepository taskRepository;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     public Mono<Void> enqueueExtraction(Conversation conversation, String userId, long lastMessageId) {
-        return settingService
+        return aiSettings
                 .memoryEnabled()
                 .flatMap(enabled -> Boolean.TRUE.equals(enabled)
                         ? enqueue(extractionTask(conversation, userId, lastMessageId))

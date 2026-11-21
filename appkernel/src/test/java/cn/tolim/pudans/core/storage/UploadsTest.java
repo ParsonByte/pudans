@@ -60,10 +60,10 @@ import reactor.core.publisher.Mono;
 class UploadsTest {
 
     @Mock
-    FileRecords fileService;
+    FileRecords fileRecords;
 
     @Mock
-    Policies policyService;
+    Policies policies;
 
     @Mock
     StorageDriverResolver driverResolver;
@@ -75,10 +75,10 @@ class UploadsTest {
     StoragePolicyPathGenerator pathGenerator;
 
     @Mock
-    TransferTokens tokenService;
+    TransferTokens transferTokens;
 
     @Mock
-    ParameterGroups settingsService;
+    ParameterGroups parameterGroups;
 
     @TempDir
     Path workDir;
@@ -90,13 +90,13 @@ class UploadsTest {
         var properties = new PudansProperties();
         properties.setWorkDir(workDir);
         service = new Uploads(
-                fileService,
-                policyService,
+                fileRecords,
+                policies,
                 driverResolver,
                 validator,
                 pathGenerator,
-                tokenService,
-                settingsService,
+                transferTokens,
+                parameterGroups,
                 properties);
     }
 
@@ -104,15 +104,15 @@ class UploadsTest {
     void initiatesALocalUploadTicket() {
         var policy = policy();
         var driver = mock(StorageDriver.class);
-        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
-        when(settingsService.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
+        when(policies.requireReady("local")).thenReturn(Mono.just(policy));
+        when(parameterGroups.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
         when(validator.chunkSize(policy)).thenReturn(8L * 1024L * 1024L);
         when(validator.partCount(10, 8L * 1024L * 1024L)).thenReturn(1);
         when(pathGenerator.generate(eq(policy), any(StoragePathContext.class))).thenReturn("uploads/key");
-        when(fileService.create(any(StorageFile.class)))
+        when(fileRecords.create(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
-        when(tokenService.signUpload(any(), any(Duration.class))).thenReturn("token");
+        when(transferTokens.signUpload(any(), any(Duration.class))).thenReturn("token");
 
         var ticket = service
                 .initiate(new StorageUploadRequest(
@@ -135,8 +135,8 @@ class UploadsTest {
         var policy = policy();
         var attributes = new LinkedHashMap<String, String>();
         attributes.put("caption", null);
-        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
-        when(settingsService.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
+        when(policies.requireReady("local")).thenReturn(Mono.just(policy));
+        when(parameterGroups.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
         when(validator.chunkSize(policy)).thenReturn(8L * 1024L * 1024L);
         when(validator.partCount(10, 8L * 1024L * 1024L)).thenReturn(1);
         when(pathGenerator.generate(eq(policy), any(StoragePathContext.class))).thenReturn("uploads/key");
@@ -148,7 +148,7 @@ class UploadsTest {
                 .isInstanceOf(ApiException.class)
                 .satisfies(error -> assertThat(((ApiException) error).getCode())
                         .isEqualTo("storage-attribute-invalid"));
-        verifyNoInteractions(fileService);
+        verifyNoInteractions(fileRecords);
     }
 
     @Test
@@ -157,12 +157,12 @@ class UploadsTest {
         var driver = mock(
                 StorageDriver.class, withSettings().extraInterfaces(DirectUploadDriver.class));
         var direct = (DirectUploadDriver) driver;
-        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
-        when(settingsService.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
+        when(policies.requireReady("local")).thenReturn(Mono.just(policy));
+        when(parameterGroups.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
         when(validator.chunkSize(policy)).thenReturn(8L * 1024L * 1024L);
         when(validator.partCount(10, 8L * 1024L * 1024L)).thenReturn(1);
         when(pathGenerator.generate(eq(policy), any(StoragePathContext.class))).thenReturn("uploads/key");
-        when(fileService.create(any(StorageFile.class)))
+        when(fileRecords.create(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
         when(direct.createDirectUpload(any())).thenReturn(Mono.just(new DirectUploadCredential(
@@ -174,7 +174,7 @@ class UploadsTest {
                 "uploads/key",
                 "text/plain",
                 Instant.now().plusSeconds(600))));
-        when(tokenService.signUpload(any(), any(Duration.class))).thenReturn("token");
+        when(transferTokens.signUpload(any(), any(Duration.class))).thenReturn("token");
 
         var ticket = service
                 .initiate(new StorageUploadRequest(
@@ -193,9 +193,9 @@ class UploadsTest {
         var policy = policy();
         var driver = mock(
                 StorageDriver.class, withSettings().extraInterfaces(DirectUploadDriver.class));
-        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
-        when(fileService.update(any(StorageFile.class)))
+        when(policies.requireReady("local")).thenReturn(Mono.just(policy));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.update(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
         when(driver.stat("uploads/a.txt"))
@@ -214,9 +214,9 @@ class UploadsTest {
         var policy = policy();
         var driver = mock(
                 StorageDriver.class, withSettings().extraInterfaces(DirectUploadDriver.class));
-        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
-        when(fileService.update(any(StorageFile.class)))
+        when(policies.requireReady("local")).thenReturn(Mono.just(policy));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.update(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
         when(driver.put(any(StoragePutRequest.class)))
@@ -241,8 +241,8 @@ class UploadsTest {
         policy.getSpec().setMaxSize(3);
         var driver = mock(
                 StorageDriver.class, withSettings().extraInterfaces(DirectUploadDriver.class));
-        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(policies.requireReady("local")).thenReturn(Mono.just(policy));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
         when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
         when(driver.stat("uploads/a.txt"))
                 .thenReturn(Mono.just(new StorageObject("uploads/a.txt", 4, Instant.now(), "etag")));
@@ -262,13 +262,13 @@ class UploadsTest {
         var driver = mock(
                 StorageDriver.class, withSettings().extraInterfaces(MultipartStorageDriver.class));
         var multipart = (MultipartStorageDriver) driver;
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
         when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
         when(multipart.abortMultipart(any())).thenReturn(Mono.error(
                 new ApiException(HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储服务请求失败。")));
 
         assertThatThrownBy(() -> service.abort("file-1").block()).isInstanceOf(ApiException.class);
-        verify(fileService, never()).delete(any(StorageFile.class));
+        verify(fileRecords, never()).delete(any(StorageFile.class));
     }
 
     @Test
@@ -276,22 +276,22 @@ class UploadsTest {
         var file = uploadingFile();
         var driver = mock(
                 StorageDriver.class, withSettings().extraInterfaces(DirectUploadDriver.class));
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
         when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
         when(driver.delete(List.of("uploads/a.txt"))).thenReturn(Mono.empty());
-        when(fileService.delete(file)).thenReturn(Mono.empty());
+        when(fileRecords.delete(file)).thenReturn(Mono.empty());
 
         service.abort("file-1").block();
 
         verify(driver).delete(List.of("uploads/a.txt"));
-        verify(fileService).delete(file);
+        verify(fileRecords).delete(file);
     }
 
     @Test
     void rejectsAPartAboveTheChunkSize() {
         var file = uploadingFile();
         file.getSpec().setChunkSize(4);
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
 
         assertThatThrownBy(() -> service.putPart("file-1", 1, 5, Flux.empty()).block())
                 .isInstanceOf(ApiException.class)
@@ -306,14 +306,14 @@ class UploadsTest {
         var driver = mock(
                 StorageDriver.class, withSettings().extraInterfaces(MultipartStorageDriver.class));
         var multipart = (MultipartStorageDriver) driver;
-        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
-        when(settingsService.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
+        when(policies.requireReady("local")).thenReturn(Mono.just(policy));
+        when(parameterGroups.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
         when(validator.chunkSize(policy)).thenReturn(4L);
         when(validator.partCount(10, 4L)).thenReturn(3);
         when(pathGenerator.generate(eq(policy), any(StoragePathContext.class))).thenReturn("uploads/key");
-        when(fileService.create(any(StorageFile.class)))
+        when(fileRecords.create(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(fileService.update(any(StorageFile.class)))
+        when(fileRecords.update(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
         when(driver.capabilities()).thenReturn(Set.of(StorageCapability.MULTIPART_UPLOAD));
@@ -344,20 +344,20 @@ class UploadsTest {
         var driver = mock(
                 StorageDriver.class, withSettings().extraInterfaces(MultipartStorageDriver.class));
         var multipart = (MultipartStorageDriver) driver;
-        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
-        when(settingsService.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
+        when(policies.requireReady("local")).thenReturn(Mono.just(policy));
+        when(parameterGroups.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
         when(validator.chunkSize(policy)).thenReturn(8L * 1024L * 1024L);
         when(validator.partCount(10, 8L * 1024L * 1024L)).thenReturn(1);
         when(pathGenerator.generate(eq(policy), any(StoragePathContext.class))).thenReturn("uploads/key");
-        when(fileService.create(any(StorageFile.class)))
+        when(fileRecords.create(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(fileService.update(any(StorageFile.class)))
+        when(fileRecords.update(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(driver.capabilities()).thenReturn(Set.of(StorageCapability.MULTIPART_UPLOAD));
         when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
         when(multipart.createMultipart(any()))
                 .thenReturn(Mono.just(new NativeMultipartUpload("upload-1", "uploads/key", 8L * 1024L * 1024L)));
-        when(tokenService.signUpload(any(), any(Duration.class))).thenReturn("token");
+        when(transferTokens.signUpload(any(), any(Duration.class))).thenReturn("token");
 
         var ticket = service
                 .initiate(new StorageUploadRequest(
@@ -374,9 +374,9 @@ class UploadsTest {
         var file = uploadingFile();
         var policy = policy();
         var driver = mock(StorageDriver.class);
-        when(policyService.requireReady("local")).thenReturn(Mono.just(policy));
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
-        when(fileService.update(any(StorageFile.class)))
+        when(policies.requireReady("local")).thenReturn(Mono.just(policy));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.update(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(driverResolver.driver(policy)).thenReturn(Mono.just(driver));
         when(driver.put(any(StoragePutRequest.class)))

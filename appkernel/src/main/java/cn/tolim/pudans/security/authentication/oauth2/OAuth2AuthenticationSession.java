@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class OAuth2AuthenticationSession {
 
-    private final ReactiveUserDetailsService userDetailsService;
+    private final ReactiveUserDetailsService reactiveUserDetailsService;
 
     private final ServerSecurityContextRepository securityContextRepository;
 
@@ -44,7 +44,7 @@ public class OAuth2AuthenticationSession {
             String username,
             OAuth2AuthenticationToken original,
             boolean twoFactorSatisfied) {
-        return userDetailsService
+        return reactiveUserDetailsService
                 .findByUsername(username)
                 .switchIfEmpty(Mono.error(() -> new UsernameNotFoundException("用户不存在。")))
                 // 登录前复核账号状态，避免停用账号凭旧授权重放建立会话

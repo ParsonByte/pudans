@@ -45,7 +45,7 @@ class MemoryRecallTest {
     AiMemoryL3Repository personaRepository;
 
     @Mock
-    Embeddings embeddingService;
+    Embeddings embeddings;
 
     @Mock
     AiOrgMemoryRepository orgMemoryRepository;
@@ -62,7 +62,7 @@ class MemoryRecallTest {
     @Test
     void usesVectorRecallAndIncludesVerifiedOrgMemory() {
         var vector = new float[] {0.1f, 0.2f};
-        when(embeddingService.embedOne("发布流程")).thenReturn(Mono.just(vector));
+        when(embeddings.embedOne("发布流程")).thenReturn(Mono.just(vector));
         when(recallRepository.searchL1Vector(
                         "team-1", "agent-1", "user-1", vector, 5))
                 .thenReturn(Flux.just(new RecalledMemory(
@@ -76,7 +76,7 @@ class MemoryRecallTest {
         when(recallRepository.findScenes("team-1", "agent-1", 3)).thenReturn(Flux.empty());
         when(personaRepository.findByScope("team-1", "agent-1")).thenReturn(Mono.empty());
         var vectorService = new MemoryRecall(
-                recallRepository, personaRepository, promptResolver, embeddingService, orgMemoryRepository,
+                recallRepository, personaRepository, promptResolver, embeddings, orgMemoryRepository,
                 3000, 4000);
 
         StepVerifier.create(vectorService.build(CONTEXT, "发布流程", 5, 3))

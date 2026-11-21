@@ -44,7 +44,7 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
 
     private final StoragePolicySecretCipher secretCipher;
 
-    private final FileRecords fileService;
+    private final FileRecords fileRecords;
 
     private final StorageDriverResolver driverResolver;
 
@@ -93,7 +93,7 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         var builtin = Boolean.parseBoolean(
                 MetadataUtil.nullSafeLabels(policy).get(BuiltinEntities.BUILTIN_LABEL));
         var referenced = Boolean.TRUE.equals(
-                fileService.existsByPolicy(name).blockOptional(LOOKUP_TIMEOUT).orElse(false));
+                fileRecords.existsByPolicy(name).blockOptional(LOOKUP_TIMEOUT).orElse(false));
         if (builtin || policy.getSpec().isDefaultPolicy() || referenced) {
             policy.getMetadata().setDeletionTimestamp(null);
             var status = Optional.ofNullable(policy.getStatus()).orElseGet(StoragePolicy.Status::new);

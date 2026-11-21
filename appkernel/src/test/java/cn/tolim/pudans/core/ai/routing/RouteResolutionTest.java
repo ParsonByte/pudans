@@ -35,16 +35,16 @@ import reactor.test.StepVerifier;
 class RouteResolutionTest {
 
     @Mock
-    ChatModes chatModeService;
+    ChatModes chatModes;
 
     @Mock
-    RouteGroups routeGroupService;
+    RouteGroups routeGroups;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
-    RouteCandidates candidateService;
+    RouteCandidates routeCandidates;
 
     @Mock
     RouteEngine routeEngine;
@@ -55,7 +55,7 @@ class RouteResolutionTest {
     void setUp() {
         var properties = new AiProperties();
         service = new RouteResolution(
-                chatModeService, routeGroupService, settingService, candidateService, routeEngine, properties);
+                chatModes, routeGroups, aiSettings, routeCandidates, routeEngine, properties);
     }
 
     @Test
@@ -63,9 +63,9 @@ class RouteResolutionTest {
         var group = group("group-a");
         group.getSpec().setParentMode(AiRouteGroup.ParentMode.PRO);
         var mode = mode("pro", "group-b", AiModel.Tier.HIGH);
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(chatModeService.get("pro")).thenReturn(Mono.just(mode));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
+        when(chatModes.get("pro")).thenReturn(Mono.just(mode));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
 
         StepVerifier.create(service.resolve(input("pro", "group-a")))
@@ -84,9 +84,9 @@ class RouteResolutionTest {
     @Test
     void usesTheModeRouteGroupWhenNoGroupIsGiven() {
         var mode = mode("fast", "fast-group", AiModel.Tier.CHEAP);
-        when(chatModeService.get("fast")).thenReturn(Mono.just(mode));
-        when(routeGroupService.get("fast-group")).thenReturn(Mono.just(group("fast-group")));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(chatModes.get("fast")).thenReturn(Mono.just(mode));
+        when(routeGroups.get("fast-group")).thenReturn(Mono.just(group("fast-group")));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
 
         StepVerifier.create(service.resolve(input("fast", null)))
@@ -97,9 +97,9 @@ class RouteResolutionTest {
 
     @Test
     void fallsBackToTheDefaultRouteGroup() {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(routeGroupService.defaultGroup()).thenReturn(Mono.just(group("default")));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(routeGroups.defaultGroup()).thenReturn(Mono.just(group("default")));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
 
         StepVerifier.create(service.resolve(input(null, null)))
@@ -112,8 +112,8 @@ class RouteResolutionTest {
     void rejectsARouteGroupWhoseParentModeDoesNotMatchTheFixedMode() {
         var group = group("group-a");
         var mode = mode("pro", "group-b", AiModel.Tier.HIGH);
-        when(chatModeService.get("pro")).thenReturn(Mono.just(mode));
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
+        when(chatModes.get("pro")).thenReturn(Mono.just(mode));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
 
         StepVerifier.create(service.resolve(input("pro", "group-a")))
                 .expectErrorSatisfies(error -> assertThat(error)
@@ -126,8 +126,8 @@ class RouteResolutionTest {
     @Test
     void rejectsImplicitSelectionOfANoneGroupInAFixedMode() {
         var mode = mode("fast", "group-b", AiModel.Tier.CHEAP);
-        when(chatModeService.get("fast")).thenReturn(Mono.just(mode));
-        when(routeGroupService.get("group-b")).thenReturn(Mono.just(group("group-b")));
+        when(chatModes.get("fast")).thenReturn(Mono.just(mode));
+        when(routeGroups.get("group-b")).thenReturn(Mono.just(group("group-b")));
 
         StepVerifier.create(service.resolve(input("fast", null)))
                 .expectErrorSatisfies(error -> {
@@ -143,9 +143,9 @@ class RouteResolutionTest {
         var mode = mode("fast", "fast-group", AiModel.Tier.CHEAP);
         var builtin = group("fast-group");
         builtin.getSpec().setParentMode(AiRouteGroup.ParentMode.PRO);
-        when(chatModeService.get("fast")).thenReturn(Mono.just(mode));
-        when(routeGroupService.get("fast-group")).thenReturn(Mono.just(builtin));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(chatModes.get("fast")).thenReturn(Mono.just(mode));
+        when(routeGroups.get("fast-group")).thenReturn(Mono.just(builtin));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
 
         StepVerifier.create(service.resolve(input("fast", null)))
@@ -157,9 +157,9 @@ class RouteResolutionTest {
     @Test
     void acceptsANoneGroupWithAnExplicitSelectionInANonFixedMode() {
         var mode = mode("balanced", null, AiModel.Tier.CHEAP);
-        when(chatModeService.get("balanced")).thenReturn(Mono.just(mode));
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group("group-a")));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(chatModes.get("balanced")).thenReturn(Mono.just(mode));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group("group-a")));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
 
         StepVerifier.create(service.resolve(input("balanced", "group-a")))
@@ -179,9 +179,9 @@ class RouteResolutionTest {
         group.getSpec().setFirstTokenSeconds(8);
         group.getSpec().setSink(true);
         group.getSpec().setRules(List.of(rule));
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
 
         StepVerifier.create(service.resolve(input(null, "group-a")))
@@ -202,7 +202,7 @@ class RouteResolutionTest {
     void rejectsADisabledMode() {
         var mode = mode("fast", "fast-group", AiModel.Tier.CHEAP);
         mode.getSpec().setEnabled(false);
-        when(chatModeService.get("fast")).thenReturn(Mono.just(mode));
+        when(chatModes.get("fast")).thenReturn(Mono.just(mode));
 
         StepVerifier.create(service.resolve(input("fast", null)))
                 .expectError(ApiException.class)
@@ -212,9 +212,9 @@ class RouteResolutionTest {
     @Test
     void rejectsAnEmptyCandidatePlan() {
         var group = group("group-a");
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of()));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of()));
         when(routeEngine.route(any(), anyList())).thenReturn(new RoutePlan(
                 null,
                 List.of(),
@@ -231,9 +231,9 @@ class RouteResolutionTest {
     @Test
     void requiresFileInputWhenTheRequestCarriesADocument() {
         var group = group("group-a");
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(plan());
         var ir = new AiChatIr(
                 List.of(new AiChatMessage("user", List.of(
@@ -248,7 +248,7 @@ class RouteResolutionTest {
                 .expectNextCount(1)
                 .verifyComplete();
 
-        org.mockito.Mockito.verify(candidateService)
+        org.mockito.Mockito.verify(routeCandidates)
                 .expand(
                         group,
                         Set.of(AiModel.Capability.CHAT),
@@ -261,10 +261,10 @@ class RouteResolutionTest {
         var primary = group("group-a");
         primary.getSpec().setFallback(List.of("group-b"));
         var fallback = group("group-b");
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(primary));
-        when(routeGroupService.get("group-b")).thenReturn(Mono.just(fallback));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(primary));
+        when(routeGroups.get("group-b")).thenReturn(Mono.just(fallback));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(exhaustedPlan(), plan());
 
         StepVerifier.create(service.resolve(input(null, "group-a")))
@@ -283,10 +283,10 @@ class RouteResolutionTest {
         primary.getSpec().setFallback(List.of("group-b"));
         var fallback = group("group-b");
         fallback.getSpec().setFallback(List.of("group-a"));
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(primary));
-        when(routeGroupService.get("group-b")).thenReturn(Mono.just(fallback));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(primary));
+        when(routeGroups.get("group-b")).thenReturn(Mono.just(fallback));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(exhaustedPlan());
 
         StepVerifier.create(service.resolve(input(null, "group-a")))
@@ -299,9 +299,9 @@ class RouteResolutionTest {
     @Test
     void reportsWhyEachCandidateWasEliminated() {
         var group = group("group-a");
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(candidateService.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
+        when(routeCandidates.expand(any(), any(), any(), any())).thenReturn(Mono.just(List.of(seat())));
         when(routeEngine.route(any(), anyList())).thenReturn(new RoutePlan(
                 null,
                 List.of(),

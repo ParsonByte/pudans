@@ -38,17 +38,17 @@ class SceneSegmentationTest {
     private static final Instant NOW = Instant.parse("2026-11-19T00:00:00Z");
 
     @Mock
-    TextGenerations generationService;
+    TextGenerations textGenerations;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     private SceneSegmentation service;
 
     @BeforeEach
     void setUp() {
         service = new SceneSegmentation(
-                new MemoryAiSupport(generationService, settingService, new ObjectMapper()));
+                new MemoryAiSupport(textGenerations, aiSettings, new ObjectMapper()));
     }
 
     @Test
@@ -77,7 +77,7 @@ class SceneSegmentationTest {
         assertThat(scenes.get(1).confidence()).isEqualByComparingTo(BigDecimal.ONE);
 
         var captor = ArgumentCaptor.forClass(GenerationRequest.class);
-        verify(generationService).generate(captor.capture());
+        verify(textGenerations).generate(captor.capture());
         var request = captor.getValue();
         assertThat(request.temperature()).isEqualTo(0.1);
         assertThat(request.maxOutputTokens()).isEqualTo(2048);
@@ -90,7 +90,7 @@ class SceneSegmentationTest {
         var scenes = service.extract("BASE_L2", List.of(), List.of()).block();
 
         assertThat(scenes).isEmpty();
-        verifyNoInteractions(generationService, settingService);
+        verifyNoInteractions(textGenerations, aiSettings);
     }
 
     @Test
@@ -106,8 +106,8 @@ class SceneSegmentationTest {
     }
 
     private void stubGeneration(String content) {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(generationService.generate(any())).thenReturn(Mono.just(
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(textGenerations.generate(any())).thenReturn(Mono.just(
                 new GenerationResult(content, "model-code", "provider-a", "account-a")));
     }
 

@@ -43,7 +43,7 @@ public class KnowledgeRetrieval {
 
     private final CitationAssembler citationAssembler;
 
-    private final Reranking rerankService;
+    private final Reranking reranking;
 
     private final ExternalRagRetriever externalRagRetriever;
 
@@ -137,7 +137,7 @@ public class KnowledgeRetrieval {
             return Mono.just(new RerankOutcome(chunks, false));
         }
         var documents = chunks.stream().map(chunk -> chunk.candidate().content()).toList();
-        return Mono.defer(() -> rerankService.rerank(
+        return Mono.defer(() -> reranking.rerank(
                         modelName, request.query(), documents, request.options().topK()))
                 .map(result -> new RerankOutcome(
                         reorder(chunks, result, request.options().topK()), true))

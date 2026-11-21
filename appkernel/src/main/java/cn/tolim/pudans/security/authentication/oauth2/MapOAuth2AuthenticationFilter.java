@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 
 class MapOAuth2AuthenticationFilter implements WebFilter {
 
-    private final Connections connectionService;
+    private final Connections connections;
 
     private final ServerSecurityContextRepository securityContextRepository;
 
@@ -41,11 +41,11 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
 
     public MapOAuth2AuthenticationFilter(
             ServerSecurityContextRepository securityContextRepository,
-            Connections connectionService,
+            Connections connections,
             OAuth2AuthenticationSession authenticationSession,
             OAuth2AuthenticationTokenCache authenticationCache,
             ServerResponse.Context context) {
-        this.connectionService = connectionService;
+        this.connections = connections;
         this.securityContextRepository = securityContextRepository;
         this.authenticationSession = authenticationSession;
         this.authenticationCache = authenticationCache;
@@ -75,7 +75,7 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
                         .flatMap(oauth2Token -> {
                             var registrationId = oauth2Token.getAuthorizedClientRegistrationId();
                             var oauth2User = oauth2Token.getPrincipal();
-                            return connectionService
+                            return connections
                                     .updateUserConnectionIfPresent(registrationId, oauth2User)
                                     .switchIfEmpty(Mono.defer(
                                             () -> Mono.justOrEmpty(
@@ -84,7 +84,7 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
                                                     .filter(Authentication.class::isInstance)
                                                     .cast(Authentication.class)
                                                     .filter(authenticationTrustResolver::isAuthenticated)
-                                                    .flatMap(preAuth -> connectionService.createUserConnection(
+                                                    .flatMap(preAuth -> connections.createUserConnection(
                                                             preAuth.getName(), registrationId, oauth2User))))
                                     .switchIfEmpty(Mono.defer(() -> {
 

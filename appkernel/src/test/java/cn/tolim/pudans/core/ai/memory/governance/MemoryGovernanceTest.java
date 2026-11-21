@@ -58,7 +58,7 @@ class MemoryGovernanceTest {
     AiMemoryGovernanceRepository repository;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     AiConversationRepository conversationRepository;
@@ -262,7 +262,7 @@ class MemoryGovernanceTest {
     void deletesWithASnapshotAndLogicalStatus() {
         var memory = memory(1L, USER_ID, MemoryStatus.ACTIVE);
         when(repository.findL1ById(1L)).thenReturn(Mono.just(memory));
-        when(settingService.spec()).thenReturn(Mono.just(settingSpec()));
+        when(aiSettings.spec()).thenReturn(Mono.just(settingSpec()));
         when(repository.insertSnapshot(eq(1L), eq(USER_ID), eq("team-a"), eq("agent-a"), anyString(), eq(180)))
                 .thenReturn(Mono.just(10L));
         when(repository.updateL1Status(1L, MemoryStatus.DELETED))
@@ -332,7 +332,7 @@ class MemoryGovernanceTest {
         var memory = memory(1L, USER_ID, MemoryStatus.ACTIVE);
         var created = request(5L, 1L, USER_ID, "DELETE", "PENDING", "这条记忆不准确，需要删除", null);
         when(repository.findL1ById(1L)).thenReturn(Mono.just(memory));
-        when(settingService.spec()).thenReturn(Mono.just(settingSpec()));
+        when(aiSettings.spec()).thenReturn(Mono.just(settingSpec()));
         when(repository.existsPendingRequest(USER_ID, "L1", 1L, "DELETE")).thenReturn(Mono.just(false));
         when(repository.insertRequest(any(NewMemoryRequest.class))).thenReturn(Mono.just(created));
         when(repository.updateL1Status(1L, MemoryStatus.PENDING_CORRECTION))
@@ -365,7 +365,7 @@ class MemoryGovernanceTest {
     @Test
     void rejectsAReasonShorterThanTheConfiguredMinimum() {
         when(repository.findL1ById(1L)).thenReturn(Mono.just(memory(1L, USER_ID, MemoryStatus.ACTIVE)));
-        when(settingService.spec()).thenReturn(Mono.just(settingSpec()));
+        when(aiSettings.spec()).thenReturn(Mono.just(settingSpec()));
 
         StepVerifier.create(service.createRequest(USER_ID, "1", MemoryRequestType.DELETE, "太短", null))
                 .expectErrorSatisfies(error -> assertApiError(
@@ -377,7 +377,7 @@ class MemoryGovernanceTest {
     @Test
     void rejectsADuplicatePendingRequest() {
         when(repository.findL1ById(1L)).thenReturn(Mono.just(memory(1L, USER_ID, MemoryStatus.ACTIVE)));
-        when(settingService.spec()).thenReturn(Mono.just(settingSpec()));
+        when(aiSettings.spec()).thenReturn(Mono.just(settingSpec()));
         when(repository.existsPendingRequest(USER_ID, "L1", 1L, "DELETE")).thenReturn(Mono.just(true));
 
         StepVerifier.create(service.createRequest(
@@ -394,7 +394,7 @@ class MemoryGovernanceTest {
         var approved = request(5L, 1L, USER_ID, "DELETE", "APPROVED", "这条记忆不准确，需要删除", null);
         when(repository.findRequestById(5L)).thenReturn(Mono.just(pending));
         when(repository.findL1ById(1L)).thenReturn(Mono.just(memory(1L, USER_ID, MemoryStatus.ACTIVE)));
-        when(settingService.spec()).thenReturn(Mono.just(settingSpec()));
+        when(aiSettings.spec()).thenReturn(Mono.just(settingSpec()));
         when(repository.insertSnapshot(eq(1L), eq(USER_ID), eq("team-a"), eq("agent-a"), anyString(), eq(180)))
                 .thenReturn(Mono.just(10L));
         when(repository.updateL1Status(1L, MemoryStatus.DELETED))

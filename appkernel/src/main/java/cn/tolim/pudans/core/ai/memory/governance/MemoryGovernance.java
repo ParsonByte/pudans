@@ -56,7 +56,7 @@ public class MemoryGovernance {
 
     private final AiMemoryGovernanceRepository repository;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final AiConversationRepository conversationRepository;
 
@@ -398,7 +398,7 @@ public class MemoryGovernance {
     }
 
     private Mono<AiSetting.Memory> memorySettings() {
-        return settingService
+        return aiSettings
                 .spec()
                 .map(spec -> spec.getMemory() == null ? new AiSetting.Memory() : spec.getMemory());
     }

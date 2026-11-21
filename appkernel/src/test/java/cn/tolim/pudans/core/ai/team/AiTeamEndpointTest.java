@@ -16,20 +16,20 @@ import reactor.core.publisher.Mono;
 class AiTeamEndpointTest {
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        client = WebTestClient.bindToRouterFunction(new AiTeamEndpoint(teamService).endpoint())
+        client = WebTestClient.bindToRouterFunction(new AiTeamEndpoint(teams).endpoint())
                 .build();
     }
 
     @Test
     void addsAMember() {
         var team = team("team-a");
-        when(teamService.addMember("team-a", "bob", AiTeam.TeamRole.MEMBER)).thenReturn(Mono.just(team));
+        when(teams.addMember("team-a", "bob", AiTeam.TeamRole.MEMBER)).thenReturn(Mono.just(team));
 
         client.post()
                 .uri("/aiteams/team-a/members")
@@ -44,7 +44,7 @@ class AiTeamEndpointTest {
     @Test
     void removesAMember() {
         var team = team("team-a");
-        when(teamService.removeMember("team-a", "bob")).thenReturn(Mono.just(team));
+        when(teams.removeMember("team-a", "bob")).thenReturn(Mono.just(team));
 
         client.delete()
                 .uri("/aiteams/team-a/members/bob")

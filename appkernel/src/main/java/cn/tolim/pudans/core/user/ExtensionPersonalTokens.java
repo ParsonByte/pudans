@@ -47,7 +47,7 @@ class ExtensionPersonalTokens implements PersonalTokens {
 
     private final AuthenticationTrustResolver authTrustResolver = new AuthenticationTrustResolverImpl();
 
-    private final ReactiveUserDetailsService userDetailsService;
+    private final ReactiveUserDetailsService reactiveUserDetailsService;
 
     private final MasterKeys masterKeys;
 
@@ -58,11 +58,11 @@ class ExtensionPersonalTokens implements PersonalTokens {
     public ExtensionPersonalTokens(
             Roles roleService,
             ReactiveExtensionClient client,
-            ReactiveUserDetailsService userDetailsService,
+            ReactiveUserDetailsService reactiveUserDetailsService,
             MasterKeys masterKeys) {
         this.roleService = roleService;
         this.client = client;
-        this.userDetailsService = userDetailsService;
+        this.reactiveUserDetailsService = reactiveUserDetailsService;
         this.masterKeys = masterKeys;
         this.clock = Clock.systemUTC();
         idGenerator = new AlternativeJdkIdGenerator();
@@ -90,7 +90,7 @@ class ExtensionPersonalTokens implements PersonalTokens {
 
     @Override
     public Mono<PersonalAccessToken> create(PersonalAccessToken patRequest, String username) {
-        return userDetailsService
+        return reactiveUserDetailsService
                 .findByUsername(username)
                 .flatMap(userDetails -> create(patRequest, username, userDetails.getAuthorities()));
     }

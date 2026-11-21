@@ -68,15 +68,15 @@ public class AiProviderEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
-    private final LangChain4jChat chatService;
+    private final LangChain4jChat langChain4jChat;
 
     private final AiModelAdapterRegistry modelAdapters;
 
-    private final Embeddings embeddingService;
+    private final Embeddings embeddings;
 
-    private final Reranking rerankService;
+    private final Reranking reranking;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -325,7 +325,7 @@ public class AiProviderEndpoint implements CustomEndpoint {
 
     private Mono<TestResult> testEmbedding(AiProvider provider, AiProviderAccount account, AiModel model) {
         var started = Instant.now();
-        return embeddingService
+        return embeddings
                 .embed(List.of(TEST_PROMPT), model.getMetadata().getName())
                 .map(batch -> new TestResult(
                         true,
@@ -338,7 +338,7 @@ public class AiProviderEndpoint implements CustomEndpoint {
 
     private Mono<TestResult> test(AiProvider provider, AiProviderAccount account, AiModel model) {
         var started = Instant.now();
-        return chatService
+        return langChain4jChat
                 .chat(provider, account, model, provider.getSpec().getProtocol(), testRequest())
                 .map(response -> new TestResult(
                         true,
@@ -358,7 +358,7 @@ public class AiProviderEndpoint implements CustomEndpoint {
         var protocol = provider.getSpec().getProtocol();
         var started = Instant.now();
         if (capability == AiModel.Capability.RERANK) {
-            return rerankService
+            return reranking
                     .rerank(
                             provider,
                             account,
@@ -470,7 +470,7 @@ public class AiProviderEndpoint implements CustomEndpoint {
     }
 
     private Mono<AiProviderAccount> firstAccount(String providerName) {
-        return accountService.firstEnabled(providerName);
+        return providerAccounts.firstEnabled(providerName);
     }
 
     private Mono<AiModel> firstChatModel(String providerName) {

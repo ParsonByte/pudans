@@ -49,7 +49,7 @@ public class LiveRecordingCleanupTask {
 
     private final StorageTransfer storageTransfer;
 
-    private final RecordingStatus statusService;
+    private final RecordingStatus recordingStatus;
 
     private final LiveRecordingWorkspace workspace;
 
@@ -59,7 +59,7 @@ public class LiveRecordingCleanupTask {
 
     private final LiveMetrics metrics;
 
-    private final LiveAlerts alertService;
+    private final LiveAlerts liveAlerts;
 
     private volatile Disposable subscription;
 
@@ -165,13 +165,13 @@ public class LiveRecordingCleanupTask {
         var code = error instanceof ApiException apiException ? apiException.getCode() : errorCode(error);
         metrics.cleanupFailed();
         log.warn("清理过期录制失败 [{}]：{}", name, error.getMessage());
-        return statusService
+        return recordingStatus
                 .mutate(name, status -> status.setCleanupAttempts(status.getCleanupAttempts() + 1))
                 .onErrorResume(updateError -> {
                     log.warn("记录录制清理失败次数失败 [{}]：{}", name, updateError.getMessage());
                     return Mono.empty();
                 })
-                .then(alertService
+                .then(liveAlerts
                         .alert(
                                 "live.cleanup.failed",
                                 name,

@@ -33,9 +33,9 @@ public class OrgCandidateTaskHandler implements AiTaskHandler {
 
     private final AiOrgMemoryRepository orgMemoryRepository;
 
-    private final L1Deduplication dedupService;
+    private final L1Deduplication l1Deduplication;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     @Override
     public String taskType() {
@@ -49,7 +49,7 @@ public class OrgCandidateTaskHandler implements AiTaskHandler {
         if (!hasText(teamId) || !hasText(agentId)) {
             return Mono.error(new IllegalArgumentException("组织记忆候选任务缺少团队或 Agent 标识"));
         }
-        return settingService
+        return aiSettings
                 .spec()
                 .flatMap(spec -> l1Repository
                         .findOrgCandidates(teamId, agentId, afterL1Id(task), CANDIDATE_BATCH)
@@ -108,7 +108,7 @@ public class OrgCandidateTaskHandler implements AiTaskHandler {
     }
 
     private String dedupHash(String content) {
-        return MemoryHashes.sha256Hex(dedupService.normalize(content));
+        return MemoryHashes.sha256Hex(l1Deduplication.normalize(content));
     }
 
     private static long afterL1Id(AiTask task) {

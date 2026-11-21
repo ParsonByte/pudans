@@ -43,10 +43,10 @@ import reactor.test.StepVerifier;
 class TextGenerationsTest {
 
     @Mock
-    RouteGroups routeGroupService;
+    RouteGroups routeGroups;
 
     @Mock
-    RouteCandidates candidateService;
+    RouteCandidates routeCandidates;
 
     @Mock
     RouteEngine routeEngine;
@@ -55,14 +55,14 @@ class TextGenerationsTest {
     ReactiveExtensionClient client;
 
     @Mock
-    LangChain4jChat chatService;
+    LangChain4jChat langChain4jChat;
 
     private TextGenerations service;
 
     @BeforeEach
     void setUp() {
         service = new TextGenerations(
-                routeGroupService, candidateService, routeEngine, chatService, client, new AiProperties());
+                routeGroups, routeCandidates, routeEngine, langChain4jChat, client, new AiProperties());
     }
 
     @Test
@@ -70,11 +70,11 @@ class TextGenerationsTest {
         var group = group("group-a");
         var seat = seat("provider-a", "account-a", "model-a");
         var selection = RouteSelection.of(seat);
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(candidateService.expand(group)).thenReturn(Mono.just(List.of(seat)));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
+        when(routeCandidates.expand(group)).thenReturn(Mono.just(List.of(seat)));
         when(routeEngine.route(any(), anyList())).thenReturn(plan(selection, List.of()));
         stubResources("provider-a", "account-a", "model-a", "gpt-x");
-        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.just(response("hello")));
+        when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.just(response("hello")));
 
         StepVerifier.create(service.generate(new GenerationRequest("group-a", "system", "user", 0, 0.2)))
                 .assertNext(result -> {
@@ -86,7 +86,7 @@ class TextGenerationsTest {
                 .verifyComplete();
 
         var irCaptor = ArgumentCaptor.forClass(AiChatIr.class);
-        verify(chatService).chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), irCaptor.capture());
+        verify(langChain4jChat).chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), irCaptor.capture());
         var ir = irCaptor.getValue();
         assertThat(ir.stream()).isFalse();
         assertThat(ir.requestParams().maxTokens()).isEqualTo(1024);
@@ -109,13 +109,13 @@ class TextGenerationsTest {
         var first = seat("provider-a", "account-a", "model-a");
         var second = seat("provider-b", "account-b", "model-b");
         var firstSelection = RouteSelection.of(first);
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(candidateService.expand(group)).thenReturn(Mono.just(List.of(first, second)));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
+        when(routeCandidates.expand(group)).thenReturn(Mono.just(List.of(first, second)));
         when(routeEngine.route(any(), anyList()))
                 .thenReturn(plan(firstSelection, List.of(RouteSelection.of(second))));
         stubResources("provider-a", "account-a", "model-a", "gpt-a");
         stubResources("provider-b", "account-b", "model-b", "gpt-b");
-        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(new IllegalStateException("boom")), Mono.just(response("fallback")));
 
         StepVerifier.create(service.generate(new GenerationRequest("group-a", "system", "user", 256, 0.1)))
@@ -133,11 +133,11 @@ class TextGenerationsTest {
         var group = group("group-a");
         var seat = seat("provider-a", "account-a", "model-a");
         var selection = RouteSelection.of(seat);
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(candidateService.expand(group)).thenReturn(Mono.just(List.of(seat)));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
+        when(routeCandidates.expand(group)).thenReturn(Mono.just(List.of(seat)));
         when(routeEngine.route(any(), anyList())).thenReturn(plan(selection, List.of()));
         stubResources("provider-a", "account-a", "model-a", "gpt-a");
-        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.error(new IllegalStateException("boom")));
+        when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.error(new IllegalStateException("boom")));
 
         StepVerifier.create(service.generate(new GenerationRequest("group-a", "system", "user", 128, 0.1)))
                 .expectErrorSatisfies(error -> {
@@ -151,7 +151,7 @@ class TextGenerationsTest {
 
     @Test
     void reportsServiceUnavailableWhenTheDefaultGroupIsMissing() {
-        when(routeGroupService.defaultGroup()).thenReturn(Mono.empty());
+        when(routeGroups.defaultGroup()).thenReturn(Mono.empty());
 
         StepVerifier.create(service.generate(new GenerationRequest(null, "system", "user", 128, 0.1)))
                 .expectErrorSatisfies(error -> {
@@ -166,8 +166,8 @@ class TextGenerationsTest {
     @Test
     void reportsServiceUnavailableWhenRoutingFindsNoCandidate() {
         var group = group("group-a");
-        when(routeGroupService.get("group-a")).thenReturn(Mono.just(group));
-        when(candidateService.expand(group)).thenReturn(Mono.just(List.of()));
+        when(routeGroups.get("group-a")).thenReturn(Mono.just(group));
+        when(routeCandidates.expand(group)).thenReturn(Mono.just(List.of()));
         when(routeEngine.route(any(), anyList())).thenReturn(plan(null, List.of()));
 
         StepVerifier.create(service.generate(new GenerationRequest("group-a", "system", "user", 128, 0.1)))

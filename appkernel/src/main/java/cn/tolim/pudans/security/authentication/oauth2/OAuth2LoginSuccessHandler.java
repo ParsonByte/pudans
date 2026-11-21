@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 
 final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
 
-    private final Connections connectionService;
+    private final Connections connections;
 
     private final OAuth2AuthenticationSession authenticationSession;
 
@@ -26,11 +26,11 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
     private final ServerResponse.Context context;
 
     OAuth2LoginSuccessHandler(
-            Connections connectionService,
+            Connections connections,
             OAuth2AuthenticationSession authenticationSession,
             SecurityProperties securityProperties,
             ServerResponse.Context context) {
-        this.connectionService = connectionService;
+        this.connections = connections;
         this.authenticationSession = authenticationSession;
         this.securityProperties = securityProperties;
         this.context = context;
@@ -52,11 +52,11 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
         var oauth2User = oauth2.getPrincipal();
         var preAuthentication = exchange.getAttribute(OAuth2LoginAttributes.PRE_AUTHENTICATION);
         var twoFactorSatisfied = OAuth2TwoFactorSupport.twoFactorSatisfied(preAuthentication);
-        return connectionService
+        return connections
                 .updateUserConnectionIfPresent(registrationId, oauth2User)
                 .switchIfEmpty(Mono.defer(() -> preAuthentication instanceof Authentication preAuth
                         && preAuth.isAuthenticated()
-                        ? connectionService.createUserConnection(
+                        ? connections.createUserConnection(
                                 preAuth.getName(), registrationId, oauth2User)
                         : Mono.error(OAuth2ConnectionRequiredException::new)))
                 .flatMap(connection -> authenticationSession.establishAndGetAuthentication(

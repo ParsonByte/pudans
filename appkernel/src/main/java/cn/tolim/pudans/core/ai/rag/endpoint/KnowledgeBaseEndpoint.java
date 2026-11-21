@@ -73,7 +73,7 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
 
     private static final int MAX_QUERY_LOG_LIMIT = 200;
 
-    private final KnowledgeBases managementService;
+    private final KnowledgeBases knowledgeBases;
 
     private final Accounts accounts;
 
@@ -194,14 +194,14 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> list(ServerRequest request) {
-        return context().flatMap(context -> managementService
+        return context().flatMap(context -> knowledgeBases
                 .listVisible(context.uid(), context.roles(), null)
                 .collectList()
                 .flatMap(items -> ServerResponse.ok().bodyValue(new ListResult<KnowledgeBase>(items))));
     }
 
     private Mono<ServerResponse> detail(ServerRequest request) {
-        return context().flatMap(context -> managementService
+        return context().flatMap(context -> knowledgeBases
                 .findVisible(request.pathVariable("name"), context.uid(), context.roles(), null)
                 .flatMap(knowledgeBase -> ServerResponse.ok().bodyValue(knowledgeBase)));
     }
@@ -218,7 +218,7 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
                     intQuery(request, "topK", DEFAULT_TOP_K, 1, MAX_TOP_K),
                     intQuery(request, "charBudget", DEFAULT_CHAR_BUDGET, 1, MAX_CHAR_BUDGET));
             var kbCodes = kbCodes(request);
-            return context().flatMap(context -> managementService
+            return context().flatMap(context -> knowledgeBases
                     .search(context.uid(), context.roles(), null, query, kbCodes, options)
                     .flatMap(result -> ServerResponse.ok().bodyValue(result)));
         });
@@ -229,9 +229,9 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
         var page = intQuery(request, "page", DEFAULT_PAGE, 1, Integer.MAX_VALUE);
         var size = intQuery(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
         var status = documentStatus(request);
-        return context().flatMap(context -> managementService
+        return context().flatMap(context -> knowledgeBases
                 .findReadable(name, context.uid(), context.roles(), null)
-                .flatMap(knowledgeBase -> managementService.listDocuments(
+                .flatMap(knowledgeBase -> knowledgeBases.listDocuments(
                         KnowledgeBaseCodes.codeOf(knowledgeBase), status, page, size))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result)));
     }
@@ -240,9 +240,9 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return context().flatMap(context -> request.bodyToMono(DocumentUploadRequest.class)
                 .switchIfEmpty(Mono.error(invalidDocument("请求体不能为空。")))
-                .flatMap(body -> managementService
+                .flatMap(body -> knowledgeBases
                         .findReadable(name, context.uid(), context.roles(), null)
-                        .flatMap(knowledgeBase -> managementService.uploadDocument(
+                        .flatMap(knowledgeBase -> knowledgeBases.uploadDocument(
                                 knowledgeBase, context.uid(), body.storageFileId(), body.fileName()))
                         .flatMap(result -> ServerResponse.ok().bodyValue(result))));
     }
@@ -250,9 +250,9 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> documentDetail(ServerRequest request) {
         var name = request.pathVariable("name");
         var documentId = documentId(request);
-        return context().flatMap(context -> managementService
+        return context().flatMap(context -> knowledgeBases
                 .findReadable(name, context.uid(), context.roles(), null)
-                .flatMap(knowledgeBase -> managementService.findDocument(
+                .flatMap(knowledgeBase -> knowledgeBases.findDocument(
                         KnowledgeBaseCodes.codeOf(knowledgeBase), documentId))
                 .flatMap(document -> ServerResponse.ok().bodyValue(document)));
     }
@@ -260,9 +260,9 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> deleteDocument(ServerRequest request) {
         var name = request.pathVariable("name");
         var documentId = documentId(request);
-        return context().flatMap(context -> managementService
+        return context().flatMap(context -> knowledgeBases
                 .findReadable(name, context.uid(), context.roles(), null)
-                .flatMap(knowledgeBase -> managementService.deleteDocument(
+                .flatMap(knowledgeBase -> knowledgeBases.deleteDocument(
                         KnowledgeBaseCodes.codeOf(knowledgeBase), documentId))
                 .then(ServerResponse.noContent().build()));
     }
@@ -270,27 +270,27 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> retryDocument(ServerRequest request) {
         var name = request.pathVariable("name");
         var documentId = documentId(request);
-        return context().flatMap(context -> managementService
+        return context().flatMap(context -> knowledgeBases
                 .findReadable(name, context.uid(), context.roles(), null)
-                .flatMap(knowledgeBase -> managementService.retryDocument(
+                .flatMap(knowledgeBase -> knowledgeBases.retryDocument(
                         knowledgeBase, documentId, context.uid()))
                 .flatMap(document -> ServerResponse.ok().bodyValue(document)));
     }
 
     private Mono<ServerResponse> reindex(ServerRequest request) {
         var name = request.pathVariable("name");
-        return context().flatMap(context -> managementService
+        return context().flatMap(context -> knowledgeBases
                 .findReadable(name, context.uid(), context.roles(), null)
-                .flatMap(knowledgeBase -> managementService.reindex(knowledgeBase, context.uid()))
+                .flatMap(knowledgeBase -> knowledgeBases.reindex(knowledgeBase, context.uid()))
                 .flatMap(count -> ServerResponse.accepted().bodyValue(new ReindexResponse(count))));
     }
 
     private Mono<ServerResponse> queryLogs(ServerRequest request) {
         var name = request.pathVariable("name");
         var limit = intQuery(request, "limit", DEFAULT_QUERY_LOG_LIMIT, 1, MAX_QUERY_LOG_LIMIT);
-        return context().flatMap(context -> managementService
+        return context().flatMap(context -> knowledgeBases
                 .findReadable(name, context.uid(), context.roles(), null)
-                .flatMap(knowledgeBase -> managementService
+                .flatMap(knowledgeBase -> knowledgeBases
                         .listQueryLogs(KnowledgeBaseCodes.codeOf(knowledgeBase), limit)
                         .collectList())
                 .flatMap(logs -> ServerResponse.ok().bodyValue(logs)));

@@ -37,16 +37,16 @@ import reactor.test.StepVerifier;
 
 class LangChain4jChatTest {
 
-    private final ProviderAccounts accountService = mock(ProviderAccounts.class);
+    private final ProviderAccounts providerAccounts = mock(ProviderAccounts.class);
 
     private final LangChain4jModelFactory modelFactory = mock(LangChain4jModelFactory.class);
 
     private final LangChain4jChat service = new LangChain4jChat(
-            accountService, modelFactory, JsonUtils.mapper());
+            providerAccounts, modelFactory, JsonUtils.mapper());
 
     @Test
     void chatsThroughTheNonNullBlockingModelApi() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var chatModel = mock(ChatModel.class);
         when(modelFactory.chatModel(
                         any(), eq(AiProvider.Protocol.OPENAI_CHAT), eq("gpt-4.1"), eq("sk-secret")))
@@ -78,7 +78,7 @@ class LangChain4jChatTest {
 
     @Test
     void fallsBackToTheBlockingApiWhenAsyncIsNotSupported() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("key"));
         var chatModel = mock(ChatModel.class);
         when(modelFactory.chatModel(any(), eq(AiProvider.Protocol.GEMINI), eq("gemini-pro"), eq("key")))
                 .thenReturn(chatModel);
@@ -109,7 +109,7 @@ class LangChain4jChatTest {
 
     @Test
     void streamsMappedEvents() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-secret"));
         var chatModel = mock(StreamingChatModel.class);
         when(modelFactory.streamingChatModel(
                         any(), eq(AiProvider.Protocol.OPENAI_CHAT), eq("gpt-4.1"), eq("sk-secret")))
@@ -134,7 +134,7 @@ class LangChain4jChatTest {
 
     @Test
     void rejectsInvalidProviderConfiguration() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("key"));
         var provider = provider(AiProvider.Protocol.OPENAI_CHAT);
         provider.getSpec().setBaseUrl(null);
 

@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AiTeamEndpoint implements CustomEndpoint {
 
-    private final Teams teamService;
+    private final Teams teams;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -52,13 +52,13 @@ public class AiTeamEndpoint implements CustomEndpoint {
                     if (body.userId() == null || body.userId().isBlank()) {
                         return Mono.error(new ServerWebInputException("userId 不能为空。"));
                     }
-                    return teamService.addMember(teamName, body.userId(), body.role());
+                    return teams.addMember(teamName, body.userId(), body.role());
                 })
                 .flatMap(team -> ServerResponse.ok().bodyValue(team));
     }
 
     private Mono<ServerResponse> removeMember(ServerRequest request) {
-        return teamService
+        return teams
                 .removeMember(request.pathVariable("name"), request.pathVariable("userId"))
                 .flatMap(team -> ServerResponse.ok().bodyValue(team));
     }

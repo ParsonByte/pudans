@@ -70,13 +70,13 @@ public class ChatTools {
 
     private final Hooks hooks;
 
-    private final AiGateway gatewayService;
+    private final AiGateway aiGateway;
 
-    private final AgentRuntimes runtimeService;
+    private final AgentRuntimes agentRuntimes;
 
     private final Workspaces workspaces;
 
-    private final MemoryViews memoryViewService;
+    private final MemoryViews memoryViews;
 
     private final AiMemoryL1Repository memoryL1Repository;
 
@@ -146,7 +146,7 @@ public class ChatTools {
         var timeout = arguments.has("timeoutSeconds") && arguments.get("timeoutSeconds").canConvertToInt()
                 ? arguments.get("timeoutSeconds").asInt()
                 : null;
-        return runtimeService
+        return agentRuntimes
                 .exec(
                         agent.getMetadata().getName(),
                         userId,
@@ -165,7 +165,7 @@ public class ChatTools {
         if (!StringUtils.hasText(path)) {
             return Mono.just(new RawOutcome("缺少 path。", true));
         }
-        return runtimeService
+        return agentRuntimes
                 .readFile(agent.getMetadata().getName(), userId, path)
                 .map(file -> new RawOutcome(
                         "encoding: " + file.encoding() + "\ncontent:\n" + file.content(), false));
@@ -177,7 +177,7 @@ public class ChatTools {
             return Mono.just(new RawOutcome("缺少 path。", true));
         }
         var encoding = text(arguments, "encoding");
-        return runtimeService
+        return agentRuntimes
                 .writeFile(
                         agent.getMetadata().getName(),
                         userId,
@@ -189,7 +189,7 @@ public class ChatTools {
 
     private Mono<RawOutcome> runtimeLogs(String userId, AiAgent agent, JsonNode arguments) {
         var limit = Math.clamp(intValue(arguments, "limit", 100), 1, 500);
-        return runtimeService
+        return agentRuntimes
                 .logs(agent.getMetadata().getName(), userId, false, null)
                 .take(limit)
                 .map(event -> event.timestamp() + " [" + event.stream() + "] " + event.line())
@@ -199,7 +199,7 @@ public class ChatTools {
     }
 
     private Mono<RawOutcome> runtimeStatus(String userId, AiAgent agent) {
-        return runtimeService
+        return agentRuntimes
                 .status(agent.getMetadata().getName(), userId)
                 .map(status -> new RawOutcome(
                         "state: " + status.state()
@@ -210,13 +210,13 @@ public class ChatTools {
     }
 
     private Mono<RawOutcome> runtimeStart(String userId, AiAgent agent) {
-        return runtimeService
+        return agentRuntimes
                 .start(agent.getMetadata().getName(), userId)
                 .map(view -> new RawOutcome("state: " + view.state(), false));
     }
 
     private Mono<RawOutcome> runtimeStop(String userId, AiAgent agent) {
-        return runtimeService
+        return agentRuntimes
                 .stop(agent.getMetadata().getName(), userId)
                 .map(view -> new RawOutcome("state: " + view.state(), false));
     }
@@ -224,7 +224,7 @@ public class ChatTools {
     private Mono<RawOutcome> runtimeSnapshot(
             String userId, AiAgent agent, JsonNode arguments) {
         var name = text(arguments, "name");
-        return runtimeService
+        return agentRuntimes
                 .snapshot(
                         agent.getMetadata().getName(),
                         userId,
@@ -242,13 +242,13 @@ public class ChatTools {
         if (value == null || !value.canConvertToLong()) {
             return Mono.just(new RawOutcome("缺少 snapshotId。", true));
         }
-        return runtimeService
+        return agentRuntimes
                 .restoreSnapshot(agent.getMetadata().getName(), userId, value.asLong())
                 .thenReturn(new RawOutcome("快照已恢复。", false));
     }
 
     private Mono<RawOutcome> runtimeSnapshots(String userId, AiAgent agent) {
-        return runtimeService
+        return agentRuntimes
                 .snapshots(agent.getMetadata().getName(), userId, 20)
                 .map(view -> "id=" + view.id() + " name=" + view.name() + " size=" + view.sizeBytes())
                 .collectList()
@@ -347,7 +347,7 @@ public class ChatTools {
             return Mono.just(new RawOutcome("Agent 未绑定团队，无法检索记忆。", true));
         }
         var limit = Math.clamp(intValue(arguments, "limit", 5), 1, 20);
-        return memoryViewService
+        return memoryViews
                 .search(userId, team, agent.getMetadata().getName(), query, limit)
                 .map(refs -> new RawOutcome(JsonUtils.objectToJson(refs), false));
     }
@@ -467,7 +467,7 @@ public class ChatTools {
         return HarnessAgent.builder()
                 .name("subagent-" + agent.getMetadata().getName())
                 .systemPrompt(systemPrompt)
-                .chatModel(new GatewayChatModel(gatewayService, context))
+                .chatModel(new GatewayChatModel(aiGateway, context))
                 .stateStore(new InMemoryAgentStateStore())
                 .temperature(0.2)
                 .maxOutputTokens(SUBAGENT_MAX_OUTPUT_TOKENS)

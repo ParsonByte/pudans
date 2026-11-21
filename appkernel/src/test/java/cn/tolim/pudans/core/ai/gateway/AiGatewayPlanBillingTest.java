@@ -82,19 +82,19 @@ class AiGatewayPlanBillingTest {
     ReactiveExtensionClient client;
 
     @Mock
-    LangChain4jChat chatService;
+    LangChain4jChat langChain4jChat;
 
     @Mock
-    RouteResolution routeResolutionService;
+    RouteResolution routeResolution;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
-    GatewaySessions sessionService;
+    GatewaySessions gatewaySessions;
 
     @Mock
-    Conversations conversationService;
+    Conversations conversations;
 
     @Mock
     AiAgentAdapterRegistry agentAdapterRegistry;
@@ -121,10 +121,10 @@ class AiGatewayPlanBillingTest {
     ProviderSpendGuard providerSpendGuard;
 
     @Mock
-    TeamQuotas teamQuotaService;
+    TeamQuotas teamQuotas;
 
     @Mock
-    GatewayKeys keyService;
+    GatewayKeys gatewayKeys;
 
     private AiGateway service;
 
@@ -134,11 +134,11 @@ class AiGatewayPlanBillingTest {
         properties.getGateway().setInjectionEnabled(false);
         service = new AiGateway(
                 client,
-                chatService,
-                routeResolutionService,
-                settingService,
-                sessionService,
-                conversationService,
+                langChain4jChat,
+                routeResolution,
+                aiSettings,
+                gatewaySessions,
+                conversations,
                 agentAdapterRegistry,
                 memoryContextBuilder,
                 planResolution,
@@ -147,22 +147,22 @@ class AiGatewayPlanBillingTest {
                 memoryTaskScheduler,
                 circuitBreaker,
                 new AiGatewayRateLimiter(null),
-                keyService,
+                gatewayKeys,
                 new SunkRouteRegistry(),
                 properties,
                 new AiMetrics(new SimpleMeterRegistry()),
                 providerSpendGuard,
-                teamQuotaService);
-        lenient().when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        lenient().when(sessionService.bind(any())).thenReturn(Mono.just(session()));
-        lenient().when(keyService.authorize(any(), any()))
+                teamQuotas);
+        lenient().when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        lenient().when(gatewaySessions.bind(any())).thenReturn(Mono.just(session()));
+        lenient().when(gatewayKeys.authorize(any(), any()))
                 .thenReturn(Mono.just(GatewayKeys.Access.unrestricted()));
-        lenient().when(keyService.acquire(any()))
+        lenient().when(gatewayKeys.acquire(any()))
                 .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
-        lenient().when(keyService.release(any())).thenReturn(Mono.empty());
-        lenient().when(conversationService.requireOwned(11L, "user-1")).thenReturn(Mono.just(conversation()));
+        lenient().when(gatewayKeys.release(any())).thenReturn(Mono.empty());
+        lenient().when(conversations.requireOwned(11L, "user-1")).thenReturn(Mono.just(conversation()));
         lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
-        lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
+        lenient().when(teamQuotas.check(any(), any())).thenReturn(Mono.empty());
         lenient().when(planResolution.resolve("user-1")).thenReturn(Mono.just(resolved(spec -> {})));
         lenient()
                 .when(planQuotas.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
@@ -176,7 +176,7 @@ class AiGatewayPlanBillingTest {
     @Test
     void reservesAndSettlesStandardUnitsForUserInvocations() {
         stubProviderA(false);
-        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.just(response()));
 
         StepVerifier.create(service.complete(invocation(AiPlan.BillingScope.USER)))
@@ -194,7 +194,7 @@ class AiGatewayPlanBillingTest {
                         eq("team-a"),
                         eq(REQUEST_ID));
         assertThat(planCaptor.getValue().getMetadata().getName()).isEqualTo("standard");
-        verify(teamQuotaService).check("team-a", BigDecimal.valueOf(ESTIMATED_UNITS));
+        verify(teamQuotas).check("team-a", BigDecimal.valueOf(ESTIMATED_UNITS));
 
         var snapshotCaptor = ArgumentCaptor.forClass(PlanUsageSnapshot.class);
         verify(planQuotas).settle(eq(REQUEST_ID), eq(ACTUAL_UNITS), snapshotCaptor.capture());
@@ -220,9 +220,9 @@ class AiGatewayPlanBillingTest {
     void releasesTheReservationWhenTheProviderFails() {
         var setting = new AiSetting.Spec();
         setting.getGateway().setMaxRetries(0);
-        when(settingService.spec()).thenReturn(Mono.just(setting));
+        when(aiSettings.spec()).thenReturn(Mono.just(setting));
         stubProviderA(false);
-        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(new IllegalStateException("upstream down")));
 
         StepVerifier.create(service.complete(invocation(AiPlan.BillingScope.USER)))
@@ -236,7 +236,7 @@ class AiGatewayPlanBillingTest {
     @Test
     void bypassesPlanBillingForSystemInvocations() {
         stubProviderA(false);
-        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.just(response()));
 
         StepVerifier.create(service.complete(invocation(AiPlan.BillingScope.SYSTEM)))
@@ -248,14 +248,14 @@ class AiGatewayPlanBillingTest {
                 .reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any());
         verify(planQuotas, never()).settle(anyString(), anyLong(), any());
         verify(planQuotas, never()).release(anyString());
-        verify(teamQuotaService, never()).check(any(), any());
+        verify(teamQuotas, never()).check(any(), any());
         verify(providerSpendGuard).check(any(), any(), any());
     }
 
     @Test
     void doesNotReserveOrSettleForFreeProviders() {
         stubProviderA(true);
-        when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.just(response()));
 
         StepVerifier.create(service.complete(invocation(AiPlan.BillingScope.USER)))
@@ -286,8 +286,8 @@ class AiGatewayPlanBillingTest {
                 })
                 .verify();
 
-        verify(routeResolutionService).resolve(any());
-        verify(chatService, never()).chat(any(), any(), any(), any(), any());
+        verify(routeResolution).resolve(any());
+        verify(langChain4jChat, never()).chat(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -298,7 +298,7 @@ class AiGatewayPlanBillingTest {
         })));
         var selectionA = selectionA();
         var selectionB = selectionB();
-        when(routeResolutionService.resolve(any())).thenAnswer(call -> {
+        when(routeResolution.resolve(any())).thenAnswer(call -> {
             var input = call.getArgument(0, RouteResolution.Input.class);
             return Mono.just("cheap-group".equals(input.routeGroupCode())
                     ? resolution("cheap-group", selectionB)
@@ -309,7 +309,7 @@ class AiGatewayPlanBillingTest {
         when(planQuotas.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
                 .thenReturn(Mono.error(quotaError(PlanWindowKind.FIVE_HOUR)))
                 .thenReturn(Mono.just(reserveResult()));
-        when(chatService.chat(any(), any(), any(), any(), any())).thenReturn(Mono.just(response()));
+        when(langChain4jChat.chat(any(), any(), any(), any(), any())).thenReturn(Mono.just(response()));
 
         StepVerifier.create(service.complete(invocation(AiPlan.BillingScope.USER)))
                 .assertNext(result -> assertThat(result.meta().provider()).isEqualTo("provider-b"))
@@ -317,7 +317,7 @@ class AiGatewayPlanBillingTest {
 
         verify(planQuotas, times(2))
                 .reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any());
-        verify(chatService, times(1)).chat(any(), any(), any(), any(), any());
+        verify(langChain4jChat, times(1)).chat(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -335,7 +335,7 @@ class AiGatewayPlanBillingTest {
                 })
                 .verify();
 
-        verify(chatService, never()).chat(any(), any(), any(), any(), any());
+        verify(langChain4jChat, never()).chat(any(), any(), any(), any(), any());
         verify(planQuotas, never())
                 .reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any());
     }
@@ -353,7 +353,7 @@ class AiGatewayPlanBillingTest {
                 })
                 .verify();
 
-        verify(chatService, never()).chat(any(), any(), any(), any(), any());
+        verify(langChain4jChat, never()).chat(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -372,7 +372,7 @@ class AiGatewayPlanBillingTest {
     private void stubProviderA(boolean free) {
         var provider = provider("provider-a", free);
         stubProvider("provider-a", "account-a", "model-a", provider);
-        lenient().when(routeResolutionService.resolve(any()))
+        lenient().when(routeResolution.resolve(any()))
                 .thenReturn(Mono.just(resolution("group-a", selectionA())));
     }
 

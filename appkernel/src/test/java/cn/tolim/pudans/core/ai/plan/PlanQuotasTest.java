@@ -50,7 +50,7 @@ class PlanQuotasTest {
     UsageLedgerRepository ledgerRepository;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     TransactionalOperator transactionalOperator;
@@ -70,7 +70,7 @@ class PlanQuotasTest {
         windowClock = new PlanWindowClock();
         windowClock.setClock(Clock.fixed(PlanTestFixtures.NOW, ZoneOffset.UTC));
         service = new PlanQuotas(
-                counterRepository, ledgerRepository, settingService, windowClock, transactionalOperator);
+                counterRepository, ledgerRepository, aiSettings, windowClock, transactionalOperator);
         plan = PlanTestFixtures.plan("standard");
         fiveWindow = PlanTestFixtures.activeFiveHour(0, 0);
         weekWindow = PlanTestFixtures.activeWeek();
@@ -78,7 +78,7 @@ class PlanQuotasTest {
                 .when(transactionalOperator.transactional(ArgumentMatchers.<Mono<Object>>any()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
         lenient()
-                .when(settingService.spec())
+                .when(aiSettings.spec())
                 .thenReturn(Mono.just(PlanTestFixtures.setting(
                         "standard", AiSetting.UnassignedPolicy.DEFAULT_PLAN)));
     }

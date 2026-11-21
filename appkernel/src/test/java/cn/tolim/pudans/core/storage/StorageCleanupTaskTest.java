@@ -20,27 +20,27 @@ import reactor.core.publisher.Mono;
 class StorageCleanupTaskTest {
 
     @Mock
-    FileRecords fileService;
+    FileRecords fileRecords;
 
     @Mock
-    Uploads uploadService;
+    Uploads uploads;
 
     @Mock
     StorageTransfer storageTransfer;
 
     @Test
     void abortsExpiredUploadsAndPurgesExpiredTrash() {
-        var task = new StorageCleanupTask(fileService, uploadService, storageTransfer, new PudansProperties());
-        when(fileService.listExpiredUploads(any(Instant.class), eq(100)))
+        var task = new StorageCleanupTask(fileRecords, uploads, storageTransfer, new PudansProperties());
+        when(fileRecords.listExpiredUploads(any(Instant.class), eq(100)))
                 .thenReturn(Flux.just(file("upload-1")));
-        when(fileService.listExpiredTrash(any(Instant.class), eq(100)))
+        when(fileRecords.listExpiredTrash(any(Instant.class), eq(100)))
                 .thenReturn(Flux.just(file("trash-1")));
-        when(uploadService.abort("upload-1")).thenReturn(Mono.empty());
+        when(uploads.abort("upload-1")).thenReturn(Mono.empty());
         when(storageTransfer.purge("trash-1")).thenReturn(Mono.empty());
 
         task.cleanup().block();
 
-        verify(uploadService).abort("upload-1");
+        verify(uploads).abort("upload-1");
         verify(storageTransfer).purge("trash-1");
     }
 

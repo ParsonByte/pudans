@@ -35,7 +35,7 @@ class MemoryTaskHandlerRegistryTest {
     AiConversationRepository conversationRepository;
 
     @Mock
-    Conversations conversationService;
+    Conversations conversations;
 
     @Mock
     AiMessageRepository messageRepository;
@@ -50,7 +50,7 @@ class MemoryTaskHandlerRegistryTest {
     AiMemoryL3Repository memoryL3Repository;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     MemoryExtraction extractionAi;
@@ -80,12 +80,12 @@ class MemoryTaskHandlerRegistryTest {
     void registersEachMemoryPipelineTaskTypeExactlyOnce() {
         var l1 = new L1ExtractTaskHandler(
                 conversationRepository,
-                conversationService,
+                conversations,
                 messageRepository,
                 memoryL1Repository,
                 memoryL2Repository,
                 memoryL3Repository,
-                settingService,
+                aiSettings,
                 extractionAi,
                 conflictAi,
                 new L1Deduplication(),

@@ -28,7 +28,7 @@ class AiMcpServerEndpointTest {
     McpServers mcpServers;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
     AiEndpointRequests requests;
@@ -38,14 +38,14 @@ class AiMcpServerEndpointTest {
     @BeforeEach
     void setUp() {
         client = WebTestClient.bindToRouterFunction(
-                        new AiMcpServerEndpoint(mcpServers, teamService, requests).endpoint())
+                        new AiMcpServerEndpoint(mcpServers, teams, requests).endpoint())
                 .build();
     }
 
     @Test
     void listsServersForAnOwnedAgent() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
-        when(teamService.requireAgent("agent-a", "alice")).thenReturn(Mono.just(agent("agent-a")));
+        when(teams.requireAgent("agent-a", "alice")).thenReturn(Mono.just(agent("agent-a")));
         when(mcpServers.byAgent("agent-a")).thenReturn(Flux.just(view()));
 
         client.get()
@@ -70,7 +70,7 @@ class AiMcpServerEndpointTest {
     @Test
     void forbidsAnAgentOutsideTheUserTeam() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
-        when(teamService.requireAgent("agent-a", "alice"))
+        when(teams.requireAgent("agent-a", "alice"))
                 .thenReturn(Mono.error(new AccessDeniedException("无权访问该 Agent。")));
 
         client.get()

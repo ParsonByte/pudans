@@ -26,7 +26,7 @@ public class L1Pipeline {
 
     private static final Logger log = LoggerFactory.getLogger(L1Pipeline.class);
 
-    private final L1Deduplication dedupService;
+    private final L1Deduplication l1Deduplication;
 
     private final MemoryPromptResolver promptResolver;
 
@@ -40,25 +40,25 @@ public class L1Pipeline {
 
     private final PersonaTrigger personaTrigger;
 
-    private final @Nullable Embeddings embeddingService;
+    private final @Nullable Embeddings embeddings;
 
     public L1Pipeline(
-            L1Deduplication dedupService,
+            L1Deduplication l1Deduplication,
             MemoryPromptResolver promptResolver,
             AiMemoryL1Repository l1Repository,
             AiConversationRepository conversationRepository,
             AiMemoryTaskRepository taskRepository,
             AiMemoryGenerationLogRepository generationLogRepository,
             PersonaTrigger personaTrigger,
-            @Nullable Embeddings embeddingService) {
-        this.dedupService = dedupService;
+            @Nullable Embeddings embeddings) {
+        this.l1Deduplication = l1Deduplication;
         this.promptResolver = promptResolver;
         this.l1Repository = l1Repository;
         this.conversationRepository = conversationRepository;
         this.taskRepository = taskRepository;
         this.generationLogRepository = generationLogRepository;
         this.personaTrigger = personaTrigger;
-        this.embeddingService = embeddingService;
+        this.embeddings = embeddings;
     }
 
     private Clock clock = Clock.systemUTC();
@@ -81,7 +81,7 @@ public class L1Pipeline {
         var dedupCandidates = memoriesById.values().stream()
                 .map(memory -> new L1Deduplication.DedupCandidate(memory, existingMemories))
                 .toList();
-        var decisions = dedupService.judgeConflicts(
+        var decisions = l1Deduplication.judgeConflicts(
                 dedupCandidates, candidates -> conflictJudge.judge(promptContext.systemPrompt(), candidates));
         var now = clock.instant();
         return Flux.fromIterable(decisions)
@@ -116,7 +116,7 @@ public class L1Pipeline {
         var content = hasText(decision.mergedContent()) ? decision.mergedContent() : extracted.content();
         var type = decision.mergedType() == null ? extracted.type() : decision.mergedType();
         var priority = decision.mergedPriority() == null ? extracted.priority() : decision.mergedPriority();
-        var dedupHash = dedupService.dedupHash(request.context(), content);
+        var dedupHash = l1Deduplication.dedupHash(request.context(), content);
         var messageIds = messageIds(extracted.sourceMessageIds());
         var sameHashTarget = targetRecordIds.stream()
                 .map(candidatesByRecordId::get)
@@ -187,10 +187,10 @@ public class L1Pipeline {
 
     // 向量写入是召回增强，失败时保留关键词召回能力
     private Mono<Void> embed(L1MemoryRecord record) {
-        if (embeddingService == null || record.id() == null) {
+        if (embeddings == null || record.id() == null) {
             return Mono.empty();
         }
-        return embeddingService
+        return embeddings
                 .embed(List.of(record.content()))
                 .filter(batch -> !batch.vectors().isEmpty())
                 .flatMap(batch -> l1Repository.updateEmbedding(record.id(), batch.vectors().getFirst()))

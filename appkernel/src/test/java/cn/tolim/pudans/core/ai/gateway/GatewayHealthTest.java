@@ -33,7 +33,7 @@ class GatewayHealthTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     AiChatRequestRepository chatRequestRepository;
@@ -49,14 +49,14 @@ class GatewayHealthTest {
     void setUp() {
         properties = new AiProperties();
         properties.getRuntime().setGatewayUrl("http://gateway.local/apis/aigateway");
-        service = new GatewayHealth(client, settingService, chatRequestRepository, properties, versionSupplier);
+        service = new GatewayHealth(client, aiSettings, chatRequestRepository, properties, versionSupplier);
     }
 
     @Test
     void reportsEnabledModelsGroupsAndRecentErrors() {
         var setting = new AiSetting.Spec();
         setting.setDefaultRouteGroup("group-b");
-        when(settingService.spec()).thenReturn(Mono.just(setting));
+        when(aiSettings.spec()).thenReturn(Mono.just(setting));
         when(client.listAll(eq(AiRouteGroup.class), any(), any()))
                 .thenReturn(Flux.just(group("group-a", false), group("group-b", true)));
         when(client.listAll(eq(AiModel.class), any(), any()))
@@ -84,7 +84,7 @@ class GatewayHealthTest {
     void fallsBackToTheDefaultRouteGroupWhenSettingHasNone() {
         var setting = new AiSetting.Spec();
         setting.setDefaultRouteGroup("");
-        when(settingService.spec()).thenReturn(Mono.just(setting));
+        when(aiSettings.spec()).thenReturn(Mono.just(setting));
         when(client.listAll(eq(AiRouteGroup.class), any(), any()))
                 .thenReturn(Flux.just(group("group-a", false), group("group-b", true)));
         when(client.listAll(eq(AiModel.class), any(), any())).thenReturn(Flux.empty());

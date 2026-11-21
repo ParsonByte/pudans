@@ -35,7 +35,7 @@ public class AiHookEndpoint implements CustomEndpoint {
 
     private final AiEndpointRequests requests;
 
-    private final Teams teamService;
+    private final Teams teams;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -55,7 +55,7 @@ public class AiHookEndpoint implements CustomEndpoint {
         var event = event(request);
         return requests
                 .userId(request)
-                .flatMapMany(userId -> teamService
+                .flatMapMany(userId -> teams
                         .requireAgent(agentName, userId)
                         .thenMany(hookService.byAgent(agentName, event)))
                 .collectList()

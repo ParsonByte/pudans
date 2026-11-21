@@ -26,7 +26,7 @@ class AiInstructionEndpointTest {
     Instructions instructions;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
     AiEndpointRequests requests;
@@ -36,14 +36,14 @@ class AiInstructionEndpointTest {
     @BeforeEach
     void setUp() {
         client = WebTestClient.bindToRouterFunction(
-                        new AiInstructionEndpoint(instructions, teamService, requests).endpoint())
+                        new AiInstructionEndpoint(instructions, teams, requests).endpoint())
                 .build();
     }
 
     @Test
     void listsInstructionsForAnOwnedAgent() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
-        when(teamService.requireAgent("agent-a", "alice")).thenReturn(Mono.just(agent("agent-a")));
+        when(teams.requireAgent("agent-a", "alice")).thenReturn(Mono.just(agent("agent-a")));
         when(instructions.byAgent("agent-a")).thenReturn(Flux.just(instruction("shared-a")));
 
         client.get()
@@ -66,7 +66,7 @@ class AiInstructionEndpointTest {
     @Test
     void forbidsAnAgentOutsideTheUserTeam() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
-        when(teamService.requireAgent("agent-a", "alice"))
+        when(teams.requireAgent("agent-a", "alice"))
                 .thenReturn(Mono.error(new AccessDeniedException("无权访问该 Agent。")));
 
         client.get()

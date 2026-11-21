@@ -44,7 +44,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
 
     private static final int MAX_LIST_LIMIT = 100;
 
-    private final AgentRuntimes runtimeService;
+    private final AgentRuntimes agentRuntimes;
 
     private final AiEndpointRequests requests;
 
@@ -161,21 +161,21 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         return requests
                 .userId(request)
                 .flatMap(userId -> ServerResponse.ok()
-                        .body(runtimeService.list(userId, beforeId, limit), RuntimeView.class));
+                        .body(agentRuntimes.list(userId, beforeId, limit), RuntimeView.class));
     }
 
     private Mono<ServerResponse> providers(ServerRequest request) {
         return requests
                 .userId(request)
                 .flatMap(userId -> ServerResponse.ok()
-                        .body(runtimeService.providers(), SandboxProviderRegistry.ProviderInfo.class));
+                        .body(agentRuntimes.providers(), SandboxProviderRegistry.ProviderInfo.class));
     }
 
     private Mono<ServerResponse> get(ServerRequest request) {
         var agent = agent(request);
         return requests
                 .userId(request)
-                .flatMap(userId -> runtimeService.get(agent, userId))
+                .flatMap(userId -> agentRuntimes.get(agent, userId))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
@@ -183,7 +183,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         var agent = agent(request);
         return requests
                 .userId(request)
-                .flatMap(userId -> runtimeService.start(agent, userId))
+                .flatMap(userId -> agentRuntimes.start(agent, userId))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
@@ -191,7 +191,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         var agent = agent(request);
         return requests
                 .userId(request)
-                .flatMap(userId -> runtimeService.stop(agent, userId))
+                .flatMap(userId -> agentRuntimes.stop(agent, userId))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
@@ -199,7 +199,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         var agent = agent(request);
         return requests
                 .userId(request)
-                .flatMap(userId -> runtimeService.restart(agent, userId))
+                .flatMap(userId -> agentRuntimes.restart(agent, userId))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
@@ -207,7 +207,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         var agent = agent(request);
         return requests
                 .userId(request)
-                .flatMap(userId -> runtimeService.delete(agent, userId))
+                .flatMap(userId -> agentRuntimes.delete(agent, userId))
                 .then(ServerResponse.noContent().build());
     }
 
@@ -216,7 +216,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         return request
                 .bodyToMono(ExecRequest.class)
                 .switchIfEmpty(Mono.error(SandboxErrors.configInvalid("请求体不能为空。")))
-                .flatMap(body -> requests.userId(request).flatMap(userId -> runtimeService.exec(
+                .flatMap(body -> requests.userId(request).flatMap(userId -> agentRuntimes.exec(
                         agent, userId, body.command(), body.args(), body.workdir(), body.timeoutSeconds())))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
@@ -229,7 +229,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         }
         return requests
                 .userId(request)
-                .flatMap(userId -> runtimeService.readFile(agent, userId, path))
+                .flatMap(userId -> agentRuntimes.readFile(agent, userId, path))
                 .flatMap(file -> ServerResponse.ok().bodyValue(file));
     }
 
@@ -238,7 +238,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         return request
                 .bodyToMono(WriteFileRequest.class)
                 .switchIfEmpty(Mono.error(SandboxErrors.configInvalid("请求体不能为空。")))
-                .flatMap(body -> requests.userId(request).flatMap(userId -> runtimeService.writeFile(
+                .flatMap(body -> requests.userId(request).flatMap(userId -> agentRuntimes.writeFile(
                         agent, userId, body.path(), body.encoding(), body.content())))
                 .then(ServerResponse.noContent().build());
     }
@@ -249,7 +249,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
                 request.queryParam("follow").orElse("false"));
         var cursor = request.queryParam("cursor").orElse(null);
         return requests.userId(request).flatMap(userId -> {
-            var events = runtimeService
+            var events = agentRuntimes
                     .logs(agent, userId, follow, cursor)
                     .map(this::logEvent);
             return ServerResponse.ok()
@@ -264,7 +264,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         var agent = agent(request);
         return requests
                 .userId(request)
-                .flatMapMany(userId -> runtimeService.snapshots(agent, userId, DEFAULT_LIST_LIMIT))
+                .flatMapMany(userId -> agentRuntimes.snapshots(agent, userId, DEFAULT_LIST_LIMIT))
                 .collectList()
                 .flatMap(items -> ServerResponse.ok().bodyValue(items));
     }
@@ -274,7 +274,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         return request
                 .bodyToMono(SnapshotRequest.class)
                 .defaultIfEmpty(new SnapshotRequest(null))
-                .flatMap(body -> requests.userId(request).flatMap(userId -> runtimeService.snapshot(
+                .flatMap(body -> requests.userId(request).flatMap(userId -> agentRuntimes.snapshot(
                         agent, userId, body.name(), userId)))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
@@ -284,7 +284,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         var snapshotId = snapshotId(request);
         return requests
                 .userId(request)
-                .flatMap(userId -> runtimeService.restoreSnapshot(agent, userId, snapshotId))
+                .flatMap(userId -> agentRuntimes.restoreSnapshot(agent, userId, snapshotId))
                 .then(ServerResponse.noContent().build());
     }
 
@@ -293,7 +293,7 @@ public class AiRuntimeEndpoint implements CustomEndpoint {
         var snapshotId = snapshotId(request);
         return requests
                 .userId(request)
-                .flatMap(userId -> runtimeService.deleteSnapshot(agent, userId, snapshotId))
+                .flatMap(userId -> agentRuntimes.deleteSnapshot(agent, userId, snapshotId))
                 .then(ServerResponse.noContent().build());
     }
 

@@ -38,13 +38,13 @@ import reactor.test.StepVerifier;
 class MemoryViewsTest {
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
-    MemoryRecall recallService;
+    MemoryRecall memoryRecall;
 
     @Mock
     AiMemoryL1Repository l1Repository;
@@ -60,7 +60,7 @@ class MemoryViewsTest {
     @BeforeEach
     void setUp() {
         service = new MemoryViews(
-                settingService, teamService, recallService, l1Repository, l2Repository, l3Repository);
+                aiSettings, teams, memoryRecall, l1Repository, l2Repository, l3Repository);
     }
 
     @Test
@@ -77,7 +77,7 @@ class MemoryViewsTest {
     @Test
     void searchesWithTheResolvedScope() {
         stubScope();
-        when(recallService.build(any(MemoryContext.class), eq("发布"), eq(5), eq(0)))
+        when(memoryRecall.build(any(MemoryContext.class), eq("发布"), eq(5), eq(0)))
                 .thenReturn(Mono.just(new MemoryInjection(
                         "facts",
                         "",
@@ -130,8 +130,8 @@ class MemoryViewsTest {
     }
 
     private void stubScope() {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(teamService.requireAgent("default", "user-1")).thenReturn(Mono.just(agent()));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(teams.requireAgent("default", "user-1")).thenReturn(Mono.just(agent()));
     }
 
     private static AiAgent agent() {

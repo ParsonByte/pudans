@@ -20,9 +20,9 @@ public class AiChunkEmbeddings implements ChunkEmbeddings {
 
     private static final Logger log = LoggerFactory.getLogger(AiChunkEmbeddings.class);
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
-    private final Embeddings embeddingService;
+    private final Embeddings embeddings;
 
     private final AiKbEmbeddingStore embeddingStore;
 
@@ -49,7 +49,7 @@ public class AiChunkEmbeddings implements ChunkEmbeddings {
         }
         var contents = embeddable.stream().map(KnowledgeBaseChunk::getContent).toList();
         return embeddingModelName(embeddingModel)
-                .flatMap(name -> embeddingService.embed(contents, name))
+                .flatMap(name -> embeddings.embed(contents, name))
                 .onErrorResume(error -> {
                     if (!isModelMissing(error)) {
                         return Mono.error(error);
@@ -64,7 +64,7 @@ public class AiChunkEmbeddings implements ChunkEmbeddings {
         if (StringUtils.hasText(embeddingModel)) {
             return Mono.just(embeddingModel);
         }
-        return settingService.spec()
+        return aiSettings.spec()
                 .flatMap(spec -> Mono.justOrEmpty(
                         spec.getEmbedding() == null ? null : spec.getEmbedding().getKnowledgeBaseModel()))
                 .filter(StringUtils::hasText)

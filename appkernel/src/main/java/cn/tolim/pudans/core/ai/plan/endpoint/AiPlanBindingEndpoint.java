@@ -22,9 +22,9 @@ public class AiPlanBindingEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiPlanBindingV1alpha1";
 
-    private final PlanBindings bindingService;
+    private final PlanBindings planBindings;
 
-    private final PlanResolution resolutionService;
+    private final PlanResolution planResolution;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -48,12 +48,12 @@ public class AiPlanBindingEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> bulk(ServerRequest request) {
         return request.bodyToMono(PlanBindings.BulkBindRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
-                .flatMap(bindingService::bulk)
+                .flatMap(planBindings::bulk)
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> resolve(ServerRequest request) {
-        return resolutionService
+        return planResolution
                 .resolve(request.pathVariable("uid"))
                 .map(resolved -> new ResolutionView(
                         resolved.planName(), resolved.displayName(), resolved.matchedBy()))

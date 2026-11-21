@@ -20,7 +20,7 @@ public class MemoryMaintenanceScheduler implements SmartLifecycle {
 
     private static final Duration DECAY_INTERVAL = Duration.ofHours(1);
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final AiMemoryL1Repository l1Repository;
 
@@ -29,7 +29,7 @@ public class MemoryMaintenanceScheduler implements SmartLifecycle {
     private Disposable decay;
 
     Mono<Long> decayOnce() {
-        return settingService
+        return aiSettings
                 .spec()
                 .map(spec -> spec.getMemory() == null ? new AiSetting.Memory() : spec.getMemory())
                 .filter(AiSetting.Memory::isDecayEnabled)

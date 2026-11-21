@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class DefaultOAuth2LoginFlowEnhancer implements OAuth2LoginFlowEnhancer {
 
-    private final Connections connectionService;
+    private final Connections connections;
 
     private final OAuth2AuthenticationTokenCache oauth2TokenCache;
 
@@ -23,10 +23,10 @@ public class DefaultOAuth2LoginFlowEnhancer implements OAuth2LoginFlowEnhancer {
     private final AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
 
     public DefaultOAuth2LoginFlowEnhancer(
-            Connections connectionService,
+            Connections connections,
             OAuth2AuthenticationTokenCache oauth2TokenCache,
             OAuth2BindIntent bindIntent) {
-        this.connectionService = connectionService;
+        this.connections = connections;
         this.oauth2TokenCache = oauth2TokenCache;
         this.bindIntent = bindIntent;
     }
@@ -55,7 +55,7 @@ public class DefaultOAuth2LoginFlowEnhancer implements OAuth2LoginFlowEnhancer {
             var oauth2User = oauth2Token.getPrincipal();
             var username = authentication.getName();
             var registrationId = oauth2Token.getAuthorizedClientRegistrationId();
-            return connectionService
+            return connections
                     .updateUserConnectionIfPresent(registrationId, oauth2User)
                     .doOnNext(connection -> {
                         if (log.isDebugEnabled()) {
@@ -63,7 +63,7 @@ public class DefaultOAuth2LoginFlowEnhancer implements OAuth2LoginFlowEnhancer {
                         }
                     })
                     .switchIfEmpty(Mono.defer(
-                            () -> connectionService.createUserConnection(username, registrationId, oauth2User)))
+                            () -> connections.createUserConnection(username, registrationId, oauth2User)))
                     .then();
         });
         return binding.then(Mono.defer(() -> oauth2TokenCache.removeToken(exchange)))

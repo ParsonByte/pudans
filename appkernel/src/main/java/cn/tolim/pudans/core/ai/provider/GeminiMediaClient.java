@@ -27,20 +27,20 @@ public class GeminiMediaClient {
 
     private final ObjectMapper mapper;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     public GeminiMediaClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService) {
+            ProviderAccounts providerAccounts) {
         this.webClient = Objects.requireNonNull(webClient, "AI WebClient 不能为空");
         this.mapper = Objects.requireNonNull(mapper, "ObjectMapper 不能为空");
-        this.accountService = Objects.requireNonNull(accountService, "供应商账号服务不能为空");
+        this.providerAccounts = Objects.requireNonNull(providerAccounts, "供应商账号服务不能为空");
     }
 
     public Mono<JsonNode> post(
             AiProvider provider, AiProviderAccount account, String path, JsonNode body) {
-        return Mono.defer(() -> accountService.apiKey(account)
+        return Mono.defer(() -> providerAccounts.apiKey(account)
                 .defaultIfEmpty("")
                 .flatMap(apiKey -> webClient
                         .post()
@@ -57,7 +57,7 @@ public class GeminiMediaClient {
     }
 
     public Mono<JsonNode> get(AiProvider provider, AiProviderAccount account, String path) {
-        return Mono.defer(() -> accountService.apiKey(account)
+        return Mono.defer(() -> providerAccounts.apiKey(account)
                 .defaultIfEmpty("")
                 .flatMap(apiKey -> webClient
                         .get()

@@ -70,7 +70,7 @@ public class AgentRuntimes {
             "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
             Long.class);
 
-    private final Teams teamService;
+    private final Teams teams;
 
     private final EnvironmentVariables environmentService;
 
@@ -89,7 +89,7 @@ public class AgentRuntimes {
     private final ObjectMapper mapper;
 
     public AgentRuntimes(
-            Teams teamService,
+            Teams teams,
             EnvironmentVariables environmentService,
             AiAgentRuntimeRepository repository,
             AiAgentSnapshotRepository snapshotRepository,
@@ -98,7 +98,7 @@ public class AgentRuntimes {
             ReactiveStringRedisTemplate redisTemplate,
             AiProperties properties,
             ObjectMapper mapper) {
-        this.teamService = teamService;
+        this.teams = teams;
         this.environmentService = environmentService;
         this.repository = repository;
         this.snapshotRepository = snapshotRepository;
@@ -110,21 +110,21 @@ public class AgentRuntimes {
     }
 
     public Flux<RuntimeView> list(String userId, long beforeId, int limit) {
-        return repository.listBefore(beforeId, limit).concatMap(record -> teamService
+        return repository.listBefore(beforeId, limit).concatMap(record -> teams
                 .requireAgent(record.agentName(), userId)
                 .map(agent -> view(record))
                 .onErrorResume(AccessDeniedException.class, error -> Mono.empty()));
     }
 
     public Mono<RuntimeView> get(String agentName, String userId) {
-        return teamService.requireAgent(agentName, userId)
+        return teams.requireAgent(agentName, userId)
                 .then(repository.find(agentName)
                         .switchIfEmpty(Mono.error(SandboxErrors.notFound(agentName))))
                 .map(AgentRuntimes::view);
     }
 
     public Mono<SandboxStatus> status(String agentName, String userId) {
-        return teamService
+        return teams
                 .requireAgent(agentName, userId)
                 .then(repository.find(agentName)
                         .switchIfEmpty(Mono.error(SandboxErrors.notFound(agentName))))
@@ -134,7 +134,7 @@ public class AgentRuntimes {
     }
 
     public Mono<RuntimeView> start(String agentName, String userId) {
-        return teamService.requireAgent(agentName, userId).flatMap(agent -> {
+        return teams.requireAgent(agentName, userId).flatMap(agent -> {
             var runtime = runtimeSpec(agentName, agent);
             return Mono.usingWhen(
                     acquireLock(agentName),
@@ -144,7 +144,7 @@ public class AgentRuntimes {
     }
 
     public Mono<RuntimeView> stop(String agentName, String userId) {
-        return teamService.requireAgent(agentName, userId)
+        return teams.requireAgent(agentName, userId)
                 .flatMap(agent -> Mono.usingWhen(
                         acquireLock(agentName),
                         token -> doStop(agentName),
@@ -153,7 +153,7 @@ public class AgentRuntimes {
     }
 
     public Mono<RuntimeView> restart(String agentName, String userId) {
-        return teamService.requireAgent(agentName, userId).flatMap(agent -> {
+        return teams.requireAgent(agentName, userId).flatMap(agent -> {
             var runtime = runtimeSpec(agentName, agent);
             return Mono.usingWhen(
                     acquireLock(agentName),
@@ -163,7 +163,7 @@ public class AgentRuntimes {
     }
 
     public Mono<Void> delete(String agentName, String userId) {
-        return teamService.requireAgent(agentName, userId)
+        return teams.requireAgent(agentName, userId)
                 .flatMap(agent -> Mono.usingWhen(
                         acquireLock(agentName),
                         token -> doDelete(agentName),
@@ -184,7 +184,7 @@ public class AgentRuntimes {
             var arguments = args == null
                     ? List.<String>of()
                     : args.stream().filter(Objects::nonNull).toList();
-            return teamService.requireAgent(agentName, userId).flatMap(agent -> {
+            return teams.requireAgent(agentName, userId).flatMap(agent -> {
                 var runtime = runtimeSpec(agentName, agent);
                 return ensureRunning(agentName, agent, runtime)
                         .flatMap(record -> {
@@ -240,7 +240,7 @@ public class AgentRuntimes {
             if (!StringUtils.hasText(path)) {
                 return Mono.error(SandboxErrors.configInvalid("path 不能为空。"));
             }
-            return teamService.requireAgent(agentName, userId)
+            return teams.requireAgent(agentName, userId)
                     .flatMap(agent -> ensureRunning(agentName, agent, runtimeSpec(agentName, agent)))
                     .flatMap(record -> adapter(record)
                             .flatMap(sandbox -> sandbox.readFile(record.sandboxId(), path)))
@@ -259,7 +259,7 @@ public class AgentRuntimes {
             if (bytes.length > MAX_FILE_BYTES) {
                 return Mono.error(SandboxErrors.fileTooLarge(bytes.length, MAX_FILE_BYTES));
             }
-            return teamService.requireAgent(agentName, userId)
+            return teams.requireAgent(agentName, userId)
                     .flatMap(agent -> ensureRunning(agentName, agent, runtimeSpec(agentName, agent)))
                     .flatMap(record -> adapter(record)
                             .flatMap(sandbox -> sandbox.writeFile(record.sandboxId(), path, bytes)))
@@ -269,7 +269,7 @@ public class AgentRuntimes {
     }
 
     public Flux<SnapshotView> snapshots(String agentName, String userId, int limit) {
-        return teamService
+        return teams
                 .requireAgent(agentName, userId)
                 .thenMany(snapshotRepository.list(agentName, limit).map(AgentRuntimes::snapshotView));
     }
@@ -277,7 +277,7 @@ public class AgentRuntimes {
     // 快照使用工作区 tar 包，所有沙箱提供方共用同一实现
     public Mono<SnapshotView> snapshot(
             String agentName, String userId, @Nullable String name, String createdBy) {
-        return teamService.requireAgent(agentName, userId).flatMap(agent -> {
+        return teams.requireAgent(agentName, userId).flatMap(agent -> {
             var runtime = runtimeSpec(agentName, agent);
             return runningRecord(agentName).flatMap(record -> {
                 var temp = tempSnapshotPath();
@@ -300,7 +300,7 @@ public class AgentRuntimes {
     }
 
     public Mono<Void> restoreSnapshot(String agentName, String userId, long snapshotId) {
-        return teamService.requireAgent(agentName, userId).flatMap(agent -> {
+        return teams.requireAgent(agentName, userId).flatMap(agent -> {
             var runtime = runtimeSpec(agentName, agent);
             return snapshotRepository
                     .find(snapshotId, agentName)
@@ -340,7 +340,7 @@ public class AgentRuntimes {
     }
 
     public Mono<Void> deleteSnapshot(String agentName, String userId, long snapshotId) {
-        return teamService
+        return teams
                 .requireAgent(agentName, userId)
                 .then(snapshotRepository.delete(snapshotId, agentName))
                 .flatMap(deleted -> deleted
@@ -408,7 +408,7 @@ public class AgentRuntimes {
             String agentName, String userId, boolean follow, @Nullable String cursor) {
         return Flux.defer(() -> {
             var initialCursor = parseCursor(cursor);
-            return teamService.requireAgent(agentName, userId)
+            return teams.requireAgent(agentName, userId)
                     .then(repository.find(agentName)
                             .switchIfEmpty(Mono.error(SandboxErrors.notFound(agentName))))
                     .flatMapMany(record -> {

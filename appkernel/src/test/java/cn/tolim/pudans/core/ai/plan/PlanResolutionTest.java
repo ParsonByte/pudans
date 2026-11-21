@@ -49,17 +49,17 @@ class PlanResolutionTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     private PlanResolution service;
 
     @BeforeEach
     void setUp() {
         service = new PlanResolution(
-                accounts, userGroupService, client, settingService, new PlanCatalog(client));
+                accounts, userGroupService, client, aiSettings, new PlanCatalog(client));
         service.setClock(Clock.fixed(PlanTestFixtures.NOW, ZoneOffset.UTC));
         lenient()
-                .when(settingService.spec())
+                .when(aiSettings.spec())
                 .thenReturn(Mono.just(PlanTestFixtures.setting(
                         "default-plan", AiSetting.UnassignedPolicy.DEFAULT_PLAN)));
         lenient().when(accounts.getUserByUid(UID)).thenReturn(Mono.just(user()));
@@ -172,7 +172,7 @@ class PlanResolutionTest {
 
     @Test
     void rejectsUsersWithoutAPlanWhenThePolicyIsDeny() {
-        when(settingService.spec())
+        when(aiSettings.spec())
                 .thenReturn(Mono.just(PlanTestFixtures.setting(
                         "default-plan", AiSetting.UnassignedPolicy.DENY)));
 
@@ -187,7 +187,7 @@ class PlanResolutionTest {
 
     @Test
     void rejectsUsersWithoutAPlanWhenNoDefaultPlanIsConfigured() {
-        when(settingService.spec())
+        when(aiSettings.spec())
                 .thenReturn(Mono.just(PlanTestFixtures.setting(
                         null, AiSetting.UnassignedPolicy.DEFAULT_PLAN)));
 

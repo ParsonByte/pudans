@@ -37,16 +37,16 @@ import reactor.test.StepVerifier;
 class ChatCompletionsSystemPromptTest {
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
-    ChatModes chatModeService;
+    ChatModes chatModes;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
-    Conversations conversationService;
+    Conversations conversations;
 
     @Mock
     ReactiveExtensionClient client;
@@ -55,16 +55,16 @@ class ChatCompletionsSystemPromptTest {
     KnowledgeBaseAcl knowledgeBaseAcl;
 
     @Mock
-    KnowledgeRetrieval retrievalService;
+    KnowledgeRetrieval knowledgeRetrieval;
 
     @Mock
-    Embeddings embeddingService;
+    Embeddings embeddings;
 
     @Mock
     AiMemoryContextBuilder memoryContextBuilder;
 
     @Mock
-    AiGateway gatewayService;
+    AiGateway aiGateway;
 
     @Mock
     MemoryTaskScheduler memoryTaskScheduler;
@@ -73,10 +73,10 @@ class ChatCompletionsSystemPromptTest {
     StorageTransfer storageTransfer;
 
     @Mock
-    AgentContext agentContextService;
+    AgentContext agentContext;
 
     @Mock
-    ChatTools toolService;
+    ChatTools chatTools;
 
     @Mock
     cn.tolim.pudans.core.ai.library.command.SlashCommands slashCommands;
@@ -110,20 +110,20 @@ class ChatCompletionsSystemPromptTest {
                 .when(journalStore.open(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(Mono.just(new cn.tolim.pudans.core.ai.harness.journal.InMemoryThreadJournal()));
         service = new ChatCompletions(
-                settingService,
-                chatModeService,
-                teamService,
-                conversationService,
+                aiSettings,
+                chatModes,
+                teams,
+                conversations,
                 client,
                 knowledgeBaseAcl,
-                retrievalService,
-                embeddingService,
+                knowledgeRetrieval,
+                embeddings,
                 memoryContextBuilder,
-                gatewayService,
+                aiGateway,
                 memoryTaskScheduler,
                 storageTransfer,
-                agentContextService,
-                toolService,
+                agentContext,
+                chatTools,
                 slashCommands,
                 hooks,
                 journalStore,

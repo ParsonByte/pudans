@@ -66,7 +66,7 @@ class L1ExtractTaskHandlerTest {
     AiConversationRepository conversationRepository;
 
     @Mock
-    Conversations conversationService;
+    Conversations conversations;
 
     @Mock
     AiMessageRepository messageRepository;
@@ -81,7 +81,7 @@ class L1ExtractTaskHandlerTest {
     AiMemoryL3Repository memoryL3Repository;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     MemoryExtraction extractionAi;
@@ -90,27 +90,27 @@ class L1ExtractTaskHandlerTest {
     MemoryConflict conflictAi;
 
     @Mock
-    L1Pipeline pipelineService;
+    L1Pipeline l1Pipeline;
 
-    private L1Deduplication dedupService;
+    private L1Deduplication l1Deduplication;
 
     private L1ExtractTaskHandler handler;
 
     @BeforeEach
     void setUp() {
-        dedupService = new L1Deduplication();
+        l1Deduplication = new L1Deduplication();
         handler = new L1ExtractTaskHandler(
                 conversationRepository,
-                conversationService,
+                conversations,
                 messageRepository,
                 memoryL1Repository,
                 memoryL2Repository,
                 memoryL3Repository,
-                settingService,
+                aiSettings,
                 extractionAi,
                 conflictAi,
-                dedupService,
-                pipelineService);
+                l1Deduplication,
+                l1Pipeline);
     }
 
     @Test
@@ -130,8 +130,8 @@ class L1ExtractTaskHandlerTest {
         when(conflictAi.judge(eq(""), anyList())).thenReturn(Mono.just(decisions));
         when(memoryL3Repository.findByScope("team-a", "agent-a")).thenReturn(Mono.empty());
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.empty());
-        when(pipelineService.process(any(), any())).thenReturn(Mono.just(result(102L)));
-        when(conversationService.reducePending(conversation(null, null), 2)).thenReturn(Mono.just(2));
+        when(l1Pipeline.process(any(), any())).thenReturn(Mono.just(result(102L)));
+        when(conversations.reducePending(conversation(null, null), 2)).thenReturn(Mono.just(2));
 
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
@@ -147,7 +147,7 @@ class L1ExtractTaskHandlerTest {
 
         var requestCaptor = ArgumentCaptor.forClass(L1Pipeline.Request.class);
         var judgeCaptor = ArgumentCaptor.forClass(L1Pipeline.ConflictJudge.class);
-        verify(pipelineService).process(requestCaptor.capture(), judgeCaptor.capture());
+        verify(l1Pipeline).process(requestCaptor.capture(), judgeCaptor.capture());
         var request = requestCaptor.getValue();
         assertThat(request.context()).isEqualTo(contextCaptor.getValue());
         assertThat(request.conversationId()).isEqualTo(CONVERSATION_ID);
@@ -163,7 +163,7 @@ class L1ExtractTaskHandlerTest {
         assertThat(request.personaState().memoriesSinceLastPersona()).isZero();
         assertThat(judgeCaptor.getValue().judge("ignored", List.of())).isEqualTo(decisions);
 
-        verify(conversationService).reducePending(conversation(null, null), 2);
+        verify(conversations).reducePending(conversation(null, null), 2);
     }
 
     @Test
@@ -185,10 +185,10 @@ class L1ExtractTaskHandlerTest {
         when(conflictAi.judge(eq(""), anyList())).thenReturn(Mono.just(decisions));
         when(memoryL3Repository.findByScope("team-a", "agent-a")).thenReturn(Mono.empty());
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.empty());
-        when(pipelineService.process(any(), any()))
+        when(l1Pipeline.process(any(), any()))
                 .thenReturn(Mono.just(result(102L)), Mono.just(result(103L)));
-        when(conversationService.reducePending(conversation(null, null), 2)).thenReturn(Mono.just(2));
-        when(conversationService.reducePending(conversation(null, null), 1)).thenReturn(Mono.just(1));
+        when(conversations.reducePending(conversation(null, null), 2)).thenReturn(Mono.just(2));
+        when(conversations.reducePending(conversation(null, null), 1)).thenReturn(Mono.just(1));
 
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
@@ -196,7 +196,7 @@ class L1ExtractTaskHandlerTest {
         verify(messageRepository).listMessages(CONVERSATION_ID, 0L, 2);
         verify(messageRepository).listMessages(CONVERSATION_ID, 102L, 2);
         verify(extractionAi, times(2)).extract(any(), eq(CONVERSATION_ID), anyList());
-        verify(conversationService, times(2)).reducePending(eq(conversation(null, null)), anyInt());
+        verify(conversations, times(2)).reducePending(eq(conversation(null, null)), anyInt());
     }
 
     @Test
@@ -206,8 +206,8 @@ class L1ExtractTaskHandlerTest {
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
 
-        verifyNoInteractions(messageRepository, extractionAi, conflictAi, pipelineService);
-        verify(conversationService, never()).reducePending(any(), anyInt());
+        verifyNoInteractions(messageRepository, extractionAi, conflictAi, l1Pipeline);
+        verify(conversations, never()).reducePending(any(), anyInt());
     }
 
     @Test
@@ -219,13 +219,13 @@ class L1ExtractTaskHandlerTest {
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
 
-        verifyNoInteractions(extractionAi, conflictAi, pipelineService);
-        verify(conversationService, never()).reducePending(any(), anyInt());
+        verifyNoInteractions(extractionAi, conflictAi, l1Pipeline);
+        verify(conversations, never()).reducePending(any(), anyInt());
     }
 
     @Test
     void precomputesConflictDecisionsAndPersonaState() {
-        var existingHash = dedupService.dedupHash(context(), "用户偏好暗色主题");
+        var existingHash = l1Deduplication.dedupHash(context(), "用户偏好暗色主题");
         var exact = record("m-old", "用户偏好暗色主题", existingHash);
         var other = record("m-other", "项目使用 Gradle 构建", "other-hash");
         var extracted = extracted("m-1", "用户偏好暗色主题");
@@ -259,8 +259,8 @@ class L1ExtractTaskHandlerTest {
         });
         when(memoryL3Repository.findByScope("team-a", "agent-a")).thenReturn(Mono.just(persona));
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.just(scene));
-        when(pipelineService.process(any(), any())).thenReturn(Mono.just(result(101L)));
-        when(conversationService.reducePending(conversation(null, null), 1)).thenReturn(Mono.just(1));
+        when(l1Pipeline.process(any(), any())).thenReturn(Mono.just(result(101L)));
+        when(conversations.reducePending(conversation(null, null), 1)).thenReturn(Mono.just(1));
 
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
@@ -273,7 +273,7 @@ class L1ExtractTaskHandlerTest {
                 .containsExactly("m-old", "m-other");
 
         var requestCaptor = ArgumentCaptor.forClass(L1Pipeline.Request.class);
-        verify(pipelineService).process(requestCaptor.capture(), any());
+        verify(l1Pipeline).process(requestCaptor.capture(), any());
         var state = requestCaptor.getValue().personaState();
         assertThat(state.explicitRequested()).isFalse();
         assertThat(state.personaGenerated()).isTrue();
@@ -298,7 +298,7 @@ class L1ExtractTaskHandlerTest {
                         .hasMessage("模型不可用"))
                 .verify();
 
-        verify(conversationService, never()).reducePending(any(), anyInt());
+        verify(conversations, never()).reducePending(any(), anyInt());
     }
 
     private void stubConversation(Long l1Cursor) {
@@ -312,7 +312,7 @@ class L1ExtractTaskHandlerTest {
     private void stubSetting(int maxMessagesPerExtraction) {
         var spec = new AiSetting().getSpec();
         spec.getMemory().setMaxMessagesPerExtraction(maxMessagesPerExtraction);
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
     }
 
     private static AiTask task(Map<String, Object> payload) {

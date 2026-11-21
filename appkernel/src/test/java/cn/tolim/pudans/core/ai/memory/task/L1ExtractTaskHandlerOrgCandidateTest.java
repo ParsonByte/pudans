@@ -53,7 +53,7 @@ class L1ExtractTaskHandlerOrgCandidateTest {
     AiConversationRepository conversationRepository;
 
     @Mock
-    Conversations conversationService;
+    Conversations conversations;
 
     @Mock
     AiMessageRepository messageRepository;
@@ -68,7 +68,7 @@ class L1ExtractTaskHandlerOrgCandidateTest {
     AiMemoryL3Repository memoryL3Repository;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     MemoryExtraction extractionAi;
@@ -77,7 +77,7 @@ class L1ExtractTaskHandlerOrgCandidateTest {
     MemoryConflict conflictAi;
 
     @Mock
-    L1Pipeline pipelineService;
+    L1Pipeline l1Pipeline;
 
     private L1ExtractTaskHandler handler;
 
@@ -85,16 +85,16 @@ class L1ExtractTaskHandlerOrgCandidateTest {
     void setUp() {
         handler = new L1ExtractTaskHandler(
                 conversationRepository,
-                conversationService,
+                conversations,
                 messageRepository,
                 memoryL1Repository,
                 memoryL2Repository,
                 memoryL3Repository,
-                settingService,
+                aiSettings,
                 extractionAi,
                 conflictAi,
                 new L1Deduplication(),
-                pipelineService);
+                l1Pipeline);
     }
 
     @Test
@@ -134,21 +134,21 @@ class L1ExtractTaskHandlerOrgCandidateTest {
                 .thenReturn(Mono.just(List.of(DedupDecision.store(extracted.recordId()))));
         when(memoryL3Repository.findByScope("team-a", "agent-a")).thenReturn(Mono.empty());
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.empty());
-        when(pipelineService.process(any(), any()))
+        when(l1Pipeline.process(any(), any()))
                 .thenReturn(Mono.just(new L1Pipeline.Result(List.of(), List.of(), 101L, 0, List.of())));
-        when(conversationService.reducePending(conversation, 1)).thenReturn(Mono.just(1));
+        when(conversations.reducePending(conversation, 1)).thenReturn(Mono.just(1));
 
         StepVerifier.create(handler.handle(task())).verifyComplete();
 
         var captor = ArgumentCaptor.forClass(L1Pipeline.Request.class);
-        verify(pipelineService).process(captor.capture(), any());
+        verify(l1Pipeline).process(captor.capture(), any());
         return captor.getValue();
     }
 
     private void stubSetting() {
         var spec = new AiSetting().getSpec();
         spec.getMemory().setMaxMessagesPerExtraction(10);
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
     }
 
     private static ExtractedMemory memory(MemoryType type, int priority, Map<String, Object> metadata) {

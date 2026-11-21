@@ -49,17 +49,17 @@ class OrgCandidateTaskHandlerTest {
     AiOrgMemoryRepository orgMemoryRepository;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     private OrgCandidateTaskHandler handler;
 
-    private L1Deduplication dedupService;
+    private L1Deduplication l1Deduplication;
 
     @BeforeEach
     void setUp() {
-        dedupService = new L1Deduplication();
+        l1Deduplication = new L1Deduplication();
         handler = new OrgCandidateTaskHandler(
-                l1Repository, orgMemoryRepository, dedupService, settingService);
+                l1Repository, orgMemoryRepository, l1Deduplication, aiSettings);
     }
 
     @Test
@@ -81,7 +81,7 @@ class OrgCandidateTaskHandlerTest {
         assertThat(candidate.content()).isEqualTo("Use Gradle");
         assertThat(candidate.contentType()).isEqualTo(MemoryType.WORK_METHOD.name());
         assertThat(candidate.dedupHash())
-                .isEqualTo(MemoryHashes.sha256Hex(dedupService.normalize("Use Gradle")));
+                .isEqualTo(MemoryHashes.sha256Hex(l1Deduplication.normalize("Use Gradle")));
         assertThat(candidate.sourceTeamIds()).containsExactly("team-a");
         assertThat(candidate.sourceUserIds()).containsExactly("user-1", "user-2");
         assertThat(candidate.sourceMemoryIds()).containsExactly(11L, 12L, 13L);
@@ -109,7 +109,7 @@ class OrgCandidateTaskHandlerTest {
     void usesTheConfiguredPromotionThreshold() {
         var spec = new AiSetting.Spec();
         spec.getMemory().setOrgPromotionThreshold(5);
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
         when(l1Repository.findOrgCandidates("team-a", "agent-a", 42L, 100))
                 .thenReturn(Flux.just(record(11L, "Use Gradle", "user-1")));
         when(orgMemoryRepository.recordVote(any())).thenReturn(Mono.just(orgMemory(31L)));
@@ -168,11 +168,11 @@ class OrgCandidateTaskHandlerTest {
                         .hasMessageContaining("团队"))
                 .verify();
 
-        verifyNoInteractions(l1Repository, orgMemoryRepository, settingService);
+        verifyNoInteractions(l1Repository, orgMemoryRepository, aiSettings);
     }
 
     private void givenDefaultSetting() {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
     }
 
     private static AiTask task(Object afterL1Id) {

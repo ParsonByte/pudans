@@ -34,15 +34,15 @@ public class LiveMonitorWorker {
 
     private final LiveSourceRegistry registry;
 
-    private final SourceStatus statusService;
+    private final SourceStatus sourceStatus;
 
-    private final RoomResolver resolveService;
+    private final RoomResolver roomResolver;
 
-    private final Recordings recordingService;
+    private final Recordings recordings;
 
     private final LiveResolveCache resolveCache;
 
-    private final LiveAlerts alertService;
+    private final LiveAlerts liveAlerts;
 
     private final LiveMetrics metrics;
 
@@ -95,7 +95,7 @@ public class LiveMonitorWorker {
 
     private Mono<Void> check(LiveSourceRegistry.Snapshot snapshot) {
         var name = snapshot.name();
-        return Mono.defer(() -> resolveService
+        return Mono.defer(() -> roomResolver
                         .resolve(snapshot.platform(), snapshot.roomId(), true)
                         .flatMap(info -> info.live()
                                 ? handleLive(name, info)
@@ -105,7 +105,7 @@ public class LiveMonitorWorker {
     }
 
     private Mono<Void> handleLive(String name, LiveRoomInfo info) {
-        return statusService.applyLive(name, info).flatMap(source -> startAutoRecording(source, info));
+        return sourceStatus.applyLive(name, info).flatMap(source -> startAutoRecording(source, info));
     }
 
     private Mono<Void> startAutoRecording(LiveSource source, LiveRoomInfo info) {
@@ -114,9 +114,9 @@ public class LiveMonitorWorker {
             return Mono.empty();
         }
         var name = source.getMetadata().getName();
-        return recordingService
+        return recordings
                 .start(source, info, true, "monitor")
-                .flatMap(recording -> statusService.markRecording(
+                .flatMap(recording -> sourceStatus.markRecording(
                         name, recording.getMetadata().getName()))
                 .then()
                 .onErrorResume(error -> handleRecordingFailure(name, error));
@@ -136,27 +136,27 @@ public class LiveMonitorWorker {
         payload.put("errorCode", code);
         payload.put("message", error.getMessage());
         payload.put("at", Instant.now().toString());
-        return statusService
+        return sourceStatus
                 .recordingFailed(sourceName, code, error.getMessage())
-                .then(alertService.alert("live.recording.failed", sourceName, payload))
+                .then(liveAlerts.alert("live.recording.failed", sourceName, payload))
                 .then();
     }
 
     private Mono<Void> handleOffline(String name) {
-        return statusService
+        return sourceStatus
                 .applyOffline(name, LiveErrorCode.LIVE_ROOM_OFFLINE.message())
                 .flatMap(source -> {
                     var recording = source.getStatus().getCurrentRecording();
                     if (!StringUtils.hasText(recording)) {
                         return Mono.empty();
                     }
-                    return recordingService
+                    return recordings
                             .stop(recording, "monitor")
                             .onErrorResume(error -> {
                                 log.warn("下线停止录制失败：{} {}", recording, error.getMessage());
                                 return Mono.empty();
                             })
-                            .then(statusService.update(name, current ->
+                            .then(sourceStatus.update(name, current ->
                                     current.getStatus().setCurrentRecording(null)))
                             .then();
                 });
@@ -168,7 +168,7 @@ public class LiveMonitorWorker {
                 ? api.getCode()
                 : LiveErrorCode.LIVE_RESOLVE_FAILED.name();
         var message = error.getMessage() == null ? code : error.getMessage();
-        var applied = statusService.applyError(name, code, message);
+        var applied = sourceStatus.applyError(name, code, message);
         if (!LiveErrorCode.LIVE_RATE_LIMITED.name().equals(code)) {
             return applied.then();
         }
@@ -178,7 +178,7 @@ public class LiveMonitorWorker {
                         .defaultIfEmpty(0L)
                         .flatMap(streak -> streak < properties.getAlert().getRateLimitThreshold()
                                 ? Mono.<Void>empty()
-                                : alertService
+                                : liveAlerts
                                         .rateLimited(
                                                 snapshot.platform(),
                                                 snapshot.roomId(),

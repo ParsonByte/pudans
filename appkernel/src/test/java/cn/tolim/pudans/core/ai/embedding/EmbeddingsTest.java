@@ -52,13 +52,13 @@ class EmbeddingsTest {
     private static final String MODEL_CODE = "text-embedding-3-small";
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     ReactiveExtensionClient client;
 
     @Mock
-    ProviderAccounts accountService;
+    ProviderAccounts providerAccounts;
 
     @Mock
     LangChain4jEmbeddingModelFactory embeddingModelFactory;
@@ -73,7 +73,7 @@ class EmbeddingsTest {
     void rejectsMissingEmbeddingModelConfiguration() {
         var spec = setting(64);
         spec.getEmbedding().setKnowledgeBaseModel(null);
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
 
         StepVerifier.create(service.embed(List.of("hello")))
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-embedding-model-missing"))
@@ -84,7 +84,7 @@ class EmbeddingsTest {
 
     @Test
     void rejectsMissingSetting() {
-        when(settingService.spec()).thenReturn(Mono.empty());
+        when(aiSettings.spec()).thenReturn(Mono.empty());
 
         StepVerifier.create(service.embed(List.of("hello")))
                 .expectErrorSatisfies(error -> assertApiError(error, 503, "ai-embedding-model-missing"))
@@ -98,7 +98,7 @@ class EmbeddingsTest {
         var spec = setting(64);
         spec.getEmbedding().setKnowledgeBaseModel(null);
         spec.getEmbedding().setMemoryModel("memory-model");
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
         stubEmbeddingTarget(model("memory-model"));
         stubAccounts(account("account-a", true));
         stubEmbedding(List.of("hello"), vector(1f, 2f));
@@ -115,7 +115,7 @@ class EmbeddingsTest {
         var spec = setting(64);
         spec.getEmbedding().setKnowledgeBaseModel(null);
         spec.getEmbedding().setQueryModel("query-model");
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
         stubEmbeddingTarget(model("query-model"));
         stubAccounts(account("account-a", true));
         stubEmbedding(List.of("hello"), vector(1f, 2f));
@@ -162,7 +162,7 @@ class EmbeddingsTest {
                 .verifyComplete();
 
         var accountCaptor = ArgumentCaptor.forClass(AiProviderAccount.class);
-        verify(accountService).apiKey(accountCaptor.capture());
+        verify(providerAccounts).apiKey(accountCaptor.capture());
         assertThat(accountCaptor.getValue().getMetadata().getName()).isEqualTo("enabled-account");
         verify(client).get(AiModel.class, MODEL_NAME);
         verify(client).get(AiProvider.class, PROVIDER_NAME);
@@ -270,7 +270,7 @@ class EmbeddingsTest {
     void usesModelEmbeddingDimensionOverride() {
         var spec = setting(64);
         spec.getEmbedding().setDimension(4);
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
         stubEmbeddingTarget(model(MODEL_NAME));
         stubAccounts(account("account-a", true));
         stubEmbedding(List.of("hello"), vector(1f, 2f));
@@ -327,7 +327,7 @@ class EmbeddingsTest {
     }
 
     private void stubSetting(int batchSize) {
-        when(settingService.spec()).thenReturn(Mono.just(setting(batchSize)));
+        when(aiSettings.spec()).thenReturn(Mono.just(setting(batchSize)));
     }
 
     private void stubEmbeddingTarget(AiModel model) {
@@ -351,7 +351,7 @@ class EmbeddingsTest {
     private void stubAccounts(AiProviderAccount... accounts) {
         when(client.listAll(eq(AiProviderAccount.class), any(), any()))
                 .thenReturn(Flux.fromArray(accounts));
-        lenient().when(accountService.apiKey(any())).thenReturn(Mono.just("api-key"));
+        lenient().when(providerAccounts.apiKey(any())).thenReturn(Mono.just("api-key"));
     }
 
     private void stubEmbedding(List<String> inputs, float[]... vectors) {

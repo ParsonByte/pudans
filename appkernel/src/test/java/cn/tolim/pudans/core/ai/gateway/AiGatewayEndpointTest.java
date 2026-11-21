@@ -44,13 +44,13 @@ import reactor.core.publisher.Mono;
 class AiGatewayEndpointTest {
 
     @Mock
-    AiGateway gatewayService;
+    AiGateway aiGateway;
 
     @Mock
     AiEndpointRequests requests;
 
     @Mock
-    GatewayHealth statusService;
+    GatewayHealth gatewayHealth;
 
     @Mock
     PlanUsage planUsage;
@@ -64,10 +64,10 @@ class AiGatewayEndpointTest {
         lenient().when(planUsage.usage("user-1")).thenReturn(Mono.empty());
         var endpoint = new AiGatewayEndpoint(
                 new AiProtocolCodecRegistry(mapper),
-                gatewayService,
+                aiGateway,
                 new AiResponseEncoders(mapper, new GeminiGatewayCodec(mapper)),
                 new GeminiGatewayCodec(mapper),
-                statusService,
+                gatewayHealth,
                 requests,
                 planUsage);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
@@ -78,7 +78,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void completesAnOpenAiChatRequest() {
-        when(gatewayService.complete(any())).thenReturn(Mono.just(result()));
+        when(aiGateway.complete(any())).thenReturn(Mono.just(result()));
 
         client.post()
                 .uri("/aigateway/-/openai/v1/chat/completions")
@@ -95,7 +95,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void streamsAnAnthropicMessagesRequest() {
-        when(gatewayService.stream(any())).thenReturn(Flux.just(
+        when(aiGateway.stream(any())).thenReturn(Flux.just(
                 new AiGatewayEvent.Meta(meta()),
                 new AiGatewayEvent.Delta(new AiStreamEvent("pong", null, null, null, null)),
                 new AiGatewayEvent.Usage(new AiTokenUsage(1, 2, null, null), BigDecimal.ONE, "PROVIDER"),
@@ -121,7 +121,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void completesAGeminiGenerateContentRequest() {
-        when(gatewayService.complete(any())).thenReturn(Mono.just(result()));
+        when(aiGateway.complete(any())).thenReturn(Mono.just(result()));
 
         client.post()
                 .uri("/aigateway/-/gemini/v1beta/models/gemini-test:generateContent")
@@ -140,7 +140,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void streamsAGeminiGenerateContentRequest() {
-        when(gatewayService.stream(any())).thenReturn(Flux.just(
+        when(aiGateway.stream(any())).thenReturn(Flux.just(
                 new AiGatewayEvent.Meta(meta()),
                 new AiGatewayEvent.Delta(new AiStreamEvent("pong", null, null, null, null)),
                 new AiGatewayEvent.Usage(new AiTokenUsage(1, 2, null, null), BigDecimal.ONE, "PROVIDER"),
@@ -166,7 +166,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void exposesGatewayStatus() {
-        when(statusService.status()).thenReturn(Mono.just(new GatewayHealth.Status(
+        when(gatewayHealth.status()).thenReturn(Mono.just(new GatewayHealth.Status(
                 true,
                 "http://localhost/aigateway",
                 List.of(AiProvider.Protocol.OPENAI_CHAT, AiProvider.Protocol.GEMINI),
@@ -193,7 +193,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void writesPatClaimsIntoCallerKey() {
-        when(gatewayService.complete(any())).thenReturn(Mono.just(result()));
+        when(aiGateway.complete(any())).thenReturn(Mono.just(result()));
         var jwt = Jwt.withTokenValue("token")
                 .header("alg", "none")
                 .subject("alice")
@@ -212,7 +212,7 @@ class AiGatewayEndpointTest {
                 .expectStatus().isOk();
 
         var captured = ArgumentCaptor.forClass(AiGatewayInvocation.class);
-        verify(gatewayService).complete(captured.capture());
+        verify(aiGateway).complete(captured.capture());
         assertThat(captured.getValue().callerKey()).isEqualTo("pat-1");
         assertThat(captured.getValue().modelOverride()).isEqualTo("gpt-test");
     }
@@ -229,7 +229,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void addsPlanUsageHeadersToACompletedResponse() {
-        when(gatewayService.complete(any())).thenReturn(Mono.just(result()));
+        when(aiGateway.complete(any())).thenReturn(Mono.just(result()));
         when(planUsage.usage("user-1")).thenReturn(Mono.just(usage()));
 
         client.post()
@@ -250,7 +250,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void skipsPlanUsageHeadersWithoutAPlan() {
-        when(gatewayService.complete(any())).thenReturn(Mono.just(result()));
+        when(aiGateway.complete(any())).thenReturn(Mono.just(result()));
 
         client.post()
                 .uri("/aigateway/-/openai/v1/chat/completions")
@@ -265,7 +265,7 @@ class AiGatewayEndpointTest {
 
     @Test
     void mapsPlanQuotaExhaustionToOpenAiInsufficientQuota() {
-        when(gatewayService.complete(any())).thenReturn(Mono.error(new ApiException(
+        when(aiGateway.complete(any())).thenReturn(Mono.error(new ApiException(
                 HttpStatus.TOO_MANY_REQUESTS,
                 PlanQuotas.CODE_QUOTA_EXCEEDED,
                 "5 小时窗口额度不足。")));
@@ -310,10 +310,10 @@ class AiGatewayEndpointTest {
         var mapper = new ObjectMapper();
         var endpoint = new AiGatewayEndpoint(
                 new AiProtocolCodecRegistry(mapper),
-                gatewayService,
+                aiGateway,
                 new AiResponseEncoders(mapper, new GeminiGatewayCodec(mapper)),
                 new GeminiGatewayCodec(mapper),
-                statusService,
+                gatewayHealth,
                 requests,
                 planUsage);
         return WebTestClient.bindToRouterFunction(endpoint.endpoint())

@@ -44,11 +44,11 @@ public class Embeddings {
 
     private static final String UPSTREAM_ERROR_CODE = "ai-embedding-upstream-error";
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final ReactiveExtensionClient client;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     private final LangChain4jEmbeddingModelFactory embeddingModelFactory;
 
@@ -65,7 +65,7 @@ public class Embeddings {
 
     public Mono<EmbeddingBatch> embedContents(List<AiModelContent> inputs, String modelName) {
         var pending = inputs == null ? List.<AiModelContent>of() : List.copyOf(inputs);
-        return settingService.spec()
+        return aiSettings.spec()
                 .switchIfEmpty(Mono.error(modelMissing(null)))
                 .flatMap(spec -> target(spec, modelName).flatMap(target -> embedBatches(target, pending)));
     }
@@ -131,7 +131,7 @@ public class Embeddings {
             return Mono.just(new EmbeddingBatch(modelCode, target.dimension(), List.of()));
         }
         var texts = texts(inputs);
-        return accountService
+        return providerAccounts
                 .apiKey(target.account())
                 .defaultIfEmpty("")
                 .flatMapMany(apiKey -> {

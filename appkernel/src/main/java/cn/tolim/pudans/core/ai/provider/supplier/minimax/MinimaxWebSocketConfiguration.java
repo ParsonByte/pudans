@@ -15,9 +15,9 @@ public class MinimaxWebSocketConfiguration {
 
     @Bean
     SupplierWebSocketHandler minimaxWebSocketHandler(
-            MinimaxProviderAccess access, ProviderAccounts accountService) {
+            MinimaxProviderAccess access, ProviderAccounts providerAccounts) {
         return new SupplierWebSocketHandler(
-                "minimax", access, accountService, MinimaxProtocol::normalizeWebSocketPath);
+                "minimax", access, providerAccounts, MinimaxProtocol::normalizeWebSocketPath);
     }
 
     @Bean

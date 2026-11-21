@@ -45,8 +45,8 @@ public class DeepSeekFilesClient extends AbstractDeepSeekClient {
     public DeepSeekFilesClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService) {
-        super(webClient, mapper, accountService, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
+            ProviderAccounts providerAccounts) {
+        super(webClient, mapper, providerAccounts, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
     }
 
     public Mono<AiProviderFile> upload(

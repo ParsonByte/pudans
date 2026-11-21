@@ -31,16 +31,16 @@ import reactor.core.publisher.Mono;
 
 class GatewayChatModelTest {
 
-    private final AiGateway gatewayService = mock(AiGateway.class);
+    private final AiGateway aiGateway = mock(AiGateway.class);
 
     @Test
     void mapsTheChatRequestToTheGatewayAndBack() {
         var captured = new AtomicReference<AiGatewayInvocation>();
-        when(gatewayService.complete(any())).thenAnswer(invocation -> {
+        when(aiGateway.complete(any())).thenAnswer(invocation -> {
             captured.set(invocation.getArgument(0));
             return Mono.just(result());
         });
-        var model = new GatewayChatModel(gatewayService, context());
+        var model = new GatewayChatModel(aiGateway, context());
         var tool = ToolSpecification.builder()
                 .name("get_weather")
                 .description("Weather lookup")

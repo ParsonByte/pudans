@@ -43,13 +43,13 @@ public class TextGenerations {
 
     private static final String CODE_GENERATION_FAILED = "ai-generation-failed";
 
-    private final RouteGroups routeGroupService;
+    private final RouteGroups routeGroups;
 
-    private final RouteCandidates candidateService;
+    private final RouteCandidates routeCandidates;
 
     private final RouteEngine routeEngine;
 
-    private final LangChain4jChat chatService;
+    private final LangChain4jChat langChain4jChat;
 
     private final ReactiveExtensionClient client;
 
@@ -60,7 +60,7 @@ public class TextGenerations {
         var maxTokens = request.maxOutputTokens() <= 0 ? DEFAULT_MAX_OUTPUT_TOKENS : request.maxOutputTokens();
         var ir = chatIr(request, maxTokens);
         return group(request.routeGroupCode())
-                .flatMap(group -> candidateService
+                .flatMap(group -> routeCandidates
                         .expand(group)
                         .onErrorMap(TextGenerations::noCandidateError)
                         .flatMap(seats -> route(group, seats, ir, maxTokens)));
@@ -68,8 +68,8 @@ public class TextGenerations {
 
     private Mono<AiRouteGroup> group(@Nullable String routeGroupCode) {
         var source = StringUtils.hasText(routeGroupCode)
-                ? routeGroupService.get(routeGroupCode)
-                : routeGroupService.defaultGroup();
+                ? routeGroups.get(routeGroupCode)
+                : routeGroups.defaultGroup();
         return source.onErrorMap(TextGenerations::noCandidateError)
                 .filter(group -> group.getSpec() != null && group.getSpec().isEnabled())
                 .switchIfEmpty(Mono.error(noCandidateError(null)));
@@ -96,7 +96,7 @@ public class TextGenerations {
         return load(selection, ir)
                 .switchIfEmpty(Mono.error(new IllegalStateException(
                         "AI 路由资源不存在: " + selection.reference())))
-                .flatMap(resources -> chatService
+                .flatMap(resources -> langChain4jChat
                         .chat(
                                 resources.provider(),
                                 resources.account(),

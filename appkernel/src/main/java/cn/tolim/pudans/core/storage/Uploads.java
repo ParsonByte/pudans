@@ -66,9 +66,9 @@ public class Uploads {
 
     private static final int MAX_ATTRIBUTE_LENGTH = 4096;
 
-    private final FileRecords fileService;
+    private final FileRecords fileRecords;
 
-    private final Policies policyService;
+    private final Policies policies;
 
     private final StorageDriverResolver driverResolver;
 
@@ -76,7 +76,7 @@ public class Uploads {
 
     private final StoragePolicyPathGenerator pathGenerator;
 
-    private final TransferTokens tokenService;
+    private final TransferTokens transferTokens;
 
     private final ParameterGroups parameterGroups;
 
@@ -90,7 +90,7 @@ public class Uploads {
     }
 
     public void verifyUploadToken(String token, String fileId) {
-        tokenService.verifyUpload(token, fileId);
+        transferTokens.verifyUpload(token, fileId);
     }
 
     public Mono<String> issueToken(String fileId) {
@@ -103,7 +103,7 @@ public class Uploads {
             if (remaining.isNegative() || remaining.isZero()) {
                 throw expired();
             }
-            return tokenService.signUpload(fileId, remaining);
+            return transferTokens.signUpload(fileId, remaining);
         });
     }
 
@@ -158,7 +158,7 @@ public class Uploads {
     }
 
     public Mono<StorageFile> complete(String fileId, List<UploadedPart> parts) {
-        return fileService.fetch(fileId)
+        return fileRecords.fetch(fileId)
                 .switchIfEmpty(Mono.error(uploadNotFound()))
                 .flatMap(file -> {
                     if (file.getSpec().getState() == StorageFileState.ACTIVE) {
@@ -171,7 +171,7 @@ public class Uploads {
                     if (expiresAt != null && expiresAt.isBefore(Instant.now())) {
                         return Mono.error(expired());
                     }
-                    return policyService
+                    return policies
                             .requireReady(file.getSpec().getPolicy())
                             .flatMap(policy -> driverResolver.driver(policy).flatMap(driver -> {
                                 if (driver instanceof DirectUploadDriver && !hasNativeUpload(file)) {
@@ -189,7 +189,7 @@ public class Uploads {
     }
 
     public Mono<Void> abort(String fileId) {
-        return fileService.fetch(fileId).flatMap(file -> {
+        return fileRecords.fetch(fileId).flatMap(file -> {
                     if (file.getSpec().getState() != StorageFileState.UPLOADING) {
                         return Mono.empty();
                     }
@@ -198,7 +198,7 @@ public class Uploads {
                             .flatMap(driver -> abortDriver(file, driver))
                             .then(Mono.fromRunnable(() -> deleteSessionDirectory(fileId))
                                     .subscribeOn(Schedulers.boundedElastic()))
-                            .then(Mono.defer(() -> fileService.delete(file)));
+                            .then(Mono.defer(() -> fileRecords.delete(file)));
                 })
                 .then();
     }
@@ -238,12 +238,12 @@ public class Uploads {
                             chunkSize,
                             partCount,
                             Instant.now().plus(Duration.ofHours(ttlHours)));
-                    return fileService.create(file)
+                    return fileRecords.create(file)
                             .flatMap(created -> driverResolver
                                     .driver(policy)
                                     .flatMap(driver -> putFile(driver, created, request, chunkSize, partCount)
                                             .flatMap(object -> activate(policy, driver, created, object)))
-                                    .onErrorResume(error -> fileService.delete(created).then(Mono.error(error))));
+                                    .onErrorResume(error -> fileRecords.delete(created).then(Mono.error(error))));
                 });
     }
 
@@ -350,7 +350,7 @@ public class Uploads {
                             chunkSize,
                             partCount,
                             expiresAt);
-                    return fileService.create(file)
+                    return fileRecords.create(file)
                             .flatMap(created -> driverResolver
                                     .driver(policy)
                                     .flatMap(driver -> prepareUpload(created, driver, expiresAt)));
@@ -403,7 +403,7 @@ public class Uploads {
             return direct
                     .createDirectUpload(request)
                     .map(credential -> ticket(file, driver, expiresAt, credential))
-                    .onErrorResume(error -> fileService.delete(file).then(Mono.error(error)));
+                    .onErrorResume(error -> fileRecords.delete(file).then(Mono.error(error)));
         }
         if (driver instanceof MultipartStorageDriver multipart
                 && driver.capabilities().contains(StorageCapability.MULTIPART_UPLOAD)) {
@@ -413,10 +413,10 @@ public class Uploads {
                     .createMultipart(request)
                     .flatMap(multipartUpload -> {
                         file.getSpec().setNativeUploadId(multipartUpload.uploadId());
-                        return fileService.update(file);
+                        return fileRecords.update(file);
                     })
                     .map(saved -> ticket(saved, driver, expiresAt, null))
-                    .onErrorResume(error -> fileService.delete(file).then(Mono.error(error)));
+                    .onErrorResume(error -> fileRecords.delete(file).then(Mono.error(error)));
         }
         return Mono.fromRunnable(() -> createSessionDirectory(fileId))
                 .subscribeOn(Schedulers.boundedElastic())
@@ -437,7 +437,7 @@ public class Uploads {
                 file.getSpec().getChunkSize(),
                 file.getSpec().getPartCount(),
                 expiresAt,
-                tokenService.signUpload(fileId, remaining),
+                transferTokens.signUpload(fileId, remaining),
                 presigned(driver),
                 directUpload);
     }
@@ -495,7 +495,7 @@ public class Uploads {
         spec.setChunkSize(0);
         return Mono.fromRunnable(() -> deleteSessionDirectory(file.getMetadata().getName()))
                 .subscribeOn(Schedulers.boundedElastic())
-                .then(fileService.update(file));
+                .then(fileRecords.update(file));
     }
 
     private Mono<Void> deleteObject(StorageDriver driver, StorageFile file) {
@@ -631,12 +631,12 @@ public class Uploads {
 
     private Mono<StoragePolicy> resolvePolicy(String policyName) {
         return StringUtils.hasText(policyName)
-                ? policyService.requireReady(policyName)
-                : policyService.defaultPolicy();
+                ? policies.requireReady(policyName)
+                : policies.defaultPolicy();
     }
 
     private Mono<StorageFile> requireUploading(String fileId) {
-        return fileService.fetch(fileId).switchIfEmpty(Mono.error(uploadNotFound())).flatMap(file -> {
+        return fileRecords.fetch(fileId).switchIfEmpty(Mono.error(uploadNotFound())).flatMap(file -> {
             if (file.getSpec().getState() != StorageFileState.UPLOADING) {
                 return Mono.error(uploadStateInvalid());
             }

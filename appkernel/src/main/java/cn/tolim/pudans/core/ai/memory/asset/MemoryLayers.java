@@ -36,7 +36,7 @@ public class MemoryLayers {
 
     private static final int MAX_PATH_LENGTH = 128;
 
-    private final MemoryAssets assetService;
+    private final MemoryAssets memoryAssets;
 
     private final AiMemoryAssetRepository assetRepository;
 
@@ -56,7 +56,7 @@ public class MemoryLayers {
             @Nullable String query,
             int limit) {
         validateCursor(beforeId, limit);
-        return assetService
+        return memoryAssets
                 .requireRead(userId, name, team)
                 .flatMapMany(ref -> assetRepository.listMessages(
                         ref.spec().getTeam(),
@@ -79,7 +79,7 @@ public class MemoryLayers {
             @Nullable String query,
             int limit) {
         validateCursor(beforeId, limit);
-        return assetService
+        return memoryAssets
                 .requireRead(userId, name, team)
                 .flatMapMany(ref -> l1Repository.listByScope(
                         ref.spec().getTeam(),
@@ -94,7 +94,7 @@ public class MemoryLayers {
 
     public Flux<MemoryL2Item> listL2(String userId, String name, @Nullable String team, long beforeId, int limit) {
         validateCursor(beforeId, limit);
-        return assetService
+        return memoryAssets
                 .requireRead(userId, name, team)
                 .flatMapMany(ref -> l2Repository
                         .listByScope(ref.spec().getTeam(), ref.spec().getSourceAgentId(), beforeId, limit)
@@ -104,7 +104,7 @@ public class MemoryLayers {
     public Mono<MemoryL2Detail> detailL2(
             String userId, String name, @Nullable String team, String path) {
         var sceneKey = validatePath(path);
-        return assetService
+        return memoryAssets
                 .requireRead(userId, name, team)
                 .flatMap(ref -> l2Repository
                         .findByKey(ref.spec().getTeam(), ref.spec().getSourceAgentId(), sceneKey)
@@ -113,7 +113,7 @@ public class MemoryLayers {
     }
 
     public Mono<MemoryL3Content> detailL3(String userId, String name, @Nullable String team) {
-        return assetService
+        return memoryAssets
                 .requireRead(userId, name, team)
                 .flatMap(ref -> l3Repository
                         .findByScope(ref.spec().getTeam(), ref.spec().getSourceAgentId())
@@ -124,7 +124,7 @@ public class MemoryLayers {
     public Mono<MemoryL1Item> updateL1(
             String userId, String name, @Nullable String team, long id, @Nullable String content) {
         var normalized = validateContent(content);
-        return assetService
+        return memoryAssets
                 .requireOwner(userId, name, team)
                 .flatMap(ref -> l1Repository
                         .updateContent(
@@ -145,7 +145,7 @@ public class MemoryLayers {
             @Nullable String content,
             @Nullable String summary) {
         var normalized = validateContent(content);
-        return assetService.requireOwner(userId, name, team).flatMap(ref -> {
+        return memoryAssets.requireOwner(userId, name, team).flatMap(ref -> {
             var teamId = ref.spec().getTeam();
             var agentId = ref.spec().getSourceAgentId();
             var target = StringUtils.hasText(path)
@@ -166,7 +166,7 @@ public class MemoryLayers {
     public Mono<MemoryL3Content> updateL3(
             String userId, String name, @Nullable String team, @Nullable String content) {
         var normalized = validateContent(content);
-        return assetService
+        return memoryAssets
                 .requireOwner(userId, name, team)
                 .flatMap(ref -> l3Repository
                         .overwriteText(ref.spec().getTeam(), ref.spec().getSourceAgentId(), normalized))
@@ -189,7 +189,7 @@ public class MemoryLayers {
         if (sessions.size() > MAX_SESSION_IDS) {
             return Mono.error(invalid("sessionIds 单次最多 100 个。"));
         }
-        return assetService.requireOwner(userId, name, team).flatMap(ref -> {
+        return memoryAssets.requireOwner(userId, name, team).flatMap(ref -> {
             var spec = ref.spec();
             if (ids.isEmpty() && sessions.isEmpty()) {
                 return assetRepository.deleteMessagesByScope(
@@ -205,7 +205,7 @@ public class MemoryLayers {
         if (normalized.size() > MAX_MESSAGE_IDS) {
             return Mono.error(invalid("ids 单次最多 5000 条。"));
         }
-        return assetService.requireOwner(userId, name, team).flatMap(ref -> {
+        return memoryAssets.requireOwner(userId, name, team).flatMap(ref -> {
             var spec = ref.spec();
             if (normalized.isEmpty()) {
                 return l1Repository.deleteByScope(

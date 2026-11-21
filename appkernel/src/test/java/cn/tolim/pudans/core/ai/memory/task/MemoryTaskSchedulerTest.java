@@ -27,14 +27,14 @@ class MemoryTaskSchedulerTest {
     AiMemoryTaskRepository taskRepository;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @InjectMocks
     MemoryTaskScheduler scheduler;
 
     @Test
     void enqueuesOneL1TaskPerConversation() {
-        when(settingService.memoryEnabled()).thenReturn(Mono.just(true));
+        when(aiSettings.memoryEnabled()).thenReturn(Mono.just(true));
         when(taskRepository.insertIfAbsent(any())).thenReturn(Mono.just(true));
 
         StepVerifier.create(scheduler.enqueueExtraction(conversation(), "user-1", 21L))
@@ -106,7 +106,7 @@ class MemoryTaskSchedulerTest {
 
     @Test
     void swallowsEnqueueFailures() {
-        when(settingService.memoryEnabled()).thenReturn(Mono.just(true));
+        when(aiSettings.memoryEnabled()).thenReturn(Mono.just(true));
         when(taskRepository.insertIfAbsent(any()))
                 .thenReturn(Mono.error(new IllegalStateException("队列不可用")));
 
@@ -116,7 +116,7 @@ class MemoryTaskSchedulerTest {
 
     @Test
     void skipsExtractionWhenMemoryIsDisabled() {
-        when(settingService.memoryEnabled()).thenReturn(Mono.just(false));
+        when(aiSettings.memoryEnabled()).thenReturn(Mono.just(false));
 
         StepVerifier.create(scheduler.enqueueExtraction(conversation(), "user-1", 21L))
                 .verifyComplete();

@@ -40,33 +40,33 @@ import reactor.core.publisher.Mono;
 class StorageTransferTest {
 
     @Mock
-    FileRecords fileService;
+    FileRecords fileRecords;
 
     @Mock
     Uploads uploadService;
 
     @Mock
-    Downloads downloadService;
+    Downloads downloads;
 
     @Mock
     StorageDriverResolver driverResolver;
 
     @Mock
-    ParameterGroups settingsService;
+    ParameterGroups parameterGroups;
 
     private StorageTransfer service;
 
     @BeforeEach
     void setUp() {
-        service = new StorageTransfer(fileService, uploadService, downloadService, driverResolver, settingsService);
+        service = new StorageTransfer(fileRecords, uploadService, downloads, driverResolver, parameterGroups);
     }
 
     @Test
     void movesAFileToTheRecycleBin() {
         var file = file(StorageFileState.ACTIVE);
-        when(fileService.get("file-1")).thenReturn(Mono.just(file));
-        when(settingsService.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
-        when(fileService.update(any(StorageFile.class)))
+        when(fileRecords.get("file-1")).thenReturn(Mono.just(file));
+        when(parameterGroups.getStorage()).thenReturn(Mono.just(new ParameterSetting.Storage()));
+        when(fileRecords.update(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         var result = service.trash("file-1").block();
@@ -82,8 +82,8 @@ class StorageTransferTest {
         var file = file(StorageFileState.TRASHED);
         file.getSpec().setTrashedAt(Instant.now());
         file.getSpec().setTrashExpiresAt(Instant.now().plusSeconds(3600));
-        when(fileService.get("file-1")).thenReturn(Mono.just(file));
-        when(fileService.update(any(StorageFile.class)))
+        when(fileRecords.get("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.update(any(StorageFile.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         var result = service.restore("file-1").block();
@@ -97,39 +97,39 @@ class StorageTransferTest {
     @Test
     void purgesAFileAndItsObject() {
         var file = file(StorageFileState.TRASHED);
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
         var driver = mock(StorageDriver.class);
         when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
         when(driver.delete(List.of("uploads/a.txt"))).thenReturn(Mono.empty());
-        when(fileService.delete(file)).thenReturn(Mono.empty());
+        when(fileRecords.delete(file)).thenReturn(Mono.empty());
 
         service.purge("file-1").block();
 
         verify(driver).delete(List.of("uploads/a.txt"));
-        verify(fileService).delete(file);
+        verify(fileRecords).delete(file);
     }
 
     @Test
     void purgesTheRecordBeforeDeletingTheObject() {
         var file = file(StorageFileState.TRASHED);
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
         var driver = mock(StorageDriver.class);
-        when(fileService.delete(file)).thenReturn(Mono.empty());
+        when(fileRecords.delete(file)).thenReturn(Mono.empty());
         when(driverResolver.driver("local")).thenReturn(Mono.just(driver));
         when(driver.delete(List.of("uploads/a.txt"))).thenReturn(Mono.empty());
 
         service.purge("file-1").block();
 
-        var order = inOrder(fileService, driver);
-        order.verify(fileService).delete(file);
+        var order = inOrder(fileRecords, driver);
+        order.verify(fileRecords).delete(file);
         order.verify(driver).delete(List.of("uploads/a.txt"));
     }
 
     @Test
     void keepsTheObjectWhenTheRecordWasRestoredConcurrently() {
         var file = file(StorageFileState.TRASHED);
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
-        when(fileService.delete(file))
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.delete(file))
                 .thenReturn(Mono.error(new OptimisticLockingFailureException("file-1")));
 
         assertThatThrownBy(() -> service.purge("file-1").block())
@@ -140,7 +140,7 @@ class StorageTransferTest {
     @Test
     void rejectsPurgingAnActiveFile() {
         var file = file(StorageFileState.ACTIVE);
-        when(fileService.fetch("file-1")).thenReturn(Mono.just(file));
+        when(fileRecords.fetch("file-1")).thenReturn(Mono.just(file));
 
         assertThatThrownBy(() -> service.purge("file-1").block())
                 .isInstanceOf(ApiException.class)
@@ -152,7 +152,7 @@ class StorageTransferTest {
     @Test
     void readsFileBytesWithLimit() {
         var content = "hello".getBytes(StandardCharsets.UTF_8);
-        when(downloadService.open(eq("file-1"), any(StorageReadOptions.class)))
+        when(downloads.open(eq("file-1"), any(StorageReadOptions.class)))
                 .thenReturn(Mono.just(new StorageReadResult(
                         new StorageObject("uploads/a.txt", content.length, Instant.now(), "etag"),
                         0,
@@ -168,7 +168,7 @@ class StorageTransferTest {
     @Test
     void rejectsFileBytesAboveLimit() {
         var content = new byte[16];
-        when(downloadService.open(eq("file-1"), any(StorageReadOptions.class)))
+        when(downloads.open(eq("file-1"), any(StorageReadOptions.class)))
                 .thenReturn(Mono.just(new StorageReadResult(
                         new StorageObject("uploads/a.txt", content.length, Instant.now(), "etag"),
                         0,

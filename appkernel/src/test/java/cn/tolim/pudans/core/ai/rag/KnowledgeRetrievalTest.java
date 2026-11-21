@@ -47,7 +47,7 @@ class KnowledgeRetrievalTest {
     AiKbQueryLogRepository queryLogRepository;
 
     @Mock
-    Reranking rerankService;
+    Reranking reranking;
 
     @Mock
     ExternalRagRetriever externalRagRetriever;
@@ -63,7 +63,7 @@ class KnowledgeRetrievalTest {
                 new HybridRetrieval(),
                 new KnowledgeBaseAcl(),
                 new CitationAssembler(),
-                rerankService,
+                reranking,
                 externalRagRetriever);
     }
 
@@ -84,7 +84,7 @@ class KnowledgeRetrievalTest {
                 .verifyComplete();
 
         verifyNoInteractions(embeddingStore);
-        verifyNoInteractions(rerankService);
+        verifyNoInteractions(reranking);
         var queryLogCaptor = ArgumentCaptor.forClass(KnowledgeBaseQueryLog.class);
         verify(queryLogRepository).insert(queryLogCaptor.capture());
         var queryLog = queryLogCaptor.getValue();
@@ -108,7 +108,7 @@ class KnowledgeRetrievalTest {
                 .verifyComplete();
 
         verifyNoInteractions(chunkRepository);
-        verifyNoInteractions(rerankService);
+        verifyNoInteractions(reranking);
         var queryLogCaptor = ArgumentCaptor.forClass(KnowledgeBaseQueryLog.class);
         verify(queryLogRepository).insert(queryLogCaptor.capture());
         assertThat(queryLogCaptor.getValue().getKbNames()).isEmpty();
@@ -161,7 +161,7 @@ class KnowledgeRetrievalTest {
                 })
                 .verifyComplete();
 
-        verifyNoInteractions(chunkRepository, embeddingStore, rerankService);
+        verifyNoInteractions(chunkRepository, embeddingStore, reranking);
         var queryLogCaptor = ArgumentCaptor.forClass(KnowledgeBaseQueryLog.class);
         verify(queryLogRepository).insert(queryLogCaptor.capture());
         assertThat(queryLogCaptor.getValue().getKbNames()).containsExactly("kb-ext");
@@ -190,7 +190,7 @@ class KnowledgeRetrievalTest {
                         .containsExactly("external.pdf", "manual.pdf"))
                 .verifyComplete();
 
-        verifyNoInteractions(embeddingStore, rerankService);
+        verifyNoInteractions(embeddingStore, reranking);
     }
 
     @Test
@@ -211,7 +211,7 @@ class KnowledgeRetrievalTest {
         readable.getSpec().setRerankModel("rerank-model");
         when(chunkRepository.searchKeyword(List.of("kb-a"), "安装", 50))
                 .thenReturn(Flux.just(candidate(1, 0.9, "第一段"), candidate(2, 0.8, "第二段")));
-        when(rerankService.rerank("rerank-model", "安装", List.of("第一段", "第二段"), 5))
+        when(reranking.rerank("rerank-model", "安装", List.of("第一段", "第二段"), 5))
                 .thenReturn(Mono.just(new RerankResult(List.of(
                         new RerankResult.ScoredIndex(1, 0.9),
                         new RerankResult.ScoredIndex(0, 0.2)))));
@@ -240,7 +240,7 @@ class KnowledgeRetrievalTest {
         readable.getSpec().setRerankModel("rerank-model");
         when(chunkRepository.searchKeyword(List.of("kb-a"), "安装", 50))
                 .thenReturn(Flux.just(candidate(1, 0.9, "第一段")));
-        when(rerankService.rerank("rerank-model", "安装", List.of("第一段"), 5))
+        when(reranking.rerank("rerank-model", "安装", List.of("第一段"), 5))
                 .thenReturn(Mono.just(new RerankResult(List.of(new RerankResult.ScoredIndex(0, 0.9)))));
         when(queryLogRepository.insert(any())).thenReturn(Mono.just(1L));
 
@@ -248,7 +248,7 @@ class KnowledgeRetrievalTest {
                 .assertNext(result -> assertThat(result.citations()).hasSize(1))
                 .verifyComplete();
 
-        verify(rerankService).rerank("rerank-model", "安装", List.of("第一段"), 5);
+        verify(reranking).rerank("rerank-model", "安装", List.of("第一段"), 5);
     }
 
     @Test
@@ -257,7 +257,7 @@ class KnowledgeRetrievalTest {
         readable.getSpec().setRerankModel("rerank-model");
         when(chunkRepository.searchKeyword(List.of("kb-a"), "安装", 50))
                 .thenReturn(Flux.just(candidate(1, 0.9, "第一段"), candidate(2, 0.8, "第二段")));
-        when(rerankService.rerank(anyString(), anyString(), anyList(), anyInt()))
+        when(reranking.rerank(anyString(), anyString(), anyList(), anyInt()))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.BAD_GATEWAY, "ai-rerank-upstream-error", "重排失败。")));
         when(queryLogRepository.insert(any())).thenReturn(Mono.just(1L));

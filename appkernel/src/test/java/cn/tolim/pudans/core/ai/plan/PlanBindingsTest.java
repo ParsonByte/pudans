@@ -41,7 +41,7 @@ class PlanBindingsTest {
     ReactiveExtensionClient client;
 
     @Mock
-    PlanCatalog catalogService;
+    PlanCatalog planCatalog;
 
     @Mock
     Groups groups;
@@ -50,17 +50,17 @@ class PlanBindingsTest {
     Accounts accounts;
 
     @Mock
-    PlanResolution resolutionService;
+    PlanResolution planResolution;
 
     private PlanBindings service;
 
     @BeforeEach
     void setUp() {
         service = new PlanBindings(
-                client, catalogService, groups, accounts, resolutionService);
+                client, planCatalog, groups, accounts, planResolution);
         service.setClock(Clock.fixed(PlanTestFixtures.NOW, ZoneOffset.UTC));
         lenient()
-                .when(catalogService.requireEnabled("standard"))
+                .when(planCatalog.requireEnabled("standard"))
                 .thenReturn(Mono.just(PlanTestFixtures.plan("standard")));
         lenient()
                 .when(client.listAll(eq(AiPlanBinding.class), any(ListOptions.class), any(Sort.class)))
@@ -107,7 +107,7 @@ class PlanBindingsTest {
         assertThat(created.getValue().getSpec().getSubject().getKind())
                 .isEqualTo(AiPlanBinding.SubjectKind.UserGroup);
         assertThat(created.getValue().getSpec().getSubject().getName()).isEqualTo("rd");
-        verify(resolutionService).invalidateAll();
+        verify(planResolution).invalidateAll();
     }
 
     @Test

@@ -34,17 +34,17 @@ import reactor.core.publisher.Mono;
 class MemoryConflictTest {
 
     @Mock
-    TextGenerations generationService;
+    TextGenerations textGenerations;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     private MemoryConflict service;
 
     @BeforeEach
     void setUp() {
         service = new MemoryConflict(
-                new MemoryAiSupport(generationService, settingService, new ObjectMapper()));
+                new MemoryAiSupport(textGenerations, aiSettings, new ObjectMapper()));
     }
 
     @Test
@@ -77,7 +77,7 @@ class MemoryConflictTest {
         assertThat(decisions.get(2).action()).isEqualTo(DedupAction.STORE);
 
         var captor = ArgumentCaptor.forClass(GenerationRequest.class);
-        verify(generationService).generate(captor.capture());
+        verify(textGenerations).generate(captor.capture());
         var request = captor.getValue();
         assertThat(request.routeGroupCode()).isNull();
         assertThat(request.temperature()).isEqualTo(0.1);
@@ -102,8 +102,8 @@ class MemoryConflictTest {
 
     @Test
     void fallsBackToStoreForAllCandidatesWhenGenerationFails() {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(generationService.generate(any())).thenReturn(Mono.error(new IllegalStateException("boom")));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(textGenerations.generate(any())).thenReturn(Mono.error(new IllegalStateException("boom")));
 
         var decisions = service.judge("BASE_L1", List.of(candidate("m1", "内容一"))).block();
 
@@ -113,8 +113,8 @@ class MemoryConflictTest {
     }
 
     private void stubGeneration(String content) {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(generationService.generate(any())).thenReturn(Mono.just(
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(textGenerations.generate(any())).thenReturn(Mono.just(
                 new GenerationResult(content, "model-code", "provider-a", "account-a")));
     }
 

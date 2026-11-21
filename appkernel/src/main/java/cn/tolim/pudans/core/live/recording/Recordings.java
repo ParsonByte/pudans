@@ -72,15 +72,15 @@ public class Recordings {
 
     private final ReactiveExtensionClient client;
 
-    private final RecordingStatus statusService;
+    private final RecordingStatus recordingStatus;
 
     private final LiveStoragePolicyResolver policyResolver;
 
-    private final LiveRecorder recorderService;
+    private final LiveRecorder liveRecorder;
 
     private final LiveRecorderRegistry registry;
 
-    private final RoomResolver resolveService;
+    private final RoomResolver roomResolver;
 
     public Mono<LiveRecording> start(LiveSource source, LiveRoomInfo info, boolean auto, String requestedBy) {
         return start(source, info, auto, requestedBy, null);
@@ -109,20 +109,20 @@ public class Recordings {
             var recording = build(source, info, auto, requestedBy, retryOf);
             recording.getSpec().setStoragePolicy(policy.getMetadata().getName());
             return client.create(recording)
-                    .flatMap(recorderService::launch)
+                    .flatMap(liveRecorder::launch)
                     .flatMap(launched -> markSourceRecording(sourceName, launched));
         });
     }
 
     public Mono<LiveRecording> stop(String name, String requestedBy) {
-        return statusService.findRequired(name).flatMap(recording -> {
+        return recordingStatus.findRequired(name).flatMap(recording -> {
             log.debug("停止录制 [{}] by {}", name, requestedBy);
-            return recorderService.stop(recording, requestedBy);
+            return liveRecorder.stop(recording, requestedBy);
         });
     }
 
     public Mono<LiveRecording> find(String name) {
-        return statusService.find(name);
+        return recordingStatus.find(name);
     }
 
     public Flux<LiveRecording> active() {
@@ -133,7 +133,7 @@ public class Recordings {
     }
 
     public Mono<LiveRecordingRetry> retry(String name, String mode, String requestedBy) {
-        return statusService.findRequired(name).flatMap(previous -> {
+        return recordingStatus.findRequired(name).flatMap(previous -> {
             var state = previous.getStatus() == null ? null : previous.getStatus().getState();
             if (state == null) {
                 return Mono.error(LIVE_RECORDING_NOT_READY.exception());
@@ -144,7 +144,7 @@ public class Recordings {
             if (state != LiveRecordingState.FAILED) {
                 return Mono.error(LIVE_RECORDING_NOT_READY.exception());
             }
-            var hasLocal = recorderService.hasLocalData(previous);
+            var hasLocal = liveRecorder.hasLocalData(previous);
             var effectiveMode = modeOf(mode, hasLocal);
             if (effectiveMode == null) {
                 return Mono.error(LIVE_INVALID_ARGUMENT.exception());
@@ -160,7 +160,7 @@ public class Recordings {
         if (!hasLocal) {
             return Mono.error(LIVE_RECORDING_NOT_READY.exception());
         }
-        return recorderService.resumeUpload(previous).flatMap(this::completeIfUploaded);
+        return liveRecorder.resumeUpload(previous).flatMap(this::completeIfUploaded);
     }
 
     private Mono<LiveRecording> restart(LiveRecording previous, String requestedBy) {
@@ -174,7 +174,7 @@ public class Recordings {
                             || !source.getSpec().isEnabled()) {
                         return Mono.error(LIVE_INVALID_SPEC.exception());
                     }
-                    return resolveService
+                    return roomResolver
                             .resolve(source.getSpec().getPlatform(), source.getSpec().getRoomId(), true)
                             .flatMap(info -> start(
                                     source,
@@ -212,7 +212,7 @@ public class Recordings {
                 : Math.max(0L, Duration.between(firstStartedAt, lastEndedAt).toMillis());
         var totalBytes = parts.stream().mapToLong(LiveRecording.Part::getSize).sum();
         var segmentCount = parts.stream().mapToInt(LiveRecording.Part::getSegmentCount).sum();
-        return statusService
+        return recordingStatus
                 .mutate(name, status -> {
                     status.setEndedAt(lastEndedAt);
                     status.setDurationMillis(durationMillis);
@@ -223,7 +223,7 @@ public class Recordings {
                     status.setErrorCode(null);
                     status.setMessage(null);
                 })
-                .flatMap(updated -> statusService.transition(name, LiveRecordingState.COMPLETED, "续传完成"));
+                .flatMap(updated -> recordingStatus.transition(name, LiveRecordingState.COMPLETED, "续传完成"));
     }
 
     private Mono<LiveRecording> markSourceRecording(String sourceName, LiveRecording recording) {
