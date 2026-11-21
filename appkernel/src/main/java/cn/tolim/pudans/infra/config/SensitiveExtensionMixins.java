@@ -4,9 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import cn.tolim.pudans.security.api.RememberMeToken;
 import cn.tolim.pudans.contract.webhook.Webhook;
-import cn.tolim.pudans.contract.ai.AiEnvironmentVariable;
-import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.ai.AiSandboxProvider;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
 import tools.jackson.databind.json.JsonMapper;
@@ -20,10 +17,6 @@ final class SensitiveExtensionMixins {
         builder.addMixIn(RememberMeToken.Spec.class, RememberMeTokenSpecMixin.class);
         builder.addMixIn(Webhook.Spec.class, WebhookSpecMixin.class);
         builder.addMixIn(StoragePolicy.Credentials.class, StoragePolicyCredentialsMixin.class);
-        builder.addMixIn(AiProviderAccount.Spec.class, AiProviderAccountSpecMixin.class);
-        builder.addMixIn(AiProviderAccount.BalanceProbe.class, AiProviderBalanceProbeMixin.class);
-        builder.addMixIn(AiEnvironmentVariable.Spec.class, AiEnvironmentVariableSpecMixin.class);
-        builder.addMixIn(AiSandboxProvider.Spec.class, AiSandboxProviderSpecMixin.class);
     }
 
     abstract static class UserSpecMixin {
@@ -66,29 +59,5 @@ final class SensitiveExtensionMixins {
 
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         abstract String getClientSecret();
-    }
-
-    abstract static class AiProviderAccountSpecMixin {
-
-        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-        abstract String getApiKey();
-    }
-
-    abstract static class AiProviderBalanceProbeMixin {
-
-        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-        abstract String getToken();
-    }
-
-    abstract static class AiEnvironmentVariableSpecMixin {
-
-        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-        abstract String getValue();
-    }
-
-    abstract static class AiSandboxProviderSpecMixin {
-
-        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-        abstract String getAccessKeySecret();
     }
 }

@@ -4,9 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.tolim.pudans.security.api.RememberMeToken;
 import cn.tolim.pudans.contract.webhook.Webhook;
-import cn.tolim.pudans.contract.ai.AiEnvironmentVariable;
-import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.ai.AiSandboxProvider;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
 import org.junit.jupiter.api.Test;
@@ -84,52 +81,5 @@ class SensitiveExtensionMixinsTest {
         var written = mapper.readValue(
                 "{\"spec\":{\"credentials\":{\"accessKey\":\"access\"}}}", StoragePolicy.class);
         assertThat(written.getSpec().getCredentials().getAccessKey()).isEqualTo("access");
-    }
-
-    @Test
-    void aiEnvironmentVariableValueIsHiddenFromResponsesButAcceptedOnInput() {
-        var variable = new AiEnvironmentVariable();
-        var spec = new AiEnvironmentVariable.Spec();
-        spec.setName("API_TOKEN");
-        spec.setValue("env-secret");
-        variable.setSpec(spec);
-
-        var json = mapper.writeValueAsString(variable);
-
-        assertThat(json).doesNotContain("env-secret");
-        var written = mapper.readValue(
-                "{\"spec\":{\"name\":\"API_TOKEN\",\"value\":\"env-secret\"}}", AiEnvironmentVariable.class);
-        assertThat(written.getSpec().getValue()).isEqualTo("env-secret");
-    }
-
-    @Test
-    void aiSandboxProviderSecretIsHiddenFromResponsesButAcceptedOnInput() {
-        var provider = new AiSandboxProvider();
-        var spec = new AiSandboxProvider.Spec();
-        spec.setProvider(AiSandboxProvider.Provider.ALIYUN);
-        spec.setAccessKeySecret("sandbox-secret");
-        provider.setSpec(spec);
-
-        var json = mapper.writeValueAsString(provider);
-
-        assertThat(json).doesNotContain("sandbox-secret");
-        var written = mapper.readValue(
-                "{\"spec\":{\"provider\":\"ALIYUN\",\"accessKeySecret\":\"sandbox-secret\"}}",
-                AiSandboxProvider.class);
-        assertThat(written.getSpec().getAccessKeySecret()).isEqualTo("sandbox-secret");
-    }
-
-    @Test
-    void aiProviderAccountKeyIsHiddenFromResponsesButAcceptedOnInput() {
-        var account = new AiProviderAccount();
-        var spec = new AiProviderAccount.Spec();
-        spec.setApiKey("sk-secret");
-        account.setSpec(spec);
-
-        var json = mapper.writeValueAsString(account);
-
-        assertThat(json).doesNotContain("sk-secret");
-        var written = mapper.readValue("{\"spec\":{\"apiKey\":\"sk-secret\"}}", AiProviderAccount.class);
-        assertThat(written.getSpec().getApiKey()).isEqualTo("sk-secret");
     }
 }
