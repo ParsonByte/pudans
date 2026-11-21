@@ -1,6 +1,13 @@
 # AGENTS.md
 
-Pudans is an enterprise identity and permission management platform. Backend: Java 25 / Spring Boot on a Gradle multi-module build. Frontend: Next.js 16 (App Router) / React 19 / TypeScript in `web/`, served as a standalone Node app with shadcn/ui as the only UI component library; components are added only through the shadcn CLI.
+Pudans is an enterprise identity and permission management platform built as a separated frontend and backend. Backend: Java 25 / Spring Boot on a Gradle multi-module build in `appkernel/`, listening on `8090`. Frontend: Next.js 16 (App Router) / React 19 / TypeScript in `web/`, served by its own Node process on `3000` and proxying `/apis`, `/login` and `/logout` to the backend. Both are packaged into the root `build/` directory as `build/appkernel/` and `build/web/`. shadcn/ui is the only UI component library; components are added only through the shadcn CLI.
+
+## Architecture
+
+- `appkernel/` owns identity, permissions, extension reconciliation, AI routing and the compatibility APIs. It is a reactive Spring Boot service and exposes HTTP only.
+- `web/` is the browser entry. It is a separate Next.js process and reaches the backend only through its proxy routes.
+- The two are deployed separately but packaged together: `./gradlew build` writes the runnable backend jar to `build/appkernel/` and the standalone Node server to `build/web/`. The root `build/` directory is the only distribution output; `appkernel/build/` and `web/.next/` stay intermediate.
+- Neither side reaches into the other's internals: the backend exposes HTTP, the frontend consumes HTTP.
 
 ## Mandatory reading order
 
@@ -109,12 +116,14 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
 | `gradle/libs.versions.toml` | Version catalog; backend dependency changes go here |
 | `web/` | Frontend: Next.js 16 App Router, React 19, TypeScript, TanStack Query, Tailwind CSS v4 and shadcn/ui; served as a standalone Node app that proxies API routes to the backend |
+| `build/appkernel/` | Distribution output: the runnable backend jar |
+| `build/web/` | Distribution output: the standalone Next.js server |
 
 ## Commands
 
 ```bash
 ./gradlew test                 # backend tests
-./gradlew build                # backend build and standalone web build
+./gradlew build                # package build/appkernel and build/web
 cd web && npm run dev          # Next.js dev server (proxies API to 8090)
 cd web && npm run start        # standalone Next.js server
 cd web && npm run lint         # frontend lint
