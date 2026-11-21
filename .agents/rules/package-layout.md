@@ -26,10 +26,10 @@
 
 `contract/<域>` 与 `core/<域>` 一一对应，两侧域集合必须完全相同，且只包含业务域。
 
-当前业务域（9 个）：
+当前业务域（8 个）：
 
 ```text
-ai  audit  dashboard  live  rbac  risk  storage  user  webhook
+ai  audit  live  rbac  risk  storage  user  webhook
 ```
 
 框架子系统不参与 `core`：`extension`、`infra`、`security`、`setting` 是顶层包，它们的契约放在各自包内的 `api/`，不放进 `contract`。
@@ -54,7 +54,7 @@ ai  audit  dashboard  live  rbac  risk  storage  user  webhook
 
 1. 任何包名不得叫 `service`，也不得出现 `service/` 目录。
 2. 不得出现 `resource/` 中间目录；资源模型直接放 `contract/<域>/` 根。
-3. `contract` 只能有 9 个业务域目录，不得出现 `extension`、`infra`、`security`、`setting`。
+3. `contract` 只能有 8 个业务域目录，不得出现 `extension`、`infra`、`security`、`setting`。
 4. 业务域的域根下不得有 `event` 包；契约层不得有 `event` 包；事件定义统一在 `event/<域>/`。子系统与其子域的内部事件（`extension/event`、`infra/event`、`core/ai/harness/event`）属于实现细节，允许保留。
 5. 契约层不得放行为接口；域级 SPI 属于实现侧，放对应域根或子系统 `api/`。
 6. 不得出现 `*ServiceImpl` 后缀类；多实现用来源前缀表达（`Extension*`、`Local*`、`Feishu*`、`Ai*`、`Default*`、`Configured*`）。
@@ -95,7 +95,7 @@ find . -type d -name resource
 find . -name '*ServiceImpl.java'
 grep -rnE 'class [A-Za-z0-9_]+Service\b|interface [A-Za-z0-9_]+Service\b' .
 find ./contract -type d -name event
-for d in ai audit dashboard live rbac risk storage user webhook; do find ./core/$d -maxdepth 1 -type d -name event; done
+for d in ai audit live rbac risk storage user webhook; do find ./core/$d -maxdepth 1 -type d -name event; done
 ```
 
 ## 目录清单
@@ -104,7 +104,6 @@ for d in ai audit dashboard live rbac risk storage user webhook; do find ./core/
 contract/          只放业务域契约
 ├── ai/            资源模型
 ├── audit/         AuditRecord
-├── dashboard/     dto/
 ├── live/          资源模型 + dto/
 ├── rbac/          角色、绑定、用户组
 ├── risk/          RiskRule + dto/
@@ -115,7 +114,6 @@ contract/          只放业务域契约
 core/              与 contract 同名的 9 个业务域
 ├── ai/<子域>/
 ├── audit/{endpoint}
-├── dashboard/{endpoint}
 ├── live/{endpoint,reconciler,alert,monitor,recorder,recording,resolve,source}
 ├── rbac/{endpoint,reconciler,group,permission}
 ├── risk/{endpoint,reconciler}
@@ -124,7 +122,7 @@ core/              与 contract 同名的 9 个业务域
 └── webhook/{reconciler}
 
 extension/         扩展引擎实现 + api/ 契约
-infra/             基础设施实现 + api/ 契约
+infra/             基础设施实现 + api/ 契约 + dashboard/ 控制台读模型
 security/          安全实现 + api/ 契约
 setting/           设置实现 + api/ 契约
 
