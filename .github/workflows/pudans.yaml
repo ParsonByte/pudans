@@ -58,7 +58,7 @@ jobs:
         if: github.repository == 'ParsonByte/pudans'
         uses: actions/upload-artifact@v6
         with:
-          name: pudans-artifacts
-          path: appkernel/build/libs
+          name: pudans-backend
+          path: build/appkernel
           if-no-files-found: error
           retention-days: 1
