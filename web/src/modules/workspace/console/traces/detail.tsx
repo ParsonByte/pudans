@@ -136,7 +136,20 @@ export function TraceDetailView({ traceFlowId }: TraceDetailViewProps) {
           <InfoRow
             label="Trace ID"
             value={
-              <span className="font-mono text-xs break-all">{traceIds.join("、") || "—"}</span>
+              traceIds.length === 0 ? (
+                <span className="text-xs text-muted-foreground">—</span>
+              ) : (
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted-foreground">
+                    展开查看 {traceIds.length} 个 Trace ID
+                  </summary>
+                  <div className="mt-1 max-h-40 space-y-0.5 overflow-y-auto font-mono break-all">
+                    {traceIds.map((id) => (
+                      <div key={id}>{id}</div>
+                    ))}
+                  </div>
+                </details>
+              )
             }
             className="sm:col-span-2"
           />
