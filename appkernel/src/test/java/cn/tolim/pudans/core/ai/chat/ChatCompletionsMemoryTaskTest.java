@@ -263,6 +263,7 @@ class ChatCompletionsMemoryTaskTest {
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong()))
                 .thenReturn(Mono.error(new IllegalStateException("队列不可用")));
+        when(conversations.reducePending(any(), anyInt())).thenReturn(Mono.just(0));
 
         StepVerifier.create(service.complete(command()))
                 .assertNext(result -> assertThat(result.messageId()).isEqualTo("21"))
@@ -427,7 +428,9 @@ class ChatCompletionsMemoryTaskTest {
         when(conversations.appendUserMessage(
                         any(), anyInt(), anyInt(), anyString(), anyString(), any()))
                 .thenReturn(Mono.just(userMessage()));
-        when(conversations.markPending(any(), anyInt())).thenReturn(Mono.just(2));
+        if (extractionEnabled) {
+            when(conversations.markPending(any(), anyInt())).thenReturn(Mono.just(2));
+        }
         when(agentContext.build(any())).thenReturn(Mono.just(new AgentContext.Context(
                 "", List.of(), List.of(), List.of(), List.of(), Map.of())));
         when(hooks.dispatch(anyString(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());

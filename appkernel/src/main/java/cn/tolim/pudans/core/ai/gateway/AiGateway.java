@@ -35,6 +35,7 @@ import cn.tolim.pudans.core.ai.plan.PlanResolution;
 import cn.tolim.pudans.core.ai.plan.PlanUsageSnapshot;
 import cn.tolim.pudans.core.ai.plan.PlanWindowKind;
 import cn.tolim.pudans.core.ai.plan.UsageUnitCalculator;
+import cn.tolim.pudans.core.ai.provider.ProviderProtocols;
 import cn.tolim.pudans.core.ai.provider.ProviderSpendGuard;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jChat;
 import cn.tolim.pudans.core.ai.routing.RouteResolution;
@@ -59,6 +60,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.CancellationException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -71,6 +73,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -89,6 +92,8 @@ public class AiGateway {
     private static final String STATUS_SUCCEEDED = "SUCCEEDED";
 
     private static final String STATUS_FAILED = "FAILED";
+
+    private static final String STATUS_CANCELED = "CANCELED";
 
     private static final String BILLING_SETTLED = "SETTLED";
 
@@ -152,7 +157,12 @@ public class AiGateway {
                                 ignored -> chat(prepared, prepared.candidates(), 0, 0, null)
                                         .onErrorResume(error ->
                                                 fail(prepared, error).then(Mono.error(upstreamError(error))))
-                                        .flatMap(attempt -> succeed(prepared, attempt)),
+                                        .flatMap(attempt -> succeed(prepared, attempt))
+                                        .doOnCancel(() -> fail(
+                                                        prepared,
+                                                        new CancellationException(
+                                                                "客户端已断开。"))
+                                                .subscribe()),
                                 gatewayKeys::release)));
     }
 
@@ -211,7 +221,7 @@ public class AiGateway {
                                     .doOnNext(event -> finished.set(true)))
                     .doOnCancel(() -> {
                         if (!finished.get()) {
-                            streamCancel(prepared, content.toString()).subscribe();
+                            streamCancel(prepared, actual.get(), content.toString()).subscribe();
                         }
                     });
             return gatewayKeys
@@ -316,8 +326,13 @@ public class AiGateway {
                                             .flatMap(conversation -> bind(invocation, conversation.id())
                                                     .flatMap(bound -> createChatRequest(
                                                                     invocation, resolution, bound, conversation, plan, hold)
-                                                            .onErrorResume(error -> release(hold)
-                                                                    .then(Mono.error(error)))
+                                                            .onErrorMap(
+                                                                    DuplicateKeyException.class,
+                                                                    error -> new ApiException(
+                                                                            HttpStatus.CONFLICT,
+                                                                            "ai-idempotency-conflict",
+                                                                            "该 Idempotency-Key 已用于其他请求或仍在处理中。",
+                                                                            error))
                                                             .thenReturn(new Prepared(
                                                                     invocation,
                                                                     setting,
@@ -330,7 +345,9 @@ public class AiGateway {
                                                                     Instant.now(),
                                                                     access,
                                                                     candidates,
-                                                                    new ArrayList<>())))));
+                                                                    new ArrayList<>()))))
+                                            .onErrorResume(error -> release(hold)
+                                                    .then(Mono.error(error))));
                         }));
     }
 
@@ -764,14 +781,21 @@ public class AiGateway {
                                             invocation.requestId(),
                                             resources.model().getSpec().getModelCode(),
                                             usage.outputTokens())
-                                    .flatMap(assistantMessage -> conversations
-                                            .markPending(prepared.conversation(), 2)
-                                            .then(memory.isExtractionEnabled()
-                                                    ? memoryTaskScheduler.enqueueExtraction(
+                                    .flatMap(assistantMessage -> memory.isExtractionEnabled()
+                                            ? conversations
+                                                    .markPending(prepared.conversation(), 2)
+                                                    .then(memoryTaskScheduler.enqueueExtraction(
                                                             prepared.conversation(),
                                                             invocation.userId(),
-                                                            assistantMessage.id())
-                                                    : Mono.empty())));
+                                                            assistantMessage.id()))
+                                                    .onErrorResume(error -> {
+                                                        log.warn("Agent 网关 L1 记忆任务投递失败。", error);
+                                                        return conversations
+                                                                .reducePending(prepared.conversation(), 2)
+                                                                .onErrorResume(reduceError -> Mono.empty())
+                                                                .then();
+                                                    })
+                                            : Mono.<Void>empty()));
                 })
                 .onErrorResume(error -> {
                     log.warn("Agent 网关 L0 归档失败。", error);
@@ -855,12 +879,28 @@ public class AiGateway {
                         codeOf(mapped), reasonOf(mapped), mapped.getStatusCode().is5xxServerError(), partial))));
     }
 
-    private Mono<Void> streamCancel(Prepared prepared, String content) {
-        if (content.isEmpty()) {
-            return release(prepared.hold());
-        }
-        var usage = resolveUsage(prepared, null, content);
-        return settle(prepared, prepared.resources(), usage);
+    private Mono<Void> streamCancel(
+            Prepared prepared, @Nullable Resources actual, String content) {
+        var resources = actual == null ? prepared.resources() : actual;
+        var partial = !content.isEmpty();
+        var usage = partial ? resolveUsage(prepared, null, content) : null;
+        var units = partial ? charge(prepared, resources, usage) : ZERO;
+        var billingStatus = partial ? BILLING_SETTLED : BILLING_RELEASED;
+        var billingSource = partial ? SOURCE_ESTIMATED : null;
+        var action = partial ? settle(prepared, resources, usage) : release(prepared.hold());
+        var latencyDuration = Duration.between(prepared.startedAt(), Instant.now());
+        var latency = (int) latencyDuration.toMillis();
+        return action.then(complete(
+                prepared,
+                usage,
+                units,
+                billingSource,
+                STATUS_CANCELED,
+                "ai-gateway-canceled",
+                billingStatus,
+                null,
+                latency,
+                null));
     }
 
     private Mono<Void> complete(
@@ -1115,9 +1155,7 @@ public class AiGateway {
     }
 
     private static AiProvider.Protocol protocolOf(Resources resources) {
-        var account = resources.account() == null ? null : resources.account().getSpec();
-        var override = account == null ? null : account.getProtocolOverride();
-        return override == null ? resources.provider().getSpec().getProtocol() : override;
+        return ProviderProtocols.of(resources.provider(), resources.account());
     }
 
     private static RouteSeat seatOf(RouteResolution.Resolution resolution, RouteSelection selection) {

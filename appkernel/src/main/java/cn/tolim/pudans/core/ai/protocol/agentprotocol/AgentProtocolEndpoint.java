@@ -13,6 +13,7 @@ import cn.tolim.pudans.core.ai.protocol.agentprotocol.AgentProtocolRunStore.RunS
 import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import dev.langchain4j.data.message.UserMessage;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,6 +31,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -169,9 +171,17 @@ public class AgentProtocolEndpoint implements CustomEndpoint {
                             sink.next(frame);
                         }
                     });
-                    sink.onCancel(record::cancel);
+                    var executionRef =
+                            new AtomicReference<Disposable>();
+                    sink.onCancel(() -> {
+                        record.cancel();
+                        var disposable = executionRef.get();
+                        if (disposable != null) {
+                            disposable.dispose();
+                        }
+                    });
                     // 结果流只订阅一次，结束事件由同一个订阅驱动。
-                    record
+                    executionRef.set(record
                             .run()
                             .result()
                             .subscribe(
@@ -192,7 +202,7 @@ public class AgentProtocolEndpoint implements CustomEndpoint {
                                                 record.snapshot().status(),
                                                 errorMessage(error)));
                                         sink.complete();
-                                    });
+                                    }));
                 },
                 FluxSink.OverflowStrategy.BUFFER);
     }

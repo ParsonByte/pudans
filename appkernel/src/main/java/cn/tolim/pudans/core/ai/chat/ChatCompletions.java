@@ -83,6 +83,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -91,6 +92,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -178,9 +180,11 @@ public class ChatCompletions {
                                         round.model(),
                                         round.usage() == null ? null : round.usage().outputTokens(),
                                         round.metadata())
-                                .flatMap(message -> conversations
-                                        .markPending(prepared.conversation(), 2)
-                                        .then(enqueueExtraction(prepared, message))
+                                .flatMap(message -> (prepared.memorySetting().isExtractionEnabled()
+                                                ? conversations
+                                                        .markPending(prepared.conversation(), 2)
+                                                        .then(enqueueExtraction(prepared, message))
+                                                : Mono.<Void>empty())
                                         .then(dispatchSessionEnd(prepared))
                                         .thenReturn(new AiChatCompletionResult(
                                                 prepared.conversation().id(),
@@ -512,9 +516,16 @@ public class ChatCompletions {
                 emitMeta(sink, prepared, state, metaEmitted);
                 mapped.forEach(sink::next);
             });
-            sink.onCancel(run::cancel);
+            var executionRef = new AtomicReference<Disposable>();
+            sink.onCancel(() -> {
+                run.cancel();
+                var disposable = executionRef.get();
+                if (disposable != null) {
+                    disposable.dispose();
+                }
+            });
             var execution = run.result().doFinally(signal -> activeRuns.remove(run.id()));
-            execution.subscribe(
+            executionRef.set(execution.subscribe(
                     result -> persistStreamResult(prepared, state, outcomes, turn, result)
                             .subscribe(message -> {
                                 emitMeta(sink, prepared, state, metaEmitted);
@@ -538,7 +549,7 @@ public class ChatCompletions {
                                         false));
                                 sink.complete();
                             }, sink::error),
-                    sink::error);
+                    sink::error));
         }, FluxSink.OverflowStrategy.BUFFER);
     }
 
@@ -1090,7 +1101,16 @@ public class ChatCompletions {
                 .enqueueExtraction(prepared.conversation(), prepared.conversation().userId(), message.id())
                 .onErrorResume(error -> {
                     log.warn("L1 记忆任务投递失败：会话 {}。", prepared.conversation().id(), error);
-                    return Mono.empty();
+                    return conversations
+                            .reducePending(prepared.conversation(), 2)
+                            .onErrorResume(reduceError -> {
+                                log.warn(
+                                        "回退会话待处理计数失败：会话 {}。",
+                                        prepared.conversation().id(),
+                                        reduceError);
+                                return Mono.empty();
+                            })
+                            .then();
                 });
     }
     private static @Nullable JsonNode roundMetadata(

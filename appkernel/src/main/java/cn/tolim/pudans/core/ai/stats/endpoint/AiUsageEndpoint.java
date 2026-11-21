@@ -292,7 +292,11 @@ public class AiUsageEndpoint implements CustomEndpoint {
                 UsageQueryParameters.date(request, "from"),
                 UsageQueryParameters.date(request, "to"),
                 UsageQueryParameters.text(request, "agent"),
-                UsageQueryParameters.text(request, "model"));
+                UsageQueryParameters.text(request, "model"),
+                UsageQueryParameters.text(request, "provider"),
+                UsageQueryParameters.text(request, "status"),
+                UsageQueryParameters.text(request, "routeGroup"),
+                UsageQueryParameters.text(request, "q"));
         return accessResolver
                 .viewer(request)
                 .flatMap(viewer -> aiUsage.sessionStats(query, viewer))
