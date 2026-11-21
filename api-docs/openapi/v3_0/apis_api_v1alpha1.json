@@ -4702,35 +4702,6 @@
         "tags": [
           "UserConnectionV1alpha1"
         ]
-      },
-      "post": {
-        "description": "Create UserConnection",
-        "operationId": "createUserConnection",
-        "requestBody": {
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/UserConnection"
-              }
-            }
-          },
-          "description": "Fresh userconnection"
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserConnection"
-                }
-              }
-            },
-            "description": "Response userconnections created just now"
-          }
-        },
-        "tags": [
-          "UserConnectionV1alpha1"
-        ]
       }
     },
     "/apis/api.pudans.tolim.cn/v1alpha1/userconnections/oidc/bind": {
@@ -4863,115 +4834,6 @@
               }
             },
             "description": "default response"
-          }
-        },
-        "tags": [
-          "UserConnectionV1alpha1"
-        ]
-      },
-      "get": {
-        "description": "Get UserConnection",
-        "operationId": "getUserConnection",
-        "parameters": [
-          {
-            "description": "Name of userconnection",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserConnection"
-                }
-              }
-            },
-            "description": "Response single userconnection"
-          }
-        },
-        "tags": [
-          "UserConnectionV1alpha1"
-        ]
-      },
-      "patch": {
-        "description": "Patch UserConnection",
-        "operationId": "patchUserConnection",
-        "parameters": [
-          {
-            "description": "Name of userconnection",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json-patch+json": {
-              "schema": {
-                "$ref": "#/components/schemas/JsonPatch"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserConnection"
-                }
-              }
-            },
-            "description": "Response userconnection patched just now"
-          }
-        },
-        "tags": [
-          "UserConnectionV1alpha1"
-        ]
-      },
-      "put": {
-        "description": "Update UserConnection",
-        "operationId": "updateUserConnection",
-        "parameters": [
-          {
-            "description": "Name of userconnection",
-            "in": "path",
-            "name": "name",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "*/*": {
-              "schema": {
-                "$ref": "#/components/schemas/UserConnection"
-              }
-            }
-          },
-          "description": "Updated userconnection"
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/UserConnection"
-                }
-              }
-            },
-            "description": "Response userconnections updated just now"
           }
         },
         "tags": [
@@ -7646,9 +7508,6 @@
           "bindingUrl": {
             "type": "string"
           },
-          "configMapRef": {
-            "$ref": "#/components/schemas/ConfigMapRef"
-          },
           "description": {
             "type": "string"
           },
@@ -7661,14 +7520,8 @@
           "logo": {
             "type": "string"
           },
-          "method": {
-            "type": "string"
-          },
           "rememberMeSupport": {
             "type": "boolean"
-          },
-          "settingRef": {
-            "$ref": "#/components/schemas/SettingRef"
           },
           "unbindUrl": {
             "type": "string"
@@ -7819,18 +7672,6 @@
           "size",
           "total",
           "totalPages"
-        ]
-      },
-      "ConfigMapRef": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "name"
         ]
       },
       "ConnectionTestRequest": {
@@ -9771,23 +9612,6 @@
           "size",
           "total",
           "totalPages"
-        ]
-      },
-      "SettingRef": {
-        "type": "object",
-        "properties": {
-          "group": {
-            "type": "string",
-            "minLength": 1
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "group",
-          "name"
         ]
       },
       "SettingSpec": {
