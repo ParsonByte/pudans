@@ -1,7 +1,7 @@
 FROM eclipse-temurin:25-jre AS builder
 
 WORKDIR /application
-ARG JAR_FILE=/application/build/libs/*.jar
+ARG JAR_FILE=build/appkernel/*.jar
 COPY $JAR_FILE application.jar
 RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 

@@ -146,6 +146,17 @@ bootJar {
     }
 }
 
+tasks.register('stageDistribution', Sync) {
+    description = 'Copy the runnable backend jar into the root build directory.'
+    dependsOn tasks.named('bootJar')
+    from(tasks.named('bootJar').flatMap { it.archiveFile })
+    into(rootProject.layout.buildDirectory.dir('appkernel'))
+}
+
+tasks.named('assemble') {
+    dependsOn tasks.named('stageDistribution')
+}
+
 tasks.named('jar') {
     archiveBaseName = 'pudans-appkernel'
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
