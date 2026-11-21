@@ -3,7 +3,6 @@ package cn.tolim.pudans.core.user;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +39,9 @@ class FeishuAccountsTest {
     Accounts accounts;
 
     @Mock
+    Connections connections;
+
+    @Mock
     Groups groups;
 
     @Mock
@@ -68,7 +70,7 @@ class FeishuAccountsTest {
                 .thenReturn(Mono.just(new UserGroupBinding()));
 
         var service = new FeishuAccounts(
-                client, accounts, groups, domainEventPublisher, transactionManager,
+                client, accounts, connections, groups, domainEventPublisher, transactionManager,
                 parameterGroups);
 
         StepVerifier.create(service.assignDefaultUserGroup("bob")).verifyComplete();
@@ -79,14 +81,15 @@ class FeishuAccountsTest {
     @Test
     void createsAUserAndConnectionWithoutProvisioningHooks() {
         when(client.listAll(eq(UserConnection.class), any(), any())).thenReturn(Flux.empty());
-        when(client.create(any(UserConnection.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(connections.createConnection(any(UserConnection.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(accounts.createUser(any(User.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(groups.assignUserGroup("alice", "normal-users"))
                 .thenReturn(Mono.just(new UserGroupBinding()));
         when(transactionManager.getReactiveTransaction(any())).thenReturn(Mono.just(transaction));
         when(transactionManager.commit(transaction)).thenReturn(Mono.empty());
         var service = new FeishuAccounts(
-                client, accounts, groups, domainEventPublisher, transactionManager,
+                client, accounts, connections, groups, domainEventPublisher, transactionManager,
                 parameterGroups);
         var data = new FeishuAccounts.FeishuUserData(
                 "alice", "Alice", "Alice@Example.com", "open-1", "union-1", null);
@@ -101,7 +104,7 @@ class FeishuAccountsTest {
                 })
                 .verifyComplete();
 
-        verify(client).create(any(UserConnection.class));
+        verify(connections).createConnection(any(UserConnection.class));
         verify(groups).assignUserGroup("alice", "normal-users");
         verify(domainEventPublisher).publish(eq("user.created"), any(), any());
     }
@@ -111,22 +114,21 @@ class FeishuAccountsTest {
         var user = localUser("bob", "Bob", "bob@example.com");
         when(accounts.getUser("bob")).thenReturn(Mono.just(user));
         when(client.listAll(eq(UserConnection.class), any(), any())).thenReturn(Flux.empty());
-        when(client.create(any(UserConnection.class)))
+        when(connections.createConnection(any(UserConnection.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         var service = new FeishuAccounts(
-                client, accounts, groups, domainEventPublisher, transactionManager,
+                client, accounts, connections, groups, domainEventPublisher, transactionManager,
                 parameterGroups);
 
         StepVerifier.create(service.bindConnection("bob", "union-1", "Bob", "bob@example.com", null, null))
                 .assertNext(connection -> {
-                    assertThat(connection.getMetadata().getName()).isEqualTo("bob-feishu");
                     assertThat(connection.getSpec().getRegistrationId()).isEqualTo("feishu");
                     assertThat(connection.getSpec().getUsername()).isEqualTo("bob");
                     assertThat(connection.getSpec().getProviderUserId()).isEqualTo("union-1");
                 })
                 .verifyComplete();
 
-        verify(client).create(any(UserConnection.class));
+        verify(connections).createConnection(any(UserConnection.class));
     }
 
     @Test
@@ -135,7 +137,7 @@ class FeishuAccountsTest {
         when(client.listAll(eq(UserConnection.class), any(), any()))
                 .thenReturn(Flux.just(feishuConnection("alice", "union-1")));
         var service = new FeishuAccounts(
-                client, accounts, groups, domainEventPublisher, transactionManager,
+                client, accounts, connections, groups, domainEventPublisher, transactionManager,
                 parameterGroups);
 
         StepVerifier.create(service.bindConnection("bob", "union-1", "Bob", "bob@example.com", null, null))
@@ -144,7 +146,7 @@ class FeishuAccountsTest {
                         .hasMessageContaining("已绑定到其他用户"))
                 .verify();
 
-        verify(client, never()).create(any(UserConnection.class));
+        verify(connections, never()).createConnection(any(UserConnection.class));
     }
 
     @Test
@@ -153,14 +155,14 @@ class FeishuAccountsTest {
         var existing = feishuConnection("bob", "union-1");
         when(client.listAll(eq(UserConnection.class), any(), any())).thenReturn(Flux.just(existing));
         var service = new FeishuAccounts(
-                client, accounts, groups, domainEventPublisher, transactionManager,
+                client, accounts, connections, groups, domainEventPublisher, transactionManager,
                 parameterGroups);
 
         StepVerifier.create(service.bindConnection("bob", "union-1", "Bob", "bob@example.com", null, null))
                 .assertNext(connection -> assertThat(connection).isSameAs(existing))
                 .verifyComplete();
 
-        verify(client, never()).create(any(UserConnection.class));
+        verify(connections, never()).createConnection(any(UserConnection.class));
     }
 
     @Test
@@ -169,7 +171,7 @@ class FeishuAccountsTest {
         when(accounts.getUser("bob")).thenReturn(Mono.just(user));
         when(client.update(user)).thenReturn(Mono.just(user));
         var service = new FeishuAccounts(
-                client, accounts, groups, domainEventPublisher, transactionManager,
+                client, accounts, connections, groups, domainEventPublisher, transactionManager,
                 parameterGroups);
 
         StepVerifier.create(service.syncProfile(
@@ -187,7 +189,7 @@ class FeishuAccountsTest {
         when(accounts.getUser("bob")).thenReturn(Mono.just(user));
         when(client.update(user)).thenReturn(Mono.just(user));
         var service = new FeishuAccounts(
-                client, accounts, groups, domainEventPublisher, transactionManager,
+                client, accounts, connections, groups, domainEventPublisher, transactionManager,
                 parameterGroups);
 
         StepVerifier.create(service.syncProfile(

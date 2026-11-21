@@ -1,27 +1,17 @@
 package cn.tolim.pudans.core.user.endpoint;
 
-import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.contract.user.UserConnection;
-import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.extension.contract.GroupVersion;
-import cn.tolim.pudans.extension.contract.ListOptions;
-import cn.tolim.pudans.extension.contract.Metadata;
-import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
-import cn.tolim.pudans.extension.contract.index.query.Queries;
-import cn.tolim.pudans.core.user.Connections;
+import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.authentication.oidc.OidcClient;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
@@ -32,7 +22,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -45,12 +34,6 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class UserConnectionEndpoint implements CustomEndpoint {
 
-    private static final String PASSKEY_PROVIDER = "passkey";
-
-    private final ReactiveExtensionClient client;
-
-    private final Accounts accounts;
-
     private final Connections connectionService;
 
     private final OidcClient oidcClient;
@@ -61,16 +44,6 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     private static String stateKey(String registrationId) {
         return UserConnectionEndpoint.class.getName() + ".STATE." + registrationId;
-    }
-
-    private static String connectionName(String registrationId, String subject) {
-        try {
-            var digest = MessageDigest.getInstance("SHA-256")
-                    .digest((registrationId + '\0' + subject).getBytes(StandardCharsets.UTF_8));
-            return "oidc-" + HexFormat.of().formatHex(digest, 0, 28);
-        } catch (java.security.NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 不可用", e);
-        }
     }
 
     @Override
@@ -166,57 +139,21 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     private Mono<UserConnection> createConnection(
             String username, String registrationId, OidcClient.OidcUserInfo userInfo) {
-        var options = ListOptions.builder()
-                .andQuery(notDeleting())
-                .andQuery(Queries.equal("spec.registrationId", registrationId))
-                .andQuery(Queries.equal("spec.providerUserId", userInfo.subject()))
-                .build();
-        return client.listAll(UserConnection.class, options, defaultSort())
-                .next()
-                .flatMap(existing -> Mono.<UserConnection>error(new ServerWebInputException(
-                        "此 OIDC 身份已绑定。")))
-                .switchIfEmpty(Mono.defer(() -> {
-                    var connection = new UserConnection();
-                    var metadata = new Metadata();
-                    metadata.setName(connectionName(registrationId, userInfo.subject()));
-                    connection.setMetadata(metadata);
-                    var spec = new UserConnection.UserConnectionSpec();
-                    spec.setRegistrationId(registrationId);
-                    spec.setUsername(username);
-                    spec.setProviderUserId(userInfo.subject());
-                    spec.setDisplayName(userInfo.name());
-                    spec.setUpdatedAt(java.time.Instant.now());
-                    connection.setSpec(spec);
-                    return client.create(connection);
-                }));
+        var connection = new UserConnection();
+        var spec = new UserConnection.UserConnectionSpec();
+        spec.setRegistrationId(registrationId);
+        spec.setUsername(username);
+        spec.setProviderUserId(userInfo.subject());
+        spec.setDisplayName(userInfo.name());
+        connection.setSpec(spec);
+        return connectionService.createConnection(connection);
     }
 
     private Mono<ServerResponse> unbind(ServerRequest request) {
-        var name = request.pathVariable("name");
         return currentUsername()
-                .flatMap(username -> client.fetch(UserConnection.class, name).flatMap(connection -> {
-                    if (!username.equals(connection.getSpec().getUsername())) {
-                        return Mono.error(new ResponseStatusException(
-                                HttpStatus.FORBIDDEN, "不能删除其他用户的连接。"));
-                    }
-                    return canRemove(username, connection).flatMap(canRemove -> canRemove
-                            ? client.delete(connection)
-                            : Mono.error(new ServerWebInputException(
-                                    "没有 Passkey 时不能移除唯一的登录方式。")));
-                }))
+                .flatMap(username -> connectionService.removeConnection(
+                        username, request.pathVariable("name")))
                 .flatMap(deleted -> ServerResponse.ok().bodyValue(deleted));
-    }
-
-    private Mono<Boolean> canRemove(String username, UserConnection target) {
-        return connectionService
-                .listConnections(username)
-                .filter(connection -> !connection.getMetadata().getName().equals(target.getMetadata().getName()))
-                .collectList()
-                .flatMap(remaining -> accounts
-                        .getUser(username)
-                        .map(user -> !remaining.isEmpty()
-                                || StringUtils.hasText(user.getSpec().getPassword())))
-                .defaultIfEmpty(false);
     }
 
     private Mono<String> currentUsername() {

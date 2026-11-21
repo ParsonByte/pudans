@@ -42,6 +42,8 @@ public class FeishuAccounts {
 
     private final Accounts accounts;
 
+    private final Connections connections;
+
     private final Groups groups;
 
     private final DomainEventPublisher domainEventPublisher;
@@ -121,7 +123,7 @@ public class FeishuAccounts {
                     user.setSpec(spec);
                     return accounts.createUser(user);
                 }))
-                .flatMap(user -> createConnection(user, providerUserId).thenReturn(user))
+                .flatMap(user -> createConnection(user, providerUserId, data.displayName()).thenReturn(user))
                 .flatMap(user -> StringUtils.hasText(userGroupName)
                         ? groups.assignUserGroup(user.getMetadata().getName(), userGroupName)
                                 .thenReturn(user)
@@ -149,18 +151,15 @@ public class FeishuAccounts {
                 .then();
     }
 
-    private Mono<UserConnection> createConnection(User user, String providerUserId) {
+    private Mono<UserConnection> createConnection(User user, String providerUserId, String displayName) {
         var connection = new UserConnection();
-        var metadata = new Metadata();
-        metadata.setName(user.getMetadata().getName() + "-feishu");
-        connection.setMetadata(metadata);
         var spec = new UserConnection.UserConnectionSpec();
         spec.setRegistrationId(PROVIDER);
         spec.setUsername(user.getMetadata().getName());
         spec.setProviderUserId(providerUserId);
-        spec.setUpdatedAt(clock.instant());
+        spec.setDisplayName(displayName);
         connection.setSpec(spec);
-        return client.create(connection);
+        return connections.createConnection(connection);
     }
 
     public Mono<UserConnection> bindConnection(
@@ -182,7 +181,7 @@ public class FeishuAccounts {
                                 ? Mono.just(existing)
                                 : Mono.error(new ServerWebInputException(
                                         "该飞书身份已绑定到其他用户。")))
-                        .switchIfEmpty(Mono.defer(() -> createConnection(user, providerUserId))))
+                        .switchIfEmpty(Mono.defer(() -> createConnection(user, providerUserId, displayName))))
                 .flatMap(connection ->
                         syncProfile(username, displayName, email, phone, avatar).then(Mono.just(connection)));
     }
@@ -234,10 +233,6 @@ public class FeishuAccounts {
         payload.put("changedFields", changedFields);
         payload.put("source", "feishu");
         domainEventPublisher.publish("user.updated", payload, null);
-    }
-
-    public Mono<Void> deleteConnection(String username) {
-        return listConnections(username).flatMap(client::delete).then();
     }
 
     public static String sanitizeUsername(String providerUserId) {
