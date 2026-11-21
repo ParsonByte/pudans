@@ -153,7 +153,7 @@ class AiUsageRepositoryTest {
                 .contains("ORDER BY id DESC")
                 .contains("LIMIT :limit")
                 .contains("request_id ILIKE :qPattern")
-                .contains("COALESCE(usage_units, points) AS units")
+                .contains("COALESCE(usage_units, points) AS usage_units")
                 .contains("route_trace ->> 'purpose' = :purpose")
                 .contains("route_trace ->> 'callerKey' = :callerKey")
                 .contains("agent_source = :agentSource")

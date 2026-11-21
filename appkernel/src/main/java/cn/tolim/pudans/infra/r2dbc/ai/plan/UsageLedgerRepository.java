@@ -104,7 +104,7 @@ public class UsageLedgerRepository {
     }
 
     public Mono<LedgerRow> findByRequestId(String requestId) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                          FROM ai_usage_ledger
                          WHERE request_id = :requestId
                          """)

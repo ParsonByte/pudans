@@ -5,6 +5,7 @@ import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEvent;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEventDraft;
 import cn.tolim.pudans.core.ai.harness.journal.JournalEventType;
+import cn.tolim.pudans.core.ai.harness.journal.JournalConflictException;
 import cn.tolim.pudans.core.ai.harness.journal.JournalException;
 import cn.tolim.pudans.core.ai.harness.journal.JournalHead;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiR2dbcBindings;
@@ -94,7 +95,7 @@ public class AiHarnessJournalRepository {
                 .collectSortedList(Comparator.comparingLong(JournalEvent::seq))
                 .flatMap(events -> {
                     if (events.size() != drafts.size()) {
-                        return Mono.error(new JournalException("线程日志追加序号冲突。"));
+                        return Mono.error(new JournalConflictException("线程日志追加序号冲突。"));
                     }
                     return Mono.just(List.copyOf(events));
                 });

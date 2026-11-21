@@ -41,7 +41,7 @@ public class AiOrgMemoryRepository {
 
     public Flux<OrgMemoryRecord> listRevoked(long beforeId, int limit) {
         // 撤销记录为停用状态，治理仓库的列表只返回活跃记录。
-        return databaseClient.sql("SELECT " + ORG_COLUMNS + """
+        return databaseClient.sql("SELECT " + ORG_COLUMNS + "\n" + """
                          FROM ai_org_memory
                          WHERE trust_level = :trustLevel
                            AND id < :beforeId
@@ -62,7 +62,7 @@ public class AiOrgMemoryRepository {
         }
         var normalized = query == null ? "" : query.strip();
         var hasQuery = !normalized.isEmpty();
-        return databaseClient.sql("SELECT " + ORG_COLUMNS + """
+        return databaseClient.sql("SELECT " + ORG_COLUMNS + "\n" + """
                          FROM ai_org_memory
                          WHERE trust_level = 'VERIFIED'
                            AND is_active = TRUE

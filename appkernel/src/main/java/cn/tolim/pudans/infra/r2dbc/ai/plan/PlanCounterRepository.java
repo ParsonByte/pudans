@@ -34,7 +34,7 @@ public class PlanCounterRepository {
     }
 
     public Mono<PlanCounterRow> lockCounter(String userId, String kind) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                          FROM ai_plan_counter
                          WHERE user_id = :userId AND kind = :kind
                          FOR UPDATE
@@ -46,7 +46,7 @@ public class PlanCounterRepository {
     }
 
     public Flux<PlanCounterRow> findByUser(String userId) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                         FROM ai_plan_counter
                         WHERE user_id = :userId
                         """)

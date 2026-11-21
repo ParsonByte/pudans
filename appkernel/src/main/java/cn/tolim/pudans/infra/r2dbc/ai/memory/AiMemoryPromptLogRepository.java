@@ -61,7 +61,7 @@ public class AiMemoryPromptLogRepository {
             @Nullable Instant to,
             long beforeId,
             int limit) {
-        var spec = databaseClient.sql("SELECT " + SELECT_COLUMNS + """
+        var spec = databaseClient.sql("SELECT " + SELECT_COLUMNS + "\n" + """
                          FROM ai_memory_prompt_log
                          WHERE id < :beforeId
                            AND (:promptId IS NULL OR prompt_id = :promptId)

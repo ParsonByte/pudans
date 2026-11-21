@@ -281,7 +281,7 @@ public class AiUsageRepository {
                         SELECT id, request_id, user_id, team_id, agent_id, agent_source, mode_code,
                                route_group, selected_provider, selected_account, selected_model, tier,
                                status, error_code, input_tokens, cache_tokens, output_tokens, total_tokens,
-                               COALESCE(usage_units, points) AS units,
+                               COALESCE(usage_units, points) AS usage_units,
                                latency_ms, ttft_ms, tps, session_key, conversation_id,
                                CASE WHEN route_trace ->> 'tries' ~ '^[0-9]+$'
                                     THEN (route_trace ->> 'tries')::int > 1
@@ -340,7 +340,7 @@ public class AiUsageRepository {
                         SELECT request_id, user_id, team_id, agent_id, agent_source, mode_code,
                                route_group, selected_provider, selected_account, selected_model, tier,
                                status, error_code, input_tokens, cache_tokens, output_tokens, total_tokens,
-                               COALESCE(usage_units, points) AS units,
+                               COALESCE(usage_units, points) AS usage_units,
                                billing_source, billing_status, usage_source,
                                upstream_request_id, latency_ms, ttft_ms, tps, session_key, conversation_id,
                                route_trace::text AS route_trace,

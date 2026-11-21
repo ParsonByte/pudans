@@ -50,7 +50,7 @@ public class AiTeamTaskRepository {
     }
 
     public Mono<TeamTask> find(String teamName, String taskId) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                          FROM ai_team_task
                          WHERE team_name = :teamName AND task_id = :taskId
                          """)
@@ -61,7 +61,7 @@ public class AiTeamTaskRepository {
     }
 
     public Flux<TeamTask> list(String teamName) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                          FROM ai_team_task
                          WHERE team_name = :teamName
                          ORDER BY created_at, task_id
@@ -72,7 +72,7 @@ public class AiTeamTaskRepository {
     }
 
     public Flux<TeamTask> claimable(String teamName, String memberName) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                          FROM ai_team_task t
                          WHERE t.team_name = :teamName
                            AND t.state = 'PENDING'

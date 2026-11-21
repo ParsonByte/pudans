@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 public interface ThreadJournal {
 
@@ -16,7 +17,8 @@ public interface ThreadJournal {
     }
 
     default Mono<List<JournalEvent>> append(List<JournalEventDraft> drafts) {
-        return head().flatMap(head -> append(head.seq(), drafts));
+        return Mono.defer(() -> head().flatMap(head -> append(head.seq(), drafts)))
+                .retryWhen(Retry.max(5).filter(error -> error instanceof JournalConflictException));
     }
 
     default Mono<Instant> lastOccurredAt() {
