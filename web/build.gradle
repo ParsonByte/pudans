@@ -54,12 +54,17 @@ tasks.register('formatCheck', NpmTask) {
     args = ['run', 'format:check']
 }
 
+tasks.register('testWeb', NpmTask) {
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'test']
+}
+
 tasks.named('assemble') {
     dependsOn tasks.named('standaloneWeb')
 }
 
 tasks.named('check') {
-    dependsOn tasks.named('lint'), tasks.named('typecheck'), tasks.named('formatCheck')
+    dependsOn tasks.named('lint'), tasks.named('typecheck'), tasks.named('formatCheck'), tasks.named('testWeb')
 }
 
 tasks.named('clean') {
