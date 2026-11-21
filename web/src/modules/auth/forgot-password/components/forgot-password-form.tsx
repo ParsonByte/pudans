@@ -1,4 +1,4 @@
-import { type FormEvent, Fragment, useState } from "react";
+import { type FormEvent, Fragment, useEffect, useState } from "react";
 import { type Resolver, useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -100,6 +100,13 @@ export function ForgotPasswordForm() {
       setCaptchaLoading(false);
     }
   };
+
+  useEffect(() => {
+    const handle = window.setTimeout(() => {
+      void loadCaptcha();
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, []);
 
   const captchaPayload = () =>
     captcha ? { captchaChallengeId: captcha.challengeId, captchaAnswer: captchaAnswer.trim() } : {};

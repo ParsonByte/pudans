@@ -21,6 +21,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.core.user.Accounts;
@@ -118,14 +119,18 @@ public class ExtensionAccounts implements Accounts {
                     "密码只能使用大小写字母 (A-Z, a-z)、数字 (0-9)，以及以下特殊字符: !@#$%^&*.?"));
         }
         return getUser(username)
-                .flatMap(user -> {
-                    if (StringUtils.hasText(user.getSpec().getPassword())
-                            && passwordEncoder.matches(rawPassword, user.getSpec().getPassword())) {
-                        return Mono.error(new UnsatisfiedAttributeValueException("新密码不能与旧密码相同。"));
-                    }
-                    user.getSpec().setPassword(passwordEncoder.encode(rawPassword));
-                    return client.update(user);
-                })
+                .flatMap(user -> Mono.fromCallable(() -> {
+                            if (StringUtils.hasText(user.getSpec().getPassword())
+                                    && passwordEncoder.matches(rawPassword, user.getSpec().getPassword())) {
+                                throw new UnsatisfiedAttributeValueException("新密码不能与旧密码相同。");
+                            }
+                            return passwordEncoder.encode(rawPassword);
+                        })
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .flatMap(encoded -> {
+                            user.getSpec().setPassword(encoded);
+                            return client.update(user);
+                        }))
                 .doOnNext(user -> publishPasswordChangedEvent(username));
     }
 
@@ -155,16 +160,18 @@ public class ExtensionAccounts implements Accounts {
     @Override
     public Mono<Boolean> confirmPassword(String username, String rawPassword) {
         return getUser(username)
-                .filter(user -> {
+                .flatMap(user -> {
                     if (!StringUtils.hasText(user.getSpec().getPassword())) {
-                        return true;
+                        return Mono.just(true);
                     }
                     if (!StringUtils.hasText(rawPassword)) {
-                        return false;
+                        return Mono.just(false);
                     }
-                    return passwordEncoder.matches(rawPassword, user.getSpec().getPassword());
+                    return Mono.fromCallable(
+                                    () -> passwordEncoder.matches(rawPassword, user.getSpec().getPassword()))
+                            .subscribeOn(Schedulers.boundedElastic());
                 })
-                .hasElement();
+                .defaultIfEmpty(false);
     }
 
     @Override

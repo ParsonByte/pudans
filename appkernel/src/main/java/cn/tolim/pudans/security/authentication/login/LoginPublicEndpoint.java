@@ -10,6 +10,7 @@ import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.infra.setting.InitializationStateGetter;
 import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.authentication.AuthProviders;
+import cn.tolim.pudans.security.captcha.Captchas;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -46,6 +47,8 @@ public class LoginPublicEndpoint implements CustomEndpoint {
     private final AuthProviders authProviders;
 
     private final SecurityParameters securitySettings;
+
+    private final Captchas captchas;
 
     private final InitializationStateGetter initializationStateGetter;
 
@@ -208,13 +211,14 @@ public class LoginPublicEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> status(ServerRequest request) {
-        return initializationStateGetter
-                .setupRequired()
-                .defaultIfEmpty(false)
-                .map(setupRequired -> new LoginStatusView(
-                        setupRequired,
+        var setupRequired = initializationStateGetter.setupRequired().defaultIfEmpty(false);
+        var captchaEnabled = captchas.loginEnabled().defaultIfEmpty(false);
+        return Mono.zip(setupRequired, captchaEnabled)
+                .map(state -> new LoginStatusView(
+                        state.getT1(),
                         securityProperties.getPostLoginUrl(),
-                        securitySettings.isRsaLoginEncryptionEnabled()))
+                        securitySettings.isRsaLoginEncryptionEnabled(),
+                        state.getT2()))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
@@ -250,5 +254,8 @@ public class LoginPublicEndpoint implements CustomEndpoint {
             String name, String displayName, String logo, String authenticationUrl, String helpPage) {}
 
     public record LoginStatusView(
-            boolean setupRequired, String postLoginUrl, boolean rsaEncryptionEnabled) {}
+            boolean setupRequired,
+            String postLoginUrl,
+            boolean rsaEncryptionEnabled,
+            boolean loginCaptchaEnabled) {}
 }

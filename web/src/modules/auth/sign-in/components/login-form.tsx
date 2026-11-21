@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getPasskeyAssertion, serializeAssertion } from "@/lib/webauthn";
 import { AuthFormCard } from "@/modules/auth/components/auth-form-card";
+import { type CaptchaChallengeState, CaptchaField } from "@/modules/auth/components/captcha-field";
 import { resolveAuthError } from "@/modules/auth/lib/auth-error";
 import { resolvePostLoginRedirect } from "@/modules/auth/lib/post-login-redirect";
 import { getLoginSession } from "@/modules/auth/lib/session";
@@ -57,6 +58,12 @@ function loginErrorMessage(error: unknown): string {
 
 export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
   const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [captcha, setCaptcha] = useState<CaptchaChallengeState | null>(null);
+  const [captchaAnswer, setCaptchaAnswer] = useState("");
+  const [captchaLoading, setCaptchaLoading] = useState(false);
+  const [twoFactorUsername, setTwoFactorUsername] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorSubmitting, setTwoFactorSubmitting] = useState(false);
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema) as Resolver<LoginValues>,
     defaultValues: { username: "", password: "" },
@@ -93,6 +100,53 @@ export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
   const rsaEncryptionEnabled =
     (loginStatusQuery.data as { rsaEncryptionEnabled?: boolean } | undefined)
       ?.rsaEncryptionEnabled ?? true;
+  const loginCaptchaEnabled =
+    (loginStatusQuery.data as { loginCaptchaEnabled?: boolean } | undefined)?.loginCaptchaEnabled ??
+    false;
+
+  const loadCaptcha = async () => {
+    setCaptchaLoading(true);
+    try {
+      const response = await apiClient.captcha.getCaptchaChallenge();
+      const challenge = response.data as CaptchaChallengeState;
+      if (challenge.challengeId && challenge.image) {
+        setCaptcha(challenge);
+        setCaptchaAnswer("");
+      } else {
+        setCaptcha(null);
+      }
+    } catch {
+      toast.error("验证码加载失败，请稍后重试。");
+    } finally {
+      setCaptchaLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!loginCaptchaEnabled) {
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      void loadCaptcha();
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, [loginCaptchaEnabled]);
+
+  const completeLogin = async () => {
+    const session = await getLoginSession();
+
+    if (!session.authenticated) {
+      toast.error("登录状态未生效，请重试。");
+      return;
+    }
+
+    if (session.consoleAccessDisallowed) {
+      window.location.assign("/403");
+      return;
+    }
+
+    window.location.assign(resolvePostLoginRedirect(redirectTo, session.redirectUrl));
+  };
 
   const onSubmit = async (values: LoginValues) => {
     try {
@@ -106,32 +160,53 @@ export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
       const submittedPassword = encryptPassword
         ? await encryptLoginPassword(values.password)
         : values.password;
-      const response = await axiosInstance.post<{ twoFactorRequired?: boolean }>(
+      if (loginCaptchaEnabled && (!captcha || !captchaAnswer.trim())) {
+        toast.error("请输入图片验证码。");
+        return;
+      }
+      const body = new URLSearchParams({ username: values.username, password: submittedPassword });
+      if (loginCaptchaEnabled && captcha) {
+        body.set("captchaChallengeId", captcha.challengeId ?? "");
+        body.set("captchaAnswer", captchaAnswer.trim());
+      }
+      const response = await axiosInstance.post<{ twoFactorRequired?: boolean; username?: string }>(
         "/login",
-        new URLSearchParams({ username: values.username, password: submittedPassword }),
+        body,
         { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
       );
 
       if (response.data?.twoFactorRequired) {
-        toast.error("该账号需要完成两步验证。");
+        setTwoFactorUsername(response.data.username ?? values.username);
+        setTwoFactorCode("");
         return;
       }
 
-      const session = await getLoginSession();
-
-      if (!session.authenticated) {
-        toast.error("登录状态未生效，请重试。");
-        return;
-      }
-
-      if (session.consoleAccessDisallowed) {
-        window.location.assign("/403");
-        return;
-      }
-
-      window.location.assign(resolvePostLoginRedirect(redirectTo, session.redirectUrl));
+      await completeLogin();
     } catch (requestError) {
       toast.error(loginErrorMessage(requestError));
+      if (loginCaptchaEnabled) {
+        void loadCaptcha();
+      }
+    }
+  };
+
+  const submitTwoFactor = async () => {
+    if (!twoFactorCode.trim()) {
+      toast.error("请输入两步验证码。");
+      return;
+    }
+    setTwoFactorSubmitting(true);
+    try {
+      await axiosInstance.post(
+        "/challenges/two-factor/totp",
+        new URLSearchParams({ code: twoFactorCode.trim() }),
+        { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+      );
+      await completeLogin();
+    } catch (requestError) {
+      toast.error(loginErrorMessage(requestError));
+    } finally {
+      setTwoFactorSubmitting(false);
     }
   };
 
@@ -177,7 +252,8 @@ export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
       }
 
       if (result.data.twoFactorRequired) {
-        toast.error("该账号需要完成两步验证，请使用密码登录。");
+        setTwoFactorUsername(username || form.getValues("username").trim() || null);
+        setTwoFactorCode("");
         return;
       }
 
@@ -206,128 +282,185 @@ export function LoginForm({ redirectTo, errorMessage }: LoginFormProps) {
 
   return (
     <AuthFormCard eyebrow="欢迎回来" title="继续你的创作" description="连接你的数字空间。">
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
-        <FormField htmlFor="username" label="用户名或邮箱" error={errors.username?.message}>
-          <Input
-            id="username"
-            autoComplete="username"
-            autoCapitalize="off"
-            spellCheck={false}
-            placeholder="请输入用户名或邮箱"
-            autoFocus
-            {...form.register("username")}
-          />
-        </FormField>
-
-        <div className="space-y-2">
-          <div className="flex items-center justify-between gap-3">
-            <Label htmlFor="password">密码</Label>
-            <Link
-              href="/forgot-password"
-              className="text-xs font-medium text-primary transition-opacity hover:opacity-80"
-            >
-              忘记密码？
-            </Link>
-          </div>
-          <PasswordInput
-            id="password"
-            autoComplete="current-password"
-            placeholder="请输入密码"
-            {...form.register("password")}
-          />
-          {errors.password?.message ? (
-            <p className="text-xs text-destructive">{errors.password.message}</p>
-          ) : null}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
-          <p className="flex items-center gap-2">
-            <CheckCircle2 className="size-3.5 text-primary" />
-            登录状态将安全保留
-          </p>
-          <p className="flex items-center gap-2">
-            <CheckCircle2 className="size-3.5 text-primary" />
-            新设备登录会提醒你
-          </p>
-          {!rsaEncryptionEnabled ? (
-            <p className="flex items-center gap-2 text-warning">
-              <TriangleAlert className="size-3.5" />
-              当前实例未启用登录传输加密，请确认通过 HTTPS 访问
+      {twoFactorUsername ? (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submitTwoFactor();
+          }}
+          className="flex flex-col gap-5"
+          noValidate
+        >
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              账号 <span className="font-medium text-foreground">{twoFactorUsername}</span>{" "}
+              已启用两步验证，请输入身份验证器中的 6 位验证码。
             </p>
-          ) : null}
-        </div>
-
-        <Button type="submit" size="lg" className="mt-1 w-full" disabled={submitting}>
-          {submitting ? <Loader2 className="animate-spin" /> : <LogIn />}
-          登录并继续
-        </Button>
-
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          或使用其他方式
-          <span className="h-px flex-1 bg-border" />
-        </div>
-
-        <div className="flex items-center gap-2">
+            <Label htmlFor="two-factor-code">两步验证码</Label>
+            <Input
+              id="two-factor-code"
+              value={twoFactorCode}
+              onChange={(event) => setTwoFactorCode(event.target.value)}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={6}
+              placeholder="请输入 6 位验证码"
+              autoFocus
+            />
+          </div>
+          <Button type="submit" size="lg" className="w-full" disabled={twoFactorSubmitting}>
+            {twoFactorSubmitting ? <Loader2 className="animate-spin" /> : <LogIn />}
+            完成验证
+          </Button>
           <Button
             type="button"
-            variant="outline"
-            size="lg"
-            className="flex-1 justify-center"
-            disabled={passkeyLoading || submitting}
+            variant="ghost"
+            size="sm"
+            disabled={twoFactorSubmitting}
             onClick={() => {
-              void handlePasskeyLogin();
+              setTwoFactorUsername(null);
+              setTwoFactorCode("");
             }}
           >
-            {passkeyLoading ? <Loader2 className="animate-spin" /> : <Fingerprint />}
-            通行密钥
+            返回账号密码登录
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5" noValidate>
+          <FormField htmlFor="username" label="用户名或邮箱" error={errors.username?.message}>
+            <Input
+              id="username"
+              autoComplete="username"
+              autoCapitalize="off"
+              spellCheck={false}
+              placeholder="请输入用户名或邮箱"
+              autoFocus
+              {...form.register("username")}
+            />
+          </FormField>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="password">密码</Label>
+              <Link
+                href="/forgot-password"
+                className="text-xs font-medium text-primary transition-opacity hover:opacity-80"
+              >
+                忘记密码？
+              </Link>
+            </div>
+            <PasswordInput
+              id="password"
+              autoComplete="current-password"
+              placeholder="请输入密码"
+              {...form.register("password")}
+            />
+            {errors.password?.message ? (
+              <p className="text-xs text-destructive">{errors.password.message}</p>
+            ) : null}
+          </div>
+
+          {loginCaptchaEnabled && captcha ? (
+            <CaptchaField
+              challenge={captcha}
+              answer={captchaAnswer}
+              onAnswerChange={setCaptchaAnswer}
+              onRefresh={() => {
+                void loadCaptcha();
+              }}
+              refreshing={captchaLoading}
+            />
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-muted-foreground">
+            <p className="flex items-center gap-2">
+              <CheckCircle2 className="size-3.5 text-primary" />
+              登录状态将安全保留
+            </p>
+            <p className="flex items-center gap-2">
+              <CheckCircle2 className="size-3.5 text-primary" />
+              新设备登录会提醒你
+            </p>
+            {!rsaEncryptionEnabled ? (
+              <p className="flex items-center gap-2 text-warning">
+                <TriangleAlert className="size-3.5" />
+                当前实例未启用登录传输加密，请确认通过 HTTPS 访问
+              </p>
+            ) : null}
+          </div>
+
+          <Button type="submit" size="lg" className="mt-1 w-full" disabled={submitting}>
+            {submitting ? <Loader2 className="animate-spin" /> : <LogIn />}
+            登录并继续
           </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            size="icon"
-            className="h-9 w-20 shrink-0"
-            aria-label="飞书"
-            title="飞书"
-            onClick={handleFeishuLogin}
-          >
-            <IconFeishu size={20} className="size-5 shrink-0" />
-          </Button>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" />
+            或使用其他方式
+            <span className="h-px flex-1 bg-border" />
+          </div>
 
-          {otherProviders.map((provider, index) => (
+          <div className="flex items-center gap-2">
             <Button
-              key={`${provider.name}-${provider.authenticationUrl}-${index}`}
-              asChild
+              type="button"
+              variant="outline"
+              size="lg"
+              className="flex-1 justify-center"
+              disabled={passkeyLoading || submitting}
+              onClick={() => {
+                void handlePasskeyLogin();
+              }}
+            >
+              {passkeyLoading ? <Loader2 className="animate-spin" /> : <Fingerprint />}
+              通行密钥
+            </Button>
+
+            <Button
+              type="button"
               variant="outline"
               size="icon"
-              className="size-9 shrink-0"
+              className="h-9 w-20 shrink-0"
+              aria-label="飞书"
+              title="飞书"
+              onClick={handleFeishuLogin}
             >
-              <a
-                href={provider.authenticationUrl}
-                aria-label={provider.displayName ?? provider.name ?? "外部登录"}
-                title={provider.displayName ?? provider.name ?? "外部登录"}
-              >
-                {provider.logo ? (
-                  <img src={provider.logo} alt="" className="size-4 shrink-0" />
-                ) : (
-                  <MessageCircle />
-                )}
-              </a>
+              <IconFeishu size={20} className="size-5 shrink-0" />
             </Button>
-          ))}
-        </div>
 
-        <p className="mt-2 text-center text-xs leading-5 text-muted-foreground">
-          登录即代表同意{" "}
-          <Link
-            href="/legal?tab=terms"
-            className="text-primary transition-opacity hover:opacity-80"
-          >
-            法律协议
-          </Link>
-        </p>
-      </form>
+            {otherProviders.map((provider, index) => (
+              <Button
+                key={`${provider.name}-${provider.authenticationUrl}-${index}`}
+                asChild
+                variant="outline"
+                size="icon"
+                className="size-9 shrink-0"
+              >
+                <a
+                  href={provider.authenticationUrl}
+                  aria-label={provider.displayName ?? provider.name ?? "外部登录"}
+                  title={provider.displayName ?? provider.name ?? "外部登录"}
+                >
+                  {provider.logo ? (
+                    <img src={provider.logo} alt="" className="size-4 shrink-0" />
+                  ) : (
+                    <MessageCircle />
+                  )}
+                </a>
+              </Button>
+            ))}
+          </div>
+
+          <p className="mt-2 text-center text-xs leading-5 text-muted-foreground">
+            登录即代表同意{" "}
+            <Link
+              href="/legal?tab=terms"
+              className="text-primary transition-opacity hover:opacity-80"
+            >
+              法律协议
+            </Link>
+          </p>
+        </form>
+      )}
     </AuthFormCard>
   );
 }

@@ -15,12 +15,15 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RefreshTokens {
@@ -98,7 +101,16 @@ public class RefreshTokens {
             request.getSpec().setName("refresh access token");
             request.getSpec().setRoles(roles);
             request.getSpec().setExpiresAt(Instant.now().plus(ttl));
-            return personalTokens.create(request, username).flatMap(personalTokens::generateToken);
+            return personalTokens
+                    .create(request, username)
+                    .flatMap(personalTokens::generateToken)
+                    .flatMap(token -> personalTokens
+                            .deleteExpired(username)
+                            .onErrorResume(error -> {
+                                log.warn("清理过期刷新访问令牌失败：{}", error.getMessage());
+                                return Mono.just(0L);
+                            })
+                            .thenReturn(token));
         });
     }
 
