@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSessionContext } from "@/modules/auth/lib/session-context";
+import { hasUiPermission } from "@/modules/workspace/lib/permissions";
 
 import {
   AUDIT_MODE_OPTIONS,
@@ -112,6 +114,8 @@ export function AuditSettingsForm({ data }: AuditSettingsFormProps) {
   };
 
   const formId = "audit-parameter-form";
+  const { session } = useSessionContext();
+  const canManage = hasUiPermission(session.uiPermissions, "settings:manage");
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -213,14 +217,25 @@ export function AuditSettingsForm({ data }: AuditSettingsFormProps) {
       </Collapsible>
 
       <FloatingActionBar open={dirty}>
-        <Button type="button" variant="outline" disabled={mutation.isPending} onClick={handleReset}>
-          <Undo2 />
-          撤销更改
-        </Button>
-        <Button type="submit" form={formId} disabled={mutation.isPending}>
-          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-          保存更改
-        </Button>
+        {canManage ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={mutation.isPending}
+              onClick={handleReset}
+            >
+              <Undo2 />
+              撤销更改
+            </Button>
+            <Button type="submit" form={formId} disabled={mutation.isPending}>
+              {mutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+              保存更改
+            </Button>
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground">只读：需要参数管理权限才能保存。</p>
+        )}
       </FloatingActionBar>
     </form>
   );

@@ -56,28 +56,6 @@ export async function updateParameterGroup(
   };
 }
 
-export async function fetchSystemConfigGroup(group: string): Promise<Record<string, unknown>> {
-  const response = await axiosInstance.get<unknown>(
-    `/apis/api.pudans.tolim.cn/v1alpha1/systemconfigs/${encodeURIComponent(group)}`,
-  );
-
-  return parseParameterGroup(response.data);
-}
-
-export async function updateSystemConfigGroup(
-  group: string,
-  body: Record<string, unknown>,
-): Promise<{ restartRequired: boolean }> {
-  const response = await axiosInstance.put(
-    `/apis/api.pudans.tolim.cn/v1alpha1/systemconfigs/${encodeURIComponent(group)}`,
-    body,
-  );
-
-  return {
-    restartRequired: String(response.headers["x-pudans-restart-required"]) === "true",
-  };
-}
-
 export function resolveParameterSettingError(error: unknown): string {
   if (isAxiosError<ProblemDetail>(error)) {
     const status = error.response?.status;

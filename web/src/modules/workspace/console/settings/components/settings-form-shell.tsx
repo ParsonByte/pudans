@@ -6,6 +6,8 @@ import { Loader2, Save, Undo2 } from "lucide-react";
 import { FloatingActionBar } from "@/components/floating-action-bar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useSessionContext } from "@/modules/auth/lib/session-context";
+import { hasUiPermission } from "@/modules/workspace/lib/permissions";
 
 type SettingsFormShellProps<T extends FieldValues> = {
   form: UseFormReturn<T>;
@@ -23,6 +25,8 @@ export function SettingsFormShell<T extends FieldValues>({
   children,
 }: SettingsFormShellProps<T>) {
   const formId = useId();
+  const { session } = useSessionContext();
+  const canManage = hasUiPermission(session.uiPermissions, "settings:manage");
 
   return (
     <form
@@ -34,14 +38,25 @@ export function SettingsFormShell<T extends FieldValues>({
     >
       {children}
       <FloatingActionBar open={form.formState.isDirty}>
-        <Button type="button" variant="outline" disabled={isPending} onClick={() => form.reset()}>
-          <Undo2 />
-          撤销更改
-        </Button>
-        <Button type="submit" form={formId} disabled={isPending}>
-          {isPending ? <Loader2 className="animate-spin" /> : <Save />}
-          保存更改
-        </Button>
+        {canManage ? (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isPending}
+              onClick={() => form.reset()}
+            >
+              <Undo2 />
+              撤销更改
+            </Button>
+            <Button type="submit" form={formId} disabled={isPending}>
+              {isPending ? <Loader2 className="animate-spin" /> : <Save />}
+              保存更改
+            </Button>
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground">只读：需要参数管理权限才能保存。</p>
+        )}
       </FloatingActionBar>
     </form>
   );

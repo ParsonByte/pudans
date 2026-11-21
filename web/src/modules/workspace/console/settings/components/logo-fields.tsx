@@ -60,12 +60,12 @@ export function LogoPair({ form, fields }: LogoPairProps) {
 
         <div className="flex flex-wrap gap-3">
           <LogoPreviewCard
-            url={resolveLogoUrl(lightValue, lightField.defaultValue ?? "")}
+            url={resolveLogoUrl(lightValue, lightField.previewFallback ?? "")}
             label="日间模式 Logo 预览"
             className="border bg-background"
           />
           <LogoPreviewCard
-            url={resolveLogoUrl(darkValue, darkField.defaultValue ?? "")}
+            url={resolveLogoUrl(darkValue, darkField.previewFallback ?? "")}
             label="黑暗模式 Logo 预览"
             className="border-neutral-800 bg-neutral-950"
           />

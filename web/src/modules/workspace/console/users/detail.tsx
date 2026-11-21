@@ -115,7 +115,6 @@ export function UserDetailView({ name }: UserDetailViewProps) {
   const connections = connectionsQuery.data ?? [];
   const roles = rolesQuery.data ?? [];
   const assignedRoles = permissionsQuery.data?.roles ?? [];
-  const effectiveRoles = permissionsQuery.data?.permissions ?? [];
   const roleLabel = (roleName: string) => {
     const role = roles.find((candidate) => candidate.metadata.name === roleName);
     return role ? roleDisplayName(role) : roleName;
@@ -129,6 +128,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["user", name] }),
       queryClient.invalidateQueries({ queryKey: ["user-group", name] }),
+      queryClient.invalidateQueries({ queryKey: ["user-permissions", name] }),
       queryClient.invalidateQueries({ queryKey: ["users"] }),
     ]);
   };
@@ -356,17 +356,7 @@ export function UserDetailView({ name }: UserDetailViewProps) {
           </ConsoleSection>
 
           <ConsoleSection>
-            <ConsoleSectionHeader
-              title="权限"
-              description="通过用户组和直接绑定获得的角色。"
-              action={
-                permissionsQuery.isSuccess ? (
-                  <span className="text-xs text-muted-foreground">
-                    {effectiveRoles.length} 个生效角色
-                  </span>
-                ) : null
-              }
-            />
+            <ConsoleSectionHeader title="角色" description="通过用户组和直接绑定获得的角色。" />
             {permissionsQuery.isPending ? (
               <div className="space-y-3 p-5">
                 <Skeleton className="h-12 w-full" />
@@ -374,40 +364,15 @@ export function UserDetailView({ name }: UserDetailViewProps) {
               </div>
             ) : permissionsQuery.isError ? (
               <ConsoleEmpty>{resolveUserApiError(permissionsQuery.error)}</ConsoleEmpty>
-            ) : assignedRoles.length === 0 && effectiveRoles.length === 0 ? (
+            ) : assignedRoles.length === 0 ? (
               <ConsoleEmpty>该用户没有分配任何角色。</ConsoleEmpty>
             ) : (
-              <div className="space-y-4 p-5">
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">已分配角色</p>
-                  {assignedRoles.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">无直接分配的角色。</p>
-                  ) : (
-                    <div className="flex flex-wrap gap-1">
-                      {assignedRoles.map((roleName) => (
-                        <Badge key={roleName} variant="secondary" title={roleName}>
-                          {roleLabel(roleName)}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                <details className="space-y-2">
-                  <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
-                    展开 {effectiveRoles.length} 个生效角色（含依赖）
-                  </summary>
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {effectiveRoles.map((roleName) => (
-                      <Badge
-                        key={roleName}
-                        variant={assignedRoles.includes(roleName) ? "secondary" : "outline"}
-                        title={roleName}
-                      >
-                        {roleLabel(roleName)}
-                      </Badge>
-                    ))}
-                  </div>
-                </details>
+              <div className="flex flex-wrap gap-1 p-5">
+                {assignedRoles.map((roleName) => (
+                  <Badge key={roleName} variant="secondary" title={roleName}>
+                    {roleLabel(roleName)}
+                  </Badge>
+                ))}
               </div>
             )}
           </ConsoleSection>
