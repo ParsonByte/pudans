@@ -20,8 +20,8 @@
 
 ## Push and history
 
-- The user pushes feature branches. Do not run `git push`, `git push --delete`, `git reset --hard`, `git branch -D` or any history-rewriting command unless the user explicitly asks for that exact operation.
-- Never push, force-push or delete `main`.
+- The user performs every remote operation. Agents must never run `git push`, `git push --delete`, `gh pr create`, `gh pr merge`, `gh pr edit` or any command that creates, updates or deletes a remote branch, tag or pull request, even when a task appears to ask for it. Stop and ask the user to run the command.
+- Never rewrite shared history (`git reset --hard` on a pushed branch, force-push or deletion of unmerged branches) unless the user explicitly asks for that exact operation.
 - Pull requests are the only path into `main`.
 
 ## Merge strategy

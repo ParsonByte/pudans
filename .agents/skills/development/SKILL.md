@@ -1,6 +1,6 @@
 ---
 name: development
-description: "Run the repository development workflow end to end: branch from main, implement in small commits, pass tests, then open a focused pull request with change and verification notes. Use when starting feature work, preparing a PR, changing dependencies or merging."
+description: "Run the repository development workflow end to end: branch from main, implement in small commits, pass tests, then prepare the branch and pull request copy for the user to push and open. Use when starting feature work, preparing a PR, changing dependencies or merging."
 ---
 
 # development
@@ -11,10 +11,10 @@ Execute `.agents/rules/development.md`: isolated branches, verified commits, sma
 
 ## Triggers
 
-- Starting a feature, fix or refactor that will be committed or pushed.
-- Preparing, updating or merging a pull request.
+- Starting a feature, fix or refactor that will be committed; the user performs every push.
+- Preparing pull request copy for the user; the user opens, updates and merges it.
 - Changing a dependency in `gradle/libs.versions.toml`.
-- Any moment before pushing a branch.
+- Any moment before handing a branch to the user.
 
 ## Steps
 
@@ -37,9 +37,9 @@ Execute `.agents/rules/development.md`: isolated branches, verified commits, sma
    ```bash
    git diff --staged | grep -Ei 'secret|token|password|api[_-]?key|BEGIN [A-Z ]*PRIVATE KEY'
    ```
-6. Push the feature branch only, never `main`, then open a pull request against `main` using the template in `templates/pull-request.md`.
-7. Request review; resolve every comment; re-run the gates after the last change before merging.
-8. Feature/fix/chore PRs into `main`: use **Rebase and merge**. `main` stays linear.
+6. Do not push and do not open the pull request. Report the branch name, the PR title and the PR body (from `templates/pull-request.md`) so the user performs the remote operation.
+7. Resolve review comments locally when the user relays them, and re-run the gates after the last change; the user merges.
+8. Record the merge strategy for the user: feature/fix/chore PRs into `main` use **Rebase and merge**, and `main` stays linear.
 
 ## Inputs and outputs
 
@@ -48,7 +48,8 @@ Execute `.agents/rules/development.md`: isolated branches, verified commits, sma
 
 ## Constraints
 
-- Never commit or push to `main`; no direct pushes, no force-push to shared branches.
+- Agents never push, force-push, delete remote branches or tags, or create, merge or edit pull requests; the user performs every remote operation.
+- Never commit directly to `main`; work on a feature branch and hand it to the user.
 - Never bypass tests, and never merge with failing checks.
 - Dependency changes always state the reason and the impact in the pull request.
 - Secrets, tokens, certificates and local environment files never enter the repository.
