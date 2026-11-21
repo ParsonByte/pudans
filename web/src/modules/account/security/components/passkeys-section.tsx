@@ -11,10 +11,13 @@ import { Button } from "@/components/ui/button";
 import { resolveApiError } from "@/lib/api-error";
 import { createPasskey, serializeRegistration } from "@/lib/webauthn";
 import {
-  ConsoleEmpty,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import {
+  ConsoleBlockSkeleton,
+  ConsoleState,
+} from "@/modules/workspace/console/components/console-state";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
 
 const PASSKEYS_QUERY_KEY = ["account-passkeys"];
@@ -96,13 +99,20 @@ export function PasskeysSection() {
         }
       />
       {passkeysQuery.isPending ? (
-        <div className="flex min-h-24 items-center justify-center">
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
-        </div>
+        <ConsoleBlockSkeleton rows={3} className="grid gap-2 p-4" itemClassName="h-12" />
       ) : passkeysQuery.isError ? (
-        <ConsoleEmpty>无法读取通行密钥。</ConsoleEmpty>
+        <ConsoleState
+          variant="error"
+          title="无法读取通行密钥。"
+          description="通行密钥列表暂时不可用，请重试。"
+          onRetry={() => void passkeysQuery.refetch()}
+        />
       ) : passkeys.length === 0 ? (
-        <ConsoleEmpty>尚未添加通行密钥。</ConsoleEmpty>
+        <ConsoleState
+          variant="empty"
+          title="尚未添加通行密钥。"
+          description="添加后，可以使用设备上的指纹、面部识别或安全密钥登录。"
+        />
       ) : (
         <div className="divide-y">
           {passkeys.map((passkey) => (

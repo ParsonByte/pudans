@@ -1,6 +1,6 @@
 export type LegalDocumentKey = "terms" | "privacy" | "confidentiality";
 
-export interface LegalSection {
+interface LegalSection {
   heading: string;
   paragraphs: string[];
 }

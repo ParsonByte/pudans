@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { type UserConnection, apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import { Link2, Loader2, Plus, Unlink } from "lucide-react";
+import { Link2, Plus, Unlink } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -11,11 +11,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { resolveApiError } from "@/lib/api-error";
 import {
-  ConsoleEmpty,
   ConsolePage,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import {
+  ConsoleBlockSkeleton,
+  ConsoleState,
+} from "@/modules/workspace/console/components/console-state";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
 
 const CONNECTIONS_QUERY_KEY = ["account-connections"];
@@ -175,13 +178,20 @@ export function AccountIdentitiesView() {
           description="已关联的飞书或其他身份提供商，可用于免密码登录。"
         />
         {connectionsQuery.isPending ? (
-          <div className="flex min-h-24 items-center justify-center">
-            <Loader2 className="size-4 animate-spin text-muted-foreground" />
-          </div>
+          <ConsoleBlockSkeleton rows={3} className="grid gap-2 p-4" itemClassName="h-12" />
         ) : connectionsQuery.isError ? (
-          <ConsoleEmpty>无法读取身份绑定。</ConsoleEmpty>
+          <ConsoleState
+            variant="error"
+            title="无法读取身份绑定。"
+            description="身份绑定列表暂时不可用，请重试。"
+            onRetry={() => void connectionsQuery.refetch()}
+          />
         ) : connections.length === 0 ? (
-          <ConsoleEmpty>尚未绑定任何身份提供商。</ConsoleEmpty>
+          <ConsoleState
+            variant="empty"
+            title="尚未绑定任何身份提供商。"
+            description="绑定后可以使用对应的第三方账号免密码登录。"
+          />
         ) : (
           <div className="divide-y">
             {connections.map((connection) => (
@@ -237,7 +247,7 @@ export function AccountIdentitiesView() {
           ))}
         </div>
         {(feishuBound || !feishuProvider) && availableOidcProviders.length === 0 ? (
-          <ConsoleEmpty>没有其他可绑定的身份提供商。</ConsoleEmpty>
+          <ConsoleState variant="empty" title="没有其他可绑定的身份提供商。" />
         ) : null}
       </ConsoleSection>
 

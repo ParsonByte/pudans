@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { type UserDevice, apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MonitorSmartphone, Trash2 } from "lucide-react";
+import { MonitorSmartphone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -10,10 +10,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { resolveApiError } from "@/lib/api-error";
 import {
-  ConsoleEmpty,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import {
+  ConsoleBlockSkeleton,
+  ConsoleState,
+} from "@/modules/workspace/console/components/console-state";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
 
 const DEVICES_QUERY_KEY = ["account-devices"];
@@ -62,13 +65,20 @@ export function DevicesSection() {
         }
       />
       {devicesQuery.isPending ? (
-        <div className="flex min-h-24 items-center justify-center">
-          <Loader2 className="size-4 animate-spin text-muted-foreground" />
-        </div>
+        <ConsoleBlockSkeleton rows={3} className="grid gap-2 p-4" itemClassName="h-12" />
       ) : devicesQuery.isError ? (
-        <ConsoleEmpty>无法读取登录设备。</ConsoleEmpty>
+        <ConsoleState
+          variant="error"
+          title="无法读取登录设备。"
+          description="登录会话暂时不可用，请重试。"
+          onRetry={() => void devicesQuery.refetch()}
+        />
       ) : devices.length === 0 ? (
-        <ConsoleEmpty>暂无登录设备。</ConsoleEmpty>
+        <ConsoleState
+          variant="empty"
+          title="暂无登录设备。"
+          description="使用其他设备登录后，可在这里查看并管理会话。"
+        />
       ) : (
         <div className="divide-y">
           {devices.map((item) => {

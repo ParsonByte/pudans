@@ -1,4 +1,3 @@
-import { type ComponentType, type ReactNode } from "react";
 import { type FieldErrors, useForm } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,10 +6,10 @@ import { Globe2, Loader2, Rocket, ShieldCheck, UserRound } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { FormField } from "@/components/form-field";
 import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 import {
@@ -19,47 +18,7 @@ import {
   resolveSetupError,
   setupSchema,
 } from "../lib/setup-schema";
-
-type SetupSectionProps = {
-  icon: ComponentType<{ className?: string }>;
-  title: string;
-  description: string;
-  children: ReactNode;
-};
-
-function SetupSection({ icon: Icon, title, description, children }: SetupSectionProps) {
-  return (
-    <section className="space-y-4">
-      <div className="flex items-start gap-3">
-        <span className="flex size-8 shrink-0 items-center justify-center bg-primary/10 text-primary">
-          <Icon className="size-4" />
-        </span>
-        <div className="space-y-0.5">
-          <h3 className="text-sm font-semibold">{title}</h3>
-          <p className="text-xs leading-5 text-muted-foreground">{description}</p>
-        </div>
-      </div>
-      <div className="space-y-4">{children}</div>
-    </section>
-  );
-}
-
-type SetupFieldProps = {
-  id: string;
-  label: string;
-  hint?: string;
-  children: ReactNode;
-};
-
-function SetupField({ id, label, hint, children }: SetupFieldProps) {
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      {children}
-      {hint ? <p className="text-xs leading-5 text-muted-foreground">{hint}</p> : null}
-    </div>
-  );
-}
+import { FormSection } from "./form-section";
 
 export function SetupForm() {
   const router = useRouter();
@@ -118,9 +77,9 @@ export function SetupForm() {
         </p>
       </div>
 
-      <SetupSection icon={Globe2} title="站点信息" description="设置系统对外展示的名称和访问地址。">
+      <FormSection icon={Globe2} title="站点信息" description="设置系统对外展示的名称和访问地址。">
         <div className="grid gap-4 md:grid-cols-2">
-          <SetupField id="site-title" label="站点名称" hint="显示在系统页面和通知中。">
+          <FormField htmlFor="site-title" label="站点名称" hint="显示在系统页面和通知中。">
             <Input
               id="site-title"
               autoComplete="organization"
@@ -129,10 +88,10 @@ export function SetupForm() {
               autoFocus
               {...register("siteTitle")}
             />
-          </SetupField>
+          </FormField>
 
-          <SetupField
-            id="external-url"
+          <FormField
+            htmlFor="external-url"
             label="站点地址"
             hint="用于生成站点链接，需以 http:// 或 https:// 开头。"
           >
@@ -144,20 +103,20 @@ export function SetupForm() {
               placeholder="https://example.com"
               {...register("externalUrl")}
             />
-          </SetupField>
+          </FormField>
         </div>
-      </SetupSection>
+      </FormSection>
 
       <Separator />
 
-      <SetupSection
+      <FormSection
         icon={UserRound}
         title="管理员账户"
         description="该账户将拥有系统的最高管理权限。"
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <SetupField
-            id="username"
+          <FormField
+            htmlFor="username"
             label="用户名"
             hint="4–63 位，小写字母、数字、点或中划线；以字母或数字开头和结尾。"
           >
@@ -170,9 +129,9 @@ export function SetupForm() {
               placeholder="例如：admin"
               {...register("username")}
             />
-          </SetupField>
+          </FormField>
 
-          <SetupField id="email" label="邮箱（选填）" hint="用于接收通知和找回密码。">
+          <FormField htmlFor="email" label="邮箱（选填）" hint="用于接收通知和找回密码。">
             <Input
               id="email"
               type="email"
@@ -182,12 +141,12 @@ export function SetupForm() {
               placeholder="name@example.com"
               {...register("email")}
             />
-          </SetupField>
+          </FormField>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <SetupField
-            id="password"
+          <FormField
+            htmlFor="password"
             label="密码"
             hint="8–257 位，支持大小写字母、数字及 !@#$%^&*.?。"
           >
@@ -198,18 +157,18 @@ export function SetupForm() {
               placeholder="请输入管理员密码"
               {...register("password")}
             />
-          </SetupField>
+          </FormField>
 
-          <SetupField id="confirm-password" label="确认密码">
+          <FormField htmlFor="confirm-password" label="确认密码">
             <PasswordInput
               id="confirm-password"
               autoComplete="new-password"
               placeholder="请再次输入密码"
               {...register("confirmPassword")}
             />
-          </SetupField>
+          </FormField>
         </div>
-      </SetupSection>
+      </FormSection>
 
       <p className="flex items-start gap-2 text-xs leading-5 text-muted-foreground">
         <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />
