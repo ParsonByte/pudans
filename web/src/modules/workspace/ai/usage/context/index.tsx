@@ -441,7 +441,7 @@ export function AiUsageContextView() {
                 <UsageKpiCards items={gridKpis} loading={gridQuery.isPending} skeletonCount={4} />
               ) : null}
 
-              <ConsoleSection className="overflow-hidden">
+              <ConsoleSection>
                 <ConsoleSectionHeader
                   title="逐请求窗口网格"
                   description="20 × 20 共 400 格，每格代表一个请求；颜色表示窗口利用率健康度，悬停查看上下文构成。"
@@ -467,7 +467,7 @@ export function AiUsageContextView() {
               </ConsoleSection>
 
               {!gridQuery.isError && gridItems.length > 0 ? (
-                <ConsoleSection className="overflow-hidden">
+                <ConsoleSection>
                   <ConsoleSectionHeader
                     title="逐请求明细"
                     description="点击行可在上方网格中定位；构成条可查看各部分 Token 占比。"

@@ -509,7 +509,7 @@ export function AiUsageRequestsView() {
         </ConsoleSection>
 
         <div className="grid gap-4 xl:grid-cols-2">
-          <ConsoleSection className="overflow-hidden">
+          <ConsoleSection>
             <ConsoleSectionHeader title="速度排行" />
             <RequestSpeedRanking
               items={speedItems}
@@ -526,7 +526,7 @@ export function AiUsageRequestsView() {
             />
           </ConsoleSection>
 
-          <ConsoleSection className="overflow-hidden">
+          <ConsoleSection>
             <ConsoleSectionHeader title="请求日历" />
             <RequestHeatmap
               from={heatmapWindow.from}
@@ -546,7 +546,7 @@ export function AiUsageRequestsView() {
           </ConsoleSection>
         </div>
 
-        <ConsoleSection className="overflow-hidden">
+        <ConsoleSection>
           <ConsoleSectionHeader
             title="请求明细"
             description="使用游标分页，筛选条件、范围与每页条数会应用到导出。"
