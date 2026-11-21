@@ -1,12 +1,12 @@
 <h1 align="center">Pudans</h1>
 
 <p align="center">
-  <strong>Every identity. Every model. One platform.</strong>
+  <strong>Every identity. One platform.</strong>
 </p>
 
 <p align="center">
-  Users, roles, workspaces and permissions on one side. Providers, routing, gateways and conversations on the other.<br>
-  Pudans gives operators one console for both.
+  Users, groups, roles, workspaces and permissions on one side, audit records and risk rules on the other.<br>
+  Pudans gives operators one console for all of it.
 </p>
 
 <p align="center">
@@ -23,8 +23,6 @@
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
   <a href="#architecture">Architecture</a> ·
-  <a href="#ai-console">AI Console</a> ·
-  <a href="#agent-runtime">Agent runtime</a> ·
   <a href="CONTRIBUTING.md">Contributing</a> ·
   <a href="#contributors">Contributors</a> ·
   <a href="LICENSE">License</a>
@@ -32,86 +30,39 @@
 
 ## What is Pudans?
 
-Pudans is an enterprise identity and permission management platform with a built-in AI Console and AI gateway.
+Pudans is an enterprise identity and permission management platform.
 
-It combines a reactive Spring Boot backend, an extension-resource model for users, roles, workspaces, menus and AI resources, and HTTP APIs for operating identity, permissions and AI traffic from one place.
+It combines a reactive Spring Boot backend, an extension-resource model for users, roles, workspaces, menus and permissions, and HTTP APIs for operating identity and permissions from one place.
 
 ## Why Pudans
 
 - **Identity, not just login.** Users, groups, roles, permissions, workspaces, menus, audit records and risk rules share one extension-resource model.
-- **AI operations in the same console.** Register providers and accounts, discover models, route traffic across them and watch live requests without leaving the admin surface.
-- **Real conversations.** Streaming chat with reasoning, markdown and multimodal attachments, plus memory and retrieval backed by live APIs.
-- **Agent-native runtime.** The LangChain4j harness powers chat, tools, subagents and protocols with streaming, permissions, plan mode, compaction, durable state and a thread journal.
-- **Open agent protocols.** Expose agents over AG-UI, A2A and Agent Protocol alongside the OpenAI/Anthropic-compatible model gateway.
-- **Retrieval your way.** Local pgvector hybrid retrieval with PDF, Word, Tika and image parsers, or Dify, RAGFlow, Haystack and Bailian knowledge bases through external connectors.
 - **Reactive from day one.** WebFlux, R2DBC and Redis keep the request path non-blocking.
-
-## AI Console
-
-| Page | What it does |
-| --- | --- |
-| **Providers** | Provider and account management, protocol presets, brand icons, quotas and live model discovery. |
-| **Model market** | Browse and filter configured models by capability, author, input/output modality, context window and pricing. |
-| **Routing** | Live user → PUDANS → provider topology with animated flow edges, request history and route decisions. |
-| **Route groups** | Model members, weights, tiers and routing modes, mapped to the fast/pro chat modes. |
-| **Gateway** | OpenAI/Anthropic-compatible endpoints, PAT-based access, model list, recent calls and display limits. |
-| **Knowledge base** | Local and external knowledge bases, document ingestion, retrieval settings and citations. |
-
-## Agent runtime
-
-Pudans runs its AI features on a LangChain4j agent harness instead of a separate chat loop.
-
-- **Harness loop.** `ReActAgent` and `HarnessAgent` run streaming chat, tool calls, plan and todo state, context compaction, tool-result eviction and structured output on LangChain4j chat and streaming models.
-- **Tools and agents.** `@Tool` reflection, tool groups and search, async tools, subagents, teams, skills, workspace and sandbox abstractions register into one toolkit.
-- **Human control.** Permission rules and ask/deny/bypass modes provide suspend-and-confirm HITL, cancellation and resumable runs.
-- **Durable context.** Agent state is stored in PostgreSQL JSONB with optimistic concurrency; thread journals record run, model, tool and checkpoint events for recovery and audit.
-
-### Protocol endpoints
-
-All routes live under `/apis/api.pudans.tolim.cn/v1alpha1`.
-
-| Protocol | Endpoint | Purpose |
-| --- | --- | --- |
-| AG-UI | `POST /aiagui/-/run` | SSE event stream for clients |
-| A2A | `GET /aia2a/.well-known/agent.json`, `POST /aia2a` | Agent card and JSON-RPC task exchange |
-| Agent Protocol | `/aiagentprotocol/-/runs`, `/aiagentprotocol/-/threads/{threadId}/state` | Run lifecycle and thread state |
-| OpenAI / Anthropic / Gemini | `/aigateway/-/...` | Model-compatible gateway endpoints |
-
-## Knowledge and retrieval
-
-- Local knowledge bases use pgvector hybrid retrieval (keyword and vector search, RRF and optional rerank) with PDF, Word, Tika and image parsers.
-- External knowledge bases can point at Dify, RAGFlow, Haystack or Bailian through `KnowledgeBase.spec.external`; credentials stay in `AiProviderAccount` references.
-- Agents can retrieve on demand through the `retrieve_knowledge` tool when `AiSetting.spec.retrieval.agenticEnabled` is on, or receive pre-retrieved context in chat.
 
 ## Architecture
 
 ```text
-Browser / Agents
-       │
-       ▼
+Browser
+   │
+   ▼
 ┌──────────────────────────────────────────┐
 │ Pudans appkernel (Spring Boot / WebFlux) │
 │ identity · RBAC · workspaces · audit     │
-│ extension resources · LangChain4j harness│
-│ providers → routing → gateway → agents   │
-│ AG-UI · A2A · Agent Protocol · RAG       │
+│ extension resources · risk rules         │
 └──────────────────────────────────────────┘
        │                          │
        ▼                          ▼
    PostgreSQL                    Redis
 ```
 
-The backend owns identity, permission decisions, extension reconciliation, AI routing, the agent harness, protocols and conversations, and exposes them over HTTP.
+The backend owns identity, permission decisions, extension reconciliation, audit and risk rules, and exposes them over HTTP.
 
 ## Repository layout
 
 | Path | Purpose |
 | --- | --- |
-| `appkernel/` | Backend core: identity, permissions, extension mechanism, AI kernel and HTTP endpoints |
-| `appkernel/src/main/java/cn/tolim/pudans/core/ai/harness/` | LangChain4j agent harness: tools, permissions, journal, skills and subagents |
-| `appkernel/src/main/java/cn/tolim/pudans/core/ai/protocol/` | AG-UI, A2A and Agent Protocol endpoints on the shared protocol runtime |
-| `appkernel/src/main/java/cn/tolim/pudans/core/ai/rag/` | Hybrid retrieval, document parsers and external RAG connectors |
-| `appkernel/src/main/resources/extensions/` | YAML source of truth for roles, permissions, workspaces, menus and AI resources |
+| `appkernel/` | Backend core: identity, permissions, extension mechanism and HTTP endpoints |
+| `appkernel/src/main/resources/extensions/` | YAML source of truth for roles, permissions, workspaces and menus |
 | `api-docs/` | OpenAPI aggregation and validation |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
 | `gradle/libs.versions.toml` | Backend dependency version catalog |
@@ -175,7 +126,6 @@ The backend reads standard Spring Boot configuration and the following environme
 | `PUDANS_REDIS_PASSWORD` | empty | Redis password |
 | `PUDANS_REDIS_DATABASE` | `0` | Redis database |
 | `PUDANS_WORK_DIR` | `~/.pudans` | Logs and runtime work directory |
-| `PUDANS_AI_ENABLED` | `true` | Enable the AI kernel |
 | `FEISHU_ENABLED` | `false` | Enable Feishu login and profile sync |
 | `FEISHU_APP_ID` / `FEISHU_APP_SECRET` | empty | Feishu OAuth credentials |
 | `FEISHU_REDIRECT_URI` | `{baseUrl}/apis/api.pudans.tolim.cn/v1alpha1/oauth2/callback/feishu` | Feishu callback URL |

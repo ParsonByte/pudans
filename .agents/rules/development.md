@@ -4,7 +4,7 @@
 
 - `main` is the only long-lived branch and the release branch.
 - Branch feature, fix and chore work from the latest `origin/main`; never commit or push directly to `main`.
-- Branch names are kebab-case with a type prefix, for example `feat/ai-console` or `fix/auth-redirect`.
+- Branch names are kebab-case with a type prefix, for example `feat/user-groups` or `fix/auth-redirect`.
 - One branch carries one task. Finish and commit the current task before starting another branch.
 
 ## Branch base and task boundaries

@@ -26,10 +26,10 @@ Adding an eighth top-level package requires changing this rule first; do not add
 
 `contract/<domain>` and `core/<domain>` map one to one. Both sides must contain exactly the same domain set, and that set contains business domains only.
 
-Current business domains (eight):
+Current business domains (seven):
 
 ```text
-ai  audit  live  rbac  risk  storage  user  webhook
+audit  live  rbac  risk  storage  user  webhook
 ```
 
 Framework subsystems are not part of `core`. `extension`, `infra`, `security` and `setting` are top-level packages, and their contracts live in their own `api/` package, never in `contract`.
@@ -54,10 +54,10 @@ Each side carries only the roles its domain needs; do not create empty directori
 
 1. No package may be named `service`, and no `service/` directory may exist.
 2. No `resource/` intermediate directory; resource models sit at the root of `contract/<domain>/`.
-3. `contract` may contain only the eight business domain directories. It must not contain `extension`, `infra`, `security` or `setting`.
-4. A business domain root must not contain an `event` package, and the contract layer must not contain an `event` package; event definitions live in `event/<domain>/`. Internal subsystem events such as `extension/event`, `infra/event` and `core/ai/harness/event` are implementation detail and may stay.
+3. `contract` may contain only the seven business domain directories. It must not contain `extension`, `infra`, `security` or `setting`.
+4. A business domain root must not contain an `event` package, and the contract layer must not contain an `event` package; event definitions live in `event/<domain>/`. Internal subsystem events such as `extension/event` and `infra/event` are implementation detail and may stay.
 5. The contract layer must not hold behaviour interfaces. Domain SPI belongs to the implementation side: the domain root, or `<subsystem>/api/` for a subsystem.
-6. No `*ServiceImpl` suffix. Multiple implementations are expressed with a source prefix: `Extension*`, `Local*`, `Feishu*`, `Ai*`, `Default*` or `Configured*`.
+6. No `*ServiceImpl` suffix. Multiple implementations are expressed with a source prefix: `Extension*`, `Local*`, `Feishu*`, `Default*` or `Configured*`.
 7. No class name with a `Service` suffix. Name classes by responsibility, following the naming vocabulary below.
 
 Violating any of these is a defect, not a style preference.
@@ -73,7 +73,7 @@ Violating any of these is a defect, not a style preference.
 | `Gateway` / `Resolver` / `Sync` | Inbound and outbound adapters, resolution, synchronisation |
 | `Log` / `Cache` / `Recovery` | Records, caching, recovery |
 | `Keys` / `Tokens` / `Cipher` / `Secrets` | Credentials and cryptography |
-| Source prefix | `Extension*`, `Local*`, `Feishu*`, `Ai*`, `Default*` or `Configured*` |
+| Source prefix | `Extension*`, `Local*`, `Feishu*`, `Default*` or `Configured*` |
 
 ## Validation commands
 
@@ -95,14 +95,13 @@ find . -type d -name resource
 find . -name '*ServiceImpl.java'
 grep -rnE 'class [A-Za-z0-9_]+Service\b|interface [A-Za-z0-9_]+Service\b' .
 find ./contract -type d -name event
-for d in ai audit live rbac risk storage user webhook; do find ./core/$d -maxdepth 1 -type d -name event; done
+for d in audit live rbac risk storage user webhook; do find ./core/$d -maxdepth 1 -type d -name event; done
 ```
 
 ## Directory tree
 
 ```text
 contract/          business contracts only
-├── ai/            resource models
 ├── audit/         AuditRecord
 ├── live/          resource models + dto/
 ├── rbac/          roles, bindings, user groups
@@ -111,8 +110,7 @@ contract/          business contracts only
 ├── user/          User, UserConnection
 └── webhook/       Webhook + dto/
 
-core/              the same eight business domains
-├── ai/<subdomain>/
+core/              the same seven business domains
 ├── audit/{endpoint}
 ├── live/{endpoint,reconciler,alert,monitor,recorder,recording,resolve,source}
 ├── rbac/{endpoint,reconciler,group,permission}

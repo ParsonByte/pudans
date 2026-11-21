@@ -12,7 +12,7 @@
 ## 分支
 
 - `main` 是唯一的长期分支与发布分支。
-- 从最新的 `origin/main` 创建短生命周期分支：`<type>/<name>`，例如 `feat/ai-route-groups` 或 `fix/chat-stream`。
+- 从最新的 `origin/main` 创建短生命周期分支：`<type>/<name>`，例如 `feat/user-groups` 或 `fix/auth-redirect`。
 - 禁止直接向 `main` 提交代码。
 - 一个分支只负责一个任务；提交 Pull Request 前先 rebase 到 `origin/main`。
 - 禁止直接推送 `main`，禁止改写共享历史。推送自己的功能分支后发起 Pull Request。
@@ -27,8 +27,8 @@
 示例：
 
 ```text
-feat: add ai route group editor
-fix: persist ai message metadata and decode jsonb
+feat: add user group editor
+fix: persist audit trace metadata and decode jsonb
 docs: add readme contributing and license
 ```
 

@@ -4,7 +4,7 @@ Pudans is an enterprise identity and permission management platform. The backend
 
 ## Architecture
 
-- `appkernel/` owns identity, permissions, extension reconciliation, AI routing and the compatibility APIs. It is a reactive Spring Boot service and exposes HTTP only.
+- `appkernel/` owns identity, permissions, extension reconciliation and the compatibility APIs. It is a reactive Spring Boot service and exposes HTTP only.
 - `./gradlew build` writes the runnable backend jar to `build/appkernel/`; `appkernel/build/` stays intermediate and the root `build/` directory is the only distribution output.
 
 ## Mandatory reading order
@@ -101,9 +101,6 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | Path | Purpose |
 | --- | --- |
 | `appkernel/` | Backend core: identity, permissions and the extension mechanism |
-| `appkernel/src/main/java/cn/tolim/pudans/contract/ai/` | AI extension resources: providers, accounts, models, route groups, chat modes, teams, agents, memory prompts and knowledge bases |
-| `appkernel/src/main/java/cn/tolim/pudans/core/ai/` | AI kernel: provider adapters, routing, gateway, memory, RAG, plans and teams |
-| `appkernel/src/main/java/cn/tolim/pudans/infra/r2dbc/ai/` | AI R2DBC data access for conversations, gateway sessions, wallets, memory, tasks and knowledge-base chunks |
 | `appkernel/src/main/resources/extensions/` | YAML source of truth for roles, permissions, workspaces and menus; see `.agents/rules/extensions.md` |
 | `api-docs/` | OpenAPI aggregation and validation, no business code |
 | `platform/appkernel/` | Backend dependency constraints (BOM) |
