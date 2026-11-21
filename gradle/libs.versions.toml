@@ -27,6 +27,8 @@ langchain4j-beta = '1.23.0-beta33'
 apache-tika = '4.2.0'
 pdfbox = '3.0.8'
 poi = '5.5.1'
+javacv = '1.5.11'
+ffmpeg = '7.1-1.5.11'
 
 [libraries]
 
@@ -80,6 +82,7 @@ tencent-cos = { module = 'com.qcloud:cos_api', version.ref = 'tencent-cos' }
 qiniu-java-sdk = { module = 'com.qiniu:qiniu-java-sdk', version.ref = 'qiniu' }
 upyun-java-sdk = { module = 'com.upyun:java-sdk', version.ref = 'upyun' }
 huawei-obs = { module = 'com.huaweicloud:esdk-obs-java', version.ref = 'huawei-obs' }
+javacv = { module = 'org.bytedeco:javacv', version.ref = 'javacv' }
 
 [bundles]
 resilience4j = ['resilience4j-springboot3', 'resilience4j-reactor']
