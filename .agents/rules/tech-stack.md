@@ -25,23 +25,6 @@
 - Do not replace Redis sessions or the Redis cache with a local or alternative distributed store.
 - Do not make a blocking dependency mandatory for the request path.
 
-## AI kernel
-
-- Use LangChain4j for model invocation, agent orchestration, embedding, reranking, memory generation and RAG. Declare the LangChain4j BOM in `platform/appkernel` and the required modules in the version catalog.
-- Keep the WebFlux `WebClient`, R2DBC and Jackson 3 setup for the gateway compatibility endpoints and for provider protocols LangChain4j does not cover. LangChain4j's internal HTTP and JSON libraries are allowed only inside the library; application code must not add a second HTTP client or JSON mapper.
-- Model calls use the LangChain4j `ChatModel` and `StreamingChatModel` APIs. Prefer the non-blocking APIs; providers without a non-blocking implementation must run on `Schedulers.boundedElastic()`.
-- Model invocation is centralized in `LangChain4jChatService`; embedding model construction is centralized in `LangChain4jEmbeddingModelFactory`; reranking is centralized in `LangChain4jScoringModelFactory` using the LangChain4j `ScoringModel` API. Do not add provider adapter, embedding client or rerank client classes. RAG components are migrated in stages.
-- Agent orchestration uses LangChain4j AI Services with the gateway-backed `GatewayChatModel` and `GatewayStreamingChatModel` bridges. The Harness runtime under `core/ai/harness` may implement a single LangChain4j `ChatModel` reasoning/tool loop to provide typed events, permissions, interruption and durable state; do not add any other agent loop or a second harness implementation.
-- MCP servers are accessed through the LangChain4j MCP client (`langchain4j-mcp`); do not hand-write JSON-RPC, SSE or STDIO transports.
-- MiniMax Native remains unsupported by the LangChain4j model path; do not reintroduce a WebClient chat adapter. MiniMax Messages, Chat and Responses use the Anthropic/OpenAI modules.
-- Provider resources expose `spec.vendor`. The transport protocol is internal and derived from the vendor; do not expose protocol variants in the UI, presets, extension schema or public responses. Presets expose one entry per vendor and a base URL.
-- Built-in system prompts live under `core/ai/prompt`; services reference them instead of inline literals.
-- Providers, accounts, models and route groups remain extension resources. Model instances are built from extension resources per request or cached by provider, account and model.
-- Gateway request and response protocols for `/apis/api.pudans.tolim.cn/v1alpha1/aigateway/...` remain internal codecs; LangChain4j is not a server-side protocol implementation. Root `/v1/...` compatibility is prohibited unless this rule is changed.
-- RAG uses LangChain4j `EmbeddingModel`, `EmbeddingStore` and `ContentRetriever` abstractions. The `EmbeddingStore` is implemented on R2DBC; do not introduce JDBC, JPA or a LangChain4j JDBC embedding store.
-- Memory and knowledge-base work uses the existing `StorageService` and `AuditService`. Do not add a second object-storage, audit or permission implementation.
-- Document parsing with Apache Tika/PDFBox is allowed only when the dependency is declared in the version catalog and executed on `Schedulers.boundedElastic()`; it must never run on the request path.
-
 ## Dependency management
 
 - Declare every new backend dependency version in `gradle/libs.versions.toml`; reference it from a build file through a `libs.*` alias.
