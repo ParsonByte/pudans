@@ -10,6 +10,7 @@ import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.core.live.resolve.RoomResolver;
+import cn.tolim.pudans.core.live.source.SourceStatus;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.time.Duration;
 import java.time.Instant;
@@ -55,6 +56,8 @@ public class LiveRecorder {
 
     private final ReactiveStringRedisTemplate redisTemplate;
 
+    private final SourceStatus sourceStatus;
+
     public Mono<LiveRecording> launch(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         var task = new LiveRecorderTask(
@@ -71,6 +74,7 @@ public class LiveRecorder {
                 policyResolver,
                 metrics,
                 redisTemplate,
+                sourceStatus,
                 recording);
         registry.register(name, task);
         var result = admission.admit(name, task);

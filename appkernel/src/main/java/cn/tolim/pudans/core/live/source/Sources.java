@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.live.source;
 
 import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveRecordingState;
 import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.live.LiveSourceState;
 import cn.tolim.pudans.extension.api.Metadata;
@@ -196,9 +197,21 @@ public class Sources {
         return sourceStatus
                 .applyLive(name, info)
                 .flatMap(live -> recordings.start(live, info, false, "api"))
-                .flatMap(recording -> sourceStatus
-                        .markRecording(name, recording.getMetadata().getName())
-                        .thenReturn(recording));
+                .flatMap(recording -> recording.getStatus().getState()
+                                == LiveRecordingState.FAILED
+                        ? sourceStatus
+                                .recordingFailed(
+                                        name,
+                                        recording.getStatus().getErrorCode() == null
+                                                ? "LIVE_STREAM_FAILED"
+                                                : recording.getStatus().getErrorCode(),
+                                        recording.getStatus().getMessage() == null
+                                                ? "录制启动失败。"
+                                                : recording.getStatus().getMessage())
+                                .thenReturn(recording)
+                        : sourceStatus
+                                .markRecording(name, recording.getMetadata().getName())
+                                .thenReturn(recording));
     }
 
     private Mono<Void> stopCurrentRecording(LiveSource source) {
