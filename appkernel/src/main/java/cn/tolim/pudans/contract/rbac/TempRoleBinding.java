@@ -32,7 +32,6 @@ public class TempRoleBinding extends AbstractExtension {
 
     public static final String SUPER_ROLE_NAME = "super-role";
 
-    public static final long DEFAULT_MAX_DURATION_SECONDS = 3600L;
     public static final long HARD_MAX_DURATION_SECONDS = 28800L;
 
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
@@ -87,7 +86,5 @@ public class TempRoleBinding extends AbstractExtension {
         private String approvalAuditId;
 
         private String revokeAuditId;
-
-        private long maxDurationSeconds = DEFAULT_MAX_DURATION_SECONDS;
     }
 }

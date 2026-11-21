@@ -242,6 +242,21 @@ public class AuditLog {
             String result,
             Map<String, Object> actionSnapshot,
             String parentAuditId) {
+        return prepareChildRecord(
+                        exchange, uid, operation, resourceType, resourceName, result, actionSnapshot, parentAuditId)
+                .doOnNext(this::record)
+                .then();
+    }
+
+    public Mono<AuditRecord> prepareChildRecord(
+            ServerWebExchange exchange,
+            String uid,
+            String operation,
+            String resourceType,
+            String resourceName,
+            String result,
+            Map<String, Object> actionSnapshot,
+            String parentAuditId) {
         return Mono.deferContextual(contextView -> {
             var trail = contextView.getOrDefault(
                     AuditTrail.class, (AuditTrail) exchange.getAttributes().get(AUDIT_TRAIL_ATTRIBUTE));
@@ -268,8 +283,7 @@ public class AuditLog {
                 if (actionSnapshot != null) {
                     record.setActionSnapshot(JsonUtils.objectToJson(actionSnapshot));
                 }
-                record(record);
-                return Mono.empty();
+                return Mono.just(record);
             });
         });
     }

@@ -7,6 +7,7 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
 import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.audit.AuditRecord;
 import cn.tolim.pudans.contract.rbac.TempRoleBinding;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.Roles;
@@ -20,6 +21,7 @@ import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.TempGrants;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import java.time.Duration;
 import java.time.Instant;
@@ -27,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.HttpStatus;
@@ -205,20 +208,41 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
         spec.setStatus(TempRoleBinding.STATUS_ACTIVE);
         spec.setApprovedBy(authentication.getName());
         spec.setApprovedAt(Instant.now());
+        return auditLog
+                .prepareChildRecord(
+                        request.exchange(),
+                        null,
+                        "TEMP_ROLE_GRANT",
+                        TempRoleBinding.KIND,
+                        binding.getMetadata().getName(),
+                        "SUCCESS",
+                        snapshot(binding),
+                        null)
+                .map(record -> {
+                    spec.setApprovalAuditId(record.getMetadata().getName());
+                    record.setActionSnapshot(JsonUtils.objectToJson(snapshot(binding)));
+                    return record;
+                })
+                .flatMap(record -> persistAndAudit(
+                        request, binding, record, tempGrants::grant, "temprole.granted"))
+                .switchIfEmpty(Mono.defer(() -> persistAndAudit(
+                        request, binding, null, tempGrants::grant, "temprole.granted")));
+    }
+
+    private Mono<TempRoleBinding> persistAndAudit(
+            ServerRequest request,
+            TempRoleBinding binding,
+            AuditRecord auditRecord,
+            Function<TempRoleBinding, Mono<Void>> grantAction,
+            String eventType) {
         return client.update(binding)
-                .flatMap(updated -> tempGrants.grant(updated).thenReturn(updated))
-                .flatMap(updated -> auditLog
-                        .recordChild(
-                                request.exchange(),
-                                null,
-                                "TEMP_ROLE_GRANT",
-                                TempRoleBinding.KIND,
-                                updated.getMetadata().getName(),
-                                "SUCCESS",
-                                snapshot(updated),
-                                null)
-                        .thenReturn(updated))
-                .doOnNext(updated -> publish("temprole.granted", updated, request));
+                .flatMap(updated -> grantAction.apply(updated).thenReturn(updated))
+                .doOnNext(updated -> {
+                    if (auditRecord != null) {
+                        auditLog.record(auditRecord);
+                    }
+                    publish(eventType, updated, request);
+                });
     }
 
     private void publish(String type, TempRoleBinding binding, ServerRequest request) {
@@ -253,20 +277,25 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                                         HttpStatus.FORBIDDEN, "你不能撤销此临时角色绑定。"));
                             }
                             spec.setStatus(TempRoleBinding.STATUS_REVOKED);
-                            return client.update(binding)
-                                    .flatMap(updated -> tempGrants.revoke(updated).thenReturn(updated))
-                                    .flatMap(updated -> auditLog
-                                            .recordChild(
-                                                    request.exchange(),
-                                                    null,
-                                                    "TEMP_ROLE_REVOKE",
-                                                    TempRoleBinding.KIND,
-                                                    updated.getMetadata().getName(),
-                                                    "SUCCESS",
-                                                    snapshot(updated),
-                                                    null)
-                                            .thenReturn(updated))
-                                    .doOnNext(updated -> publish("temprole.revoked", updated, request));
+                            return auditLog
+                                    .prepareChildRecord(
+                                            request.exchange(),
+                                            null,
+                                            "TEMP_ROLE_REVOKE",
+                                            TempRoleBinding.KIND,
+                                            binding.getMetadata().getName(),
+                                            "SUCCESS",
+                                            snapshot(binding),
+                                            null)
+                                    .map(record -> {
+                                        spec.setRevokeAuditId(record.getMetadata().getName());
+                                        record.setActionSnapshot(JsonUtils.objectToJson(snapshot(binding)));
+                                        return record;
+                                    })
+                                    .flatMap(record -> persistAndAudit(
+                                            request, binding, record, tempGrants::revoke, "temprole.revoked"))
+                                    .switchIfEmpty(Mono.defer(() -> persistAndAudit(
+                                            request, binding, null, tempGrants::revoke, "temprole.revoked")));
                         }))
                 .flatMap(binding -> ServerResponse.ok().bodyValue(binding));
     }
