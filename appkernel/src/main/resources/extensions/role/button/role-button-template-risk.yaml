@@ -44,3 +44,49 @@ rules:
       - "riskrules"
     verbs:
       - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-create-riskrules
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-riskrules" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.risk"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "新建风险规则"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建新的风险场景规则。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "5"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["risk:create"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "riskrules"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-delete-riskrules
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-riskrules" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.risk"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "delete"
+    rbac.authorization.pudans.tolim.cn/ui-label: "删除风险规则"
+    rbac.authorization.pudans.tolim.cn/ui-description: "删除不再需要的风险规则。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "15"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["risk:delete"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "riskrules"
+    verbs:
+      - "delete"

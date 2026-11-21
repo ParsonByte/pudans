@@ -67,3 +67,11 @@ rules:
       - "temprolebindings/revoke"
     verbs:
       - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "temprolebindings"
+    verbs:
+      - "update"
+      - "patch"
+      - "delete"

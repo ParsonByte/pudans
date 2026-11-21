@@ -1,0 +1,22 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-ai-generations
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "AI Console"
+    rbac.authorization.pudans.tolim.cn/display-name: "AI Generation View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "ai.generations"
+    rbac.authorization.pudans.tolim.cn/ui-component: "ai-generations"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "ai"
+    rbac.authorization.pudans.tolim.cn/ui-path: "/ai/generations"
+    rbac.authorization.pudans.tolim.cn/ui-label: "生成记录"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看 AI 生成记录。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:images"
+    rbac.authorization.pudans.tolim.cn/ui-group: "使用"
+    rbac.authorization.pudans.tolim.cn/ui-order: "25"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["ai-generations:view"]'
+rules: []
