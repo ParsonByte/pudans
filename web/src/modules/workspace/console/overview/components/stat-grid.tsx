@@ -1,7 +1,7 @@
 import type { DashboardOverview } from "@pudans-dev/api-client";
 import { Activity, ShieldAlert, ShieldCheck, Users, UsersRound, Webhook } from "lucide-react";
 
-import { ConsoleSection } from "@/modules/workspace/console/components/console-page";
+import { ConsoleStat } from "@/modules/workspace/console/components/console-stat";
 
 type StatGridProps = {
   overview: DashboardOverview;
@@ -20,17 +20,7 @@ export function StatGrid({ overview }: StatGridProps) {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       {stats.map((stat) => (
-        <ConsoleSection key={stat.label} className="flex items-start justify-between gap-4 p-5">
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-            <p className="text-2xl font-semibold tracking-tight tabular-nums">
-              {stat.value.toLocaleString("zh-CN")}
-            </p>
-          </div>
-          <span className="flex size-9 shrink-0 items-center justify-center bg-primary/10 text-primary">
-            <stat.icon className="size-4" />
-          </span>
-        </ConsoleSection>
+        <ConsoleStat key={stat.label} {...stat} />
       ))}
     </div>
   );

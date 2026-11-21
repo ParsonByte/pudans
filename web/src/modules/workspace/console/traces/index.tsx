@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -40,12 +39,15 @@ import {
   todayAuditTimeRange,
 } from "@/modules/workspace/console/audit/lib/api";
 import {
-  ConsoleEmpty,
   ConsolePage,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
 import { ConsoleStat } from "@/modules/workspace/console/components/console-stat";
+import {
+  ConsoleState,
+  ConsoleTableSkeleton,
+} from "@/modules/workspace/console/components/console-state";
 import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { type JourneyItem, fetchJourneysPage } from "./lib/api";
@@ -279,21 +281,24 @@ export function TracesView() {
             action={<Badge variant="secondary">共 {total.toLocaleString("zh-CN")} 位用户</Badge>}
           />
           {query.isError ? (
-            <div className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
-              <p className="text-sm font-medium">无法加载链路</p>
-              <p className="text-xs text-muted-foreground">请检查筛选条件或登录状态后重试。</p>
-              <Button variant="outline" size="sm" onClick={() => void query.refetch()}>
-                重试
-              </Button>
-            </div>
+            <ConsoleState
+              variant="error"
+              title="无法加载链路"
+              description="请检查筛选条件或登录状态后重试。"
+              onRetry={() => void query.refetch()}
+            />
           ) : query.isPending ? (
-            <div className="space-y-3 p-5">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
+            <Table>
+              <TableBody>
+                <ConsoleTableSkeleton
+                  columns={canExport ? 7 : 6}
+                  rows={3}
+                  cellClassName="px-5 py-3"
+                />
+              </TableBody>
+            </Table>
           ) : journeys.length === 0 ? (
-            <ConsoleEmpty>当前条件下没有用户活动记录。</ConsoleEmpty>
+            <ConsoleState variant="empty" title="当前条件下没有用户活动记录。" />
           ) : (
             <Table>
               <TableHeader>

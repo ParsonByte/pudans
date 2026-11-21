@@ -60,11 +60,11 @@ function labelsOf(role: Role): Record<string, string> {
   return role.metadata.labels ?? {};
 }
 
-export function isRoleTemplate(role: Role): boolean {
+function isRoleTemplate(role: Role): boolean {
   return labelsOf(role)[ROLE_TEMPLATE_LABEL] === "true";
 }
 
-export function isHiddenRole(role: Role): boolean {
+function isHiddenRole(role: Role): boolean {
   return labelsOf(role)[ROLE_HIDDEN_LABEL] === "true";
 }
 

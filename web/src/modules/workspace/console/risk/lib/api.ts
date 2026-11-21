@@ -86,6 +86,38 @@ export async function updateRiskRule(rule: RiskRuleItem): Promise<void> {
   );
 }
 
+export type RiskRuleCreateInput = {
+  name: string;
+  scene: string;
+  description?: string;
+  enabled: boolean;
+  windowSeconds: number;
+  threshold: number;
+  blockSeconds: number;
+  action: "BLOCK" | "ALERT";
+};
+
+export async function createRiskRule(input: RiskRuleCreateInput): Promise<void> {
+  await axiosInstance.post(`${API_PREFIX}/riskrules`, {
+    apiVersion: "pudans.tolim.cn/v1alpha1",
+    kind: "RiskRule",
+    metadata: { name: input.name },
+    spec: {
+      scene: input.scene,
+      description: input.description || undefined,
+      enabled: input.enabled,
+      windowSeconds: input.windowSeconds,
+      threshold: input.threshold,
+      blockSeconds: input.action === "ALERT" ? 0 : input.blockSeconds,
+      action: input.action,
+    },
+  });
+}
+
+export async function deleteRiskRule(name: string): Promise<void> {
+  await axiosInstance.delete(`${API_PREFIX}/riskrules/${encodeURIComponent(name)}`);
+}
+
 export async function fetchRiskBans(): Promise<RiskBanItem[]> {
   const response = await axiosInstance.get<RiskBanItem[]>(`${API_PREFIX}/riskrules/bans`);
   return Array.isArray(response.data) ? response.data : [];

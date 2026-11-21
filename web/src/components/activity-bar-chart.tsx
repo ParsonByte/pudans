@@ -1,5 +1,17 @@
-import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+"use client";
 
+import { useMemo } from "react";
+
+import type { EChartsOption } from "echarts";
+
+import {
+  chartAxisLabel,
+  chartGrid,
+  chartSplitLine,
+  chartTooltip,
+} from "@/components/charts/chart-options";
+import { useChartTokens } from "@/components/charts/chart-theme";
+import { EChart } from "@/components/charts/echart";
 import { formatTrendDay } from "@/lib/date";
 
 type ActivityBarChartPoint = {
@@ -20,47 +32,71 @@ export function ActivityBarChart({
   height = 300,
   formatLabel = formatTrendDay,
 }: ActivityBarChartProps) {
-  const data = points
-    .map((point) => ({ date: point.date ?? "", count: point.count ?? 0 }))
-    .filter((point) => point.date)
-    .sort((left, right) => left.date.localeCompare(right.date));
+  const tokens = useChartTokens();
+  const data = useMemo(
+    () =>
+      points
+        .map((point) => ({ date: point.date ?? "", count: point.count ?? 0 }))
+        .filter((point) => point.date)
+        .sort((left, right) => left.date.localeCompare(right.date)),
+    [points],
+  );
+  const option = useMemo<EChartsOption>(
+    () => ({
+      grid: chartGrid(),
+      tooltip: {
+        ...chartTooltip(tokens),
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params) => {
+          const items = Array.isArray(params) ? params : [params];
+          const first = items[0];
+          if (!first) {
+            return "";
+          }
+          const rows = items.map(
+            (item) =>
+              `${item.marker ?? ""}${item.seriesName ?? ""}：${Number(
+                item.value ?? 0,
+              ).toLocaleString("zh-CN")}`,
+          );
+          return `${formatLabel(String(first.name ?? ""))}<br/>${rows.join("<br/>")}`;
+        },
+      },
+      xAxis: {
+        type: "category",
+        data: data.map((point) => point.date),
+        axisLabel: {
+          ...chartAxisLabel(tokens),
+          formatter: (value: string) => formatLabel(value),
+        },
+        axisLine: { show: false },
+        axisTick: { show: false },
+      },
+      yAxis: {
+        type: "value",
+        minInterval: 1,
+        axisLabel: chartAxisLabel(tokens),
+        splitLine: chartSplitLine(tokens),
+        axisLine: { show: false },
+        axisTick: { show: false },
+      },
+      series: [
+        {
+          type: "bar",
+          name: seriesLabel,
+          data: data.map((point) => point.count),
+          itemStyle: { color: tokens.primary },
+          barMaxWidth: 24,
+        },
+      ],
+    }),
+    [data, formatLabel, seriesLabel, tokens],
+  );
 
   return (
     <div className="w-full p-4 pt-5" style={{ height }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-          <XAxis
-            dataKey="date"
-            stroke="var(--muted-foreground)"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={formatLabel}
-            interval="preserveStartEnd"
-          />
-          <YAxis
-            stroke="var(--muted-foreground)"
-            fontSize={12}
-            tickLine={false}
-            axisLine={false}
-            allowDecimals={false}
-            width={40}
-          />
-          <Tooltip
-            cursor={{ fill: "var(--muted)" }}
-            labelFormatter={(label) => formatLabel(String(label))}
-            formatter={(value) => [Number(value).toLocaleString("zh-CN"), seriesLabel]}
-            contentStyle={{
-              background: "var(--popover)",
-              border: "1px solid var(--border)",
-              borderRadius: 0,
-              color: "var(--popover-foreground)",
-              fontSize: "0.75rem",
-            }}
-          />
-          <Bar dataKey="count" fill="var(--primary)" radius={0} />
-        </BarChart>
-      </ResponsiveContainer>
+      <EChart option={option} height="100%" ariaLabel={seriesLabel} />
     </div>
   );
 }

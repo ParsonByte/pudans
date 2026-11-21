@@ -1,6 +1,8 @@
 import type { Role, RoleRef, UserGroup, UserGroupBinding } from "@pudans-dev/api-client";
 
+import { RBAC_API_GROUP } from "@/modules/workspace/console/roles/lib/binding-model";
 import {
+  ROLE_KIND,
   compareRoles,
   isBuiltinRole,
   roleDisplayName,
@@ -11,6 +13,8 @@ export const USER_GROUP_API_VERSION = "pudans.tolim.cn/v1alpha1";
 
 export const USER_GROUP_KIND = "UserGroup";
 
+const USER_GROUP_BINDING_KIND = "UserGroupBinding";
+
 const SUPER_ADMINS_GROUP = "super-admins";
 
 const SYSTEM_ADMINS_GROUP = "system-admins";
@@ -19,11 +23,7 @@ const NORMAL_USERS_GROUP = "normal-users";
 
 const USER_GROUP_BUILTIN_LABEL = "pudans.tolim.cn/builtin";
 
-const ROLE_KIND = "Role";
-
 const USER_KIND = "User";
-
-const API_GROUP = "pudans.tolim.cn";
 
 export type UserGroupRoleOption = {
   name: string;
@@ -59,12 +59,40 @@ export function userGroupRoleNames(group: UserGroup): string[] {
     .map((roleRef) => roleRef.name as string);
 }
 
-export function userGroupRoleRefs(roleNames: readonly string[]): RoleRef[] {
-  return roleNames.map((name) => ({
+export function userGroupRoleRef(roleName: string): RoleRef {
+  return {
     kind: ROLE_KIND,
-    name,
-    apiGroup: API_GROUP,
-  }));
+    name: roleName,
+    apiGroup: RBAC_API_GROUP,
+  };
+}
+
+export function userGroupRoleRefs(roleNames: readonly string[]): RoleRef[] {
+  return roleNames.map(userGroupRoleRef);
+}
+
+export function userGroupRoleBindingName(groupName: string, roleName: string): string {
+  return `${groupName}-${roleName}-binding`;
+}
+
+export function userGroupRoleBinding(
+  name: string,
+  groupName: string,
+  roleName: string,
+): UserGroupBinding {
+  return {
+    apiVersion: USER_GROUP_API_VERSION,
+    kind: USER_GROUP_BINDING_KIND,
+    metadata: { name },
+    roleRef: userGroupRoleRef(roleName),
+    subjects: [
+      {
+        apiGroup: RBAC_API_GROUP,
+        kind: USER_GROUP_KIND,
+        name: groupName,
+      },
+    ],
+  };
 }
 
 export function userGroupRoleOptions(
@@ -95,7 +123,7 @@ export function userGroupRoleOptions(
 }
 
 export function userGroupSubject(groupName: string): string {
-  return `${API_GROUP}/${USER_GROUP_KIND}/${groupName}`;
+  return `${RBAC_API_GROUP}/${USER_GROUP_KIND}/${groupName}`;
 }
 
 export function membershipBindingUsernames(
@@ -109,7 +137,7 @@ export function membershipBindingUsernames(
       continue;
     }
     for (const subject of binding.subjects ?? []) {
-      if (subject.kind === USER_KIND && subject.apiGroup === API_GROUP && subject.name) {
+      if (subject.kind === USER_KIND && subject.apiGroup === RBAC_API_GROUP && subject.name) {
         names.add(subject.name);
       }
     }
@@ -130,7 +158,7 @@ export function roleBindingNames(
     const grantedToGroup = (binding.subjects ?? []).some(
       (subject) =>
         subject.kind === USER_GROUP_KIND &&
-        subject.apiGroup === API_GROUP &&
+        subject.apiGroup === RBAC_API_GROUP &&
         subject.name === groupName,
     );
     if (grantedToGroup) {

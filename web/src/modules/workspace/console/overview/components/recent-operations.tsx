@@ -1,16 +1,25 @@
 import type { RecentOperation } from "@pudans-dev/api-client";
 
+import { LongText } from "@/components/data-table";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { AuditResultBadge } from "@/modules/workspace/console/audit/components/audit-result-badge";
 import {
   auditOperationLabel,
   auditResourceLabel,
 } from "@/modules/workspace/console/audit/lib/audit-labels";
 import {
-  ConsoleEmpty,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import { ConsoleState } from "@/modules/workspace/console/components/console-state";
 
 import { formatAuditTime } from "../lib/format";
 
@@ -27,40 +36,47 @@ export function RecentOperations({ operations }: RecentOperationsProps) {
         action={<Badge variant="secondary">{operations.length} 条</Badge>}
       />
       {operations.length === 0 ? (
-        <ConsoleEmpty>暂无审计记录。</ConsoleEmpty>
+        <ConsoleState variant="empty" title="暂无审计记录。" />
       ) : (
-        <ul className="divide-y">
-          {operations.map((operation, index) => (
-            <li
-              key={operation.auditId ?? `${operation.timestamp}-${index}`}
-              className="flex flex-col gap-3 px-5 py-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              <div className="min-w-0 space-y-1">
-                <p className="truncate text-sm font-medium">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-5">时间</TableHead>
+              <TableHead className="px-5">操作</TableHead>
+              <TableHead className="px-5">资源</TableHead>
+              <TableHead className="px-5">操作人</TableHead>
+              <TableHead className="px-5">结果</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {operations.map((operation, index) => (
+              <TableRow key={operation.auditId ?? `${operation.timestamp}-${index}`}>
+                <TableCell className="px-5 py-2.5 text-xs text-muted-foreground tabular-nums">
+                  <time dateTime={operation.timestamp}>{formatAuditTime(operation.timestamp)}</time>
+                </TableCell>
+                <TableCell className="px-5 py-2.5 text-sm">
                   {auditOperationLabel(operation.operation)}
-                  {operation.resourceType ? (
-                    <span className="ms-2 text-xs font-normal text-muted-foreground">
-                      {auditResourceLabel(operation.resourceType)}
-                    </span>
-                  ) : null}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">
+                </TableCell>
+                <TableCell className="px-5 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-xs text-muted-foreground">
+                      {operation.resourceType ? auditResourceLabel(operation.resourceType) : "—"}
+                    </p>
+                    <LongText className="max-w-64 text-sm">
+                      {operation.resourceName || "—"}
+                    </LongText>
+                  </div>
+                </TableCell>
+                <TableCell className="px-5 py-2.5 text-sm">
                   {operation.operator || "未知用户"}
-                  {operation.resourceName ? ` · ${operation.resourceName}` : ""}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-3">
-                <AuditResultBadge result={operation.result} />
-                <time
-                  dateTime={operation.timestamp}
-                  className="text-xs text-muted-foreground tabular-nums"
-                >
-                  {formatAuditTime(operation.timestamp)}
-                </time>
-              </div>
-            </li>
-          ))}
-        </ul>
+                </TableCell>
+                <TableCell className="px-5 py-2.5">
+                  <AuditResultBadge result={operation.result} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </ConsoleSection>
   );

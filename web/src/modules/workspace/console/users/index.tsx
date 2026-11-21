@@ -503,54 +503,57 @@ export function UsersView() {
     data: users,
   });
 
-  return (
-    <ConsolePage title="用户">
-      <div className="flex flex-1 flex-col gap-4 sm:gap-6">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-2xl font-bold tracking-tight">用户列表</h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void usersQuery.refetch()}
-              disabled={usersQuery.isFetching}
-            >
-              {usersQuery.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-              刷新
-            </Button>
-            {canExport ? (
-              <Button
-                type="button"
-                variant="outline"
-                title="导出当前筛选结果"
-                onClick={() => exportMutation.mutate()}
-                disabled={exportMutation.isPending}
-              >
-                {exportMutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
-                导出
-              </Button>
-            ) : null}
-            {canImport ? (
-              <Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
-                <Upload />
-                导入
-              </Button>
-            ) : null}
-            {canBatchCreate ? (
-              <Button type="button" variant="outline" onClick={() => setBatchCreateOpen(true)}>
-                <ListPlus />
-                批量创建
-              </Button>
-            ) : null}
-            {canCreate ? (
-              <Button type="button" onClick={() => setCreateOpen(true)}>
-                <Plus />
-                创建用户
-              </Button>
-            ) : null}
-          </div>
-        </div>
+  const pageActions = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={() => void usersQuery.refetch()}
+        disabled={usersQuery.isFetching}
+      >
+        {usersQuery.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+        刷新
+      </Button>
+      {canExport ? (
+        <Button
+          type="button"
+          variant="outline"
+          title="导出当前筛选结果"
+          onClick={() => exportMutation.mutate()}
+          disabled={exportMutation.isPending}
+        >
+          {exportMutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
+          导出
+        </Button>
+      ) : null}
+      {canImport ? (
+        <Button type="button" variant="outline" onClick={() => setImportOpen(true)}>
+          <Upload />
+          导入
+        </Button>
+      ) : null}
+      {canBatchCreate ? (
+        <Button type="button" variant="outline" onClick={() => setBatchCreateOpen(true)}>
+          <ListPlus />
+          批量创建
+        </Button>
+      ) : null}
+      {canCreate ? (
+        <Button type="button" onClick={() => setCreateOpen(true)}>
+          <Plus />
+          创建用户
+        </Button>
+      ) : null}
+    </div>
+  );
 
+  return (
+    <ConsolePage
+      title="用户"
+      description="管理账号、状态、用户组与登录安全。"
+      actions={pageActions}
+    >
+      <div className="flex flex-1 flex-col gap-4 sm:gap-6">
         <DataTableToolbar
           searchPlaceholder="筛选用户..."
           searchValue={searchInput}

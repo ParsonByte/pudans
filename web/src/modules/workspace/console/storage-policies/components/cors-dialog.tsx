@@ -4,16 +4,9 @@ import { useMutation } from "@tanstack/react-query";
 import { Loader2, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
+import { DialogFormShell } from "@/components/dialog-form-shell";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 import { configureStoragePolicyCors, resolveStorageApiError } from "../lib/api";
@@ -45,33 +38,19 @@ export function CorsDialog({ name, onClose, onSaved }: CorsDialogProps) {
   };
 
   return (
-    <Dialog
+    <DialogFormShell
       open
       onOpenChange={(open) => {
         if (!open) {
           onClose();
         }
       }}
-    >
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <ShieldCheck className="size-5" />
-            配置跨域策略
-          </DialogTitle>
-          <DialogDescription>
-            允许浏览器直接访问该存储桶。多个来源用逗号分隔，* 表示允许所有来源。
-          </DialogDescription>
-        </DialogHeader>
-        <FormField label="允许的来源" htmlFor="storage-cors-origins">
-          <Input
-            id="storage-cors-origins"
-            value={origins}
-            onChange={(event) => setOrigins(event.target.value)}
-            placeholder="https://example.com, https://app.example.com"
-          />
-        </FormField>
-        <DialogFooter>
+      title="配置跨域策略"
+      description="允许浏览器直接访问该存储桶。多个来源用逗号分隔，* 表示允许所有来源。"
+      icon={<ShieldCheck className="size-5" />}
+      size="lg"
+      footer={
+        <>
           <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
             取消
           </Button>
@@ -79,8 +58,17 @@ export function CorsDialog({ name, onClose, onSaved }: CorsDialogProps) {
             {mutation.isPending ? <Loader2 className="animate-spin" /> : null}
             提交配置
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <FormField label="允许的来源" htmlFor="storage-cors-origins">
+        <Input
+          id="storage-cors-origins"
+          value={origins}
+          onChange={(event) => setOrigins(event.target.value)}
+          placeholder="https://example.com, https://app.example.com"
+        />
+      </FormField>
+    </DialogFormShell>
   );
 }

@@ -2,7 +2,15 @@ import { z } from "zod";
 
 import { BASE_PATH } from "@/lib/base-path";
 
-export type ParameterGroupKey = "site" | "session" | "captcha" | "mail" | "audit" | "server";
+export type ParameterGroupKey =
+  | "site"
+  | "session"
+  | "captcha"
+  | "mail"
+  | "audit"
+  | "server"
+  | "system-config"
+  | "extension-resources";
 
 type ParameterFieldKind =
   | "text"
@@ -14,7 +22,8 @@ type ParameterFieldKind =
   | "boolean"
   | "select"
   | "user-group"
-  | "readonly";
+  | "readonly"
+  | "json";
 
 type ParameterFieldOption = {
   value: string;
@@ -37,6 +46,7 @@ export type ParameterField = {
   rows?: number;
   options?: readonly ParameterFieldOption[];
   readOnly?: boolean;
+  jsonShape?: "object" | "array";
 };
 
 export type ParameterGroup = {
@@ -447,6 +457,19 @@ export const PARAMETER_GROUPS: readonly ParameterGroup[] = [
     description: "临时路径、站点标识、密钥、令牌有效期与垃圾回收参数。",
     fields: [],
   },
+  {
+    key: "system-config",
+    label: "系统配置",
+    description: "直接读写 /systemconfigs 分组，用于兼容旧版配置字段。",
+    fields: [],
+  },
+  {
+    key: "extension-resources",
+    label: "扩展资源",
+    description:
+      "管理 Webhook、ConfigMap、Secret、Setting、RememberMeToken 与 AnnotationSetting 扩展资源。",
+    fields: [],
+  },
 ];
 
 export function getParameterGroup(key: ParameterGroupKey): ParameterGroup {
@@ -478,6 +501,8 @@ export function createParameterFormValues(
       values[field.name] = typeof value === "boolean" ? value : field.defaultValue === "true";
     } else if (field.kind === "number") {
       values[field.name] = typeof value === "number" ? value : Number(field.defaultValue ?? 0);
+    } else if (field.kind === "json") {
+      values[field.name] = formatJsonText(value ?? field.defaultValue);
     } else if (field.kind === "select") {
       values[field.name] =
         typeof value === "string" && value ? value : (field.options?.[0]?.value ?? "");
@@ -502,6 +527,8 @@ export function createParameterRequestBody(
 
     if (field.kind === "number") {
       normalized = Number(value);
+    } else if (field.kind === "json") {
+      normalized = parseParameterJson(String(value ?? ""));
     }
 
     setPath(body, field.path ?? [field.name], normalized);
@@ -544,6 +571,35 @@ function createFieldSchema(field: ParameterField): z.ZodType {
     return z.string().min(1, `请选择${field.label}。`);
   }
 
+  if (field.kind === "json") {
+    return z.string().superRefine((value, context) => {
+      const text = value.trim();
+
+      if (!text) {
+        if (field.required) {
+          context.addIssue({ code: "custom", message: `请输入${field.label}。` });
+        }
+        return;
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(text) as unknown;
+      } catch {
+        context.addIssue({ code: "custom", message: `${field.label}必须是有效的 JSON。` });
+        return;
+      }
+
+      const isObject = parsed !== null && typeof parsed === "object" && !Array.isArray(parsed);
+      if (field.jsonShape === "object" && !isObject) {
+        context.addIssue({ code: "custom", message: `${field.label}必须是 JSON 对象。` });
+      }
+      if (field.jsonShape === "array" && !Array.isArray(parsed)) {
+        context.addIssue({ code: "custom", message: `${field.label}必须是 JSON 数组。` });
+      }
+    });
+  }
+
   let schema = z.string().trim();
 
   if (field.required) {
@@ -566,6 +622,30 @@ function createFieldSchema(field: ParameterField): z.ZodType {
   }
 
   return schema;
+}
+
+export function parseParameterJson<T = unknown>(text: string): T | undefined {
+  const trimmed = text.trim();
+
+  if (!trimmed) {
+    return undefined;
+  }
+
+  try {
+    return JSON.parse(trimmed) as T;
+  } catch {
+    return undefined;
+  }
+}
+
+function formatJsonText(value: unknown): string {
+  if (value === undefined || value === null) {
+    return "";
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  return JSON.stringify(value, null, 2);
 }
 
 function readPath(source: Record<string, unknown>, path: readonly string[]): unknown {

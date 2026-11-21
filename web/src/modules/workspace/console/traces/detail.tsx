@@ -1,20 +1,12 @@
 import { useMemo, useState } from "react";
 
 import { useQuery } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  CheckCircle2,
-  Loader2,
-  RefreshCw,
-  Waypoints,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 import { InfoRow } from "@/components/info-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { AuditResultBadge } from "@/modules/workspace/console/audit/components/audit-result-badge";
 import { auditResourceLabel } from "@/modules/workspace/console/audit/lib/audit-labels";
@@ -23,6 +15,10 @@ import {
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import {
+  ConsoleBlockSkeleton,
+  ConsoleState,
+} from "@/modules/workspace/console/components/console-state";
 import { useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { TraceSpanDetailDialog } from "./components/trace-span-detail-dialog";
@@ -55,11 +51,7 @@ export function TraceDetailView({ traceFlowId }: TraceDetailViewProps) {
   if (query.isPending) {
     return (
       <ConsolePage title="链路详情">
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-40" />
-          <Skeleton className="h-40" />
-          <Skeleton className="h-80" />
-        </div>
+        <ConsoleBlockSkeleton rows={3} className="space-y-4" itemClassName="h-32 w-full" />
       </ConsolePage>
     );
   }
@@ -67,27 +59,23 @@ export function TraceDetailView({ traceFlowId }: TraceDetailViewProps) {
   if (query.isError || !flow) {
     return (
       <ConsolePage title="链路详情">
-        <ConsoleSection className="flex min-h-64 flex-col items-center justify-center gap-4 p-8 text-center">
-          <Waypoints className="size-8 text-muted-foreground" />
-          <div className="space-y-1">
-            <h2 className="text-sm font-semibold">无法加载链路</h2>
-            <p className="text-xs text-muted-foreground">该链路不存在或没有审计记录。</p>
-          </div>
-          <div className="flex gap-2">
-            {tracesPath ? (
+        <ConsoleState
+          variant="error"
+          title="无法加载链路"
+          description="该链路不存在或没有审计记录。"
+          onRetry={() => void query.refetch()}
+          wrapper
+          action={
+            tracesPath ? (
               <Button variant="outline" size="sm" asChild>
                 <Link href={tracesPath}>
                   <ArrowLeft />
                   返回链路列表
                 </Link>
               </Button>
-            ) : null}
-            <Button variant="outline" size="sm" onClick={() => void query.refetch()}>
-              <RefreshCw />
-              重试
-            </Button>
-          </div>
-        </ConsoleSection>
+            ) : undefined
+          }
+        />
       </ConsolePage>
     );
   }

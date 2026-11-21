@@ -1,7 +1,9 @@
 import type { ComponentType } from "react";
 
 import {
+  Blocks,
   ClipboardList,
+  FileJson,
   Globe2,
   KeyRound,
   type LucideIcon,
@@ -24,10 +26,12 @@ import { ConsolePage, ConsoleSection } from "@/modules/workspace/console/compone
 import { PARAMETER_GROUPS, type ParameterGroupKey } from "./lib/parameter-fields";
 import { AuditSettingsPage } from "./pages/audit-settings";
 import { CaptchaSettingsPage } from "./pages/captcha-settings";
+import { ExtensionResourcesPage } from "./pages/extension-resources";
 import { MailSettingsPage } from "./pages/mail-settings";
 import { ServerSettingsPage } from "./pages/server-settings";
 import { SessionSettingsPage } from "./pages/session-settings";
 import { SiteSettingsPage } from "./pages/site-settings";
+import { SystemConfigSettingsPage } from "./pages/system-config-settings";
 
 const GROUP_ICONS: Record<ParameterGroupKey, LucideIcon> = {
   site: Globe2,
@@ -36,6 +40,8 @@ const GROUP_ICONS: Record<ParameterGroupKey, LucideIcon> = {
   mail: Mail,
   audit: ClipboardList,
   server: Server,
+  "system-config": FileJson,
+  "extension-resources": Blocks,
 };
 
 const SETTINGS_PAGES: Record<ParameterGroupKey, ComponentType> = {
@@ -45,6 +51,8 @@ const SETTINGS_PAGES: Record<ParameterGroupKey, ComponentType> = {
   mail: MailSettingsPage,
   audit: AuditSettingsPage,
   server: ServerSettingsPage,
+  "system-config": SystemConfigSettingsPage,
+  "extension-resources": ExtensionResourcesPage,
 };
 
 type ConsoleSettingsViewProps = {

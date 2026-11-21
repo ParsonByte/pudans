@@ -1,4 +1,4 @@
-import { axiosInstance } from "@pudans-dev/api-client";
+import { type UserPermission, apiClient, axiosInstance } from "@pudans-dev/api-client";
 
 import { resolveApiError } from "@/lib/api-error";
 
@@ -114,6 +114,12 @@ export async function createLocalUsers(
     "/apis/api.pudans.tolim.cn/v1alpha1/users/-/local/batch",
     { users },
   );
+
+  return response.data;
+}
+
+export async function fetchUserPermissions(name: string): Promise<UserPermission> {
+  const response = await apiClient.user.getUserPermissions({ name });
 
   return response.data;
 }

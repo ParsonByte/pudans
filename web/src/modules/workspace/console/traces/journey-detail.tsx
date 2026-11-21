@@ -8,7 +8,6 @@ import { useSearchParams } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { AuditLogDetailDialog } from "@/modules/workspace/console/audit/components/audit-log-detail-dialog";
 import { AuditResultBadge } from "@/modules/workspace/console/audit/components/audit-result-badge";
 import {
@@ -17,11 +16,14 @@ import {
   todayAuditTimeRange,
 } from "@/modules/workspace/console/audit/lib/api";
 import {
-  ConsoleEmpty,
   ConsolePage,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import {
+  ConsoleBlockSkeleton,
+  ConsoleState,
+} from "@/modules/workspace/console/components/console-state";
 import { useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { JourneyChain } from "./components/journey-chain";
@@ -58,11 +60,7 @@ export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
   if (query.isPending) {
     return (
       <ConsolePage title="链路详情">
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-40" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-80" />
-        </div>
+        <ConsoleBlockSkeleton rows={3} className="space-y-4" itemClassName="h-32 w-full" />
       </ConsolePage>
     );
   }
@@ -81,7 +79,12 @@ export function JourneyDetailView({ uid }: JourneyDetailViewProps) {
           ) : null}
         </div>
         <ConsoleSection>
-          <ConsoleEmpty>该用户在当前时间范围内没有活动记录。</ConsoleEmpty>
+          <ConsoleState
+            variant={query.isError ? "error" : "empty"}
+            title={query.isError ? "无法加载链路" : "该用户在当前时间范围内没有活动记录。"}
+            description={query.isError ? "请稍后重试。" : undefined}
+            onRetry={query.isError ? () => void query.refetch() : undefined}
+          />
         </ConsoleSection>
       </ConsolePage>
     );

@@ -11,7 +11,7 @@ import {
   auditOperationLabel,
   auditResourceLabel,
 } from "@/modules/workspace/console/audit/lib/audit-labels";
-import { ConsoleEmpty } from "@/modules/workspace/console/components/console-page";
+import { ConsoleState } from "@/modules/workspace/console/components/console-state";
 
 import {
   SPAN_KIND_BADGE_VARIANTS,
@@ -53,7 +53,7 @@ export function TraceTree({ tree, onSelect, className }: TraceTreeProps) {
   }, [tree, collapsedIds]);
 
   if (tree.spans.length === 0) {
-    return <ConsoleEmpty>该链路没有审计步骤。</ConsoleEmpty>;
+    return <ConsoleState variant="empty" title="该链路没有审计步骤。" />;
   }
 
   const toggleNode = (id: string) => {

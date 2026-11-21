@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -29,11 +28,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  ConsoleEmpty,
   ConsolePage,
   ConsoleSection,
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
+import {
+  ConsoleState,
+  ConsoleTableSkeleton,
+} from "@/modules/workspace/console/components/console-state";
 import { useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { AuditLogDetailDialog } from "./components/audit-log-detail-dialog";
@@ -273,22 +275,20 @@ export function AuditLogsView() {
             action={<Badge variant="secondary">共 {total.toLocaleString("zh-CN")} 条</Badge>}
           />
           {query.isError ? (
-            <div className="flex min-h-48 flex-col items-center justify-center gap-3 p-6 text-center">
-              <p className="text-sm font-medium">无法加载审计日志</p>
-              <p className="text-xs text-muted-foreground">请检查筛选条件或登录状态后重试。</p>
-              <Button variant="outline" size="sm" onClick={() => void query.refetch()}>
-                重试
-              </Button>
-            </div>
+            <ConsoleState
+              variant="error"
+              title="无法加载审计日志"
+              description="请检查筛选条件或登录状态后重试。"
+              onRetry={() => void query.refetch()}
+            />
           ) : query.isPending ? (
-            <div className="space-y-3 p-5">
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-              <Skeleton className="h-10 w-full" />
-            </div>
+            <Table>
+              <TableBody>
+                <ConsoleTableSkeleton columns={8} rows={4} cellClassName="px-5 py-2.5" />
+              </TableBody>
+            </Table>
           ) : records.length === 0 ? (
-            <ConsoleEmpty>没有匹配的审计日志。</ConsoleEmpty>
+            <ConsoleState variant="empty" title="没有匹配的审计日志。" />
           ) : (
             <Table>
               <TableHeader>

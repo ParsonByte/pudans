@@ -140,6 +140,16 @@ export function ParameterFieldControl({
           aria-invalid={Boolean(message)}
           {...form.register(field.name)}
         />
+      ) : field.kind === "json" ? (
+        <Textarea
+          id={fieldId}
+          rows={field.rows ?? 8}
+          className="font-mono text-xs"
+          autoComplete="off"
+          spellCheck={false}
+          aria-invalid={Boolean(message)}
+          {...form.register(field.name)}
+        />
       ) : field.kind === "password" ? (
         <PasswordInput
           id={fieldId}

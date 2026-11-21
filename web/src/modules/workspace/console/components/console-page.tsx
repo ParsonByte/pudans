@@ -6,14 +6,22 @@ import { cn } from "@/lib/utils";
 
 type ConsolePageProps = {
   title: string;
+  description?: string;
+  actions?: ReactNode;
+  backHref?: string;
   children: ReactNode;
 };
 
-export function ConsolePage({ title, children }: ConsolePageProps) {
+export function ConsolePage({ title, description, actions, backHref, children }: ConsolePageProps) {
   return (
     <>
-      <PageHeader title={title} />
-      <Main className="flex flex-1 flex-col gap-6">{children}</Main>
+      <PageHeader title={title} actions={actions} backHref={backHref} />
+      <Main className="flex flex-1 flex-col gap-6">
+        {description ? (
+          <p className="max-w-3xl text-xs leading-5 text-muted-foreground">{description}</p>
+        ) : null}
+        {children}
+      </Main>
     </>
   );
 }

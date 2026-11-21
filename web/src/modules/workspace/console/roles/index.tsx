@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import {
   ConsoleEmpty,
@@ -21,7 +22,9 @@ import { fetchPermissionCatalog } from "@/modules/workspace/lib/permission-api";
 import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
 import { CreateRoleDialog } from "./components/create-role-dialog";
+import { RoleBindingsTab } from "./components/role-bindings-tab";
 import { RolePermissionEditor } from "./components/role-permission-editor";
+import { TempRoleBindingsTab } from "./components/temp-role-bindings-tab";
 import { resolveRoleApiError } from "./lib/api";
 import { MY_UI_PERMISSIONS_QUERY_KEY, useMyUiPermissions } from "./lib/current-permissions";
 import {
@@ -34,15 +37,45 @@ import {
 import { useRoles } from "./lib/use-roles";
 
 export function RolesView() {
-  const queryClient = useQueryClient();
   const allowedOperations = useAllowedOperations();
+  const canCreate = allowedOperations.has("create");
+  const canUpdate = allowedOperations.has("update");
+  const canDelete = allowedOperations.has("delete");
+
+  return (
+    <ConsolePage title="角色" description="管理角色、直接绑定与临时授权。">
+      <Tabs defaultValue="roles" className="flex flex-1 flex-col">
+        <TabsList>
+          <TabsTrigger value="roles">角色</TabsTrigger>
+          <TabsTrigger value="bindings">角色绑定</TabsTrigger>
+          <TabsTrigger value="temp">临时授权</TabsTrigger>
+        </TabsList>
+        <TabsContent value="roles" className="flex flex-1 flex-col">
+          <RolesPanel canCreate={canCreate} canUpdate={canUpdate} canDelete={canDelete} />
+        </TabsContent>
+        <TabsContent value="bindings" className="flex flex-1 flex-col">
+          <RoleBindingsTab canCreate={canCreate} canUpdate={canUpdate} canDelete={canDelete} />
+        </TabsContent>
+        <TabsContent value="temp" className="flex flex-1 flex-col">
+          <TempRoleBindingsTab canCreate={canCreate} canUpdate={canUpdate} canDelete={canDelete} />
+        </TabsContent>
+      </Tabs>
+    </ConsolePage>
+  );
+}
+
+type RolesPanelProps = {
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+};
+
+function RolesPanel({ canCreate, canUpdate, canDelete }: RolesPanelProps) {
+  const queryClient = useQueryClient();
   const [selectedName, setSelectedName] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
-  const canCreate = allowedOperations.has("create");
-  const canUpdate = allowedOperations.has("update");
-  const canDelete = allowedOperations.has("delete");
 
   const rolesQuery = useRoles();
   const myPermissionsQuery = useMyUiPermissions();
@@ -109,7 +142,7 @@ export function RolesView() {
   };
 
   return (
-    <ConsolePage title="角色">
+    <div className="flex flex-1 flex-col gap-4">
       {loading ? (
         <div className="grid flex-1 gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
           <Skeleton className="h-[420px]" />
@@ -129,7 +162,7 @@ export function RolesView() {
         </ConsoleSection>
       ) : (
         <div className="grid flex-1 items-start gap-4 xl:grid-cols-[280px_minmax(0,1fr)]">
-          <ConsoleSection className="flex h-fit flex-col xl:sticky xl:top-20 xl:h-[calc(100svh-7rem)]">
+          <ConsoleSection className="flex h-fit flex-col xl:sticky xl:top-20 xl:h-[calc(100svh-10rem)]">
             <div className="space-y-3 border-b p-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
@@ -264,7 +297,7 @@ export function RolesView() {
           }
         }}
       />
-    </ConsolePage>
+    </div>
   );
 }
 
