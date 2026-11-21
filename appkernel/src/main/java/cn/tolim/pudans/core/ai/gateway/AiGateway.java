@@ -104,15 +104,15 @@ public class AiGateway {
 
     private final ReactiveExtensionClient client;
 
-    private final LangChain4jChat chatService;
+    private final LangChain4jChat langChain4jChat;
 
-    private final RouteResolution routeResolutionService;
+    private final RouteResolution routeResolution;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
-    private final GatewaySessions sessionService;
+    private final GatewaySessions gatewaySessions;
 
-    private final Conversations conversationService;
+    private final Conversations conversations;
 
     private final AiAgentAdapterRegistry agentAdapterRegistry;
 
@@ -130,7 +130,7 @@ public class AiGateway {
 
     private final AiGatewayRateLimiter rateLimiter;
 
-    private final GatewayKeys keyService;
+    private final GatewayKeys gatewayKeys;
 
     private final SunkRouteRegistry sunkRouteRegistry;
 
@@ -140,11 +140,11 @@ public class AiGateway {
 
     private final ProviderSpendGuard providerSpendGuard;
 
-    private final TeamQuotas teamQuotaService;
+    private final TeamQuotas teamQuotas;
 
     public Mono<AiGatewayResult> complete(AiGatewayInvocation invocation) {
         return prepare(invocation)
-                .flatMap(prepared -> keyService
+                .flatMap(prepared -> gatewayKeys
                         .acquire(prepared.access())
                         .onErrorResume(error -> fail(prepared, error).then(Mono.error(upstreamError(error))))
                         .flatMap(permit -> Mono.usingWhen(
@@ -153,7 +153,7 @@ public class AiGateway {
                                         .onErrorResume(error ->
                                                 fail(prepared, error).then(Mono.error(upstreamError(error))))
                                         .flatMap(attempt -> succeed(prepared, attempt)),
-                                keyService::release)));
+                                gatewayKeys::release)));
     }
 
     public Flux<AiGatewayEvent> stream(AiGatewayInvocation invocation) {
@@ -214,10 +214,10 @@ public class AiGateway {
                             streamCancel(prepared, content.toString()).subscribe();
                         }
                     });
-            return keyService
+            return gatewayKeys
                     .acquire(prepared.access())
                     .flatMapMany(permit -> Flux.usingWhen(
-                            Mono.just(permit), ignored -> events, keyService::release))
+                            Mono.just(permit), ignored -> events, gatewayKeys::release))
                     .onErrorResume(error ->
                             streamFail(prepared, actual.get(), content.toString(), error));
         }));
@@ -228,7 +228,7 @@ public class AiGateway {
             return Mono.error(new ApiException(
                     HttpStatus.SERVICE_UNAVAILABLE, "ai-disabled", "AI 功能未启用。"));
         }
-        return settingService.spec().flatMap(setting -> prepare(invocation, setting));
+        return aiSettings.spec().flatMap(setting -> prepare(invocation, setting));
     }
 
     private Mono<Prepared> prepare(AiGatewayInvocation invocation, AiSetting.Spec setting) {
@@ -263,7 +263,7 @@ public class AiGateway {
             AiSetting.Spec setting,
             @Nullable String modeCode,
             @Nullable String routeGroupCode) {
-        return routeResolutionService
+        return routeResolution
                 .resolve(new RouteResolution.Input(
                         modeCode,
                         routeGroupCode,
@@ -304,7 +304,7 @@ public class AiGateway {
             PlanContext plan) {
         return requireAccess(invocation, resolution, plan)
                 .then(load(resolution.selection()))
-                .flatMap(resources -> keyService.authorize(invocation, resources.model())
+                .flatMap(resources -> gatewayKeys.authorize(invocation, resources.model())
                         .flatMap(access -> {
                             var candidates = candidates(resolution, access, plan);
                             if (candidates.isEmpty()) {
@@ -419,7 +419,7 @@ public class AiGateway {
     }
 
     private Mono<GatewaySession> bind(AiGatewayInvocation invocation, @Nullable Long conversationId) {
-        return sessionService.bind(new BindRequest(
+        return gatewaySessions.bind(new BindRequest(
                 invocation.userId(),
                 invocation.agentSource(),
                 invocation.sessionKey(),
@@ -434,9 +434,9 @@ public class AiGateway {
             RouteResolution.Resolution resolution,
             GatewaySession session) {
         if (invocation.conversationId() != null) {
-            return conversationService.requireOwned(invocation.conversationId(), invocation.userId());
+            return conversations.requireOwned(invocation.conversationId(), invocation.userId());
         }
-        return conversationService.createOrGet(new NewConversation(
+        return conversations.createOrGet(new NewConversation(
                 GatewaySessions.DEFAULT_SPACE,
                 invocation.userId(),
                 session.teamId(),
@@ -473,7 +473,7 @@ public class AiGateway {
         var config = plan.plan();
         var guard = providerSpendGuard
                 .check(resources.provider(), resources.account(), amount)
-                .then(config == null ? Mono.empty() : teamQuotaService.check(session.teamId(), amount));
+                .then(config == null ? Mono.empty() : teamQuotas.check(session.teamId(), amount));
         return guard.then(Mono.defer(() -> {
             if (config == null || free) {
                 return Mono.just(new Hold(null, free));
@@ -562,7 +562,7 @@ public class AiGateway {
     }
 
     private Mono<Attempted> chatOnce(Prepared prepared, Resources resources) {
-        var call = chatService
+        var call = langChain4jChat
                 .chat(
                         resources.provider(),
                         resources.account(),
@@ -592,7 +592,7 @@ public class AiGateway {
         return load(selection)
                 .flatMapMany(resources -> {
                     actual.set(resources);
-                    Flux<AiStreamEvent> stream = chatService
+                    Flux<AiStreamEvent> stream = langChain4jChat
                             .streamChat(
                                     resources.provider(),
                                     resources.account(),
@@ -747,15 +747,15 @@ public class AiGateway {
         var memory = prepared.setting().getMemory() == null
                 ? new AiSetting.Memory()
                 : prepared.setting().getMemory();
-        return conversationService
+        return conversations
                 .recentHistory(prepared.conversation(), 200)
                 .collectList()
                 .flatMap(history -> {
                     var turn = history.isEmpty() ? 1 : history.getLast().turnIndex() + 1;
-                    return conversationService
+                    return conversations
                             .appendUserMessage(
                                     prepared.conversation(), turn, 0, userText, invocation.requestId())
-                            .flatMap(userMessage -> conversationService
+                            .flatMap(userMessage -> conversations
                                     .appendAssistantMessage(
                                             prepared.conversation(),
                                             turn,
@@ -764,7 +764,7 @@ public class AiGateway {
                                             invocation.requestId(),
                                             resources.model().getSpec().getModelCode(),
                                             usage.outputTokens())
-                                    .flatMap(assistantMessage -> conversationService
+                                    .flatMap(assistantMessage -> conversations
                                             .markPending(prepared.conversation(), 2)
                                             .then(memory.isExtractionEnabled()
                                                     ? memoryTaskScheduler.enqueueExtraction(

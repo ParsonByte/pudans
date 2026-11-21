@@ -54,11 +54,11 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
 
     private final LiveSourceRegistry registry;
 
-    private final SourceStatus statusService;
+    private final SourceStatus sourceStatus;
 
     private final Recordings recordingService;
 
-    private final LiveAlerts alertService;
+    private final LiveAlerts liveAlerts;
 
     private final LiveMetrics metrics;
 
@@ -94,7 +94,7 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
             registry.upsert(source);
             var state = source.getStatus().getState();
             if (state == LiveSourceState.IDLE || state == LiveSourceState.DISABLED) {
-                return statusService
+                return sourceStatus
                         .transition(name, LiveSourceStateMachine.Event.ENABLED, null)
                         .then();
             }
@@ -102,7 +102,7 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
         }
         registry.remove(name);
         return stopCurrentRecording(source)
-                .then(statusService
+                .then(sourceStatus
                         .transition(name, LiveSourceStateMachine.Event.DISABLED, null)
                         .then());
     }
@@ -149,7 +149,7 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
                         payload.put("message", "直播源删除时录制停止超时");
                         payload.put("at", Instant.now().toString());
                         metrics.cleanupFailed();
-                        return alertService
+                        return liveAlerts
                                 .alert("live.cleanup.failed", name, payload)
                                 .then(removeFinalizer(source))
                                 .thenReturn(Result.doNotRetry());

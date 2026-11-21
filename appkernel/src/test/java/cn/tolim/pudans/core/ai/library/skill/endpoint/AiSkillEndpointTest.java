@@ -28,20 +28,20 @@ class AiSkillEndpointTest {
     Skills skills;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
     AiEndpointRequests requests;
 
     @Mock
-    SkillPromotion curatorService;
+    SkillPromotion skillPromotion;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         client = WebTestClient.bindToRouterFunction(
-                        new AiSkillEndpoint(skills, teamService, requests, curatorService).endpoint())
+                        new AiSkillEndpoint(skills, teams, requests, skillPromotion).endpoint())
                 .build();
     }
 
@@ -66,7 +66,7 @@ class AiSkillEndpointTest {
     @Test
     void listsSkillsForAnOwnedAgent() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
-        when(teamService.requireAgent("agent-a", "alice")).thenReturn(Mono.just(agent("agent-a")));
+        when(teams.requireAgent("agent-a", "alice")).thenReturn(Mono.just(agent("agent-a")));
         when(skills.byAgent("agent-a")).thenReturn(Flux.just(skill("release")));
 
         client.get()
@@ -89,7 +89,7 @@ class AiSkillEndpointTest {
     @Test
     void forbidsAnAgentOutsideTheUserTeam() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
-        when(teamService.requireAgent("agent-a", "alice"))
+        when(teams.requireAgent("agent-a", "alice"))
                 .thenReturn(Mono.error(new AccessDeniedException("无权访问该 Agent。")));
 
         client.get()

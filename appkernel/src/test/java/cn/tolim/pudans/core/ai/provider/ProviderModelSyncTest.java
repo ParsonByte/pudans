@@ -31,7 +31,7 @@ class ProviderModelSyncTest {
     ReactiveExtensionClient client;
 
     @Mock
-    ProviderAccounts accountService;
+    ProviderAccounts providerAccounts;
 
     @Mock
     DeepSeekModelsClient deepSeekModelsClient;
@@ -45,7 +45,7 @@ class ProviderModelSyncTest {
         var account = new AiProviderAccount();
         var existing = model("deepseek-deepseek-chat", "deepseek-chat", "旧名称");
         when(client.get(AiProvider.class, "deepseek")).thenReturn(Mono.just(provider));
-        when(accountService.firstEnabled("deepseek")).thenReturn(Mono.just(account));
+        when(providerAccounts.firstEnabled("deepseek")).thenReturn(Mono.just(account));
         when(deepSeekModelsClient.list(provider, account)).thenReturn(Mono.just(new ModelList(
                 "list",
                 List.of(
@@ -55,7 +55,7 @@ class ProviderModelSyncTest {
         when(client.update(existing)).thenReturn(Mono.just(existing));
         when(client.create(any(AiModel.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         var service = new ProviderModelSync(
-                client, accountService, deepSeekModelsClient, genericModelsClient);
+                client, providerAccounts, deepSeekModelsClient, genericModelsClient);
 
         StepVerifier.create(service.sync("deepseek"))
                 .assertNext(result -> {
@@ -76,9 +76,9 @@ class ProviderModelSyncTest {
         var provider = provider("custom", AiProvider.Protocol.OLLAMA);
         var account = new AiProviderAccount();
         when(client.get(AiProvider.class, "custom")).thenReturn(Mono.just(provider));
-        when(accountService.firstEnabled("custom")).thenReturn(Mono.just(account));
+        when(providerAccounts.firstEnabled("custom")).thenReturn(Mono.just(account));
         var service = new ProviderModelSync(
-                client, accountService, deepSeekModelsClient, genericModelsClient);
+                client, providerAccounts, deepSeekModelsClient, genericModelsClient);
 
         StepVerifier.create(service.sync("custom"))
                 .expectErrorSatisfies(error -> assertThat(error)

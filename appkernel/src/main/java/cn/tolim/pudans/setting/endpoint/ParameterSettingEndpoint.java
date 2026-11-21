@@ -33,7 +33,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
 
     private static final String GROUP_PARAMETER = "group";
 
-    private final ParameterGroups groupService;
+    private final ParameterGroups parameterGroups;
 
     private final MailSettings mailSettings;
 
@@ -143,7 +143,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> getGroup(ServerRequest request) {
         var group = request.pathVariable(GROUP_PARAMETER);
-        return groupService.getGroup(group).flatMap(json -> ServerResponse.ok().bodyValue(json));
+        return parameterGroups.getGroup(group).flatMap(json -> ServerResponse.ok().bodyValue(json));
     }
 
     private Mono<ServerResponse> updateGroup(ServerRequest request) {
@@ -151,13 +151,13 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
         return request.bodyToMono(ObjectNode.class)
                 .switchIfEmpty(Mono.error(new org.springframework.web.server.ServerWebInputException(
                         "请求体不能为空。")))
-                .flatMap(body -> groupService.updateGroup(group, body))
+                .flatMap(body -> parameterGroups.updateGroup(group, body))
                 .flatMap(result -> noContent(result.restartRequired()));
     }
 
     private Mono<ServerResponse> getLegacyGroup(ServerRequest request) {
         var group = request.pathVariable(GROUP_PARAMETER);
-        return groupService.getLegacyGroup(group).flatMap(json -> ServerResponse.ok().bodyValue(json));
+        return parameterGroups.getLegacyGroup(group).flatMap(json -> ServerResponse.ok().bodyValue(json));
     }
 
     private Mono<ServerResponse> updateLegacyGroup(ServerRequest request) {
@@ -165,7 +165,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
         return request.bodyToMono(ObjectNode.class)
                 .switchIfEmpty(Mono.error(new org.springframework.web.server.ServerWebInputException(
                         "请求体不能为空。")))
-                .flatMap(body -> groupService.updateLegacyGroup(group, body))
+                .flatMap(body -> parameterGroups.updateLegacyGroup(group, body))
                 .flatMap(result -> noContent(result.restartRequired()));
     }
 

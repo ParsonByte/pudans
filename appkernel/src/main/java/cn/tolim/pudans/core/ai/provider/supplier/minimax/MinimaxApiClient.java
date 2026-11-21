@@ -37,8 +37,8 @@ public class MinimaxApiClient extends AbstractMinimaxClient {
     public MinimaxApiClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService) {
-        super(webClient, mapper, accountService, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
+            ProviderAccounts providerAccounts) {
+        super(webClient, mapper, providerAccounts, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
     }
 
     public Mono<JsonNode> get(
@@ -125,7 +125,7 @@ public class MinimaxApiClient extends AbstractMinimaxClient {
 
     public Flux<DataBuffer> content(
             AiProvider provider, AiProviderAccount account, String path, Map<String, String> query) {
-        return Flux.defer(() -> accountService
+        return Flux.defer(() -> providerAccounts
                         .apiKey(account)
                         .defaultIfEmpty("")
                         .flatMapMany(apiKey -> webClient()
@@ -147,7 +147,7 @@ public class MinimaxApiClient extends AbstractMinimaxClient {
 
     public Flux<JsonNode> postStream(
             AiProvider provider, AiProviderAccount account, String path, JsonNode body) {
-        return Flux.defer(() -> accountService
+        return Flux.defer(() -> providerAccounts
                         .apiKey(account)
                         .defaultIfEmpty("")
                         .flatMapMany(apiKey -> webClient()

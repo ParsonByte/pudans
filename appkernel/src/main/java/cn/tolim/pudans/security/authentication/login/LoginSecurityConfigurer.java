@@ -42,9 +42,9 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
 
     private final ObservationRegistry observationRegistry;
 
-    private final ReactiveUserDetailsService userDetailsService;
+    private final ReactiveUserDetailsService reactiveUserDetailsService;
 
-    private final ReactiveUserDetailsPasswordService passwordService;
+    private final ReactiveUserDetailsPasswordService reactiveUserDetailsPasswordService;
 
     private final Accounts accounts;
 
@@ -76,8 +76,8 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
 
     public LoginSecurityConfigurer(
             ObservationRegistry observationRegistry,
-            ReactiveUserDetailsService userDetailsService,
-            ReactiveUserDetailsPasswordService passwordService,
+            ReactiveUserDetailsService reactiveUserDetailsService,
+            ReactiveUserDetailsPasswordService reactiveUserDetailsPasswordService,
             Accounts accounts,
             PasswordEncoder passwordEncoder,
             ServerSecurityContextRepository securityContextRepository,
@@ -93,8 +93,8 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
             RefreshTokens refreshTokens,
             SecurityParameters securitySettings) {
         this.observationRegistry = observationRegistry;
-        this.userDetailsService = userDetailsService;
-        this.passwordService = passwordService;
+        this.reactiveUserDetailsService = reactiveUserDetailsService;
+        this.reactiveUserDetailsPasswordService = reactiveUserDetailsPasswordService;
         this.accounts = accounts;
         this.passwordEncoder = passwordEncoder;
         this.securityContextRepository = securityContextRepository;
@@ -152,6 +152,6 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
 
     ReactiveAuthenticationManager defaultAuthenticationManager() {
         return new LoginReactiveAuthenticationManager(
-                userDetailsService, accounts, passwordEncoder, passwordService);
+                reactiveUserDetailsService, accounts, passwordEncoder, reactiveUserDetailsPasswordService);
     }
 }

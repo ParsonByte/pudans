@@ -65,9 +65,9 @@ public class AiConversationEndpoint implements CustomEndpoint {
 
     private final Conversations conversationService;
 
-    private final Teams teamService;
+    private final Teams teams;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final AiEndpointRequests requests;
 
@@ -154,7 +154,7 @@ public class AiConversationEndpoint implements CustomEndpoint {
 
     private Mono<Conversation> createConversation(String userId, CreateConversationRequest body) {
         return resolveAgentName(body.agentName())
-                .flatMap(agentName -> teamService.requireAgent(agentName, userId))
+                .flatMap(agentName -> teams.requireAgent(agentName, userId))
                 .flatMap(agent -> conversationService.createOrGet(newConversation(userId, body, agent)));
     }
 
@@ -176,7 +176,7 @@ public class AiConversationEndpoint implements CustomEndpoint {
         if (StringUtils.hasText(agentName)) {
             return Mono.just(agentName);
         }
-        return settingService
+        return aiSettings
                 .defaults()
                 .map(defaults -> StringUtils.hasText(defaults.getAgent())
                         ? defaults.getAgent()

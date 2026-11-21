@@ -40,7 +40,7 @@ class LiveRecordingRecoveryTest {
     private ReactiveExtensionClient client;
 
     @Mock
-    private RecordingStatus statusService;
+    private RecordingStatus recordingStatus;
 
     @Mock
     private LiveRecorderRegistry registry;
@@ -63,7 +63,7 @@ class LiveRecordingRecoveryTest {
     void setUp() {
         var properties = new LiveProperties();
         properties.getRecorder().setWorkDir(tempDir.toString());
-        recovery = new LiveRecordingRecovery(client, statusService, registry, workspace, redisTemplate, properties);
+        recovery = new LiveRecordingRecovery(client, recordingStatus, registry, workspace, redisTemplate, properties);
     }
 
     @Test
@@ -77,14 +77,14 @@ class LiveRecordingRecoveryTest {
         when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class)))
                 .thenReturn(Mono.just(Boolean.TRUE));
         when(redisTemplate.delete(any(Publisher.class))).thenReturn(Mono.just(2L));
-        when(statusService.fail(eq("live-stale"), eq(LiveErrorCode.LIVE_RECORDER_LOST), anyString()))
+        when(recordingStatus.fail(eq("live-stale"), eq(LiveErrorCode.LIVE_RECORDER_LOST), anyString()))
                 .thenReturn(Mono.just(recording));
         when(workspace.recordingDir("live-stale")).thenReturn(tempDir.resolve("live-stale"));
 
         var recovered = recovery.recover().block();
 
         assertThat(recovered).isEqualTo(1);
-        verify(statusService).fail(eq("live-stale"), eq(LiveErrorCode.LIVE_RECORDER_LOST), anyString());
+        verify(recordingStatus).fail(eq("live-stale"), eq(LiveErrorCode.LIVE_RECORDER_LOST), anyString());
         verify(redisTemplate).delete(any(Publisher.class));
     }
 
@@ -99,7 +99,7 @@ class LiveRecordingRecoveryTest {
         var recovered = recovery.recover().block();
 
         assertThat(recovered).isZero();
-        verify(statusService, never()).fail(anyString(), any(LiveErrorCode.class), anyString());
+        verify(recordingStatus, never()).fail(anyString(), any(LiveErrorCode.class), anyString());
         verifyNoInteractions(redisTemplate);
     }
 
@@ -113,7 +113,7 @@ class LiveRecordingRecoveryTest {
         var recovered = recovery.recover().block();
 
         assertThat(recovered).isZero();
-        verify(statusService, never()).fail(anyString(), any(LiveErrorCode.class), anyString());
+        verify(recordingStatus, never()).fail(anyString(), any(LiveErrorCode.class), anyString());
     }
 
     @Test

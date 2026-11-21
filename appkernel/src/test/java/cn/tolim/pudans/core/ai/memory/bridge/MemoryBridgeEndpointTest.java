@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 class MemoryBridgeEndpointTest {
 
     @Mock
-    MemoryBridge bridgeService;
+    MemoryBridge memoryBridge;
 
     @Mock
     AiEndpointRequests requests;
@@ -34,7 +34,7 @@ class MemoryBridgeEndpointTest {
     @BeforeEach
     void setUp() {
         lenient().when(requests.userId(any(), anyString(), anyString())).thenReturn(Mono.just("user-1"));
-        var endpoint = new MemoryBridgeEndpoint(bridgeService, requests);
+        var endpoint = new MemoryBridgeEndpoint(memoryBridge, requests);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(principal())).build()))
@@ -43,7 +43,7 @@ class MemoryBridgeEndpointTest {
 
     @Test
     void searchesAtomicMemoriesForTheBoundSession() {
-        when(bridgeService.atomicSearch("user-1", "claude-code", "session-1", "飞书", 5))
+        when(memoryBridge.atomicSearch("user-1", "claude-code", "session-1", "飞书", 5))
                 .thenReturn(Mono.just(List.of(new MemoryInjection.Ref(
                         1L, "L1:1", "飞书同步使用 OAuth", MemoryType.WORK_FACT, "集成", 0.8))));
 
@@ -71,7 +71,7 @@ class MemoryBridgeEndpointTest {
 
     @Test
     void listsScenarios() {
-        when(bridgeService.scenarios("user-1", "openai", "session-1")).thenReturn(Flux.empty());
+        when(memoryBridge.scenarios("user-1", "openai", "session-1")).thenReturn(Flux.empty());
 
         client.post()
                 .uri("/memorybridge/-/scenario/ls")

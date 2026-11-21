@@ -19,23 +19,23 @@ public class PlanUsage {
 
     private static final String STATE_IDLE = "IDLE";
 
-    private final PlanResolution resolutionService;
+    private final PlanResolution planResolution;
 
     private final PlanCounterRepository counterRepository;
 
-    private final PlanVouchers voucherService;
+    private final PlanVouchers planVouchers;
 
     private final PlanWindowClock windowClock;
 
     public Mono<UsageView> usage(String userId) {
         Assert.hasText(userId, "userId 不能为空");
-        return resolutionService.resolve(userId).flatMap(resolved -> {
+        return planResolution.resolve(userId).flatMap(resolved -> {
             var plan = resolved.plan();
             var now = windowClock.now();
             return counterRepository
                     .findByUser(userId)
                     .collectList()
-                    .flatMap(rows -> voucherService
+                    .flatMap(rows -> planVouchers
                             .totals(userId, plan)
                             .map(vouchers -> new UsageView(
                                     new PlanSummary(

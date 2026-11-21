@@ -15,30 +15,30 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public final class KnowledgeBaseContentRetriever implements ContentRetriever {
 
-    private final KnowledgeRetrieval retrievalService;
+    private final KnowledgeRetrieval knowledgeRetrieval;
 
-    private final Embeddings embeddingService;
+    private final Embeddings embeddings;
 
     private final RagContext context;
 
     private volatile List<Citation> citations = List.of();
 
     public KnowledgeBaseContentRetriever(
-            KnowledgeRetrieval retrievalService,
-            Embeddings embeddingService,
+            KnowledgeRetrieval knowledgeRetrieval,
+            Embeddings embeddings,
             RagContext context) {
-        this.retrievalService = Objects.requireNonNull(retrievalService, "知识库检索服务不能为空");
-        this.embeddingService = Objects.requireNonNull(embeddingService, "嵌入服务不能为空");
+        this.knowledgeRetrieval = Objects.requireNonNull(knowledgeRetrieval, "知识库检索服务不能为空");
+        this.embeddings = Objects.requireNonNull(embeddings, "嵌入服务不能为空");
         this.context = Objects.requireNonNull(context, "RAG 上下文不能为空");
     }
 
     @Override
     public List<Content> retrieve(Query query) {
-        var embedding = embeddingService.embedOne(query.text()).onErrorResume(error -> {
+        var embedding = embeddings.embedOne(query.text()).onErrorResume(error -> {
             log.warn("知识库查询向量生成失败，降级为关键词检索。", error);
             return Mono.just(new float[0]);
         }).block();
-        var result = retrievalService
+        var result = knowledgeRetrieval
                 .retrieve(new KnowledgeBaseRetrievalRequest(
                         context.userId(),
                         context.requestId(),

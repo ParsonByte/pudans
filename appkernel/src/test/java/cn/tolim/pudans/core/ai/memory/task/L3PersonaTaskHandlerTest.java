@@ -71,7 +71,7 @@ class L3PersonaTaskHandlerTest {
     PersonaProfiling personaAi;
 
     @Mock
-    L3Pipeline pipelineService;
+    L3Pipeline l3Pipeline;
 
     private L3PersonaTaskHandler handler;
 
@@ -85,7 +85,7 @@ class L3PersonaTaskHandlerTest {
                 new MemoryPromptResolver(),
                 jevAi,
                 personaAi,
-                pipelineService);
+                l3Pipeline);
     }
 
     @Test
@@ -105,7 +105,7 @@ class L3PersonaTaskHandlerTest {
         when(personaAi.generate("", persona, List.of(new JevGate.ChangedScene(
                         "scene-1", "场景一摘要", "内容 55\n内容 56"))))
                 .thenReturn(Mono.just(generated));
-        when(pipelineService.process(any(), any(), any())).thenReturn(Mono.just(
+        when(l3Pipeline.process(any(), any(), any())).thenReturn(Mono.just(
                 new L3Pipeline.Result(
                         PersonaTrigger.Reason.NONE,
                         new JevDecision(JevDecisionType.DEFERRED, JevChangeType.NONE, "none"),
@@ -119,7 +119,7 @@ class L3PersonaTaskHandlerTest {
         var requestCaptor = ArgumentCaptor.forClass(L3Pipeline.Request.class);
         var classifierCaptor = ArgumentCaptor.forClass(JevGate.ChangeClassifier.class);
         var generatorCaptor = ArgumentCaptor.forClass(L3Pipeline.PersonaGenerator.class);
-        verify(pipelineService).process(requestCaptor.capture(), classifierCaptor.capture(), generatorCaptor.capture());
+        verify(l3Pipeline).process(requestCaptor.capture(), classifierCaptor.capture(), generatorCaptor.capture());
         var request = requestCaptor.getValue();
         assertThat(request.teamId()).isEqualTo("team-a");
         assertThat(request.agentId()).isEqualTo("agent-a");
@@ -156,7 +156,7 @@ class L3PersonaTaskHandlerTest {
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
 
-        verifyNoInteractions(jevAi, personaAi, pipelineService);
+        verifyNoInteractions(jevAi, personaAi, l3Pipeline);
         verify(memoryL1Repository, never()).findByIds(anyList());
     }
 
@@ -173,7 +173,7 @@ class L3PersonaTaskHandlerTest {
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
 
-        verifyNoInteractions(jevAi, personaAi, pipelineService);
+        verifyNoInteractions(jevAi, personaAi, l3Pipeline);
         verify(memoryL1Repository, never()).findByIds(anyList());
     }
 
@@ -185,7 +185,7 @@ class L3PersonaTaskHandlerTest {
                 .verifyComplete();
 
         verifyNoInteractions(memoryL1Repository, memoryL2Repository, memoryL3Repository);
-        verifyNoInteractions(jevAi, personaAi, pipelineService);
+        verifyNoInteractions(jevAi, personaAi, l3Pipeline);
     }
 
     private static AiTask task(Map<String, Object> payload) {

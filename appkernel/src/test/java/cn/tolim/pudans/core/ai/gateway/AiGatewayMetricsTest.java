@@ -64,19 +64,19 @@ class AiGatewayMetricsTest {
     ReactiveExtensionClient client;
 
     @Mock
-    LangChain4jChat chatService;
+    LangChain4jChat langChain4jChat;
 
     @Mock
-    RouteResolution routeResolutionService;
+    RouteResolution routeResolution;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
-    GatewaySessions sessionService;
+    GatewaySessions gatewaySessions;
 
     @Mock
-    Conversations conversationService;
+    Conversations conversations;
 
     @Mock
     AiAgentAdapterRegistry agentAdapterRegistry;
@@ -103,10 +103,10 @@ class AiGatewayMetricsTest {
     ProviderSpendGuard providerSpendGuard;
 
     @Mock
-    TeamQuotas teamQuotaService;
+    TeamQuotas teamQuotas;
 
     @Mock
-    GatewayKeys keyService;
+    GatewayKeys gatewayKeys;
 
     private SimpleMeterRegistry registry;
 
@@ -117,13 +117,13 @@ class AiGatewayMetricsTest {
         registry = new SimpleMeterRegistry();
         var properties = new AiProperties();
         properties.getGateway().setInjectionEnabled(false);
-        lenient().when(keyService.authorize(any(), any()))
+        lenient().when(gatewayKeys.authorize(any(), any()))
                 .thenReturn(Mono.just(GatewayKeys.Access.unrestricted()));
-        lenient().when(keyService.acquire(any()))
+        lenient().when(gatewayKeys.acquire(any()))
                 .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
-        lenient().when(keyService.release(any())).thenReturn(Mono.empty());
+        lenient().when(gatewayKeys.release(any())).thenReturn(Mono.empty());
         lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
-        lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
+        lenient().when(teamQuotas.check(any(), any())).thenReturn(Mono.empty());
         lenient().when(planResolution.resolve("user-1")).thenReturn(Mono.just(resolved()));
         lenient()
                 .when(planQuotas.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
@@ -132,11 +132,11 @@ class AiGatewayMetricsTest {
         lenient().when(planQuotas.release(anyString())).thenReturn(Mono.just(releaseResult()));
         service = new AiGateway(
                 client,
-                chatService,
-                routeResolutionService,
-                settingService,
-                sessionService,
-                conversationService,
+                langChain4jChat,
+                routeResolution,
+                aiSettings,
+                gatewaySessions,
+                conversations,
                 agentAdapterRegistry,
                 memoryContextBuilder,
                 planResolution,
@@ -145,18 +145,18 @@ class AiGatewayMetricsTest {
                 memoryTaskScheduler,
                 circuitBreaker,
                 new AiGatewayRateLimiter(null),
-                keyService,
+                gatewayKeys,
                 new SunkRouteRegistry(),
                 properties,
                 new AiMetrics(registry),
                 providerSpendGuard,
-                teamQuotaService);
+                teamQuotas);
     }
 
     @Test
     void recordsSuccessMetricsAfterACompletedChat() {
         stubPreparedGateway();
-                when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.just(response()));
+                when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any())).thenReturn(Mono.just(response()));
         when(chatRequestRepository.completeChatRequest(any())).thenReturn(Mono.empty());
 
         StepVerifier.create(service.complete(invocation())).expectNextCount(1).verifyComplete();
@@ -174,7 +174,7 @@ class AiGatewayMetricsTest {
     @Test
     void recordsFailureMetricsAndProviderExhaustedAlert() {
         stubPreparedGateway();
-                when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+                when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(new IllegalStateException("upstream down")));
         when(chatRequestRepository.completeChatRequest(any())).thenReturn(Mono.empty());
 
@@ -189,9 +189,9 @@ class AiGatewayMetricsTest {
 
     @Test
     void recordsRouteExhaustedAlertWhenResolutionHasNoSelection() {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(sessionService.bind(any())).thenReturn(Mono.just(session()));
-        when(routeResolutionService.resolve(any())).thenReturn(Mono.error(new ApiException(
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(gatewaySessions.bind(any())).thenReturn(Mono.just(session()));
+        when(routeResolution.resolve(any())).thenReturn(Mono.error(new ApiException(
                 HttpStatus.SERVICE_UNAVAILABLE, "ai-route-no-candidate", "路由组没有可用候选。")));
 
         StepVerifier.create(service.complete(invocation())).expectError(ApiException.class).verify();
@@ -207,13 +207,13 @@ class AiGatewayMetricsTest {
     }
 
     private void stubResolvedResources() {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(sessionService.bind(any())).thenReturn(Mono.just(session()));
-        when(routeResolutionService.resolve(any())).thenReturn(Mono.just(resolution()));
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(gatewaySessions.bind(any())).thenReturn(Mono.just(session()));
+        when(routeResolution.resolve(any())).thenReturn(Mono.just(resolution()));
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider()));
         when(client.get(AiProviderAccount.class, "account-a")).thenReturn(Mono.just(account()));
         when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model()));
-        lenient().when(conversationService.requireOwned(11L, "user-1"))
+        lenient().when(conversations.requireOwned(11L, "user-1"))
                 .thenReturn(Mono.just(conversation()));
     }
 

@@ -28,7 +28,7 @@ public class AiMemoryEndpoint implements CustomEndpoint {
 
     private static final String TAG = "MemoryV1alpha1";
 
-    private final MemoryViews memoryService;
+    private final MemoryViews memoryViews;
 
     private final AiEndpointRequests requests;
 
@@ -80,7 +80,7 @@ public class AiMemoryEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> list(ServerRequest request) {
-        return userId(request).flatMap(userId -> memoryService
+        return userId(request).flatMap(userId -> memoryViews
                 .list(
                         userId,
                         query(request, "team"),
@@ -96,7 +96,7 @@ public class AiMemoryEndpoint implements CustomEndpoint {
         if (!StringUtils.hasText(query)) {
             return Mono.error(new ServerWebInputException("q 不能为空。"));
         }
-        return userId(request).flatMap(userId -> memoryService
+        return userId(request).flatMap(userId -> memoryViews
                 .search(
                         userId,
                         query(request, "team"),
@@ -107,21 +107,21 @@ public class AiMemoryEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> scenes(ServerRequest request) {
-        return userId(request).flatMap(userId -> memoryService
+        return userId(request).flatMap(userId -> memoryViews
                 .scenes(userId, query(request, "team"), query(request, "agent"))
                 .collectList()
                 .flatMap(scenes -> ServerResponse.ok().bodyValue(scenes)));
     }
 
     private Mono<ServerResponse> profile(ServerRequest request) {
-        return userId(request).flatMap(userId -> memoryService
+        return userId(request).flatMap(userId -> memoryViews
                 .profile(userId, query(request, "team"), query(request, "agent"))
                 .flatMap(persona -> ServerResponse.ok().bodyValue(persona))
                 .switchIfEmpty(ServerResponse.notFound().build()));
     }
 
     private Mono<ServerResponse> detail(ServerRequest request) {
-        return userId(request).flatMap(userId -> memoryService
+        return userId(request).flatMap(userId -> memoryViews
                 .detail(
                         userId,
                         request.pathVariable("name"),

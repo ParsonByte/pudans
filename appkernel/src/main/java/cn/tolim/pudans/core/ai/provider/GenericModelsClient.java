@@ -29,15 +29,15 @@ public class GenericModelsClient {
 
     private final ObjectMapper mapper;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     public GenericModelsClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService) {
+            ProviderAccounts providerAccounts) {
         this.webClient = webClient;
         this.mapper = mapper;
-        this.accountService = accountService;
+        this.providerAccounts = providerAccounts;
     }
 
     public static boolean supports(AiProvider.Protocol protocol) {
@@ -59,7 +59,7 @@ public class GenericModelsClient {
 
     public Mono<DeepSeekModelsClient.ModelList> list(
             AiProvider provider, AiProviderAccount account) {
-        return Mono.defer(() -> accountService
+        return Mono.defer(() -> providerAccounts
                         .apiKey(account)
                         .flatMap(apiKey -> webClient
                                 .get()

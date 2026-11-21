@@ -61,13 +61,13 @@ class DeepSeekToolsClientTest {
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
-    private final ProviderAccounts accountService = mock(ProviderAccounts.class);
+    private final ProviderAccounts providerAccounts = mock(ProviderAccounts.class);
 
     private final AtomicReference<ClientRequest> captured = new AtomicReference<>();
 
     @Test
     void searchesWeb() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var result = client(json(SEARCH_BODY))
                 .search(provider(AiProvider.Protocol.DEEPSEEK), account(),
@@ -96,7 +96,7 @@ class DeepSeekToolsClientTest {
 
     @Test
     void fetchesWebPage() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var result = client(json(FETCH_BODY))
                 .fetch(provider(AiProvider.Protocol.DEEPSEEK), account(), "https://example.com")
@@ -112,7 +112,7 @@ class DeepSeekToolsClientTest {
 
     @Test
     void recognizesDocument() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var result = client(json(OCR_BODY))
                 .ocr(provider(AiProvider.Protocol.DEEPSEEK), account(), "report.pdf",
@@ -135,7 +135,7 @@ class DeepSeekToolsClientTest {
 
     @Test
     void recognizesAudio() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
 
         var result = client(json(ASR_BODY))
                 .asr(provider(AiProvider.Protocol.DEEPSEEK), account(), "recording.wav",
@@ -150,7 +150,7 @@ class DeepSeekToolsClientTest {
 
     @Test
     void streamsSpeechAudio() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("sk-ds-secret"));
         var response = ClientResponse.create(HttpStatus.OK)
                 .header(HttpHeaders.CONTENT_TYPE, "audio/wav")
                 .body("audio")
@@ -182,6 +182,6 @@ class DeepSeekToolsClientTest {
             return Mono.just(response);
         };
         return new DeepSeekToolsClient(
-                WebClient.builder().exchangeFunction(exchange).build(), mapper, accountService);
+                WebClient.builder().exchangeFunction(exchange).build(), mapper, providerAccounts);
     }
 }

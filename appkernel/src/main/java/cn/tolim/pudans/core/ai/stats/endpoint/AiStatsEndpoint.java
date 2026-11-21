@@ -28,7 +28,7 @@ public class AiStatsEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiStatsV1alpha1";
 
-    private final AiStats statsService;
+    private final AiStats aiStats;
 
     private final UsageAccessResolver accessResolver;
 
@@ -107,12 +107,12 @@ public class AiStatsEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> routing(ServerRequest request) {
-        return statsService.routing(days(request))
+        return aiStats.routing(days(request))
                 .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
     }
 
     private Mono<ServerResponse> routingLive(ServerRequest request) {
-        return statsService
+        return aiStats
                 .routingLive(days(request), limit(request))
                 .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
     }
@@ -130,7 +130,7 @@ public class AiStatsEndpoint implements CustomEndpoint {
         var limit = UsageQueryParameters.limit(request);
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> statsService.routingHistory(query, beforeId, limit, viewer))
+                .flatMap(viewer -> aiStats.routingHistory(query, beforeId, limit, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -138,25 +138,25 @@ public class AiStatsEndpoint implements CustomEndpoint {
         var requestId = request.pathVariable("requestId");
         return accessResolver
                 .viewer(request)
-                .flatMap(viewer -> statsService.routingHistoryDetail(requestId, viewer))
+                .flatMap(viewer -> aiStats.routingHistoryDetail(requestId, viewer))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> units(ServerRequest request) {
-        return statsService.units(days(request))
+        return aiStats.units(days(request))
                 .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
     }
 
     private Mono<ServerResponse> memory(ServerRequest request) {
-        return statsService.memory().flatMap(stats -> ServerResponse.ok().bodyValue(stats));
+        return aiStats.memory().flatMap(stats -> ServerResponse.ok().bodyValue(stats));
     }
 
     private Mono<ServerResponse> knowledgeBase(ServerRequest request) {
-        return statsService.knowledgeBase().flatMap(stats -> ServerResponse.ok().bodyValue(stats));
+        return aiStats.knowledgeBase().flatMap(stats -> ServerResponse.ok().bodyValue(stats));
     }
 
     private Mono<ServerResponse> models(ServerRequest request) {
-        return statsService.models(days(request))
+        return aiStats.models(days(request))
                 .flatMap(stats -> ServerResponse.ok().bodyValue(stats));
     }
 

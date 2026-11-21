@@ -36,7 +36,7 @@ public class Hooks {
 
     private final WebhookEventPublisher eventPublisher;
 
-    private final @Nullable AgentRuntimes runtimeService;
+    private final @Nullable AgentRuntimes agentRuntimes;
 
     Hooks(ReactiveExtensionClient client, WebhookEventPublisher eventPublisher) {
         this(client, eventPublisher, null);
@@ -46,10 +46,10 @@ public class Hooks {
     public Hooks(
             ReactiveExtensionClient client,
             WebhookEventPublisher eventPublisher,
-            @Nullable AgentRuntimes runtimeService) {
+            @Nullable AgentRuntimes agentRuntimes) {
         this.client = client;
         this.eventPublisher = eventPublisher;
-        this.runtimeService = runtimeService;
+        this.agentRuntimes = agentRuntimes;
     }
 
     public Flux<AiHook> byAgent(String agentName, AiHook.@Nullable Event event) {
@@ -81,7 +81,7 @@ public class Hooks {
 
     private Mono<Void> execute(String agentName, AiHook hook) {
         var spec = hook.getSpec();
-        if (runtimeService == null
+        if (agentRuntimes == null
                 || spec == null
                 || !StringUtils.hasText(spec.getCommand())) {
             return Mono.empty();
@@ -90,7 +90,7 @@ public class Hooks {
                 .filter(agent -> agent.getSpec() != null
                         && agent.getSpec().getRuntime() != null
                         && agent.getSpec().getRuntime().getProvider() != AiAgent.RuntimeProvider.NONE)
-                .flatMap(agent -> runtimeService
+                .flatMap(agent -> agentRuntimes
                         .execInternal(agentName, spec.getCommand(), null, spec.getTimeoutSeconds())
                         .then())
                 .onErrorResume(error -> {

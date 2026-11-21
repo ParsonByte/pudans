@@ -20,20 +20,20 @@ public final class KnowledgeBaseRetrievalTool {
 
     private static final String NO_RESULT = "知识库未检索到相关内容。";
 
-    private final KnowledgeRetrieval retrievalService;
+    private final KnowledgeRetrieval knowledgeRetrieval;
 
-    private final Embeddings embeddingService;
+    private final Embeddings embeddings;
 
     private final RagContext context;
 
     private volatile List<Citation> citations = List.of();
 
     public KnowledgeBaseRetrievalTool(
-            KnowledgeRetrieval retrievalService,
-            Embeddings embeddingService,
+            KnowledgeRetrieval knowledgeRetrieval,
+            Embeddings embeddings,
             RagContext context) {
-        this.retrievalService = Objects.requireNonNull(retrievalService, "知识库检索服务不能为空");
-        this.embeddingService = Objects.requireNonNull(embeddingService, "嵌入服务不能为空");
+        this.knowledgeRetrieval = Objects.requireNonNull(knowledgeRetrieval, "知识库检索服务不能为空");
+        this.embeddings = Objects.requireNonNull(embeddings, "嵌入服务不能为空");
         this.context = Objects.requireNonNull(context, "RAG 上下文不能为空");
     }
 
@@ -64,12 +64,12 @@ public final class KnowledgeBaseRetrievalTool {
             }
             try {
                 var text = query.textValue().strip();
-                var embedding = embeddingService
+                var embedding = embeddings
                         .embedOne(text)
                         .onErrorResume(error -> Mono.just(new float[0]))
                         .defaultIfEmpty(new float[0])
                         .block();
-                var result = retrievalService
+                var result = knowledgeRetrieval
                         .retrieve(retrievalRequest(text, limit(arguments), embedding))
                         .block();
                 if (result == null || result.citations().isEmpty()) {

@@ -39,7 +39,7 @@ class StoragePolicyReconcilerTest {
     StoragePolicySecretCipher secretCipher;
 
     @Mock
-    FileRecords fileService;
+    FileRecords fileRecords;
 
     @Mock
     StorageDriverResolver driverResolver;
@@ -48,7 +48,7 @@ class StoragePolicyReconcilerTest {
 
     @BeforeEach
     void setUp() {
-        reconciler = new StoragePolicyReconciler(client, validator, secretCipher, fileService, driverResolver);
+        reconciler = new StoragePolicyReconciler(client, validator, secretCipher, fileRecords, driverResolver);
     }
 
     @Test
@@ -76,7 +76,7 @@ class StoragePolicyReconcilerTest {
         policy.getMetadata().setDeletionTimestamp(Instant.now());
         policy.getSpec().setDefaultPolicy(true);
         when(client.fetch(StoragePolicy.class, "p1")).thenReturn(Optional.of(policy));
-        when(fileService.existsByPolicy("p1")).thenReturn(Mono.just(false));
+        when(fileRecords.existsByPolicy("p1")).thenReturn(Mono.just(false));
         doNothing().when(client).update(any(StoragePolicy.class));
 
         reconciler.reconcile(new Reconciler.Request("p1"));
@@ -92,7 +92,7 @@ class StoragePolicyReconcilerTest {
         policy.getMetadata().setDeletionTimestamp(Instant.now());
         policy.getMetadata().setFinalizers(Set.of("storage-policy-protection"));
         when(client.fetch(StoragePolicy.class, "p1")).thenReturn(Optional.of(policy));
-        when(fileService.existsByPolicy("p1")).thenReturn(Mono.just(false));
+        when(fileRecords.existsByPolicy("p1")).thenReturn(Mono.just(false));
         doNothing().when(client).update(any(StoragePolicy.class));
 
         reconciler.reconcile(new Reconciler.Request("p1"));

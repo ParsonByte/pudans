@@ -164,7 +164,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                             });
                 })
                 .doOnNext(token -> addCookie(token, exchange))
-                .flatMap(t -> getUserDetailsService().findByUsername(t.getSpec().getUsername()));
+                .flatMap(t -> getReactiveUserDetailsService().findByUsername(t.getSpec().getUsername()));
     }
 
     private Mono<Void> validateDevice(ServerWebExchange exchange, RememberMeToken token) {

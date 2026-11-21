@@ -26,17 +26,17 @@ import reactor.test.StepVerifier;
 class JevClassificationTest {
 
     @Mock
-    TextGenerations generationService;
+    TextGenerations textGenerations;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     private JevClassification service;
 
     @BeforeEach
     void setUp() {
         service = new JevClassification(
-                new MemoryAiSupport(generationService, settingService, new ObjectMapper()));
+                new MemoryAiSupport(textGenerations, aiSettings, new ObjectMapper()));
     }
 
     @Test
@@ -52,7 +52,7 @@ class JevClassificationTest {
                 .verifyComplete();
 
         var captor = ArgumentCaptor.forClass(GenerationRequest.class);
-        verify(generationService).generate(captor.capture());
+        verify(textGenerations).generate(captor.capture());
         var request = captor.getValue();
         assertThat(request.temperature()).isEqualTo(0.1);
         assertThat(request.maxOutputTokens()).isEqualTo(1024);
@@ -79,8 +79,8 @@ class JevClassificationTest {
     }
 
     private void stubGeneration(String content) {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(generationService.generate(any())).thenReturn(Mono.just(
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(textGenerations.generate(any())).thenReturn(Mono.just(
                 new GenerationResult(content, "model-code", "provider-a", "account-a")));
     }
 

@@ -55,7 +55,7 @@ class AiStatsEndpointTest {
     private static final Instant NOW = Instant.parse("2026-11-19T08:00:00Z");
 
     @Mock
-    AiStats statsService;
+    AiStats aiStats;
 
     @Mock
     Accounts userService;
@@ -65,7 +65,7 @@ class AiStatsEndpointTest {
     @BeforeEach
     void setUp() {
         var endpoint = new AiStatsEndpoint(
-                statsService, new UsageAccessResolver(new AiEndpointRequests(userService)));
+                aiStats, new UsageAccessResolver(new AiEndpointRequests(userService)));
         var mapper = JsonMapper.builder()
                 .addModule(new JacksonAdapterModule(JsonUtils::mapper))
                 .build();
@@ -82,7 +82,7 @@ class AiStatsEndpointTest {
 
     @Test
     void returnsTheLiveRoutingOverview() {
-        when(statsService.routingLive(7, 5)).thenReturn(Mono.just(overview()));
+        when(aiStats.routingLive(7, 5)).thenReturn(Mono.just(overview()));
 
         client.get()
                 .uri("/aistats/-/routing/live?days=7&limit=5")
@@ -102,7 +102,7 @@ class AiStatsEndpointTest {
 
     @Test
     void appliesTheDefaultWindowAndLimit() {
-        when(statsService.routingLive(14, 20)).thenReturn(Mono.just(overview()));
+        when(aiStats.routingLive(14, 20)).thenReturn(Mono.just(overview()));
 
         client.get()
                 .uri("/aistats/-/routing/live")
@@ -114,7 +114,7 @@ class AiStatsEndpointTest {
 
     @Test
     void returnsTheDailyUnitStatsOnTheCanonicalRoute() {
-        when(statsService.units(14)).thenReturn(Mono.just(unitStats()));
+        when(aiStats.units(14)).thenReturn(Mono.just(unitStats()));
 
         client.get()
                 .uri("/aistats/-/units")
@@ -128,7 +128,7 @@ class AiStatsEndpointTest {
 
     @Test
     void keepsTheDeprecatedPointsAlias() {
-        when(statsService.units(7)).thenReturn(Mono.just(unitStats()));
+        when(aiStats.units(7)).thenReturn(Mono.just(unitStats()));
 
         client.get()
                 .uri("/aistats/-/points?days=7")
@@ -149,7 +149,7 @@ class AiStatsEndpointTest {
     @Test
     void returnsTheRoutingHistoryPage() {
         authenticatedUser();
-        when(statsService.routingHistory(
+        when(aiStats.routingHistory(
                         any(RoutingHistoryQuery.class), eq(100L), eq(20), any(Viewer.class)))
                 .thenReturn(Mono.just(new RoutingHistoryPage(
                         List.of(historyItem()), 9L)));
@@ -169,7 +169,7 @@ class AiStatsEndpointTest {
 
         var query = ArgumentCaptor.forClass(RoutingHistoryQuery.class);
         var viewer = ArgumentCaptor.forClass(Viewer.class);
-        verify(statsService).routingHistory(query.capture(), eq(100L), eq(20), viewer.capture());
+        verify(aiStats).routingHistory(query.capture(), eq(100L), eq(20), viewer.capture());
         assertThat(query.getValue().from()).isEqualTo(LocalDate.parse("2026-11-13"));
         assertThat(query.getValue().to()).isEqualTo(LocalDate.parse("2026-11-19"));
         assertThat(query.getValue().status()).isEqualTo("FAILED");
@@ -184,7 +184,7 @@ class AiStatsEndpointTest {
     @Test
     void returnsTheRoutingHistoryDetail() {
         authenticatedUser();
-        when(statsService.routingHistoryDetail(eq("req-5"), any(Viewer.class)))
+        when(aiStats.routingHistoryDetail(eq("req-5"), any(Viewer.class)))
                 .thenReturn(Mono.just(historyDetail()));
 
         client.get()

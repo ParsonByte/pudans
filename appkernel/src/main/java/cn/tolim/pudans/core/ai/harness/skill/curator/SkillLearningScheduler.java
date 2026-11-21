@@ -18,14 +18,14 @@ public class SkillLearningScheduler implements SmartLifecycle {
 
     private static final Duration INTERVAL = Duration.ofHours(1);
 
-    private final SkillPromotion curatorService;
+    private final SkillPromotion skillPromotion;
 
     private volatile boolean running;
 
     private Disposable learning;
 
     Mono<Long> learnOnce() {
-        return curatorService.autoPromote();
+        return skillPromotion.autoPromote();
     }
 
     @Override

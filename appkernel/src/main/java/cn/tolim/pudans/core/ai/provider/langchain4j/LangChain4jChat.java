@@ -24,7 +24,7 @@ import reactor.core.scheduler.Schedulers;
 @Service
 public class LangChain4jChat {
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     private final LangChain4jModelFactory modelFactory;
 
@@ -39,10 +39,10 @@ public class LangChain4jChat {
     private final OllamaLangChain4jChatMapper ollamaMapper;
 
     public LangChain4jChat(
-            ProviderAccounts accountService,
+            ProviderAccounts providerAccounts,
             LangChain4jModelFactory modelFactory,
             ObjectMapper mapper) {
-        this.accountService = Objects.requireNonNull(accountService, "供应商账号服务不能为空");
+        this.providerAccounts = Objects.requireNonNull(providerAccounts, "供应商账号服务不能为空");
         this.modelFactory = Objects.requireNonNull(modelFactory, "LangChain4j 模型工厂不能为空");
         var requiredMapper = Objects.requireNonNull(mapper, "ObjectMapper 不能为空");
         this.anthropicMapper = new AnthropicLangChain4jMapper(requiredMapper);
@@ -97,7 +97,7 @@ public class LangChain4jChat {
         if (account == null) {
             return Mono.just("");
         }
-        return accountService.apiKey(account).defaultIfEmpty("");
+        return providerAccounts.apiKey(account).defaultIfEmpty("");
     }
 
     private static Mono<ChatResponse> invoke(ChatModel chatModel, ChatRequest request) {

@@ -102,7 +102,7 @@ class AiUsageEndpointTest {
     private static final Instant NOW = Instant.parse("2026-11-19T08:00:00Z");
 
     @Mock
-    AiUsage usageService;
+    AiUsage aiUsage;
 
     @Mock
     Accounts accounts;
@@ -115,7 +115,7 @@ class AiUsageEndpointTest {
     @BeforeEach
     void setUp() {
         var endpoint = new AiUsageEndpoint(
-                usageService, new UsageAccessResolver(new AiEndpointRequests(accounts)), auditLog);
+                aiUsage, new UsageAccessResolver(new AiEndpointRequests(accounts)), auditLog);
         var mapper = JsonMapper.builder()
                 .addModule(new JacksonAdapterModule(JsonUtils::mapper))
                 .build();
@@ -132,7 +132,7 @@ class AiUsageEndpointTest {
     @Test
     void returnsTheUsageOverviewWithTheBucketAndScope() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.overview(any(OverviewQuery.class), any(Viewer.class)))
+        when(aiUsage.overview(any(OverviewQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.just(overview()));
 
         client.get()
@@ -151,7 +151,7 @@ class AiUsageEndpointTest {
 
         var query = ArgumentCaptor.forClass(OverviewQuery.class);
         var viewer = ArgumentCaptor.forClass(Viewer.class);
-        verify(usageService).overview(query.capture(), viewer.capture());
+        verify(aiUsage).overview(query.capture(), viewer.capture());
         assertThat(query.getValue().from()).isEqualTo(LocalDate.parse("2026-11-13"));
         assertThat(query.getValue().to()).isEqualTo(LocalDate.parse("2026-11-19"));
         assertThat(query.getValue().agent()).isEqualTo("agent-a");
@@ -163,13 +163,13 @@ class AiUsageEndpointTest {
     @Test
     void defaultsTheScopeToSelfForAdministrators() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.overview(any(OverviewQuery.class), any(Viewer.class)))
+        when(aiUsage.overview(any(OverviewQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.just(overview()));
 
         client.get().uri("/aistats/-/usage/overview").exchange().expectStatus().isOk();
 
         var viewer = ArgumentCaptor.forClass(Viewer.class);
-        verify(usageService).overview(any(OverviewQuery.class), viewer.capture());
+        verify(aiUsage).overview(any(OverviewQuery.class), viewer.capture());
         assertThat(viewer.getValue().all()).isFalse();
         assertThat(viewer.getValue().admin()).isTrue();
     }
@@ -181,20 +181,20 @@ class AiUsageEndpointTest {
                 .exchange()
                 .expectStatus().isBadRequest();
 
-        verify(usageService, never()).overview(any(), any());
+        verify(aiUsage, never()).overview(any(), any());
     }
 
     @Test
     void returnsTheHeatmapAndSpeedAggregates() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.heatmap(any(HeatmapQuery.class), any(Viewer.class)))
+        when(aiUsage.heatmap(any(HeatmapQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.just(new Heatmap(
                         "tokens",
                         "2026-11-13",
                         "2026-11-19",
                         List.of(new HeatmapBucket(
                                 "2026-11-19", null, 5, 460, new BigDecimal("0.30"))))));
-        when(usageService.speed(any(SpeedQuery.class), any(Viewer.class)))
+        when(aiUsage.speed(any(SpeedQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.just(new Speed(List.of(new SpeedItem(
                         "deepseek-chat",
                         null,
@@ -225,7 +225,7 @@ class AiUsageEndpointTest {
     @Test
     void requestsUseTheDefaultPagingAndNewFilters() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.requests(any(RequestQuery.class), eq(AiUsage.NO_CURSOR), eq(50), any()))
+        when(aiUsage.requests(any(RequestQuery.class), eq(AiUsage.NO_CURSOR), eq(50), any()))
                 .thenReturn(Mono.just(requestPage()));
 
         client.get()
@@ -245,7 +245,7 @@ class AiUsageEndpointTest {
                 .jsonPath("$.totals.retriedRequests").isEqualTo(2);
 
         var query = ArgumentCaptor.forClass(RequestQuery.class);
-        verify(usageService).requests(query.capture(), eq(AiUsage.NO_CURSOR), eq(50), any());
+        verify(aiUsage).requests(query.capture(), eq(AiUsage.NO_CURSOR), eq(50), any());
         assertThat(query.getValue().status()).isEqualTo("SUCCEEDED");
         assertThat(query.getValue().q()).isEqualTo("timeout");
         assertThat(query.getValue().purpose()).isEqualTo("agent-run");
@@ -258,7 +258,7 @@ class AiUsageEndpointTest {
     @Test
     void requestsApplyTheCursorAndLimit() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.requests(any(RequestQuery.class), eq(42L), eq(5), any()))
+        when(aiUsage.requests(any(RequestQuery.class), eq(42L), eq(5), any()))
                 .thenReturn(Mono.just(requestPage()));
 
         client.get()
@@ -266,7 +266,7 @@ class AiUsageEndpointTest {
                 .exchange()
                 .expectStatus().isOk();
 
-        verify(usageService).requests(any(RequestQuery.class), eq(42L), eq(5), any());
+        verify(aiUsage).requests(any(RequestQuery.class), eq(42L), eq(5), any());
     }
 
     @Test
@@ -281,8 +281,8 @@ class AiUsageEndpointTest {
                 .exchange()
                 .expectStatus().isBadRequest();
 
-        verify(usageService, never()).requests(any(), anyLong(), anyInt(), any());
-        verify(usageService, never()).overview(any(), any());
+        verify(aiUsage, never()).requests(any(), anyLong(), anyInt(), any());
+        verify(aiUsage, never()).overview(any(), any());
     }
 
     @Test
@@ -298,7 +298,7 @@ class AiUsageEndpointTest {
     @Test
     void exportsTheFilteredRequestsAsCsv() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.export(any(RequestQuery.class), any(Viewer.class)))
+        when(aiUsage.export(any(RequestQuery.class), any(Viewer.class)))
                 .thenReturn(Flux.just("time,requestId\n", "2026-11-19T08:00:00Z,req-5\n"));
 
         client.get()
@@ -312,7 +312,7 @@ class AiUsageEndpointTest {
                 .isEqualTo("time,requestId\n2026-11-19T08:00:00Z,req-5\n");
 
         var query = ArgumentCaptor.forClass(RequestQuery.class);
-        verify(usageService).export(query.capture(), any(Viewer.class));
+        verify(aiUsage).export(query.capture(), any(Viewer.class));
         assertThat(query.getValue().provider()).isEqualTo("deepseek");
         assertThat(query.getValue().agentSource()).isEqualTo("gateway-agent");
         assertThat(query.getValue().retried()).isTrue();
@@ -321,7 +321,7 @@ class AiUsageEndpointTest {
     @Test
     void returnsTheRequestDetail() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.request(eq("req-5"), any(Viewer.class))).thenReturn(Mono.just(requestDetail()));
+        when(aiUsage.request(eq("req-5"), any(Viewer.class))).thenReturn(Mono.just(requestDetail()));
 
         client.get()
                 .uri("/aistats/-/usage/requests/req-5")
@@ -342,9 +342,9 @@ class AiUsageEndpointTest {
     @Test
     void returnsSessionPagesDetailsAndStats() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.sessions(any(), eq(7L), eq(20), any())).thenReturn(Mono.just(sessionPage()));
-        when(usageService.session(eq(9L), any())).thenReturn(Mono.just(sessionDetail()));
-        when(usageService.sessionStats(any(SessionStatsQuery.class), any()))
+        when(aiUsage.sessions(any(), eq(7L), eq(20), any())).thenReturn(Mono.just(sessionPage()));
+        when(aiUsage.session(eq(9L), any())).thenReturn(Mono.just(sessionDetail()));
+        when(aiUsage.sessionStats(any(SessionStatsQuery.class), any()))
                 .thenReturn(Mono.just(sessionStats()));
 
         client.get()
@@ -384,8 +384,8 @@ class AiUsageEndpointTest {
     @Test
     void returnsTheContextCompositionAndGrid() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.context(any(ContextQuery.class), any())).thenReturn(Mono.just(context()));
-        when(usageService.contextGrid(any(), any())).thenReturn(Mono.just(contextGrid()));
+        when(aiUsage.context(any(ContextQuery.class), any())).thenReturn(Mono.just(context()));
+        when(aiUsage.contextGrid(any(), any())).thenReturn(Mono.just(contextGrid()));
 
         client.get()
                 .uri("/aistats/-/usage/context?agent=agent-a")
@@ -410,7 +410,7 @@ class AiUsageEndpointTest {
     @Test
     void clearsUsageAndWritesTheAuditRecord() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.clear(any(ClearQuery.class), any(Viewer.class)))
+        when(aiUsage.clear(any(ClearQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.just(new ClearResult(3, 1)));
 
         client.post()
@@ -424,7 +424,7 @@ class AiUsageEndpointTest {
                 .jsonPath("$.modelRequestsDeleted").isEqualTo(1);
 
         var query = ArgumentCaptor.forClass(ClearQuery.class);
-        verify(usageService).clear(query.capture(), any(Viewer.class));
+        verify(aiUsage).clear(query.capture(), any(Viewer.class));
         assertThat(query.getValue().before()).isEqualTo(LocalDate.parse("2026-11-01"));
         assertThat(query.getValue().provider()).isEqualTo("deepseek");
         assertThat(query.getValue().model()).isEqualTo("deepseek-chat");
@@ -447,7 +447,7 @@ class AiUsageEndpointTest {
     @Test
     void rejectsAClearWithoutABeforeDate() {
         when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.clear(any(ClearQuery.class), any(Viewer.class)))
+        when(aiUsage.clear(any(ClearQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.BAD_REQUEST, AiUsageErrorCodes.BEFORE_REQUIRED, "before 不能为空。")));
 
@@ -459,7 +459,7 @@ class AiUsageEndpointTest {
                 .expectStatus().isBadRequest();
 
         var query = ArgumentCaptor.forClass(ClearQuery.class);
-        verify(usageService).clear(query.capture(), any(Viewer.class));
+        verify(aiUsage).clear(query.capture(), any(Viewer.class));
         assertThat(query.getValue().before()).isNull();
     }
 

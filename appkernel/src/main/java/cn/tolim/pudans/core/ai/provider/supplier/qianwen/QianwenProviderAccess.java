@@ -23,7 +23,7 @@ public class QianwenProviderAccess implements SupplierWebSocketAccess {
 
     private final ReactiveExtensionClient client;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     @Override
     public Mono<AiProvider> requireProvider(String name) {
@@ -45,7 +45,7 @@ public class QianwenProviderAccess implements SupplierWebSocketAccess {
 
     @Override
     public Mono<AiProviderAccount> requireAccount(AiProvider provider) {
-        return accountService
+        return providerAccounts
                 .firstEnabled(provider.getMetadata().getName())
                 .switchIfEmpty(Mono.error(new ApiException(
                         HttpStatus.BAD_GATEWAY, CODE_NO_ACCOUNT, "供应商没有可用账号。")));

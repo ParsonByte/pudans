@@ -136,8 +136,8 @@ class KnowledgeIngestionTest {
 
     @Test
     void callsTheReservedEmbeddingServiceWhenAvailable() {
-        ChunkEmbeddings embeddingService = mock(ChunkEmbeddings.class);
-        when(embeddingServiceProvider.getIfAvailable()).thenReturn(embeddingService);
+        ChunkEmbeddings chunkEmbeddings = mock(ChunkEmbeddings.class);
+        when(embeddingServiceProvider.getIfAvailable()).thenReturn(chunkEmbeddings);
         when(documentRepository.findByKbNameAndChecksum("kb-a", "sum")).thenReturn(Mono.empty());
         when(documentRepository.insertPending(any())).thenReturn(Mono.just(7L));
         when(chunkRepository.insertAll(anyList())).thenAnswer(invocation -> {
@@ -145,7 +145,7 @@ class KnowledgeIngestionTest {
             chunks.forEach(chunk -> chunk.setId(100L));
             return Flux.fromIterable(chunks);
         });
-        when(embeddingService.embed(anyList(), eq("embedding-model"))).thenReturn(Mono.empty());
+        when(chunkEmbeddings.embed(anyList(), eq("embedding-model"))).thenReturn(Mono.empty());
         when(documentRepository.updateStatus(7L, DocumentStatus.READY, 1, 2, null))
                 .thenReturn(Mono.just(document(DocumentStatus.READY, 7L)));
 
@@ -153,7 +153,7 @@ class KnowledgeIngestionTest {
                 .expectNextCount(1)
                 .verifyComplete();
 
-        verify(embeddingService).embed(anyList(), eq("embedding-model"));
+        verify(chunkEmbeddings).embed(anyList(), eq("embedding-model"));
     }
 
     @Test

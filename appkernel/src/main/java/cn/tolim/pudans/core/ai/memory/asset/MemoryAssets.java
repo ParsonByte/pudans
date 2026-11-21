@@ -93,7 +93,7 @@ public class MemoryAssets {
 
     private final AiMemoryL3Repository l3Repository;
 
-    private final Conversations conversationService;
+    private final Conversations conversations;
 
     private final MemoryTaskScheduler taskScheduler;
 
@@ -331,10 +331,10 @@ public class MemoryAssets {
                             spec.getDisplayName(),
                             null,
                             null);
-                    return conversationService
+                    return conversations
                             .createOrGet(conversation)
                             .flatMap(created -> appendImported(created, messages.value())
-                                    .flatMap(last -> conversationService
+                                    .flatMap(last -> conversations
                                             .markPending(created, messages.value().size())
                                             .then(taskScheduler.enqueueExtractionForImport(
                                                     created, spec.getSourceUserId(), last.id()))
@@ -694,9 +694,9 @@ public class MemoryAssets {
                     var turn = (int) tuple.getT1().longValue() + 1;
                     var message = tuple.getT2();
                     return ROLE_USER.equals(message.role())
-                            ? conversationService.appendUserMessage(
+                            ? conversations.appendUserMessage(
                                     conversation, turn, 0, message.content(), null)
-                            : conversationService.appendAssistantMessage(
+                            : conversations.appendAssistantMessage(
                                     conversation, turn, 0, message.content(), null, null, null);
                 })
                 .collectList()

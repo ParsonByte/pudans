@@ -30,11 +30,11 @@ public class MemoryViews {
 
     private static final String CODE_NOT_FOUND = "ai-memory-not-found";
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
-    private final Teams teamService;
+    private final Teams teams;
 
-    private final MemoryRecall recallService;
+    private final MemoryRecall memoryRecall;
 
     private final AiMemoryL1Repository l1Repository;
 
@@ -56,7 +56,7 @@ public class MemoryViews {
 
     public Mono<List<MemoryInjection.Ref>> search(
             String userId, String team, String agent, String query, int limit) {
-        return scope(userId, team, agent).flatMap(scope -> recallService
+        return scope(userId, team, agent).flatMap(scope -> memoryRecall
                 .build(
                         new MemoryContext(scope.team(), userId, scope.agent(), "user-search", null),
                         query,
@@ -90,12 +90,12 @@ public class MemoryViews {
     }
 
     private Mono<Scope> scope(String userId, String team, String agent) {
-        return settingService.spec().flatMap(setting -> {
+        return aiSettings.spec().flatMap(setting -> {
             var defaults = setting.getDefaults() == null ? new AiSetting.Defaults() : setting.getDefaults();
             var agentName = StringUtils.hasText(agent)
                     ? agent
                     : StringUtils.hasText(defaults.getAgent()) ? defaults.getAgent() : Teams.DEFAULT_AGENT;
-            return teamService.requireAgent(agentName, userId).flatMap(found -> {
+            return teams.requireAgent(agentName, userId).flatMap(found -> {
                 var teamName = StringUtils.hasText(team) ? team : found.getSpec().getTeam();
                 if (!teamName.equals(found.getSpec().getTeam())) {
                     return Mono.error(new ApiException(

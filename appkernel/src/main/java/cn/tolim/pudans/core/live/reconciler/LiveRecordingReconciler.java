@@ -56,7 +56,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
 
     private final StorageTransfer storageTransfer;
 
-    private final RecordingStatus statusService;
+    private final RecordingStatus recordingStatus;
 
     private final LiveRecordingWorkspace workspace;
 
@@ -64,7 +64,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
 
     private final LiveMetrics metrics;
 
-    private final LiveAlerts alertService;
+    private final LiveAlerts liveAlerts;
 
     @Override
     public Result reconcile(Reconciler.Request request) {
@@ -109,7 +109,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
 
     private void markRecorderLost(String name) {
         try {
-            statusService.fail(name, LiveErrorCode.LIVE_RECORDER_LOST, "录制器实例已失联").block(LOOKUP_TIMEOUT);
+            recordingStatus.fail(name, LiveErrorCode.LIVE_RECORDER_LOST, "录制器实例已失联").block(LOOKUP_TIMEOUT);
         } catch (RuntimeException error) {
             log.warn("标记录制失联失败 [{}]：{}", name, error.getMessage());
         }
@@ -162,7 +162,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
         var next = currentAttempts(name) + 1;
         var attempts = next;
         try {
-            var updated = statusService
+            var updated = recordingStatus
                     .mutate(name, status -> status.setCleanupAttempts(next))
                     .block(LOOKUP_TIMEOUT);
             if (updated != null && updated.getStatus() != null) {
@@ -172,7 +172,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
             log.warn("记录清理失败次数失败 [{}]：{}", name, updateError.getMessage());
         }
         if (attempts > MAX_ATTEMPTS) {
-            alertService
+            liveAlerts
                     .alert("live.cleanup.failed", name, Map.of(
                             "recordingName", name,
                             "errorCode", LiveErrorCode.LIVE_CLEANUP_FAILED.name()))

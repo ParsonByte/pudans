@@ -37,17 +37,17 @@ class MemoryExtractionTest {
     private static final Instant CREATED_AT = Instant.parse("2026-11-19T00:00:00Z");
 
     @Mock
-    TextGenerations generationService;
+    TextGenerations textGenerations;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     private MemoryExtraction service;
 
     @BeforeEach
     void setUp() {
         service = new MemoryExtraction(
-                new MemoryAiSupport(generationService, settingService, new ObjectMapper()));
+                new MemoryAiSupport(textGenerations, aiSettings, new ObjectMapper()));
     }
 
     @Test
@@ -88,8 +88,8 @@ class MemoryExtractionTest {
     void usesTheConfiguredRouteGroupAndStripsJsonFences() {
         var spec = new AiSetting.Spec();
         spec.getMemory().setExtractionRouteGroup("memory-group");
-        when(settingService.spec()).thenReturn(Mono.just(spec));
-        when(generationService.generate(any())).thenReturn(Mono.just(new GenerationResult(
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
+        when(textGenerations.generate(any())).thenReturn(Mono.just(new GenerationResult(
                 """
                         ```json
                         {"scenes":[{"sceneName":"排障","messageIds":[1],
@@ -110,7 +110,7 @@ class MemoryExtractionTest {
                 .isEqualTo(MemoryType.WORK_METHOD);
 
         var captor = ArgumentCaptor.forClass(GenerationRequest.class);
-        verify(generationService).generate(captor.capture());
+        verify(textGenerations).generate(captor.capture());
         var request = captor.getValue();
         assertThat(request.routeGroupCode()).isEqualTo("memory-group");
         assertThat(request.temperature()).isEqualTo(0.1);
@@ -140,12 +140,12 @@ class MemoryExtractionTest {
         assertThat(outcome).isNotNull();
         assertThat(outcome.scenes()).isEmpty();
         assertThat(outcome.modelCode()).isNull();
-        verifyNoInteractions(generationService, settingService);
+        verifyNoInteractions(textGenerations, aiSettings);
     }
 
     private void stubGeneration(String content) {
-        when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
-        when(generationService.generate(any())).thenReturn(Mono.just(
+        when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        when(textGenerations.generate(any())).thenReturn(Mono.just(
                 new GenerationResult(content, "model-code", "provider-a", "account-a")));
     }
 

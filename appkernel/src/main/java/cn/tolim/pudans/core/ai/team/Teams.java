@@ -23,7 +23,7 @@ public class Teams {
 
     private final ReactiveExtensionClient client;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final Accounts accounts;
 
@@ -36,12 +36,12 @@ public class Teams {
     }
 
     public Mono<AiTeam> defaultTeam() {
-        return settingService.defaults().flatMap(defaults -> getTeam(
+        return aiSettings.defaults().flatMap(defaults -> getTeam(
                 StringUtils.hasText(defaults.getTeam()) ? defaults.getTeam() : DEFAULT_TEAM));
     }
 
     public Mono<AiAgent> defaultAgent() {
-        return settingService.defaults().flatMap(defaults -> getAgent(
+        return aiSettings.defaults().flatMap(defaults -> getAgent(
                 StringUtils.hasText(defaults.getAgent()) ? defaults.getAgent() : DEFAULT_AGENT));
     }
 

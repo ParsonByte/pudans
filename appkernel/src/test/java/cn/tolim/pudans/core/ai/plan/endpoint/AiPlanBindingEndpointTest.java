@@ -23,16 +23,16 @@ import reactor.core.publisher.Mono;
 class AiPlanBindingEndpointTest {
 
     @Mock
-    PlanBindings bindingService;
+    PlanBindings planBindings;
 
     @Mock
-    PlanResolution resolutionService;
+    PlanResolution planResolution;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new AiPlanBindingEndpoint(bindingService, resolutionService);
+        var endpoint = new AiPlanBindingEndpoint(planBindings, planResolution);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -44,7 +44,7 @@ class AiPlanBindingEndpointTest {
                         AiPlanBinding.SubjectKind.UserGroup, "rd")),
                 1,
                 true);
-        when(bindingService.bulk(request))
+        when(planBindings.bulk(request))
                 .thenReturn(Mono.just(new PlanBindings.BulkBindResult(
                         "standard",
                         List.of(new PlanBindings.BindingSummary(
@@ -68,12 +68,12 @@ class AiPlanBindingEndpointTest {
                 .jsonPath("$.bindings[0].kind").isEqualTo("UserGroup")
                 .jsonPath("$.bindings[0].priority").isEqualTo(1);
 
-        verify(bindingService).bulk(request);
+        verify(planBindings).bulk(request);
     }
 
     @Test
     void reportsAnInvalidBulkRequest() {
-        when(bindingService.bulk(any(PlanBindings.BulkBindRequest.class)))
+        when(planBindings.bulk(any(PlanBindings.BulkBindRequest.class)))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.BAD_REQUEST,
                         PlanBindings.CODE_BINDING_INVALID,
@@ -89,7 +89,7 @@ class AiPlanBindingEndpointTest {
 
     @Test
     void previewsAUsersResolvedPlan() {
-        when(resolutionService.resolve("uid-alice"))
+        when(planResolution.resolve("uid-alice"))
                 .thenReturn(Mono.just(new PlanResolution.ResolvedPlan(
                         "standard", "套餐 standard", "User/uid-alice", null)));
 
@@ -102,6 +102,6 @@ class AiPlanBindingEndpointTest {
                 .jsonPath("$.displayName").isEqualTo("套餐 standard")
                 .jsonPath("$.matchedBy").isEqualTo("User/uid-alice");
 
-        verify(resolutionService).resolve("uid-alice");
+        verify(planResolution).resolve("uid-alice");
     }
 }

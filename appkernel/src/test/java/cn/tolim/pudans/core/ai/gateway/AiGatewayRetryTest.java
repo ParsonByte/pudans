@@ -77,19 +77,19 @@ class AiGatewayRetryTest {
     ReactiveExtensionClient client;
 
     @Mock
-    LangChain4jChat chatService;
+    LangChain4jChat langChain4jChat;
 
     @Mock
-    RouteResolution routeResolutionService;
+    RouteResolution routeResolution;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
-    GatewaySessions sessionService;
+    GatewaySessions gatewaySessions;
 
     @Mock
-    Conversations conversationService;
+    Conversations conversations;
 
     @Mock
     AiAgentAdapterRegistry agentAdapterRegistry;
@@ -116,13 +116,13 @@ class AiGatewayRetryTest {
     ProviderSpendGuard providerSpendGuard;
 
     @Mock
-    TeamQuotas teamQuotaService;
+    TeamQuotas teamQuotas;
 
     @Mock
     AiGatewayRateLimiter rateLimiter;
 
     @Mock
-    GatewayKeys keyService;
+    GatewayKeys gatewayKeys;
 
     private final SunkRouteRegistry sunkRouteRegistry = new SunkRouteRegistry();
 
@@ -151,14 +151,14 @@ class AiGatewayRetryTest {
         modelA = model("model-a", "provider-a");
         modelB = model("model-b", "provider-b");
         lenient()
-                .when(keyService.authorize(any(), any()))
+                .when(gatewayKeys.authorize(any(), any()))
                 .thenReturn(Mono.just(GatewayKeys.Access.unrestricted()));
         lenient()
-                .when(keyService.acquire(any()))
+                .when(gatewayKeys.acquire(any()))
                 .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
-        lenient().when(keyService.release(any())).thenReturn(Mono.empty());
+        lenient().when(gatewayKeys.release(any())).thenReturn(Mono.empty());
         lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
-        lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
+        lenient().when(teamQuotas.check(any(), any())).thenReturn(Mono.empty());
         lenient()
                 .when(planQuotas.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
                 .thenReturn(Mono.just(reserveResult()));
@@ -173,7 +173,7 @@ class AiGatewayRetryTest {
     void retriesRetryableErrorsUpToTheConfiguredMaximumWithExponentialBackoff() {
         var service = service(new AiGatewayRateLimiter(null));
         stubGateway(setting(2, 200, false), resolution(selectionA(), List.of(), true));
-                when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+                when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(upstream(HttpStatus.SERVICE_UNAVAILABLE)));
 
         StepVerifier.withVirtualTime(() -> service.complete(invocation()))
@@ -183,14 +183,14 @@ class AiGatewayRetryTest {
                 .expectError(ApiException.class)
                 .verify();
 
-        verify(chatService, times(3)).chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any());
+        verify(langChain4jChat, times(3)).chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any());
     }
 
     @Test
     void doesNotRetryNonRetryableStatusesAndMovesToTheNextCandidate() {
         var service = service(new AiGatewayRateLimiter(null));
         stubGateway(setting(2, 1, false), resolution(selectionA(), List.of(selectionB()), false));
-                when(chatService.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+                when(langChain4jChat.chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(upstream(HttpStatus.BAD_REQUEST)));
 
         StepVerifier.create(service.complete(invocation()))
@@ -200,31 +200,31 @@ class AiGatewayRetryTest {
                 })
                 .verify();
 
-        verify(chatService, times(2)).chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any());
+        verify(langChain4jChat, times(2)).chat(any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any());
     }
 
     @Test
     void failsOverToTheNextCandidateAfterRetriesAreExhausted() {
         var service = service(new AiGatewayRateLimiter(null));
         stubGateway(setting(1, 1, false), resolution(selectionA(), List.of(selectionB()), true));
-                when(chatService.chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+                when(langChain4jChat.chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(upstream(HttpStatus.SERVICE_UNAVAILABLE)));
-        when(chatService.chat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.chat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.just(response()));
 
         StepVerifier.create(service.complete(invocation()))
                 .assertNext(result -> assertThat(result.meta().provider()).isEqualTo("provider-b"))
                 .verifyComplete();
 
-        verify(chatService, times(2)).chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any());
-        verify(chatService, times(1)).chat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any());
+        verify(langChain4jChat, times(2)).chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any());
+        verify(langChain4jChat, times(1)).chat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any());
     }
 
     @Test
     void recordsPurposeViaAndCallerKeyInTheRouteTrace() {
         var service = service(new AiGatewayRateLimiter(null));
         stubGateway(setting(0, 1, false), resolution(selectionA(), List.of(), true));
-                when(chatService.chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+                when(langChain4jChat.chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.just(response()));
         var invocation = new AiGatewayInvocation(
                 AiProvider.Protocol.OPENAI_CHAT,
@@ -263,10 +263,10 @@ class AiGatewayRetryTest {
         when(rateLimiter.acquire(same(providerB), same(accountB)))
                 .thenReturn(Mono.just(AiGatewayRateLimiter.Permit.empty()));
         when(rateLimiter.release(any())).thenReturn(Mono.empty());
-        when(chatService.chat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.chat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.just(response()));
         var subscribedA = new java.util.concurrent.atomic.AtomicBoolean();
-        when(chatService.chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.defer(() -> {
                     subscribedA.set(true);
                     return Mono.error(upstream(HttpStatus.SERVICE_UNAVAILABLE));
@@ -285,16 +285,16 @@ class AiGatewayRetryTest {
     void marksAnUpstreamTooManyRequestsAsSunkWithoutRetryWhenRetriesAreDisabled() {
         var service = service(new AiGatewayRateLimiter(null));
         stubGateway(setting(0, 1, false), resolution(selectionA(), List.of(selectionB()), true));
-                when(chatService.chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+                when(langChain4jChat.chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.error(upstream(HttpStatus.TOO_MANY_REQUESTS)));
-        when(chatService.chat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.chat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.just(response()));
 
         StepVerifier.create(service.complete(invocation()))
                 .assertNext(result -> assertThat(result.meta().provider()).isEqualTo("provider-b"))
                 .verifyComplete();
 
-        verify(chatService, times(1)).chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any());
+        verify(langChain4jChat, times(1)).chat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any());
         assertThat(sunkRouteRegistry.isSunk("provider-a", "account-a")).isTrue();
     }
 
@@ -302,7 +302,7 @@ class AiGatewayRetryTest {
     void doesNotFailOverAfterTheFirstStreamedByte() {
         var service = service(new AiGatewayRateLimiter(null));
         stubGateway(setting(2, 1, false), resolution(selectionA(), List.of(selectionB()), false));
-                when(chatService.streamChat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+                when(langChain4jChat.streamChat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Flux.concat(
                         Flux.just(new AiStreamEvent("partial", null, null, null, null)),
                         Flux.error(upstream(HttpStatus.SERVICE_UNAVAILABLE))));
@@ -319,16 +319,16 @@ class AiGatewayRetryTest {
                 })
                 .verifyComplete();
 
-        verify(chatService, never()).streamChat(same(providerB), any(), any(), any(), any());
+        verify(langChain4jChat, never()).streamChat(same(providerB), any(), any(), any(), any());
     }
 
     @Test
     void failsOverToTheNextCandidateBeforeTheFirstStreamedByte() {
         var service = service(new AiGatewayRateLimiter(null));
         stubGateway(setting(0, 1, false), resolution(selectionA(), List.of(selectionB()), false));
-                when(chatService.streamChat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+                when(langChain4jChat.streamChat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Flux.error(upstream(HttpStatus.SERVICE_UNAVAILABLE)));
-        when(chatService.streamChat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
+        when(langChain4jChat.streamChat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Flux.just(new AiStreamEvent("pong", null, null, null, "stop")));
 
         StepVerifier.create(service.stream(invocation()))
@@ -339,18 +339,18 @@ class AiGatewayRetryTest {
                 .assertNext(event -> assertThat(event).isInstanceOf(AiGatewayEvent.Done.class))
                 .verifyComplete();
 
-        verify(chatService, times(1)).streamChat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any());
-        verify(chatService, times(1)).streamChat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any());
+        verify(langChain4jChat, times(1)).streamChat(same(providerA), same(accountA), same(modelA), eq(AiProvider.Protocol.OPENAI_CHAT), any());
+        verify(langChain4jChat, times(1)).streamChat(same(providerB), same(accountB), same(modelB), eq(AiProvider.Protocol.OPENAI_CHAT), any());
     }
 
     private AiGateway service(AiGatewayRateLimiter limiter) {
         return new AiGateway(
                 client,
-                chatService,
-                routeResolutionService,
-                settingService,
-                sessionService,
-                conversationService,
+                langChain4jChat,
+                routeResolution,
+                aiSettings,
+                gatewaySessions,
+                conversations,
                 agentAdapterRegistry,
                 memoryContextBuilder,
                 planResolution,
@@ -359,26 +359,26 @@ class AiGatewayRetryTest {
                 memoryTaskScheduler,
                 circuitBreaker,
                 limiter,
-                keyService,
+                gatewayKeys,
                 sunkRouteRegistry,
                 properties,
                 new AiMetrics(new SimpleMeterRegistry()),
                 providerSpendGuard,
-                teamQuotaService);
+                teamQuotas);
     }
 
     private void stubGateway(
             AiSetting.Spec setting, RouteResolution.Resolution resolution) {
-        when(settingService.spec()).thenReturn(Mono.just(setting));
-        when(sessionService.bind(any())).thenReturn(Mono.just(session()));
-        when(routeResolutionService.resolve(any())).thenReturn(Mono.just(resolution));
+        when(aiSettings.spec()).thenReturn(Mono.just(setting));
+        when(gatewaySessions.bind(any())).thenReturn(Mono.just(session()));
+        when(routeResolution.resolve(any())).thenReturn(Mono.just(resolution));
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(providerA));
         lenient().when(client.get(AiProvider.class, "provider-b")).thenReturn(Mono.just(providerB));
         when(client.get(AiProviderAccount.class, "account-a")).thenReturn(Mono.just(accountA));
         lenient().when(client.get(AiProviderAccount.class, "account-b")).thenReturn(Mono.just(accountB));
         when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(modelA));
         lenient().when(client.get(AiModel.class, "model-b")).thenReturn(Mono.just(modelB));
-        when(conversationService.requireOwned(11L, "user-1")).thenReturn(Mono.just(conversation()));
+        when(conversations.requireOwned(11L, "user-1")).thenReturn(Mono.just(conversation()));
         when(planResolution.resolve("user-1")).thenReturn(Mono.just(resolved()));
         when(chatRequestRepository.createChatRequest(any())).thenReturn(Mono.empty());
         when(chatRequestRepository.completeChatRequest(any())).thenReturn(Mono.empty());

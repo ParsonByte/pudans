@@ -6,14 +6,14 @@ import reactor.core.publisher.Mono;
 
 public final class AiTeamAccessPolicy implements TeamAccessPolicy {
 
-    private final Teams teamService;
+    private final Teams teams;
 
-    public AiTeamAccessPolicy(Teams teamService) {
-        this.teamService = Objects.requireNonNull(teamService, "团队服务不能为空");
+    public AiTeamAccessPolicy(Teams teams) {
+        this.teams = Objects.requireNonNull(teams, "团队服务不能为空");
     }
 
     @Override
     public Mono<Void> requireMember(String teamName, String userId) {
-        return teamService.requireTeam(teamName, userId).then();
+        return teams.requireTeam(teamName, userId).then();
     }
 }

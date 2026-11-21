@@ -30,21 +30,21 @@ class GatewaySessionsTest {
     AiGatewaySessionRepository repository;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     private GatewaySessions service;
 
     @BeforeEach
     void setUp() {
-        service = new GatewaySessions(repository, teamService, settingService);
+        service = new GatewaySessions(repository, teams, aiSettings);
     }
 
     @Test
     void bindsTheAgentTeamAndName() {
-        when(teamService.requireAgent("agent-a", "user-1")).thenReturn(Mono.just(agent("agent-a", "team-a")));
+        when(teams.requireAgent("agent-a", "user-1")).thenReturn(Mono.just(agent("agent-a", "team-a")));
         when(repository.upsert(any())).thenAnswer(invocation -> Mono.just(session(invocation.getArgument(0))));
 
         StepVerifier.create(service.bind(new GatewaySessions.BindRequest(
@@ -64,8 +64,8 @@ class GatewaySessionsTest {
     void usesTheConfiguredDefaultAgent() {
         var defaults = new AiSetting.Defaults();
         defaults.setAgent("default");
-        when(settingService.defaults()).thenReturn(Mono.just(defaults));
-        when(teamService.requireAgent("default", "user-1")).thenReturn(Mono.just(agent("default", "default")));
+        when(aiSettings.defaults()).thenReturn(Mono.just(defaults));
+        when(teams.requireAgent("default", "user-1")).thenReturn(Mono.just(agent("default", "default")));
         when(repository.upsert(any())).thenAnswer(invocation -> Mono.just(session(invocation.getArgument(0))));
 
         StepVerifier.create(service.bind(new GatewaySessions.BindRequest(

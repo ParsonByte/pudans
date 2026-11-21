@@ -45,7 +45,7 @@ class KnowledgeBaseEndpointTest {
     private static final String AI_USER_ROLE = "role-template-ai-user";
 
     @Mock
-    KnowledgeBases managementService;
+    KnowledgeBases knowledgeBases;
 
     @Mock
     Accounts accounts;
@@ -54,7 +54,7 @@ class KnowledgeBaseEndpointTest {
 
     @BeforeEach
     void setUp() {
-        var endpoint = new KnowledgeBaseEndpoint(managementService, accounts);
+        var endpoint = new KnowledgeBaseEndpoint(knowledgeBases, accounts);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter(authenticatedAs(USERNAME, "ROLE_" + AI_USER_ROLE))
                 .build();
@@ -63,7 +63,7 @@ class KnowledgeBaseEndpointTest {
     @Test
     void listsReadableKnowledgeBases() {
         authenticatedUser();
-        when(managementService.listVisible(UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.listVisible(UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Flux.just(knowledgeBase("kb-a")));
 
         client.get()
@@ -81,7 +81,7 @@ class KnowledgeBaseEndpointTest {
     @Test
     void returnsKnowledgeBaseDetail() {
         authenticatedUser();
-        when(managementService.findVisible("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findVisible("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase("kb-a")));
 
         client.get()
@@ -97,7 +97,7 @@ class KnowledgeBaseEndpointTest {
     @Test
     void hidesUnreadableKnowledgeBaseDetail() {
         authenticatedUser();
-        when(managementService.findVisible("kb-private", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findVisible("kb-private", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.NOT_FOUND,
                         KnowledgeBases.CODE_KB_NOT_FOUND,
@@ -118,13 +118,13 @@ class KnowledgeBaseEndpointTest {
                 .expectStatus()
                 .isBadRequest();
 
-        verifyNoInteractions(managementService);
+        verifyNoInteractions(knowledgeBases);
     }
 
     @Test
     void searchesWithDefaultOptions() {
         authenticatedUser();
-        when(managementService.search(
+        when(knowledgeBases.search(
                         UID,
                         Set.of(AI_USER_ROLE),
                         null,
@@ -142,7 +142,7 @@ class KnowledgeBaseEndpointTest {
                 .jsonPath("$.prompt")
                 .isEqualTo("prompt");
 
-        verify(managementService)
+        verify(knowledgeBases)
                 .search(
                         UID,
                         Set.of(AI_USER_ROLE),
@@ -155,7 +155,7 @@ class KnowledgeBaseEndpointTest {
     @Test
     void searchesWithQueryOverrides() {
         authenticatedUser();
-        when(managementService.search(
+        when(knowledgeBases.search(
                         UID,
                         Set.of(AI_USER_ROLE),
                         null,
@@ -171,7 +171,7 @@ class KnowledgeBaseEndpointTest {
                 .expectStatus()
                 .isOk();
 
-        verify(managementService)
+        verify(knowledgeBases)
                 .search(
                         UID,
                         Set.of(AI_USER_ROLE),
@@ -189,7 +189,7 @@ class KnowledgeBaseEndpointTest {
                 .expectStatus()
                 .isBadRequest();
 
-        verifyNoInteractions(managementService);
+        verifyNoInteractions(knowledgeBases);
     }
 
     @Test
@@ -197,9 +197,9 @@ class KnowledgeBaseEndpointTest {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
         var result = ingestionResult(9);
-        when(managementService.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
-        when(managementService.uploadDocument(knowledgeBase, UID, "file-1", "manual.pdf"))
+        when(knowledgeBases.uploadDocument(knowledgeBase, UID, "file-1", "manual.pdf"))
                 .thenReturn(Mono.just(result));
 
         client.post()
@@ -218,9 +218,9 @@ class KnowledgeBaseEndpointTest {
     void rejectsForbiddenDocumentUpload() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(managementService.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
-        when(managementService.uploadDocument(knowledgeBase, UID, "file-1", null))
+        when(knowledgeBases.uploadDocument(knowledgeBase, UID, "file-1", null))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.FORBIDDEN,
                         KnowledgeBases.CODE_FORBIDDEN,
@@ -239,9 +239,9 @@ class KnowledgeBaseEndpointTest {
     void listsDocumentsWithFilters() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(managementService.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
-        when(managementService.listDocuments("kb-a", DocumentStatus.FAILED, 2, 10))
+        when(knowledgeBases.listDocuments("kb-a", DocumentStatus.FAILED, 2, 10))
                 .thenReturn(Mono.just(new ListResult<>(2, 10, 3, List.of(document(9)))));
 
         client.get()
@@ -260,9 +260,9 @@ class KnowledgeBaseEndpointTest {
     void returnsDocumentDetail() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(managementService.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
-        when(managementService.findDocument("kb-a", 9)).thenReturn(Mono.just(document(9)));
+        when(knowledgeBases.findDocument("kb-a", 9)).thenReturn(Mono.just(document(9)));
 
         client.get()
                 .uri("/knowledgebases/kb-a/documents/9")
@@ -278,9 +278,9 @@ class KnowledgeBaseEndpointTest {
     void deletesDocument() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(managementService.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
-        when(managementService.deleteDocument("kb-a", 9)).thenReturn(Mono.empty());
+        when(knowledgeBases.deleteDocument("kb-a", 9)).thenReturn(Mono.empty());
 
         client.delete()
                 .uri("/knowledgebases/kb-a/documents/9")
@@ -288,7 +288,7 @@ class KnowledgeBaseEndpointTest {
                 .expectStatus()
                 .isNoContent();
 
-        verify(managementService).deleteDocument("kb-a", 9);
+        verify(knowledgeBases).deleteDocument("kb-a", 9);
     }
 
     @Test
@@ -299,16 +299,16 @@ class KnowledgeBaseEndpointTest {
                 .expectStatus()
                 .isBadRequest();
 
-        verifyNoInteractions(managementService);
+        verifyNoInteractions(knowledgeBases);
     }
 
     @Test
     void retriesFailedDocument() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(managementService.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
-        when(managementService.retryDocument(knowledgeBase, 9, UID)).thenReturn(Mono.just(document(9)));
+        when(knowledgeBases.retryDocument(knowledgeBase, 9, UID)).thenReturn(Mono.just(document(9)));
 
         client.post()
                 .uri("/knowledgebases/kb-a/documents/9/retry")
@@ -319,16 +319,16 @@ class KnowledgeBaseEndpointTest {
                 .jsonPath("$.id")
                 .isEqualTo(9);
 
-        verify(managementService).retryDocument(knowledgeBase, 9, UID);
+        verify(knowledgeBases).retryDocument(knowledgeBase, 9, UID);
     }
 
     @Test
     void reindexesKnowledgeBase() {
         authenticatedUser();
         var knowledgeBase = knowledgeBase("kb-a");
-        when(managementService.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
-        when(managementService.reindex(knowledgeBase, UID)).thenReturn(Mono.just(2L));
+        when(knowledgeBases.reindex(knowledgeBase, UID)).thenReturn(Mono.just(2L));
 
         client.post()
                 .uri("/knowledgebases/kb-a/reindex")
@@ -339,7 +339,7 @@ class KnowledgeBaseEndpointTest {
                 .jsonPath("$.queued")
                 .isEqualTo(2);
 
-        verify(managementService).reindex(knowledgeBase, UID);
+        verify(knowledgeBases).reindex(knowledgeBase, UID);
     }
 
     @Test
@@ -348,9 +348,9 @@ class KnowledgeBaseEndpointTest {
         var knowledgeBase = knowledgeBase("kb-a");
         var queryLog = new KnowledgeBaseQueryLog();
         queryLog.setQuery("hello");
-        when(managementService.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
+        when(knowledgeBases.findReadable("kb-a", UID, Set.of(AI_USER_ROLE), null))
                 .thenReturn(Mono.just(knowledgeBase));
-        when(managementService.listQueryLogs("kb-a", 50)).thenReturn(Flux.just(queryLog));
+        when(knowledgeBases.listQueryLogs("kb-a", 50)).thenReturn(Flux.just(queryLog));
 
         client.get()
                 .uri("/knowledgebases/kb-a/querylogs")
@@ -361,7 +361,7 @@ class KnowledgeBaseEndpointTest {
                 .jsonPath("$[0].query")
                 .isEqualTo("hello");
 
-        verify(managementService).listQueryLogs("kb-a", 50);
+        verify(knowledgeBases).listQueryLogs("kb-a", 50);
     }
 
     private void authenticatedUser() {

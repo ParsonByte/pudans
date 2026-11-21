@@ -47,7 +47,7 @@ public class LivePartMerger {
 
     private final LivePartManifest partManifest;
 
-    private final RecordingStatus statusService;
+    private final RecordingStatus recordingStatus;
 
     private final LivePartUploader uploader;
 
@@ -65,7 +65,7 @@ public class LivePartMerger {
             LiveRecordingWorkspace workspace,
             LiveSegmentManifest segmentManifest,
             LivePartManifest partManifest,
-            RecordingStatus statusService,
+            RecordingStatus recordingStatus,
             LivePartUploader uploader,
             LiveStoragePolicyResolver policyResolver,
             LiveProperties properties,
@@ -73,7 +73,7 @@ public class LivePartMerger {
         this.workspace = workspace;
         this.segmentManifest = segmentManifest;
         this.partManifest = partManifest;
-        this.statusService = statusService;
+        this.recordingStatus = recordingStatus;
         this.uploader = uploader;
         this.policyResolver = policyResolver;
         this.properties = properties;
@@ -168,7 +168,7 @@ public class LivePartMerger {
         var name = session.recordingName;
         LiveRecording recording;
         try {
-            recording = statusService.findRequired(name).block();
+            recording = recordingStatus.findRequired(name).block();
         } catch (RuntimeException error) {
             fail(session, codeOf(error, LIVE_MERGE_FAILED), "读取录制记录失败：" + error.getMessage());
             return;
@@ -194,7 +194,7 @@ public class LivePartMerger {
         }
         LiveRecording recording;
         try {
-            recording = statusService.findRequired(session.recordingName).block();
+            recording = recordingStatus.findRequired(session.recordingName).block();
         } catch (RuntimeException error) {
             fail(session, codeOf(error, LIVE_MERGE_FAILED), "读取录制记录失败：" + error.getMessage());
             return;
@@ -228,7 +228,7 @@ public class LivePartMerger {
         part.setStartedAt(closed.getFirst().startedAt());
         part.setEndedAt(closed.getLast().endedAt());
         part.setSegmentCount(closed.size());
-        statusService.addPart(name, part).block();
+        recordingStatus.addPart(name, part).block();
         partManifest.append(name, part);
 
         var target = workspace.partPath(name, index);
@@ -237,7 +237,7 @@ public class LivePartMerger {
         var size = sizeOf(target);
         part.setSize(size);
         part.setDurationMillis(closed.stream().mapToLong(LiveSegment::durationMillis).sum());
-        var updated = statusService
+        var updated = recordingStatus
                 .mutatePart(name, index, stored -> {
                     stored.setSize(part.getSize());
                     stored.setDurationMillis(part.getDurationMillis());
@@ -280,7 +280,7 @@ public class LivePartMerger {
         var name = session.recordingName;
         LiveRecording recording;
         try {
-            recording = statusService.findRequired(name).block();
+            recording = recordingStatus.findRequired(name).block();
         } catch (RuntimeException error) {
             fail(session, codeOf(error, LIVE_STORAGE_FAILED), "读取录制记录失败：" + error.getMessage());
             return;
@@ -318,7 +318,7 @@ public class LivePartMerger {
 
     private void refreshTotals(String name) {
         try {
-            statusService
+            recordingStatus
                     .mutate(name, status -> {
                         var parts = status.getParts();
                         status.setPartCount(parts.size());
@@ -352,7 +352,7 @@ public class LivePartMerger {
         session.failureCode = code;
         log.warn("录制进入失败状态 [{}] {}：{}", session.recordingName, code.name(), message);
         try {
-            statusService.fail(session.recordingName, code, message).block();
+            recordingStatus.fail(session.recordingName, code, message).block();
         } catch (RuntimeException error) {
             log.warn("写入录制失败状态失败 [{}]：{}", session.recordingName, error.getMessage());
         }

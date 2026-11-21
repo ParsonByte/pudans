@@ -47,7 +47,7 @@ class OAuth2LoginSuccessHandlerTest {
     private static final String USERNAME = "alice";
 
     @Mock
-    Connections connectionService;
+    Connections connections;
 
     @Mock
     OAuth2AuthenticationSession authenticationSession;
@@ -62,7 +62,7 @@ class OAuth2LoginSuccessHandlerTest {
     @BeforeEach
     void setUp() {
         handler = new OAuth2LoginSuccessHandler(
-                connectionService, authenticationSession, new SecurityProperties(), context);
+                connections, authenticationSession, new SecurityProperties(), context);
         exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/login/oauth2/code/feishu").build());
     }
 
@@ -89,7 +89,7 @@ class OAuth2LoginSuccessHandlerTest {
         var spec = new UserConnection.UserConnectionSpec();
         spec.setUsername(USERNAME);
         connection.setSpec(spec);
-        when(connectionService.updateUserConnectionIfPresent(eq(REGISTRATION_ID), any()))
+        when(connections.updateUserConnectionIfPresent(eq(REGISTRATION_ID), any()))
                 .thenReturn(Mono.just(connection));
         when(authenticationSession.establishAndGetAuthentication(any(), eq(USERNAME), any(), anyBoolean()))
                 .thenReturn(Mono.empty());
@@ -107,7 +107,7 @@ class OAuth2LoginSuccessHandlerTest {
 
     @Test
     void unboundConnectionRedirectsBrowserNavigationToSignIn() {
-        when(connectionService.updateUserConnectionIfPresent(eq(REGISTRATION_ID), any()))
+        when(connections.updateUserConnectionIfPresent(eq(REGISTRATION_ID), any()))
                 .thenReturn(Mono.empty());
         var pageExchange = MockServerWebExchange.from(MockServerHttpRequest.get("/login/oauth2/code/feishu")
                 .header(HttpHeaders.ACCEPT, MediaType.TEXT_HTML_VALUE)

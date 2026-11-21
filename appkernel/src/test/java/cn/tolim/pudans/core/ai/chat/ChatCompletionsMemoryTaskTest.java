@@ -74,16 +74,16 @@ class ChatCompletionsMemoryTaskTest {
     private static final Instant NOW = Instant.parse("2026-11-19T00:00:00Z");
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
-    ChatModes chatModeService;
+    ChatModes chatModes;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
-    Conversations conversationService;
+    Conversations conversations;
 
     @Mock
     ReactiveExtensionClient client;
@@ -92,16 +92,16 @@ class ChatCompletionsMemoryTaskTest {
     KnowledgeBaseAcl knowledgeBaseAcl;
 
     @Mock
-    KnowledgeRetrieval retrievalService;
+    KnowledgeRetrieval knowledgeRetrieval;
 
     @Mock
     AiMemoryContextBuilder memoryContextBuilder;
 
     @Mock
-    AiGateway gatewayService;
+    AiGateway aiGateway;
 
     @Mock
-    Embeddings embeddingService;
+    Embeddings embeddings;
 
     @Mock
     MemoryTaskScheduler memoryTaskScheduler;
@@ -110,10 +110,10 @@ class ChatCompletionsMemoryTaskTest {
     StorageTransfer storageTransfer;
 
     @Mock
-    AgentContext agentContextService;
+    AgentContext agentContext;
 
     @Mock
-    ChatTools toolService;
+    ChatTools chatTools;
 
     @Mock
     SlashCommands slashCommands;
@@ -163,20 +163,20 @@ class ChatCompletionsMemoryTaskTest {
                 .when(mcpServers.decorateToolkit(any(), any()))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         service = new ChatCompletions(
-                settingService,
-                chatModeService,
-                teamService,
-                conversationService,
+                aiSettings,
+                chatModes,
+                teams,
+                conversations,
                 client,
                 knowledgeBaseAcl,
-                retrievalService,
-                embeddingService,
+                knowledgeRetrieval,
+                embeddings,
                 memoryContextBuilder,
-                gatewayService,
+                aiGateway,
                 memoryTaskScheduler,
                 storageTransfer,
-                agentContextService,
-                toolService,
+                agentContext,
+                chatTools,
                 slashCommands,
                 hooks,
                 journalStore,
@@ -204,8 +204,8 @@ class ChatCompletionsMemoryTaskTest {
     @Test
     void completeEnqueuesAnL1TaskForTheAssistantMessage() {
         stubPrepare(true);
-        when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
-        when(conversationService.appendAssistantMessage(
+        when(aiGateway.complete(any())).thenReturn(Mono.just(gatewayResult()));
+        when(conversations.appendAssistantMessage(
                         any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
@@ -223,10 +223,10 @@ class ChatCompletionsMemoryTaskTest {
     @Test
     void streamEnqueuesAnL1TaskWhenTheAssistantMessageCompletes() {
         stubPrepare(true);
-        when(gatewayService.stream(any())).thenReturn(Flux.just(
+        when(aiGateway.stream(any())).thenReturn(Flux.just(
                 new AiGatewayEvent.Meta(gatewayMeta()),
                 new AiGatewayEvent.Done("21", "stop", false)));
-        when(conversationService.appendAssistantMessage(
+        when(conversations.appendAssistantMessage(
                         any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
@@ -242,8 +242,8 @@ class ChatCompletionsMemoryTaskTest {
     @Test
     void completeSkipsTheTaskWhenExtractionIsDisabled() {
         stubPrepare(false);
-        when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
-        when(conversationService.appendAssistantMessage(
+        when(aiGateway.complete(any())).thenReturn(Mono.just(gatewayResult()));
+        when(conversations.appendAssistantMessage(
                         any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
 
@@ -257,8 +257,8 @@ class ChatCompletionsMemoryTaskTest {
     @Test
     void completeIgnoresAnEnqueueFailure() {
         stubPrepare(true);
-        when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
-        when(conversationService.appendAssistantMessage(
+        when(aiGateway.complete(any())).thenReturn(Mono.just(gatewayResult()));
+        when(conversations.appendAssistantMessage(
                         any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong()))
@@ -276,8 +276,8 @@ class ChatCompletionsMemoryTaskTest {
         stubPrepare(true);
         when(slashCommands.resolve("agent-a", "/review 重点"))
                 .thenReturn(Mono.just(new SlashCommands.ResolvedSlashCommand("review", "评审这段内容")));
-        when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
-        when(conversationService.appendAssistantMessage(
+        when(aiGateway.complete(any())).thenReturn(Mono.just(gatewayResult()));
+        when(conversations.appendAssistantMessage(
                         any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
@@ -289,11 +289,11 @@ class ChatCompletionsMemoryTaskTest {
                 .expectNextCount(1)
                 .verifyComplete();
 
-        verify(gatewayService).complete(invocationCaptor.capture());
+        verify(aiGateway).complete(invocationCaptor.capture());
         var last = invocationCaptor.getValue().ir().messages().getLast();
         assertThat(last.parts())
                 .anySatisfy(part -> assertThat(((AiContentPart.Text) part).text()).isEqualTo("评审这段内容"));
-        verify(conversationService)
+        verify(conversations)
                 .appendUserMessage(any(), anyInt(), anyInt(), contentCaptor.capture(), anyString(), any());
         assertThat(contentCaptor.getValue()).isEqualTo("评审这段内容");
     }
@@ -301,11 +301,11 @@ class ChatCompletionsMemoryTaskTest {
     @Test
     void executesToolCallsAndRepeatsTheGatewayRound() {
         stubPrepare(true);
-        when(gatewayService.complete(any()))
+        when(aiGateway.complete(any()))
                 .thenReturn(Mono.just(gatewayResultWithToolCall()))
                 .thenReturn(Mono.just(gatewayResult()));
-        when(toolService.execute(anyString(), any(), any())).thenReturn(Mono.just(toolOutcome()));
-        when(conversationService.appendAssistantMessage(
+        when(chatTools.execute(anyString(), any(), any())).thenReturn(Mono.just(toolOutcome()));
+        when(conversations.appendAssistantMessage(
                         any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
@@ -315,8 +315,8 @@ class ChatCompletionsMemoryTaskTest {
                 .assertNext(result -> assertThat(result.content()).isEqualTo("先查一下\n\n回答"))
                 .verifyComplete();
 
-        verify(gatewayService, times(2)).complete(any());
-        verify(conversationService).appendAssistantMessage(
+        verify(aiGateway, times(2)).complete(any());
+        verify(conversations).appendAssistantMessage(
                 any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), metadataCaptor.capture());
         var metadata = metadataCaptor.getValue();
         assertThat(metadata.path("toolCalls").get(0).path("name").asText()).isEqualTo("skill");
@@ -326,7 +326,7 @@ class ChatCompletionsMemoryTaskTest {
     @Test
     void streamEmitsToolCallAndToolResultBeforeTheFinalAnswer() {
         stubPrepare(true);
-        when(gatewayService.stream(any()))
+        when(aiGateway.stream(any()))
                 .thenReturn(
                         Flux.just(
                                 new AiGatewayEvent.Meta(gatewayMeta()),
@@ -341,8 +341,8 @@ class ChatCompletionsMemoryTaskTest {
                                 new AiGatewayEvent.Meta(gatewayMeta()),
                                 new AiGatewayEvent.Delta(new AiStreamEvent("最终答案", null, null, null, null)),
                                 new AiGatewayEvent.Done("21", "stop", false)));
-        when(toolService.execute(anyString(), any(), any())).thenReturn(Mono.just(toolOutcome()));
-        when(conversationService.appendAssistantMessage(
+        when(chatTools.execute(anyString(), any(), any())).thenReturn(Mono.just(toolOutcome()));
+        when(conversations.appendAssistantMessage(
                         any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
@@ -355,19 +355,19 @@ class ChatCompletionsMemoryTaskTest {
                 })
                 .verifyComplete();
 
-        verify(gatewayService, times(2)).stream(any());
+        verify(aiGateway, times(2)).stream(any());
     }
 
     @Test
     void streamEmitsHarnessTextDeltasAndPersistsTheCombinedAnswer() {
         stubPrepare(true);
-        when(gatewayService.stream(any())).thenReturn(Flux.just(
+        when(aiGateway.stream(any())).thenReturn(Flux.just(
                 new AiGatewayEvent.Meta(gatewayMeta()),
                 new AiGatewayEvent.Delta(new AiStreamEvent("你", null, null, null, null)),
                 new AiGatewayEvent.Delta(new AiStreamEvent("好", null, null, null, null)),
                 new AiGatewayEvent.Usage(new AiTokenUsage(1, 2, null, null), BigDecimal.ONE, "PROVIDER"),
                 new AiGatewayEvent.Done("21", "stop", false)));
-        when(conversationService.appendAssistantMessage(
+        when(conversations.appendAssistantMessage(
                         any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
@@ -385,50 +385,50 @@ class ChatCompletionsMemoryTaskTest {
                 })
                 .verifyComplete();
 
-        verify(conversationService).appendAssistantMessage(
+        verify(conversations).appendAssistantMessage(
                 any(), anyInt(), anyInt(), contentCaptor.capture(), anyString(), anyString(), any(), any());
         assertThat(contentCaptor.getValue()).isEqualTo("你好");
     }
 
     @Test
     void regenerateDeletesTheLastAssistantMessageWithoutAppendingAUserMessage() {
-        when(settingService.spec()).thenReturn(Mono.just(setting(true)));
-        when(chatModeService.get("fast")).thenReturn(Mono.just(mode()));
-        when(conversationService.requireOwned(7L, "user-1")).thenReturn(Mono.just(conversation()));
-        when(teamService.requireAgent("agent-a", "user-1")).thenReturn(Mono.just(agent()));
-        when(conversationService.deleteLastAssistant(any())).thenReturn(Mono.empty());
-        when(conversationService.recentHistory(any(), anyInt())).thenReturn(Flux.just(userMessage()));
+        when(aiSettings.spec()).thenReturn(Mono.just(setting(true)));
+        when(chatModes.get("fast")).thenReturn(Mono.just(mode()));
+        when(conversations.requireOwned(7L, "user-1")).thenReturn(Mono.just(conversation()));
+        when(teams.requireAgent("agent-a", "user-1")).thenReturn(Mono.just(agent()));
+        when(conversations.deleteLastAssistant(any())).thenReturn(Mono.empty());
+        when(conversations.recentHistory(any(), anyInt())).thenReturn(Flux.just(userMessage()));
         when(memoryContextBuilder.build(any(), anyString(), anyInt(), anyInt())).thenReturn(Mono.empty());
-        when(agentContextService.build(any())).thenReturn(Mono.just(new AgentContext.Context(
+        when(agentContext.build(any())).thenReturn(Mono.just(new AgentContext.Context(
                 "", List.of(), List.of(), List.of(), List.of(), Map.of())));
         when(hooks.dispatch(anyString(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
-        when(gatewayService.complete(any())).thenReturn(Mono.just(gatewayResult()));
-        when(conversationService.appendAssistantMessage(
+        when(aiGateway.complete(any())).thenReturn(Mono.just(gatewayResult()));
+        when(conversations.appendAssistantMessage(
                         any(), anyInt(), anyInt(), any(), anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(assistantMessage()));
-        when(conversationService.markPending(any(), anyInt())).thenReturn(Mono.just(2));
+        when(conversations.markPending(any(), anyInt())).thenReturn(Mono.just(2));
         when(memoryTaskScheduler.enqueueExtraction(any(), anyString(), anyLong())).thenReturn(Mono.empty());
 
         StepVerifier.create(service.complete(regenerateCommand()))
                 .expectNextCount(1)
                 .verifyComplete();
 
-        verify(conversationService).deleteLastAssistant(any());
-        verify(conversationService, never())
+        verify(conversations).deleteLastAssistant(any());
+        verify(conversations, never())
                 .appendUserMessage(any(), anyInt(), anyInt(), anyString(), anyString(), any());
     }
 
     private void stubPrepare(boolean extractionEnabled) {
-        when(settingService.spec()).thenReturn(Mono.just(setting(extractionEnabled)));
-        when(chatModeService.get("fast")).thenReturn(Mono.just(mode()));
-        when(teamService.requireAgent("default", "user-1")).thenReturn(Mono.just(agent()));
-        when(conversationService.createOrGet(any())).thenReturn(Mono.just(conversation()));
+        when(aiSettings.spec()).thenReturn(Mono.just(setting(extractionEnabled)));
+        when(chatModes.get("fast")).thenReturn(Mono.just(mode()));
+        when(teams.requireAgent("default", "user-1")).thenReturn(Mono.just(agent()));
+        when(conversations.createOrGet(any())).thenReturn(Mono.just(conversation()));
         when(memoryContextBuilder.build(any(), anyString(), anyInt(), anyInt())).thenReturn(Mono.empty());
-        when(conversationService.appendUserMessage(
+        when(conversations.appendUserMessage(
                         any(), anyInt(), anyInt(), anyString(), anyString(), any()))
                 .thenReturn(Mono.just(userMessage()));
-        when(conversationService.markPending(any(), anyInt())).thenReturn(Mono.just(2));
-        when(agentContextService.build(any())).thenReturn(Mono.just(new AgentContext.Context(
+        when(conversations.markPending(any(), anyInt())).thenReturn(Mono.just(2));
+        when(agentContext.build(any())).thenReturn(Mono.just(new AgentContext.Context(
                 "", List.of(), List.of(), List.of(), List.of(), Map.of())));
         when(hooks.dispatch(anyString(), any(AiHook.Event.class), any())).thenReturn(Mono.empty());
     }

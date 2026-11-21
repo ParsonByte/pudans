@@ -49,7 +49,7 @@ public class LiveRecorderTask implements Runnable {
 
     private final LiveProperties properties;
 
-    private final RecordingStatus statusService;
+    private final RecordingStatus recordingStatus;
 
     private final LiveRecorderRegistry registry;
 
@@ -61,7 +61,7 @@ public class LiveRecorderTask implements Runnable {
 
     private final LiveStreamOpener opener;
 
-    private final RoomResolver resolveService;
+    private final RoomResolver roomResolver;
 
     private final LiveDiskGuard diskGuard;
 
@@ -105,13 +105,13 @@ public class LiveRecorderTask implements Runnable {
 
     public LiveRecorderTask(
             LiveProperties properties,
-            RecordingStatus statusService,
+            RecordingStatus recordingStatus,
             LiveRecorderRegistry registry,
             LivePartMerger merger,
             LiveRecordingWorkspace workspace,
             LiveSegmentManifest segmentManifest,
             LiveStreamOpener opener,
-            RoomResolver resolveService,
+            RoomResolver roomResolver,
             LiveDiskGuard diskGuard,
             LiveRecorderBackoff backoff,
             LiveStoragePolicyResolver policyResolver,
@@ -119,13 +119,13 @@ public class LiveRecorderTask implements Runnable {
             ReactiveStringRedisTemplate redisTemplate,
             LiveRecording recording) {
         this.properties = properties;
-        this.statusService = statusService;
+        this.recordingStatus = recordingStatus;
         this.registry = registry;
         this.merger = merger;
         this.workspace = workspace;
         this.segmentManifest = segmentManifest;
         this.opener = opener;
-        this.resolveService = resolveService;
+        this.roomResolver = roomResolver;
         this.diskGuard = diskGuard;
         this.backoff = backoff;
         this.policyResolver = policyResolver;
@@ -185,7 +185,7 @@ public class LiveRecorderTask implements Runnable {
     }
 
     private boolean markRecording() {
-        var recording = statusService.findRequired(recordingName).block();
+        var recording = recordingStatus.findRequired(recordingName).block();
         if (recording == null || recording.getStatus() == null) {
             return false;
         }
@@ -197,8 +197,8 @@ public class LiveRecorderTask implements Runnable {
             log.info("录制任务已收到停止请求，跳过启动 [{}]", recordingName);
             return false;
         }
-        statusService.transition(recordingName, LiveRecordingState.RECORDING, null).block();
-        statusService
+        recordingStatus.transition(recordingName, LiveRecordingState.RECORDING, null).block();
+        recordingStatus
                 .mutate(recordingName, status -> {
                     status.setOwnerInstance(ownerInstance);
                     status.setHeartbeatAt(Instant.now());
@@ -382,7 +382,7 @@ public class LiveRecorderTask implements Runnable {
 
     private Resolution resolve() {
         try {
-            var info = resolveService.resolve(LivePlatform.valueOf(platform), roomId, true).block();
+            var info = roomResolver.resolve(LivePlatform.valueOf(platform), roomId, true).block();
             if (info == null) {
                 return new Resolution(null, LIVE_RESOLVE_FAILED, "解析结果为空");
             }
@@ -408,7 +408,7 @@ public class LiveRecorderTask implements Runnable {
         lastHeartbeatAt = now;
         var bytes = writer.totalBytes() + writer.currentSize();
         renewOwner();
-        statusService
+        recordingStatus
                 .mutate(recordingName, status -> {
                     status.setHeartbeatAt(now);
                     if (writer.lastPacketAt() != null) {
@@ -451,7 +451,7 @@ public class LiveRecorderTask implements Runnable {
     }
 
     private void complete() {
-        var recording = statusService.findRequired(recordingName).block();
+        var recording = recordingStatus.findRequired(recordingName).block();
         if (recording == null || recording.getStatus() == null) {
             return;
         }
@@ -459,7 +459,7 @@ public class LiveRecorderTask implements Runnable {
         var parts = status.getParts();
         if (parts == null || parts.isEmpty()) {
             log.info("录制未产生有效分片，标记取消 [{}]", recordingName);
-            statusService.transition(recordingName, LiveRecordingState.CANCELED, LIVE_NO_DATA.message()).block();
+            recordingStatus.transition(recordingName, LiveRecordingState.CANCELED, LIVE_NO_DATA.message()).block();
             return;
         }
         if (parts.stream().anyMatch(part -> part.getState() != PartState.UPLOADED)) {
@@ -474,7 +474,7 @@ public class LiveRecorderTask implements Runnable {
                 : Math.max(Duration.between(first.getStartedAt(), endedAt).toMillis(), 0);
         var totalBytes = parts.stream().mapToLong(LiveRecording.Part::getSize).sum();
         var segmentCount = parts.stream().mapToInt(LiveRecording.Part::getSegmentCount).sum();
-        statusService
+        recordingStatus
                 .mutate(recordingName, current -> {
                     current.setEndedAt(endedAt);
                     current.setDurationMillis(durationMillis);
@@ -484,13 +484,13 @@ public class LiveRecorderTask implements Runnable {
                     current.setLocalBytes(merger.localBytes(recordingName));
                 })
                 .block();
-        statusService.transition(recordingName, LiveRecordingState.COMPLETED, null).block();
+        recordingStatus.transition(recordingName, LiveRecordingState.COMPLETED, null).block();
         log.info("录制完成 [{}]，成品 {} 个，字节 {}", recordingName, parts.size(), totalBytes);
     }
 
     private void fail(LiveErrorCode code, String message) {
         try {
-            statusService.fail(recordingName, code, message).block();
+            recordingStatus.fail(recordingName, code, message).block();
         } catch (RuntimeException error) {
             log.warn("写入录制失败状态失败 [{}]：{}", recordingName, error.getMessage());
         }

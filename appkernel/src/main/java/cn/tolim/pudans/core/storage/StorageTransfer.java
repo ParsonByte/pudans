@@ -35,58 +35,58 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class StorageTransfer {
 
-    private final FileRecords fileService;
+    private final FileRecords fileRecords;
 
-    private final Uploads uploadService;
+    private final Uploads uploads;
 
-    private final Downloads downloadService;
+    private final Downloads downloads;
 
     private final StorageDriverResolver driverResolver;
 
     private final ParameterGroups parameterGroups;
 
     public Mono<UploadTicket> initiateUpload(StorageUploadRequest request) {
-        return uploadService.initiate(request);
+        return uploads.initiate(request);
     }
 
     public Mono<String> issueUploadToken(String fileId) {
-        return uploadService.issueToken(fileId);
+        return uploads.issueToken(fileId);
     }
 
     public Mono<UploadStatus> uploadStatus(String fileId) {
-        return uploadService.status(fileId);
+        return uploads.status(fileId);
     }
 
     public Mono<UploadedPart> putPart(String fileId, int partNumber, long contentLength, Flux<org.springframework.core.io.buffer.DataBuffer> body) {
-        return uploadService.putPart(fileId, partNumber, contentLength, body);
+        return uploads.putPart(fileId, partNumber, contentLength, body);
     }
 
     public Mono<UploadPartUrl> uploadPartUrl(String fileId, int partNumber) {
-        return uploadService.partUrl(fileId, partNumber);
+        return uploads.partUrl(fileId, partNumber);
     }
 
     public Mono<StorageFile> completeUpload(String fileId, List<UploadedPart> parts) {
-        return uploadService.complete(fileId, parts);
+        return uploads.complete(fileId, parts);
     }
 
     public Mono<Void> abortUpload(String fileId) {
-        return uploadService.abort(fileId);
+        return uploads.abort(fileId);
     }
 
     public Mono<StorageFile> upload(StorageWriteRequest request) {
-        return uploadService.upload(request);
+        return uploads.upload(request);
     }
 
     public Mono<StorageFile> getFile(String fileId) {
-        return fileService.get(fileId);
+        return fileRecords.get(fileId);
     }
 
     public Mono<ListResult<StorageFile>> listFiles(StorageFileQuery query) {
-        return fileService.list(query);
+        return fileRecords.list(query);
     }
 
     public Mono<StorageFile> trash(String fileId) {
-        return fileService.get(fileId).flatMap(file -> {
+        return fileRecords.get(fileId).flatMap(file -> {
             if (file.getSpec().getState() != StorageFileState.ACTIVE) {
                 return Mono.error(new ApiException(
                         HttpStatus.CONFLICT, "storage-file-state-invalid", "只有可读文件可以移入回收站。"));
@@ -99,13 +99,13 @@ public class StorageTransfer {
                         file.getSpec().setTrashedAt(now);
                         var days = settings.getTrashRetentionDays() == null ? 30 : settings.getTrashRetentionDays();
                         file.getSpec().setTrashExpiresAt(days > 0 ? now.plus(Duration.ofDays(days)) : null);
-                        return fileService.update(file);
+                        return fileRecords.update(file);
                     });
         });
     }
 
     public Mono<StorageFile> restore(String fileId) {
-        return fileService.get(fileId).flatMap(file -> {
+        return fileRecords.get(fileId).flatMap(file -> {
             if (file.getSpec().getState() != StorageFileState.TRASHED) {
                 return Mono.error(new ApiException(
                         HttpStatus.CONFLICT, "storage-file-state-invalid", "只有回收站中的文件可以恢复。"));
@@ -113,21 +113,21 @@ public class StorageTransfer {
             file.getSpec().setState(StorageFileState.ACTIVE);
             file.getSpec().setTrashedAt(null);
             file.getSpec().setTrashExpiresAt(null);
-            return fileService.update(file);
+            return fileRecords.update(file);
         });
     }
 
     public Mono<Void> purge(String fileId) {
-        return fileService.fetch(fileId).flatMap(file -> {
+        return fileRecords.fetch(fileId).flatMap(file -> {
             if (file.getSpec().getState() == StorageFileState.UPLOADING) {
-                return uploadService.abort(fileId);
+                return uploads.abort(fileId);
             }
             if (file.getSpec().getState() != StorageFileState.TRASHED) {
                 return Mono.error(new ApiException(
                         HttpStatus.CONFLICT, "storage-file-state-invalid", "只有回收站中的文件可以彻底删除。"));
             }
             // 先按版本删除记录，恢复操作抢先成功时对象不会被删除
-            return fileService
+            return fileRecords
                     .delete(file)
                     .then(Mono.defer(() -> driverResolver.driver(file.getSpec().getPolicy())))
                     .flatMap(driver -> driver
@@ -140,9 +140,9 @@ public class StorageTransfer {
     }
 
     public Mono<Void> purgeObjectFirst(String fileId) {
-        return fileService.fetch(fileId).flatMap(file -> {
+        return fileRecords.fetch(fileId).flatMap(file -> {
             if (file.getSpec().getState() == StorageFileState.UPLOADING) {
-                return uploadService.abort(fileId);
+                return uploads.abort(fileId);
             }
             // 先删除对象再删除记录，保证重试时还能定位到存储对象
             return driverResolver
@@ -153,16 +153,16 @@ public class StorageTransfer {
                         return Mono.error(new ApiException(
                                 HttpStatus.BAD_GATEWAY, "storage-object-delete-failed", "删除存储对象失败。"));
                     })
-                    .then(fileService.delete(file));
+                    .then(fileRecords.delete(file));
         });
     }
 
     public Mono<DownloadUrl> downloadUrl(String fileId, Duration ttl) {
-        return downloadService.downloadUrl(fileId, ttl);
+        return downloads.downloadUrl(fileId, ttl);
     }
 
     public Mono<StorageReadResult> open(String fileId, StorageReadOptions options) {
-        return downloadService.open(fileId, options);
+        return downloads.open(fileId, options);
     }
 
     public Mono<byte[]> readBytes(String fileId, int maxBytes) {
@@ -172,15 +172,15 @@ public class StorageTransfer {
     }
 
     public Mono<StorageSource> sourceUrl(String fileId, StorageSourceOptions options) {
-        return downloadService.sourceUrl(fileId, options);
+        return downloads.sourceUrl(fileId, options);
     }
 
     public void verifyDownload(String token, String fileId) {
-        downloadService.verify(token, fileId);
+        downloads.verify(token, fileId);
     }
 
     public void verifyUpload(String token, String fileId) {
-        uploadService.verifyUploadToken(token, fileId);
+        uploads.verifyUploadToken(token, fileId);
     }
 
     public Mono<Void> configureCors(String policyName, List<String> origins) {

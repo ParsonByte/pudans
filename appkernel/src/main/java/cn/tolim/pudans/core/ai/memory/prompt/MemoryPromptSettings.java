@@ -43,7 +43,7 @@ public class MemoryPromptSettings {
 
     private final AiMemoryPromptLogRepository logRepository;
 
-    private final Teams teamService;
+    private final Teams teams;
 
     public Mono<ResolvedMemoryPrompt> settings(
             AiMemoryPrompt.Layer layer, @Nullable String team, @Nullable String agent) {
@@ -210,12 +210,12 @@ public class MemoryPromptSettings {
         }
         if (target.targetType() == AiMemoryPromptBinding.TargetType.TEAM
                 || target.targetType() == AiMemoryPromptBinding.TargetType.AGENT) {
-            return teamService
+            return teams
                     .getTeam(target.team())
                     .switchIfEmpty(Mono.error(invalid("team 不存在。")))
                     .flatMap(team -> target.targetType() == AiMemoryPromptBinding.TargetType.TEAM
                             ? Mono.empty()
-                            : teamService
+                            : teams
                                     .getAgent(target.agent())
                                     .filter(agent -> agent.getSpec() != null
                                             && target.team().equals(agent.getSpec().getTeam()))

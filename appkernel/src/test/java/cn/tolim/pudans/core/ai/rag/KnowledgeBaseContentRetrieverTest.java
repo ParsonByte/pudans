@@ -22,10 +22,10 @@ import reactor.core.publisher.Mono;
 class KnowledgeBaseContentRetrieverTest {
 
     @Mock
-    KnowledgeRetrieval retrievalService;
+    KnowledgeRetrieval knowledgeRetrieval;
 
     @Mock
-    Embeddings embeddingService;
+    Embeddings embeddings;
 
     private KnowledgeBaseContentRetriever retriever;
 
@@ -39,15 +39,15 @@ class KnowledgeBaseContentRetrieverTest {
                 "dept-a",
                 new RetrievalOptions(60, 0.3, 10, 4000),
                 30);
-        retriever = new KnowledgeBaseContentRetriever(retrievalService, embeddingService, context);
+        retriever = new KnowledgeBaseContentRetriever(knowledgeRetrieval, embeddings, context);
     }
 
     @Test
     void returnsTheKnowledgePromptAndKeepsCitations() {
         var vector = new float[] {0.1f, 0.2f};
         var citation = new Citation(1, 101, "manual.pdf", 3, "2.1 安装", 0.9, "先备份。");
-        when(embeddingService.embedOne("怎么安装")).thenReturn(Mono.just(vector));
-        when(retrievalService.retrieve(any(KnowledgeBaseRetrievalRequest.class)))
+        when(embeddings.embedOne("怎么安装")).thenReturn(Mono.just(vector));
+        when(knowledgeRetrieval.retrieve(any(KnowledgeBaseRetrievalRequest.class)))
                 .thenReturn(Mono.just(new KnowledgeBaseRetrievalResult(
                         "【知识库资料】\n[1]《manual.pdf》\n先备份。", List.of(citation))));
 
@@ -58,7 +58,7 @@ class KnowledgeBaseContentRetrieverTest {
                 .contains("[1]《manual.pdf》"));
         assertThat(retriever.citations()).containsExactly(citation);
         var request = ArgumentCaptor.forClass(KnowledgeBaseRetrievalRequest.class);
-        verify(retrievalService).retrieve(request.capture());
+        verify(knowledgeRetrieval).retrieve(request.capture());
         assertThat(request.getValue().query()).isEqualTo("怎么安装");
         assertThat(request.getValue().queryEmbedding()).containsExactly(vector);
         assertThat(request.getValue().requestId()).isEqualTo("req-1");
@@ -67,14 +67,14 @@ class KnowledgeBaseContentRetrieverTest {
 
     @Test
     void fallsBackToKeywordRetrievalWhenEmbeddingFails() {
-        when(embeddingService.embedOne("怎么安装")).thenReturn(Mono.error(new IllegalStateException("失败")));
-        when(retrievalService.retrieve(any(KnowledgeBaseRetrievalRequest.class)))
+        when(embeddings.embedOne("怎么安装")).thenReturn(Mono.error(new IllegalStateException("失败")));
+        when(knowledgeRetrieval.retrieve(any(KnowledgeBaseRetrievalRequest.class)))
                 .thenReturn(Mono.just(new KnowledgeBaseRetrievalResult("", List.of())));
 
         assertThat(retriever.retrieve(Query.from("怎么安装"))).isEmpty();
 
         var request = ArgumentCaptor.forClass(KnowledgeBaseRetrievalRequest.class);
-        verify(retrievalService).retrieve(request.capture());
+        verify(knowledgeRetrieval).retrieve(request.capture());
         assertThat(request.getValue().queryEmbedding()).isEmpty();
         assertThat(retriever.citations()).isEmpty();
     }

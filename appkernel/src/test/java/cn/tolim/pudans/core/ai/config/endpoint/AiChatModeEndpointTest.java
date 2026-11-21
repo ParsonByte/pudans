@@ -19,19 +19,19 @@ import reactor.core.publisher.Flux;
 class AiChatModeEndpointTest {
 
     @Mock
-    ChatModes chatModeService;
+    ChatModes chatModes;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        client = WebTestClient.bindToRouterFunction(new AiChatModeEndpoint(chatModeService).endpoint())
+        client = WebTestClient.bindToRouterFunction(new AiChatModeEndpoint(chatModes).endpoint())
                 .build();
     }
 
     @Test
     void listsEnabledModesWithMetadata() {
-        when(chatModeService.available()).thenReturn(Flux.just(
+        when(chatModes.available()).thenReturn(Flux.just(
                 mode("fast", "快速模式", "fast-group", AiModel.Tier.CHEAP, List.of("kb-a")),
                 mode("pro", "专业模式", "pro-group", AiModel.Tier.HIGH, List.of())));
 
@@ -50,7 +50,7 @@ class AiChatModeEndpointTest {
 
     @Test
     void returnsAnEmptyListWhenNoModeIsEnabled() {
-        when(chatModeService.available()).thenReturn(Flux.empty());
+        when(chatModes.available()).thenReturn(Flux.empty());
 
         client.get()
                 .uri("/chats/-/modes")
@@ -62,7 +62,7 @@ class AiChatModeEndpointTest {
 
     @Test
     void toleratesAModeWithoutKnowledgeBases() {
-        when(chatModeService.available()).thenReturn(
+        when(chatModes.available()).thenReturn(
                 Flux.just(mode("plain", "普通模式", "plain-group", null, null)));
 
         client.get()

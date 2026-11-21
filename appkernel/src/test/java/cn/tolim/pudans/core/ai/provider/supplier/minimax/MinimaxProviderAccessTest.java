@@ -25,7 +25,7 @@ class MinimaxProviderAccessTest {
     ReactiveExtensionClient client;
 
     @Mock
-    ProviderAccounts accountService;
+    ProviderAccounts providerAccounts;
 
     @InjectMocks
     MinimaxProviderAccess access;
@@ -60,7 +60,7 @@ class MinimaxProviderAccessTest {
         var account = new AiProviderAccount();
         account.setMetadata(metadata("account-a"));
         account.getSpec().setProvider("provider-a");
-        when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account));
+        when(providerAccounts.firstEnabled("provider-a")).thenReturn(Mono.just(account));
 
         StepVerifier.create(access.requireAccount(provider))
                 .expectNext(account)

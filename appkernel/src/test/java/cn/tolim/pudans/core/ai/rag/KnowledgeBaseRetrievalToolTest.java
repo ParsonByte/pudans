@@ -28,21 +28,21 @@ import reactor.core.publisher.Mono;
 class KnowledgeBaseRetrievalToolTest {
 
     @Mock
-    KnowledgeRetrieval retrievalService;
+    KnowledgeRetrieval knowledgeRetrieval;
 
     @Mock
-    Embeddings embeddingService;
+    Embeddings embeddings;
 
     @BeforeEach
     void setUp() {
         lenient()
-                .when(embeddingService.embedOne(anyString()))
+                .when(embeddings.embedOne(anyString()))
                 .thenReturn(Mono.just(new float[] {0.1f, 0.2f}));
     }
 
     @Test
     void definesTheToolNameAndRequiredQuerySchema() {
-        var definition = new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, context()).definition();
+        var definition = new KnowledgeBaseRetrievalTool(knowledgeRetrieval, embeddings, context()).definition();
 
         assertThat(definition.name()).isEqualTo(KnowledgeBaseRetrievalTool.NAME);
         assertThat(definition.parameters().path("type").asText()).isEqualTo("object");
@@ -55,7 +55,7 @@ class KnowledgeBaseRetrievalToolTest {
 
     @Test
     void mapsArgumentsToTheRetrievalRequest() {
-        when(retrievalService.retrieve(any())).thenReturn(Mono.just(result()));
+        when(knowledgeRetrieval.retrieve(any())).thenReturn(Mono.just(result()));
 
         var outcome = handler().execute(
                 request("{\"query\":\" 安装 \",\"limit\":3}"),
@@ -64,7 +64,7 @@ class KnowledgeBaseRetrievalToolTest {
         assertThat(outcome.error()).isFalse();
         assertThat(outcome.output()).contains("[1]《manual.pdf》");
         var captor = ArgumentCaptor.forClass(KnowledgeBaseRetrievalRequest.class);
-        verify(retrievalService).retrieve(captor.capture());
+        verify(knowledgeRetrieval).retrieve(captor.capture());
         var request = captor.getValue();
         assertThat(request.userId()).isEqualTo("alice");
         assertThat(request.requestId()).isEqualTo("req-1");
@@ -80,13 +80,13 @@ class KnowledgeBaseRetrievalToolTest {
 
     @Test
     void clampsTheLimitToTheSupportedRange() {
-        when(retrievalService.retrieve(any())).thenReturn(Mono.just(result()));
+        when(knowledgeRetrieval.retrieve(any())).thenReturn(Mono.just(result()));
 
         handler().execute(request("{\"query\":\"安装\",\"limit\":99}"), LangChain4jToolMapper.arguments(
                 "{\"query\":\"安装\",\"limit\":99}"));
 
         var captor = ArgumentCaptor.forClass(KnowledgeBaseRetrievalRequest.class);
-        verify(retrievalService).retrieve(captor.capture());
+        verify(knowledgeRetrieval).retrieve(captor.capture());
         assertThat(captor.getValue().options().topK()).isEqualTo(20);
     }
 
@@ -96,12 +96,12 @@ class KnowledgeBaseRetrievalToolTest {
 
         assertThat(outcome.error()).isTrue();
         assertThat(outcome.output()).contains("检索问题");
-        verifyNoInteractions(retrievalService);
+        verifyNoInteractions(knowledgeRetrieval);
     }
 
     @Test
     void reportsAnEmptyKnowledgeBaseWithoutError() {
-        when(retrievalService.retrieve(any()))
+        when(knowledgeRetrieval.retrieve(any()))
                 .thenReturn(Mono.just(new KnowledgeBaseRetrievalResult("", List.of())));
 
         var outcome = handler().execute(
@@ -113,7 +113,7 @@ class KnowledgeBaseRetrievalToolTest {
 
     @Test
     void reportsRetrievalFailuresAsToolErrors() {
-        when(retrievalService.retrieve(any())).thenReturn(Mono.error(new IllegalStateException("db down")));
+        when(knowledgeRetrieval.retrieve(any())).thenReturn(Mono.error(new IllegalStateException("db down")));
 
         var outcome = handler().execute(
                 request("{\"query\":\"安装\"}"), LangChain4jToolMapper.arguments("{\"query\":\"安装\"}"));
@@ -124,8 +124,8 @@ class KnowledgeBaseRetrievalToolTest {
 
     @Test
     void registersWithTheHarnessToolkitAndExecutesThroughIt() {
-        when(retrievalService.retrieve(any())).thenReturn(Mono.just(result()));
-        var toolkit = new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, context())
+        when(knowledgeRetrieval.retrieve(any())).thenReturn(Mono.just(result()));
+        var toolkit = new KnowledgeBaseRetrievalTool(knowledgeRetrieval, embeddings, context())
                 .register(new HarnessToolkit());
 
         var outcome = toolkit.execute(ToolExecutionRequest.builder()
@@ -139,8 +139,8 @@ class KnowledgeBaseRetrievalToolTest {
 
     @Test
     void exposesCitationsAfterRetrieval() {
-        when(retrievalService.retrieve(any())).thenReturn(Mono.just(result()));
-        var tool = new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, context());
+        when(knowledgeRetrieval.retrieve(any())).thenReturn(Mono.just(result()));
+        var tool = new KnowledgeBaseRetrievalTool(knowledgeRetrieval, embeddings, context());
 
         tool.handler().execute(
                 request("{\"query\":\"安装\"}"), LangChain4jToolMapper.arguments("{\"query\":\"安装\"}"));
@@ -149,7 +149,7 @@ class KnowledgeBaseRetrievalToolTest {
     }
 
     private HarnessToolkit.ToolHandler handler() {
-        return new KnowledgeBaseRetrievalTool(retrievalService, embeddingService, context()).handler();
+        return new KnowledgeBaseRetrievalTool(knowledgeRetrieval, embeddings, context()).handler();
     }
 
     private static ToolExecutionRequest request(String arguments) {

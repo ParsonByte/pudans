@@ -37,7 +37,7 @@ public class L2SceneTaskHandler implements AiTaskHandler {
 
     private final SceneSegmentation sceneAi;
 
-    private final L2Pipeline pipelineService;
+    private final L2Pipeline l2Pipeline;
 
     @Override
     public String taskType() {
@@ -96,7 +96,7 @@ public class L2SceneTaskHandler implements AiTaskHandler {
         return sceneAi
                 .extract(systemPrompt, newL1, existingScenes)
                 .defaultIfEmpty(List.of())
-                .flatMap(scenes -> pipelineService.process(
+                .flatMap(scenes -> l2Pipeline.process(
                         new L2Pipeline.Request(
                                 teamId,
                                 agentId,

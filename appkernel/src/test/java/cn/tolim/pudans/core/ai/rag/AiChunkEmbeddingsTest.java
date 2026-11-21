@@ -30,10 +30,10 @@ import reactor.test.StepVerifier;
 class AiChunkEmbeddingsTest {
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
-    Embeddings embeddingService;
+    Embeddings embeddings;
 
     @Mock
     AiKbEmbeddingStore embeddingStore;
@@ -47,7 +47,7 @@ class AiChunkEmbeddingsTest {
         var second = chunk(2L, "second");
         var firstVector = new float[] {0.1f, 0.2f};
         var secondVector = new float[] {0.3f, 0.4f};
-        when(embeddingService.embed(List.of("first", "second"), "kb-model"))
+        when(embeddings.embed(List.of("first", "second"), "kb-model"))
                 .thenReturn(Mono.just(new EmbeddingBatch(
                         "text-embedding-3-small", 2, List.of(firstVector, secondVector))));
         when(embeddingStore.updateEmbedding(1L, firstVector)).thenReturn(Mono.empty());
@@ -63,20 +63,20 @@ class AiChunkEmbeddingsTest {
     @Test
     void fallsBackToSettingModelWhenKnowledgeBaseModelIsBlank() {
         var vector = new float[] {1f, 2f};
-        when(settingService.spec()).thenReturn(Mono.just(setting("setting-model")));
-        when(embeddingService.embed(List.of("hello"), "setting-model"))
+        when(aiSettings.spec()).thenReturn(Mono.just(setting("setting-model")));
+        when(embeddings.embed(List.of("hello"), "setting-model"))
                 .thenReturn(Mono.just(new EmbeddingBatch("text-embedding-3-small", 2, List.of(vector))));
         when(embeddingStore.updateEmbedding(1L, vector)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.embed(List.of(chunk(1L, "hello")), " ")).verifyComplete();
 
-        verify(embeddingService).embed(List.of("hello"), "setting-model");
-        verify(embeddingService, never()).embed(anyList());
+        verify(embeddings).embed(List.of("hello"), "setting-model");
+        verify(embeddings, never()).embed(anyList());
     }
 
     @Test
     void skipsEmbeddingWhenKnowledgeBaseModelIsMissing() {
-        when(embeddingService.embed(anyList(), eq("kb-model")))
+        when(embeddings.embed(anyList(), eq("kb-model")))
                 .thenReturn(Mono.error(modelMissing()));
 
         StepVerifier.create(service.embed(List.of(chunk(1L, "hello")), "kb-model")).verifyComplete();
@@ -86,25 +86,25 @@ class AiChunkEmbeddingsTest {
 
     @Test
     void skipsEmbeddingWhenSettingHasNoKnowledgeBaseModel() {
-        when(settingService.spec()).thenReturn(Mono.just(setting(null)));
+        when(aiSettings.spec()).thenReturn(Mono.just(setting(null)));
 
         StepVerifier.create(service.embed(List.of(chunk(1L, "hello")), null)).verifyComplete();
 
-        verifyNoInteractions(embeddingService, embeddingStore);
+        verifyNoInteractions(embeddings, embeddingStore);
     }
 
     @Test
     void skipsEmbeddingWhenSettingIsMissing() {
-        when(settingService.spec()).thenReturn(Mono.empty());
+        when(aiSettings.spec()).thenReturn(Mono.empty());
 
         StepVerifier.create(service.embed(List.of(chunk(1L, "hello")), null)).verifyComplete();
 
-        verifyNoInteractions(embeddingService, embeddingStore);
+        verifyNoInteractions(embeddings, embeddingStore);
     }
 
     @Test
     void propagatesUpstreamEmbeddingErrors() {
-        when(embeddingService.embed(anyList(), eq("kb-model")))
+        when(embeddings.embed(anyList(), eq("kb-model")))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.BAD_GATEWAY, "ai-embedding-upstream-error", "嵌入服务调用失败。")));
 
@@ -127,7 +127,7 @@ class AiChunkEmbeddingsTest {
                 })
                 .verify();
 
-        verifyNoInteractions(embeddingService, embeddingStore);
+        verifyNoInteractions(embeddings, embeddingStore);
     }
 
     @Test
@@ -135,7 +135,7 @@ class AiChunkEmbeddingsTest {
         var blank = chunk(1L, "   ");
         var content = chunk(2L, "hello");
         var vector = new float[] {1f, 2f};
-        when(embeddingService.embed(List.of("hello"), "kb-model"))
+        when(embeddings.embed(List.of("hello"), "kb-model"))
                 .thenReturn(Mono.just(new EmbeddingBatch("text-embedding-3-small", 2, List.of(vector))));
         when(embeddingStore.updateEmbedding(2L, vector)).thenReturn(Mono.empty());
 
@@ -147,7 +147,7 @@ class AiChunkEmbeddingsTest {
 
     @Test
     void rejectsVectorCountMismatch() {
-        when(embeddingService.embed(anyList(), eq("kb-model")))
+        when(embeddings.embed(anyList(), eq("kb-model")))
                 .thenReturn(Mono.just(new EmbeddingBatch(
                         "text-embedding-3-small", 2, List.of(new float[] {1f, 2f}))));
 
@@ -165,7 +165,7 @@ class AiChunkEmbeddingsTest {
     void ignoresEmptyChunkLists() {
         StepVerifier.create(service.embed(List.of(), "kb-model")).verifyComplete();
 
-        verifyNoInteractions(embeddingService, embeddingStore);
+        verifyNoInteractions(embeddings, embeddingStore);
     }
 
     private static KnowledgeBaseChunk chunk(Long id, String content) {

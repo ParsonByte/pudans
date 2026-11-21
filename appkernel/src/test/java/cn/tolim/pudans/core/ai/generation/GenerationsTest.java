@@ -63,10 +63,10 @@ class GenerationsTest {
     ReactiveExtensionClient client;
 
     @Mock
-    ProviderAccounts accountService;
+    ProviderAccounts providerAccounts;
 
     @Mock
-    RouteResolution routeResolutionService;
+    RouteResolution routeResolution;
 
     @Mock
     AiModelAdapterRegistry adapterRegistry;
@@ -81,7 +81,7 @@ class GenerationsTest {
     PlanQuotas planQuotas;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     AiGenerationRecorder recorder;
@@ -93,7 +93,7 @@ class GenerationsTest {
     CircuitBreaker circuitBreaker;
 
     @Mock
-    TeamQuotas teamQuotaService;
+    TeamQuotas teamQuotas;
 
     @Mock
     ProviderSpendGuard providerSpendGuard;
@@ -107,8 +107,8 @@ class GenerationsTest {
     @BeforeEach
     void setUpGuards() {
         lenient().when(providerSpendGuard.check(any(), any(), any())).thenReturn(Mono.empty());
-        lenient().when(teamQuotaService.check(any(), any())).thenReturn(Mono.empty());
-        lenient().when(settingService.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
+        lenient().when(teamQuotas.check(any(), any())).thenReturn(Mono.empty());
+        lenient().when(aiSettings.spec()).thenReturn(Mono.just(new AiSetting.Spec()));
         lenient().when(planResolution.resolve(USER)).thenReturn(Mono.just(resolved()));
         lenient()
                 .when(planQuotas.reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any()))
@@ -199,7 +199,7 @@ class GenerationsTest {
         var routeGroup = routeGroup("default");
         when(requestRepository.findByUserAndIdempotency(USER, IDEMPOTENCY_KEY))
                 .thenReturn(Mono.empty());
-        when(routeResolutionService.resolveCapability(any()))
+        when(routeResolution.resolveCapability(any()))
                 .thenReturn(Mono.just(new RouteResolution.Resolution(
                         routeGroup, null, null, plan, List.of())));
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(primaryProvider));
@@ -263,7 +263,7 @@ class GenerationsTest {
         verify(planQuotas, never())
                 .reserve(anyString(), anyString(), any(), anyLong(), anyString(), any(), any());
         verify(planQuotas, never()).release(anyString());
-        verify(teamQuotaService, never()).check(any(), any());
+        verify(teamQuotas, never()).check(any(), any());
         verify(providerSpendGuard).check(any(), any(), any());
     }
 
@@ -290,7 +290,7 @@ class GenerationsTest {
                 .thenReturn(Mono.empty());
         when(client.get(AiModel.class, model.getMetadata().getName())).thenReturn(Mono.just(model));
         when(client.get(AiProvider.class, model.getSpec().getProvider())).thenReturn(Mono.just(provider));
-        when(accountService.firstEnabled(model.getSpec().getProvider())).thenReturn(Mono.just(account));
+        when(providerAccounts.firstEnabled(model.getSpec().getProvider())).thenReturn(Mono.just(account));
     }
 
     private static AiGenerationCommand command(

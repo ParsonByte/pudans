@@ -34,13 +34,13 @@ class MinimaxApiClientTest {
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
-    private final ProviderAccounts accountService = mock(ProviderAccounts.class);
+    private final ProviderAccounts providerAccounts = mock(ProviderAccounts.class);
 
     private final AtomicReference<ClientRequest> captured = new AtomicReference<>();
 
     @Test
     void postsJsonWithBearerAndApiKey() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("mm-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("mm-key"));
 
         var node = client(json("{\"lyrics\":\"hello\",\"base_resp\":{\"status_code\":0}}"))
                 .post(provider(AiProvider.Protocol.MINIMAX), account(),
@@ -60,7 +60,7 @@ class MinimaxApiClientTest {
 
     @Test
     void rejectsBaseRespErrors() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("mm-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("mm-key"));
 
         assertThatThrownBy(() -> client(json(
                         "{\"base_resp\":{\"status_code\":1008,\"status_msg\":\"insufficient balance\"}}"))
@@ -75,7 +75,7 @@ class MinimaxApiClientTest {
 
     @Test
     void getsWithQueryParameters() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("mm-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("mm-key"));
 
         client(json("{\"files\":[]}"))
                 .get(provider(AiProvider.Protocol.MINIMAX), account(),
@@ -88,7 +88,7 @@ class MinimaxApiClientTest {
 
     @Test
     void uploadsMultipartFile() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("mm-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("mm-key"));
 
         client(json("{\"file\":{\"file_id\":1},\"base_resp\":{\"status_code\":0}}"))
                 .upload(provider(AiProvider.Protocol.MINIMAX), account(),
@@ -107,7 +107,7 @@ class MinimaxApiClientTest {
 
     @Test
     void streamsJsonEvents() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("mm-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("mm-key"));
 
         var events = client(sse("{\"delta\":\"a\"}", "{\"delta\":\"b\"}", "[DONE]"))
                 .postStream(provider(AiProvider.Protocol.MINIMAX), account(),
@@ -121,7 +121,7 @@ class MinimaxApiClientTest {
 
     @Test
     void downloadsBinaryContent() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("mm-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("mm-key"));
         var response = ClientResponse.create(HttpStatus.OK)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
                 .body("binary")
@@ -151,6 +151,6 @@ class MinimaxApiClientTest {
             return Mono.just(response);
         };
         return new MinimaxApiClient(
-                WebClient.builder().exchangeFunction(exchange).build(), mapper, accountService);
+                WebClient.builder().exchangeFunction(exchange).build(), mapper, providerAccounts);
     }
 }

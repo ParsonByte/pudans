@@ -59,10 +59,10 @@ class AgentRuntimesTest {
     private static final Instant NOW = Instant.parse("2026-11-19T00:00:00Z");
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
-    EnvironmentVariables environmentService;
+    EnvironmentVariables environmentVariables;
 
     @Mock
     AiAgentRuntimeRepository repository;
@@ -93,8 +93,8 @@ class AgentRuntimesTest {
         properties.getRuntime().setLockSeconds(60);
         properties.getRuntime().setLogPollSeconds(2);
         service = new AgentRuntimes(
-                teamService,
-                environmentService,
+                teams,
+                environmentVariables,
                 repository,
                 snapshotRepository,
                 registry,
@@ -108,10 +108,10 @@ class AgentRuntimesTest {
     void startsASandboxAndInjectsTheGatewayEnvironment() {
         lockAcquired();
         var adapter = mock(SandboxProviderAdapter.class);
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.empty());
         when(registry.adapter(AiSandboxProvider.Provider.ALIYUN)).thenReturn(Mono.just(adapter));
-        when(environmentService.resolveValues(AGENT)).thenReturn(Mono.just(Map.of("FOO", "bar")));
+        when(environmentVariables.resolveValues(AGENT)).thenReturn(Mono.just(Map.of("FOO", "bar")));
         when(repository.upsert(any())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(adapter.create(any())).thenReturn(Mono.just(new SandboxHandle("sb-1", "https://sandbox.example.com")));
         when(repository.updateState(
@@ -157,7 +157,7 @@ class AgentRuntimesTest {
     @Test
     void startIsIdempotentForAnAlreadyRunningSandbox() {
         lockAcquired();
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
 
         StepVerifier.create(service.start(AGENT, USER))
@@ -168,14 +168,14 @@ class AgentRuntimesTest {
                 .verifyComplete();
 
         verifyNoInteractions(registry);
-        verifyNoInteractions(environmentService);
+        verifyNoInteractions(environmentVariables);
         verify(repository, never()).upsert(any());
         verify(repository, never()).updateState(any(), any(), any(), any(), any(), anyBoolean());
     }
 
     @Test
     void rejectsStartWhenAnotherOperationHoldsTheLock() {
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         when(valueOperations.setIfAbsent(anyString(), anyString(), any(Duration.class)))
                 .thenReturn(Mono.just(false));
@@ -190,7 +190,7 @@ class AgentRuntimesTest {
 
     @Test
     void rejectsStartWhenTheAgentHasNoRuntimeProvider() {
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.NONE)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.NONE)));
 
         StepVerifier.create(service.start(AGENT, USER))
                 .expectErrorSatisfies(error -> assertApiError(error, SandboxErrors.AGENT_NOT_CONFIGURED))
@@ -205,7 +205,7 @@ class AgentRuntimesTest {
     void stopsAndDestroysARunningSandbox() {
         lockAcquired();
         var adapter = mock(SandboxProviderAdapter.class);
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
         when(repository.updateState(
                         AGENT, SandboxState.STOPPING, "sb-1", "https://sandbox.example.com", null, false))
@@ -228,7 +228,7 @@ class AgentRuntimesTest {
     @Test
     void stopIsIdempotentForAnAlreadyStoppedRuntime() {
         lockAcquired();
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.STOPPED, null)));
 
         StepVerifier.create(service.stop(AGENT, USER))
@@ -243,7 +243,7 @@ class AgentRuntimesTest {
     void deletesTheSandboxAndTheRuntimeRecord() {
         lockAcquired();
         var adapter = mock(SandboxProviderAdapter.class);
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
         when(registry.adapter(AiSandboxProvider.Provider.ALIYUN)).thenReturn(Mono.just(adapter));
         when(adapter.destroy("sb-1")).thenReturn(Mono.empty());
@@ -259,10 +259,10 @@ class AgentRuntimesTest {
     @Test
     void storesAWorkspaceSnapshot() {
         var adapter = mock(SandboxProviderAdapter.class);
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
         when(registry.adapter(AiSandboxProvider.Provider.ALIYUN)).thenReturn(Mono.just(adapter));
-        when(environmentService.resolveValues(AGENT)).thenReturn(Mono.just(Map.of()));
+        when(environmentVariables.resolveValues(AGENT)).thenReturn(Mono.just(Map.of()));
         when(repository.markActive(AGENT)).thenReturn(Mono.empty());
         when(adapter.exec(eq("sb-1"), any()))
                 .thenReturn(Mono.just(new SandboxExecResult(0, "", "", 5)));
@@ -287,14 +287,14 @@ class AgentRuntimesTest {
     @Test
     void restoresAWorkspaceSnapshot() {
         var adapter = mock(SandboxProviderAdapter.class);
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
         when(registry.adapter(AiSandboxProvider.Provider.ALIYUN)).thenReturn(Mono.just(adapter));
         when(snapshotRepository.find(7L, AGENT)).thenReturn(Mono.just(
                 new cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository.SnapshotRecord(
                         7L, AGENT, "release", "hello".getBytes(), 5, USER, NOW)));
         when(adapter.writeFile(eq("sb-1"), anyString(), any())).thenReturn(Mono.empty());
-        when(environmentService.resolveValues(AGENT)).thenReturn(Mono.just(Map.of()));
+        when(environmentVariables.resolveValues(AGENT)).thenReturn(Mono.just(Map.of()));
         when(repository.markActive(AGENT)).thenReturn(Mono.empty());
         when(adapter.exec(eq("sb-1"), any()))
                 .thenReturn(Mono.just(new SandboxExecResult(0, "", "", 5)));
@@ -308,7 +308,7 @@ class AgentRuntimesTest {
     @Test
     void reportsTheSandboxStatus() {
         var adapter = mock(SandboxProviderAdapter.class);
-        when(teamService.requireAgent(AGENT, USER))
+        when(teams.requireAgent(AGENT, USER))
                 .thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT))
                 .thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
@@ -330,10 +330,10 @@ class AgentRuntimesTest {
     @Test
     void executesACommandInTheRunningSandbox() {
         var adapter = mock(SandboxProviderAdapter.class);
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
         when(registry.adapter(AiSandboxProvider.Provider.ALIYUN)).thenReturn(Mono.just(adapter));
-        when(environmentService.resolveValues(AGENT)).thenReturn(Mono.just(Map.of("FOO", "bar")));
+        when(environmentVariables.resolveValues(AGENT)).thenReturn(Mono.just(Map.of("FOO", "bar")));
         when(adapter.exec(eq("sb-1"), any()))
                 .thenReturn(Mono.just(new SandboxExecResult(0, "hello\n", "", 12)));
         when(repository.markActive(AGENT)).thenReturn(Mono.empty());
@@ -361,7 +361,7 @@ class AgentRuntimesTest {
 
     @Test
     void rejectsExecWhenTheSandboxIsNotRunning() {
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.STOPPED, null)));
 
         StepVerifier.create(service.exec(AGENT, USER, "echo", List.of("hello"), null, 30))
@@ -369,7 +369,7 @@ class AgentRuntimesTest {
                 .verify();
 
         verifyNoInteractions(registry);
-        verifyNoInteractions(environmentService);
+        verifyNoInteractions(environmentVariables);
     }
 
     @Test
@@ -378,12 +378,12 @@ class AgentRuntimesTest {
                 .expectErrorSatisfies(error -> assertApiError(error, SandboxErrors.CONFIG_INVALID))
                 .verify();
 
-        verifyNoInteractions(teamService);
+        verifyNoInteractions(teams);
     }
 
     @Test
     void replaysBufferedLogsWithoutFollowing() {
-        when(teamService.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
+        when(teams.requireAgent(AGENT, USER)).thenReturn(Mono.just(agent(AiAgent.RuntimeProvider.ALIYUN)));
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
         when(logBuffer.snapshot(AGENT)).thenReturn(List.of(
                 new SandboxLogEvent(NOW, "stdout", "first"),
@@ -403,7 +403,7 @@ class AgentRuntimesTest {
                 .expectErrorSatisfies(error -> assertApiError(error, SandboxErrors.CONFIG_INVALID))
                 .verify();
 
-        verifyNoInteractions(teamService);
+        verifyNoInteractions(teams);
     }
 
     private void lockAcquired() {

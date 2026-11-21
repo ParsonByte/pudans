@@ -44,7 +44,7 @@ public class SubagentToolFactory {
 
     private static final String AGENT_SOURCE = "pudans-subagent";
 
-    private final AiGateway gatewayService;
+    private final AiGateway aiGateway;
 
     private final AgentStateStore stateStore;
 
@@ -167,8 +167,8 @@ public class SubagentToolFactory {
         return HarnessAgent.builder()
                 .name("subagent-" + subagent.getMetadata().getName())
                 .systemPrompt(spec.getPrompt())
-                .chatModel(new GatewayChatModel(gatewayService, context, runState))
-                .streamingChatModel(new GatewayStreamingChatModel(gatewayService, context, runState))
+                .chatModel(new GatewayChatModel(aiGateway, context, runState))
+                .streamingChatModel(new GatewayStreamingChatModel(aiGateway, context, runState))
                 .toolkit(toolkit)
                 .stateStore(stateStore)
                 .journalStore(journalStore)

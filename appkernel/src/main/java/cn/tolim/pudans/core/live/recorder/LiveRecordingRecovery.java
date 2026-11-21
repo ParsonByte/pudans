@@ -46,7 +46,7 @@ public class LiveRecordingRecovery {
 
     private final ReactiveExtensionClient client;
 
-    private final RecordingStatus statusService;
+    private final RecordingStatus recordingStatus;
 
     private final LiveRecorderRegistry registry;
 
@@ -114,7 +114,7 @@ public class LiveRecordingRecovery {
         var name = recording.getMetadata().getName();
         var state = recording.getStatus() == null ? null : recording.getStatus().getState();
         var message = "录制器实例失联，录制中断（原状态 " + state + "）";
-        return statusService
+        return recordingStatus
                 .fail(name, LiveErrorCode.LIVE_RECORDER_LOST, message)
                 .then(cleanKeys(name))
                 .then(cleanEmptyDir(name))

@@ -46,15 +46,15 @@ public class AiProviderBalanceProbeClient {
 
     private final ObjectMapper mapper;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     public AiProviderBalanceProbeClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService) {
+            ProviderAccounts providerAccounts) {
         this.webClient = webClient;
         this.mapper = mapper;
-        this.accountService = accountService;
+        this.providerAccounts = providerAccounts;
     }
 
     public static boolean configured(@Nullable AiProviderAccount account) {
@@ -71,7 +71,7 @@ public class AiProviderBalanceProbeClient {
                     var uri = uri(provider, probe);
                     var token = StringUtils.hasText(probe.getToken())
                             ? Mono.just(probe.getToken().strip())
-                            : accountService.apiKey(account).defaultIfEmpty("");
+                            : providerAccounts.apiKey(account).defaultIfEmpty("");
                     return token.flatMap(value -> request(probe, uri, value).map(this::parse));
                 })
                 .onErrorMap(IllegalArgumentException.class, error -> notConfigured())

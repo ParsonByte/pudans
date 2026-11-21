@@ -12,9 +12,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AiMemoryContextBuilder {
 
-    private final MemoryRecall recallService;
+    private final MemoryRecall memoryRecall;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final MemoryAssetBindingResolver bindingResolver;
 
@@ -23,13 +23,13 @@ public class AiMemoryContextBuilder {
         if (query == null || query.isBlank()) {
             return Mono.just(MemoryInjection.empty());
         }
-        return settingService.memoryEnabled().flatMap(enabled -> {
+        return aiSettings.memoryEnabled().flatMap(enabled -> {
             if (!Boolean.TRUE.equals(enabled)) {
                 return Mono.just(MemoryInjection.empty());
             }
             return bindingResolver
                     .borrowedScopes(context)
-                    .flatMap(scopes -> recallService.build(context, query, l1Limit, l2Limit, null, scopes))
+                    .flatMap(scopes -> memoryRecall.build(context, query, l1Limit, l2Limit, null, scopes))
                     .defaultIfEmpty(MemoryInjection.empty());
         });
     }

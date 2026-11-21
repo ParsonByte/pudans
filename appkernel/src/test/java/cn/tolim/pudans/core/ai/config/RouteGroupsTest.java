@@ -23,13 +23,13 @@ class RouteGroupsTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     private RouteGroups service;
 
     @BeforeEach
     void setUp() {
-        service = new RouteGroups(client, settingService);
+        service = new RouteGroups(client, aiSettings);
     }
 
     @Test
@@ -38,7 +38,7 @@ class RouteGroupsTest {
         spec.setDefaultRouteGroup("default");
         var group = new AiRouteGroup();
         group.setMetadata(metadata("default"));
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
         when(client.get(AiRouteGroup.class, "default")).thenReturn(Mono.just(group));
 
         StepVerifier.create(service.defaultGroup())
@@ -51,7 +51,7 @@ class RouteGroupsTest {
         var spec = new AiSetting.Spec();
         var group = new AiRouteGroup();
         group.setMetadata(metadata("fallback"));
-        when(settingService.spec()).thenReturn(Mono.just(spec));
+        when(aiSettings.spec()).thenReturn(Mono.just(spec));
         when(client.listAll(org.mockito.ArgumentMatchers.eq(AiRouteGroup.class),
                         org.mockito.ArgumentMatchers.any(),
                         org.mockito.ArgumentMatchers.any()))

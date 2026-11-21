@@ -55,7 +55,7 @@ public class AiGenerationRecorder {
 
     private final PlanQuotas planQuotas;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final AiMetrics metrics;
 
@@ -243,7 +243,7 @@ public class AiGenerationRecorder {
     }
 
     private Mono<AiSetting.Billing> billing() {
-        return settingService
+        return aiSettings
                 .spec()
                 .map(spec -> spec.getBilling() == null ? new AiSetting.Billing() : spec.getBilling())
                 .defaultIfEmpty(new AiSetting.Billing());

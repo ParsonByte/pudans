@@ -33,15 +33,15 @@ public class Sources {
 
     private final LiveSourceValidator validator;
 
-    private final RoomResolver resolveService;
+    private final RoomResolver roomResolver;
 
-    private final SourceStatus statusService;
+    private final SourceStatus sourceStatus;
 
     private final LiveSourceRegistry registry;
 
-    private final SourceHealth healthService;
+    private final SourceHealth sourceHealth;
 
-    private final Recordings recordingService;
+    private final Recordings recordings;
 
     private final LiveProperties properties;
 
@@ -62,7 +62,7 @@ public class Sources {
                     return validator
                             .ensureAbsent(name)
                             .then(Mono.defer(() -> validator.resolveStoragePolicy(autoRecord, storagePolicy)))
-                            .zipWhen(policy -> resolveService.resolve(
+                            .zipWhen(policy -> roomResolver.resolve(
                                     room.platform(), room.roomId(), false))
                             .flatMap(pair -> createSource(
                                     name,
@@ -83,14 +83,14 @@ public class Sources {
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_SOURCE_NOT_FOUND.exception()))
                 .flatMap(source -> {
                     var spec = source.getSpec();
-                    return resolveService
+                    return roomResolver
                             .resolve(spec.getPlatform(), spec.getRoomId(), force)
-                            .onErrorResume(ApiException.class, error -> statusService
+                            .onErrorResume(ApiException.class, error -> sourceStatus
                                     .applyError(name, error.getCode(), error.getMessage())
                                     .then(Mono.<LiveRoomInfo>error(error)))
                             .flatMap(info -> info.live()
-                                    ? statusService.applyLive(name, info)
-                                    : statusService.applyOffline(
+                                    ? sourceStatus.applyLive(name, info)
+                                    : sourceStatus.applyOffline(
                                             name, LiveErrorCode.LIVE_ROOM_OFFLINE.message()));
                 });
     }
@@ -109,10 +109,10 @@ public class Sources {
                     }
                     source.getSpec().setEnabled(enabled);
                     return client.update(source).flatMap(updated -> enabled
-                            ? statusService.transition(
+                            ? sourceStatus.transition(
                                     name, LiveSourceStateMachine.Event.ENABLED, null)
                             : stopCurrentRecording(updated)
-                                    .then(statusService.transition(
+                                    .then(sourceStatus.transition(
                                             name,
                                             LiveSourceStateMachine.Event.DISABLED,
                                             null)));
@@ -148,14 +148,14 @@ public class Sources {
                                     spec.setStoragePolicy(policy);
                                     ready = client.update(source);
                                 }
-                                return ready.then(resolveService
+                                return ready.then(roomResolver
                                         .resolve(spec.getPlatform(), spec.getRoomId(), true)
-                                        .onErrorResume(ApiException.class, error -> statusService
+                                        .onErrorResume(ApiException.class, error -> sourceStatus
                                                 .applyError(name, error.getCode(), error.getMessage())
                                                 .then(Mono.<LiveRoomInfo>error(error)))
                                         .flatMap(info -> info.live()
                                                 ? startManual(name, info)
-                                                : statusService
+                                                : sourceStatus
                                                         .applyOffline(
                                                                 name,
                                                                 LiveErrorCode.LIVE_ROOM_OFFLINE.message())
@@ -166,19 +166,19 @@ public class Sources {
     }
 
     public Mono<LiveSource> applyLive(String name, LiveRoomInfo info) {
-        return statusService.applyLive(name, info);
+        return sourceStatus.applyLive(name, info);
     }
 
     public Mono<LiveSource> applyOffline(String name, String message) {
-        return statusService.applyOffline(name, message);
+        return sourceStatus.applyOffline(name, message);
     }
 
     public Mono<LiveSource> applyError(String name, String code, String message) {
-        return statusService.applyError(name, code, message);
+        return sourceStatus.applyError(name, code, message);
     }
 
     public Mono<LiveSource> markRecording(String name, String recordingName) {
-        return statusService.markRecording(name, recordingName);
+        return sourceStatus.markRecording(name, recordingName);
     }
 
     public Mono<LiveSourceHealth> preview(String roomUrl) {
@@ -186,17 +186,17 @@ public class Sources {
                 .subscribeOn(Schedulers.boundedElastic())
                 .flatMap(room -> {
                     var name = LiveSourceValidator.resourceName(room);
-                    return resolveService
+                    return roomResolver
                             .resolve(room.platform(), room.roomId(), false)
-                            .map(info -> healthService.preview(name, info));
+                            .map(info -> sourceHealth.preview(name, info));
                 });
     }
 
     private Mono<LiveRecording> startManual(String name, LiveRoomInfo info) {
-        return statusService
+        return sourceStatus
                 .applyLive(name, info)
-                .flatMap(live -> recordingService.start(live, info, false, "api"))
-                .flatMap(recording -> statusService
+                .flatMap(live -> recordings.start(live, info, false, "api"))
+                .flatMap(recording -> sourceStatus
                         .markRecording(name, recording.getMetadata().getName())
                         .thenReturn(recording));
     }
@@ -206,7 +206,7 @@ public class Sources {
         if (!StringUtils.hasText(recording)) {
             return Mono.empty();
         }
-        return recordingService
+        return recordings
                 .stop(recording, "api")
                 .onErrorResume(error -> {
                     log.warn("停止直播源关联录制失败：{} {}", recording, error.getMessage());

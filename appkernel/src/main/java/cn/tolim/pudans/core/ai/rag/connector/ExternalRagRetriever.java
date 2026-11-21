@@ -23,7 +23,7 @@ public class ExternalRagRetriever {
 
     private final ExternalRagConnectorResolver connectorResolver;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     public static boolean isExternal(KnowledgeBase knowledgeBase) {
         return knowledgeBase != null
@@ -78,9 +78,9 @@ public class ExternalRagRetriever {
         if (!StringUtils.hasText(credentialRef)) {
             return Mono.empty();
         }
-        return accountService.get(credentialRef.strip())
+        return providerAccounts.get(credentialRef.strip())
                 .switchIfEmpty(Mono.error(configError(external, "凭据引用不存在。")))
-                .flatMap(account -> accountService.apiKey(account)
+                .flatMap(account -> providerAccounts.apiKey(account)
                         .switchIfEmpty(Mono.error(configError(external, "凭据引用未配置 API Key。"))));
     }
 

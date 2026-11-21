@@ -35,19 +35,19 @@ class LiveSourceCreateTest {
     ReactiveExtensionClient client;
 
     @Mock
-    RoomResolver resolveService;
+    RoomResolver roomResolver;
 
     @Mock
-    SourceStatus statusService;
+    SourceStatus sourceStatus;
 
     @Mock
     LiveSourceRegistry registry;
 
     @Mock
-    SourceHealth healthService;
+    SourceHealth sourceHealth;
 
     @Mock
-    Recordings recordingService;
+    Recordings recordings;
 
     private Sources service() {
         var validator = new LiveSourceValidator(
@@ -55,11 +55,11 @@ class LiveSourceCreateTest {
         return new Sources(
                 client,
                 validator,
-                resolveService,
-                statusService,
+                roomResolver,
+                sourceStatus,
                 registry,
-                healthService,
-                recordingService,
+                sourceHealth,
+                recordings,
                 new LiveProperties());
     }
 
@@ -71,7 +71,7 @@ class LiveSourceCreateTest {
     @Test
     void createsOfflineSourceWithDerivedNameAndDefaults() {
         when(client.fetch(LiveSource.class, "douyin-123456789")).thenReturn(Mono.empty());
-        when(resolveService.resolve(LivePlatform.DOUYIN, "123456789", false))
+        when(roomResolver.resolve(LivePlatform.DOUYIN, "123456789", false))
                 .thenReturn(Mono.just(offlineInfo()));
         when(client.create(any(LiveSource.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -102,7 +102,7 @@ class LiveSourceCreateTest {
                 .expectErrorMatches(error -> error instanceof ApiException api
                         && LiveErrorCode.LIVE_SOURCE_DUPLICATE.name().equals(api.getCode()))
                 .verify();
-        verifyNoInteractions(resolveService);
+        verifyNoInteractions(roomResolver);
     }
 
     @Test
@@ -111,5 +111,5 @@ class LiveSourceCreateTest {
                 .expectErrorMatches(error -> error instanceof ApiException api
                         && LiveErrorCode.LIVE_INVALID_SPEC.name().equals(api.getCode()))
                 .verify();
-        verifyNoInteractions(resolveService);
+        verifyNoInteractions(roomResolver);
     }}

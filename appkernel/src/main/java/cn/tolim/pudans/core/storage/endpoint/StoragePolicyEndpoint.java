@@ -31,7 +31,7 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
 
     private final StoragePolicyValidator validator;
 
-    private final Policies policyService;
+    private final Policies policies;
 
     private final StorageTransfer storageTransfer;
 
@@ -104,7 +104,7 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return storageTransfer
                 .test(name)
-                .flatMap(result -> policyService.recordTestResult(name, result).thenReturn(result))
+                .flatMap(result -> policies.recordTestResult(name, result).thenReturn(result))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 

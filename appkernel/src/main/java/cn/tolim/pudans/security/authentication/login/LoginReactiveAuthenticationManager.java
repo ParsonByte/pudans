@@ -20,13 +20,13 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManager {
 
-    private final ReactiveUserDetailsService userDetailsService;
+    private final ReactiveUserDetailsService reactiveUserDetailsService;
 
     private final Accounts accounts;
 
     private final PasswordEncoder passwordEncoder;
 
-    private final ReactiveUserDetailsPasswordService passwordService;
+    private final ReactiveUserDetailsPasswordService reactiveUserDetailsPasswordService;
 
     private Scheduler scheduler = Schedulers.boundedElastic();
 
@@ -55,7 +55,7 @@ class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManage
 
 
     Mono<UserDetails> lookupByUsername(String loginId) {
-        return userDetailsService.findByUsername(loginId);
+        return reactiveUserDetailsService.findByUsername(loginId);
     }
 
 
@@ -66,16 +66,16 @@ class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManage
         return accounts
                 .findUserByVerifiedEmail(loginId)
                 .flatMap(user ->
-                        userDetailsService.findByUsername(user.getMetadata().getName()));
+                        reactiveUserDetailsService.findByUsername(user.getMetadata().getName()));
     }
 
     private Mono<UserDetails> upgradePasswordIfNeeded(UserDetails userDetails, String password) {
-        if (passwordService != null) {
+        if (reactiveUserDetailsPasswordService != null) {
             var upgradeEncoding =
                     userDetails.getPassword() != null && passwordEncoder.upgradeEncoding(userDetails.getPassword());
             if (upgradeEncoding) {
                 var newPassword = passwordEncoder.encode(password);
-                return passwordService.updatePassword(userDetails, newPassword);
+                return reactiveUserDetailsPasswordService.updatePassword(userDetails, newPassword);
             }
         }
         return Mono.just(userDetails);

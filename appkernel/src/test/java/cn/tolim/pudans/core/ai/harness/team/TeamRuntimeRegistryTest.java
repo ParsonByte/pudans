@@ -13,11 +13,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TeamRuntimeRegistryTest {
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Test
     void reusesOneRuntimePerTeam() {
-        var registry = new TeamRuntimeRegistry(teamService, null);
+        var registry = new TeamRuntimeRegistry(teams, null);
 
         var first = registry.runtime("team-a");
         var second = registry.runtime("team-a");
@@ -29,7 +29,7 @@ class TeamRuntimeRegistryTest {
 
     @Test
     void rejectsBlankTeamNames() {
-        var registry = new TeamRuntimeRegistry(teamService, null);
+        var registry = new TeamRuntimeRegistry(teams, null);
 
         assertThatThrownBy(() -> registry.runtime(" "))
                 .isInstanceOf(IllegalArgumentException.class);

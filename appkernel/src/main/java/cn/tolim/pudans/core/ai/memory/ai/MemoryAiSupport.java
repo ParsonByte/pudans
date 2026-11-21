@@ -30,9 +30,9 @@ final class MemoryAiSupport {
 
     private static final String CODE_INVALID = "ai-memory-generation-invalid";
 
-    private final TextGenerations generationService;
+    private final TextGenerations textGenerations;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     private final ObjectMapper mapper;
 
@@ -41,7 +41,7 @@ final class MemoryAiSupport {
                 .map(code -> new GenerationRequest(code, systemPrompt, userPrompt, maxOutputTokens, TEMPERATURE))
                 .defaultIfEmpty(new GenerationRequest(
                         null, systemPrompt, userPrompt, maxOutputTokens, TEMPERATURE))
-                .flatMap(generationService::generate);
+                .flatMap(textGenerations::generate);
     }
 
     String write(Object value) {
@@ -203,7 +203,7 @@ final class MemoryAiSupport {
     }
 
     private Mono<String> routeGroup() {
-        return settingService.spec().flatMap(spec -> {
+        return aiSettings.spec().flatMap(spec -> {
             var code = spec.getMemory() == null ? null : spec.getMemory().getExtractionRouteGroup();
             return StringUtils.hasText(code) ? Mono.just(code.strip()) : Mono.empty();
         });

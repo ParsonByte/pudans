@@ -26,7 +26,7 @@ public class AiProviderModelSyncScheduler implements SmartLifecycle {
 
     private final ReactiveExtensionClient client;
 
-    private final ProviderModelSync modelSyncService;
+    private final ProviderModelSync providerModelSync;
 
     private volatile boolean running;
 
@@ -40,7 +40,7 @@ public class AiProviderModelSyncScheduler implements SmartLifecycle {
     }
 
     private Mono<Long> sync(String providerName) {
-        return modelSyncService
+        return providerModelSync
                 .sync(providerName)
                 .doOnNext(result -> log.debug(
                         "供应商 {} 模型同步完成：新增 {}，更新 {}，未变 {}。",

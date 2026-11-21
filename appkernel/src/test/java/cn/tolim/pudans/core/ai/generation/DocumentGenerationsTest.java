@@ -27,7 +27,7 @@ import reactor.test.StepVerifier;
 class DocumentGenerationsTest {
 
     @Mock
-    TextGenerations textGenerationService;
+    TextGenerations textGenerations;
 
     @Mock
     StorageTransfer storageTransfer;
@@ -36,12 +36,12 @@ class DocumentGenerationsTest {
 
     @BeforeEach
     void setUp() {
-        service = new DocumentGenerations(textGenerationService, storageTransfer);
+        service = new DocumentGenerations(textGenerations, storageTransfer);
     }
 
     @Test
     void storesMarkdownOutputAndStripsCodeFences() {
-        when(textGenerationService.generate(any()))
+        when(textGenerations.generate(any()))
                 .thenReturn(Mono.just(new GenerationResult("```markdown\n# 标题\n正文\n```", "gpt-test", "p", "a")));
         var file = storageFile("file-1");
         when(storageTransfer.upload(any())).thenReturn(Mono.just(file));
@@ -65,7 +65,7 @@ class DocumentGenerationsTest {
 
     @Test
     void generatesHtmlWithTheHtmlExtension() {
-        when(textGenerationService.generate(any()))
+        when(textGenerations.generate(any()))
                 .thenReturn(Mono.just(new GenerationResult("<html><body>内容</body></html>", "gpt-test", "p", "a")));
         var file = storageFile("file-2");
         when(storageTransfer.upload(any())).thenReturn(Mono.just(file));

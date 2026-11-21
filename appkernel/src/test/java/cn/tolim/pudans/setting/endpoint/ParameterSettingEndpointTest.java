@@ -27,7 +27,7 @@ import tools.jackson.databind.node.ObjectNode;
 class ParameterSettingEndpointTest {
 
     @Mock
-    ParameterGroups groupService;
+    ParameterGroups parameterGroups;
 
     @Mock
     MailSettings mailSettings;
@@ -39,7 +39,7 @@ class ParameterSettingEndpointTest {
 
     @BeforeEach
     void setUp() {
-        var endpoint = new ParameterSettingEndpoint(groupService, mailSettings, connectionTester);
+        var endpoint = new ParameterSettingEndpoint(parameterGroups, mailSettings, connectionTester);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -66,7 +66,7 @@ class ParameterSettingEndpointTest {
 
     @Test
     void newPathGetReturnsTheGroupValue() {
-        when(groupService.getGroup("site")).thenReturn(Mono.just(siteNode()));
+        when(parameterGroups.getGroup("site")).thenReturn(Mono.just(siteNode()));
 
         webTestClient
                 .get()
@@ -81,7 +81,7 @@ class ParameterSettingEndpointTest {
 
     @Test
     void newPathPutStoresTheGroupValueAndReportsRestart() {
-        when(groupService.updateGroup(eq("server"), any(ObjectNode.class)))
+        when(parameterGroups.updateGroup(eq("server"), any(ObjectNode.class)))
                 .thenReturn(Mono.just(new ParameterGroups.UpdateResult(true)));
 
         webTestClient
@@ -95,12 +95,12 @@ class ParameterSettingEndpointTest {
                 .expectHeader()
                 .valueEquals(ParameterSettingEndpoint.RESTART_REQUIRED_HEADER, "true");
 
-        verify(groupService).updateGroup(eq("server"), any(ObjectNode.class));
+        verify(parameterGroups).updateGroup(eq("server"), any(ObjectNode.class));
     }
 
     @Test
     void legacyPathGetRemainsAvailable() {
-        when(groupService.getLegacyGroup("basic")).thenReturn(Mono.just(siteNode()));
+        when(parameterGroups.getLegacyGroup("basic")).thenReturn(Mono.just(siteNode()));
 
         webTestClient
                 .get()
@@ -115,7 +115,7 @@ class ParameterSettingEndpointTest {
 
     @Test
     void legacyPathPutRemainsAvailable() {
-        when(groupService.updateLegacyGroup(eq("basic"), any(ObjectNode.class)))
+        when(parameterGroups.updateLegacyGroup(eq("basic"), any(ObjectNode.class)))
                 .thenReturn(Mono.just(new ParameterGroups.UpdateResult(false)));
 
         webTestClient
@@ -128,7 +128,7 @@ class ParameterSettingEndpointTest {
                 .isNoContent();
 
         var captor = ArgumentCaptor.forClass(ObjectNode.class);
-        verify(groupService).updateLegacyGroup(eq("basic"), captor.capture());
+        verify(parameterGroups).updateLegacyGroup(eq("basic"), captor.capture());
         assertThat(captor.getValue().get("title").asString()).isEqualTo("Pudans");
     }
 

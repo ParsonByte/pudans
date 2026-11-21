@@ -40,7 +40,7 @@ public class PlanVouchers {
 
     public static final String CODE_GRANT_INVALID = "ai-plan-voucher-grant-invalid";
 
-    private final PlanResolution resolutionService;
+    private final PlanResolution planResolution;
 
     private final PlanCounterRepository counterRepository;
 
@@ -56,7 +56,7 @@ public class PlanVouchers {
 
     @Autowired
     public PlanVouchers(
-            PlanResolution resolutionService,
+            PlanResolution planResolution,
             PlanCounterRepository counterRepository,
             PlanVoucherRepository voucherRepository,
             PlanWindowClock windowClock,
@@ -64,7 +64,7 @@ public class PlanVouchers {
             Groups userGroupService,
             ReactiveTransactionManager transactionManager) {
         this(
-                resolutionService,
+                planResolution,
                 counterRepository,
                 voucherRepository,
                 windowClock,
@@ -74,14 +74,14 @@ public class PlanVouchers {
     }
 
     PlanVouchers(
-            PlanResolution resolutionService,
+            PlanResolution planResolution,
             PlanCounterRepository counterRepository,
             PlanVoucherRepository voucherRepository,
             PlanWindowClock windowClock,
             Accounts accounts,
             Groups userGroupService,
             TransactionalOperator transactionalOperator) {
-        this.resolutionService = resolutionService;
+        this.planResolution = planResolution;
         this.counterRepository = counterRepository;
         this.voucherRepository = voucherRepository;
         this.windowClock = windowClock;
@@ -92,7 +92,7 @@ public class PlanVouchers {
 
     public Mono<VoucherBalance> balance(String userId) {
         Assert.hasText(userId, "userId 不能为空");
-        return resolutionService.resolve(userId).flatMap(resolved -> totals(userId, resolved.plan()));
+        return planResolution.resolve(userId).flatMap(resolved -> totals(userId, resolved.plan()));
     }
 
     public Mono<VoucherBalance> totals(String userId, AiPlan plan) {
@@ -117,7 +117,7 @@ public class PlanVouchers {
         Assert.hasText(requestId, "requestId 不能为空");
         Assert.hasText(userId, "userId 不能为空");
         Assert.notNull(kind, "重置券类型不能为空");
-        return resolutionService
+        return planResolution
                 .resolve(userId)
                 .flatMap(resolved -> {
                     PlanCatalog.requireValid(resolved.plan());
@@ -281,7 +281,7 @@ public class PlanVouchers {
     }
 
     private Mono<String> grantOne(String userId, PlanVoucherKind kind, int count) {
-        return resolutionService.resolve(userId).flatMap(resolved -> {
+        return planResolution.resolve(userId).flatMap(resolved -> {
             var plan = resolved.plan();
             PlanCatalog.requireValid(plan);
             var periodKey = periodKey(periodOf(plan), windowClock.now());

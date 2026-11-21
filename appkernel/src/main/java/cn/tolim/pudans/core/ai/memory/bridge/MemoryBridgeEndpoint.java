@@ -31,7 +31,7 @@ public class MemoryBridgeEndpoint implements CustomEndpoint {
 
     private static final String CODE_SESSION_MISSING = "ai-gateway-session-missing";
 
-    private final MemoryBridge bridgeService;
+    private final MemoryBridge memoryBridge;
 
     private final AiEndpointRequests requests;
 
@@ -69,7 +69,7 @@ public class MemoryBridgeEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> atomicSearch(ServerRequest request) {
         return identity(request)
                 .zipWith(searchRequest(request))
-                .flatMap(tuple -> bridgeService
+                .flatMap(tuple -> memoryBridge
                         .atomicSearch(
                                 tuple.getT1().userId(),
                                 tuple.getT1().agentSource(),
@@ -82,7 +82,7 @@ public class MemoryBridgeEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> conversationSearch(ServerRequest request) {
         return identity(request)
                 .zipWith(searchRequest(request))
-                .flatMap(tuple -> bridgeService
+                .flatMap(tuple -> memoryBridge
                         .conversationSearch(
                                 tuple.getT1().userId(),
                                 tuple.getT1().agentSource(),
@@ -95,7 +95,7 @@ public class MemoryBridgeEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> scenarios(ServerRequest request) {
         return identity(request)
-                .flatMap(identity -> bridgeService
+                .flatMap(identity -> memoryBridge
                         .scenarios(identity.userId(), identity.agentSource(), identity.sessionKey())
                         .collectList()
                         .flatMap(scenes -> ServerResponse.ok().bodyValue(scenes)));
@@ -111,7 +111,7 @@ public class MemoryBridgeEndpoint implements CustomEndpoint {
                         return Mono.error(new ApiException(
                                 HttpStatus.BAD_REQUEST, CODE_BODY_INVALID, "sceneKey 不能为空。"));
                     }
-                    return bridgeService
+                    return memoryBridge
                             .readScenario(
                                     tuple.getT1().userId(),
                                     tuple.getT1().agentSource(),

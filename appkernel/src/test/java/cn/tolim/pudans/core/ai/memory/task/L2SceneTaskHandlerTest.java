@@ -54,7 +54,7 @@ class L2SceneTaskHandlerTest {
     SceneSegmentation sceneAi;
 
     @Mock
-    L2Pipeline pipelineService;
+    L2Pipeline l2Pipeline;
 
     private L2SceneTaskHandler handler;
 
@@ -66,7 +66,7 @@ class L2SceneTaskHandlerTest {
                 memoryL2Repository,
                 new MemoryPromptResolver(),
                 sceneAi,
-                pipelineService);
+                l2Pipeline);
     }
 
     @Test
@@ -81,7 +81,7 @@ class L2SceneTaskHandlerTest {
                 .thenReturn(Flux.fromIterable(newL1));
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.fromIterable(existing));
         when(sceneAi.extract("", newL1, existing)).thenReturn(Mono.just(extracted));
-        when(pipelineService.process(any(), any()))
+        when(l2Pipeline.process(any(), any()))
                 .thenReturn(Mono.just(new L2Pipeline.Result(List.of(), 55L, 1, 1)));
 
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
@@ -89,7 +89,7 @@ class L2SceneTaskHandlerTest {
 
         var requestCaptor = ArgumentCaptor.forClass(L2Pipeline.Request.class);
         var extractorCaptor = ArgumentCaptor.forClass(L2Pipeline.SceneExtractor.class);
-        verify(pipelineService).process(requestCaptor.capture(), extractorCaptor.capture());
+        verify(l2Pipeline).process(requestCaptor.capture(), extractorCaptor.capture());
         var request = requestCaptor.getValue();
         assertThat(request.teamId()).isEqualTo("team-a");
         assertThat(request.agentId()).isEqualTo("agent-a");
@@ -108,7 +108,7 @@ class L2SceneTaskHandlerTest {
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
 
-        verifyNoInteractions(sceneAi, pipelineService);
+        verifyNoInteractions(sceneAi, l2Pipeline);
         verifyNoInteractions(memoryL2Repository);
     }
 
@@ -119,7 +119,7 @@ class L2SceneTaskHandlerTest {
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
 
-        verifyNoInteractions(memoryL1Repository, sceneAi, pipelineService);
+        verifyNoInteractions(memoryL1Repository, sceneAi, l2Pipeline);
     }
 
     @Test
@@ -127,7 +127,7 @@ class L2SceneTaskHandlerTest {
         StepVerifier.create(handler.handle(task(Map.of("teamId", "team-a", "agentId", "agent-a"))))
                 .verifyComplete();
 
-        verifyNoInteractions(conversationRepository, memoryL1Repository, sceneAi, pipelineService);
+        verifyNoInteractions(conversationRepository, memoryL1Repository, sceneAi, l2Pipeline);
     }
 
     private static AiTask task(Map<String, Object> payload) {

@@ -51,7 +51,7 @@ class PlanVouchersTest {
     private static final String WEEKLY = PlanVoucherKind.WEEKLY_RESET.name();
 
     @Mock
-    PlanResolution resolutionService;
+    PlanResolution planResolution;
 
     @Mock
     PlanCounterRepository counterRepository;
@@ -83,7 +83,7 @@ class PlanVouchersTest {
         windowClock = new PlanWindowClock();
         windowClock.setClock(Clock.fixed(PlanTestFixtures.NOW, ZoneOffset.UTC));
         service = new PlanVouchers(
-                resolutionService,
+                planResolution,
                 counterRepository,
                 voucherRepository,
                 windowClock,
@@ -96,7 +96,7 @@ class PlanVouchersTest {
         fiveWindow = PlanTestFixtures.activeFiveHour(0, 0);
         weekWindow = PlanTestFixtures.activeWeek();
         lenient()
-                .when(resolutionService.resolve(UID))
+                .when(planResolution.resolve(UID))
                 .thenReturn(Mono.just(new PlanResolution.ResolvedPlan(
                         "standard", "套餐 standard", "User/" + UID, plan)));
         lenient()

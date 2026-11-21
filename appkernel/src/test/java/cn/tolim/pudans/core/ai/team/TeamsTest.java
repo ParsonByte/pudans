@@ -26,7 +26,7 @@ class TeamsTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiSettings settingService;
+    AiSettings aiSettings;
 
     @Mock
     Accounts accounts;
@@ -35,7 +35,7 @@ class TeamsTest {
 
     @BeforeEach
     void setUp() {
-        service = new Teams(client, settingService, accounts);
+        service = new Teams(client, aiSettings, accounts);
     }
 
     @Test
@@ -80,7 +80,7 @@ class TeamsTest {
     void defaultAgentUsesTheSettingDefaults() {
         var setting = new AiSetting();
         setting.getSpec().getDefaults().setAgent("agent-a");
-        when(settingService.defaults()).thenReturn(Mono.just(setting.getSpec().getDefaults()));
+        when(aiSettings.defaults()).thenReturn(Mono.just(setting.getSpec().getDefaults()));
         when(client.get(AiAgent.class, "agent-a"))
                 .thenReturn(Mono.just(agent("agent-a", "team-a", "alice", AiAgent.Visibility.TEAM)));
 

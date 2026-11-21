@@ -23,7 +23,7 @@ abstract class AbstractMinimaxClient {
 
     protected final ObjectMapper mapper;
 
-    protected final ProviderAccounts accountService;
+    protected final ProviderAccounts providerAccounts;
 
     private final WebClient webClient;
 
@@ -34,12 +34,12 @@ abstract class AbstractMinimaxClient {
     protected AbstractMinimaxClient(
             WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService,
+            ProviderAccounts providerAccounts,
             String errorCode,
             String defaultError) {
         this.webClient = Objects.requireNonNull(webClient, "AI WebClient 不能为空");
         this.mapper = Objects.requireNonNull(mapper, "ObjectMapper 不能为空");
-        this.accountService = Objects.requireNonNull(accountService, "供应商账号服务不能为空");
+        this.providerAccounts = Objects.requireNonNull(providerAccounts, "供应商账号服务不能为空");
         this.errorCode = Objects.requireNonNull(errorCode, "错误码不能为空");
         this.defaultError = Objects.requireNonNull(defaultError, "错误说明不能为空");
     }
@@ -50,7 +50,7 @@ abstract class AbstractMinimaxClient {
 
     protected final <T> Mono<T> withApiKey(
             AiProviderAccount account, Function<String, Mono<T>> call) {
-        return accountService.apiKey(account).defaultIfEmpty("").flatMap(call);
+        return providerAccounts.apiKey(account).defaultIfEmpty("").flatMap(call);
     }
 
     protected final HttpHeaders headers(AiProvider provider, String apiKey, MediaType accept) {

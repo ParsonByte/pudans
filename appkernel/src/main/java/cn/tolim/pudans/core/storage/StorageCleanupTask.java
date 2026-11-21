@@ -19,9 +19,9 @@ public class StorageCleanupTask {
 
     private static final int BATCH_SIZE = 100;
 
-    private final FileRecords fileService;
+    private final FileRecords fileRecords;
 
-    private final Uploads uploadService;
+    private final Uploads uploads;
 
     private final StorageTransfer storageTransfer;
 
@@ -41,14 +41,14 @@ public class StorageCleanupTask {
 
     Mono<Void> cleanup() {
         var now = Instant.now();
-        return fileService
+        return fileRecords
                 .listExpiredUploads(now, BATCH_SIZE)
-                .concatMap(file -> uploadService.abort(file.getMetadata().getName())
+                .concatMap(file -> uploads.abort(file.getMetadata().getName())
                         .onErrorResume(error -> {
                             log.warn("清理过期上传 [{}] 失败", file.getMetadata().getName(), error);
                             return Mono.empty();
                         }))
-                .thenMany(fileService
+                .thenMany(fileRecords
                         .listExpiredTrash(now, BATCH_SIZE)
                         .concatMap(file -> storageTransfer.purge(file.getMetadata().getName())
                                 .onErrorResume(error -> {

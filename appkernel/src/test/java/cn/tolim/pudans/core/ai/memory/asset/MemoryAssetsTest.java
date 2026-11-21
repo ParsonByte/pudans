@@ -52,7 +52,7 @@ class MemoryAssetsTest {
     ReactiveExtensionClient client;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     @Mock
     AiMemoryAssetRepository assetRepository;
@@ -70,7 +70,7 @@ class MemoryAssetsTest {
     AiMemoryL3Repository l3Repository;
 
     @Mock
-    Conversations conversationService;
+    Conversations conversations;
 
     @Mock
     MemoryTaskScheduler taskScheduler;
@@ -81,19 +81,19 @@ class MemoryAssetsTest {
     void setUp() {
         service = new MemoryAssets(
                 client,
-                teamService,
+                teams,
                 assetRepository,
                 generationLogRepository,
                 l1Repository,
                 l2Repository,
                 l3Repository,
-                conversationService,
+                conversations,
                 taskScheduler);
     }
 
     @Test
     void listSynthesizesAssetsFromExistingMemoryScopes() {
-        when(teamService.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
+        when(teams.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
         stubAssets();
         stubAgents();
         when(assetRepository.findScopes("team-a")).thenReturn(Flux.just(new ScopeRow("team-a", "user-1", "agent-a")));
@@ -117,7 +117,7 @@ class MemoryAssetsTest {
         when(assetRepository.findScopes(null)).thenReturn(Flux.empty());
         when(assetRepository.findAgentScopes(null)).thenReturn(Flux.empty());
         stubAssets(asset("asset-a", "team-a", "user-1", "agent-a", "owner-1", AiMemoryAsset.Visibility.TEAM));
-        when(teamService.isMember("team-a", "user-2")).thenReturn(Mono.just(false));
+        when(teams.isMember("team-a", "user-2")).thenReturn(Mono.just(false));
         stubAgents();
 
         StepVerifier.create(service.list("user-2", null, null, null, false, 50))
@@ -131,7 +131,7 @@ class MemoryAssetsTest {
         when(assetRepository.findAgentScopes("team-a")).thenReturn(Flux.empty());
         stubAssets(asset("asset-b", "team-a", "user-1", "agent-b", "user-1", AiMemoryAsset.Visibility.TEAM));
         stubAgents();
-        when(teamService.isMember("team-a", "user-2")).thenReturn(Mono.just(true));
+        when(teams.isMember("team-a", "user-2")).thenReturn(Mono.just(true));
         when(assetRepository.counts("team-a", "user-1", "agent-b")).thenReturn(Mono.just(COUNTS));
 
         StepVerifier.create(service.list("user-2", "team-a", null, null, false, 50))
@@ -143,8 +143,8 @@ class MemoryAssetsTest {
 
     @Test
     void duplicateScopeAssetCreationReturnsConflict() {
-        when(teamService.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
-        when(teamService.getAgent("agent-a")).thenReturn(Mono.just(agent("agent-a", "team-a", "user-1")));
+        when(teams.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
+        when(teams.getAgent("agent-a")).thenReturn(Mono.just(agent("agent-a", "team-a", "user-1")));
         stubAssets(asset("asset-a", "team-a", "user-1", "agent-a", "user-1", AiMemoryAsset.Visibility.TEAM));
 
         StepVerifier.create(service.create("user-1", createCommand()))
@@ -159,7 +159,7 @@ class MemoryAssetsTest {
 
     @Test
     void ownerCannotBindAssetToItsOwnSourceAgent() {
-        when(teamService.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
+        when(teams.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
         when(client.get(AiMemoryAsset.class, "asset-a"))
                 .thenReturn(Mono.just(asset(
                         "asset-a", "team-a", "user-1", "agent-a", "user-1", AiMemoryAsset.Visibility.TEAM)));
@@ -182,8 +182,8 @@ class MemoryAssetsTest {
         target2.getSpec().setAgents(List.of("agent-target"));
         var candidate = asset(
                 "asset-a", "team-a", "user-1", "agent-a", "user-1", AiMemoryAsset.Visibility.TEAM);
-        when(teamService.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
-        when(teamService.getAgent("agent-target")).thenReturn(Mono.just(agent("agent-target", "team-a", "user-1")));
+        when(teams.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
+        when(teams.getAgent("agent-target")).thenReturn(Mono.just(agent("agent-target", "team-a", "user-1")));
         when(client.get(AiMemoryAsset.class, "asset-a")).thenReturn(Mono.just(candidate));
         stubAssets(target, target2, candidate);
         when(assetRepository.scopeExists("team-a", "user-1", "agent-target")).thenReturn(Mono.just(false));
@@ -198,7 +198,7 @@ class MemoryAssetsTest {
     void privateAssetIsNotReadableByOtherTeamMembers() {
         var asset = asset(
                 "private-asset", "team-a", "user-9", "agent-a", "user-9", AiMemoryAsset.Visibility.PRIVATE);
-        when(teamService.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
+        when(teams.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
         when(client.get(AiMemoryAsset.class, "private-asset")).thenReturn(Mono.just(asset));
 
         StepVerifier.create(service.detail("user-1", "private-asset", "team-a"))
@@ -211,7 +211,7 @@ class MemoryAssetsTest {
     void clearDeletesAllFourLayersForOwner() {
         var asset = asset(
                 "asset-a", "team-a", "user-1", "agent-a", "user-1", AiMemoryAsset.Visibility.TEAM);
-        when(teamService.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
+        when(teams.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
         when(client.get(AiMemoryAsset.class, "asset-a")).thenReturn(Mono.just(asset));
         when(assetRepository.deleteMessagesByScope("team-a", "user-1", "agent-a")).thenReturn(Mono.just(3L));
         when(l1Repository.deleteByScope("team-a", "agent-a", "user-1")).thenReturn(Mono.just(2L));
@@ -236,7 +236,7 @@ class MemoryAssetsTest {
                         .isEqualTo(MemoryAssets.CODE_IMPORT_INVALID))
                 .verify();
 
-        verifyNoInteractions(conversationService, taskScheduler);
+        verifyNoInteractions(conversations, taskScheduler);
     }
 
     @Test
@@ -271,7 +271,7 @@ class MemoryAssetsTest {
                 "input",
                 "output",
                 NOW);
-        when(teamService.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
+        when(teams.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
         when(client.get(AiMemoryAsset.class, "asset-a")).thenReturn(Mono.just(asset));
         when(generationLogRepository.listByScope(
                         "team-a", "agent-a", AiMemoryPrompt.Layer.L1, "system", null, null, Long.MAX_VALUE, 50))
@@ -300,8 +300,8 @@ class MemoryAssetsTest {
         when(assetRepository.findScopes("team-a"))
                 .thenReturn(Flux.just(new ScopeRow("team-a", "user-1", "agent-a")));
         when(assetRepository.findAgentScopes("team-a")).thenReturn(Flux.empty());
-        when(teamService.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
-        when(teamService.getAgent("agent-target")).thenReturn(Mono.just(agent("agent-target", "team-a", "user-1")));
+        when(teams.isMember("team-a", "user-1")).thenReturn(Mono.just(true));
+        when(teams.getAgent("agent-target")).thenReturn(Mono.just(agent("agent-target", "team-a", "user-1")));
         when(assetRepository.scopeExists("team-a", "user-1", "agent-target")).thenReturn(Mono.just(false));
         when(client.create(any(AiMemoryAsset.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));

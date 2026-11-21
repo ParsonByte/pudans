@@ -29,7 +29,7 @@ public class AiProviderModelEndpoint implements CustomEndpoint {
 
     private static final String CODE_UNSUPPORTED = "ai-provider-models-unsupported";
 
-    private final ProviderModelSync modelSyncService;
+    private final ProviderModelSync providerModelSync;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -50,13 +50,13 @@ public class AiProviderModelEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> list(ServerRequest request) {
-        return modelSyncService
+        return providerModelSync
                 .list(request.pathVariable("name"))
                 .flatMap(models -> ServerResponse.ok().bodyValue(models));
     }
 
     private Mono<ServerResponse> syncModels(ServerRequest request) {
-        return modelSyncService
+        return providerModelSync
                 .sync(request.pathVariable("name"))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }

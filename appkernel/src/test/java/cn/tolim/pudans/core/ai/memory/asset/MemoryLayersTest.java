@@ -43,7 +43,7 @@ class MemoryLayersTest {
     private static final Instant NOW = Instant.parse("2026-11-19T00:00:00Z");
 
     @Mock
-    MemoryAssets assetService;
+    MemoryAssets memoryAssets;
 
     @Mock
     AiMemoryAssetRepository assetRepository;
@@ -62,7 +62,7 @@ class MemoryLayersTest {
     @BeforeEach
     void setUp() {
         service = new MemoryLayers(
-                assetService, assetRepository, l1Repository, l2Repository, l3Repository);
+                memoryAssets, assetRepository, l1Repository, l2Repository, l3Repository);
     }
 
     @Test
@@ -75,7 +75,7 @@ class MemoryLayersTest {
 
     @Test
     void updateL1RequiresOwnerAndWritesStrippedContent() {
-        when(assetService.requireOwner("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
+        when(memoryAssets.requireOwner("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
         var updated = new MemoryL1Item(
                 4L,
                 "record-4",
@@ -98,7 +98,7 @@ class MemoryLayersTest {
 
     @Test
     void updateL2ByPathPreservesMetadataBlock() {
-        when(assetService.requireOwner("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
+        when(memoryAssets.requireOwner("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
         var existing = scene("[META]{\"summary\":\"旧\"}[/META]旧正文");
         when(l2Repository.findByKey("team-a", "agent-a", "release")).thenReturn(Mono.just(existing));
         when(l2Repository.updateContent(anyString(), anyString(), anyLong(), anyString(), anyString()))
@@ -117,7 +117,7 @@ class MemoryLayersTest {
 
     @Test
     void updateL2WithoutPathFallsBackToNumericId() {
-        when(assetService.requireOwner("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
+        when(memoryAssets.requireOwner("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
         when(l2Repository.findById("team-a", "agent-a", 5L)).thenReturn(Mono.just(scene("正文")));
         when(l2Repository.updateContent(anyString(), anyString(), anyLong(), anyString(), anyString()))
                 .thenReturn(Mono.just(scene("正文")));
@@ -131,7 +131,7 @@ class MemoryLayersTest {
 
     @Test
     void listL0ReadsMessagesFromTheAssetScope() {
-        when(assetService.requireRead("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
+        when(memoryAssets.requireRead("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
         when(assetRepository.listMessages("team-a", "user-1", "agent-a", 100L, null, null, "发布", 20))
                 .thenReturn(Flux.just(message()));
 
@@ -145,7 +145,7 @@ class MemoryLayersTest {
 
     @Test
     void deleteL0DeletesSelectedMessagesWithinTheScope() {
-        when(assetService.requireOwner("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
+        when(memoryAssets.requireOwner("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
         when(assetRepository.deleteMessages(
                         "team-a", "user-1", "agent-a", List.of(9L), List.of("session-1")))
                 .thenReturn(Mono.just(1L));
@@ -173,7 +173,7 @@ class MemoryLayersTest {
 
     @Test
     void detailL3ReturnsEmptyPersonaWhenNoProfileExists() {
-        when(assetService.requireRead("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
+        when(memoryAssets.requireRead("user-1", "asset-a", "team-a")).thenReturn(Mono.just(assetRef()));
         when(l3Repository.findByScope("team-a", "agent-a")).thenReturn(Mono.empty());
 
         StepVerifier.create(service.detailL3("user-1", "asset-a", "team-a"))

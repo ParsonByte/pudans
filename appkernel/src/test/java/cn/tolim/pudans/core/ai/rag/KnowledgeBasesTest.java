@@ -52,10 +52,10 @@ class KnowledgeBasesTest {
     ReactiveExtensionClient client;
 
     @Mock
-    KnowledgeRetrieval retrievalService;
+    KnowledgeRetrieval knowledgeRetrieval;
 
     @Mock
-    KnowledgeIngestion ingestionService;
+    KnowledgeIngestion knowledgeIngestion;
 
     @Mock
     AiKbDocumentRepository documentRepository;
@@ -70,7 +70,7 @@ class KnowledgeBasesTest {
     StorageTransfer storageTransfer;
 
     @Mock
-    Embeddings embeddingService;
+    Embeddings embeddings;
 
     private KnowledgeBases service;
 
@@ -79,13 +79,13 @@ class KnowledgeBasesTest {
         service = new KnowledgeBases(
                 client,
                 new KnowledgeBaseAcl(),
-                retrievalService,
-                ingestionService,
+                knowledgeRetrieval,
+                knowledgeIngestion,
                 documentRepository,
                 chunkRepository,
                 queryLogRepository,
                 storageTransfer,
-                embeddingService);
+                embeddings);
     }
 
     @Test
@@ -124,18 +124,18 @@ class KnowledgeBasesTest {
         when(client.listAll(eq(KnowledgeBase.class), any(ListOptions.class), any(Sort.class)))
                 .thenReturn(Flux.just(knowledgeBase));
         var result = new KnowledgeBaseRetrievalResult("prompt", List.of());
-        when(retrievalService.retrieve(any(KnowledgeBaseRetrievalRequest.class)))
+        when(knowledgeRetrieval.retrieve(any(KnowledgeBaseRetrievalRequest.class)))
                 .thenReturn(Mono.just(result));
         var options = new RetrievalOptions(60, 0.3, 8, 4000);
 
-        when(embeddingService.embedOne("hello")).thenReturn(Mono.just(new float[] {0.1f, 0.2f}));
+        when(embeddings.embedOne("hello")).thenReturn(Mono.just(new float[] {0.1f, 0.2f}));
 
         StepVerifier.create(service.search("uid-alice", Set.of("role-a"), null, "hello", List.of("kb-a"), options))
                 .expectNext(result)
                 .verifyComplete();
 
         var request = ArgumentCaptor.forClass(KnowledgeBaseRetrievalRequest.class);
-        verify(retrievalService).retrieve(request.capture());
+        verify(knowledgeRetrieval).retrieve(request.capture());
         assertThat(request.getValue().userId()).isEqualTo("uid-alice");
         assertThat(request.getValue().query()).isEqualTo("hello");
         assertThat(request.getValue().knowledgeBases()).containsExactly(knowledgeBase);
@@ -154,7 +154,7 @@ class KnowledgeBasesTest {
         when(client.listAll(eq(KnowledgeBase.class), any(ListOptions.class), any(Sort.class)))
                 .thenReturn(Flux.just(knowledgeBase));
         var result = new KnowledgeBaseRetrievalResult("prompt", List.of());
-        when(retrievalService.retrieve(any(KnowledgeBaseRetrievalRequest.class)))
+        when(knowledgeRetrieval.retrieve(any(KnowledgeBaseRetrievalRequest.class)))
                 .thenReturn(Mono.just(result));
         var options = new RetrievalOptions(60, 0.3, 8, 4000);
 
@@ -163,9 +163,9 @@ class KnowledgeBasesTest {
                 .verifyComplete();
 
         var request = ArgumentCaptor.forClass(KnowledgeBaseRetrievalRequest.class);
-        verify(retrievalService).retrieve(request.capture());
+        verify(knowledgeRetrieval).retrieve(request.capture());
         assertThat(request.getValue().queryEmbedding()).isEmpty();
-        verifyNoInteractions(embeddingService);
+        verifyNoInteractions(embeddings);
     }
 
     @Test
@@ -184,7 +184,7 @@ class KnowledgeBasesTest {
                 .verify();
 
         verify(storageTransfer, never()).open(any(), any());
-        verify(ingestionService, never()).ingest(any(), any());
+        verify(knowledgeIngestion, never()).ingest(any(), any());
     }
 
     @Test
@@ -212,7 +212,7 @@ class KnowledgeBasesTest {
         when(storageTransfer.open(eq("file-1"), any(StorageReadOptions.class)))
                 .thenReturn(Mono.just(readResult(content)));
         var result = ingestionResult(9);
-        when(ingestionService.ingest(eq(knowledgeBase), any(KnowledgeBaseIngestionRequest.class)))
+        when(knowledgeIngestion.ingest(eq(knowledgeBase), any(KnowledgeBaseIngestionRequest.class)))
                 .thenReturn(Mono.just(result));
 
         StepVerifier.create(service.uploadDocument(knowledgeBase, "uid-alice", "file-1", null))
@@ -220,7 +220,7 @@ class KnowledgeBasesTest {
                 .verifyComplete();
 
         var request = ArgumentCaptor.forClass(KnowledgeBaseIngestionRequest.class);
-        verify(ingestionService).ingest(eq(knowledgeBase), request.capture());
+        verify(knowledgeIngestion).ingest(eq(knowledgeBase), request.capture());
         assertThat(request.getValue().fileName()).isEqualTo("manual.md");
         assertThat(request.getValue().mimeType()).isEqualTo("text/markdown");
         assertThat(request.getValue().uploadedBy()).isEqualTo("uid-alice");
@@ -257,7 +257,7 @@ class KnowledgeBasesTest {
                 })
                 .verify();
 
-        verify(ingestionService, never()).ingest(any(), any());
+        verify(knowledgeIngestion, never()).ingest(any(), any());
     }
 
     @Test
@@ -270,7 +270,7 @@ class KnowledgeBasesTest {
         when(storageTransfer.open(eq("file-1"), any(StorageReadOptions.class)))
                 .thenReturn(Mono.just(readResult("hello".getBytes(StandardCharsets.UTF_8))));
         var result = ingestionResult(9);
-        when(ingestionService.ingest(eq(knowledgeBase), any(KnowledgeBaseIngestionRequest.class)))
+        when(knowledgeIngestion.ingest(eq(knowledgeBase), any(KnowledgeBaseIngestionRequest.class)))
                 .thenReturn(Mono.just(result));
 
         StepVerifier.create(service.retryDocument(knowledgeBase, 9, "uid-alice"))
@@ -278,7 +278,7 @@ class KnowledgeBasesTest {
                 .verifyComplete();
 
         var request = ArgumentCaptor.forClass(KnowledgeBaseIngestionRequest.class);
-        verify(ingestionService).ingest(eq(knowledgeBase), request.capture());
+        verify(knowledgeIngestion).ingest(eq(knowledgeBase), request.capture());
         assertThat(request.getValue().checksum()).isEqualTo("stored-checksum");
     }
 
@@ -295,7 +295,7 @@ class KnowledgeBasesTest {
         when(chunkRepository.deleteByDocumentId(9L)).thenReturn(Mono.empty());
         when(documentRepository.updateStatus(eq(9L), eq(DocumentStatus.FAILED), eq(0), eq(0), isNull()))
                 .thenReturn(Mono.just(document));
-        when(ingestionService.ingest(eq(knowledgeBase), any(KnowledgeBaseIngestionRequest.class)))
+        when(knowledgeIngestion.ingest(eq(knowledgeBase), any(KnowledgeBaseIngestionRequest.class)))
                 .thenReturn(Mono.just(ingestionResult(9)));
 
         StepVerifier.create(service.reindex(knowledgeBase, "uid-alice"))

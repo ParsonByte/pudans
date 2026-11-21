@@ -41,7 +41,7 @@ public class ProviderModelSync {
 
     private final ReactiveExtensionClient client;
 
-    private final ProviderAccounts accountService;
+    private final ProviderAccounts providerAccounts;
 
     private final DeepSeekModelsClient deepSeekModelsClient;
 
@@ -67,7 +67,7 @@ public class ProviderModelSync {
     }
 
     private Mono<AiProviderAccount> account(String providerName) {
-        return accountService
+        return providerAccounts
                 .firstEnabled(providerName)
                 .switchIfEmpty(Mono.error(new ApiException(
                         HttpStatus.SERVICE_UNAVAILABLE, CODE_NO_ACCOUNT, "供应商没有可用账号。")));

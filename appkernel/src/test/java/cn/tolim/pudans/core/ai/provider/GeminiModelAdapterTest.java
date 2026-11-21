@@ -33,13 +33,13 @@ class GeminiModelAdapterTest {
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
-    private final ProviderAccounts accountService = mock(ProviderAccounts.class);
+    private final ProviderAccounts providerAccounts = mock(ProviderAccounts.class);
 
     private final AtomicReference<ClientRequest> captured = new AtomicReference<>();
 
     @Test
     void generatesImagesFromInlineData() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("goog-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("goog-key"));
         var adapter = adapter(json("""
                 {"candidates":[{"content":{"parts":[
                   {"text":"这里是图片"},
@@ -76,7 +76,7 @@ class GeminiModelAdapterTest {
 
     @Test
     void submitsLongRunningVideoOperations() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("goog-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("goog-key"));
         var adapter = adapter(json("""
                 {"name":"operations/veo-1"}
                 """));
@@ -102,7 +102,7 @@ class GeminiModelAdapterTest {
 
     @Test
     void pollsCompletedVideoOperations() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("goog-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("goog-key"));
         var adapter = adapter(json("""
                 {"name":"operations/veo-1","done":true,"response":{"generateVideoResponse":{
                   "generatedSamples":[{"video":{"uri":"https://cdn.example.com/video.mp4"}}]
@@ -128,7 +128,7 @@ class GeminiModelAdapterTest {
 
     @Test
     void keepsPollingUntilTheOperationCompletes() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("goog-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("goog-key"));
         var adapter = adapter(json("""
                 {"name":"operations/veo-1","done":false}
                 """));
@@ -153,7 +153,7 @@ class GeminiModelAdapterTest {
         };
         var webClient = WebClient.builder().exchangeFunction(exchange).build();
         return new GeminiModelAdapter(
-                new GeminiMediaClient(webClient, mapper, accountService), mapper);
+                new GeminiMediaClient(webClient, mapper, providerAccounts), mapper);
     }
 
     private static ClientResponse json(String body) {
@@ -188,7 +188,7 @@ class GeminiModelAdapterTest {
 
     @Test
     void reportsFailedOperations() {
-        when(accountService.apiKey(any())).thenReturn(Mono.just("goog-key"));
+        when(providerAccounts.apiKey(any())).thenReturn(Mono.just("goog-key"));
         var adapter = adapter(json("""
                 {"name":"operations/veo-1","done":true,"error":{"message":"quota exceeded"}}
                 """));

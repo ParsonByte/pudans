@@ -25,9 +25,9 @@ public class GatewaySessions {
 
     private final AiGatewaySessionRepository repository;
 
-    private final Teams teamService;
+    private final Teams teams;
 
-    private final AiSettings settingService;
+    private final AiSettings aiSettings;
 
     public Mono<GatewaySession> bind(BindRequest request) {
         Assert.notNull(request, "会话绑定参数不能为空");
@@ -65,14 +65,14 @@ public class GatewaySessions {
 
     private Mono<AiAgent> resolveAgent(@Nullable String agentName, String userId) {
         if (StringUtils.hasText(agentName)) {
-            return teamService.requireAgent(agentName, userId);
+            return teams.requireAgent(agentName, userId);
         }
-        return settingService
+        return aiSettings
                 .defaults()
                 .map(defaults -> StringUtils.hasText(defaults.getAgent())
                         ? defaults.getAgent()
                         : Teams.DEFAULT_AGENT)
-                .flatMap(name -> teamService.requireAgent(name, userId));
+                .flatMap(name -> teams.requireAgent(name, userId));
     }
 
     public record BindRequest(

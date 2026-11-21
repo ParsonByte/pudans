@@ -40,9 +40,9 @@ public class AiGenerationEndpoint implements CustomEndpoint {
 
     private static final int MAX_LIMIT = 100;
 
-    private final Generations generationService;
+    private final Generations generations;
 
-    private final DocumentGenerations documentService;
+    private final DocumentGenerations documentGenerations;
 
     private final AiModelRequestRepository requestRepository;
 
@@ -84,7 +84,7 @@ public class AiGenerationEndpoint implements CustomEndpoint {
                 .flatMap(userId -> request.bodyToMono(GenerationBody.class)
                         .switchIfEmpty(Mono.error(new ApiException(
                                 HttpStatus.BAD_REQUEST, "ai-generation-body-invalid", "请求体不能为空。")))
-                        .flatMap(body -> generationService.generate(command(userId, body))))
+                        .flatMap(body -> generations.generate(command(userId, body))))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -97,7 +97,7 @@ public class AiGenerationEndpoint implements CustomEndpoint {
                                 HttpStatus.BAD_REQUEST,
                                 "ai-document-generation-invalid",
                                 "请求体不能为空。")))
-                        .flatMap(body -> documentService.generate(new DocumentGenerations.Command(
+                        .flatMap(body -> documentGenerations.generate(new DocumentGenerations.Command(
                                 userId,
                                 body.title(),
                                 body.prompt(),

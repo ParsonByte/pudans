@@ -22,7 +22,7 @@ public class AiChatModeEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiChatModeV1alpha1";
 
-    private final ChatModes chatModeService;
+    private final ChatModes chatModes;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -36,7 +36,7 @@ public class AiChatModeEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> list(ServerRequest request) {
-        return chatModeService
+        return chatModes
                 .available()
                 .map(ChatModeView::from)
                 .collectList()

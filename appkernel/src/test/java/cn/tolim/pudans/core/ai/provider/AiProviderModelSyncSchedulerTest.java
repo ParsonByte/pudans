@@ -26,7 +26,7 @@ class AiProviderModelSyncSchedulerTest {
     ReactiveExtensionClient client;
 
     @Mock
-    ProviderModelSync modelSyncService;
+    ProviderModelSync providerModelSync;
 
     @Test
     void syncsEveryEnabledProvider() {
@@ -35,16 +35,16 @@ class AiProviderModelSyncSchedulerTest {
         var disabled = provider("disabled", false);
         when(client.listAll(eq(AiProvider.class), any(), any()))
                 .thenReturn(Flux.just(first, second, disabled));
-        when(modelSyncService.sync("first")).thenReturn(Mono.just(result()));
-        when(modelSyncService.sync("second")).thenReturn(Mono.just(result()));
-        var scheduler = new AiProviderModelSyncScheduler(client, modelSyncService);
+        when(providerModelSync.sync("first")).thenReturn(Mono.just(result()));
+        when(providerModelSync.sync("second")).thenReturn(Mono.just(result()));
+        var scheduler = new AiProviderModelSyncScheduler(client, providerModelSync);
 
         StepVerifier.create(scheduler.syncOnce())
                 .assertNext(count -> assertThat(count).isEqualTo(2L))
                 .verifyComplete();
 
-        verify(modelSyncService).sync("first");
-        verify(modelSyncService).sync("second");
+        verify(providerModelSync).sync("first");
+        verify(providerModelSync).sync("second");
     }
 
     private static AiProvider provider(String name, boolean enabled) {

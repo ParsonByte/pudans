@@ -29,16 +29,16 @@ class AiHookEndpointTest {
     AiEndpointRequests requests;
 
     @Mock
-    Teams teamService;
+    Teams teams;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         lenient().when(requests.userId(any())).thenReturn(Mono.just("user-1"));
-        lenient().when(teamService.requireAgent(any(), any())).thenReturn(Mono.just(new AiAgent()));
+        lenient().when(teams.requireAgent(any(), any())).thenReturn(Mono.just(new AiAgent()));
         client = WebTestClient.bindToRouterFunction(
-                        new AiHookEndpoint(hooks, requests, teamService).endpoint())
+                        new AiHookEndpoint(hooks, requests, teams).endpoint())
                 .build();
     }
 

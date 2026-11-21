@@ -62,7 +62,7 @@ public class AiChatEndpoint implements CustomEndpoint {
 
     private static final String ATTACHMENT_MODULE = "ai-chat";
 
-    private final ChatCompletions chatService;
+    private final ChatCompletions chatCompletions;
 
     private final AiEndpointRequests requests;
 
@@ -117,13 +117,13 @@ public class AiChatEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> complete(ServerRequest request) {
-        return command(request).flatMap(chatService::complete)
+        return command(request).flatMap(chatCompletions::complete)
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> stream(ServerRequest request) {
         return command(request).flatMap(command -> {
-            var body = chatService.stream(command).map(this::encode);
+            var body = chatCompletions.stream(command).map(this::encode);
             return ServerResponse.ok()
                     .contentType(MediaType.TEXT_EVENT_STREAM)
                     .header("Cache-Control", "no-cache")
@@ -145,7 +145,7 @@ public class AiChatEndpoint implements CustomEndpoint {
                                 CODE_BODY_INVALID,
                                 "runId 与 toolCallId 不能为空。"));
                     }
-                    return chatService.confirm(
+                    return chatCompletions.confirm(
                                     tuple.getT1(),
                                     confirmation.runId(),
                                     confirmation.toolCallId(),
@@ -168,7 +168,7 @@ public class AiChatEndpoint implements CustomEndpoint {
                                 CODE_BODY_INVALID,
                                 "runId 与 toolCallId 不能为空。"));
                     }
-                    return chatService.submitExternalResult(
+                    return chatCompletions.submitExternalResult(
                                     tuple.getT1(),
                                     result.runId(),
                                     result.toolCallId(),
@@ -183,7 +183,7 @@ public class AiChatEndpoint implements CustomEndpoint {
         var runId = request.pathVariable("runId");
         return requests
                 .userId(request, "ai-chat-unauthenticated", "未认证。")
-                .flatMap(userId -> chatService.interrupt(userId, runId)
+                .flatMap(userId -> chatCompletions.interrupt(userId, runId)
                         ? ServerResponse.accepted().build()
                         : runNotFound());
     }

@@ -28,8 +28,8 @@ public class DeepSeekBalanceClient extends AbstractDeepSeekClient {
     public DeepSeekBalanceClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            ProviderAccounts accountService) {
-        super(webClient, mapper, accountService, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
+            ProviderAccounts providerAccounts) {
+        super(webClient, mapper, providerAccounts, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
     }
 
     public Mono<DeepSeekBalance> get(AiProvider provider, AiProviderAccount account) {

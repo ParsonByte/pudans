@@ -42,26 +42,26 @@ class AiProviderEndpointTest {
     ReactiveExtensionClient client;
 
     @Mock
-    LangChain4jChat chatService;
+    LangChain4jChat langChain4jChat;
 
     @Mock
-    Embeddings embeddingService;
+    Embeddings embeddings;
 
     @Mock
     AiModelAdapterRegistry modelAdapters;
 
     @Mock
-    Reranking rerankService;
+    Reranking reranking;
 
     @Mock
-    ProviderAccounts accountService;
+    ProviderAccounts providerAccounts;
 
     private WebTestClient webClient;
 
     @BeforeEach
     void setUp() {
         lenient().when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider()));
-        lenient().when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account()));
+        lenient().when(providerAccounts.firstEnabled("provider-a")).thenReturn(Mono.just(account()));
         lenient()
                 .when(client.update(any(AiProvider.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -69,16 +69,16 @@ class AiProviderEndpointTest {
                 .when(client.update(any(AiProviderAccount.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         var endpoint = new AiProviderEndpoint(
-                client, chatService, modelAdapters, embeddingService, rerankService, accountService);
+                client, langChain4jChat, modelAdapters, embeddings, reranking, providerAccounts);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
     @Test
     void testsAProviderThroughItsFirstAccountAndModel() {
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider()));
-        when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account()));
+        when(providerAccounts.firstEnabled("provider-a")).thenReturn(Mono.just(account()));
         when(client.listAll(eq(AiModel.class), any(), any())).thenReturn(Flux.just(model()));
-        when(chatService.chat(
+        when(langChain4jChat.chat(
                         any(), any(), any(), eq(AiProvider.Protocol.OPENAI_CHAT), any()))
                 .thenReturn(Mono.just(new AiChatResponse(
                         "resp-1", "gpt-test", new AiChatMessage("assistant", List.of()), null, "stop")));
@@ -185,7 +185,7 @@ class AiProviderEndpointTest {
         var model = model();
         model.getSpec().setModelType(AiModel.ModelType.EMBEDDING);
         when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model));
-        when(embeddingService.embed(List.of("Reply with OK."), "model-a"))
+        when(embeddings.embed(List.of("Reply with OK."), "model-a"))
                 .thenReturn(Mono.just(new EmbeddingBatch("embed-test", 2, List.of(new float[] {0.1f, 0.2f}))));
 
         webClient.post()
@@ -202,7 +202,7 @@ class AiProviderEndpointTest {
         var model = model();
         model.getSpec().setModelType(AiModel.ModelType.RERANK);
         when(client.get(AiModel.class, "model-a")).thenReturn(Mono.just(model));
-        when(rerankService.rerank(
+        when(reranking.rerank(
                         any(AiProvider.class),
                         any(AiProviderAccount.class),
                         any(AiModel.class),
@@ -220,7 +220,7 @@ class AiProviderEndpointTest {
                 .jsonPath("$.successful").isEqualTo(true)
                 .jsonPath("$.model").isEqualTo("gpt-test");
 
-        verify(rerankService).rerank(
+        verify(reranking).rerank(
                 any(AiProvider.class),
                 any(AiProviderAccount.class),
                 any(AiModel.class),

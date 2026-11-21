@@ -19,7 +19,7 @@ public class AiPlanUsageEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiPlanV1alpha1";
 
-    private final PlanUsage usageService;
+    private final PlanUsage planUsage;
 
     private final AiEndpointRequests requests;
 
@@ -41,12 +41,12 @@ public class AiPlanUsageEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> currentUser(ServerRequest request) {
         return requests.userId(request)
-                .flatMap(usageService::usage)
+                .flatMap(planUsage::usage)
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
     private Mono<ServerResponse> userUsage(ServerRequest request) {
-        return usageService
+        return planUsage
                 .usage(request.pathVariable("uid"))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }

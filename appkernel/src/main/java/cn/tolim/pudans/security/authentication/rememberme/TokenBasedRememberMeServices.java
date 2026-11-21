@@ -52,7 +52,7 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
 
     protected final CookieSignatureKeyResolver cookieSignatureKeyResolver;
     protected final RememberMeCookieResolver rememberMeCookieResolver;
-    private final ReactiveUserDetailsService userDetailsService;
+    private final ReactiveUserDetailsService reactiveUserDetailsService;
     private final LoginParameterRequestCache parameterRequestCache;
     private UserDetailsChecker userDetailsChecker = new AccountStatusUserDetailsChecker();
     private GrantedAuthoritiesMapper authoritiesMapper = new NullAuthoritiesMapper();
@@ -126,7 +126,7 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
         }
 
 
-        return getUserDetailsService()
+        return getReactiveUserDetailsService()
                 .findByUsername(cookieTokens[0])
                 .switchIfEmpty(Mono.error(new UsernameNotFoundException("未找到用户 '" + cookieTokens[0] + "'")))
                 .flatMap(userDetails -> {
@@ -245,7 +245,7 @@ class TokenBasedRememberMeServices implements ServerLogoutHandler, RememberMeSer
                 return Mono.empty();
             }
             if (!StringUtils.hasLength(password)) {
-                return getUserDetailsService().findByUsername(username).flatMap(user -> {
+                return getReactiveUserDetailsService().findByUsername(username).flatMap(user -> {
                     String existingPassword = user.getPassword();
                     if (!StringUtils.hasLength(existingPassword)) {
                         log.debug("无法获取用户 {} 的密码", username);

@@ -29,7 +29,7 @@ class AiProviderModelEndpointTest {
     ReactiveExtensionClient client;
 
     @Mock
-    ProviderAccounts accountService;
+    ProviderAccounts providerAccounts;
 
     @Mock
     DeepSeekModelsClient modelsClient;
@@ -42,7 +42,7 @@ class AiProviderModelEndpointTest {
     @BeforeEach
     void setUp() {
         var syncService = new cn.tolim.pudans.core.ai.provider.ProviderModelSync(
-                client, accountService, modelsClient, genericModelsClient);
+                client, providerAccounts, modelsClient, genericModelsClient);
         var endpoint = new AiProviderModelEndpoint(syncService);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
@@ -52,7 +52,7 @@ class AiProviderModelEndpointTest {
         var provider = provider();
         var account = account();
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider));
-        when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account));
+        when(providerAccounts.firstEnabled("provider-a")).thenReturn(Mono.just(account));
         when(modelsClient.list(eq(provider), eq(account)))
                 .thenReturn(Mono.just(new DeepSeekModelsClient.ModelList(
                         "list",
@@ -85,7 +85,7 @@ class AiProviderModelEndpointTest {
         local.getSpec().setDisplayName("旧名称");
         local.getSpec().setContextWindow(1000);
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider));
-        when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account));
+        when(providerAccounts.firstEnabled("provider-a")).thenReturn(Mono.just(account));
         when(modelsClient.list(eq(provider), eq(account))).thenReturn(Mono.just(modelList()));
         when(client.listAll(eq(AiModel.class), any(), any())).thenReturn(Flux.just(local));
         when(client.update(any(AiModel.class)))
@@ -109,7 +109,7 @@ class AiProviderModelEndpointTest {
         var account = account();
         var local = model("legacy-model");
         when(client.get(AiProvider.class, "provider-a")).thenReturn(Mono.just(provider));
-        when(accountService.firstEnabled("provider-a")).thenReturn(Mono.just(account));
+        when(providerAccounts.firstEnabled("provider-a")).thenReturn(Mono.just(account));
         when(modelsClient.list(eq(provider), eq(account))).thenReturn(Mono.just(modelList()));
         when(client.listAll(eq(AiModel.class), any(), any())).thenReturn(Flux.just(local));
         when(client.create(any(AiModel.class)))

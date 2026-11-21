@@ -32,11 +32,11 @@ public class LiveSourceEndpoint implements CustomEndpoint {
 
     private static final String TAG = "LiveSourceV1alpha1";
 
-    private final Sources sourceService;
+    private final Sources sources;
 
-    private final SourceSummaries summaryService;
+    private final SourceSummaries sourceSummaries;
 
-    private final SourceHealth healthService;
+    private final SourceHealth sourceHealth;
 
     private final AuditLog auditLog;
 
@@ -91,7 +91,7 @@ public class LiveSourceEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> fromUrl(ServerRequest request) {
         return request.bodyToMono(LiveSourceCreateRequest.class)
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_INVALID_ARGUMENT.exception()))
-                .flatMap(body -> sourceService
+                .flatMap(body -> sources
                         .create(
                                 body.roomUrl(),
                                 body.alias(),
@@ -106,34 +106,34 @@ public class LiveSourceEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> preview(ServerRequest request) {
         return request.bodyToMono(LiveSourceCreateRequest.class)
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_INVALID_ARGUMENT.exception()))
-                .flatMap(body -> sourceService.preview(body.roomUrl()))
+                .flatMap(body -> sources.preview(body.roomUrl()))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> resolve(ServerRequest request) {
         var name = request.pathVariable("name");
-        return sourceService
+        return sources
                 .resolve(name, true)
-                .map(source -> healthService.of(source))
+                .map(source -> sourceHealth.of(source))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> record(ServerRequest request) {
         var name = request.pathVariable("name");
-        return sourceService
+        return sources
                 .recordOnce(name)
                 .flatMap(recording -> ServerResponse.ok().bodyValue(recording));
     }
 
     private Mono<ServerResponse> summary(ServerRequest request) {
-        return summaryService
+        return sourceSummaries
                 .summary()
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
     private Mono<ServerResponse> health(ServerRequest request) {
         var name = request.pathVariable("name");
-        return healthService
+        return sourceHealth
                 .health(name)
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }

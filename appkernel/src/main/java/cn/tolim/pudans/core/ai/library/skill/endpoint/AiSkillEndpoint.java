@@ -34,11 +34,11 @@ public class AiSkillEndpoint implements CustomEndpoint {
 
     private final Skills skillService;
 
-    private final Teams teamService;
+    private final Teams teams;
 
     private final AiEndpointRequests requests;
 
-    private final SkillPromotion curatorService;
+    private final SkillPromotion skillPromotion;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -95,7 +95,7 @@ public class AiSkillEndpoint implements CustomEndpoint {
         var agentName = agent(request);
         return requests
                 .userId(request)
-                .flatMap(userId -> teamService.requireAgent(agentName, userId))
+                .flatMap(userId -> teams.requireAgent(agentName, userId))
                 .flatMapMany(agent -> skillService.byAgent(agent.getMetadata().getName()))
                 .collectList()
                 .flatMap(skills -> ServerResponse.ok().bodyValue(skills));
@@ -104,7 +104,7 @@ public class AiSkillEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> usage(ServerRequest request) {
         return requests
                 .userId(request)
-                .flatMapMany(userId -> curatorService.usage().flatMapMany(Flux::fromIterable))
+                .flatMapMany(userId -> skillPromotion.usage().flatMapMany(Flux::fromIterable))
                 .collectList()
                 .flatMap(records -> ServerResponse.ok().bodyValue(records));
     }
@@ -122,7 +122,7 @@ public class AiSkillEndpoint implements CustomEndpoint {
                 .orElse(100);
         return requests
                 .userId(request)
-                .flatMapMany(userId -> curatorService.audit(limit).flatMapMany(Flux::fromIterable))
+                .flatMapMany(userId -> skillPromotion.audit(limit).flatMapMany(Flux::fromIterable))
                 .collectList()
                 .flatMap(entries -> ServerResponse.ok().bodyValue(entries));
     }
@@ -131,7 +131,7 @@ public class AiSkillEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return requests
                 .userId(request)
-                .flatMap(actor -> curatorService.promote(name, actor))
+                .flatMap(actor -> skillPromotion.promote(name, actor))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
@@ -139,7 +139,7 @@ public class AiSkillEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return requests
                 .userId(request)
-                .flatMap(actor -> curatorService.archive(name, actor))
+                .flatMap(actor -> skillPromotion.archive(name, actor))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 

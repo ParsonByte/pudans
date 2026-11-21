@@ -29,7 +29,7 @@ class ExternalRagRetrieverTest {
     ExternalRagConnectorResolver connectorResolver;
 
     @Mock
-    ProviderAccounts accountService;
+    ProviderAccounts providerAccounts;
 
     @Mock
     ExternalRagConnector connector;
@@ -38,7 +38,7 @@ class ExternalRagRetrieverTest {
 
     @BeforeEach
     void setUp() {
-        retriever = new ExternalRagRetriever(connectorResolver, accountService);
+        retriever = new ExternalRagRetriever(connectorResolver, providerAccounts);
     }
 
     @Test
@@ -85,8 +85,8 @@ class ExternalRagRetrieverTest {
         external.setCredentialRef("accounts/primary");
         knowledgeBase.getSpec().setExternal(external);
         var account = new AiProviderAccount();
-        when(accountService.get("accounts/primary")).thenReturn(Mono.just(account));
-        when(accountService.apiKey(account)).thenReturn(Mono.just("resolved-key"));
+        when(providerAccounts.get("accounts/primary")).thenReturn(Mono.just(account));
+        when(providerAccounts.apiKey(account)).thenReturn(Mono.just("resolved-key"));
         when(connectorResolver.connector(KnowledgeBase.ExternalProvider.RAGFLOW)).thenReturn(connector);
         when(connector.retrieve(any(ExternalRagTarget.class), any(ExternalRagRequest.class)))
                 .thenReturn(Mono.just(new ExternalRagResult(List.of())));
@@ -133,7 +133,7 @@ class ExternalRagRetrieverTest {
         var external = external(KnowledgeBase.ExternalProvider.DIFY);
         external.setCredentialRef("accounts/missing");
         knowledgeBase.getSpec().setExternal(external);
-        when(accountService.get("accounts/missing")).thenReturn(Mono.empty());
+        when(providerAccounts.get("accounts/missing")).thenReturn(Mono.empty());
 
         StepVerifier.create(retriever.retrieve(knowledgeBase, "安装", options()))
                 .expectErrorSatisfies(error -> {
@@ -151,7 +151,7 @@ class ExternalRagRetrieverTest {
         var chunks = retriever.retrieve(knowledgeBase, "安装", options()).block();
 
         assertThat(chunks).isEmpty();
-        verifyNoInteractions(connectorResolver, accountService);
+        verifyNoInteractions(connectorResolver, providerAccounts);
     }
 
     @Test
