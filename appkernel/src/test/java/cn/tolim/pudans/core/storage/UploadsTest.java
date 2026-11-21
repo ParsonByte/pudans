@@ -18,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.LinkedHashMap;
@@ -394,6 +395,30 @@ class UploadsTest {
         assertThat(result.getSpec().getSize()).isEqualTo(4);
         assertThat(Files.notExists(directory)).isTrue();
         verify(driver).put(any(StoragePutRequest.class));
+    }
+
+    @Test
+    void cleansStaleTemporaryFilesAndOrphanSessions() throws Exception {
+        var old = Instant.now().minus(Duration.ofHours(2));
+        var temp = workDir.resolve("uploads/.tmp");
+        Files.createDirectories(temp);
+        var staleTemp = Files.writeString(temp.resolve(".upload-old.tmp"), "old");
+        var freshTemp = Files.writeString(temp.resolve(".upload-new.tmp"), "new");
+        var orphan = Files.createDirectories(workDir.resolve("uploads/.sessions/orphan"));
+        Files.writeString(orphan.resolve("part-1"), "old");
+        var active = Files.createDirectories(workDir.resolve("uploads/.sessions/active"));
+        Files.writeString(active.resolve("part-1"), "old");
+        Files.setLastModifiedTime(staleTemp, FileTime.from(old));
+        Files.setLastModifiedTime(orphan, FileTime.from(old));
+        Files.setLastModifiedTime(active, FileTime.from(old));
+
+        service.cleanupLocalArtifacts(Set.of("active"), Instant.now().minus(Duration.ofHours(1)))
+                .block();
+
+        assertThat(Files.notExists(staleTemp)).isTrue();
+        assertThat(Files.exists(freshTemp)).isTrue();
+        assertThat(Files.notExists(orphan)).isTrue();
+        assertThat(Files.exists(active)).isTrue();
     }
 
     private static StoragePolicy policy() {

@@ -12,6 +12,7 @@ public class ClientIpAddressInitializer implements InitializingBean {
 
     private final PudansProperties properties;
 
+    // 启动时注入受信代理配置，刷新客户端 IP 解析规则。
     @Override
     public void afterPropertiesSet() {
         IpAddressUtils.configure(properties.getSecurity().getTrustedProxies());

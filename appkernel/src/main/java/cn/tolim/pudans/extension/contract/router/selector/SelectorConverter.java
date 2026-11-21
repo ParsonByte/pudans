@@ -10,6 +10,7 @@ import org.springframework.core.convert.converter.Converter;
 @Slf4j
 public class SelectorConverter implements Converter<String, SelectorCriteria> {
 
+    // 按操作符优先级依次尝试解析选择器。
     @Override
     public @Nullable SelectorCriteria convert(@Nullable String selector) {
         return Arrays.stream(Operator.values())

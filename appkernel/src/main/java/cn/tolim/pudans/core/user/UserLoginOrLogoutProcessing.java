@@ -16,6 +16,7 @@ public class UserLoginOrLogoutProcessing {
     private final Accounts accounts;
     private final ApplicationEventPublisher eventPublisher;
 
+    // 读取用户并发布登录事件
     public Mono<Void> loginProcessing(String username) {
         return accounts
                 .getUser(username)
@@ -25,6 +26,7 @@ public class UserLoginOrLogoutProcessing {
                 .then();
     }
 
+    // 读取用户并发布登出事件
     public Mono<Void> logoutProcessing(String username) {
         return accounts
                 .getUser(username)

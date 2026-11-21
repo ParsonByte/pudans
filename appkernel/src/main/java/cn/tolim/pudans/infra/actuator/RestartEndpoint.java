@@ -26,6 +26,7 @@ class RestartEndpoint implements ApplicationListener<ApplicationStartedEvent> {
 
     private ConfigurableApplicationContext context;
 
+    // 逐级关闭父子上下文，确保重启前释放全部资源。
     private static void closeRecursively(ApplicationContext ctx) {
         while (ctx != null) {
             if (ctx instanceof Closeable closeable) {
@@ -39,6 +40,7 @@ class RestartEndpoint implements ApplicationListener<ApplicationStartedEvent> {
         }
     }
 
+    // 在独立线程中重启，避免阻塞当前请求线程。
     @WriteOperation
     public Mono<Map<String, String>> restart() {
         return Mono.fromSupplier(() -> {
@@ -51,6 +53,7 @@ class RestartEndpoint implements ApplicationListener<ApplicationStartedEvent> {
         });
     }
 
+    // 关闭旧上下文后以原始参数重新启动应用。
     private synchronized void doRestart() {
         log.info("正在重启...");
         if (this.context != null) {
@@ -69,6 +72,7 @@ class RestartEndpoint implements ApplicationListener<ApplicationStartedEvent> {
         }
     }
 
+    // 只记录首次启动的上下文，作为后续重启的基准。
     @Override
     public void onApplicationEvent(ApplicationStartedEvent event) {
         if (this.context == null) {

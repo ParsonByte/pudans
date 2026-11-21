@@ -103,6 +103,7 @@ public class AuditRecord extends AbstractExtension {
     @Schema(readOnly = true)
     private boolean archived;
 
+    // 标记该记录由合成流程生成，区别于真实请求。
     public void markSyntheticFlow() {
         this.syntheticFlow = true;
     }

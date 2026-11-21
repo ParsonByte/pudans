@@ -31,6 +31,7 @@ public class PasswordResetMailer {
 
     private final MailSettings mailSettings;
 
+    // 启动时提醒非开发环境启用日志投递的风险。
     @PostConstruct
     void warnIfLogCodesEnabledOutsideDev() {
         var options = pudansProperties.getSecurity().getPasswordReset();
@@ -40,6 +41,7 @@ public class PasswordResetMailer {
         }
     }
 
+    // 优先使用已配置的邮件设置发送验证码。
     public Mono<Void> sendCode(String email, String code) {
         var options = pudansProperties.getSecurity().getPasswordReset();
         return mailSettings.isConfigured().flatMap(configured -> {
@@ -51,6 +53,7 @@ public class PasswordResetMailer {
         });
     }
 
+    // 邮件设置未就绪时退回默认发件器或开发日志。
     private Mono<Void> sendWithFallbackSender(
             String email, String code, SecurityProperties.PasswordResetOptions options) {
         var mailSender = mailSenderProvider.getIfAvailable();

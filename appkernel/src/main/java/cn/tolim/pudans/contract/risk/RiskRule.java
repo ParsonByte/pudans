@@ -28,6 +28,7 @@ public class RiskRule extends AbstractExtension {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Spec spec = new Spec();
 
+    // 用给定配置构建风险规则。
     public static RiskRule of(RiskRule.Spec spec) {
         var rule = new RiskRule();
         rule.setSpec(spec);
@@ -54,6 +55,7 @@ public class RiskRule extends AbstractExtension {
 
         private String action = ACTION_BLOCK;
 
+        // 配置了阻断时长且动作非告警时才执行阻断。
         public boolean blocking() {
             return blockSeconds > 0 && !ACTION_ALERT.equals(action);
         }

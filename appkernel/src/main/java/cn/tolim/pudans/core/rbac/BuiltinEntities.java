@@ -20,6 +20,7 @@ public final class BuiltinEntities {
 
     private BuiltinEntities() {}
 
+    // 按用户名和组名生成绑定名，调用方不得自行拼接。
     public static String membershipBindingName(String username, String groupName) {
         return username + "-" + groupName + "-binding";
     }

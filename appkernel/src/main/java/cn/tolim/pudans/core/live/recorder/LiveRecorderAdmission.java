@@ -41,6 +41,7 @@ public class LiveRecorderAdmission {
 
     private final ThreadPoolExecutor executor;
 
+    // 按配置创建有界线程池与等待队列
     public LiveRecorderAdmission(LiveProperties properties) {
         var recorder = properties.getRecorder();
         this.maxConcurrent = Math.max(recorder.getMaxConcurrent(), 1);
@@ -55,6 +56,7 @@ public class LiveRecorderAdmission {
                 new ThreadPoolExecutor.AbortPolicy());
     }
 
+    // 在锁内判定准入，并提交包装任务维护计数
     public Admission admit(String recordingName, Runnable task) {
         Runnable wrapper = () -> {
             start(recordingName);
@@ -90,6 +92,7 @@ public class LiveRecorderAdmission {
         }
     }
 
+    // 只取消仍在排队的任务，运行中任务不受影响
     public boolean cancel(String recordingName) {
         synchronized (lock) {
             if (!queued.remove(recordingName)) {
@@ -100,18 +103,21 @@ public class LiveRecorderAdmission {
         }
     }
 
+    // 返回当前占用录制槽位的任务数
     public int activeCount() {
         synchronized (lock) {
             return running.size();
         }
     }
 
+    // 返回等待录制槽位的任务数
     public int queuedCount() {
         synchronized (lock) {
             return queued.size();
         }
     }
 
+    // 任务真正开始执行时从队列转入运行集合
     private void start(String recordingName) {
         synchronized (lock) {
             queued.remove(recordingName);
@@ -119,6 +125,7 @@ public class LiveRecorderAdmission {
         }
     }
 
+    // 任务结束后释放运行占位与 future
     private void finish(String recordingName) {
         synchronized (lock) {
             running.remove(recordingName);
@@ -126,6 +133,7 @@ public class LiveRecorderAdmission {
         }
     }
 
+    // 关闭线程池，中断仍在执行的任务
     @PreDestroy
     public void shutdown() {
         executor.shutdownNow();
@@ -135,6 +143,7 @@ public class LiveRecorderAdmission {
 
         private final AtomicInteger index = new AtomicInteger();
 
+        // 录制线程按序号命名并设为守护线程
         @Override
         public Thread newThread(Runnable runnable) {
             var thread = new Thread(runnable, "live-recorder-" + index.incrementAndGet());

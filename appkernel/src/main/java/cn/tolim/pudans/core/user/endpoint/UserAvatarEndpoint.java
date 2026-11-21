@@ -33,6 +33,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
 
     private final AvatarStorage avatarStorage;
 
+    // 注册上传与删除头像的路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "UserV1alpha1";
@@ -51,6 +52,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 解析表单文件，保存并更新头像
     private Mono<ServerResponse> upload(ServerRequest request) {
         return currentUser()
                 .flatMap(user -> request.multipartData()
@@ -66,6 +68,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user, true)));
     }
 
+    // 删除头像文件并清空头像地址
     private Mono<ServerResponse> delete(ServerRequest request) {
         return currentUser()
                 .flatMap(user -> avatarStorage.deleteForUser(user).thenReturn(user))
@@ -73,11 +76,13 @@ public class UserAvatarEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user, true)));
     }
 
+    // 将头像地址写回用户记录
     private Mono<User> updateAvatar(User user, String avatar) {
         user.getSpec().setAvatar(avatar);
         return client.update(user);
     }
 
+    // 从安全上下文解析当前用户
     private Mono<User> currentUser() {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
@@ -86,6 +91,7 @@ public class UserAvatarEndpoint implements CustomEndpoint {
                 .flatMap(accounts::getUser);
     }
 
+    // 返回当前头像接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

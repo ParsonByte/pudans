@@ -23,6 +23,7 @@ public class NavigationEndpoint implements CustomEndpoint {
 
     private final PermissionDirectory permissionDirectory;
 
+    // 注册导航查询路由并声明响应模型。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "NavigationV1alpha1";
@@ -35,6 +36,7 @@ public class NavigationEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 按当前登录用户权限生成导航数据。
     private Mono<ServerResponse> navigation(ServerRequest request) {
         return request
                 .principal()

@@ -72,7 +72,7 @@ class AuditWebFilterTest {
     }
 
     @Test
-    void inheritedHeaderIsUsedWhenNoFlowIdExistsYet() {
+    void clientHeaderCannotControlTheFlowId() {
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/users")
                 .header(AuditLog.TRACE_FLOW_ID_HEADER, "flow-from-header")
                 .build());
@@ -80,11 +80,11 @@ class AuditWebFilterTest {
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 
         assertThat(exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE))
-                .isEqualTo("flow-from-header");
+                .isNotEqualTo("flow-from-header");
     }
 
     @Test
-    void oversizedHeaderIsTruncatedBeforeItIsStored() {
+    void oversizedClientHeaderIsIgnored() {
         var exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/api/v1/users")
                 .header(AuditLog.TRACE_FLOW_ID_HEADER, "x".repeat(500))
                 .build());
@@ -92,7 +92,7 @@ class AuditWebFilterTest {
         StepVerifier.create(filter.filter(exchange, chain())).verifyComplete();
 
         assertThat((String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE))
-                .hasSize(64);
+                .isNotEqualTo("x".repeat(500));
     }
 
     @Test

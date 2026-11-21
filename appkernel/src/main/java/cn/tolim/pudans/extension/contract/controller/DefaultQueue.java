@@ -24,10 +24,12 @@ public class DefaultQueue<R> implements RequestQueue<R> {
     private final Set<R> dirty;
     private volatile boolean disposed = false;
 
+    // 以零最小延迟创建队列。
     public DefaultQueue(Supplier<Instant> nowSupplier) {
         this(nowSupplier, Duration.ZERO);
     }
 
+    // 初始化锁、延迟队列与处理中集合。
     public DefaultQueue(Supplier<Instant> nowSupplier, Duration minDelay) {
         this.lock = new ReentrantLock();
         this.nowSupplier = nowSupplier;
@@ -37,6 +39,7 @@ public class DefaultQueue<R> implements RequestQueue<R> {
         this.queue = new DelayQueue<>();
     }
 
+    // 按最小延迟立即加入请求。
     @Override
     public boolean addImmediately(R request) {
         log.debug("立即加入请求 {}", request);
@@ -44,6 +47,7 @@ public class DefaultQueue<R> implements RequestQueue<R> {
         return add(delayedEntry);
     }
 
+    // 去重并保留更早的就绪时间后入队。
     @Override
     public boolean add(DelayedEntry<R> entry) {
         lock.lock();
@@ -84,6 +88,7 @@ public class DefaultQueue<R> implements RequestQueue<R> {
         }
     }
 
+    // 取出到期请求并标记为处理中。
     @Override
     public DelayedEntry<R> take() throws InterruptedException {
         var entry = queue.take();
@@ -101,6 +106,7 @@ public class DefaultQueue<R> implements RequestQueue<R> {
         }
     }
 
+    // 结束处理，期间有新变更则重新入队。
     @Override
     public void done(R request) {
         lock.lock();
@@ -117,16 +123,19 @@ public class DefaultQueue<R> implements RequestQueue<R> {
         }
     }
 
+    // 返回队列中的请求数量。
     @Override
     public long size() {
         return queue.size();
     }
 
+    // 查看最早到期的请求但不取出。
     @Override
     public DelayedEntry<R> peek() {
         return queue.peek();
     }
 
+    // 停止队列并清空全部跟踪状态。
     @Override
     public void dispose() {
         lock.lock();
@@ -140,11 +149,13 @@ public class DefaultQueue<R> implements RequestQueue<R> {
         }
     }
 
+    // 返回是否已销毁。
     @Override
     public boolean isDisposed() {
         return this.disposed;
     }
 
+    // 查找同一请求已存在的延迟项。
     private Optional<DelayedEntry<R>> findOldEntry(DelayedEntry<R> entry) {
         for (DelayedEntry<R> element : queue) {
             if (element.equals(entry)) {

@@ -49,6 +49,7 @@ class GcReconciler implements Reconciler<GcRequest> {
 
     private Scheduler scheduler;
 
+    // 装配依赖并创建回收队列与同步器。
     GcReconciler(
             ExtensionClient client,
             ReactiveExtensionStoreClient storeClient,
@@ -67,6 +68,7 @@ class GcReconciler implements Reconciler<GcRequest> {
         this.scheduler = Schedulers.boundedElastic();
     }
 
+    // 读取请求对应扩展，在可删除时执行清理。
     @Override
     public Result reconcile(GcRequest request) {
         log.debug("扩展 {} 正在被删除", request);
@@ -77,6 +79,7 @@ class GcReconciler implements Reconciler<GcRequest> {
         return null;
     }
 
+    // 在同一事务内删除存储记录与索引。
     private <E extends Extension> Mono<Void> doDelete(E extension) {
         var extensionStore = converter.convertTo(extension);
         var tx = TransactionalOperator.create(transactionManager);
@@ -93,6 +96,7 @@ class GcReconciler implements Reconciler<GcRequest> {
                         extension.getMetadata().getName()));
     }
 
+    // 使用队列与同步器构建垃圾回收控制器。
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return new DefaultController<>(
@@ -106,11 +110,13 @@ class GcReconciler implements Reconciler<GcRequest> {
                 10);
     }
 
+    // 方案注册后补扫其中已标记删除的对象。
     @EventListener
     void onSchemeAddedEvent(SchemeAddedEvent event) {
         synchronizer.onApplicationEvent(event);
     }
 
+    // 无终结器且已标记删除的对象才可清理。
     private Predicate<Extension> deletable() {
         return extension -> CollectionUtils.isEmpty(extension.getMetadata().getFinalizers())
                 && extension.getMetadata().getDeletionTimestamp() != null;

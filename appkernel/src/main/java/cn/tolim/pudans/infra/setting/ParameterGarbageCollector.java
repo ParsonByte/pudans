@@ -41,6 +41,7 @@ public class ParameterGarbageCollector {
 
     private ScheduledFuture<?> currentTask;
 
+    // 初始化单线程调度器，避免并发回收任务。
     @PostConstruct
     void startScheduler() {
         taskScheduler.setPoolSize(1);
@@ -48,16 +49,19 @@ public class ParameterGarbageCollector {
         taskScheduler.initialize();
     }
 
+    // 关闭调度器，释放后台线程。
     @PreDestroy
     void stopScheduler() {
         taskScheduler.shutdown();
     }
 
+    // 扩展资源就绪后按服务器配置重新调度。
     @EventListener
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
         reschedule();
     }
 
+    // 仅当服务器组配置变化时才重新调度。
     @EventListener
     void onParameterSettingChanged(ParameterSettingChangedEvent event) {
         var previous = event.getOldData().get("server");
@@ -68,6 +72,7 @@ public class ParameterGarbageCollector {
         reschedule();
     }
 
+    // 读取定时配置，失败时使用默认表达式。
     void reschedule() {
         parameterGroups.getServer().subscribe(
                 server -> schedule(server.getGcCron()),
@@ -77,6 +82,7 @@ public class ParameterGarbageCollector {
                 });
     }
 
+    // 取消旧任务并按校验后的定时表达式重新调度。
     private synchronized void schedule(String cron) {
         if (currentTask != null) {
             currentTask.cancel(false);
@@ -96,6 +102,7 @@ public class ParameterGarbageCollector {
         return new CronTrigger(expression, PudansTime.BEIJING);
     }
 
+    // 在弹性线程池依次执行临时文件与令牌清理。
     void run() {
         Schedulers.boundedElastic().schedule(() -> {
             try {
@@ -111,6 +118,7 @@ public class ParameterGarbageCollector {
         });
     }
 
+    // 删除临时目录中超过保留时限的文件。
     int cleanTempFiles() {
         var directory = tempPathResolver.resolve().blockOptional(Duration.ofSeconds(10)).orElse(null);
         if (directory == null || Files.notExists(directory)) {
@@ -131,6 +139,7 @@ public class ParameterGarbageCollector {
         return deleted[0];
     }
 
+    // 判断文件修改时间是否早于阈值。
     private static boolean olderThan(Path path, Instant threshold) {
         try {
             return Files.getLastModifiedTime(path).toInstant().isBefore(threshold);
@@ -139,6 +148,7 @@ public class ParameterGarbageCollector {
         }
     }
 
+    // 删除文件并累计成功删除数量。
     private static void delete(Path path, int[] deleted) {
         try {
             if (Files.deleteIfExists(path)) {

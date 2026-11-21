@@ -50,6 +50,7 @@ public class LiveMonitorWorker {
 
     private Disposable subscription;
 
+    // 按配置间隔启动监控循环，丢弃积压的 tick
     @PostConstruct
     public void start() {
         var tick = properties.getMonitor().getTick();
@@ -62,6 +63,7 @@ public class LiveMonitorWorker {
                 .subscribe();
     }
 
+    // 停止监控循环并释放订阅
     @PreDestroy
     public void stop() {
         if (subscription != null) {
@@ -83,6 +85,7 @@ public class LiveMonitorWorker {
                 .then();
     }
 
+    // 取到期源并按并发上限解析，避免一次 tick 过载
     private Mono<Void> runDue() {
         var due = registry.snapshotDue(Instant.now(), properties.getMonitor().getMaxPerTick());
         if (due.isEmpty()) {
@@ -93,6 +96,7 @@ public class LiveMonitorWorker {
                 .then();
     }
 
+    // 解析单个源并按在线、离线或失败分支处理
     private Mono<Void> check(LiveSourceRegistry.Snapshot snapshot) {
         var name = snapshot.name();
         return Mono.defer(() -> roomResolver
@@ -104,10 +108,12 @@ public class LiveMonitorWorker {
                 .doFinally(signal -> registry.release(name));
     }
 
+    // 写回在线状态并按配置启动自动录制
     private Mono<Void> handleLive(String name, LiveRoomInfo info) {
         return sourceStatus.applyLive(name, info).flatMap(source -> startAutoRecording(source, info));
     }
 
+    // 仅未录制且开启自动录制的源才发起录制
     private Mono<Void> startAutoRecording(LiveSource source, LiveRoomInfo info) {
         var status = source.getStatus();
         if (!source.getSpec().isAutoRecord() || StringUtils.hasText(status.getCurrentRecording())) {
@@ -131,6 +137,7 @@ public class LiveMonitorWorker {
                 .onErrorResume(error -> handleRecordingFailure(name, error));
     }
 
+    // 并发上限只告警，其余失败写回源并发送告警
     private Mono<Void> handleRecordingFailure(String sourceName, Throwable error) {
         var code = error instanceof ApiException api
                 ? api.getCode()
@@ -151,6 +158,7 @@ public class LiveMonitorWorker {
                 .then();
     }
 
+    // 写回离线状态并停止该源正在进行的录制
     private Mono<Void> handleOffline(String name) {
         return sourceStatus
                 .applyOffline(name, LiveErrorCode.LIVE_ROOM_OFFLINE.message())
@@ -171,6 +179,7 @@ public class LiveMonitorWorker {
                 });
     }
 
+    // 写回解析错误，限流达到阈值时发送告警
     private Mono<Void> handleFailure(LiveSourceRegistry.Snapshot snapshot, Throwable error) {
         var name = snapshot.name();
         var code = error instanceof ApiException api

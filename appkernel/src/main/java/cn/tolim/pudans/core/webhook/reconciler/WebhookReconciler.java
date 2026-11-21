@@ -18,6 +18,7 @@ public class WebhookReconciler implements Reconciler<Reconciler.Request> {
 
     private final WebhookSecretCipher secretCipher;
 
+    // 把新增 Webhook 的明文密钥加密后写回。
     @Override
     public Result reconcile(Request request) {
         client.fetch(Webhook.class, request.name()).ifPresent(webhook -> {
@@ -34,6 +35,7 @@ public class WebhookReconciler implements Reconciler<Reconciler.Request> {
         return Result.doNotRetry();
     }
 
+    // 声明本协调器负责的 Webhook 扩展。
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new Webhook()).build();

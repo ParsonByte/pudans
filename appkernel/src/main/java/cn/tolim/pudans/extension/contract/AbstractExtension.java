@@ -12,12 +12,14 @@ public abstract class AbstractExtension implements Extension {
 
     private MetadataOperator metadata;
 
+    // 优先采用 GVK 注解推导的版本，缺省回落字段值。
     @Override
     public String getApiVersion() {
         var apiVersionFromGvk = Extension.super.getApiVersion();
         return apiVersionFromGvk != null ? apiVersionFromGvk : this.apiVersion;
     }
 
+    // 优先采用 GVK 注解推导的 Kind，缺省回落字段值。
     @Override
     public String getKind() {
         var kindFromGvk = Extension.super.getKind();

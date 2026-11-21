@@ -22,19 +22,23 @@ public class Policies {
 
     private final ReactiveExtensionClient client;
 
+    // 按名称读取存储策略。
     public Mono<StoragePolicy> get(String name) {
         return client.get(StoragePolicy.class, name);
     }
 
+    // 保存策略并返回更新后的结果。
     public Mono<StoragePolicy> update(StoragePolicy policy) {
         return client.update(policy);
     }
 
+    // 按类型列出全部存储策略。
     public Flux<StoragePolicy> list(StoragePolicyType type) {
         var options = ListOptions.builder().andQuery(equal("spec.type", type)).build();
         return client.listAll(StoragePolicy.class, options, defaultSort());
     }
 
+    // 返回首个就绪的默认策略，否则报不可用。
     public Mono<StoragePolicy> defaultPolicy() {
         var options = ListOptions.builder()
                 .andQuery(equal("spec.defaultPolicy", true))
@@ -48,6 +52,7 @@ public class Policies {
                         "系统未配置可用的默认存储策略。")));
     }
 
+    // 要求策略就绪，否则返回不可用的原因。
     public Mono<StoragePolicy> requireReady(String name) {
         return get(name).flatMap(policy -> {
             if (policy.getStatus() != null && policy.getStatus().isReady()) {
@@ -59,6 +64,7 @@ public class Policies {
         });
     }
 
+    // 将连通性测试结果写回策略状态。
     public Mono<StoragePolicy> recordTestResult(String name, StorageTestResult result) {
         return get(name).flatMap(policy -> {
             var status = Optional.ofNullable(policy.getStatus()).orElseGet(StoragePolicy.Status::new);

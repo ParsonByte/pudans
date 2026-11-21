@@ -3,33 +3,28 @@ package cn.tolim.pudans.security.authentication.recovery;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import cn.tolim.pudans.infra.utils.Digests;
 import java.security.SecureRandom;
-import java.util.HexFormat;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PasswordRecovery {
 
     private static final String KEY_PREFIX = "pudans:password-reset:";
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final HexFormat HEX = HexFormat.of();
 
     private final ReactiveStringRedisTemplate redisTemplate;
     private final Accounts accounts;
     private final PasswordResetMailer mailer;
     private final PudansProperties pudansProperties;
 
+    // 按冷却窗口生成并投递验证码，异常时释放冷却。
     public Mono<Void> sendCode(String email) {
         var normalizedEmail = normalizeEmail(email);
         var options = pudansProperties.getSecurity().getPasswordReset();
@@ -56,7 +51,7 @@ public class PasswordRecovery {
                             .then(Mono.defer(() -> accounts
                                     .listByEmail(normalizedEmail)
                                     .next()
-                                    .flatMap(user -> mailer.sendCode(normalizedEmail, code))
+                                    .flatMap(ignored -> mailer.sendCode(normalizedEmail, code))
                                     .then()))
                             .onErrorResume(error -> redisTemplate
                                     .delete(cooldownKey)
@@ -65,6 +60,7 @@ public class PasswordRecovery {
                 });
     }
 
+    // 校验验证码并限制失败次数，成功后更新密码。
     public Mono<Void> resetPassword(String email, String code, String newPassword) {
         var normalizedEmail = normalizeEmail(email);
         var options = pudansProperties.getSecurity().getPasswordReset();
@@ -77,7 +73,7 @@ public class PasswordRecovery {
                 .get(codeKey)
                 .switchIfEmpty(Mono.error(invalidCode()))
                 .flatMap(storedDigest -> {
-                    if (!constantTimeEquals(storedDigest, digest(normalizedEmail, code))) {
+                    if (!Digests.constantTimeEquals(storedDigest, digest(normalizedEmail, code))) {
                         return registerFailedAttempt(attemptsKey, codeKey, options.getMaxAttempts())
                                 .then(Mono.error(invalidCode()));
                     }
@@ -95,6 +91,7 @@ public class PasswordRecovery {
                 });
     }
 
+    // 累计失败次数，达到上限后使验证码失效。
     private Mono<Void> registerFailedAttempt(String attemptsKey, String codeKey, int maxAttempts) {
         return redisTemplate
                 .opsForValue()
@@ -110,40 +107,32 @@ public class PasswordRecovery {
                 .then();
     }
 
+    // 统一邮箱格式，空值按空字符串处理。
     private static String normalizeEmail(String email) {
         return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 
+    // 使用安全随机源生成六位数字验证码。
     private static String generateCode() {
         return String.format(Locale.ROOT, "%06d", RANDOM.nextInt(1_000_000));
     }
 
+    // 摘要绑定邮箱与验证码，避免跨邮箱复用。
     private static String digest(String email, String code) {
-        return sha256(email + ":" + code);
+        return Digests.sha256Hex(email + ":" + code);
     }
 
+    // 对邮箱做摘要并截断，避免在缓存键中暴露原文。
     private static String emailKey(String normalizedEmail) {
-        return sha256(normalizedEmail).substring(0, 48);
+        return Digests.sha256Hex(normalizedEmail).substring(0, 48);
     }
 
+    // 拼接带前缀的缓存键，保证命名空间隔离。
     private static String key(String emailKey, String suffix) {
         return KEY_PREFIX + emailKey + ":" + suffix;
     }
 
-    private static String sha256(String value) {
-        try {
-            var digest = MessageDigest.getInstance("SHA-256");
-            return HEX.formatHex(digest.digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 不可用", e);
-        }
-    }
-
-    private static boolean constantTimeEquals(String left, String right) {
-        return MessageDigest.isEqual(
-                left.getBytes(StandardCharsets.UTF_8), right.getBytes(StandardCharsets.UTF_8));
-    }
-
+    // 构造统一的验证码无效响应，避免泄露细节。
     private static ApiException invalidCode() {
         return new ApiException(
                 HttpStatus.BAD_REQUEST, "recovery-code-invalid", "验证码无效或已过期。");

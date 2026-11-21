@@ -19,10 +19,12 @@ class DefaultIndicesManager implements IndicesManager {
 
     private final ConcurrentMap<Class<? extends Extension>, Indices<? extends Extension>> indicesMap;
 
+    // 创建并发安全的类型到索引映射。
     DefaultIndicesManager() {
         indicesMap = new ConcurrentHashMap<>();
     }
 
+    // 合并默认索引与自定义索引并注册。
     @Override
     public <E extends Extension> void add(Class<E> type, List<ValueIndexSpec<E, ?>> indexSpecs) {
         indicesMap.computeIfAbsent(type, t -> {
@@ -43,12 +45,14 @@ class DefaultIndicesManager implements IndicesManager {
         });
     }
 
+    // 关闭并清空全部类型索引。
     @Override
     public void close() throws IOException {
         IOUtils.close(indicesMap.values().toArray(Indices[]::new));
         indicesMap.clear();
     }
 
+    // 按类型获取索引，缺失时抛出参数错误。
     @Override
     public <E extends Extension> Indices<E> get(Class<E> type) {
         var indices = (Indices<E>) indicesMap.get(type);
@@ -58,12 +62,14 @@ class DefaultIndicesManager implements IndicesManager {
         return indices;
     }
 
+    // 移除并静默关闭类型的索引。
     @Override
     public <E extends Extension> void remove(Class<E> type) {
         var indices = indicesMap.remove(type);
         IOUtils.closeQuietly(indices);
     }
 
+    // 提供名称与时间戳的默认索引。
     private <E extends Extension> List<ValueIndexSpec<E, ?>> createDefaultIndexSpecs() {
         var metadataNameSpec = IndexSpecs.<E, String>single("metadata.name", String.class)
                 .indexFunc(e -> e.getMetadata().getName())

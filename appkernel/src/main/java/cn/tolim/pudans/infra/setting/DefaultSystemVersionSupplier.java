@@ -14,10 +14,12 @@ public class DefaultSystemVersionSupplier implements SystemVersionSupplier {
 
     private final ObjectProvider<BuildProperties> buildProperties;
 
+    // 注入构建信息提供者，缺失时回退默认版本。
     public DefaultSystemVersionSupplier(ObjectProvider<BuildProperties> buildProperties) {
         this.buildProperties = buildProperties;
     }
 
+    // 读取构建版本，缺失或非法时回退默认值。
     @Override
     public Version get() {
         var properties = buildProperties.getIfUnique();

@@ -10,6 +10,7 @@ public final class ExternalUrlUtils {
     private ExternalUrlUtils() {}
 
 
+    // 将 URL 主机部分转为 ASCII 兼容形式。
     @Nullable
     public static String toAscii(@Nullable String externalUrl) {
         if (externalUrl == null || !externalUrl.contains("://")) {
@@ -38,6 +39,7 @@ public final class ExternalUrlUtils {
                 + externalUrl.substring(authorityEndIndex);
     }
 
+    // 处理用户信息、IPv6 与端口，失败时保留原值。
     private static String toAsciiAuthority(String authority) {
         var atIndex = authority.lastIndexOf('@');
         var userInfo = atIndex >= 0 ? authority.substring(0, atIndex + 1) : "";

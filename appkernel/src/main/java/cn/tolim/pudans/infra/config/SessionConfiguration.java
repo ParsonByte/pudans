@@ -23,6 +23,7 @@ import org.springframework.session.security.SpringSessionBackedReactiveSessionRe
 class SessionConfiguration {
 
     @Bean
+    // 会话值使用 Jackson 序列化，兼容多节点读取。
     ReactiveRedisTemplate<String, Object> sessionRedisTemplate(ReactiveRedisConnectionFactory connectionFactory) {
         var serializer = JacksonSerialization.sessionSerializer();
         var context = RedisSerializationContext.<String, Object>newSerializationContext()
@@ -35,6 +36,7 @@ class SessionConfiguration {
     }
 
     @Bean
+    // 配置会话命名空间、超时与写入策略。
     ReactiveRedisIndexedSessionRepository reactiveRedisSessionStore(
             ReactiveRedisConnectionFactory connectionFactory,
             ReactiveStringRedisTemplate stringRedisTemplate,
@@ -51,6 +53,7 @@ class SessionConfiguration {
     }
 
     @Bean
+    // 基于 Redis 会话仓库提供会话注册能力。
     SpringSessionBackedReactiveSessionRegistry<ReactiveRedisIndexedSessionRepository.RedisSession> reactiveSessionRegistry(
             ReactiveRedisIndexedSessionRepository sessionRepository) {
         return new SpringSessionBackedReactiveSessionRegistry<>(sessionRepository, sessionRepository);

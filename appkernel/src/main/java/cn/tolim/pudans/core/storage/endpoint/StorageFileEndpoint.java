@@ -21,6 +21,7 @@ public class StorageFileEndpoint implements CustomEndpoint {
 
     private final StorageTransfer storageTransfer;
 
+    // 注册回收站、恢复、彻底删除与下载地址路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "StorageFileV1alpha1";
@@ -44,24 +45,28 @@ public class StorageFileEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 将指定文件移入回收站并返回最新记录。
     private Mono<ServerResponse> trash(ServerRequest request) {
         return storageTransfer
                 .trash(request.pathVariable("name"))
                 .flatMap(file -> ServerResponse.ok().bodyValue(file));
     }
 
+    // 将回收站文件恢复为可读并返回最新记录。
     private Mono<ServerResponse> restore(ServerRequest request) {
         return storageTransfer
                 .restore(request.pathVariable("name"))
                 .flatMap(file -> ServerResponse.ok().bodyValue(file));
     }
 
+    // 彻底删除文件及其存储对象。
     private Mono<ServerResponse> purge(ServerRequest request) {
         return storageTransfer
                 .purge(request.pathVariable("name"))
                 .then(ServerResponse.status(HttpStatus.NO_CONTENT).build());
     }
 
+    // 生成文件的短期下载地址。
     private Mono<ServerResponse> downloadUrl(ServerRequest request) {
         return storageTransfer
                 .downloadUrl(request.pathVariable("name"), null)

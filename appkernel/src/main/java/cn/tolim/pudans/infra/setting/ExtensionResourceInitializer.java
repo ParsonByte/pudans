@@ -38,6 +38,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    // 注入扩展客户端与属性，用于加载初始资源。
     public ExtensionResourceInitializer(
             PudansProperties pudansProperties,
             InternalReactiveExtensionClient extensionClient,
@@ -47,6 +48,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
         this.eventPublisher = eventPublisher;
     }
 
+    // 加载扩展文件并创建或更新，随后清理过期模板。
     @Override
     public void start() {
         if (running) {
@@ -98,6 +100,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
         eventPublisher.publishEvent(new ExtensionInitializedEvent(this));
     }
 
+    // 标记初始化器已停止，避免重复启动。
     @Override
     public void stop() {
         if (!running) {
@@ -106,16 +109,19 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
         running = false;
     }
 
+    // 返回初始化器是否处于运行状态。
     @Override
     public boolean isRunning() {
         return running;
     }
 
+    // 在控制器就绪前完成扩展资源初始化。
     @Override
     public int getPhase() {
         return InitializationPhase.EXTENSION_RESOURCES.getPhase();
     }
 
+    // 判断资源是否为带模板标签的角色定义。
     private static boolean isRoleTemplate(Unstructured extension) {
         var metadata = extension.getMetadata();
         var labels = metadata == null ? null : metadata.getLabels();
@@ -124,6 +130,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
                 && Boolean.parseBoolean(labels.get(Role.TEMPLATE_LABEL_NAME));
     }
 
+    // 删除代码中已移除的角色模板，避免残留。
     private void pruneRoleTemplates(Set<String> loadedTemplates) {
         var options = ListOptions.builder()
                 .labelSelector()
@@ -145,6 +152,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
         });
     }
 
+    // 已存在则更新，不存在且未删除时新建。
     private Mono<Unstructured> createOrUpdate(Unstructured extension) {
         return Mono.just(extension)
                 .flatMap(ext -> extensionClient.fetch(
@@ -170,6 +178,7 @@ public class ExtensionResourceInitializer implements SmartLifecycle {
                 }));
     }
 
+    // 解析类路径位置为资源列表，非法位置直接报错。
     private List<Resource> listResources(String location) {
         var resolver = new PathMatchingResourcePatternResolver();
         try {

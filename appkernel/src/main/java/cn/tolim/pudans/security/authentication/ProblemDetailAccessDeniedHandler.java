@@ -15,10 +15,12 @@ public class ProblemDetailAccessDeniedHandler implements ServerAccessDeniedHandl
 
     private final ServerResponse.Context context;
 
+    // 保存响应写出上下文，用于拒绝访问时输出问题详情。
     public ProblemDetailAccessDeniedHandler(ServerResponse.Context context) {
         this.context = context;
     }
 
+    // 访问被拒绝时统一返回禁止访问的问题详情响应。
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, AccessDeniedException denied) {
         return ProblemDetailResponses.write(

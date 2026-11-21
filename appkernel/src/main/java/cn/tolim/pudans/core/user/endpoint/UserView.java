@@ -7,10 +7,12 @@ import java.time.Instant;
 
 public record UserView(String apiVersion, String kind, MetadataOperator metadata, Spec spec, Status status) {
 
+    // 默认暴露邮箱生成视图
     public static UserView from(User user) {
         return from(user, true);
     }
 
+    // 按可见性决定是否输出邮箱
     public static UserView from(User user, boolean exposeEmail) {
         if (user == null) {
             return null;

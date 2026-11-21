@@ -8767,6 +8767,9 @@
         "properties": {
           "base64Format": {
             "type": "string"
+          },
+          "padding": {
+            "type": "string"
           }
         }
       },

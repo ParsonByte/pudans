@@ -20,16 +20,19 @@ class RememberMeCookieResolverImpl implements RememberMeCookieResolver {
 
     private final Duration cookieMaxAge;
 
+    // 从安全配置读取令牌有效期作为 Cookie 生存时间。
     public RememberMeCookieResolverImpl(PudansProperties pudansProperties) {
         this.cookieMaxAge = pudansProperties.getSecurity().getRememberMe().getTokenValidity();
     }
 
+    // 只读取第一个同名 Cookie，避免重复值干扰。
     @Override
     @Nullable
     public HttpCookie resolveRememberMeCookie(ServerWebExchange exchange) {
         return exchange.getRequest().getCookies().getFirst(getCookieName());
     }
 
+    // 延迟到响应提交前写入，确保 Cookie 与响应一致。
     @Override
     public void setRememberMeCookie(ServerWebExchange exchange, String value) {
         Assert.notNull(value, "'value' 不能为空");
@@ -41,6 +44,7 @@ class RememberMeCookieResolverImpl implements RememberMeCookieResolver {
                 }));
     }
 
+    // 延迟写入过期 Cookie，使浏览器清除记住我状态。
     @Override
     public void expireCookie(ServerWebExchange exchange) {
         exchange.getResponse()

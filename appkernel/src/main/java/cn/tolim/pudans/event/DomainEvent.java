@@ -18,6 +18,7 @@ public class  DomainEvent extends ApplicationEvent {
 
     private final Map<String, Object> payload;
 
+    // 统一传递事件标识、发生时间与业务载荷。
     public DomainEvent(
             Object source,
             String eventId,

@@ -9,6 +9,7 @@ import tools.jackson.databind.module.SimpleModule;
 
 public class PudansSecurityJackson3Module extends SimpleModule {
 
+    // 为安全相关类型注册混入，统一序列化规则
     @Override
     public void setupModule(SetupContext context) {
         context.setMixIn(PudansUser.class, PudansUserMixin.class);

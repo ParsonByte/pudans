@@ -19,6 +19,7 @@ public class OneDriveStorageDriverFactory implements StorageDriverFactory {
 
     private final PudansProperties properties;
 
+    // 声明 OneDrive 类型及其支持的能力。
     @Override
     public List<StoragePolicyTypeDescriptor> descriptors() {
         return List.of(new StoragePolicyTypeDescriptor(
@@ -29,6 +30,7 @@ public class OneDriveStorageDriverFactory implements StorageDriverFactory {
                 Set.of(StorageCapability.PRESIGNED_SOURCE, StorageCapability.RANGE_READ)));
     }
 
+    // 以工作目录临时区创建 OneDrive 驱动。
     @Override
     public StorageDriver create(ResolvedStoragePolicy resolved) {
         Path tempDirectory = properties.getWorkDir().toAbsolutePath().normalize().resolve("uploads/.tmp");

@@ -35,6 +35,7 @@ public class DefaultController<R> implements Controller {
     private volatile boolean disposed = false;
     private volatile boolean started = false;
 
+    // 委托 Executor 构造器创建控制器。
     public DefaultController(
             String name,
             Reconciler<R> reconciler,
@@ -48,6 +49,7 @@ public class DefaultController<R> implements Controller {
         this(name, reconciler, queue, synchronizer, nowSupplier, minDelay, maxDelay, (Executor) executor, workerCount);
     }
 
+    // 校验工作线程数并保存运行时依赖。
     public DefaultController(
             String name,
             Reconciler<R> reconciler,
@@ -71,6 +73,7 @@ public class DefaultController<R> implements Controller {
         this.workerCounter = new AtomicLong();
     }
 
+    // 使用系统时钟与单工作线程创建控制器。
     public DefaultController(
             String name,
             Reconciler<R> reconciler,
@@ -81,6 +84,7 @@ public class DefaultController<R> implements Controller {
         this(name, reconciler, queue, synchronizer, Instant::now, minDelay, maxDelay, 1);
     }
 
+    // 使用系统时钟创建指定线程数的控制器。
     public DefaultController(
             String name,
             Reconciler<R> reconciler,
@@ -92,6 +96,7 @@ public class DefaultController<R> implements Controller {
         this(name, reconciler, queue, synchronizer, Instant::now, minDelay, maxDelay, workerCount);
     }
 
+    // 按名称创建虚拟线程执行器并委托构造。
     public DefaultController(
             String name,
             Reconciler<R> reconciler,
@@ -104,6 +109,7 @@ public class DefaultController<R> implements Controller {
         this(name, reconciler, queue, synchronizer, nowSupplier, minDelay, maxDelay, executor(name), workerCount);
     }
 
+    // 创建按名称命名虚拟线程的执行器。
     private static Executor executor(String name) {
         return Executors.newThreadPerTaskExecutor(Thread.ofVirtual()
                 .name(name, 1)
@@ -111,6 +117,7 @@ public class DefaultController<R> implements Controller {
                 .factory());
     }
 
+    // 等待执行器终止，并恢复中断标记。
     private static void closeExecutorService(ExecutorService executorService) {
         boolean terminated = executorService.isTerminated();
         if (!terminated) {
@@ -133,15 +140,18 @@ public class DefaultController<R> implements Controller {
         }
     }
 
+    // 返回控制器名称。
     @Override
     public String getName() {
         return name;
     }
 
+    // 返回工作线程数。
     public int getWorkerCount() {
         return workerCount;
     }
 
+    // 幂等启动同步器与工作线程。
     @Override
     public void start() {
         if (isStarted() || isDisposed()) {
@@ -156,6 +166,7 @@ public class DefaultController<R> implements Controller {
         IntStream.range(0, getWorkerCount()).mapToObj(i -> new Worker()).forEach(executor::execute);
     }
 
+    // 停止同步器、线程池与队列，释放资源。
     @Override
     public void dispose() {
         disposed = true;
@@ -185,11 +196,13 @@ public class DefaultController<R> implements Controller {
         }
     }
 
+    // 返回是否已销毁。
     @Override
     public boolean isDisposed() {
         return disposed;
     }
 
+    // 返回是否已启动。
     public boolean isStarted() {
         return started;
     }
@@ -198,14 +211,17 @@ public class DefaultController<R> implements Controller {
 
         private final String name;
 
+        // 按序号生成工作线程名称。
         Worker() {
             this.name = DefaultController.this.getName() + "-worker-" + workerCounter.incrementAndGet();
         }
 
+        // 返回工作线程名称。
         public String getName() {
             return name;
         }
 
+        // 循环取请求、协调并按结果重新入队。
         @Override
         public void run() {
             log.info("控制器工作线程 {} 已启动", this.name);

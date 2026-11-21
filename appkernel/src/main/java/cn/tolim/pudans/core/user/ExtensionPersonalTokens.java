@@ -28,10 +28,12 @@ import java.util.List;
 import java.util.Objects;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.util.AlternativeJdkIdGenerator;
 import org.springframework.util.CollectionUtils;
@@ -60,6 +62,7 @@ class ExtensionPersonalTokens implements PersonalTokens {
 
     private Clock clock;
 
+    // 初始化依赖与默认时钟
     public ExtensionPersonalTokens(
             Roles roleService,
             ReactiveExtensionClient client,
@@ -73,26 +76,56 @@ class ExtensionPersonalTokens implements PersonalTokens {
         idGenerator = new AlternativeJdkIdGenerator();
     }
 
+    // 将令牌名和密钥编码为完整令牌
     static String buildToken(String patName, String secret) {
         var encoded = Base64.getUrlEncoder().withoutPadding().encodeToString((patName + ':' + secret).getBytes(UTF_8));
         return PersonalAccessToken.PAT_TOKEN_PREFIX + encoded;
     }
 
+    // 替换时钟便于测试过期与撤销时间
     void setClock(Clock clock) {
         this.clock = clock;
     }
 
+    // 从安全上下文创建令牌并拒绝特权会话
     @Override
     public Mono<PersonalAccessToken> create(PersonalAccessToken patRequest) {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
 
                 .filter(authTrustResolver::isAuthenticated)
+                .flatMap(auth -> isSudoAuthentication(auth)
+                        ? Mono.error(new UnsatisfiedAttributeValueException(
+                                "sudo 会话不能创建个人访问令牌。"))
+                        : Mono.just(auth))
                 .switchIfEmpty(Mono.error(
                         () -> new UnsatisfiedAttributeValueException("请先登录。")))
-                .flatMap(auth -> create(patRequest, auth.getName(), auth.getAuthorities()));
+                .flatMap(auth -> ensureScopesWithinCaller(patRequest, auth.getAuthorities())
+                        .then(Mono.defer(() -> create(patRequest, auth.getName(), auth.getAuthorities()))));
     }
 
+    // 带 scope 的令牌只能签发 scope 更窄的子令牌，不能通过 RolesOnly 绕过限制。
+    private Mono<Void> ensureScopesWithinCaller(
+            PersonalAccessToken patRequest, Collection<? extends GrantedAuthority> authorities) {
+        var callerScopes = AuthorityUtils.authoritiesToScopes(authorities);
+        if (callerScopes.isEmpty()) {
+            return Mono.empty();
+        }
+        var unrestricted = callerScopes.contains("*") || callerScopes.contains("*:*");
+        var requested = patRequest.getSpec() == null ? null : patRequest.getSpec().getScopes();
+        if (!unrestricted
+                && (CollectionUtils.isEmpty(requested) || !callerScopes.containsAll(requested))) {
+            return Mono.error(new UnsatisfiedAttributeValueException(
+                    "子令牌的 scope 不能超出当前令牌。"));
+        }
+        if (PersonalAccessToken.SCOPE_MODE_ROLES_ONLY.equals(patRequest.getSpec().getScopeMode())) {
+            return Mono.error(new UnsatisfiedAttributeValueException(
+                    "带 scope 的令牌不能创建 RolesOnly 子令牌。"));
+        }
+        return Mono.empty();
+    }
+
+    // 为指定用户创建令牌并沿用其权限
     @Override
     public Mono<PersonalAccessToken> create(PersonalAccessToken patRequest, String username) {
         return reactiveUserDetailsService
@@ -100,6 +133,7 @@ class ExtensionPersonalTokens implements PersonalTokens {
                 .flatMap(userDetails -> create(patRequest, username, userDetails.getAuthorities()));
     }
 
+    // 校验有效期、特权与角色后复制请求数据
     private Mono<PersonalAccessToken> create(
             PersonalAccessToken patRequest, String username, Collection<? extends GrantedAuthority> authorities) {
         var patSpec = patRequest.getSpec();
@@ -173,6 +207,7 @@ class ExtensionPersonalTokens implements PersonalTokens {
                 .flatMap(client::create);
     }
 
+    // 仅撤销尚未撤销的令牌并记录时间
     @Override
     public Mono<PersonalAccessToken> revoke(String patName, String username) {
         return get(patName, username)
@@ -186,6 +221,7 @@ class ExtensionPersonalTokens implements PersonalTokens {
                 .flatMap(client::update);
     }
 
+    // 仅恢复已撤销令牌并清除撤销时间
     @Override
     public Mono<PersonalAccessToken> restore(String patName, String username) {
         return get(patName, username)
@@ -198,11 +234,13 @@ class ExtensionPersonalTokens implements PersonalTokens {
                 .flatMap(client::update);
     }
 
+    // 校验归属后删除令牌
     @Override
     public Mono<PersonalAccessToken> delete(String patName, String username) {
         return get(patName, username).flatMap(client::delete);
     }
 
+    // 只返回属于该用户的令牌
     @Override
     public Mono<PersonalAccessToken> get(String patName, String username) {
         return client.fetch(PersonalAccessToken.class, patName)
@@ -210,6 +248,7 @@ class ExtensionPersonalTokens implements PersonalTokens {
                 .switchIfEmpty(Mono.error(() -> new NotFoundException("个人访问令牌不存在或已删除。")));
     }
 
+    // 列出用户创建的全部令牌
     @Override
     public Flux<PersonalAccessToken> list(String username) {
         var options = ListOptions.builder()
@@ -218,6 +257,7 @@ class ExtensionPersonalTokens implements PersonalTokens {
         return client.listAll(PersonalAccessToken.class, options, defaultSort());
     }
 
+    // 删除过期令牌并返回删除数量
     @Override
     public Mono<Long> deleteExpired(String username) {
         var now = clock.instant();
@@ -229,9 +269,23 @@ class ExtensionPersonalTokens implements PersonalTokens {
                 .count();
     }
 
+    // 撤销用户全部未撤销令牌，返回实际撤销数量
+    @Override
+    public Mono<Long> revokeAll(String username) {
+        var now = clock.instant();
+        return list(username)
+                .filter(pat -> pat.getSpec() != null && !pat.getSpec().isRevoked())
+                .flatMap(pat -> {
+                    pat.getSpec().setRevoked(true);
+                    pat.getSpec().setRevokesAt(now);
+                    return client.update(pat);
+                })
+                .count();
+    }
+
+    // 生成一次性密钥并保存其哈希
     @Override
     public Mono<String> generateToken(PersonalAccessToken pat) {
-
 
         return Mono.fromCallable(this::generateSecret)
                 .subscribeOn(Schedulers.boundedElastic())
@@ -244,12 +298,14 @@ class ExtensionPersonalTokens implements PersonalTokens {
                 });
     }
 
+    // 生成足够随机的令牌密钥
     private String generateSecret() {
         var bytes = new byte[24];
         secureRandom.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    // 未申请角色时默认通过，否则校验授权
     private Mono<Boolean> hasSufficientRoles(
             Collection<? extends GrantedAuthority> grantedAuthorities, List<String> requestRoles) {
         if (CollectionUtils.isEmpty(requestRoles)) {
@@ -259,9 +315,16 @@ class ExtensionPersonalTokens implements PersonalTokens {
         return roleService.contains(grantedRoles, requestRoles);
     }
 
+    // 判断是否具备管理员角色
     private static boolean isAdmin(Collection<? extends GrantedAuthority> authorities) {
         var roles = AuthorityUtils.authoritiesToRoles(authorities);
         return roles.contains(BuiltinEntities.SUPER_ROLE)
                 || roles.contains(BuiltinEntities.SYSTEM_ADMIN_ROLE);
+    }
+
+    // sudo 令牌只能临时代表目标用户，不能借机创建持久凭据。
+    private static boolean isSudoAuthentication(Authentication authentication) {
+        return authentication instanceof JwtAuthenticationToken jwt
+                && jwt.getToken().hasClaim("sudo_user");
     }
 }

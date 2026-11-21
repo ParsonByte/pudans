@@ -5,14 +5,13 @@ import static cn.tolim.pudans.security.authorization.AuthorityUtils.AUTHENTICATE
 import static cn.tolim.pudans.security.authorization.AuthorityUtils.ROLE_PREFIX;
 import static java.util.Objects.requireNonNullElse;
 
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.exception.UserNotFoundException;
 import cn.tolim.pudans.security.authentication.login.PudansUser;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorUtils;
 import java.util.function.BooleanSupplier;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.ReactiveUserDetailsPasswordService;
@@ -21,27 +20,29 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 public class UserDetailsLoader implements ReactiveUserDetailsService, ReactiveUserDetailsPasswordService {
 
     private final Accounts accounts;
 
-    private final Groups groups;
+    private final UserRoles userRoles;
 
 
     @Setter
     private BooleanSupplier twoFactorAuthEnabled = () -> true;
 
-    public UserDetailsLoader(Accounts accounts, Groups groups) {
+    // 注入账户查询与角色服务，作为用户详情加载的来源。
+    public UserDetailsLoader(Accounts accounts, UserRoles userRoles) {
         this.accounts = accounts;
-        this.groups = groups;
+        this.userRoles = userRoles;
     }
 
+    // 更新密码后返回保留双因素设置的新用户详情。
     @Override
     public Mono<UserDetails> updatePassword(UserDetails user, String newPassword) {
-        return accounts.updatePassword(user.getUsername(), newPassword).map(u -> withNewPassword(user, newPassword));
+        return accounts.updatePassword(user.getUsername(), newPassword).map(ignored -> withNewPassword(user, newPassword));
     }
 
+    // 加载账户与角色并转换为认证用户，未知用户统一报凭据错误。
     @Override
     public Mono<UserDetails> findByUsername(String username) {
         var getUser = accounts.getUser(username);
@@ -50,8 +51,8 @@ public class UserDetailsLoader implements ReactiveUserDetailsService, ReactiveUs
                 .flatMap(user -> {
                     var name = user.getMetadata().getName();
                     var disabled = requireNonNullElse(user.getSpec().getDisabled(), false);
-                    var setAuthorities = groups
-                            .getRoleNamesByUsername(name)
+                    var setAuthorities = userRoles
+                            .list(name)
 
                             .concatWithValues(AUTHENTICATED_ROLE_NAME, ANONYMOUS_ROLE_NAME)
                             .map(roleName -> new SimpleGrantedAuthority(ROLE_PREFIX + roleName))
@@ -71,6 +72,7 @@ public class UserDetailsLoader implements ReactiveUserDetailsService, ReactiveUs
                 });
     }
 
+    // 用新密码重建用户详情，并保留原有双因素认证信息。
     private UserDetails withNewPassword(UserDetails userDetails, String newPassword) {
         var updated = User.withUserDetails(userDetails).password(newPassword).build();
         if (userDetails instanceof PudansUserDetailsContract contract) {

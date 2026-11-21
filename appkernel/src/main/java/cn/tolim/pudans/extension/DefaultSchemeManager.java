@@ -27,6 +27,7 @@ public class DefaultSchemeManager implements SchemeManager {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    // 注入索引引擎与事件发布器并初始化方案列表。
     public DefaultSchemeManager(IndexEngine indexEngine, ApplicationEventPublisher eventPublisher) {
         this.indexEngine = indexEngine;
         this.eventPublisher = eventPublisher;
@@ -35,6 +36,7 @@ public class DefaultSchemeManager implements SchemeManager {
         schemes = new CopyOnWriteArrayList<>();
     }
 
+    // 注册方案及其索引规格，并广播方案新增事件。
     @Override
     public <E extends Extension> void register(Class<E> type, Consumer<IndexSpecs<E>> specsConsumer) {
         var scheme = Scheme.buildFromType(type);
@@ -50,6 +52,7 @@ public class DefaultSchemeManager implements SchemeManager {
         eventPublisher.publishEvent(new SchemeAddedEvent(this, scheme));
     }
 
+    // 移除方案与索引，并广播方案移除事件。
     @Override
     public void unregister(Scheme scheme) {
         if (schemes.contains(scheme)) {
@@ -59,6 +62,7 @@ public class DefaultSchemeManager implements SchemeManager {
         }
     }
 
+    // 返回不可修改的方案快照列表。
     @Override
     public List<Scheme> schemes() {
         return Collections.unmodifiableList(schemes);
@@ -72,6 +76,7 @@ public class DefaultSchemeManager implements SchemeManager {
             this.specMap = new HashMap<>();
         }
 
+        // 保证同名索引规格只注册一次。
         @Override
         public <K extends Comparable<K>> void add(ValueIndexSpec<E, K> indexSpec) {
             Assert.isTrue(
@@ -80,6 +85,7 @@ public class DefaultSchemeManager implements SchemeManager {
             this.specMap.put(indexSpec.getName(), indexSpec);
         }
 
+        // 返回已收集的索引规格集合。
         @Override
         public List<ValueIndexSpec<E, ?>> getIndexSpecs() {
             return specMap.values().stream().toList();

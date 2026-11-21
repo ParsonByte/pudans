@@ -11,6 +11,7 @@ public interface SuperAdminInitializer {
     String SUPER_ROLE_NAME = AuthorityUtils.SUPER_ROLE_NAME;
 
 
+    // 按给定参数初始化超级管理员及其所需角色与用户组。
     Mono<Void> initialize(InitializationParam param);
 
     @Data

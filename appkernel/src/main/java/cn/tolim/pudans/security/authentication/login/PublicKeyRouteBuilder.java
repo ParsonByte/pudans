@@ -13,11 +13,13 @@ public class PublicKeyRouteBuilder {
 
     private final LoginCipher loginCipher;
 
+    // 持有密文能力以暴露登录所需的公钥。
     public PublicKeyRouteBuilder(LoginCipher loginCipher) {
         this.loginCipher = loginCipher;
     }
 
 
+    // 提供登录页加密密码所需的公钥接口。
     public RouterFunction<ServerResponse> build() {
         return SpringdocRouteBuilder.route()
                 .GET(
@@ -39,5 +41,8 @@ public class PublicKeyRouteBuilder {
     public static class PublicKeyResponse {
 
         private String base64Format;
+
+        // 告知客户端优先使用 OAEP-SHA256 加密登录密码
+        private String padding = "OAEP-SHA256";
     }
 }

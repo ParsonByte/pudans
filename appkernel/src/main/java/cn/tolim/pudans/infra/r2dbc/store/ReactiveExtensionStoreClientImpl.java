@@ -33,6 +33,7 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
 
     private int fetchSize = DEFAULT_FETCH_SIZE;
 
+    // 自动补全前缀分隔符后按名称升序读取。
     @Override
     public Flux<ExtensionStore> listByNamePrefix(String prefix) {
         Assert.hasText(prefix, "前缀不能为空");
@@ -46,6 +47,7 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
                 .all();
     }
 
+    // 使用名称游标实现稳定的分页读取。
     @Override
     public Flux<ExtensionStore> listBy(String prefix, @Nullable String nameCursor, int limit) {
         Assert.hasText(prefix, "前缀不能为空");
@@ -64,6 +66,7 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
                 .all();
     }
 
+    // 查询后按入参顺序重排，保持调用方预期。
     @Override
     public Flux<ExtensionStore> listByNames(List<String> names) {
         if (CollectionUtils.isEmpty(names)) {
@@ -76,11 +79,13 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
         return repository.findByNameIn(names).sort(Comparator.comparingInt(es -> orderMap.get(es.getName())));
     }
 
+    // 按名称读取扩展记录。
     @Override
     public Mono<ExtensionStore> fetchByName(String name) {
         return repository.findById(name);
     }
 
+    // 新建记录，并将唯一键冲突映射为重复名称。
     @Override
     public Mono<ExtensionStore> create(String name, byte[] data) {
         return repository
@@ -89,11 +94,13 @@ public class ReactiveExtensionStoreClientImpl implements ReactiveExtensionStoreC
                         DuplicateKeyException.class, t -> new DuplicateNameException("检测到重复名称。", t));
     }
 
+    // 使用乐观锁版本保存更新内容。
     @Override
     public Mono<ExtensionStore> update(String name, Long version, byte[] data) {
         return repository.save(new ExtensionStore(name, data, version));
     }
 
+    // 先读取再带版本删除，触发乐观锁校验。
     @Override
     public Mono<ExtensionStore> delete(String name, Long version) {
         return repository.findById(name).flatMap(extensionStore -> {

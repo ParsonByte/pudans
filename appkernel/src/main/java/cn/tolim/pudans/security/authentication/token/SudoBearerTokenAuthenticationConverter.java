@@ -14,6 +14,7 @@ final class SudoBearerTokenAuthenticationConverter implements ServerAuthenticati
 
     private final ServerBearerTokenAuthenticationConverter delegate = new ServerBearerTokenAuthenticationConverter();
 
+    // 读取请求头中的代操作用户名并包装为专用令牌。
     @Override
     public Mono<Authentication> convert(ServerWebExchange exchange) {
         var sudoUsername = exchange.getRequest().getHeaders().getFirst(SUDO_HEADER);

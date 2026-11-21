@@ -8,6 +8,7 @@ public final class UserEventPayloads {
 
     private UserEventPayloads() {}
 
+    // 组装用户创建事件的公共字段
     public static Map<String, Object> created(User user) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", user.getMetadata().getName());

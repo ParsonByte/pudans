@@ -59,10 +59,12 @@ final class ProblemDetailMessages {
 
     private ProblemDetailMessages() {}
 
+    // 查询框架异常文案码对应的中文标题。
     static @Nullable String title(String code) {
         return TITLES.get(code);
     }
 
+    // 查询并格式化框架异常的中文详情模板。
     static @Nullable String detail(String code, @Nullable Object[] args) {
         var template = DETAILS.get(code);
         if (template == null) {

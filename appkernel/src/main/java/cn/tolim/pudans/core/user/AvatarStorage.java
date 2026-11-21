@@ -58,6 +58,7 @@ public class AvatarStorage {
 
     private final WebpSupport webpSupport;
 
+    // 校验、缩放并保存头像后返回地址
     public Mono<String> store(User user, FilePart file) {
         return parameterGroups.getSession().flatMap(session -> {
             validateContentType(file);
@@ -70,6 +71,7 @@ public class AvatarStorage {
         });
     }
 
+    // 删除用户当前头像并忽略缺失文件
     public Mono<Void> deleteForUser(User user) {
         return parameterGroups
                 .getSession()
@@ -79,6 +81,7 @@ public class AvatarStorage {
                 .then();
     }
 
+    // 校验文件名后读取头像，不合法时返回空
     public Mono<Resource> load(String filename) {
         if (!isSafeFileName(filename)) {
             return Mono.empty();
@@ -92,6 +95,7 @@ public class AvatarStorage {
         }).subscribeOn(Schedulers.boundedElastic()));
     }
 
+    // 拒绝缺失或不受支持的图片类型
     private void validateContentType(FilePart file) {
         var contentType = file.headers().getContentType();
         if (contentType == null) {
@@ -110,11 +114,13 @@ public class AvatarStorage {
         }
     }
 
+    // 取配置的大小上限，非法值回退默认值
     private static long maxSize(ParameterSetting.Session session) {
         var configured = session.getAvatarMaxSize();
         return configured == null || configured <= 0 ? DEFAULT_AVATAR_MAX_SIZE : configured;
     }
 
+    // 将缩放尺寸限制在允许区间内
     private static int dimension(ParameterSetting.Session session) {
         var configured = session.getAvatarDimension();
         if (configured == null) {
@@ -123,6 +129,7 @@ public class AvatarStorage {
         return Math.max(MIN_AVATAR_DIMENSION, Math.min(MAX_AVATAR_DIMENSION, configured));
     }
 
+    // 读取文件内容，超出限制时拒绝
     private Mono<byte[]> readBytes(FilePart file, long maxSize) {
         var declaredLength = file.headers().getContentLength();
         if (declaredLength > maxSize) {
@@ -138,6 +145,7 @@ public class AvatarStorage {
                         HttpStatus.BAD_REQUEST, "avatar-empty", "头像文件为空。")));
     }
 
+    // 复制缓冲区字节并确保释放资源
     private static byte[] toBytes(DataBuffer buffer, long maxSize) {
         try {
             if (buffer.readableByteCount() > maxSize) {
@@ -151,6 +159,7 @@ public class AvatarStorage {
         }
     }
 
+    // 构造统一的头像超限错误
     private static ApiException tooLarge(long maxSize) {
         return new ApiException(
                 HttpStatus.PAYLOAD_TOO_LARGE,
@@ -158,6 +167,7 @@ public class AvatarStorage {
                 "头像大小不能超过 " + maxSize + " 字节。");
     }
 
+    // 居中裁剪为正方形并输出图片
     private byte[] resize(byte[] sourceBytes, int dimension) {
         validateSourceDimensions(sourceBytes);
         try {
@@ -191,6 +201,7 @@ public class AvatarStorage {
         }
     }
 
+    // 解码前限制源图尺寸以防内存耗尽
     private static void validateSourceDimensions(byte[] sourceBytes) {
         try (var input = ImageIO.createImageInputStream(new ByteArrayInputStream(sourceBytes))) {
             if (input == null) {
@@ -230,6 +241,7 @@ public class AvatarStorage {
         }
     }
 
+    // 保存新头像并清理旧文件
     private Mono<String> writeAvatar(User user, ParameterSetting.Session session, byte[] bytes) {
         return Mono.fromCallable(() -> {
                     var directory = directory(session);
@@ -254,6 +266,7 @@ public class AvatarStorage {
                                 error));
     }
 
+    // 解析并限制头像目录在工作目录内
     private Path directory(ParameterSetting.Session session) {
         var workDir = pudansProperties.getWorkDir().toAbsolutePath().normalize();
         var configured = session.getAvatarStoragePath();
@@ -266,6 +279,7 @@ public class AvatarStorage {
         return resolved;
     }
 
+    // 仅删除本站生成的头像文件
     private void deleteAvatar(String avatarUrl, Path directory) {
         if (!StringUtils.hasText(avatarUrl) || !avatarUrl.startsWith(AVATAR_URL_PREFIX)) {
             return;
@@ -285,17 +299,20 @@ public class AvatarStorage {
         }
     }
 
+    // 只接受白名单扩展名和简单文件名
     private static boolean isSafeFileName(String filename) {
         return filename != null
                 && filename.matches("[A-Za-z0-9._-]+")
                 && ALLOWED_EXTENSIONS.contains(extension(filename));
     }
 
+    // 提取小写扩展名，无扩展名时为空
     private static String extension(String filename) {
         var dot = filename.lastIndexOf('.');
         return dot < 0 ? "" : filename.substring(dot + 1).toLowerCase(Locale.ROOT);
     }
 
+    // 将用户名转为适合文件名的安全形式
     private static String sanitize(String username) {
         return username.replaceAll("[^A-Za-z0-9._-]", "_");
     }

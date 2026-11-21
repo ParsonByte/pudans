@@ -58,6 +58,7 @@ public class LiveRecorder {
 
     private final SourceStatus sourceStatus;
 
+    // 创建并登记录制任务，按准入结果返回或标记等待
     public Mono<LiveRecording> launch(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         var task = new LiveRecorderTask(
@@ -89,6 +90,7 @@ public class LiveRecorder {
         return Mono.just(recording);
     }
 
+    // 按当前状态取消排队、请求停止或重复停止
     public Mono<LiveRecording> stop(LiveRecording recording, String requestedBy) {
         var name = recording.getMetadata().getName();
         return switch (recording.getStatus().getState()) {
@@ -96,6 +98,7 @@ public class LiveRecorder {
                 admission.cancel(name);
                 registry.unregister(name);
                 yield clearRemoteKeys(name)
+                        .then(clearSourceRecording(recording))
                         .then(recordingStatus.transition(name, LiveRecordingState.CANCELED, "排队中被取消"));
             }
             case RECORDING -> requestStopSignal(name, requestedBy)
@@ -110,6 +113,16 @@ public class LiveRecorder {
         };
     }
 
+    // 取消排队录制后释放直播源的录制指针，避免永久阻塞后续录制
+    private Mono<Void> clearSourceRecording(LiveRecording recording) {
+        var sourceName = recording.getSpec() == null ? null : recording.getSpec().getSourceName();
+        if (!org.springframework.util.StringUtils.hasText(sourceName)) {
+            return Mono.empty();
+        }
+        return sourceStatus.recordingEnded(sourceName).then();
+    }
+
+    // 存在未上传分片或成品时说明本地可续传
     public boolean hasLocalData(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         if (!workspace.listSegmentFiles(name).isEmpty() || !workspace.listPartFiles(name).isEmpty()) {
@@ -118,6 +131,7 @@ public class LiveRecorder {
         return recording.getStatus().getParts().stream().anyMatch(part -> part.getState() != PartState.UPLOADED);
     }
 
+    // 在后台线程续传合并上传，完成后返回最新记录
     public Mono<LiveRecording> resumeUpload(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         return Mono.fromRunnable(() -> {
@@ -139,6 +153,7 @@ public class LiveRecorder {
                 .then(recordingStatus.findRequired(name));
     }
 
+    // 停止超时后强制关闭拉流器并标记失败
     private void scheduleStopWatchdog(String name) {
         Mono.delay(properties.getRecorder().getStopTimeout(), Schedulers.boundedElastic())
                 .flatMap(ignored -> {
@@ -154,6 +169,7 @@ public class LiveRecorder {
                 .subscribe(ignored -> {}, error -> log.warn("停止看门狗执行失败 [{}]：{}", name, error.getMessage()));
     }
 
+    // 写入跨实例停止信号，Redis 失败不阻断停止
     private Mono<Void> requestStopSignal(String name, String requestedBy) {
         var actor = requestedBy == null || requestedBy.isBlank() ? "unknown" : requestedBy;
         return redisTemplate
@@ -166,6 +182,7 @@ public class LiveRecorder {
                 });
     }
 
+    // 清理本录制的 owner 与停止键
     private Mono<Void> clearRemoteKeys(String name) {
         return redisTemplate
                 .delete(

@@ -16,6 +16,7 @@ public final class JsonPatch {
 
     private JsonPatch() {}
 
+    // 注册 JSON Patch 操作的 OpenAPI 模式。
     public static void addSchema(Components components) {
         Function<String, io.swagger.v3.oas.models.media.Schema<?>> opSchemaFunc =
                 op -> new StringSchema()._enum(List.of(op)).type("string");

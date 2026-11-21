@@ -3,11 +3,23 @@ package cn.tolim.pudans.core.live.resolve;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import org.junit.jupiter.api.Test;
 
 class DouyinRoomPayloadMapperTest {
 
-    private final DouyinRoomPayloadMapper mapper = new DouyinRoomPayloadMapper(new LiveStreamUrlValidator());
+    // 使用固定公网地址，避免测试依赖真实 DNS。
+    private final DouyinRoomPayloadMapper mapper = new DouyinRoomPayloadMapper(new LiveStreamUrlValidator(
+            host -> {
+                try {
+                    return new InetAddress[] {
+                        InetAddress.getByAddress(new byte[] {(byte) 93, (byte) 184, (byte) 216, (byte) 34})
+                    };
+                } catch (UnknownHostException error) {
+                    throw new IllegalStateException(error);
+                }
+            }));
 
     @Test
     void mapsRoomAndOrderedStreams() throws Exception {

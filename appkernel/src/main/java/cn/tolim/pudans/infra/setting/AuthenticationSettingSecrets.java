@@ -1,5 +1,7 @@
 package cn.tolim.pudans.infra.setting;
 
+import cn.tolim.pudans.infra.utils.SettingUtils;
+
 import cn.tolim.pudans.infra.contract.ParameterSetting;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ArrayNode;
@@ -13,6 +15,7 @@ final class AuthenticationSettingSecrets {
 
     private AuthenticationSettingSecrets() {}
 
+    // 对飞书与各认证提供者的密钥统一脱敏。
     static void mask(ObjectNode root) {
         if (root == null) {
             return;
@@ -22,6 +25,7 @@ final class AuthenticationSettingSecrets {
         maskProviders(root, "oidc");
     }
 
+    // 掩码值沿用已保存的密钥，避免更新时被覆盖。
     static void restoreMasked(ObjectNode incoming, ObjectNode existing) {
         if (incoming == null) {
             return;
@@ -31,6 +35,7 @@ final class AuthenticationSettingSecrets {
         restoreProviders(incoming, existing, "oidc");
     }
 
+    // 加密所有非空的认证密钥后再持久化。
     static void encrypt(ObjectNode root, ParameterSettingSecretCipher cipher) {
         if (root == null) {
             return;
@@ -40,6 +45,7 @@ final class AuthenticationSettingSecrets {
         encryptProviders(root, "oidc", cipher);
     }
 
+    // 仅解密副本用于校验，不回写持久化数据。
     static void decryptForValidation(ObjectNode root, ParameterSettingSecretCipher cipher) {
         if (root == null) {
             return;
@@ -49,6 +55,7 @@ final class AuthenticationSettingSecrets {
         decryptProviders(root, "oidc", cipher);
     }
 
+    // 解密认证设置中的密钥字段，供运行时使用。
     static void decrypt(ParameterSetting.Authentication authentication, ParameterSettingSecretCipher cipher) {
         if (authentication == null) {
             return;
@@ -67,6 +74,7 @@ final class AuthenticationSettingSecrets {
         }
     }
 
+    // 逐项脱敏提供者列表中的客户端密钥。
     private static void maskProviders(ObjectNode root, String group) {
         var providers = providers(root, group);
         if (providers == null) {
@@ -77,6 +85,7 @@ final class AuthenticationSettingSecrets {
         }
     }
 
+    // 按注册标识匹配旧配置并恢复被掩码的密钥。
     private static void restoreProviders(ObjectNode incoming, ObjectNode existing, String group) {
         var incomingProviders = providers(incoming, group);
         if (incomingProviders == null) {
@@ -88,7 +97,7 @@ final class AuthenticationSettingSecrets {
             if (incomingProvider == null) {
                 continue;
             }
-            var registrationId = text(incomingProvider, "registrationId");
+            var registrationId = SettingUtils.text(incomingProvider, "registrationId");
             restoreSecret(
                     incomingProvider,
                     findProvider(existingProviders, registrationId),
@@ -96,6 +105,7 @@ final class AuthenticationSettingSecrets {
         }
     }
 
+    // 加密提供者列表中的客户端密钥。
     private static void encryptProviders(ObjectNode root, String group, ParameterSettingSecretCipher cipher) {
         var providers = providers(root, group);
         if (providers == null) {
@@ -106,6 +116,7 @@ final class AuthenticationSettingSecrets {
         }
     }
 
+    // 解密提供者列表中的客户端密钥副本。
     private static void decryptProviders(ObjectNode root, String group, ParameterSettingSecretCipher cipher) {
         var providers = providers(root, group);
         if (providers == null) {
@@ -116,19 +127,21 @@ final class AuthenticationSettingSecrets {
         }
     }
 
+    // 在旧配置中按注册标识查找对应提供者。
     private static ObjectNode findProvider(ArrayNode providers, String registrationId) {
         if (providers == null || registrationId == null) {
             return null;
         }
         for (int index = 0; index < providers.size(); index++) {
             var provider = object(providers.get(index));
-            if (provider != null && registrationId.equals(text(provider, "registrationId"))) {
+            if (provider != null && registrationId.equals(SettingUtils.text(provider, "registrationId"))) {
                 return provider;
             }
         }
         return null;
     }
 
+    // 安全读取提供者数组，结构不符时返回空。
     private static ArrayNode providers(ObjectNode root, String group) {
         var groupNode = object(root, group);
         if (groupNode == null) {
@@ -138,22 +151,17 @@ final class AuthenticationSettingSecrets {
         return node instanceof ArrayNode array ? array : null;
     }
 
+    // 仅当节点为对象时返回，否则返回空。
     private static ObjectNode object(JsonNode node) {
         return node instanceof ObjectNode objectNode ? objectNode : null;
     }
 
+    // 读取子对象字段，父节点或字段缺失时返回空。
     private static ObjectNode object(ObjectNode root, String field) {
         return root == null ? null : object(root.get(field));
     }
 
-    private static String text(ObjectNode node, String field) {
-        if (node == null) {
-            return null;
-        }
-        var value = node.get(field);
-        return value != null && value.isString() ? value.asString() : null;
-    }
-
+    // 仅对非空字符串密钥写入掩码。
     private static void maskSecret(ObjectNode node, String field) {
         if (node == null) {
             return;
@@ -164,6 +172,7 @@ final class AuthenticationSettingSecrets {
         }
     }
 
+    // 恢复掩码字段；无历史值时移除该字段。
     private static void restoreSecret(ObjectNode incoming, ObjectNode existing, String field) {
         if (incoming == null) {
             return;
@@ -180,6 +189,7 @@ final class AuthenticationSettingSecrets {
         }
     }
 
+    // 对未加密的非空密钥执行加密。
     private static void encryptSecret(ObjectNode node, String field, ParameterSettingSecretCipher cipher) {
         if (node == null) {
             return;
@@ -193,6 +203,7 @@ final class AuthenticationSettingSecrets {
         }
     }
 
+    // 对已加密的密钥执行解密。
     private static void decryptSecret(ObjectNode node, String field, ParameterSettingSecretCipher cipher) {
         if (node == null) {
             return;
@@ -203,6 +214,7 @@ final class AuthenticationSettingSecrets {
         }
     }
 
+    // 仅当值已加密时才解密，否则原样返回。
     private static String decrypt(String value, ParameterSettingSecretCipher cipher) {
         return value == null || value.isEmpty() || !cipher.isEncrypted(value) ? value : cipher.decrypt(value);
     }

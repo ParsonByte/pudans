@@ -61,6 +61,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    // 提取审计快照所需的申请关键字段。
     private static Map<String, Object> snapshot(TempRoleBinding binding) {
         var spec = binding.getSpec();
         var snapshot = new LinkedHashMap<String, Object>();
@@ -73,11 +74,13 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
         return snapshot;
     }
 
+    // 声明该端点使用的接口版本。
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
+    // 注册临时角色绑定的查询、申请、审批与撤销路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "TempRoleBindingV1alpha1";
@@ -108,6 +111,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 按权限过滤列表，普通用户只能查看本人申请。
     private Mono<ServerResponse> list(ServerRequest request) {
         return currentAuthentication().flatMap(authentication -> {
             var options = ListOptions.builder().andQuery(notDeleting());
@@ -131,6 +135,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
         });
     }
 
+    // 读取单条申请，非管理员只能访问本人记录。
     private Mono<ServerResponse> get(ServerRequest request) {
         return currentAuthentication().flatMap(authentication -> client
                 .fetch(TempRoleBinding.class, request.pathVariable("name"))
@@ -143,12 +148,14 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                 .flatMap(binding -> ServerResponse.ok().bodyValue(binding)));
     }
 
+    // 判断当前认证是否具有管理员角色。
     private static boolean isTemporaryRoleAdmin(Authentication authentication) {
         var roles = AuthorityUtils.authoritiesToRoles(authentication.getAuthorities());
         return roles.contains(BuiltinEntities.SUPER_ROLE)
                 || roles.contains(BuiltinEntities.SYSTEM_ADMIN_ROLE);
     }
 
+    // 校验并创建待审批申请，同时记录审计。
     private Mono<ServerResponse> apply(ServerRequest request) {
         return currentAuthentication()
                 .flatMap(authentication -> request.bodyToMono(ApplyRequest.class)
@@ -171,6 +178,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                 .flatMap(binding -> ServerResponse.ok().bodyValue(binding));
     }
 
+    // 校验审批权限后授予临时角色，可安全重入。
     private Mono<ServerResponse> approve(ServerRequest request) {
         var name = request.pathVariable("name");
         return client.fetch(TempRoleBinding.class, name)
@@ -202,6 +210,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                 .flatMap(binding -> ServerResponse.ok().bodyValue(binding));
     }
 
+    // 标记申请生效并写入授权审计。
     private Mono<TempRoleBinding> grantAndAudit(ServerRequest request, TempRoleBinding binding,
             Authentication authentication) {
         var spec = binding.getSpec();
@@ -229,6 +238,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                         request, binding, null, tempGrants::grant, "temprole.granted")));
     }
 
+    // 先持久化绑定再授权，成功后才发布事件。
     private Mono<TempRoleBinding> persistAndAudit(
             ServerRequest request,
             TempRoleBinding binding,
@@ -245,6 +255,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 发布临时角色状态变更事件，携带流程标识。
     private void publish(String type, TempRoleBinding binding, ServerRequest request) {
         var spec = binding.getSpec();
         var payload = new LinkedHashMap<String, Object>();
@@ -257,6 +268,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                 type, payload, (String) request.exchange().getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
+    // 校验撤销资格后撤销临时角色并记录审计。
     private Mono<ServerResponse> revoke(ServerRequest request) {
         return currentAuthentication()
                 .flatMap(authentication -> client.fetch(TempRoleBinding.class, request.pathVariable("name"))
@@ -300,6 +312,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
                 .flatMap(binding -> ServerResponse.ok().bodyValue(binding));
     }
 
+    // 校验申请字段与身份后构造待创建绑定。
     private Mono<TempRoleBinding> validateApply(ApplyRequest body, Authentication authentication) {
         if (CollectionUtils.isEmpty(body.roleNames())) {
             return Mono.error(new ServerWebInputException("roleNames 不能为空。"));
@@ -342,6 +355,7 @@ public class TempRoleBindingEndpoint implements CustomEndpoint {
         return Mono.just(binding);
     }
 
+    // 取当前已认证用户，匿名或缺失时拒绝。
     private Mono<Authentication> currentAuthentication() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)

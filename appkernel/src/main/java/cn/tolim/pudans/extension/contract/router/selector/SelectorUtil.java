@@ -11,6 +11,7 @@ public final class SelectorUtil {
     private SelectorUtil() {}
 
 
+    // 把标签与字段选择器表达式解析为列表选项。
     public static ListOptions labelAndFieldSelectorToListOptions(
             List<String> labelSelectorTerms, List<String> fieldSelectorTerms) {
         var selectorConverter = new SelectorConverter();

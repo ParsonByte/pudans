@@ -42,6 +42,7 @@ public class AuthenticationConnectionTester {
 
     private final WebClient webClient;
 
+    // 默认构造使用带地址校验的客户端，防止测试请求外联内网。
     @Autowired
     public AuthenticationConnectionTester(
             SecurityParameters securitySettings, FeishuClient feishuClient) {
@@ -56,6 +57,7 @@ public class AuthenticationConnectionTester {
                         .build());
     }
 
+    // 供测试注入自定义客户端，避免发起真实外联请求。
     AuthenticationConnectionTester(
             SecurityParameters securitySettings,
             FeishuClient feishuClient,
@@ -65,6 +67,7 @@ public class AuthenticationConnectionTester {
         this.webClient = webClient;
     }
 
+    // 按提供方类型分派连通性测试，类型缺失或不支持时返回失败。
     public Mono<ConnectionTestResult> test(ConnectionTestRequest request) {
         if (request == null) {
             return Mono.just(failure("请求体不能为空。"));
@@ -81,6 +84,7 @@ public class AuthenticationConnectionTester {
         };
     }
 
+    // 使用飞书应用凭据获取令牌以验证连通性。
     private Mono<ConnectionTestResult> testFeishu(ConnectionTestRequest request) {
         var settings = securitySettings.feishu();
         var appId = firstNonBlank(request.appId(), settings.appId());
@@ -94,6 +98,7 @@ public class AuthenticationConnectionTester {
                 .onErrorResume(error -> Mono.just(failure("飞书连接失败：" + readable(error))));
     }
 
+    // 校验令牌地址与凭据后，用客户端凭据模式探测令牌端点。
     private Mono<ConnectionTestResult> testOAuth2(ConnectionTestRequest request) {
         var provider = findOAuth2Provider(request.registrationId());
         var providerTokenUri = provider == null ? null : provider.getTokenUri();
@@ -122,6 +127,7 @@ public class AuthenticationConnectionTester {
         return testTokenEndpoint(tokenUri, clientId, clientSecret, scopes);
     }
 
+    // 读取 OIDC 发现文档，确认授权与令牌端点齐全。
     private Mono<ConnectionTestResult> testOidc(ConnectionTestRequest request) {
         var provider = findOidcProvider(request.registrationId());
         var issuerUri = firstNonBlank(request.issuerUri(), provider == null ? null : provider.getIssuerUri());
@@ -158,6 +164,7 @@ public class AuthenticationConnectionTester {
                 .onErrorResume(error -> Mono.just(failure("OIDC 发现请求失败：" + readable(error))));
     }
 
+    // 以客户端凭据模式请求令牌端点，据响应判定连接结果。
     private Mono<ConnectionTestResult> testTokenEndpoint(
             String tokenUri, String clientId, String clientSecret, String scopes) {
         var form = new LinkedMultiValueMap<String, String>();
@@ -183,6 +190,7 @@ public class AuthenticationConnectionTester {
                 .onErrorResume(error -> Mono.just(failure("令牌端点请求失败：" + readable(error))));
     }
 
+    // 将令牌端点响应映射为测试结果，部分错误仍说明端点可达。
     private static ConnectionTestResult resultForTokenResponse(int status, String body) {
         var lowerBody = body.toLowerCase(Locale.ROOT);
         if (status >= 200 && status < 300) {
@@ -200,6 +208,7 @@ public class AuthenticationConnectionTester {
         return failure("令牌端点返回 HTTP " + status + "。");
     }
 
+    // 按注册标识查找已保存的 OAuth2 提供方配置。
     private ParameterSetting.OAuth2Provider findOAuth2Provider(String registrationId) {
         if (!StringUtils.hasText(registrationId)) {
             return null;
@@ -211,6 +220,7 @@ public class AuthenticationConnectionTester {
                 .orElse(null);
     }
 
+    // 按注册标识查找已保存的 OIDC 提供方配置。
     private OidcProperties.Provider findOidcProvider(String registrationId) {
         if (!StringUtils.hasText(registrationId)) {
             return null;
@@ -222,6 +232,7 @@ public class AuthenticationConnectionTester {
                 .orElse(null);
     }
 
+    // 归一化类型并过滤不支持的值，避免大小写差异。
     private static String normalizeType(String type) {
         if (!StringUtils.hasText(type)) {
             return null;
@@ -233,6 +244,7 @@ public class AuthenticationConnectionTester {
         };
     }
 
+    // 掩码值视为未修改，沿用已保存的密钥。
     private static String resolveSecret(String supplied, String stored) {
         if (StringUtils.hasText(supplied)
                 && !ParameterSettingSensitiveFields.MASK.equals(supplied)) {
@@ -241,15 +253,18 @@ public class AuthenticationConnectionTester {
         return stored;
     }
 
+    // 优先使用请求值，缺省时回退到已保存配置。
     private static String firstNonBlank(String preferred, String fallback) {
         return StringUtils.hasText(preferred) ? preferred : fallback;
     }
 
+    // 未提交密钥或提交掩码时，认为沿用已保存的密钥。
     private static boolean usesStoredSecret(String supplied) {
         return !StringUtils.hasText(supplied)
                 || ParameterSettingSensitiveFields.MASK.equals(supplied);
     }
 
+    // 忽略末尾斜杠比较地址，避免无意义差异。
     private static boolean sameUri(String left, String right) {
         return left.replaceAll("/+$", "").equals(right.replaceAll("/+$", ""));
     }
@@ -265,6 +280,7 @@ public class AuthenticationConnectionTester {
         return null;
     }
 
+    // 仅接受带主机名的 HTTP 或 HTTPS 地址。
     private static boolean isHttpUrl(String value) {
         if (!StringUtils.hasText(value)) {
             return false;
@@ -279,15 +295,18 @@ public class AuthenticationConnectionTester {
         }
     }
 
+    // 提取可读错误信息，没有消息时退回异常类型名。
     private static String readable(Throwable error) {
         var message = error.getMessage();
         return StringUtils.hasText(message) ? message : error.getClass().getSimpleName();
     }
 
+    // 统一构造成功结果，避免各分支重复装配。
     private static ConnectionTestResult success(String message) {
         return new ConnectionTestResult(true, message);
     }
 
+    // 统一构造失败结果，供各分支复用。
     private static ConnectionTestResult failure(String message) {
         return new ConnectionTestResult(false, message);
     }

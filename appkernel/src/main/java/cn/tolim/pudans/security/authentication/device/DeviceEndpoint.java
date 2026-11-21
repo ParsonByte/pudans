@@ -43,6 +43,7 @@ public class DeviceEndpoint implements CustomEndpoint {
     private final ReactiveFindByIndexNameSessionRepository<?> sessionRepository;
     private final DeviceSessions deviceSessions;
 
+    // 注册设备查询与撤销路由，并同步生成接口文档
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         final var tag = "DeviceV1alpha1";
@@ -69,6 +70,7 @@ public class DeviceEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 撤销前校验主体归属，避免越权操作他人设备
     private Mono<ServerResponse> revokeDevice(ServerRequest request) {
         final var deviceId = request.pathVariable("deviceId");
         return principalName()
@@ -76,6 +78,7 @@ public class DeviceEndpoint implements CustomEndpoint {
                 .then(ServerResponse.noContent().build());
     }
 
+    // 合并会话状态，标记当前设备与是否仍然活跃
     private Mono<ServerResponse> listDevices(ServerRequest request) {
         return getRequestContext(request)
                 .flatMapMany(context -> {
@@ -100,6 +103,7 @@ public class DeviceEndpoint implements CustomEndpoint {
                 .flatMap(deviceDto -> ServerResponse.ok().bodyValue(deviceDto));
     }
 
+    // 当前设备与活跃设备优先，其余按最近访问倒序
     Comparator<DeviceDto> deviceDtoComparator() {
         return Comparator.comparing(DeviceDto::isCurrentDevice)
                 .thenComparing(DeviceDto::isActive)
@@ -110,6 +114,7 @@ public class DeviceEndpoint implements CustomEndpoint {
                 .reversed();
     }
 
+    // 同时获取主体会话映射与当前会话，供状态比对
     private Mono<RequestContext> getRequestContext(ServerRequest request) {
         return principalName().flatMap(principalName -> {
             var builder = RequestContext.builder().sessionMap(Map.of()).username(principalName);
@@ -120,12 +125,14 @@ public class DeviceEndpoint implements CustomEndpoint {
         });
     }
 
+    // 从安全上下文提取当前登录主体名称
     Mono<String> principalName() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .map(Principal::getName);
     }
 
+    // 复用统一分组版本，保证接口路径前缀一致
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

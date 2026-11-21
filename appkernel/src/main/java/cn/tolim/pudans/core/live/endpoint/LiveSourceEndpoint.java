@@ -40,6 +40,7 @@ public class LiveSourceEndpoint implements CustomEndpoint {
 
     private final AuditLog auditLog;
 
+    // 注册创建、解析、录制、汇总与健康路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         return SpringdocRouteBuilder.route()
@@ -88,6 +89,7 @@ public class LiveSourceEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 从直播间链接创建直播源并记录审计
     private Mono<ServerResponse> fromUrl(ServerRequest request) {
         return request.bodyToMono(LiveSourceCreateRequest.class)
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_INVALID_ARGUMENT.exception()))
@@ -103,6 +105,7 @@ public class LiveSourceEndpoint implements CustomEndpoint {
                 .flatMap(source -> ServerResponse.status(HttpStatus.CREATED).bodyValue(source));
     }
 
+    // 解析链接返回预览结果，不落库
     private Mono<ServerResponse> preview(ServerRequest request) {
         return request.bodyToMono(LiveSourceCreateRequest.class)
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_INVALID_ARGUMENT.exception()))
@@ -110,6 +113,7 @@ public class LiveSourceEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 解析指定直播源并写回最新状态
     private Mono<ServerResponse> resolve(ServerRequest request) {
         var name = request.pathVariable("name");
         return sources
@@ -118,6 +122,7 @@ public class LiveSourceEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 对指定直播源立即发起一次录制
     private Mono<ServerResponse> record(ServerRequest request) {
         var name = request.pathVariable("name");
         return sources
@@ -125,12 +130,14 @@ public class LiveSourceEndpoint implements CustomEndpoint {
                 .flatMap(recording -> ServerResponse.ok().bodyValue(recording));
     }
 
+    // 返回直播源状态与内存计数汇总
     private Mono<ServerResponse> summary(ServerRequest request) {
         return sourceSummaries
                 .summary()
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 返回指定直播源的健康快照
     private Mono<ServerResponse> health(ServerRequest request) {
         var name = request.pathVariable("name");
         return sourceHealth
@@ -138,6 +145,7 @@ public class LiveSourceEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 记录直播源创建审计，失败不影响创建结果
     private Mono<Void> recordCreateAudit(ServerRequest request, LiveSource source) {
         var snapshot = new LinkedHashMap<String, Object>();
         snapshot.put("roomId", source.getSpec().getRoomId());

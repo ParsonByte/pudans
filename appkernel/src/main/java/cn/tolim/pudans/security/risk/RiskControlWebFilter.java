@@ -64,6 +64,7 @@ public class RiskControlWebFilter implements WebFilter {
 
     private final ServerResponse.Context context;
 
+    // 静态资源与错误页跳过，其余先做风险预检
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         if (StaticRequestPaths.isStatic(exchange)
@@ -83,6 +84,7 @@ public class RiskControlWebFilter implements WebFilter {
         });
     }
 
+    // 读取安全上下文并识别超级管理员
     private Mono<Actor> actor(ServerWebExchange exchange) {
         return securityContextRepository
                 .load(exchange)
@@ -102,6 +104,7 @@ public class RiskControlWebFilter implements WebFilter {
                 });
     }
 
+    // 先查封禁场景，再评估请求洪泛
     private Mono<PreCheck> preCheck(ServerWebExchange exchange, String ip) {
         var path = exchange.getRequest().getPath().value();
         var banScenes = new java.util.LinkedHashSet<String>();
@@ -121,12 +124,14 @@ public class RiskControlWebFilter implements WebFilter {
                                 : new PreCheck(false, RiskScene.REQUEST_FLOOD, decision))));
     }
 
+    // 放行请求并在结束后记录风险事件
     private Mono<Void> observe(ServerWebExchange exchange, String ip, WebFilterChain chain) {
         return chain.filter(exchange)
                 .then(Mono.defer(() -> after(exchange, ip, null)))
                 .onErrorResume(error -> after(exchange, ip, error).then(Mono.error(error)));
     }
 
+    // 按响应状态记录登录、认证与服务错误
     private Mono<Void> after(ServerWebExchange exchange, String ip, Throwable error) {
         var status = exchange.getResponse().getStatusCode();
         var code = status != null ? status.value() : error != null ? 500 : 200;
@@ -144,6 +149,7 @@ public class RiskControlWebFilter implements WebFilter {
         return Flux.concat(checks).then();
     }
 
+    // 评估风险场景，达阈值时升级为封禁
     private Mono<Void> recordFailure(String scene, String ip, ServerWebExchange exchange) {
         return riskGuard
                 .evaluate(scene, ip)
@@ -154,6 +160,7 @@ public class RiskControlWebFilter implements WebFilter {
                 });
     }
 
+    // 封禁主体并发送一次告警与审计
     private Mono<Void> escalate(String scene, String ip, RiskDecision decision, ServerWebExchange exchange) {
         var banned = !decision.blockFor().isZero();
         var ban = banned ? riskGuard.ban(scene, ip, decision.blockFor()) : Mono.empty();
@@ -176,6 +183,7 @@ public class RiskControlWebFilter implements WebFilter {
                         }));
     }
 
+    // 已拦截请求记录审计后返回 429
     private Mono<Void> blocked(ServerWebExchange exchange, String ip, PreCheck pre) {
         var decision = pre.decision();
         var ban = decision.blockFor().isZero()
@@ -198,6 +206,7 @@ public class RiskControlWebFilter implements WebFilter {
                 .then(reject(exchange, decision));
     }
 
+    // 写入风险事件审计并补齐链路标识
     private Mono<Void> audit(
             ServerWebExchange exchange,
             String ip,
@@ -240,6 +249,7 @@ public class RiskControlWebFilter implements WebFilter {
         }));
     }
 
+    // 解析审计主体，匿名请求用占位标识
     private Mono<ActorIdentity> actorIdentity(ServerWebExchange exchange) {
         var uid = (String) exchange.getAttributes().get(AuditLog.UID_ATTRIBUTE);
         var username = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
@@ -264,6 +274,7 @@ public class RiskControlWebFilter implements WebFilter {
                 });
     }
 
+    // 构造风险审计记录的上下文数据
     private Map<String, Object> context(String scene, String ip, RiskDecision decision) {
         var context = new LinkedHashMap<String, Object>();
         context.put("scene", scene);
@@ -274,6 +285,7 @@ public class RiskControlWebFilter implements WebFilter {
         return context;
     }
 
+    // 发布告警事件并发送飞书通知
     private void notifyAlert(String scene, String ip, RiskDecision decision, ServerWebExchange exchange) {
         var alert = new RiskAlert(
                 scene, ip, decision.count(), exchange.getRequest().getPath().value(), Instant.now());
@@ -293,6 +305,7 @@ public class RiskControlWebFilter implements WebFilter {
         alertNotifier.send(alert).subscribe();
     }
 
+    // 发布请求被拦截的领域事件
     private void publishBlocked(
             ServerWebExchange exchange, String ip, String scene, RiskDecision decision) {
         var payload = new LinkedHashMap<String, Object>();
@@ -311,6 +324,7 @@ public class RiskControlWebFilter implements WebFilter {
                 (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
+    // 返回 429 并携带重试等待时间
     private Mono<Void> reject(ServerWebExchange exchange, RiskDecision decision) {
         if (!decision.retryAfter().isZero()) {
             exchange.getResponse().getHeaders().set("Retry-After", String.valueOf(decision.retryAfter().toSeconds()));
@@ -326,6 +340,7 @@ public class RiskControlWebFilter implements WebFilter {
 
     record PreCheck(boolean allowed, String scene, RiskDecision decision) {
 
+        // 构造无需拦截的通过结果
         static PreCheck pass() {
             return new PreCheck(true, null, RiskDecision.permit());
         }
@@ -333,6 +348,7 @@ public class RiskControlWebFilter implements WebFilter {
 
     record Actor(boolean superAdmin) {
 
+        // 未认证请求视为非超级管理员
         static Actor anonymous() {
             return new Actor(false);
         }

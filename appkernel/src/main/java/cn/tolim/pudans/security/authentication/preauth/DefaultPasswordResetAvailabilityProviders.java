@@ -17,12 +17,14 @@ public class DefaultPasswordResetAvailabilityProviders implements PasswordResetA
 
     private final List<PasswordResetAvailabilityProvider> providers;
 
+    // 缓存安全配置与有序提供者，保证结果稳定。
     public DefaultPasswordResetAvailabilityProviders(
             PudansProperties pudansProperties, ObjectProvider<PasswordResetAvailabilityProvider> providers) {
         this.securityProperties = pudansProperties.getSecurity();
         this.providers = providers.orderedStream().toList();
     }
 
+    // 仅保留提供者支持且当前可用的重置方式。
     @Override
     public Flux<PasswordResetMethod> getAvailableMethods() {
         return Flux.fromIterable(securityProperties.getPasswordResetMethods())

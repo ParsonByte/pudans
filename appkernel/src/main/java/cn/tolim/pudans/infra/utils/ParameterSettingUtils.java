@@ -26,6 +26,7 @@ public enum ParameterSettingUtils {
     private static final String DATA_SNAPSHOT_ANNO = "pudans.tolim.cn/data-snapshot";
 
 
+    // 按配置组深度合并，覆盖值优先。
     public static Map<String, String> mergeMap(Map<String, String> defaultMap, Map<String, String> overrideMap)
             throws JsonProcessingException {
         if (CollectionUtils.isEmpty(defaultMap)) {
@@ -51,6 +52,7 @@ public enum ParameterSettingUtils {
     }
 
 
+    // 合并数据并保留覆盖方的元数据。
     public static ConfigMap mergeConfigMap(ConfigMap defaultConfigMap, ConfigMap overrideConfigMap)
             throws JsonProcessingException {
         var mergedData = mergeMap(
@@ -62,6 +64,7 @@ public enum ParameterSettingUtils {
         return merged;
     }
 
+    // 将两组 JSON 配置深度合并为文本。
     private static String mergeJsonStrings(String mainJson, String updateJson) throws JsonProcessingException {
         var mainNode = mapper.readTree(mainJson);
         var updateNode = mapper.readTree(updateJson);
@@ -72,6 +75,7 @@ public enum ParameterSettingUtils {
         return mapper.writeValueAsString(mergedNode);
     }
 
+    // 对象递归合并，其余类型直接覆盖。
     private static JsonNode deepMerge(JsonNode mainNode, JsonNode updateNode) {
 
         if (!mainNode.isObject() || !updateNode.isObject()) {
@@ -92,6 +96,7 @@ public enum ParameterSettingUtils {
     }
 
 
+    // 数据变化时更新校验和，返回是否需要同步。
     public static boolean populateChecksum(ConfigMap configMap) {
         var toHash =
                 Optional.ofNullable(configMap.getData()).map(Objects::toString).orElse("");
@@ -118,6 +123,7 @@ public enum ParameterSettingUtils {
     }
 
 
+    // 将当前数据快照写入注解供后续差异比较。
     public static void updateDataSnapshot(ConfigMap configMap) {
         Optional.ofNullable(configMap.getData()).map(JsonUtils::objectToJson).ifPresent(dataJson -> {
             var metadata = configMap.getMetadata();
@@ -129,6 +135,7 @@ public enum ParameterSettingUtils {
     }
 
 
+    // 读取数据快照，缺失时返回空映射。
     public static Map<String, String> getDataSnapshot(ConfigMap configMap) {
         return Optional.ofNullable(configMap.getMetadata().getAnnotations())
                 .map(annotations -> annotations.get(DATA_SNAPSHOT_ANNO))

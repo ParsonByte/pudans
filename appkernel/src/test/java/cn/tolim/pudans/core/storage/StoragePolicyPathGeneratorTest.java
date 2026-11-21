@@ -94,6 +94,18 @@ class StoragePolicyPathGeneratorTest {
         assertThat(key).isEqualTo("uploads/" + expected);
     }
 
+    // 扩展名中的分隔符和控制字符不能进入存储键。
+    @Test
+    void sanitizesExtensionVariable() {
+        var policy = policy("uploads", "{randomkey8}{ext}");
+
+        var key = generator.generate(
+                policy, new StoragePathContext(null, "", "report.\u0000/evil", now));
+
+        assertThat(key).startsWith("uploads/");
+        assertThat(key).doesNotContain("/evil").doesNotContain("\u0000");
+    }
+
     @Test
     void keepsTimestampKeysUniqueWithinTheSameSecond() {
         var policy = policy("uploads", "{timestamp}_{originname}");

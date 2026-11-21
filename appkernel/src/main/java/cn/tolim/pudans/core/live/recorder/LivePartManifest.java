@@ -17,6 +17,7 @@ public class LivePartManifest {
 
     private final LiveRecordingWorkspace workspace;
 
+    // 把成品元数据追加到本地清单供恢复使用
     public void append(String recordingName, LiveRecording.Part part) {
         try {
             LiveSegmentManifest.appendLine(

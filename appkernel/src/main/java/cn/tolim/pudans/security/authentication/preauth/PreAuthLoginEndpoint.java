@@ -31,6 +31,7 @@ class PreAuthLoginEndpoint {
 
     private final LoginParameterRequestCache parameterRequestCache;
 
+    // 注册预认证登录路由，跳转到外部认证提供方。
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 100)
     RouterFunction<ServerResponse> preAuthLoginEndpoints() {
@@ -42,6 +43,7 @@ class PreAuthLoginEndpoint {
                         .build());
     }
 
+    // 校验提供方后重定向至认证地址，并暂存记住我参数。
     private Mono<ServerResponse> socialLogin(ServerRequest request) {
         var authProviderName = request.pathVariable("authProviderName");
         return authProviders

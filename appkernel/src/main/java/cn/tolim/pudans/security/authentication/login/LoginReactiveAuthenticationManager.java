@@ -31,10 +31,12 @@ class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManage
     private Scheduler scheduler = Schedulers.boundedElastic();
 
 
+    // 允许测试替换查找用户所用的调度器。
     void setScheduler(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 
+    // 按邮箱或用户名匹配密码，随后复核状态并升级哈希。
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         var loginId = authentication.getName();
@@ -54,11 +56,13 @@ class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManage
     }
 
 
+    // 按登录名查找用户详情。
     Mono<UserDetails> lookupByUsername(String loginId) {
         return reactiveUserDetailsService.findByUsername(loginId);
     }
 
 
+    // 仅在登录名形如邮箱时按已验证邮箱查找。
     Mono<UserDetails> lookupByEmail(String loginId) {
         if (!loginId.contains("@")) {
             return Mono.empty();
@@ -69,6 +73,7 @@ class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManage
                         reactiveUserDetailsService.findByUsername(user.getMetadata().getName()));
     }
 
+    // 密码哈希编码过旧时自动升级存储值。
     private Mono<UserDetails> upgradePasswordIfNeeded(UserDetails userDetails, String password) {
         if (reactiveUserDetailsPasswordService != null) {
             var upgradeEncoding =

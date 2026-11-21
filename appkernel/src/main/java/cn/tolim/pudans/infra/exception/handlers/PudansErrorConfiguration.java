@@ -16,6 +16,7 @@ import org.springframework.web.reactive.result.view.ViewResolver;
 public class PudansErrorConfiguration {
 
 
+    // 注册最高优先级错误处理器，接管响应式异常响应。
     @Bean
     @Order(-1)
     ErrorWebExceptionHandler errorWebExceptionHandler(
@@ -33,6 +34,7 @@ public class PudansErrorConfiguration {
     }
 
 
+    // 提供生成问题详情的错误属性实现。
     @Bean
     ErrorAttributes errorAttributes() {
         return new ProblemDetailErrorAttributes();

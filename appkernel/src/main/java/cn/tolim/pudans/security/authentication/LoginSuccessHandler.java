@@ -33,6 +33,7 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
 
     private final RefreshTokens refreshTokens;
 
+    // 初始化成功处理器并配置登录后的默认跳转地址。
     public LoginSuccessHandler(
             ServerResponse.Context context,
             LoginFlowHandler loginFlowHandler,
@@ -49,6 +50,7 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
         this.refreshTokens = refreshTokens;
     }
 
+    // 双因素认证仅返回提示，常规登录签发刷新令牌并返回主体。
     @Override
     public Mono<Void> onAuthenticationSuccess(WebFilterExchange webFilterExchange, Authentication authentication) {
         if (authentication instanceof TwoFactorAuthentication) {
@@ -97,6 +99,7 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
                                 })));
     }
 
+    // 输出需要双因素认证的提示，供前端引导用户继续验证。
     private Mono<Void> writeTwoFactorRequired(ServerWebExchange exchange, Authentication authentication) {
         return ServerResponse.ok()
                 .bodyValue(new TwoFactorRequiredView(true, authentication.getName()))

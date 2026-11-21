@@ -5,16 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.Roles;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.security.contract.PersonalAccessToken;
-import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.setting.MasterKeys;
 import java.util.Base64;
 import java.util.List;
@@ -44,7 +43,7 @@ class PatAuthenticationManagerTest {
     Roles roles;
 
     @Mock
-    Groups groups;
+    UserRoles userRoles;
 
     @Mock
     MasterKeys masterKeys;
@@ -53,7 +52,7 @@ class PatAuthenticationManagerTest {
 
     @BeforeEach
     void setUp() {
-        manager = new PatAuthenticationManager(client, delegate, roles, groups, masterKeys);
+        manager = new PatAuthenticationManager(client, delegate, roles, userRoles, masterKeys);
     }
 
     private static User user(String username) {
@@ -82,10 +81,8 @@ class PatAuthenticationManagerTest {
         when(client.fetch(PersonalAccessToken.class, "pat-1")).thenReturn(Mono.just(pat));
         when(client.fetch(User.class, "alice")).thenReturn(Mono.just(user("alice")));
         when(client.fetch(User.class, "bob")).thenReturn(Mono.just(user("bob")));
-        when(roles.getRolesByUsername("alice")).thenReturn(Flux.just("normal-role"));
-        when(groups.getRoleNamesByUsername(anyString())).thenReturn(Flux.empty());
-        when(roles.getRolesByUsername("bob"))
-                .thenReturn(Flux.just("normal-role", "system-admin-role"));
+        when(userRoles.list("alice")).thenReturn(Flux.just("normal-role"));
+        when(userRoles.list("bob")).thenReturn(Flux.just("normal-role", "system-admin-role"));
         when(roles.contains(anyCollection(), anyList())).thenReturn(Mono.just(true));
         when(client.update(pat)).thenReturn(Mono.just(pat));
 
@@ -124,8 +121,7 @@ class PatAuthenticationManagerTest {
         when(masterKeys.matches(eq("token-2"), eq("secret"), any())).thenReturn(true);
         when(client.fetch(PersonalAccessToken.class, "pat-2")).thenReturn(Mono.just(pat));
         when(client.fetch(User.class, "carol")).thenReturn(Mono.just(user("carol")));
-        when(roles.getRolesByUsername("carol")).thenReturn(Flux.empty());
-        when(groups.getRoleNamesByUsername("carol")).thenReturn(Flux.just("gateway-role"));
+        when(userRoles.list("carol")).thenReturn(Flux.just("gateway-role"));
         when(roles.contains(anyCollection(), anyList()))
                 .thenAnswer(invocation -> Mono.just(invocation.<java.util.Collection<String>>getArgument(0)
                         .contains("gateway-role")));

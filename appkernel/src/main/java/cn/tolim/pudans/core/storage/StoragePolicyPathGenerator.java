@@ -70,6 +70,9 @@ public class StoragePolicyPathGenerator {
 
     private static final int MAX_SEGMENT_LENGTH = 200;
 
+    private static final int MAX_EXTENSION_LENGTH = 32;
+
+    // 渲染目录与文件名规则并归一化存储键。
     public String generate(StoragePolicy policy, StoragePathContext context) {
         var spec = policy.getSpec();
         var directory = render(spec.getDirNameRule(), context, true);
@@ -77,6 +80,7 @@ public class StoragePolicyPathGenerator {
         return normalizeKey(directory + "/" + fileName);
     }
 
+    // 校验路径规则并确保包含随机变量。
     public List<String> validateRules(String dirNameRule, String fileNameRule) {
         var errors = new ArrayList<String>();
         validateRule("目录规则", dirNameRule, true, errors);
@@ -87,6 +91,7 @@ public class StoragePolicyPathGenerator {
         return errors;
     }
 
+    // 校验单条规则的字面量、变量与长度。
     private void validateRule(String label, String rule, boolean directoryRule, List<String> errors) {
         if (!StringUtils.hasText(rule)) {
             errors.add(label + "不能为空。");
@@ -116,15 +121,18 @@ public class StoragePolicyPathGenerator {
         }
     }
 
+    // 判断规则是否包含避免覆盖的随机变量。
     private static boolean containsUniqueVariable(String rule) {
         return rule != null && UNIQUE_VARIABLES.stream().anyMatch(rule::contains);
     }
 
+    // 用上下文值替换规则中的变量占位符。
     private String render(String rule, StoragePathContext context, boolean pathAvailable) {
         return VARIABLE.matcher(rule).replaceAll(match -> Matcher.quoteReplacement(
                 value(match.group(), context, pathAvailable)));
     }
 
+    // 计算单个变量对应的路径片段。
     private String value(String variable, StoragePathContext context, boolean pathAvailable) {
         var time = LocalDateTime.ofInstant(context.now(), PudansTime.BEIJING);
         return switch (variable) {
@@ -154,11 +162,13 @@ public class StoragePolicyPathGenerator {
         };
     }
 
+    // 生成纳秒时间戳，降低同秒重名概率。
     private static long epochNanos(StoragePathContext context) {
         var now = context.now();
         return now.getEpochSecond() * 1_000_000_000L + now.getNano();
     }
 
+    // 生成指定长度的字母数字随机串。
     private static String randomString(int length) {
         var builder = new StringBuilder(length);
         for (var index = 0; index < length; index++) {
@@ -167,6 +177,7 @@ public class StoragePolicyPathGenerator {
         return builder.toString();
     }
 
+    // 清理名称中的路径分隔符与控制字符。
     private static String sanitizeName(String value) {
         if (!StringUtils.hasText(value)) {
             return "file";
@@ -178,6 +189,7 @@ public class StoragePolicyPathGenerator {
         return sanitized.length() > MAX_SEGMENT_LENGTH ? sanitized.substring(0, MAX_SEGMENT_LENGTH) : sanitized;
     }
 
+    // 过滤路径中的空段与相对路径片段。
     private static String sanitizePath(String value) {
         if (!StringUtils.hasText(value)) {
             return "";
@@ -188,19 +200,27 @@ public class StoragePolicyPathGenerator {
                 .collect(Collectors.joining("/"));
     }
 
+    // 去掉文件名最后一个扩展名。
     private static String withoutExtension(String value) {
         var dot = value.lastIndexOf('.');
         return dot <= 0 ? value : value.substring(0, dot);
     }
 
+    // 提取并清理扩展名，避免非法字符进入键。
     private static String extensionOf(String value) {
         if (!StringUtils.hasText(value)) {
             return "";
         }
         var dot = value.lastIndexOf('.');
-        return dot < 0 ? "" : value.substring(dot);
+        if (dot < 0) {
+            return "";
+        }
+        // 扩展名可能来自客户端，去掉路径分隔符和控制字符后再拼进存储键。
+        var extension = value.substring(dot).replaceAll("[^A-Za-z0-9.]", "");
+        return extension.length() > MAX_EXTENSION_LENGTH || ".".equals(extension) ? "" : extension;
     }
 
+    // 归一化存储键，移除非法路径片段。
     private static String normalizeKey(String value) {
         var normalized = Arrays.stream(value.replace('\\', '/').split("/"))
                 .map(String::trim)

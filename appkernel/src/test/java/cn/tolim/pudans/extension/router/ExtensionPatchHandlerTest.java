@@ -67,7 +67,11 @@ class ExtensionPatchHandlerTest {
                 mapper.createObjectNode());
         handler = new ExtensionPatchHandler(scheme, client, builtinEntityPolicy);
         current = new JsonExtension(mapper, bindingNode());
+        org.mockito.Mockito.lenient().when(builtinEntityPolicy.checkPatch(any())).thenReturn(Mono.empty());
         org.mockito.Mockito.lenient().when(client.update(any())).thenReturn(Mono.empty());
+        org.mockito.Mockito.lenient()
+                .when(client.get(eq(UserGroupBinding.class), eq(NAME)))
+                .thenReturn(Mono.just(new UserGroupBinding()));
     }
 
     private ObjectNode bindingNode() {

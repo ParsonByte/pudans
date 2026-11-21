@@ -24,6 +24,7 @@ class WebSessionLoginParameterRequestCache implements LoginParameterRequestCache
 
     private final ServerWebExchangeMatcher cacheMatcher = createDefaultRequestMatcher();
 
+    // 优先从查询参数读取，其次回退到表单数据。
     private static Mono<String> loadParameter(ServerWebExchange exchange, String parameterName) {
 
         return Mono.justOrEmpty(exchange.getRequest().getQueryParams().getFirst(parameterName))
@@ -33,6 +34,7 @@ class WebSessionLoginParameterRequestCache implements LoginParameterRequestCache
                         .filter(Predicate.not(String::isBlank))));
     }
 
+    // 仅缓存登录相关页面的表单提交请求。
     private static ServerWebExchangeMatcher createDefaultRequestMatcher() {
         var post = pathMatchers(HttpMethod.POST, "/login/**", "/social/**", "/challenges/**");
         var form = new MediaTypeServerWebExchangeMatcher(MediaType.TEXT_HTML);
@@ -40,6 +42,7 @@ class WebSessionLoginParameterRequestCache implements LoginParameterRequestCache
         return new AndServerWebExchangeMatcher(post, form);
     }
 
+    // 匹配登录请求时把参数暂存到会话，避免刷新后丢失。
     @Override
     public Mono<Void> saveParameter(ServerWebExchange exchange, String parameterName) {
         return cacheMatcher
@@ -55,6 +58,7 @@ class WebSessionLoginParameterRequestCache implements LoginParameterRequestCache
                 .then();
     }
 
+    // 登录后从会话删除暂存参数，防止跨流程残留。
     @Override
     public Mono<Void> removeParameter(ServerWebExchange exchange, String parameterName) {
         return cacheMatcher
@@ -69,6 +73,7 @@ class WebSessionLoginParameterRequestCache implements LoginParameterRequestCache
                 .then();
     }
 
+    // 从会话读取暂存参数，非字符串值视为不存在。
     @Override
     public Mono<String> getParameter(ServerWebExchange exchange, String parameterName) {
         return exchange.getSession()

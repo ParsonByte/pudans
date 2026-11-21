@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.script.RedisScript;
@@ -12,7 +11,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RiskGuard {
@@ -51,18 +49,22 @@ public class RiskGuard {
 
     private final RiskRuleRegistry ruleRegistry;
 
+    // 生成场景与主体对应的限流窗口键。
     public static String windowKey(String scene, String subject) {
         return WINDOW_KEY_PREFIX + scene + ':' + subject;
     }
 
+    // 生成场景与主体对应的封禁键。
     public static String banKey(String scene, String subject) {
         return BAN_KEY_PREFIX + scene + ':' + subject;
     }
 
+    // 生成告警去重标记的 Redis 键。
     public static String alertKey(String scene, String subject) {
         return ALERT_KEY_PREFIX + scene + ':' + subject;
     }
 
+    // 执行滑动窗口限流，并返回是否放行。
     public Mono<RiskDecision> evaluate(String scene, String subject) {
         var rule = ruleRegistry.rule(scene);
         if (rule == null || !rule.isEnabled()) {
@@ -82,15 +84,16 @@ public class RiskGuard {
                 .defaultIfEmpty(RiskDecision.permit());
     }
 
+    // 判断主体在指定场景下是否已被封禁。
     public Mono<Boolean> isBanned(String scene, String subject) {
         return redisTemplate.hasKey(banKey(scene, subject));
     }
-    //删除 `windowKey` 可以把失败计数一并清零
-    // 如果不清理，计数会一直留在 Redis 里：用户解封后只要再错一两次，累计次数就又会超过阈值，导致刚解封就立刻重新被封。
+    // 解封时同时清除失败计数，避免解封后立刻再次达到阈值。
     public Mono<Long> unban(String scene, String subject) {
         return redisTemplate.delete(banKey(scene, subject), windowKey(scene, subject));
     }
 
+    // 按场景顺序返回首个命中的封禁场景。
     public Mono<String> firstBannedScene(java.util.Collection<String> scenes, String subject) {
         if (scenes == null || scenes.isEmpty()) {
             return Mono.empty();
@@ -110,6 +113,7 @@ public class RiskGuard {
                 });
     }
 
+    // 扫描并列出仍在有效期内的封禁记录。
     public Flux<RiskBan> listBans() {
         return redisTemplate
                 .scan(ScanOptions.scanOptions()
@@ -127,6 +131,7 @@ public class RiskGuard {
 
     public record RiskBan(String scene, String subject, long expiresInSeconds) {
 
+        // 从 Redis 键还原封禁场景、主体与剩余时长。
         static RiskBan fromKey(String key, Duration ttl) {
             if (ttl == null || ttl.isZero() || ttl.isNegative() || !key.startsWith(BAN_KEY_PREFIX)) {
                 return null;
@@ -141,6 +146,7 @@ public class RiskGuard {
         }
     }
 
+    // 为主体写入带过期时间的封禁标记。
     public Mono<Void> ban(String scene, String subject, Duration duration) {
         if (duration == null || duration.isZero() || duration.isNegative()) {
             return Mono.empty();
@@ -151,6 +157,7 @@ public class RiskGuard {
                 .then();
     }
 
+    // 以默认五分钟去重窗口标记告警已发送。
     public Mono<Boolean> markAlerted(String scene, String subject, Duration ttl) {
         var effectiveTtl = ttl == null || ttl.isZero() || ttl.isNegative() ? Duration.ofMinutes(5) : ttl;
         return redisTemplate

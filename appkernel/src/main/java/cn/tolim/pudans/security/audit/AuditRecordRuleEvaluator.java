@@ -14,6 +14,7 @@ public class AuditRecordRuleEvaluator {
 
     private final ParameterGroups parameterGroups;
 
+    // 审计规则读取失败时默认记录，避免漏审
     public Mono<Boolean> shouldRecord(String operation, String resourceType) {
         return parameterGroups
                 .getAudit()
@@ -22,6 +23,7 @@ public class AuditRecordRuleEvaluator {
                 .onErrorResume(error -> Mono.just(true));
     }
 
+    // 未配置规则或名单为空时默认记录全部请求
     private static boolean evaluate(
             ParameterSetting.AuditRecordRules rules, String operation, String resourceType) {
         if (rules == null) {
@@ -42,6 +44,7 @@ public class AuditRecordRuleEvaluator {
         return true;
     }
 
+    // 支持通配符并按忽略大小写匹配操作或资源
     private static boolean matches(List<String> patterns, String value) {
         if (CollectionUtils.isEmpty(patterns) || value == null) {
             return false;

@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 record NonPatJwtAuthenticationConverter(Converter<Jwt, Mono<AbstractAuthenticationToken>> delegate)
         implements Converter<Jwt, Mono<AbstractAuthenticationToken>> {
 
+    // 拒绝个人访问令牌走签名令牌路径，其余交给原转换器。
     @Override
     public Mono<AbstractAuthenticationToken> convert(Jwt jwt) {
 

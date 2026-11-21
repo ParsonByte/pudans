@@ -35,6 +35,7 @@ public class FeishuProperties {
 
     private String alertChatId = "";
 
+    // 启用且凭据齐全时才认为飞书集成已配置。
     public boolean isConfigured() {
         return enabled && StringUtils.hasText(appId) && StringUtils.hasText(appSecret);
     }

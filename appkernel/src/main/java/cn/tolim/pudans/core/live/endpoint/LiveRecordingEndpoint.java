@@ -64,6 +64,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
 
     private final AuditLog auditLog;
 
+    // 注册录制查询、停止、下载、重试与批量删除路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "LiveRecordingV1alpha1";
@@ -95,6 +96,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 解析过滤条件并返回分页录制视图
     private Mono<ServerResponse> query(ServerRequest request) {
         return Mono.fromCallable(() -> parseQuery(request))
                 .flatMap(recordingQueries::query)
@@ -106,6 +108,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 .flatMap(page -> ServerResponse.ok().bodyValue(page));
     }
 
+    // 列出排队、录制中与收尾中的录制
     private Mono<ServerResponse> active(ServerRequest request) {
         var options = ListOptions.builder()
                 .andQuery(in("status.state", List.of(
@@ -117,6 +120,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 .flatMap(items -> ServerResponse.ok().bodyValue(items));
     }
 
+    // 停止指定录制，成功后记录审计
     private Mono<ServerResponse> stop(ServerRequest request) {
         return recordingService
                 .stop(request.pathVariable("name"), "api")
@@ -125,6 +129,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
+    // 按请求体选择续传或重新拉流重试
     private Mono<ServerResponse> retry(ServerRequest request) {
         var name = request.pathVariable("name");
         return request.bodyToMono(LiveRecordingRetry.class)
@@ -134,6 +139,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 为已上传成品生成短期下载地址
     private Mono<ServerResponse> downloadUrl(ServerRequest request) {
         var name = request.pathVariable("name");
         return request.bodyToMono(LiveRecordingDownloadRequest.class)
@@ -142,6 +148,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 .flatMap(download -> ServerResponse.ok().bodyValue(download));
     }
 
+    // 批量删除录制，逐条返回处理结果
     private Mono<ServerResponse> batchDelete(ServerRequest request) {
         return request.bodyToMono(BatchDeleteRequest.class)
                 .defaultIfEmpty(new BatchDeleteRequest(List.of()))
@@ -161,10 +168,12 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 删除单条录制，活动状态与不存在都转为结果项
     private Mono<BatchDeleteItem> deleteOne(String name) {
         return client.fetch(LiveRecording.class, name)
                 .flatMap(recording -> {
-                    if (isActive(recording.getStatus().getState())) {
+                    var state = recording.getStatus().getState();
+                    if (state != null && state.isActive()) {
                         return Mono.just(new BatchDeleteItem(
                                 name,
                                 "REJECTED",
@@ -183,6 +192,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                         name, "REJECTED", "LIVE_DELETE_FAILED", "删除录制失败。")));
     }
 
+    // 校验录制状态与成品后构建下载描述
     private Mono<LiveRecordingDownload> buildDownload(
             LiveRecording recording, LiveRecordingDownloadRequest request) {
         var state = recording.getStatus().getState();
@@ -218,6 +228,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 recording.getMetadata().getName(), items));
     }
 
+    // 优先生成直传地址，失败再回退到代理下载
     private Mono<PartDownload> toDownload(LiveRecording.Part part, Duration ttl) {
         var options = new StorageSourceOptions(true, part.getFilename(), ttl);
         return storageTransfer
@@ -234,6 +245,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                                 part.getSize()))));
     }
 
+    // 直传地址缺少过期时间时按 TTL 补全
     private PartDownload toDirectDownload(LiveRecording.Part part, Duration ttl, StorageSource source) {
         var expiresAt = source.expiresAt() == null ? Instant.now().plus(ttl) : source.expiresAt();
         return new PartDownload(
@@ -245,12 +257,14 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 part.getSize());
     }
 
+    // 下载有效期限制在 60 到 900 秒
     private Duration normalizeTtl(Integer ttlSeconds) {
         var seconds = ttlSeconds == null ? 300 : ttlSeconds;
         seconds = Math.max(60, Math.min(900, seconds));
         return Duration.ofSeconds(seconds);
     }
 
+    // 解析分页、状态与时间范围并校验参数
     private LiveRecordingQuery parseQuery(ServerRequest request) {
         var page = parseInt(request.queryParam("page").orElse(null), 1);
         var size = parseInt(request.queryParam("size").orElse(null), DEFAULT_PAGE_SIZE);
@@ -279,6 +293,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 size);
     }
 
+    // 记录停止录制审计，失败不影响停止结果
     private Mono<Void> recordStopAudit(ServerRequest request, LiveRecording recording) {
         var snapshot = new LinkedHashMap<String, Object>();
         snapshot.put("state", recording.getStatus().getState());
@@ -299,6 +314,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 记录重试录制审计，失败不影响重试结果
     private Mono<Void> recordRetryAudit(ServerRequest request, LiveRecordingRetry result) {
         var snapshot = new LinkedHashMap<String, Object>();
         snapshot.put("recording", result.recording());
@@ -319,6 +335,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 为每个删除结果写入审计，失败不阻断删除
     private Mono<Void> recordBatchDeleteAudit(ServerRequest request, List<BatchDeleteItem> items) {
         return Flux.fromIterable(items)
                 .concatMap(item -> {
@@ -345,6 +362,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
                 .then();
     }
 
+    // 数字参数非法时统一抛参数错误
     private static int parseInt(String value, int defaultValue) {
         if (!StringUtils.hasText(value)) {
             return defaultValue;
@@ -356,6 +374,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
         }
     }
 
+    // 时间参数按 ISO 格式解析，非法即拒绝
     private static Instant parseInstant(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
@@ -367,12 +386,7 @@ public class LiveRecordingEndpoint implements CustomEndpoint {
         }
     }
 
-    private static boolean isActive(LiveRecordingState state) {
-        return state == LiveRecordingState.QUEUED
-                || state == LiveRecordingState.RECORDING
-                || state == LiveRecordingState.FINALIZING;
-    }
-
+    // 合并期望与状态生成对外录制视图
     private static LiveRecordingView toView(LiveRecording recording) {
         var spec = recording.getSpec();
         var status = recording.getStatus();

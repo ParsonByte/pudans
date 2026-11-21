@@ -26,11 +26,13 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
     private final ConversionService conversionService;
     private IndicesManager indicesManager;
 
+    // 注入类型转换服务并初始化索引管理器。
     public DefaultIndexEngine(ConversionService conversionService) {
         this.conversionService = conversionService;
         this.indicesManager = new DefaultIndicesManager();
     }
 
+    // 按排序字段组合比较器，并以主键兜底。
     private static Comparator<Object[]> buildComparator(List<SortOrder> sortOrders) {
         Comparator<Object[]> comparator = null;
         for (var i = 0; i < sortOrders.size(); i++) {
@@ -51,6 +53,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return comparator.thenComparing(Comparator.comparing(DefaultIndexEngine::primaryKey));
     }
 
+    // 空值排在前面，其余按自然顺序比较。
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static int compareSortKeys(Object left, Object right) {
 
@@ -63,6 +66,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return ((Comparable) left).compareTo(right);
     }
 
+    // 为每个主键预先计算排序键值。
     private static List<Object[]> createSortEntries(Collection<String> primaryKeys, List<SortOrder> sortOrders) {
         var entries = new ArrayList<Object[]>(primaryKeys.size());
         for (var primaryKey : primaryKeys) {
@@ -73,10 +77,12 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return entries;
     }
 
+    // 创建主键加排序键的定长数组。
     private static Object[] newSortEntry(List<SortOrder> sortOrders) {
         return new Object[sortOrders.size() + 1];
     }
 
+    // 填充主键并计算每个排序字段的值。
     private static void fillSortEntry(Object[] sortEntry, String primaryKey, List<SortOrder> sortOrders) {
         sortEntry[0] = primaryKey;
         for (var i = 0; i < sortOrders.size(); i++) {
@@ -84,10 +90,12 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         }
     }
 
+    // 取出排序条目中的主键。
     private static String primaryKey(Object[] sortEntry) {
         return (String) sortEntry[0];
     }
 
+    // 无排序时按自然顺序，否则按排序键排序。
     private static List<String> sortedPrimaryKeys(Collection<String> primaryKeys, List<SortOrder> sortOrders) {
         if (sortOrders.isEmpty()) {
             var sortedResult = new ArrayList<>(primaryKeys);
@@ -103,6 +111,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return sortedResult;
     }
 
+    // 用小顶堆取出排序后的前 N 项。
     private static List<String> topN(Collection<String> result, List<SortOrder> sortOrders, int topN) {
         var pq = topNHeap(result, sortOrders, topN);
         var finalResult = new LinkedList<String>();
@@ -112,6 +121,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return finalResult;
     }
 
+    // 维护大小为 N 的小顶堆过滤候选。
     private static PriorityQueue<Object[]> topNHeap(Collection<String> result, List<SortOrder> sortOrders, int topN) {
         var comparator = buildComparator(sortOrders);
         var pq = new PriorityQueue<Object[]>(topN + 1, comparator.reversed());
@@ -131,11 +141,13 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return pq;
     }
 
+    // 关闭索引管理器，释放索引资源。
     @Override
     public void destroy() throws Exception {
         this.indicesManager.close();
     }
 
+    // 按扩展类型写入对应索引。
     @Override
     public <E extends Extension> void insert(Iterable<E> extensions) {
         extensions.forEach(extension -> {
@@ -145,6 +157,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         });
     }
 
+    // 按扩展类型更新对应索引。
     @Override
     public <E extends Extension> void update(Iterable<E> extensions) {
         extensions.forEach(extension -> {
@@ -153,6 +166,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         });
     }
 
+    // 按扩展类型删除对应索引。
     @Override
     public <E extends Extension> void delete(Iterable<E> extensions) {
         extensions.forEach(extension -> {
@@ -161,6 +175,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         });
     }
 
+    // 解析条件后分页返回匹配的主键。
     @Override
     public <E extends Extension> ListResult<String> retrieve(Class<E> type, ListOptions options, PageRequest page) {
         if (options == null) {
@@ -176,6 +191,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return paginate(result, page, sortOrders);
     }
 
+    // 解析条件后返回全部匹配的主键。
     @Override
     public <E extends Extension> Iterable<String> retrieveAll(Class<E> type, ListOptions options, Sort sort) {
         if (options == null) {
@@ -197,6 +213,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return sortedPrimaryKeys(result, sortOrders)::iterator;
     }
 
+    // 解析条件后返回排序前 N 个主键。
     @Override
     public <E extends Extension> Iterable<String> retrieveTopN(
             Class<E> type, ListOptions options, Sort sort, int topN) {
@@ -216,6 +233,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return topN(result, sortOrders, topN);
     }
 
+    // 解析条件后统计匹配的主键数量。
     @Override
     public <E extends Extension> long count(Class<E> type, ListOptions options) {
         if (options == null) {
@@ -228,16 +246,13 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return queryVisitor.getResult().size();
     }
 
+    // 返回索引管理器。
     @Override
     public IndicesManager getIndicesManager() {
         return this.indicesManager;
     }
 
-    void setIndicesManager(IndicesManager indicesManager) {
-        Assert.notNull(indicesManager, "indicesManager 不能为 null");
-        this.indicesManager = indicesManager;
-    }
-
+    // 把排序字段解析为索引访问器。
     private <E extends Extension> List<SortOrder> buildSortOrders(Sort sort, Indices<E> indices) {
         var sortOrders = new ArrayList<SortOrder>(sort.toList().size());
         for (var order : sort) {
@@ -260,6 +275,7 @@ class DefaultIndexEngine implements IndexEngine, DisposableBean {
         return sortOrders;
     }
 
+    // 按页大小截取排序结果，必要时走堆。
     private ListResult<String> paginate(Collection<String> result, PageRequest page, List<SortOrder> sortOrders) {
         var total = result.size();
         int offset = (page.getPageNumber() - 1) * page.getPageSize();

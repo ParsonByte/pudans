@@ -15,6 +15,7 @@ class DeviceSessionFilter implements WebFilter {
 
     private final DeviceSessions deviceSessions;
 
+    // 请求结束后比对会话标识，变化时同步设备记录
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         return exchange.getSession().flatMap(session -> {

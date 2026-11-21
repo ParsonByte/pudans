@@ -23,7 +23,7 @@ class UserEndpointListOptionsTest {
     private final Groups groups = mock(Groups.class);
 
     private final UserEndpoint endpoint = new UserEndpoint(
-            null, null, null, groups, null, null, null, null, null, null, null, null);
+            null, null, null, groups, null, null, null, null, null, null, null, null, null);
 
     @Test
     void pushesActiveStatusDownAsDisabledFalse() throws Exception {

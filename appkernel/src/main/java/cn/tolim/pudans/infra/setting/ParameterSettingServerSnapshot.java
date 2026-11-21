@@ -16,6 +16,7 @@ public class ParameterSettingServerSnapshot {
 
     private final AtomicReference<Snapshot> snapshot = new AtomicReference<>(new Snapshot(false, false));
 
+    // 缓存启动时的敏感配置状态，供后续判断。
     @EventListener
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
         parameterGroups.getServer().subscribe(
@@ -31,6 +32,7 @@ public class ParameterSettingServerSnapshot {
                 error -> log.warn("无法捕获参数服务器快照", error));
     }
 
+    // 返回最近一次捕获的服务器配置快照。
     public Snapshot current() {
         return snapshot.get();
     }

@@ -37,6 +37,7 @@ public class TempRoleBinding extends AbstractExtension {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Spec spec = new Spec();
 
+    // 创建待审批的临时角色绑定申请。
     public static TempRoleBinding apply(
             String username, List<String> roleNames, Instant expiresAt, String reason, String ticketId,
             String requestedBy) {
@@ -53,6 +54,7 @@ public class TempRoleBinding extends AbstractExtension {
         return binding;
     }
 
+    // 仅在绑定已批准且尚未过期时生效。
     public boolean isActiveAt(Instant now) {
         return STATUS_ACTIVE.equals(spec.getStatus())
                 && spec.getExpiresAt() != null

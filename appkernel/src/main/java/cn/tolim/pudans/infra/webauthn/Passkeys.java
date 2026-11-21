@@ -28,14 +28,12 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class Passkeys {
@@ -55,24 +53,29 @@ public class Passkeys {
     private final WebAuthnManager webAuthnManager =
             WebAuthnManager.createNonStrictWebAuthnManager(objectConverter);
 
+    // 生成 URL 安全的无填充 Base64 文本。
     public static String base64Url(byte[] bytes) {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    // 解码 URL 安全的 Base64 文本。
     public static byte[] base64UrlDecode(String value) {
         return Base64.getUrlDecoder().decode(value);
     }
 
+    // 使用用户名 UTF-8 字节作为凭据句柄。
     public static byte[] usernameHandle(String username) {
         return username.getBytes(StandardCharsets.UTF_8);
     }
 
+    // 生成 32 字节随机挑战并编码。
     public String newChallenge() {
         var bytes = new byte[32];
         RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    // 查询用户未删除的通行密钥绑定。
     public Flux<UserConnection> listPasskeys(String username) {
         var options = ListOptions.builder()
                 .andQuery(notDeleting())
@@ -82,6 +85,7 @@ public class Passkeys {
         return client.listAll(UserConnection.class, options, defaultSort());
     }
 
+    // 校验注册响应并持久化认证器公钥。
     public Mono<UserConnection> verifyRegistration(String username, String credentialJson, String challenge) {
         return Mono.fromCallable(() -> {
                     var registrationData = webAuthnManager.verifyRegistrationResponseJSON(
@@ -112,6 +116,7 @@ public class Passkeys {
                 .flatMap(connections::createConnection);
     }
 
+    // 校验断言并更新签名计数器，防止重放。
     public Mono<AuthenticationResult> verifyAssertion(String credentialJson, String challenge) {
         return Mono.fromCallable(() -> webAuthnManager.parseAuthenticationResponseJSON(credentialJson))
                 .flatMap(parsed -> {
@@ -138,6 +143,7 @@ public class Passkeys {
                 });
     }
 
+    // 按凭据标识查找有效的通行密钥绑定。
     public Mono<UserConnection> findByCredentialId(String credentialId) {
         var options = ListOptions.builder()
                 .andQuery(notDeleting())
@@ -147,6 +153,7 @@ public class Passkeys {
         return client.listAll(UserConnection.class, options, defaultSort()).next();
     }
 
+    // 仅允许 ES256 与 RS256 的注册参数。
     private RegistrationParameters registrationParameters(String challenge) {
         var algorithms = List.of(
                 new com.webauthn4j.data.PublicKeyCredentialParameters(
@@ -158,12 +165,14 @@ public class Passkeys {
         return new RegistrationParameters(serverProperty(challenge), algorithms, false, true);
     }
 
+    // 使用服务端属性与已存储认证器构建校验参数。
     private AuthenticationParameters authenticationParameters(
             String challenge, com.webauthn4j.authenticator.Authenticator authenticator) {
         return new AuthenticationParameters(
                 serverProperty(challenge), authenticator, List.of(), false, true);
     }
 
+    // 从存储的 COSE 公钥还原认证器对象。
     private com.webauthn4j.authenticator.Authenticator authenticator(UserConnection connection) {
         try {
             var coseKey = objectConverter
@@ -185,6 +194,7 @@ public class Passkeys {
         }
     }
 
+    // 以配置的来源与 RP ID 构建服务端属性。
     private ServerProperty serverProperty(String challenge) {
         var origins = properties.getOrigins().stream()
                 .map(Origin::create)
@@ -193,6 +203,7 @@ public class Passkeys {
                 Base64.getUrlDecoder().decode(challenge)));
     }
 
+    // 将注册结果转换为用户连接记录。
     private UserConnection buildConnection(
             String username,
             String credentialId,

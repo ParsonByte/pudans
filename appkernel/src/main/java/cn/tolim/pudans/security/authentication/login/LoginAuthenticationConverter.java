@@ -10,7 +10,6 @@ import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import cn.tolim.pudans.security.authentication.exception.TooManyRequestsException;
 import cn.tolim.pudans.security.captcha.Captchas;
 import java.util.Base64;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -18,7 +17,6 @@ import org.springframework.security.web.server.authentication.ServerFormLoginAut
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 public class LoginAuthenticationConverter extends ServerFormLoginAuthenticationConverter {
 
     public static final String ATTEMPTED_USERNAME_ATTRIBUTE =
@@ -32,6 +30,7 @@ public class LoginAuthenticationConverter extends ServerFormLoginAuthenticationC
 
     private final SecurityParameters securitySettings;
 
+    // 注入密文解密、风控与验证码等登录依赖。
     public LoginAuthenticationConverter(
             LoginCipher loginCipher,
             RiskGuard riskGuard,
@@ -43,12 +42,14 @@ public class LoginAuthenticationConverter extends ServerFormLoginAuthenticationC
         this.securitySettings = securitySettings;
     }
 
+    // 登录开启验证码时校验挑战标识与答案。
     private Mono<Boolean> verifyCaptcha(ServerWebExchange exchange) {
         return exchange.getFormData()
                 .flatMap(form -> captchas.verify(
                         form.getFirst("captchaChallengeId"), form.getFirst("captchaAnswer")));
     }
 
+    // 凭据进入认证管理器前完成验证码、解密与风控校验。
     @Override
     public Mono<Authentication> convert(ServerWebExchange exchange) {
         var clientIp = IpAddressUtils.getClientIp(exchange.getRequest());

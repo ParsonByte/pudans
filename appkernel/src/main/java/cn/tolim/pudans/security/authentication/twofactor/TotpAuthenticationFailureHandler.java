@@ -38,6 +38,7 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
 
     private final ServerResponse.Context context;
 
+    // 优先使用安全上下文中的用户名，缺失时回退审计属性。
     private static Mono<String> currentUsername(ServerWebExchange exchange) {
         var attribute = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
         return ReactiveSecurityContextHolder.getContext()
@@ -47,6 +48,7 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
                 .defaultIfEmpty(attribute == null ? "anonymous" : attribute);
     }
 
+    // 处于风控封禁期时直接返回限流响应，不再校验验证码。
     private static Mono<Void> tooManyRequests(ServerWebExchange exchange) {
         var response = exchange.getResponse();
         response.setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
@@ -57,12 +59,14 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes(StandardCharsets.UTF_8))));
     }
 
+    // 以会话标识作为风控主体，无会话时退化为客户端地址。
     private static Mono<String> subject(ServerWebExchange exchange) {
         return exchange.getSession()
                 .map(session -> session.getId())
                 .defaultIfEmpty(IpAddressUtils.getClientIp(exchange.getRequest()));
     }
 
+    // 先记录失败审计，再依据风控结论决定限流或返回无效码。
     @Override
     public Mono<Void> onAuthenticationFailure(WebFilterExchange webFilterExchange, AuthenticationException exception) {
         var exchange = webFilterExchange.getExchange();
@@ -79,6 +83,7 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
                                 "TOTP 验证码无效。"));
     }
 
+    // 对失败尝试做风险评估，命中阈值时执行封禁并记录事件。
     private Mono<Boolean> escalate(ServerWebExchange exchange) {
         return subject(exchange)
                 .flatMap(subject -> riskGuard
@@ -88,6 +93,7 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
                                 : handleBreach(exchange, subject, decision)));
     }
 
+    // 按风控结论封禁主体并写入审计，标记该请求已被拦截。
     private Mono<Boolean> handleBreach(ServerWebExchange exchange, String subject, RiskDecision decision) {
         var ban = decision.blockFor().isZero()
                 ? Mono.empty()
@@ -110,6 +116,7 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
                 .thenReturn(true);
     }
 
+    // 记录验证码失败审计，同时发布登录失败领域事件。
     private Mono<Void> auditFailure(ServerWebExchange exchange, AuthenticationException exception) {
         return currentUsername(exchange).flatMap(username -> {
             var context = new LinkedHashMap<String, Object>();
@@ -129,6 +136,7 @@ public class TotpAuthenticationFailureHandler implements ServerAuthenticationFai
         });
     }
 
+    // 发布登录失败事件，供风控与通知等下游消费者使用。
     private void publishLoginFailure(
             ServerWebExchange exchange, String username, AuthenticationException exception) {
         var payload = new LinkedHashMap<String, Object>();

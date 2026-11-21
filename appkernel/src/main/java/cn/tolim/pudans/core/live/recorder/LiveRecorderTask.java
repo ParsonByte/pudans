@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
-import reactor.core.publisher.Mono;
 
 // 单个录制任务：拉流写分片、断流重解析退避、收尾合并上传并落最终状态
 @Slf4j
@@ -41,8 +40,6 @@ public class LiveRecorderTask implements Runnable {
     private static final long SLEEP_SLICE_MILLIS = 200;
 
     private static final Duration OWNER_TTL = Duration.ofSeconds(90);
-
-    private static final Duration STOP_TTL = Duration.ofHours(1);
 
     private static final Duration REMOTE_CHECK_INTERVAL = Duration.ofSeconds(1);
 
@@ -108,6 +105,7 @@ public class LiveRecorderTask implements Runnable {
 
     private volatile Instant lastRemoteCheckAt;
 
+    // 从录制资源提取任务所需的不可变参数
     public LiveRecorderTask(
             LiveProperties properties,
             RecordingStatus recordingStatus,
@@ -147,27 +145,28 @@ public class LiveRecorderTask implements Runnable {
         this.storagePolicyName = recording.getSpec().getStoragePolicy();
     }
 
+    // 对外暴露录制资源名，供日志与注册表使用
     public String recordingName() {
         return recordingName;
     }
 
-    public boolean stopRequested() {
-        return stopRequested.get();
-    }
-
+    // 只设置停止标记，由拉流循环自行收尾
     public void requestStop() {
         stopRequested.set(true);
     }
 
+    // 置停止标记并释放拉流器，用于停止超时兜底
     public void forceClose() {
         stopRequested.set(true);
         releaseActiveGrabber();
     }
 
+    // 拉流器非空说明当前正在拉流
     public boolean isStreaming() {
         return activeGrabber != null;
     }
 
+    // 执行一次完整录制：拉流、收尾并清理本实例资源
     @Override
     public void run() {
         try {
@@ -192,6 +191,7 @@ public class LiveRecorderTask implements Runnable {
         }
     }
 
+    // 校验排队状态后抢占录制所有权并开始心跳
     private boolean markRecording() {
         var recording = recordingStatus.findRequired(recordingName).block();
         if (recording == null || recording.getStatus() == null) {
@@ -216,6 +216,7 @@ public class LiveRecorderTask implements Runnable {
         return true;
     }
 
+    // 反复拉流直到正常收尾、失败或达到重试上限
     private Outcome capture() {
         var recovery = new Recovery();
         var captureStartedAt = Instant.now();
@@ -253,6 +254,7 @@ public class LiveRecorderTask implements Runnable {
         }
     }
 
+    // 每轮拉流前检查停止、合并、磁盘与地址
     private Outcome prepare(Instant captureStartedAt) {
         if (stopRequested.get()) {
             return Outcome.stop();
@@ -281,7 +283,11 @@ public class LiveRecorderTask implements Runnable {
             return Outcome.failure(codeOf(error, LIVE_DISK_FULL), error.getReason());
         }
         if (currentUrl != null) {
-            return null;
+            if (opener.isAllowed(currentUrl)) {
+                return null;
+            }
+            log.warn("当前拉流地址已不再允许，重新解析 [{}]", recordingName);
+            currentUrl = null;
         }
         var resolution = resolve();
         if (resolution.errorCode() != null) {
@@ -299,6 +305,7 @@ public class LiveRecorderTask implements Runnable {
         return null;
     }
 
+    // 循环读取媒体包写分片，直到停止或流中断
     private StreamFailure runStream(FFmpegFrameGrabber grabber) {
         var writer = new LiveSegmentWriter(
                 workspace, segmentManifest, properties, recordingName, grabber, segmentSeconds);
@@ -358,6 +365,7 @@ public class LiveRecorderTask implements Runnable {
         }
     }
 
+    // 按重试预算重解析地址并退避等待后重连
     private Outcome recover(Recovery recovery, LiveErrorCode lastCode, String message) {
         if (stopRequested.get()) {
             return Outcome.stop();
@@ -399,6 +407,7 @@ public class LiveRecorderTask implements Runnable {
         return null;
     }
 
+    // 解析房间信息，离线映射为正常结束
     private Resolution resolve() {
         try {
             var info = roomResolver.resolve(LivePlatform.valueOf(platform), roomId, true).block();
@@ -415,6 +424,7 @@ public class LiveRecorderTask implements Runnable {
         }
     }
 
+    // 按间隔写心跳，并上报字节与分片进度
     private void heartbeat(LiveSegmentWriter writer) {
         var now = Instant.now();
         if (heartbeatClosed) {
@@ -446,6 +456,7 @@ public class LiveRecorderTask implements Runnable {
         }
     }
 
+    // 收尾合并上传，按结果完成或标记失败
     private void finish(Outcome outcome) {
         heartbeatClosed = true;
         try {
@@ -470,6 +481,7 @@ public class LiveRecorderTask implements Runnable {
         complete();
     }
 
+    // 全部成品上传后写最终统计并标记完成
     private void complete() {
         var recording = recordingStatus.findRequired(recordingName).block();
         if (recording == null || recording.getStatus() == null) {
@@ -510,6 +522,7 @@ public class LiveRecorderTask implements Runnable {
         log.info("录制完成 [{}]，成品 {} 个，字节 {}", recordingName, parts.size(), totalBytes);
     }
 
+    // 写失败状态并同步回直播源
     private void fail(LiveErrorCode code, String message) {
         try {
             recordingStatus.fail(recordingName, code, message).block();
@@ -519,6 +532,7 @@ public class LiveRecorderTask implements Runnable {
         updateSourceFailed(code, message);
     }
 
+    // 清除直播源的录制指针，空源名直接跳过
     private void clearSourceRecording() {
         if (!org.springframework.util.StringUtils.hasText(sourceName)) {
             return;
@@ -530,6 +544,7 @@ public class LiveRecorderTask implements Runnable {
         }
     }
 
+    // 把录制失败回写到关联直播源
     private void updateSourceFailed(LiveErrorCode code, String message) {
         if (!org.springframework.util.StringUtils.hasText(sourceName)) {
             return;
@@ -541,6 +556,7 @@ public class LiveRecorderTask implements Runnable {
         }
     }
 
+    // 限频判断是否该读取跨实例停止信号
     private boolean remoteCheckDue() {
         var now = Instant.now();
         var last = lastRemoteCheckAt;
@@ -551,6 +567,7 @@ public class LiveRecorderTask implements Runnable {
         return true;
     }
 
+    // 读取停止键，Redis 异常时本轮忽略
     private boolean remoteStopRequested() {
         try {
             return Boolean.TRUE.equals(redisTemplate.hasKey(stopKey()).blockOptional(REMOTE_CHECK_TIMEOUT).orElse(false));
@@ -560,6 +577,7 @@ public class LiveRecorderTask implements Runnable {
         }
     }
 
+    // 定期续期 owner 键，供恢复流程判断存活
     private void renewOwner() {
         redisTemplate
                 .opsForValue()
@@ -567,12 +585,14 @@ public class LiveRecorderTask implements Runnable {
                 .subscribe(ignored -> {}, error -> log.debug("写入录制 owner 失败 [{}]：{}", recordingName, error.getMessage()));
     }
 
+    // 任务结束时删除 owner 与停止键
     private void cleanupRemoteKeys() {
         redisTemplate
                 .delete(ownerKey(), stopKey())
                 .subscribe(ignored -> {}, error -> log.debug("清理录制 Redis 键失败 [{}]：{}", recordingName, error.getMessage()));
     }
 
+    // 停止并释放当前拉流器，重复调用无副作用
     private void releaseActiveGrabber() {
         var grabber = activeGrabber;
         activeGrabber = null;
@@ -591,14 +611,17 @@ public class LiveRecorderTask implements Runnable {
         }
     }
 
+    // 归属键按录制名隔离不同实例
     private String ownerKey() {
         return LiveRecordingRecovery.OWNER_KEY_PREFIX + recordingName;
     }
 
+    // 停止键按录制名跨实例共享
     private String stopKey() {
         return LiveRecordingRecovery.STOP_KEY_PREFIX + recordingName;
     }
 
+    // 分段休眠以便停止请求及时生效
     private boolean sleep(Duration duration) {
         var deadline = System.nanoTime() + duration.toNanos();
         while (System.nanoTime() < deadline) {
@@ -616,6 +639,7 @@ public class LiveRecorderTask implements Runnable {
         return !stopRequested.get();
     }
 
+    // 优先复用异常携带的直播错误码，否则用兜底码
     private static LiveErrorCode codeOf(Throwable error, LiveErrorCode fallback) {
         if (error instanceof ApiException apiException && apiException.getCode() != null) {
             try {
@@ -633,10 +657,12 @@ public class LiveRecorderTask implements Runnable {
 
     private record Outcome(LiveErrorCode errorCode, String message) {
 
+        // 构造正常收尾的结局
         static Outcome stop() {
             return new Outcome(null, null);
         }
 
+        // 构造带错误码与说明的失败结局
         static Outcome failure(LiveErrorCode errorCode, String message) {
             return new Outcome(errorCode, message);
         }

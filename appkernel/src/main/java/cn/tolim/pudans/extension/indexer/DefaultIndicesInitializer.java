@@ -26,6 +26,7 @@ class DefaultIndicesInitializer implements IndicesInitializer {
 
     private final ExtensionConverter extensionConverter;
 
+    // 注入索引引擎、存储客户端与转换器。
     DefaultIndicesInitializer(
             IndexEngine indexEngine, ReactiveExtensionStoreClient client, ExtensionConverter extensionConverter) {
         this.indexEngine = indexEngine;
@@ -33,17 +34,20 @@ class DefaultIndicesInitializer implements IndicesInitializer {
         this.extensionConverter = extensionConverter;
     }
 
+    // Scheme 注册后立即回填该类型索引。
     @EventListener
     void onSchemeAddedEvent(SchemeAddedEvent event) {
         var scheme = event.getScheme();
         this.initialize(scheme);
     }
 
+    // 实现初始化契约，直接回填索引。
     @Override
     public void initialize(Scheme scheme) {
         doInitialize(scheme);
     }
 
+    // 分批扫描存储并把扩展写入索引。
     public <E extends Extension> void doInitialize(Scheme scheme) {
         var type = (Class<E>) scheme.type();
         var prefix = ExtensionStoreUtil.buildStoreNamePrefix(scheme);

@@ -26,22 +26,26 @@ public class UserGroupReconciler implements Reconciler<Request> {
 
     private final BuiltinRoleDefinitions builtinRoleDefinitions;
 
+    // 注入扩展客户端与内置定义，用于恢复校验。
     public UserGroupReconciler(ExtensionClient client, BuiltinRoleDefinitions builtinRoleDefinitions) {
         this.client = client;
         this.builtinRoleDefinitions = builtinRoleDefinitions;
     }
 
+    // 内置用户组被篡改时恢复规范定义。
     @Override
     public Result reconcile(Request request) {
         client.fetch(UserGroup.class, request.name()).ifPresent(this::restore);
         return Result.doNotRetry();
     }
 
+    // 声明该协调器负责用户组资源。
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new UserGroup()).build();
     }
 
+    // 保留内置角色引用，并合并用户自定角色。
     private List<UserGroup.RoleRef> expectedRoleRefs(UserGroup canonical, UserGroup current) {
         var canonicalRefs = canonical.getRoleRefs() == null
                 ? List.<UserGroup.RoleRef>of()
@@ -73,6 +77,7 @@ public class UserGroupReconciler implements Reconciler<Request> {
         return expected;
     }
 
+    // 恢复内置用户组，同时保留新增自定义角色。
     private void restore(UserGroup group) {
         builtinRoleDefinitions.group(group.getMetadata().getName()).ifPresent(canonical -> {
             var changed = false;

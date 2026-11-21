@@ -29,12 +29,14 @@ public class AuditWal {
 
     private final Path directory;
 
+    // 按工作目录确定 WAL 的存放位置。
     public AuditWal(PudansProperties properties) {
         this.directory = properties.getWorkDir() == null
                 ? Path.of(System.getProperty("java.io.tmpdir"), "pudans-audit-wal")
                 : properties.getWorkDir().resolve(DIRECTORY);
     }
 
+    // 将记录追加到按天切分的 WAL 文件。
     public void append(AuditRecord record) {
         var serialized = serialize(record);
         synchronized (writeLock) {
@@ -53,6 +55,7 @@ public class AuditWal {
         }
     }
 
+    // 启动时重放尚未确认写入的 WAL 文件。
     public void replay(Consumer<AuditRecord> consumer) {
         if (!Files.isDirectory(directory)) {
             return;
@@ -66,6 +69,7 @@ public class AuditWal {
         }
     }
 
+    // 逐行解析 WAL 并归档处理完成的文件。
     private void replayFile(Path file, Consumer<AuditRecord> consumer) {
         var records = new ArrayList<AuditRecord>();
         try (Stream<String> lines = Files.lines(file, StandardCharsets.UTF_8)) {
@@ -94,6 +98,7 @@ public class AuditWal {
         }
     }
 
+    // 序列化失败时退回最小结构，便于后续排查。
     private static String serialize(AuditRecord record) {
         try {
             return JsonUtils.objectToJson(record);

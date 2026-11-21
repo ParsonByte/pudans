@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.core.rbac.Roles;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.setting.MasterKeys;
 import java.time.Instant;
@@ -32,7 +33,7 @@ class MasterKeyRotationScopeTest {
     Roles roleService;
 
     @Mock
-    cn.tolim.pudans.core.rbac.group.Groups groups;
+    UserRoles userRoles;
 
     @Mock
     MasterKeys masterKeys;
@@ -47,7 +48,7 @@ class MasterKeyRotationScopeTest {
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
         when(jwtDecoder.decode("rsa-jwt")).thenReturn(Mono.just(jwt));
-        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, groups, masterKeys);
+        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, userRoles, masterKeys);
 
         StepVerifier.create(manager.authenticate(new BearerTokenAuthenticationToken("rsa-jwt")))
                 .assertNext(authentication -> assertThat(authentication.getName()).isEqualTo("alice"))
@@ -57,7 +58,7 @@ class MasterKeyRotationScopeTest {
     @Test
     void legacyPatJwtsAreRejectedAfterMasterKeyRotation() {
         when(masterKeys.currentVersion()).thenReturn(1);
-        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, groups, masterKeys);
+        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, userRoles, masterKeys);
 
         StepVerifier.create(manager.authenticate(new BearerTokenAuthenticationToken("pat_legacy.jwt")))
                 .expectError(InvalidBearerTokenException.class)

@@ -18,12 +18,14 @@ public class StorageStartupVerifier implements SmartLifecycle {
 
     private volatile boolean running;
 
+    // 保存存储连接以在启动阶段验证可用性。
     public StorageStartupVerifier(
             ConnectionFactory connectionFactory, ReactiveStringRedisTemplate redisTemplate) {
         this.connectionFactory = connectionFactory;
         this.redisTemplate = redisTemplate;
     }
 
+    // 启动时验证存储可用后再标记运行。
     @Override
     public void start() {
         verifyPostgres();
@@ -31,6 +33,7 @@ public class StorageStartupVerifier implements SmartLifecycle {
         running = true;
     }
 
+    // 强制使用 PostgreSQL，连接失败立即中止启动。
     private void verifyPostgres() {
         io.r2dbc.spi.Connection connection = null;
         try {
@@ -51,6 +54,7 @@ public class StorageStartupVerifier implements SmartLifecycle {
         }
     }
 
+    // 会话与权限依赖 Redis，不可用时中止启动。
     private void verifyRedis() {
         try {
             var exists = redisTemplate.hasKey("pudans:startup:probe").block(TIMEOUT);
@@ -65,16 +69,19 @@ public class StorageStartupVerifier implements SmartLifecycle {
         }
     }
 
+    // 停止时清除运行标记。
     @Override
     public void stop() {
         running = false;
     }
 
+    // 供生命周期框架查询运行状态。
     @Override
     public boolean isRunning() {
         return running;
     }
 
+    // 最早启动，保证依赖存储的组件随后初始化。
     @Override
     public int getPhase() {
         return Integer.MIN_VALUE;

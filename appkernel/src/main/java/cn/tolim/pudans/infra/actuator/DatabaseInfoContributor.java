@@ -27,10 +27,12 @@ class DatabaseInfoContributor implements InfoContributor, InitializingBean {
     @Nullable
     private ConnectionMetadata connectionMetadata;
 
+    // 注入连接工厂，供启动时读取数据库元数据。
     public DatabaseInfoContributor(ConnectionFactory connectionFactory) {
         this.connectionFactory = connectionFactory;
     }
 
+    // 启动时读取一次数据库元数据，失败则阻止应用启动。
     @Override
     public void afterPropertiesSet() throws Exception {
         var connectionMetadata = Mono.usingWhen(
@@ -48,6 +50,7 @@ class DatabaseInfoContributor implements InfoContributor, InitializingBean {
         this.connectionMetadata = connectionMetadata;
     }
 
+    // 仅当元数据读取成功时才向信息端点暴露数据库信息。
     @Override
     public void contribute(Info.Builder builder) {
         if (this.connectionMetadata != null) {

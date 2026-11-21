@@ -2,12 +2,12 @@ package cn.tolim.pudans.core.webhook;
 
 import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.extension.contract.ListOptions;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
+import cn.tolim.pudans.infra.utils.Digests;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import io.github.resilience4j.reactor.retry.RetryOperator;
@@ -19,8 +19,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -44,6 +42,14 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
 
     private static final Duration RETRY_INTERVAL = Duration.ofMillis(500);
 
+    private static final int MIN_ATTEMPTS = 1;
+
+    private static final int MAX_ATTEMPTS = 10;
+
+    private static final long MIN_TIMEOUT_MILLIS = 1_000L;
+
+    private static final long MAX_TIMEOUT_MILLIS = 30_000L;
+
     private static final Duration SHUTDOWN_TIMEOUT = Duration.ofSeconds(5);
 
     private static final String STATUS_SUCCESS = "SUCCESS";
@@ -62,6 +68,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
 
     private final WebClient webClient;
 
+    // 构建带地址校验与超时控制的 HTTP 客户端。
     public WebhookDispatcher(
             WebhookEventBus eventBus,
             ReactiveExtensionClient client,
@@ -85,6 +92,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
 
     private Disposable subscription;
 
+    // 把事件序列化为签名所需的标准载荷。
     private static String payload(WebhookEvent event) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("id", event.id());
@@ -94,25 +102,15 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         return JsonUtils.objectToJson(payload);
     }
 
+    // 按时间戳与载荷生成 HMAC 签名头。
     static String sign(String secret, String timestamp, String body) {
         if (!org.springframework.util.StringUtils.hasText(secret)) {
             return null;
         }
-        try {
-            var mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(secret.getBytes(UTF_8), "HmacSHA256"));
-            var digest = mac.doFinal((timestamp + '.' + body).getBytes(UTF_8));
-            var hex = new StringBuilder(digest.length * 2);
-            for (byte value : digest) {
-                hex.append(Character.forDigit((value >> 4) & 0xF, 16));
-                hex.append(Character.forDigit(value & 0xF, 16));
-            }
-            return "sha256=" + hex;
-        } catch (Exception e) {
-            throw new IllegalStateException("无法对 Webhook 载荷进行签名", e);
-        }
+        return "sha256=" + Digests.hmacSha256Hex(secret, timestamp + '.' + body);
     }
 
+    // 判断错误是否值得重试，仅限瞬时失败。
     private static boolean retryable(Throwable error) {
         if (error instanceof WebClientResponseException response) {
             return response.getStatusCode().is5xxServerError() || response.getStatusCode().value() == 429;
@@ -122,12 +120,14 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                 || error instanceof java.io.IOException;
     }
 
+    // 提取响应状态码，非响应错误归零。
     private static int statusOf(Throwable error) {
         return error instanceof WebClientResponseException response
                 ? response.getStatusCode().value()
                 : 0;
     }
 
+    // 截断过长的 URL 等字段以适配审计存储。
     private static String truncate(String value) {
         if (value == null) {
             return null;
@@ -135,6 +135,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         return value.length() <= 2000 ? value : value.substring(0, 2000);
     }
 
+    // 启动事件订阅并持续消费待投递事件。
     @Override
     public void afterPropertiesSet() {
         var latch = new CountDownLatch(1);
@@ -151,6 +152,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                 .subscribe();
     }
 
+    // 停机时停止事件总线并等待在途投递。
     @Override
     public void destroy() {
         eventBus.complete();
@@ -170,6 +172,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         }
     }
 
+    // 找出订阅该事件的启用 Webhook 并投递。
     private Mono<Void> dispatch(WebhookEvent event) {
         return client
                 .listAll(Webhook.class, ListOptions.builder().andQuery(notDeleting()).build(), defaultSort())
@@ -183,6 +186,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                 });
     }
 
+    // 校验目标后投递事件，失败时记录审计。
     private Mono<Void> deliver(Webhook webhook, WebhookEvent event) {
         var startedAt = System.currentTimeMillis();
         var attempts = new AtomicInteger();
@@ -205,6 +209,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                 .then();
     }
 
+    // 按配置重试发送请求，并统计尝试次数。
     private Mono<org.springframework.http.ResponseEntity<Void>> send(
             Webhook webhook,
             WebhookEvent event,
@@ -217,7 +222,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         var retry = io.github.resilience4j.retry.Retry.of(
                 "webhook-" + webhook.getMetadata().getName(),
                 RetryConfig.custom()
-                        .maxAttempts(Math.max(1, spec.getMaxAttempts()))
+                        .maxAttempts(Math.clamp(spec.getMaxAttempts(), MIN_ATTEMPTS, MAX_ATTEMPTS))
                         .waitDuration(RETRY_INTERVAL)
                         .retryOnException(WebhookDispatcher::retryable)
                         .build());
@@ -241,7 +246,8 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                             .bodyValue(body)
                             .retrieve()
                             .toBodilessEntity()
-                            .timeout(Duration.ofMillis(Math.max(1000L, spec.getTimeoutMillis())));
+                            .timeout(Duration.ofMillis(
+                                    Math.clamp(spec.getTimeoutMillis(), MIN_TIMEOUT_MILLIS, MAX_TIMEOUT_MILLIS)));
                 })
                 .transformDeferred(RetryOperator.of(retry))
                 .doOnNext(response -> record(
@@ -253,6 +259,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                         null));
     }
 
+    // 记录投递审计并更新 Webhook 的投递状态。
     private void record(
             Webhook webhook,
             WebhookEvent event,
@@ -295,6 +302,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         updateDeliveryStatus(webhook.getMetadata().getName(), error == null);
     }
 
+    // 异步更新投递结果，冲突时有限重试。
     private void updateDeliveryStatus(String webhookName, boolean success) {
         var deliveredAt = Instant.now();
         Mono.defer(() -> client
@@ -318,6 +326,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
                 .subscribe();
     }
 
+    // 读取并解密 Webhook 密钥，未加密则原样使用。
     private String secret(Webhook.Spec spec) {
         var secret = spec.getSecret();
         if (secret == null) {

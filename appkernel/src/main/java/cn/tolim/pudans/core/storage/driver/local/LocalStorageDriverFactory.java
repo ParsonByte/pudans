@@ -18,6 +18,7 @@ public class LocalStorageDriverFactory implements StorageDriverFactory {
 
     private final PudansProperties properties;
 
+    // 声明本地存储类型及其支持的能力。
     @Override
     public List<StoragePolicyTypeDescriptor> descriptors() {
         return List.of(new StoragePolicyTypeDescriptor(
@@ -28,6 +29,7 @@ public class LocalStorageDriverFactory implements StorageDriverFactory {
                 Set.of(StorageCapability.RANGE_READ, StorageCapability.PROXY_REQUIRED)));
     }
 
+    // 以工作目录为根创建本地存储驱动。
     @Override
     public StorageDriver create(ResolvedStoragePolicy policy) {
         return new LocalStorageDriver(policy.policy(), properties.getWorkDir().toAbsolutePath().normalize());

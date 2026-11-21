@@ -22,6 +22,7 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
@@ -56,12 +57,14 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
 
     private final ServerResponse.Context context;
 
+    // 统一以重定向方式结束响应并跳转到指定地址
     private static Mono<Void> redirect(ServerWebExchange exchange, String location) {
         exchange.getResponse().setStatusCode(HttpStatus.FOUND);
         exchange.getResponse().getHeaders().setLocation(URI.create(location));
         return exchange.getResponse().setComplete();
     }
 
+    // 仅接管飞书授权与回调路径，其余请求直接放行
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         var path = exchange.getRequest().getPath().value();
@@ -74,6 +77,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         return chain.filter(exchange);
     }
 
+    // 授权入口按绑定标记区分新登录与已有身份绑定
     private Mono<Void> authorize(ServerWebExchange exchange) {
         var properties = securitySettings.feishu();
         if (!properties.isConfigured()) {
@@ -92,6 +96,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 .then();
     }
 
+    // 生成随机状态并暂存会话，用于回调时校验请求来源
     private Mono<Void> buildAuthorizationRedirect(
             ServerWebExchange exchange, FeishuSettings properties, boolean bind) {
         var state = UUID.randomUUID().toString();
@@ -114,6 +119,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                         .put(AuditLog.OPERATION_ATTRIBUTE, bind ? "BIND" : "LOGIN")));
     }
 
+    // 校验回调状态并完成登录或绑定，异常统一转为失败响应
     private Mono<Void> callback(ServerWebExchange exchange) {
         var properties = securitySettings.feishu();
         if (!properties.isConfigured()) {
@@ -163,6 +169,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 });
     }
 
+    // 将飞书身份写入当前登录用户，失败时回显问题详情
     private Mono<Void> bindIdentity(ServerWebExchange exchange, String code) {
         exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "BIND");
         return currentUsername(exchange)
@@ -190,6 +197,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 .then();
     }
 
+    // 绑定失败统一记录审计并返回可读的问题详情
     private Mono<Void> bindFailure(ServerWebExchange exchange, Throwable error) {
         log.warn("飞书身份绑定失败", error);
         exchange.getAttributes().put(AuditLog.RESULT_ATTRIBUTE, "DENIED");
@@ -203,18 +211,22 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 BIND_RESULT_PATH);
     }
 
+    // 优先使用跨应用稳定标识，缺失时退回应用内标识
     private static String providerUserId(FeishuClient.FeishuUserInfo userInfo) {
         return StringUtils.hasText(userInfo.unionId()) ? userInfo.unionId() : userInfo.openId();
     }
 
+    // 绑定身份必须来自浏览器会话，令牌不能新增持久登录方式
     private static Mono<String> currentUsername(ServerWebExchange exchange) {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 .filter(authentication -> authentication.isAuthenticated()
-                        && !(authentication instanceof AnonymousAuthenticationToken))
+                        && !(authentication instanceof AnonymousAuthenticationToken)
+                        && !(authentication instanceof JwtAuthenticationToken))
                 .map(Authentication::getName);
     }
 
+    // 完成外部登录，需要双重验证时阻止直接建立会话
     private Mono<Void> establish(ServerWebExchange exchange, String username) {
         return externalLogins
                 .complete(exchange, username, "feishu")
@@ -223,6 +235,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                         : redirect(exchange, securityProperties.getPostLoginUrl()));
     }
 
+    // 外部登录无法完成二次验证，引导用户改用密码登录
     private Mono<Void> twoFactorRequired(ServerWebExchange exchange) {
         return ProblemDetailResponses.writeOrRedirect(
                 exchange,
@@ -233,6 +246,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 ProblemDetailResponses.SIGN_IN_PATH);
     }
 
+    // 账号状态校验未通过，记录拒绝原因并结束登录
     private Mono<Void> loginRejected(ServerWebExchange exchange, String reason) {
         exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "LOGIN");
         exchange.getAttributes().put(AuditLog.RESULT_ATTRIBUTE, "DENIED");
@@ -246,10 +260,12 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 ProblemDetailResponses.SIGN_IN_PATH);
     }
 
+    // 区分未启用与配置缺失，便于前端展示准确原因
     private String unavailableReason(FeishuSettings settings) {
         return settings.enabled() ? "feishu_not_configured" : "feishu_disabled";
     }
 
+    // 记录失败审计并发布登录失败事件，再返回错误响应
     private Mono<Void> loginFailure(ServerWebExchange exchange, String reason) {
         exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "LOGIN");
         exchange.getAttributes().put(AuditLog.RESULT_ATTRIBUTE, "DENIED");
@@ -264,6 +280,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 ProblemDetailResponses.SIGN_IN_PATH);
     }
 
+    // 将登录失败原因码映射为用户可读的提示文案
     private String failureDetail(String reason) {
         return switch (reason) {
             case "feishu_not_bound" -> "该飞书账号尚未绑定 Pudans 账号，请先使用账号密码登录后绑定飞书。";
@@ -277,6 +294,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         };
     }
 
+    // 将账号拒绝原因码映射为用户可读的提示文案
     private String rejectionDetail(String reason) {
         return switch (reason) {
             case "account_not_found" -> "未找到与该飞书账号关联的 Pudans 账号，请先使用账号密码登录后绑定飞书。";
@@ -288,6 +306,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
         };
     }
 
+    // 失败事件用于风控告警，匿名登录尝试也要上报
     private void publishLoginFailure(ServerWebExchange exchange, String reason) {
         var username = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
         var payload = new LinkedHashMap<String, Object>();
@@ -301,6 +320,7 @@ public class FeishuOAuth2LoginWebFilter implements WebFilter {
                 (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
+    // 配置支持占位符，需按实际请求来源生成回调地址
     private String resolveRedirectUri(ServerWebExchange exchange, String configured) {
         var requestUri = exchange.getRequest().getURI();
         var baseUrl = UriComponentsBuilder.fromUri(requestUri)

@@ -97,19 +97,23 @@ public class PermissionDirectory {
 
     public record NavigationOperation(String key, boolean allowed) {}
 
+    // 监听角色与配置变化，使导航目录及时失效。
     @PostConstruct
     void registerWatcher() {
         client.watch(new Watcher() {
+            // 新增资源可能影响目录，立即失效缓存。
             @Override
             public void onAdd(Extension extension) {
                 invalidate(extension);
             }
 
+            // 更新资源后失效缓存，下次请求重新加载。
             @Override
             public void onUpdate(Extension oldExtension, Extension newExtension) {
                 invalidate(newExtension);
             }
 
+            // 删除资源后失效缓存，避免返回已移除菜单。
             @Override
             public void onDelete(Extension extension) {
                 invalidate(extension);
@@ -118,6 +122,7 @@ public class PermissionDirectory {
             @Override
             public void dispose() {}
 
+            // 观察者常驻生命周期，始终视为未释放。
             @Override
             public boolean isDisposed() {
                 return false;
@@ -125,10 +130,12 @@ public class PermissionDirectory {
         });
     }
 
+    // 返回角色模板构建的权限目录，必要时重新加载。
     public Mono<PermissionCatalog> catalog() {
         return snapshot();
     }
 
+    // 按管理权限展开关联的查看与操作权限。
     public Mono<List<String>> expand(List<String> permissions) {
         if (permissions.contains(UiPermissions.ALL_UI_PERMISSIONS)) {
             return Mono.just(List.of(UiPermissions.ALL_UI_PERMISSIONS));
@@ -160,6 +167,7 @@ public class PermissionDirectory {
         });
     }
 
+    // 判断权限集合是否具备指定界面能力。
     public Mono<Boolean> hasCapability(List<String> permissions, String capability) {
         if (permissions.contains(UiPermissions.ALL_UI_PERMISSIONS)) {
             return Mono.just(true);
@@ -177,6 +185,7 @@ public class PermissionDirectory {
         });
     }
 
+    // 检查层级权限是否命中目标能力。
     private static boolean matchesCapability(Level level, List<String> permissions, String capability) {
         return level != null
                 && capability.equals(level.capability())
@@ -184,6 +193,7 @@ public class PermissionDirectory {
                 && permissions.contains(level.permission());
     }
 
+    // 按权限裁剪工作区与菜单，生成导航结构。
     public Mono<Navigation> navigation(List<String> permissions) {        return snapshot().map(catalog -> {
             var granted = new HashSet<>(permissions);
             var allGranted = granted.contains(UiPermissions.ALL_UI_PERMISSIONS);
@@ -226,6 +236,7 @@ public class PermissionDirectory {
         });
     }
 
+    // 公开菜单或任一权限命中即可访问。
     private static boolean isAccessible(Menu menu, Set<String> permissions) {
         if (menu.publicMenu()) {
             return true;
@@ -240,6 +251,7 @@ public class PermissionDirectory {
                 && permissions.contains(menu.manage().permission());
     }
 
+    // 角色或配置变化后让目录快照失效。
     private void invalidate(Extension extension) {
         if (extension != null
                 && (Role.KIND.equals(extension.getKind())
@@ -249,6 +261,7 @@ public class PermissionDirectory {
         }
     }
 
+    // 在有效期内复用快照，否则重新加载目录。
     private Mono<PermissionCatalog> snapshot() {
         var current = snapshot;
         if (current != null && System.currentTimeMillis() - loadedAt < TTL.toMillis()) {
@@ -260,6 +273,7 @@ public class PermissionDirectory {
         });
     }
 
+    // 加载角色模板与资源标签配置。
     private Mono<PermissionCatalog> load() {
         var options = ListOptions.builder()
                 .labelSelector()
@@ -277,6 +291,7 @@ public class PermissionDirectory {
         return Mono.zip(roles, resourceLabels).map(tuple -> buildCatalog(tuple.getT1(), tuple.getT2()));
     }
 
+    // 把角色模板注解装配成工作区、菜单与操作。
     private PermissionCatalog buildCatalog(List<Role> roles, Map<String, String> resourceLabels) {
         var workspaces = new LinkedHashMap<String, WorkspaceBuilder>();
         var menus = new LinkedHashMap<String, MenuBuilder>();
@@ -377,6 +392,7 @@ public class PermissionDirectory {
         return new PermissionCatalog(catalogWorkspaces, resourceLabels);
     }
 
+    // 用注解覆盖菜单的可选展示字段。
     private static void applyMenuMetadata(MenuBuilder menu, Map<String, String> annotations) {
         var label = annotations.get(Role.UI_LABEL_ANNO);
         if (StringUtils.isNotBlank(label)) {
@@ -419,11 +435,13 @@ public class PermissionDirectory {
         }
     }
 
+    // 取注解中的第一个界面权限作为主权限。
     private static String firstPermission(Map<String, String> annotations) {
         var permissions = parseList(annotations.get(Role.UI_PERMISSIONS_ANNO));
         return permissions.stream().filter(StringUtils::isNotBlank).findFirst().orElse(null);
     }
 
+    // 解析注解中的数组，解析失败按空列表处理。
     private static List<String> parseList(String raw) {
         if (StringUtils.isBlank(raw)) {
             return List.of();
@@ -440,10 +458,12 @@ public class PermissionDirectory {
         }
     }
 
+    // 注解值非空时采用，否则回退到默认值。
     private static String defaultValue(String value, String fallback) {
         return StringUtils.isNotBlank(value) ? value : fallback;
     }
 
+    // 解析整型注解，非法或缺失时归零。
     private static int intValue(String value) {
         if (StringUtils.isBlank(value)) {
             return 0;
@@ -468,6 +488,7 @@ public class PermissionDirectory {
 
         private int order;
 
+        // 以工作区标识初始化构建器，缺省名称同标识。
         private WorkspaceBuilder(String id) {
             this.id = id;
             this.name = id;
@@ -505,11 +526,13 @@ public class PermissionDirectory {
 
         private final List<Operation> operations = new ArrayList<>();
 
+        // 以菜单键初始化构建器，标签缺省同键。
         private MenuBuilder(String key) {
             this.key = key;
             this.label = key;
         }
 
+        // 生成按顺序排列操作的不可变菜单对象。
         private Menu build() {
             var sortedOperations = operations.stream()
                     .sorted(Comparator.comparingInt(Operation::order))

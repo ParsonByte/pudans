@@ -111,6 +111,20 @@ class ReactiveExtensionClientImplTest {
         when(converter.convertFrom(eq(Unstructured.class), any())).thenReturn(stored, updated);
     }
 
+    // 外部创建同样不能写入 finalizer，否则资源会永远卡在删除中。
+    @Test
+    void createRejectsClientSuppliedFinalizers() {
+        var tampered = unstructured(bindingJson(", \"finalizers\": [\"evil-finalizer\"]", "alice"));
+
+        StepVerifier.create(client.create(tampered))
+                .expectErrorSatisfies(error -> assertThat(error)
+                        .isInstanceOf(AccessDeniedException.class)
+                        .hasMessageContaining("finalizers"))
+                .verify();
+
+        verify(storeClient, never()).create(anyString(), any());
+    }
+
     @Test
     void updateRejectsAClientSuppliedDeletionTimestamp() {
         givenStored(unstructured(bindingJson("", "alice")));

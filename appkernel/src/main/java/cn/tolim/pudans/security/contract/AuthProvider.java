@@ -77,6 +77,7 @@ public class AuthProvider extends AbstractExtension {
 
         private String unbindUrl;
 
+        // 未显式配置认证类型时默认使用 OAuth2
         public void setAuthType(@Nullable AuthType authType) {
             this.authType = (authType == null ? AuthType.OAUTH2 : authType);
         }

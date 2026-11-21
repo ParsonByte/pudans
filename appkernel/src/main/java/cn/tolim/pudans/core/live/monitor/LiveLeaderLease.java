@@ -38,10 +38,12 @@ public class LiveLeaderLease {
 
     private final AtomicBoolean leader = new AtomicBoolean();
 
+    // 本实例当前是否持有 leader 租约
     public boolean isLeader() {
         return leader.get();
     }
 
+    // 尝试获取或续期租约，失败视为失去 leader
     public Mono<Boolean> renew() {
         var ttl = properties.getMonitor().getLeaderTtl();
         return redisTemplate
@@ -56,6 +58,7 @@ public class LiveLeaderLease {
                 });
     }
 
+    // 释放本实例持有的租约，仅删除自己的键
     public Mono<Void> release() {
         return redisTemplate
                 .execute(RELEASE_SCRIPT, List.of(KEY), instanceId)
@@ -67,6 +70,7 @@ public class LiveLeaderLease {
                 });
     }
 
+    // 仅当键仍属于本实例时才续期，避免抢占他人租约
     private Mono<Boolean> renewExisting(Duration ttl) {
         return redisTemplate
                 .execute(RENEW_SCRIPT, List.of(KEY), instanceId, String.valueOf(ttl.toMillis()))

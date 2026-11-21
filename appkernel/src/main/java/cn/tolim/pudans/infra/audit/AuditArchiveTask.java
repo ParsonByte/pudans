@@ -29,6 +29,7 @@ public class AuditArchiveTask {
 
     private Disposable subscription;
 
+    // 按固定间隔触发归档，单实例内串行执行。
     @PostConstruct
     public void start() {
         subscription =
@@ -39,6 +40,7 @@ public class AuditArchiveTask {
                         .subscribe();
     }
 
+    // 归档早于保留期限的记录，并记录归档数量。
     Mono<Long> archive() {
         var cutoff = Instant.now().minus(Math.max(1, retentionDays), ChronoUnit.DAYS);
         return auditStore
@@ -46,6 +48,7 @@ public class AuditArchiveTask {
                 .doOnNext(count -> log.info("已归档 {} 条早于 {} 的审计记录", count, cutoff));
     }
 
+    // 停止定时归档，释放调度订阅。
     @PreDestroy
     public void stop() {
         if (subscription != null) {

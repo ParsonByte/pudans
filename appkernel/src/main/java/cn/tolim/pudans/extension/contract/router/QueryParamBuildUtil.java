@@ -6,12 +6,11 @@ import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
 
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.experimental.UtilityClass;
-import lombok.extern.slf4j.Slf4j;
 
-@Slf4j
 @UtilityClass
 public class QueryParamBuildUtil {
 
+    // 构造排序查询参数的 OpenAPI 描述。
     public static org.springdoc.core.fn.builders.parameter.Builder sortParameter() {
         return parameterBuilder()
                 .in(ParameterIn.QUERY)

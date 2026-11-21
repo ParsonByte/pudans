@@ -9,5 +9,6 @@ public interface MultiValueIndexSpecBuilder<E extends Extension, K extends Compa
         extends IndexSpecBuilder<E, K, MultiValueIndexSpecBuilder<E, K>> {
 
 
+    // 设置从扩展提取多值键的函数。
     MultiValueIndexSpecBuilder<E, K> indexFunc(Function<E, Set<K>> indexFunc);
 }

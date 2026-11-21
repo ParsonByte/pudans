@@ -20,6 +20,7 @@ public class QiniuStorageDriverFactory implements StorageDriverFactory {
 
     private final PudansProperties properties;
 
+    // 声明七牛云类型及其支持的能力。
     @Override
     public List<StoragePolicyTypeDescriptor> descriptors() {
         return List.of(new StoragePolicyTypeDescriptor(
@@ -33,6 +34,7 @@ public class QiniuStorageDriverFactory implements StorageDriverFactory {
                         StorageCapability.RANGE_READ)));
     }
 
+    // 根据访问凭据创建七牛认证对象。
     @Override
     public StorageDriver create(ResolvedStoragePolicy resolved) {
         var policy = resolved.policy();

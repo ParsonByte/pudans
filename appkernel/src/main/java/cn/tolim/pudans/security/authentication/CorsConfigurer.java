@@ -18,10 +18,12 @@ public class CorsConfigurer implements SecurityConfigurer {
 
     private final SecurityProperties.CorsOptions corsOptions;
 
+    // 缓存跨域配置，避免每次请求重复读取属性。
     public CorsConfigurer(PudansProperties pudansProperties) {
         corsOptions = pudansProperties.getSecurity().getCorsOptions();
     }
 
+    // 按配置启用跨域校验，禁用时直接关闭过滤器。
     @Override
     public void configure(ServerHttpSecurity http) {
         http.cors(spec -> {
@@ -33,6 +35,7 @@ public class CorsConfigurer implements SecurityConfigurer {
         });
     }
 
+    // 合并显式跨域配置与 API 默认规则，供安全链使用。
     CorsConfigurationSource apiCorsConfigSource() {
         var source = new UrlBasedCorsConfigurationSource();
 

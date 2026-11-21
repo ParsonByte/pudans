@@ -24,6 +24,7 @@ public class PreferredPasswordEncoder implements PasswordEncoder {
 
     private final DelegatingPasswordEncoder delegating;
 
+    // 预先注册两种算法，由配置决定新密码的哈希方式
     public PreferredPasswordEncoder(SecurityParameters securitySettings) {
         this.securitySettings = securitySettings;
         this.argon2 = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
@@ -34,6 +35,7 @@ public class PreferredPasswordEncoder implements PasswordEncoder {
         this.delegating = new DelegatingPasswordEncoder(ARGON2_ENCODING_ID, encoders);
     }
 
+    // 按配置选择算法，并写入前缀供校验时识别
     @Override
     public String encode(CharSequence rawPassword) {
         if (securitySettings.isArgon2PasswordStorageEnabled()) {
@@ -42,13 +44,17 @@ public class PreferredPasswordEncoder implements PasswordEncoder {
         return "{" + BCRYPT_ENCODING_ID + "}" + bcrypt.encode(rawPassword);
     }
 
+    // 依据哈希前缀委派算法，兼容历史密码数据
     @Override
     public boolean matches(CharSequence rawPassword, String encodedPassword) {
         return encodedPassword != null && delegating.matches(rawPassword, encodedPassword);
     }
 
+    // 启用 Argon2 后，登录成功时把旧 BCrypt 哈希升级为 Argon2
     @Override
     public boolean upgradeEncoding(String encodedPassword) {
-        return false;
+        return encodedPassword != null
+                && securitySettings.isArgon2PasswordStorageEnabled()
+                && !encodedPassword.startsWith("{" + ARGON2_ENCODING_ID + "}");
     }
 }

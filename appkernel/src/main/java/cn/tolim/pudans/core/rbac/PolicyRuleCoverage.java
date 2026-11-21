@@ -10,10 +10,12 @@ public final class PolicyRuleCoverage {
 
     private PolicyRuleCoverage() {}
 
+    // 判断已授权规则是否覆盖请求的全部规则。
     public static boolean covers(Collection<PolicyRule> granted, Collection<PolicyRule> requested) {
         return requested.stream().allMatch(rule -> covers(granted, rule));
     }
 
+    // 单条规则按资源与非资源两类分别判断覆盖。
     public static boolean covers(Collection<PolicyRule> granted, PolicyRule requested) {
         var hasResourceGrant = requested.getResources().length > 0;
         var hasNonResourceGrant = requested.getNonResourceURLs().length > 0;
@@ -26,6 +28,7 @@ public final class PolicyRuleCoverage {
         return !hasNonResourceGrant || nonResourceAccessCovered(granted, requested);
     }
 
+    // 逐一检查资源、动作与名称组合是否被覆盖。
     private static boolean resourceAccessCovered(Collection<PolicyRule> granted, PolicyRule requested) {
         for (var group : requested.getApiGroups()) {
             for (var resource : requested.getResources()) {
@@ -48,6 +51,7 @@ public final class PolicyRuleCoverage {
         return true;
     }
 
+    // 在已授权规则中查找能覆盖目标资源的条目。
     private static boolean anyResourceGrant(
             Collection<PolicyRule> granted, String group, String resource, String verb, String name) {
         for (var rule : granted) {
@@ -63,6 +67,7 @@ public final class PolicyRuleCoverage {
         return false;
     }
 
+    // 逐一检查非资源地址与动作是否被覆盖。
     private static boolean nonResourceAccessCovered(Collection<PolicyRule> granted, PolicyRule requested) {
         for (var url : requested.getNonResourceURLs()) {
             for (var verb : requested.getVerbs()) {
@@ -74,6 +79,7 @@ public final class PolicyRuleCoverage {
         return true;
     }
 
+    // 在已授权规则中查找能覆盖目标地址的条目。
     private static boolean anyNonResourceGrant(Collection<PolicyRule> granted, String url, String verb) {
         for (var rule : granted) {
             if (rule.getNonResourceURLs().length == 0
@@ -86,6 +92,7 @@ public final class PolicyRuleCoverage {
         return false;
     }
 
+    // 通配符或精确匹配任一授权值即可通过。
     private static boolean valueMatches(String[] grantedValues, String requestedValue) {
         for (var grantedValue : grantedValues) {
             if (ALL.equals(grantedValue) || grantedValue.equals(requestedValue)) {
@@ -95,6 +102,7 @@ public final class PolicyRuleCoverage {
         return false;
     }
 
+    // 判断授权名称集合是否覆盖请求的资源名。
     private static boolean resourceNamesCover(String[] grantedNames, String requestedName) {
         if (grantedNames.length == 0) {
             return true;
@@ -110,6 +118,7 @@ public final class PolicyRuleCoverage {
         return false;
     }
 
+    // 支持前缀通配，授权前缀匹配即视为覆盖。
     private static boolean nonResourceUrlCovers(String[] grantedUrls, String requestedUrl) {
         for (var grantedUrl : grantedUrls) {
             if (ALL.equals(grantedUrl) || grantedUrl.equals(requestedUrl)) {

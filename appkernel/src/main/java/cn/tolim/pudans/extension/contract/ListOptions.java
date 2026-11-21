@@ -19,10 +19,12 @@ public class ListOptions {
 
     private @Nullable FieldSelector fieldSelector;
 
+    // 创建空的选择条件构建器。
     public static ListOptionsBuilder builder() {
         return new ListOptionsBuilder();
     }
 
+    // 复制已有选择条件创建构建器。
     public static ListOptionsBuilder builder(ListOptions listOptions) {
         return new ListOptionsBuilder(listOptions);
     }
@@ -32,6 +34,7 @@ public class ListOptions {
         return toCondition().toString();
     }
 
+    // 把字段与标签选择器合并为单一条件。
     public Condition toCondition() {
         Condition condition = null;
         var fieldSelector = getFieldSelector();
@@ -67,6 +70,7 @@ public class ListOptions {
         public ListOptionsBuilder() {}
 
 
+        // 从已有选项复制标签条件与字段查询。
         public ListOptionsBuilder(ListOptions listOptions) {
             if (listOptions.getLabelSelector() != null) {
                 this.labelSelectorBuilder =
@@ -78,6 +82,7 @@ public class ListOptions {
         }
 
 
+        // 惰性创建标签选择器构建器。
         public LabelSelectorBuilder labelSelector() {
             if (labelSelectorBuilder == null) {
                 labelSelectorBuilder = new LabelSelectorBuilder(this);
@@ -85,12 +90,14 @@ public class ListOptions {
             return labelSelectorBuilder;
         }
 
+        // 直接替换字段查询条件。
         public ListOptionsBuilder fieldQuery(Query query) {
             this.query = query;
             return this;
         }
 
 
+        // 把新查询与现有条件按与组合。
         public ListOptionsBuilder andQuery(Query query) {
             if (!(query instanceof Condition condition)) {
                 throw new IllegalArgumentException("给定的查询必须是 Condition 的实例");
@@ -107,6 +114,7 @@ public class ListOptions {
         }
 
 
+        // 把新查询与现有条件按或组合。
         public ListOptionsBuilder orQuery(Query query) {
             if (!(query instanceof Condition condition)) {
                 throw new IllegalArgumentException("给定的查询必须是 Condition 的实例");
@@ -123,6 +131,7 @@ public class ListOptions {
         }
 
 
+        // 生成不可变的选择条件快照。
         public ListOptions build() {
             var listOptions = new ListOptions();
             if (labelSelectorBuilder != null) {
@@ -138,15 +147,18 @@ public class ListOptions {
     public static class LabelSelectorBuilder extends LabelSelector.LabelSelectorBuilder<LabelSelectorBuilder> {
         private final ListOptionsBuilder listOptionsBuilder;
 
+        // 包装已有标签条件并回指父构建器。
         public LabelSelectorBuilder(List<LabelCondition> conditions, ListOptionsBuilder listOptionsBuilder) {
             super(conditions);
             this.listOptionsBuilder = listOptionsBuilder;
         }
 
+        // 以父构建器创建空标签选择器。
         public LabelSelectorBuilder(ListOptionsBuilder listOptionsBuilder) {
             this.listOptionsBuilder = listOptionsBuilder;
         }
 
+        // 结束标签条件编辑，回到选项构建器。
         public ListOptionsBuilder end() {
             return this.listOptionsBuilder;
         }

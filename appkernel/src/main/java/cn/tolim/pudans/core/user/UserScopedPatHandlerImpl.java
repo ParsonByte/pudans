@@ -44,6 +44,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
 
     private final AuthenticationTrustResolver authTrustResolver = new AuthenticationTrustResolverImpl();
 
+    // 注入令牌、审计与安全配置
     public UserScopedPatHandlerImpl(
             ReactiveExtensionClient client,
             PersonalTokens personalTokens,
@@ -55,6 +56,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
         this.securitySettings = securitySettings;
     }
 
+    // 构造用于审计的令牌快照
     private static Map<String, Object> snapshot(PersonalAccessToken pat) {
         var spec = pat.getSpec();
         var snapshot = new LinkedHashMap<String, Object>();
@@ -69,6 +71,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
         return snapshot;
     }
 
+    // 拒绝未认证或匿名会话
     private Mono<Authentication> mustBeAuthenticated(Mono<Authentication> authentication) {
         return authentication
                 .filter(authTrustResolver::isAuthenticated)
@@ -76,6 +79,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
                 .switchIfEmpty(Mono.error(AccessDeniedException::new));
     }
 
+    // 校验策略、生成令牌并写入审计
     @Override
     public Mono<ServerResponse> create(ServerRequest request) {
         return ReactiveSecurityContextHolder.getContext()
@@ -108,6 +112,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
                 .flatMap(pat -> ServerResponse.ok().bodyValue(pat));
     }
 
+    // 校验令牌开关与最长有效期限制
     Mono<PersonalAccessToken> validatePolicy(PersonalAccessToken pat) {
         if (!securitySettings.isPatEnabled()) {
             return Mono.error(new ServerWebInputException("个人访问令牌已禁用。"));
@@ -124,6 +129,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
         return Mono.just(pat);
     }
 
+    // 按当前认证用户列出令牌
     @Override
     public Mono<ServerResponse> list(ServerRequest request) {        return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
@@ -139,6 +145,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
                 });
     }
 
+    // 读取当前用户指定名称的令牌
     @Override
     public Mono<ServerResponse> get(ServerRequest request) {
         return ReactiveSecurityContextHolder.getContext()
@@ -150,6 +157,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
                 .flatMap(pat -> ServerResponse.ok().bodyValue(pat));
     }
 
+    // 撤销令牌并记录审计
     @Override
     public Mono<ServerResponse> revoke(ServerRequest request) {
         return ReactiveSecurityContextHolder.getContext()
@@ -172,6 +180,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
                 .flatMap(revokedPat -> ServerResponse.ok().bodyValue(revokedPat));
     }
 
+    // 删除当前用户的令牌
     @Override
     public Mono<ServerResponse> delete(ServerRequest request) {
         return ReactiveSecurityContextHolder.getContext()
@@ -183,6 +192,7 @@ class UserScopedPatHandlerImpl implements UserScopedPatHandler {
                 .flatMap(pat -> ServerResponse.ok().bodyValue(pat));
     }
 
+    // 恢复当前用户的令牌
     @Override
     public Mono<ServerResponse> restore(ServerRequest request) {
         return ReactiveSecurityContextHolder.getContext()

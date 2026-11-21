@@ -10,6 +10,7 @@ public class SchemeRemovedEvent extends ApplicationEvent {
     @Getter
     private final Scheme scheme;
 
+    // 携带移除方案发布应用事件。
     public SchemeRemovedEvent(Object source, Scheme scheme) {
         super(source);
         this.scheme = scheme;

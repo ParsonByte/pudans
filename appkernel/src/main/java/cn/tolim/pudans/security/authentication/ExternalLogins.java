@@ -33,6 +33,7 @@ public class ExternalLogins {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    // 校验账户状态并建立登录会话，失败时记录审计与事件。
     public Mono<LoginCompletionResult> complete(ServerWebExchange exchange, String username, String method) {
         return reactiveUserDetailsService
                 .findByUsername(username)
@@ -61,6 +62,7 @@ public class ExternalLogins {
                         });
     }
 
+    // 保存登录上下文，需要二次验证时暂不触发登录成功流程。
     private Mono<LoginCompletionResult> complete(
             ServerWebExchange exchange, String username, String method, UserDetails userDetails) {
         var authentication = UsernamePasswordAuthenticationToken.authenticated(
@@ -78,6 +80,7 @@ public class ExternalLogins {
                                 .thenReturn(new LoginCompletionResult(false, username))));
     }
 
+    // 将认证异常转换为登录拒绝原因，便于审计归类。
     private LoginRejectedException toRejection(AuthenticationException error) {
         if (error instanceof LoginRejectedException rejected) {
             return rejected;
@@ -93,6 +96,7 @@ public class ExternalLogins {
         return new LoginRejectedException(reason, error);
     }
 
+    // 发布登录失败事件，供审计与风控消费。
     private void publishFailure(ServerWebExchange exchange, String username, String method, String reason) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", username == null ? "anonymous" : username);

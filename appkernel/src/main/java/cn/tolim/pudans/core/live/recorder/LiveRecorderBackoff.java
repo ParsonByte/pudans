@@ -13,6 +13,7 @@ public class LiveRecorderBackoff {
 
     private final LiveProperties properties;
 
+    // 按重试次数指数退避并叠加配置的抖动
     public Duration next(int attempt) {
         var recorder = properties.getRecorder();
         var shift = Math.min(Math.max(attempt - 1, 0), 10);

@@ -28,6 +28,7 @@ public class OneDriveTokenClient {
 
     private volatile Token token;
 
+    // 缓存配置，凭据由调用方解密后传入。
     public OneDriveTokenClient(
             StoragePolicy policy, String clientSecret, String refreshToken, WebClient webClient) {
         var spec = policy.getSpec();
@@ -41,6 +42,7 @@ public class OneDriveTokenClient {
         this.webClient = webClient;
     }
 
+    // 复用未过期令牌，否则用刷新令牌换新。
     public Mono<String> accessToken() {
         var current = token;
         if (current != null && current.expiresAt().isAfter(Instant.now().plusSeconds(30))) {

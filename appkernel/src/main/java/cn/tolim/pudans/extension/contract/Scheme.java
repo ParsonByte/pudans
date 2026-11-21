@@ -14,6 +14,7 @@ public record Scheme(
         String plural,
         String singular,
         ObjectNode openApiSchema) {
+    // 校验 Scheme 必要字段，避免注册非法资源。
     public Scheme {
         Assert.notNull(type, "扩展的类型不能为 null");
         Assert.notNull(groupVersionKind, "扩展的 GroupVersionKind 不能为 null");
@@ -23,6 +24,7 @@ public record Scheme(
     }
 
 
+    // 从扩展类型解析 GVK 并生成 OpenAPI 模式。
     public static Scheme buildFromType(Class<? extends Extension> type) {
 
         var gvk = getGvkFromType(type);
@@ -44,6 +46,7 @@ public record Scheme(
     }
 
 
+    // 读取并校验类型上的 GVK 注解。
     public static GVK getGvkFromType(Class<? extends Extension> type) {
         var gvk = type.getAnnotation(GVK.class);
         Assert.notNull(gvk, "缺少注解 " + GVK.class.getName() + "，类型为 " + type.getName());

@@ -27,6 +27,7 @@ public class ExtensionCompositeRouterFunction implements RouterFunction<ServerRe
 
     private final BuiltinEntityPolicy builtinEntityPolicy;
 
+    // 保存客户端与内建实体策略并初始化路由表。
     public ExtensionCompositeRouterFunction(
             ReactiveExtensionClient client, BuiltinEntityPolicy builtinEntityPolicy) {
         this.client = client;
@@ -34,6 +35,7 @@ public class ExtensionCompositeRouterFunction implements RouterFunction<ServerRe
         schemeRouterFuncMapper = new ConcurrentHashMap<>();
     }
 
+    // 依次匹配各 Scheme 路由并返回首个命中。
     @Override
     public Mono<HandlerFunction<ServerResponse>> route(ServerRequest request) {
         return Flux.fromIterable(getRouterFunctions())
@@ -41,16 +43,19 @@ public class ExtensionCompositeRouterFunction implements RouterFunction<ServerRe
                 .next();
     }
 
+    // 把访问器转发给每个子路由函数。
     @Override
     public void accept(RouterFunctions.Visitor visitor) {
         getRouterFunctions().forEach(routerFunction -> routerFunction.accept(visitor));
     }
 
+    // 返回当前全部子路由的只读视图。
     private Iterable<RouterFunction<ServerResponse>> getRouterFunctions() {
 
         return Collections.unmodifiableCollection(schemeRouterFuncMapper.values());
     }
 
+    // 为新增 Scheme 创建并注册路由。
     @EventListener
     void onSchemeAddedEvent(SchemeAddedEvent event) {
         var scheme = event.getScheme();
@@ -58,6 +63,7 @@ public class ExtensionCompositeRouterFunction implements RouterFunction<ServerRe
         this.schemeRouterFuncMapper.put(scheme, factory.create());
     }
 
+    // 移除 Scheme 对应的路由。
     @EventListener
     void onSchemeRemovedEvent(SchemeRemovedEvent event) {
         this.schemeRouterFuncMapper.remove(event.getScheme());

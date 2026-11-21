@@ -27,6 +27,7 @@ public class DouyinLiveRoomResolver {
 
     private final DouyinRoomPayloadMapper mapper;
 
+    // 注入专用 WebClient 与解析组件
     public DouyinLiveRoomResolver(
             @Qualifier("liveWebClient") WebClient liveWebClient,
             LiveProperties properties,
@@ -38,6 +39,7 @@ public class DouyinLiveRoomResolver {
         this.mapper = mapper;
     }
 
+    // 请求房间页面并按状态码映射为直播错误
     public Mono<LiveRoomInfo> resolve(String roomId) {
         return liveWebClient
                 .get()
@@ -72,6 +74,7 @@ public class DouyinLiveRoomResolver {
                 });
     }
 
+    // 识别限流页面后提取并映射房间数据
     private LiveRoomInfo parse(String html, String roomId) {
         if (looksRateLimited(html)) {
             throw LiveErrorCode.LIVE_RATE_LIMITED.exception();
@@ -79,6 +82,7 @@ public class DouyinLiveRoomResolver {
         return mapper.map(extractor.extract(html), roomId);
     }
 
+    // 页面出现验证码特征时按限流处理
     private static boolean looksRateLimited(String html) {
         var lower = html.toLowerCase();
         return lower.contains("captcha") || lower.contains("verify-center") || lower.contains("滑块验证");

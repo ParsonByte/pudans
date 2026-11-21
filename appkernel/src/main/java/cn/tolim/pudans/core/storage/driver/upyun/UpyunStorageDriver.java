@@ -1,5 +1,7 @@
 package cn.tolim.pudans.core.storage.driver.upyun;
 
+import cn.tolim.pudans.core.storage.driver.StorageDriverErrors;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -22,8 +24,6 @@ import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.DirectUploadDriver;
-import cn.tolim.pudans.core.storage.driver.DirectUploadDriver.DirectUploadCredential;
-import cn.tolim.pudans.core.storage.driver.DirectUploadDriver.StorageDirectUploadRequest;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
 import cn.tolim.pudans.core.storage.driver.StorageIo;
@@ -44,8 +44,6 @@ import tools.jackson.databind.json.JsonMapper;
 
 public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
 
-    private static final long TEMP_SPACE_RESERVE = 64L * 1024 * 1024;
-
     private final StoragePolicy policy;
 
     private final UpYun client;
@@ -56,6 +54,7 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
 
     private final Path tempDirectory;
 
+    // 保存策略、又拍云客户端与操作员凭据。
     public UpyunStorageDriver(
             StoragePolicy policy, UpYun client, String operator, String password, Path tempDirectory) {
         this.policy = policy;
@@ -65,16 +64,19 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
         this.tempDirectory = tempDirectory;
     }
 
+    // 标识该驱动处理又拍云类型策略。
     @Override
     public StoragePolicyType type() {
         return StoragePolicyType.UPYUN;
     }
 
+    // 又拍云支持客户端直传与范围读取。
     @Override
     public Set<StorageCapability> capabilities() {
         return Set.of(StorageCapability.DIRECT_UPLOAD, StorageCapability.RANGE_READ);
     }
 
+    // 生成表单直传所需的策略与签名。
     @Override
     public Mono<DirectUploadCredential> createDirectUpload(StorageDirectUploadRequest request) {
         return Mono.fromCallable(() -> {
@@ -103,12 +105,13 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
+    // 检查覆盖冲突后暂存并写入文件。
     @Override
     public Mono<StorageObject> put(StoragePutRequest request) {
         return Mono.fromCallable(() -> fileInfo(request.key()))
                 .subscribeOn(Schedulers.boundedElastic())
                 .onErrorResume(error -> Mono.empty())
-                .flatMap(info -> request.overwrite() ? Mono.empty() : Mono.error(conflict()))
+                .flatMap(info -> request.overwrite() ? Mono.empty() : Mono.error(StorageDriverErrors.conflict()))
                 .then(StorageIo.spool(request.body(), tempDirectory))
                 .flatMap(path -> Mono.fromCallable(() -> {
                             var success = client.writeFile(request.key(), path.toFile(), true, Map.of());
@@ -123,6 +126,7 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
                         .onErrorMap(UpException.class, this::mapError));
     }
 
+    // 下载到临时文件后按范围读取并清理。
     @Override
     public Mono<StorageReadResult> get(String key, StorageReadOptions options) {
         var range = options == null ? null : options.range();
@@ -161,23 +165,10 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
 
     // 临时盘容不下整份对象时直接拒绝，避免 Range 下载写满磁盘。
     private void ensureTempSpace(long total) {
-        try {
-            Files.createDirectories(tempDirectory);
-            var usable = Files.getFileStore(tempDirectory).getUsableSpace();
-            if (total > Math.max(0L, usable - TEMP_SPACE_RESERVE)) {
-                throw new ApiException(
-                        HttpStatus.INSUFFICIENT_STORAGE,
-                        "storage-temp-space-insufficient",
-                        "临时存储空间不足，无法下载该文件。");
-            }
-        } catch (IOException e) {
-            throw new ApiException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "storage-temp-space-unknown",
-                    "无法检测临时存储空间。");
-        }
+        StorageIo.ensureUsableSpace(tempDirectory, total);
     }
 
+    // 查询又拍云对象元数据。
     @Override
     public Mono<StorageObject> stat(String key) {
         return Mono.fromCallable(() -> statBlocking(key))
@@ -185,6 +176,7 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
                 .onErrorMap(UpException.class, this::mapError);
     }
 
+    // 逐个删除对象并映射客户端异常。
     @Override
     public Mono<Void> delete(Collection<String> keys) {
         return Flux.fromIterable(keys)
@@ -197,11 +189,13 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
                 .onErrorMap(UpException.class, this::mapError);
     }
 
+    // 又拍云通过服务端代理下载，不返回直链。
     @Override
     public Mono<StorageSource> source(String key, StorageSourceOptions options) {
         return Mono.just(new StorageSource(null, null, true));
     }
 
+    // 通过查询空间用量检测连接状态。
     @Override
     public Mono<StorageTestResult> testConnection() {
         return Mono.fromCallable(() -> {
@@ -213,17 +207,20 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
                         false, "存储连接失败：" + safeMessage(error), Instant.now())));
     }
 
+    // 无长期持有的外部连接需要关闭。
     @Override
     public void close() {}
 
+    // 返回策略配置的存储桶名称。
     private String bucket() {
         return policy.getSpec().getBucketName();
     }
 
+    // 同步查询文件信息并转换为对象元数据。
     private StorageObject statBlocking(String key) throws IOException, UpException {
         var info = fileInfo(key);
         if (info == null) {
-            throw notFound();
+            throw StorageDriverErrors.notFound();
         }
         var size = parseLong(info.get("size"));
         var lastModified = parseDate(info.get("last-modified"));
@@ -231,12 +228,14 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
         return new StorageObject(key, size, lastModified, etag);
     }
 
+    // 在客户端锁内查询，避免并发调用冲突。
     private Map<String, String> fileInfo(String key) throws IOException, UpException {
         synchronized (client) {
             return client.getFileInfo(key);
         }
     }
 
+    // 解析长整型字段，缺失或非法时返回零。
     private static long parseLong(String value) {
         if (!StringUtils.hasText(value)) {
             return 0;
@@ -248,6 +247,7 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
         }
     }
 
+    // 解析 RFC 1123 时间，格式错误时返回空。
     private static Instant parseDate(String value) {
         if (!StringUtils.hasText(value)) {
             return null;
@@ -259,6 +259,7 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
         }
     }
 
+    // 按又拍云规则计算表单上传签名。
     private static String sign(String operator, String password, List<String> elements) {
         try {
             var passwordHash = MessageDigest.getInstance("MD5").digest(password.getBytes(StandardCharsets.UTF_8));
@@ -273,25 +274,22 @@ public class UpyunStorageDriver implements StorageDriver, DirectUploadDriver {
         }
     }
 
+    // 将又拍云异常映射为存储服务错误。
     private ApiException mapError(UpException error) {
         return new ApiException(
                 HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储服务请求失败。", error);
     }
 
+    // 将本地读取异常映射为存储读取错误。
     private ApiException ioError(IOException error) {
         return new ApiException(
                 HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储读取失败。", error);
     }
 
-    private static ApiException notFound() {
-        return new ApiException(HttpStatus.NOT_FOUND, "storage-object-not-found", "文件不存在。");
-    }
 
+    // 提取可安全展示的错误信息。
     private static String safeMessage(Throwable error) {
         return StringUtils.hasText(error.getMessage()) ? error.getMessage() : "存储服务不可用。";
     }
 
-    private static ApiException conflict() {
-        return new ApiException(HttpStatus.CONFLICT, "storage-object-exists", "文件已存在。");
-    }
 }

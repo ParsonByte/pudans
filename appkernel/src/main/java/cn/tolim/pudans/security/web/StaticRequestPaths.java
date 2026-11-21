@@ -10,6 +10,7 @@ public final class StaticRequestPaths {
 
     private StaticRequestPaths() {}
 
+    // 静态资源请求不参与审计与风险控制
     public static boolean isStatic(ServerWebExchange exchange) {
         var path = exchange.getRequest().getPath().value();
         for (var prefix : PREFIXES) {

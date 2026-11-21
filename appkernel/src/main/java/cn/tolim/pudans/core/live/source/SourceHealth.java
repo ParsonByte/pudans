@@ -18,12 +18,14 @@ public class SourceHealth {
 
     private final ReactiveExtensionClient client;
 
+    // 查询源并转换为健康快照，不存在即报错
     public Mono<LiveSourceHealth> health(String name) {
         return client.fetch(LiveSource.class, name)
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_SOURCE_NOT_FOUND.exception()))
                 .map(this::of);
     }
 
+    // 从源状态生成健康视图
     public LiveSourceHealth of(LiveSource source) {
         var status = source.getStatus();
         return new LiveSourceHealth(
@@ -40,6 +42,7 @@ public class SourceHealth {
                 status.getLastResolveError());
     }
 
+    // 用解析结果生成预览健康视图，不落库
     public LiveSourceHealth preview(String name, LiveRoomInfo info) {
         var now = Instant.now();
         return new LiveSourceHealth(

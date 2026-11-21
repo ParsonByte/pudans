@@ -15,6 +15,7 @@ import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.contract.ExternalUrlSupplier;
 import cn.tolim.pudans.infra.contract.ValidationUtils;
 import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.event.user.PasswordChangedEvent;
 import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.infra.exception.RequestBodyValidationException;
@@ -31,6 +32,7 @@ import java.util.Map;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
@@ -68,8 +70,11 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     private final SecurityParameters securitySettings;
 
+    // 注入账户、动态口令与审计等依赖，供双重验证接口使用。
     public TwoFactorAuthEndpoint(
             ReactiveExtensionClient client,
             Accounts accounts,
@@ -80,6 +85,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
             ExternalUrlSupplier externalUrl,
             AuditLog auditLog,
             DomainEventPublisher domainEventPublisher,
+            ApplicationEventPublisher eventPublisher,
             SecurityParameters securitySettings) {
         this.client = client;
         this.accounts = accounts;
@@ -90,9 +96,11 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         this.externalUrl = externalUrl;
         this.auditLog = auditLog;
         this.domainEventPublisher = domainEventPublisher;
+        this.eventPublisher = eventPublisher;
         this.securitySettings = securitySettings;
     }
 
+    // 构造审计快照，仅记录是否已绑定密钥，避免泄露密钥内容。
     private static Map<String, Object> totpSnapshot(User user) {
         var snapshot = new LinkedHashMap<String, Object>();
         snapshot.put("username", user.getMetadata().getName());
@@ -102,6 +110,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         return snapshot;
     }
 
+    // 构造领域事件载荷，携带用户标识与双重验证开关状态。
     private static Map<String, Object> totpPayload(User user) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", user.getMetadata().getName());
@@ -110,14 +119,17 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         return payload;
     }
 
+    // 读取审计链路标识，使领域事件与请求审计可以相互关联。
     private static String traceFlowId(ServerWebExchange exchange) {
         return (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE);
     }
 
+    // 匿名认证视为未登录，防止匿名主体访问设置相关接口。
     private static boolean isAuthenticatedUser(Authentication authentication) {
         return authentication != null && !(authentication instanceof AnonymousAuthenticationToken);
     }
 
+    // 注册双重验证设置与动态口令绑定的路由及接口文档。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "TwoFactorAuthV1alpha1";
@@ -183,6 +195,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 校验密码与动态码后解绑口令，并记录审计与领域事件。
     private Mono<ServerResponse> deleteTotp(ServerRequest request) {
         var totpDeleteRequestMono = request.bodyToMono(PasswordRequest.class)
                 .switchIfEmpty(Mono.error(() -> new ServerWebInputException("请求体不能为空")))
@@ -219,14 +232,17 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         return ServerResponse.ok().body(twoFactorAuthSettings, TwoFactorAuthSettings.class);
     }
 
+    // 关闭双重验证，具体开关逻辑交由统一方法处理。
     private Mono<ServerResponse> disableTwoFactor(ServerRequest request) {
         return toggleTwoFactor(request, false);
     }
 
+    // 开启双重验证，具体开关逻辑交由统一方法处理。
     private Mono<ServerResponse> enableTwoFactor(ServerRequest request) {
         return toggleTwoFactor(request, true);
     }
 
+    // 校验密码与已有动态码后切换开关，首次开启时吊销旧凭据。
     private Mono<ServerResponse> toggleTwoFactor(ServerRequest request, boolean enabled) {
         return request.bodyToMono(PasswordRequest.class)
                 .switchIfEmpty(Mono.error(() -> new ServerWebInputException("请求体不能为空")))
@@ -240,12 +256,22 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                         .switchIfEmpty(Mono.error(
                                 () -> new UnsatisfiedAttributeValueException("密码不匹配。")))
                         .flatMap(user -> consumeTotpIfConfigured(user, passwordRequest.getTotpCode()))
-                        .doOnNext(user -> user.getSpec().setTwoFactorAuthEnabled(enabled))
-                        .flatMap(client::update)
+                        .flatMap(user -> {
+                            var username = user.getMetadata().getName();
+                            var wasEnabled = Boolean.TRUE.equals(user.getSpec().getTwoFactorAuthEnabled());
+                            user.getSpec().setTwoFactorAuthEnabled(enabled);
+                            return client.update(user).doOnNext(updated -> {
+                                if (enabled && !wasEnabled) {
+                                    // 开启双重验证后吊销旧的持久凭据，强制按新策略重新认证。
+                                    eventPublisher.publishEvent(new PasswordChangedEvent(this, username));
+                                }
+                            });
+                        })
                         .map(TwoFactorUtils::getTwoFactorAuthSettings))
                 .flatMap(twoFactorAuthSettings -> ServerResponse.ok().bodyValue(twoFactorAuthSettings));
     }
 
+    // 生成新的动态口令密钥与认证链接，供认证器应用扫描绑定。
     private Mono<ServerResponse> getTotpAuthLink(ServerRequest request) {
         var authLinkResponse = getCurrentUser().map(user -> {
             var username = user.getMetadata().getName();
@@ -269,6 +295,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         return ServerResponse.ok().body(authLinkResponse, TotpAuthLinkResponse.class);
     }
 
+    // 校验密码与动态码后绑定新密钥，并记录审计与领域事件。
     private Mono<ServerResponse> configureTotp(ServerRequest request) {
         var totpRequestMono = request.bodyToMono(TotpRequest.class)
                 .switchIfEmpty(Mono.error(() -> new ServerWebInputException("请求体不能为空。")))
@@ -318,6 +345,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         return ServerResponse.ok().body(twoFactorAuthSettings, TwoFactorAuthSettings.class);
     }
 
+    // 统一执行请求体校验，失败时转换为请求参数校验异常。
     private Mono<Void> validateRequest(Object target, String name, ServerRequest request) {
         var bindingResult = ValidationUtils.validate(target, name, validator);
         if (bindingResult.hasErrors()) {
@@ -326,6 +354,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         return Mono.empty();
     }
 
+    // 已绑定验证器时必须校验动态码，防止仅凭密码修改配置。
     private Mono<User> consumeTotpIfConfigured(User user, String totpCode) {
         if (StringUtils.isBlank(user.getSpec().getTotpEncryptedSecret())) {
             return Mono.just(user);
@@ -337,6 +366,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                         error -> new UnsatisfiedAttributeValueException(error.getMessage()));
     }
 
+    // 将验证码解析为整数，空值或非法格式统一转为业务异常。
     private Mono<Integer> parseTotpCode(String totpCode) {
         if (StringUtils.isBlank(totpCode)) {
             return Mono.error(new UnsatisfiedAttributeValueException("请输入双重验证码。"));
@@ -348,12 +378,14 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
         }
     }
 
+    // 返回当前登录用户的双重验证配置状态。
     private Mono<ServerResponse> getTwoFactorSettings(ServerRequest request) {
         return getCurrentUser()
                 .map(TwoFactorUtils::getTwoFactorAuthSettings)
                 .flatMap(settings -> ServerResponse.ok().bodyValue(settings));
     }
 
+    // 从安全上下文取已认证用户，匿名访问直接拒绝。
     private Mono<User> getCurrentUser() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
@@ -363,6 +395,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                 .flatMap(accounts::getUser);
     }
 
+    // 声明该接口所属的接口分组版本。
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

@@ -22,12 +22,14 @@ class ExtensionCreateHandler implements CreateHandler {
 
     private final BuiltinEntityPolicy builtinEntityPolicy;
 
+    // 保存方案、客户端与内建实体策略。
     ExtensionCreateHandler(Scheme scheme, ReactiveExtensionClient client, BuiltinEntityPolicy builtinEntityPolicy) {
         this.scheme = scheme;
         this.client = client;
         this.builtinEntityPolicy = builtinEntityPolicy;
     }
 
+    // 校验资源标识与创建权限后写入并返回 201。
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
         return request.bodyToMono(Unstructured.class)
@@ -45,6 +47,7 @@ class ExtensionCreateHandler implements CreateHandler {
                         .bodyValue(createdExt));
     }
 
+    // 返回集合资源的路径模板。
     @Override
     public String pathPattern() {
         return buildExtensionPathPattern(scheme);

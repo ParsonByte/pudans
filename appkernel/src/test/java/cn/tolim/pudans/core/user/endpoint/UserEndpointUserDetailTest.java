@@ -41,7 +41,7 @@ class UserEndpointUserDetailTest {
     @BeforeEach
     void setUp() {
         var endpoint = new UserEndpoint(
-                null, accounts, null, null, null, auditLog, null, null, null, null, null, userConnectionService);
+                null, accounts, null, null, null, null, auditLog, null, null, null, null, null, userConnectionService);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 

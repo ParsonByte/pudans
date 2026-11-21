@@ -37,8 +37,10 @@ class SudoModeWebFilter implements WebFilter {
     private final List<HttpMessageReader<?>> messageReaders;
     private final RouterFunction<ServerResponse> sudoRoutes;
     private final ServerWebExchangeMatcher sudoProtocolMatcher;
+    private final ServerWebExchangeMatcher passwordMatcher;
     private final ServerWebExchangeMatcher sensitiveMatcher;
 
+    // 构建安全确认路由与敏感操作匹配器
     SudoModeWebFilter(SudoChallenges sudoChallenges, ServerResponse.Context responseContext) {
         this.sudoChallenges = sudoChallenges;
         this.responseContext = responseContext;
@@ -51,9 +53,11 @@ class SudoModeWebFilter implements WebFilter {
         this.sudoProtocolMatcher = new OrServerWebExchangeMatcher(
                 pathMatchers(HttpMethod.GET, SUDO_PATH),
                 pathMatchers(HttpMethod.POST, SUDO_CODE_PATH, SUDO_CONFIRM_PATH));
-        this.sensitiveMatcher = createSensitiveMatcher();
+        this.passwordMatcher = createPasswordMatcher();
+        this.sensitiveMatcher = new OrServerWebExchangeMatcher(passwordMatcher, createTokenMatcher());
     }
 
+    // 读取必填表单字段，缺失时拒绝请求
     private static String requiredFormValue(MultiValueMap<String, String> form, String name) {
         var value = form.getFirst(name);
         if (!StringUtils.hasText(value)) {
@@ -62,13 +66,18 @@ class SudoModeWebFilter implements WebFilter {
         return value;
     }
 
-    private static ServerWebExchangeMatcher createSensitiveMatcher() {
+    // 定义需要安全确认的改密与令牌接口
+    private static ServerWebExchangeMatcher createPasswordMatcher() {
+        return pathMatchers(
+                HttpMethod.PUT,
+                ApiGroups.API_PREFIX + "/users/-/password",
+                ApiGroups.API_PREFIX + "/users/*/password",
+                ApiGroups.API_PREFIX + "/users/-/self/password");
+    }
+
+    // 定义必须完成安全确认的令牌管理接口
+    private static ServerWebExchangeMatcher createTokenMatcher() {
         return new OrServerWebExchangeMatcher(
-                pathMatchers(
-                        HttpMethod.PUT,
-                        ApiGroups.API_PREFIX + "/users/-/password",
-                        ApiGroups.API_PREFIX + "/users/*/password",
-                        ApiGroups.API_PREFIX + "/users/-/self/password"),
                 pathMatchers(
                         HttpMethod.POST,
                         ApiGroups.API_PREFIX + "/personalaccesstokens"),
@@ -81,6 +90,7 @@ class SudoModeWebFilter implements WebFilter {
                         ApiGroups.API_PREFIX + "/personalaccesstokens/*/actions/restoration"));
     }
 
+    // 拦截安全确认协议并对敏感操作强制执行
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         return sudoProtocolMatcher.matches(exchange).flatMap(sudoProtocol -> {
@@ -91,11 +101,16 @@ class SudoModeWebFilter implements WebFilter {
                 if (!sensitive.isMatch()) {
                     return chain.filter(exchange);
                 }
-                return enforceSudo(exchange).then(Mono.defer(() -> chain.filter(exchange)));
+                // 改密接口允许无验证方式的用户设置初始密码，令牌接口必须完成确认。
+                return passwordMatcher
+                        .matches(exchange)
+                        .flatMap(passwordPath -> enforceSudo(exchange, passwordPath.isMatch())
+                                .then(Mono.defer(() -> chain.filter(exchange))));
             });
         });
     }
 
+    // 将安全确认请求分发给内部路由处理
     private Mono<Void> handleSudoProtocol(ServerWebExchange exchange) {
         var request = ServerRequest.create(exchange, messageReaders);
         return sudoRoutes
@@ -104,12 +119,14 @@ class SudoModeWebFilter implements WebFilter {
                 .flatMap(response -> response.writeTo(exchange, responseContext));
     }
 
+    // 返回当前会话的安全确认状态
     private Mono<ServerResponse> getStatus(ServerRequest request) {
         return sudoChallenges
                 .status(request.exchange())
                 .flatMap(status -> ServerResponse.ok().bodyValue(status));
     }
 
+    // 读取验证方式并触发验证码发送
     private Mono<ServerResponse> sendCode(ServerRequest request) {
         return request.formData()
                 .map(form -> requiredFormValue(form, "method"))
@@ -117,6 +134,7 @@ class SudoModeWebFilter implements WebFilter {
                 .then(ServerResponse.noContent().build());
     }
 
+    // 读取必要参数并完成安全确认
     private Mono<ServerResponse> confirm(ServerRequest request) {
         return request.formData()
                 .flatMap(form -> {
@@ -127,12 +145,14 @@ class SudoModeWebFilter implements WebFilter {
                 .then(ServerResponse.noContent().build());
     }
 
-    private Mono<Void> enforceSudo(ServerWebExchange exchange) {
+    // 对已认证用户校验安全确认是否有效
+    private Mono<Void> enforceSudo(ServerWebExchange exchange, boolean allowWithoutMethods) {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 // 令牌认证同样需要安全确认，避免持令牌绕过 sudo 直接改密或管理令牌
                 .filter(authentication -> authentication.isAuthenticated()
                         && !(authentication instanceof AnonymousAuthenticationToken))
-                .flatMap(auth -> sudoChallenges.requireSudo(exchange, auth.getName()));
+                .flatMap(auth ->
+                        sudoChallenges.requireSudo(exchange, auth.getName(), allowWithoutMethods));
     }
 }

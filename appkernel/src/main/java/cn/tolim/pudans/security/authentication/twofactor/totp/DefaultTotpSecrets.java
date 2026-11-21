@@ -48,6 +48,7 @@ public class DefaultTotpSecrets implements TotpSecrets {
 
     private final BytesEncryptor encryptor;
 
+    // 优先使用外部密钥，否则加载或创建设备本地密钥库。
     public DefaultTotpSecrets(PudansProperties properties) {
         var options = properties.getSecurity().getTotp();
         if (StringUtils.hasText(options.getKey())) {
@@ -58,6 +59,7 @@ public class DefaultTotpSecrets implements TotpSecrets {
         }
     }
 
+    // 校验外部 AES 密钥格式，配置错误时在启动阶段失败。
     private static BytesEncryptor fromExternalKey(String encodedKey) {
         final byte[] key;
         try {
@@ -72,6 +74,7 @@ public class DefaultTotpSecrets implements TotpSecrets {
         return encryptorOf(new SecretKeySpec(key, "AES"));
     }
 
+    // 复用已有密钥库，条目缺失或无效时生成新密钥并原子落盘。
     private BytesEncryptor loadOrCreateEncryptor(Path keysRoot, String configuredPassword) {
         try {
             Files.createDirectories(keysRoot);
@@ -111,6 +114,7 @@ public class DefaultTotpSecrets implements TotpSecrets {
         }
     }
 
+    // 用配置密码，否则生成并持久化随机的密钥库密码。
     private static char[] resolvePassword(String configuredPassword, Path passwordFile) throws IOException {
         if (StringUtils.hasText(configuredPassword)) {
             return configuredPassword.toCharArray();
@@ -128,16 +132,19 @@ public class DefaultTotpSecrets implements TotpSecrets {
         return Files.readString(passwordFile).trim().toCharArray();
     }
 
+    // 以密码保护方式写入 AES 密钥条目，供后续读取。
     private static void storeEntry(KeyStore keyStore, SecretKey key, char[] password) throws KeyStoreException {
         keyStore.setEntry(ALIAS, new KeyStore.SecretKeyEntry(key), new KeyStore.PasswordProtection(password));
     }
 
+    // 生成 256 位 AES 密钥，作为 TOTP 密钥的加密根密钥。
     private static SecretKey generateKey() throws NoSuchAlgorithmException {
         var generator = KeyGenerator.getInstance("AES");
         generator.init(KEY_SIZE_BITS);
         return generator.generateKey();
     }
 
+    // 先写临时文件再原子替换，避免密钥库写入中途损坏。
     private static void writeAtomically(Path target, KeyStore keyStore, char[] password)
             throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException {
         var directory = target.getParent();
@@ -153,6 +160,7 @@ public class DefaultTotpSecrets implements TotpSecrets {
         }
     }
 
+    // 尽力限制为仅属主可读写，平台不支持时降级放行。
     private static void restrictPermissions(Path path) {
         try {
             Files.setPosixFilePermissions(path, PosixFilePermissions.fromString("rw-------"));
@@ -161,11 +169,13 @@ public class DefaultTotpSecrets implements TotpSecrets {
         }
     }
 
+    // 统一使用 GCM 模式加密，保证密文完整性与随机性。
     private static BytesEncryptor encryptorOf(SecretKey secretKey) {
         return new AesBytesEncryptor(
                 secretKey, KeyGenerators.secureRandom(32), AesBytesEncryptor.CipherAlgorithm.GCM);
     }
 
+    // 在允许的时间步偏差内匹配验证码，命中时返回对应步长。
     @Override
     public Long matchStep(String rawSecret, int code, long nowMillis) {
         try {
@@ -186,16 +196,19 @@ public class DefaultTotpSecrets implements TotpSecrets {
         }
     }
 
+    // 生成 32 位 Base32 密钥，供认证器应用绑定。
     @Override
     public String generateTotpSecret() {
         return generateBase32Secret(32);
     }
 
+    // 以十六进制输出密文，便于安全地存入扩展字段。
     @Override
     public String encryptSecret(String rawSecret) {
         return new String(Hex.encode(encryptor.encrypt(rawSecret.getBytes())));
     }
 
+    // 还原明文密钥，仅供服务端校验时短暂使用。
     @Override
     public String decryptSecret(String encryptedSecret) {
         return new String(encryptor.decrypt(Hex.decode(encryptedSecret)));

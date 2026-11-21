@@ -14,6 +14,7 @@ public class CaptchaChallengeStore {
 
     private final ReactiveStringRedisTemplate redisTemplate;
 
+    // 按挑战标识保存答案并设置过期时间
     public Mono<Void> save(String challengeId, String answer, Duration ttl) {
         return redisTemplate
                 .opsForValue()

@@ -28,11 +28,13 @@ public class HashIds {
 
     private final AtomicReference<String> salt = new AtomicReference<>(DEFAULT_SALT);
 
+    // 扩展初始化后刷新哈希盐值
     @EventListener
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
         refreshSalt();
     }
 
+    // 仅当服务端配置变化时刷新盐值
     @EventListener
     void onParameterSettingChanged(ParameterSettingChangedEvent event) {
         if (!Objects.equals(event.getOldData().get("server"), event.getNewData().get("server"))) {
@@ -40,16 +42,19 @@ public class HashIds {
         }
     }
 
+    // 异步读取最新盐值，失败时保留旧值
     void refreshSalt() {
         parameterGroups.getServer().subscribe(
                 server -> applySalt(server.getHashIdSalt()),
                 error -> log.warn("无法读取哈希 ID 盐值，保留之前的盐值", error));
     }
 
+    // 空白盐值回退到默认值
     void applySalt(String value) {
         salt.set(StringUtils.hasText(value) ? value : DEFAULT_SALT);
     }
 
+    // 用当前盐值生成稳定的短哈希标识
     public String encode(String value) {
         if (value == null) {
             return null;

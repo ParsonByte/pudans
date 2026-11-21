@@ -97,6 +97,17 @@ class OutboundRequestValidatorTest {
                 .isFalse();
     }
 
+    // 数字、十六进制和带前导零的点分主机同样按 IP 字面量处理。
+    @Test
+    void numericHostVariantsAreClassifiedAsLiterals() {
+        assertThat(OutboundRequestValidator.isIpLiteral("2130706433")).isTrue();
+        assertThat(OutboundRequestValidator.isIpLiteral("0x7f000001")).isTrue();
+        assertThat(OutboundRequestValidator.isIpLiteral("0177.0.0.1")).isTrue();
+        assertThat(OutboundRequestValidator.isIpLiteral("example.com")).isFalse();
+        assertThat(OutboundRequestValidator.isBlockedLiteral("2130706433")).isTrue();
+        assertThat(OutboundRequestValidator.isBlockedLiteral("0177.0.0.1")).isTrue();
+    }
+
     @Test
     void nonHttpSchemeIsRejected() {
         assertThatThrownBy(() -> validator.validate("ftp://example.com/hook"))

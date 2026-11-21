@@ -34,6 +34,7 @@ class ParameterSettingReconciler implements Reconciler<Reconciler.Request> {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    // 检测到参数变更时更新快照并发布事件。
     @Override
     public Result reconcile(Request request) {
         Assert.state(
@@ -58,6 +59,7 @@ class ParameterSettingReconciler implements Reconciler<Reconciler.Request> {
         return null;
     }
 
+    // 只协调名为参数设置的系统配置资源。
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         ExtensionMatcher matcher =
@@ -73,6 +75,7 @@ class ParameterSettingReconciler implements Reconciler<Reconciler.Request> {
                 .build();
     }
 
+    // 合并默认值后构造变更事件，保证监听方看到完整配置。
     private ParameterSettingChangedEvent computeChangedEvent(
             ConfigMap configMap, @Nullable Map<String, String> oldData) {
         return client.fetch(ConfigMap.class, ParameterSetting.PARAMETER_SETTINGS_DEFAULT)

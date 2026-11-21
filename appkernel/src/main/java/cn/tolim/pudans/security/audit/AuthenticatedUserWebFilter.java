@@ -17,6 +17,7 @@ public class AuthenticatedUserWebFilter implements WebFilter, Ordered {
 
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
+    // 把当前已认证用户写入请求属性供审计使用
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         return ReactiveSecurityContextHolder.getContext()
@@ -27,6 +28,7 @@ public class AuthenticatedUserWebFilter implements WebFilter, Ordered {
                 .then(chain.filter(exchange));
     }
 
+    // 记录用户名及令牌中的代持与提权信息
     private void capture(ServerWebExchange exchange, Authentication authentication) {
         exchange.getAttributes().put(AuditLog.USERNAME_ATTRIBUTE, authentication.getName());
         if (authentication instanceof JwtAuthenticationToken jwtAuthentication) {
@@ -41,6 +43,7 @@ public class AuthenticatedUserWebFilter implements WebFilter, Ordered {
         }
     }
 
+    // 先于业务过滤器执行，确保审计属性可用
     @Override
     public int getOrder() {
         return Ordered.HIGHEST_PRECEDENCE;

@@ -15,10 +15,12 @@ public class WebhookEventBus {
 
     private final Object emitLock = new Object();
 
+    // 暴露事件流供分发器订阅。
     public Flux<WebhookEvent> events() {
         return sink.asFlux();
     }
 
+    // 发布事件，缓冲区满时记录告警。
     public void emit(WebhookEvent event) {
         Sinks.EmitResult result;
         synchronized (emitLock) {
@@ -29,6 +31,7 @@ public class WebhookEventBus {
         }
     }
 
+    // 结束事件流，通知订阅者不再有新事件。
     public void complete() {
         sink.tryEmitComplete();
     }

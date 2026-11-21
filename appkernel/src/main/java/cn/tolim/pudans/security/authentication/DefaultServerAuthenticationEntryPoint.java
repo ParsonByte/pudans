@@ -27,10 +27,12 @@ public class DefaultServerAuthenticationEntryPoint implements ServerAuthenticati
 
     private final ServerResponse.Context context;
 
+    // 注入响应写入上下文，用于输出问题详情。
     public DefaultServerAuthenticationEntryPoint(ServerResponse.Context context) {
         this.context = context;
     }
 
+    // 区分 XHR 与普通请求，分别返回 401 状态或问题详情。
     @Override
     public Mono<Void> commence(ServerWebExchange exchange, AuthenticationException ex) {
         return xhrMatcher

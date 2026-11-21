@@ -5,7 +5,7 @@ import static org.springframework.security.web.server.util.matcher.ServerWebExch
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.infra.contract.AnonymousUserConst;
 import cn.tolim.pudans.security.contract.authentication.LoginCipher;
-import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.audit.AuthenticatedUserWebFilter;
@@ -37,6 +37,7 @@ import org.springframework.security.web.server.util.matcher.NegatedServerWebExch
 @RequiredArgsConstructor
 public class WebServerSecurityConfig {
 
+    // 组装匿名身份、安全上下文、响应头与请求缓存策略。
     @Bean
     SecurityWebFilterChain filterChain(
             ServerHttpSecurity http,
@@ -84,29 +85,33 @@ public class WebServerSecurityConfig {
         return http.build();
     }
 
+    // 使用自定义请求缓存保留登录前访问地址。
     @Bean
     ServerRequestCache serverRequestCache() {
         return new PudansServerRequestCache();
     }
 
+    // 将安全上下文保存在 Web 会话中。
     @Bean
     ServerSecurityContextRepository securityContextRepository() {
         return new WebSessionServerSecurityContextRepository();
     }
 
+    // 按配置决定是否启用 TOTP 二次验证。
     @Bean
     UserDetailsLoader userDetailsService(
             Accounts accounts,
-            Groups groups,
+            UserRoles userRoles,
             PudansProperties pudansProperties,
             SecurityParameters securitySettings) {
-        var userDetailService = new UserDetailsLoader(accounts, groups);
+        var userDetailService = new UserDetailsLoader(accounts, userRoles);
         userDetailService.setTwoFactorAuthEnabled(() ->
                 !pudansProperties.getSecurity().getTwoFactorAuth().isDisabled()
                         && securitySettings.isTotpEnabled());
         return userDetailService;
     }
 
+    // 暴露登录加密所需的公钥路由。
     @Bean
     org.springframework.web.reactive.function.server.RouterFunction<
             org.springframework.web.reactive.function.server.ServerResponse>
@@ -114,6 +119,7 @@ public class WebServerSecurityConfig {
         return new PublicKeyRouteBuilder(loginCipher).build();
     }
 
+    // 使用工作目录下的密钥实现 RSA 登录加密。
     @Bean
     LoginCipher loginCipher(PudansProperties pudansProperties) {
         return new RsaLoginCipher(pudansProperties.getWorkDir().resolve("keys"));

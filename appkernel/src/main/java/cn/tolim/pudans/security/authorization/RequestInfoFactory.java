@@ -21,10 +21,12 @@ public class RequestInfoFactory {
 
     final Set<String> specialVerbs;
 
+    // 默认补充代理与监听两个特殊动作
     public RequestInfoFactory(Set<String> apiPrefixes, Set<String> grouplessApiPrefixes) {
         this(apiPrefixes, grouplessApiPrefixes, Set.of("proxy", "watch"));
     }
 
+    // 保存 API 前缀与特殊动作配置
     public RequestInfoFactory(Set<String> apiPrefixes, Set<String> grouplessApiPrefixes, Set<String> specialVerbs) {
         this.apiPrefixes = apiPrefixes;
         this.grouplessApiPrefixes = grouplessApiPrefixes;
@@ -32,6 +34,7 @@ public class RequestInfoFactory {
     }
 
 
+    // 把请求路径解析为规则匹配所需信息
     public RequestInfo newRequestInfo(ServerHttpRequest request) {
 
         PathContainer path = request.getPath().pathWithinApplication();
@@ -168,6 +171,7 @@ public class RequestInfoFactory {
         return requestInfo;
     }
 
+    // 去除首尾斜杠后按路径段拆分
     private String[] splitPath(String path) {
         path = StringUtils.strip(path, "/");
         if (StringUtils.isEmpty(path)) {

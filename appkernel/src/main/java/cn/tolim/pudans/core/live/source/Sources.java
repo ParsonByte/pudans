@@ -46,6 +46,7 @@ public class Sources {
 
     private final LiveProperties properties;
 
+    // 校验链接与策略并解析房间后创建直播源
     public Mono<LiveSource> create(
             String roomUrl,
             String alias,
@@ -79,6 +80,7 @@ public class Sources {
                 });
     }
 
+    // 手动解析源并写回在线、离线或错误状态
     public Mono<LiveSource> resolve(String name, boolean force) {
         return client.fetch(LiveSource.class, name)
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_SOURCE_NOT_FOUND.exception()))
@@ -96,6 +98,7 @@ public class Sources {
                 });
     }
 
+    // 启停源并同步注册表与关联录制
     public Mono<LiveSource> setEnabled(String name, boolean enabled) {
         return client.fetch(LiveSource.class, name)
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_SOURCE_NOT_FOUND.exception()))
@@ -120,6 +123,7 @@ public class Sources {
                 });
     }
 
+    // 先停止关联录制再删除直播源
     public Mono<LiveSource> delete(String name) {
         return client.fetch(LiveSource.class, name)
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_SOURCE_NOT_FOUND.exception()))
@@ -129,6 +133,7 @@ public class Sources {
                 });
     }
 
+    // 状态与策略校验通过后立即发起一次录制
     public Mono<LiveRecording> recordOnce(String name) {
         return client.fetch(LiveSource.class, name)
                 .switchIfEmpty(Mono.error(LiveErrorCode.LIVE_SOURCE_NOT_FOUND.exception()))
@@ -166,22 +171,27 @@ public class Sources {
                 });
     }
 
+    // 转发在线状态写回
     public Mono<LiveSource> applyLive(String name, LiveRoomInfo info) {
         return sourceStatus.applyLive(name, info);
     }
 
+    // 转发离线状态写回
     public Mono<LiveSource> applyOffline(String name, String message) {
         return sourceStatus.applyOffline(name, message);
     }
 
+    // 转发解析错误状态写回
     public Mono<LiveSource> applyError(String name, String code, String message) {
         return sourceStatus.applyError(name, code, message);
     }
 
+    // 转发录制开始状态写回
     public Mono<LiveSource> markRecording(String name, String recordingName) {
         return sourceStatus.markRecording(name, recordingName);
     }
 
+    // 解析链接返回预览结果，不修改任何资源
     public Mono<LiveSourceHealth> preview(String roomUrl) {
         return Mono.fromCallable(() -> validator.parseRoomUrl(roomUrl))
                 .subscribeOn(Schedulers.boundedElastic())
@@ -193,6 +203,7 @@ public class Sources {
                 });
     }
 
+    // 写在线状态后启动手动录制，失败回写源
     private Mono<LiveRecording> startManual(String name, LiveRoomInfo info) {
         return sourceStatus
                 .applyLive(name, info)
@@ -214,6 +225,7 @@ public class Sources {
                                 .thenReturn(recording));
     }
 
+    // 停止该源当前录制，失败只告警
     private Mono<Void> stopCurrentRecording(LiveSource source) {
         var recording = source.getStatus().getCurrentRecording();
         if (!StringUtils.hasText(recording)) {
@@ -228,6 +240,7 @@ public class Sources {
                 .then();
     }
 
+    // 构造并创建直播源，重名映射为重复错误
     private Mono<LiveSource> createSource(
             String name,
             cn.tolim.pudans.contract.live.LivePlatform platform,

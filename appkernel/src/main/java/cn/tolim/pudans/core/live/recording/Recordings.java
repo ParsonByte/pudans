@@ -82,10 +82,14 @@ public class Recordings {
 
     private final RoomResolver roomResolver;
 
+    private final LiveRecordingLocks recordingLocks;
+
+    // 不带重试来源的启动重载
     public Mono<LiveRecording> start(LiveSource source, LiveRoomInfo info, boolean auto, String requestedBy) {
         return start(source, info, auto, requestedBy, null);
     }
 
+    // 校验源与房间信息后创建录制并启动任务
     public Mono<LiveRecording> start(
             LiveSource source, LiveRoomInfo info, boolean auto, String requestedBy, String retryOf) {
         if (source == null || source.getMetadata() == null || !StringUtils.hasText(source.getMetadata().getName())) {
@@ -101,6 +105,18 @@ public class Recordings {
             return Mono.error(LIVE_ROOM_OFFLINE.exception());
         }
         var sourceName = source.getMetadata().getName();
+        return recordingLocks.withLock(sourceName, Mono.defer(() -> startLocked(
+                source, info, auto, requestedBy, retryOf, sourceName)));
+    }
+
+    // 持锁后再次检查源状态并创建录制，避免并发重复启动。
+    private Mono<LiveRecording> startLocked(
+            LiveSource source,
+            LiveRoomInfo info,
+            boolean auto,
+            String requestedBy,
+            String retryOf,
+            String sourceName) {
         var currentRecording = source.getStatus() == null ? null : source.getStatus().getCurrentRecording();
         if (StringUtils.hasText(currentRecording) && registry.isActive(currentRecording)) {
             return Mono.error(LIVE_RECORDING_ACTIVE.exception());
@@ -114,6 +130,7 @@ public class Recordings {
         });
     }
 
+    // 读取最新录制后交给录制器停止
     public Mono<LiveRecording> stop(String name, String requestedBy) {
         return recordingStatus.findRequired(name).flatMap(recording -> {
             log.debug("停止录制 [{}] by {}", name, requestedBy);
@@ -121,10 +138,12 @@ public class Recordings {
         });
     }
 
+    // 查询录制记录，不存在返回空
     public Mono<LiveRecording> find(String name) {
         return recordingStatus.find(name);
     }
 
+    // 列出所有活动状态的录制
     public Flux<LiveRecording> active() {
         var options = ListOptions.builder()
                 .andQuery(in("status.state", ACTIVE_STATES))
@@ -132,6 +151,7 @@ public class Recordings {
         return client.listAll(LiveRecording.class, options, defaultSort());
     }
 
+    // 按失败状态与本地数据选择续传或重新拉流
     public Mono<LiveRecordingRetry> retry(String name, String mode, String requestedBy) {
         return recordingStatus.findRequired(name).flatMap(previous -> {
             var state = previous.getStatus() == null ? null : previous.getStatus().getState();
@@ -156,6 +176,7 @@ public class Recordings {
         });
     }
 
+    // 无本地数据不能续传，否则上传后补齐完成状态
     private Mono<LiveRecording> resume(LiveRecording previous, boolean hasLocal) {
         if (!hasLocal) {
             return Mono.error(LIVE_RECORDING_NOT_READY.exception());
@@ -163,6 +184,7 @@ public class Recordings {
         return liveRecorder.resumeUpload(previous).flatMap(this::completeIfUploaded);
     }
 
+    // 重新解析房间并基于原源创建新录制
     private Mono<LiveRecording> restart(LiveRecording previous, String requestedBy) {
         var sourceName = previous.getSpec().getSourceName();
         return client
@@ -185,6 +207,7 @@ public class Recordings {
                 });
     }
 
+    // 空模式按本地数据推导，非法模式返回空
     private String modeOf(String mode, boolean hasLocal) {
         if (!StringUtils.hasText(mode)) {
             return hasLocal ? MODE_UPLOAD : MODE_STREAM;
@@ -196,6 +219,7 @@ public class Recordings {
         return null;
     }
 
+    // 所有成品已上传时补齐统计并标记完成
     private Mono<LiveRecording> completeIfUploaded(LiveRecording recording) {
         var parts = recording.getStatus().getParts();
         if (parts.isEmpty()) {
@@ -226,6 +250,7 @@ public class Recordings {
                 .flatMap(updated -> recordingStatus.transition(name, LiveRecordingState.COMPLETED, "续传完成"));
     }
 
+    // 回写源当前录制，冲突重试后失败只告警
     private Mono<LiveRecording> markSourceRecording(String sourceName, LiveRecording recording) {
         var recordingName = recording.getMetadata().getName();
         if (recording.getStatus().getState() == LiveRecordingState.FAILED) {
@@ -253,6 +278,7 @@ public class Recordings {
                 .thenReturn(recording);
     }
 
+    // 从源与房间信息构造录制资源
     private LiveRecording build(
             LiveSource source, LiveRoomInfo info, boolean auto, String requestedBy, String retryOf) {
         var recording = new LiveRecording();
@@ -276,6 +302,7 @@ public class Recordings {
         return recording;
     }
 
+    // 录制名带源名、UTC 时间与随机后缀避免冲突
     private String recordingName(String sourceName) {
         var suffix = new StringBuilder(NAME_RANDOM_LENGTH);
         for (int i = 0; i < NAME_RANDOM_LENGTH; i++) {

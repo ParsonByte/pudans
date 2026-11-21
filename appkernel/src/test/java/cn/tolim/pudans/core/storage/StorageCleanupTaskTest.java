@@ -1,11 +1,13 @@
 package cn.tolim.pudans.core.storage;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -42,6 +44,17 @@ class StorageCleanupTaskTest {
 
         verify(uploads).abort("upload-1");
         verify(storageTransfer).purge("trash-1");
+    }
+
+    @Test
+    void sweepsLocalArtifactsAgainstActiveUploads() {
+        var task = new StorageCleanupTask(fileRecords, uploads, storageTransfer, new PudansProperties());
+        when(fileRecords.listUploadingNames()).thenReturn(Flux.just("upload-1"));
+        when(uploads.cleanupLocalArtifacts(anySet(), any(Instant.class))).thenReturn(Mono.empty());
+
+        task.sweepLocalArtifacts().block();
+
+        verify(uploads).cleanupLocalArtifacts(eq(Set.of("upload-1")), any(Instant.class));
     }
 
     private static StorageFile file(String name) {

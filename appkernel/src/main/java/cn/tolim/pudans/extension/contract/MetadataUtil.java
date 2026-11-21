@@ -11,6 +11,7 @@ public enum MetadataUtil {
     public static final String HIDDEN_LABEL = "pudans.tolim.cn/hidden";
 
 
+    // 确保标签映射可写，缺失时创建空映射。
     public static Map<String, String> nullSafeLabels(AbstractExtension extension) {
         Assert.notNull(extension, "扩展不能为 null。");
         Assert.notNull(extension.getMetadata(), "扩展的 metadata 不能为 null。");
@@ -23,6 +24,7 @@ public enum MetadataUtil {
     }
 
 
+    // 确保注解映射可写，缺失时创建空映射。
     public static Map<String, String> nullSafeAnnotations(AbstractExtension extension) {
         Assert.notNull(extension, "扩展不能为 null。");
         Assert.notNull(extension.getMetadata(), "扩展的 metadata 不能为 null。");

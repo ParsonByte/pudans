@@ -20,6 +20,7 @@ class ExtensionConfigMaps implements ConfigMaps {
 
     private final ReactiveExtensionClient client;
 
+    // 并发冲突时退避重试，不存在则创建
     @Override
     public Mono<Void> upsertConfig(String configMapName, ObjectNode configJsonData) {
         Assert.notNull(configMapName, "ConfigMap 名称不能为空");
@@ -41,6 +42,7 @@ class ExtensionConfigMaps implements ConfigMaps {
                 .then();
     }
 
+    // 把持久化 ConfigMap 转换为 JSON 视图
     @Override
     public Mono<ObjectNode> fetchConfig(String configMapName) {
         return client.fetch(ConfigMap.class, configMapName).map(SettingUtils::settingConfigToJson);

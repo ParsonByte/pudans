@@ -18,6 +18,7 @@ public class PermissionCatalogEndpoint implements CustomEndpoint {
 
     private final PermissionDirectory permissionDirectory;
 
+    // 注册权限目录查询路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "PermissionCatalogV1alpha1";
@@ -30,6 +31,7 @@ public class PermissionCatalogEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 返回由角色模板构建的权限目录。
     private Mono<ServerResponse> catalog(ServerRequest request) {
         return permissionDirectory
                 .catalog()

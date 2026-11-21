@@ -17,30 +17,36 @@ class TotpSudoVerificationProvider implements SudoVerificationProvider {
 
     private final TotpConsumptions totpConsumptions;
 
+    // 注入动态口令消费校验组件
     TotpSudoVerificationProvider(TotpConsumptions totpConsumptions) {
         this.totpConsumptions = totpConsumptions;
     }
 
+    // 使用稳定的动态口令方式名
     @Override
     public String method() {
         return METHOD;
     }
 
+    // 动态口令由本地生成，无需发送
     @Override
     public boolean canSendCode() {
         return false;
     }
 
+    // 仅已绑定动态口令的账户可用
     @Override
     public Mono<Boolean> supports(User user) {
         return Mono.just(StringUtils.isNotBlank(user.getSpec().getTotpEncryptedSecret()));
     }
 
+    // 动态口令方式不支持发送验证码
     @Override
     public Mono<Void> sendCode(User user) {
         return Mono.error(new ServerWebInputException("TOTP 无需发送验证码"));
     }
 
+    // 校验动态口令并拒绝重复使用
     @Override
     public Mono<Void> verify(User user, String code) {
         var encryptedSecret = user.getSpec().getTotpEncryptedSecret();

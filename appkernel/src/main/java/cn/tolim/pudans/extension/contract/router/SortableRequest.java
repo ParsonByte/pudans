@@ -26,16 +26,19 @@ public class SortableRequest extends IListRequest.QueryListRequest {
 
     protected final ServerWebExchange exchange;
 
+    // 从请求交换中提取查询参数。
     public SortableRequest(ServerWebExchange exchange) {
         super(exchange.getRequest().getQueryParams());
         this.exchange = exchange;
     }
 
+    // 在通用参数上追加排序参数。
     public static void buildParameters(Builder builder) {
         IListRequest.buildParameters(builder);
         builder.parameter(QueryParamBuildUtil.sortParameter());
     }
 
+    // 解析请求排序并追加默认排序。
     @ArraySchema(
             uniqueItems = true,
             arraySchema =
@@ -52,14 +55,17 @@ public class SortableRequest extends IListRequest.QueryListRequest {
         return SortResolver.defaultInstance.resolve(exchange).and(defaultSort());
     }
 
+    // 把选择器参数转换为列表选项。
     public ListOptions toListOptions() {
         return labelAndFieldSelectorToListOptions(getLabelSelector(), getFieldSelector());
     }
 
+    // 按页码、页大小与排序构造分页请求。
     public PageRequest toPageRequest() {
         return PageRequestImpl.of(getPage(), getSize(), getSort());
     }
 
+    // 按键路径与方向构造扩展比较器。
     public <T extends Extension> Comparator<T> toComparator() {
         var sort = getSort();
         var fallbackComparator = Stream.<Comparator<T>>of(compareCreationTimestamp(false), compareName(true));

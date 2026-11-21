@@ -26,6 +26,7 @@ public class ParameterSetting {
     public static final String LEGACY_PARAMETER_SETTINGS = "system";
     public static final String MIGRATION_ANNOTATION = "pudans.tolim.cn/migrated-from";
 
+    // 优先使用类型转换，无法转换时按 JSON 解析。
     public static <T> @Nullable T get(Map<String, String> data, String key, Class<T> type) {
         var valueString = data.get(key);
         if (valueString == null) {
@@ -478,11 +479,13 @@ public class ParameterSetting {
 
         private List<String> resourceTypes;
 
+        // 白名单模式只记录匹配的审计项。
         @JsonIgnore
         public boolean isWhitelist() {
             return "WHITELIST".equalsIgnoreCase(mode);
         }
 
+        // 黑名单模式跳过匹配的审计项。
         @JsonIgnore
         public boolean isBlacklist() {
             return "BLACKLIST".equalsIgnoreCase(mode);

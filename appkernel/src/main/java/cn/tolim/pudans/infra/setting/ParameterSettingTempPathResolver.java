@@ -19,6 +19,7 @@ public class ParameterSettingTempPathResolver {
 
     private final PudansProperties pudansProperties;
 
+    // 读取服务器配置中的临时路径，缺失时用默认值。
     public Mono<Path> resolve() {
         return parameterGroups
                 .getServer()
@@ -26,6 +27,7 @@ public class ParameterSettingTempPathResolver {
                 .defaultIfEmpty(resolve(DEFAULT_TEMP_PATH));
     }
 
+    // 将相对路径限制在工作目录内，越界时回退默认目录。
     public Path resolve(String tempPath) {
         var relative = StringUtils.hasText(tempPath) ? tempPath : DEFAULT_TEMP_PATH;
         var workDir = pudansProperties.getWorkDir().toAbsolutePath().normalize();

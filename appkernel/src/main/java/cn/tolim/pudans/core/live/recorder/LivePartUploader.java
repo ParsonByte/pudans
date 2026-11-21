@@ -1,6 +1,5 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_RECORDING_NOT_READY;
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STORAGE_FAILED;
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STORAGE_POLICY_INVALID;
 
@@ -71,6 +70,7 @@ public class LivePartUploader {
 
     private final LiveMetrics metrics;
 
+    // 标记上传中，失败写入状态并可重试整个上传
     public Mono<LiveRecording.Part> upload(
             LiveRecording recording, LiveRecording.Part part, Path file, StoragePolicy policy) {
         if (!LiveStoragePolicyResolver.isRecordable(policy)) {
@@ -95,6 +95,7 @@ public class LivePartUploader {
                                 .flatMap(stored -> markUploaded(name, index, stored, file, size))));
     }
 
+    // 小文件单次上传，大文件要求驱动支持分片上传
     private Mono<StorageFile> transfer(
             LiveRecording recording, LiveRecording.Part part, Path file, StoragePolicy policy, long size) {
         var chunkSize = storagePolicyValidator.chunkSize(policy);
@@ -111,6 +112,7 @@ public class LivePartUploader {
         });
     }
 
+    // 初始化分片上传，失败时尽力中止已创建的上传
     private Mono<StorageFile> multipartUpload(
             LiveRecording recording, LiveRecording.Part part, Path file, StoragePolicy policy, long size) {
         return storageTransfer.initiateUpload(uploadRequest(recording, part, policy, size)).flatMap(ticket -> uploadParts(
@@ -149,6 +151,7 @@ public class LivePartUploader {
         }
     }
 
+    // 上传成功后标记成品并删除本地缓存文件
     private Mono<LiveRecording.Part> markUploaded(
             String name, int index, StorageFile stored, Path file, long size) {
         var storageFile = stored.getMetadata().getName();
@@ -162,9 +165,10 @@ public class LivePartUploader {
                 })
                 .flatMap(updated -> Mono.fromRunnable(() -> deleteLocal(file))
                         .subscribeOn(Schedulers.boundedElastic())
-                        .thenReturn(findPart(updated, index)));
+                        .thenReturn(RecordingStatus.findPart(updated, index)));
     }
 
+    // 记录成品失败状态并把错误继续抛给调用方
     private Mono<LiveRecording.Part> uploadFailed(String name, int index, Throwable error) {
         metrics.partUploadFail();
         var code = error instanceof ApiException apiException
@@ -181,6 +185,7 @@ public class LivePartUploader {
                 .then(Mono.error(failure));
     }
 
+    // 构造单次上传请求，流式读取本地成品
     private StorageWriteRequest writeRequest(
             LiveRecording recording, LiveRecording.Part part, Path file, StoragePolicy policy, long size) {
         return new StorageWriteRequest(
@@ -196,6 +201,7 @@ public class LivePartUploader {
                 false);
     }
 
+    // 构造分片上传的初始化请求
     private StorageUploadRequest uploadRequest(
             LiveRecording recording, LiveRecording.Part part, StoragePolicy policy, long size) {
         return new StorageUploadRequest(
@@ -210,18 +216,22 @@ public class LivePartUploader {
                 null);
     }
 
+    // 对象存储来源路径按录制名与成品名生成
     private static String originPath(LiveRecording recording, LiveRecording.Part part) {
         return ORIGIN_PREFIX + recording.getMetadata().getName() + "/" + fileName(part);
     }
 
+    // 原始文件名优先用清单文件名，缺失时回退
     private static String originalName(LiveRecording.Part part) {
         return StringUtils.hasText(part.getFilename()) ? part.getFilename() : fileName(part);
     }
 
+    // 成品固定命名格式，索引补零便于排序
     private static String fileName(LiveRecording.Part part) {
         return String.format("part-%05d.ts", part.getIndex());
     }
 
+    // 附加录制、源与成品元数据供对象检索
     private static Map<String, String> attributes(LiveRecording recording, LiveRecording.Part part) {
         var attributes = new LinkedHashMap<String, String>();
         attributes.put("recording", recording.getMetadata().getName());
@@ -237,6 +247,7 @@ public class LivePartUploader {
         return attributes;
     }
 
+    // 上传重试按配置次数退避，策略错误不重试
     private Retry uploadRetry() {
         var retries = Math.max(properties.getRecorder().getUploadRetries(), 0);
         return Retry.backoff(retries, RETRY_INITIAL_BACKOFF)
@@ -251,18 +262,7 @@ public class LivePartUploader {
                 && LIVE_STORAGE_POLICY_INVALID.name().equals(apiException.getCode());
     }
 
-    private static LiveRecording.Part findPart(LiveRecording recording, int index) {
-        var parts = recording.getStatus() == null ? null : recording.getStatus().getParts();
-        if (parts != null) {
-            for (var candidate : parts) {
-                if (candidate.getIndex() == index) {
-                    return candidate;
-                }
-            }
-        }
-        throw LIVE_RECORDING_NOT_READY.exception();
-    }
-
+    // 错误信息缺失时使用通用存储失败文案
     private static String message(Throwable error) {
         return error.getMessage() == null ? LIVE_STORAGE_FAILED.message() : error.getMessage();
     }
@@ -276,6 +276,7 @@ public class LivePartUploader {
         }
     }
 
+    // 关闭通道失败无需处理，只释放资源
     private static void closeQuietly(FileChannel channel) {
         try {
             channel.close();

@@ -29,14 +29,17 @@ public class FeishuSdkClient {
 
     private final AtomicReference<CachedClient> cachedClient = new AtomicReference<>();
 
+    // 注入安全参数，按当前配置创建飞书客户端。
     public FeishuSdkClient(SecurityParameters securitySettings) {
         this.securitySettings = securitySettings;
     }
 
+    // 使用当前飞书设置获取或创建缓存客户端。
     private Client client(SecurityParameters.FeishuSettings settings) {
         return client(settings.appId(), settings.appSecret());
     }
 
+    // 凭据变化时重建客户端，避免复用失效连接。
     private Client client(String appId, String appSecret) {
         var current = cachedClient.get();
         if (current != null
@@ -52,6 +55,7 @@ public class FeishuSdkClient {
         return client;
     }
 
+    // 调用飞书授权码接口换取用户访问令牌。
     public Mono<Token> exchangeCode(String code) {
         var client = client(securitySettings.feishu());
         return call(() -> {
@@ -74,6 +78,7 @@ public class FeishuSdkClient {
         });
     }
 
+    // 使用用户访问令牌读取其飞书资料。
     public Mono<UserInfo> fetchUserInfo(String accessToken) {
         var client = client(securitySettings.feishu());
         return call(() -> {
@@ -95,15 +100,12 @@ public class FeishuSdkClient {
         });
     }
 
-    public Mono<String> tenantAccessToken() {
-        var settings = securitySettings.feishu();
-        return tenantAccessToken(client(settings), settings.appId(), settings.appSecret());
-    }
-
+    // 用指定应用凭据获取租户访问令牌。
     public Mono<String> tenantAccessToken(String appId, String appSecret) {
         return tenantAccessToken(client(appId, appSecret), appId, appSecret);
     }
 
+    // 调用内部接口换取租户令牌，供连通性测试使用。
     private Mono<String> tenantAccessToken(Client client, String appId, String appSecret) {
         return call(() -> {
             var request = InternalTenantAccessTokenReq.newBuilder()
@@ -117,6 +119,7 @@ public class FeishuSdkClient {
         });
     }
 
+    // 从原始响应解析租户令牌，缺失时抛出异常。
     static String requireTenantAccessToken(InternalTenantAccessTokenResp response) {
         var raw = response.getRawResponse();
         var body = raw == null ? null : UnmarshalRespUtil.unmarshalResp(raw, TenantAccessTokenResp.class);
@@ -126,6 +129,7 @@ public class FeishuSdkClient {
         return body.getTenantAccessToken();
     }
 
+    // 按用户标识前缀选择对应类型查询通讯录。
     public Mono<UserInfo> fetchContactUser(String userId) {
         var client = client(securitySettings.feishu());
         return call(() -> {
@@ -152,6 +156,7 @@ public class FeishuSdkClient {
         });
     }
 
+    // 以指定消息类型向接收方发送消息。
     public Mono<Void> sendMessage(String receiveId, String receiveIdType, String msgType, String content) {
         var client = client(securitySettings.feishu());
         return call(() -> {
@@ -171,10 +176,12 @@ public class FeishuSdkClient {
         }).then();
     }
 
+    // 在弹性线程池执行阻塞的客户端调用。
     private static <T> Mono<T> call(Callable<T> callable) {
         return Mono.fromCallable(callable).subscribeOn(Schedulers.boundedElastic());
     }
 
+    // 拼接错误前缀与飞书返回码和消息。
     private static String failure(String prefix, int code, String message) {
         return prefix + ": " + code + " " + message;
     }
@@ -187,6 +194,7 @@ public class FeishuSdkClient {
             String openId, String unionId, String name, String email, String phone, String avatar) {}
 
     public static class FeishuSdkException extends RuntimeException {
+        // 使用飞书返回的错误描述构造异常。
         public FeishuSdkException(String message) {
             super(message);
         }

@@ -29,6 +29,7 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    // 绑定登录方式与失败处理所需的协作对象。
     public LoginFailureHandler(
             String loginMethod,
             ServerResponse.Context context,
@@ -40,6 +41,7 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
         this.domainEventPublisher = domainEventPublisher;
     }
 
+    // 失败时记录审计属性并发布登录失败事件后输出错误响应。
     @Override
     public Mono<Void> onAuthenticationFailure(WebFilterExchange webFilterExchange, AuthenticationException exception) {
         var exchange = webFilterExchange.getExchange();
@@ -52,6 +54,7 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
                 .then(handleAuthenticationException(exception, exchange));
     }
 
+    // 失败事件携带尝试用户名、登录方式、原因和客户端地址。
     private void publishLoginFailure(ServerWebExchange exchange, AuthenticationException exception) {
         var attempted =
                 (String) exchange.getAttributes().get(LoginAuthenticationConverter.ATTEMPTED_USERNAME_ATTRIBUTE);
@@ -69,12 +72,14 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
                 (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
+    // 限流异常映射为过多请求状态，其余认证异常映射为未授权。
     private Mono<Void> handleAuthenticationException(Throwable exception, ServerWebExchange exchange) {
         var status = exception instanceof TooManyRequestsException ? HttpStatus.TOO_MANY_REQUESTS : UNAUTHORIZED;
         var errorResponse = createErrorResponse(exception, status, exchange);
         return writeErrorResponse(errorResponse, exchange);
     }
 
+    // 以问题详情格式将认证错误写入响应。
     private Mono<Void> writeErrorResponse(ErrorResponse errorResponse, ServerWebExchange exchange) {
         return ServerResponse.status(errorResponse.getStatusCode())
                 .contentType(APPLICATION_JSON)

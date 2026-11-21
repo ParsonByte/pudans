@@ -20,6 +20,7 @@ import org.springframework.security.authentication.AuthenticationTrustResolverIm
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -43,6 +44,7 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
 
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
+    // 注册免密凭据的注册与列表路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "PasskeyV1alpha1";
@@ -65,6 +67,7 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 生成注册挑战与凭据参数
     private Mono<ServerResponse> registrationOptions(ServerRequest request) {
         return currentUsername()
                 .flatMap(accounts::getUser)
@@ -107,6 +110,7 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
                         }));
     }
 
+    // 消费会话挑战并保存免密凭据
     private Mono<ServerResponse> verifyRegistration(ServerRequest request) {
         return currentUsername()
                 .flatMap(username -> request.exchange()
@@ -124,6 +128,7 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
                 .flatMap(connection -> ServerResponse.ok().bodyValue(connection));
     }
 
+    // 列出当前用户的免密设备
     private Mono<ServerResponse> list(ServerRequest request) {
         return currentUsername()
                 .flatMapMany(passkeyService::listPasskeys)
@@ -131,15 +136,18 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
                 .flatMap(connections -> ServerResponse.ok().bodyValue(connections));
     }
 
+    // 要求浏览器会话认证，令牌不能注册持久登录凭据
     private Mono<String> currentUsername() {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 .filter(trustResolver::isAuthenticated)
+                .filter(authentication -> !(authentication instanceof JwtAuthenticationToken))
                 .map(Authentication::getName)
                 .switchIfEmpty(Mono.error(
-                        new ResponseStatusException(HttpStatus.FORBIDDEN, "需要身份认证。")));
+                        new ResponseStatusException(HttpStatus.FORBIDDEN, "需要浏览器会话认证。")));
     }
 
+    // 返回当前免密登录接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

@@ -1,5 +1,7 @@
 package cn.tolim.pudans.core.storage.driver.local;
 
+import cn.tolim.pudans.core.storage.driver.StorageDriverErrors;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -42,21 +44,25 @@ public class LocalStorageDriver implements StorageDriver {
 
     private final Path root;
 
+    // 规范化存储根目录，防止路径逃逸。
     public LocalStorageDriver(StoragePolicy policy, Path root) {
         this.policy = policy;
         this.root = root.toAbsolutePath().normalize();
     }
 
+    // 标识该驱动处理本地存储策略。
     @Override
     public StoragePolicyType type() {
         return StoragePolicyType.LOCAL;
     }
 
+    // 本地存储需要服务端代理下载。
     @Override
     public Set<StorageCapability> capabilities() {
         return Set.of(StorageCapability.RANGE_READ, StorageCapability.PROXY_REQUIRED);
     }
 
+    // 写入临时文件后原子替换目标对象。
     @Override
     public Mono<StorageObject> put(StoragePutRequest request) {
         return Mono.fromCallable(() -> {
@@ -95,6 +101,7 @@ public class LocalStorageDriver implements StorageDriver {
                         .subscribeOn(Schedulers.boundedElastic()));
     }
 
+    // 读取本地文件并支持字节范围请求。
     @Override
     public Mono<StorageReadResult> get(String key, StorageReadOptions options) {
         return Mono.fromCallable(() -> {
@@ -117,9 +124,10 @@ public class LocalStorageDriver implements StorageDriver {
                     return new StorageReadResult(object, start, end, length, body);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
-                .onErrorMap(NoSuchFileException.class, error -> notFound());
+                .onErrorMap(NoSuchFileException.class, error -> StorageDriverErrors.notFound());
     }
 
+    // 查询本地文件元数据。
     @Override
     public Mono<StorageObject> stat(String key) {
         return Mono.fromCallable(() -> {
@@ -127,9 +135,10 @@ public class LocalStorageDriver implements StorageDriver {
                     return stat(target, key);
                 })
                 .subscribeOn(Schedulers.boundedElastic())
-                .onErrorMap(NoSuchFileException.class, error -> notFound());
+                .onErrorMap(NoSuchFileException.class, error -> StorageDriverErrors.notFound());
     }
 
+    // 逐个删除本地文件并忽略缺失对象。
     @Override
     public Mono<Void> delete(Collection<String> keys) {
         return Flux.fromIterable(keys)
@@ -138,11 +147,13 @@ public class LocalStorageDriver implements StorageDriver {
                 .then();
     }
 
+    // 本地存储不提供直链，要求代理下载。
     @Override
     public Mono<StorageSource> source(String key, StorageSourceOptions options) {
         return Mono.just(new StorageSource(null, null, true));
     }
 
+    // 在存储根目录写入探针验证可写性。
     @Override
     public Mono<StorageTestResult> testConnection() {
         return Mono.fromCallable(() -> {
@@ -156,6 +167,7 @@ public class LocalStorageDriver implements StorageDriver {
                         new StorageTestResult(false, "本地存储不可写：" + error.getMessage(), Instant.now())));
     }
 
+    // 解析并校验对象键，阻止目录穿越。
     private Path resolve(String key) {
         if (!StringUtils.hasText(key)) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "storage-key-invalid", "存储路径不能为空。");
@@ -167,15 +179,18 @@ public class LocalStorageDriver implements StorageDriver {
         return target;
     }
 
+    // 读取文件属性构造对象元数据。
     private StorageObject stat(Path target, String key) throws IOException {
         var attributes = Files.readAttributes(target, BasicFileAttributes.class);
         return new StorageObject(key, attributes.size(), attributes.lastModifiedTime().toInstant(), etag(attributes.size(), attributes));
     }
 
+    // 用大小与修改时间生成弱 ETag。
     private static String etag(long size, BasicFileAttributes attributes) {
         return size + "-" + attributes.lastModifiedTime().toMillis();
     }
 
+    // 从指定偏移生成限定长度的数据流。
     private Flux<DataBuffer> readRange(Path path, long start, long length) {
         if (length <= 0) {
             return Flux.empty();
@@ -213,6 +228,7 @@ public class LocalStorageDriver implements StorageDriver {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
+    // 打开文件通道并初始化读取游标。
     private static ReadState openState(Path path, long start, long length) {
         try {
             return new ReadState(FileChannel.open(path, StandardOpenOption.READ), new AtomicLong(start), new AtomicLong(length));
@@ -221,9 +237,6 @@ public class LocalStorageDriver implements StorageDriver {
         }
     }
 
-    private static ApiException notFound() {
-        return new ApiException(HttpStatus.NOT_FOUND, "storage-object-not-found", "文件不存在。");
-    }
 
     private record ReadState(FileChannel channel, AtomicLong position, AtomicLong remaining) {}
 }

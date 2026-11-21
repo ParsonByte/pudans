@@ -13,6 +13,7 @@ public class DefaultSmtpSenderFactory implements SmtpSenderFactory {
 
     private static final int SOCKET_TIMEOUT_MILLIS = 5000;
 
+    // 按邮件设置构建带连接池与超时的发送器。
     @Override
     public JavaMailSender create(ParameterSetting.Mail mail) {
         var sender = new JavaMailSenderImpl();

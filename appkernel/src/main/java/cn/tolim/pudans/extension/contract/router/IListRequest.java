@@ -15,6 +15,7 @@ import org.springframework.util.StringUtils;
 
 public interface IListRequest {
 
+    // 声明列表接口的通用查询参数。
     static void buildParameters(Builder builder) {
         builder.parameter(parameterBuilder()
                         .in(ParameterIn.QUERY)
@@ -42,15 +43,19 @@ public interface IListRequest {
                         .implementationArray(String.class));
     }
 
+    // 返回页码，非正数按第一页处理。
     @Schema(description = "The page number, starts from 1. Values below 1 are treated as 1.")
     Integer getPage();
 
+    // 返回页大小，零表示不限制。
     @Schema(description = "Size of one page. Zero indicates no limit.")
     Integer getSize();
 
+    // 返回标签选择器表达式列表。
     @Schema(description = "Label selector for filtering.")
     List<String> getLabelSelector();
 
+    // 返回字段选择器表达式列表。
     @Schema(description = "Field selector for filtering.")
     List<String> getFieldSelector();
 
@@ -60,10 +65,12 @@ public interface IListRequest {
 
         private final ConversionService conversionService = ApplicationConversionService.getSharedInstance();
 
+        // 包装请求查询参数作为选择器来源。
         public QueryListRequest(MultiValueMap<String, String> queryParams) {
             this.queryParams = queryParams;
         }
 
+        // 读取 page 参数，缺失时返回 0。
         @Override
         public Integer getPage() {
             var page = queryParams.getFirst("page");
@@ -73,6 +80,7 @@ public interface IListRequest {
             return 0;
         }
 
+        // 读取 size 参数，缺失时使用最大页大小。
         @Override
         public Integer getSize() {
             var size = queryParams.getFirst("size");
@@ -82,11 +90,13 @@ public interface IListRequest {
             return PageRequestImpl.MAX_SIZE;
         }
 
+        // 读取全部标签选择器参数。
         @Override
         public List<String> getLabelSelector() {
             return queryParams.getOrDefault("labelSelector", Collections.emptyList());
         }
 
+        // 读取全部字段选择器参数。
         @Override
         public List<String> getFieldSelector() {
             return queryParams.getOrDefault("fieldSelector", Collections.emptyList());

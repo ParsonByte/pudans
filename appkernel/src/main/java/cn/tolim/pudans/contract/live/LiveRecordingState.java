@@ -6,5 +6,10 @@ public enum LiveRecordingState {
     FINALIZING,
     COMPLETED,
     FAILED,
-    CANCELED
+    CANCELED;
+
+    // 排队、录制中与收尾中都属于活动状态。
+    public boolean isActive() {
+        return this == QUEUED || this == RECORDING || this == FINALIZING;
+    }
 }

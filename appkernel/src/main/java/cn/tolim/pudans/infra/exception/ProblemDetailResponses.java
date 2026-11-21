@@ -17,6 +17,7 @@ public final class ProblemDetailResponses {
 
     private ProblemDetailResponses() {}
 
+    // 直接写出问题详情响应，不进行内容协商跳转。
     public static Mono<Void> write(
             ServerWebExchange exchange,
             ServerResponse.Context context,
@@ -29,6 +30,7 @@ public final class ProblemDetailResponses {
                 .flatMap(response -> response.writeTo(exchange, context));
     }
 
+    // 浏览器请求跳转错误页，其他客户端返回问题详情。
     public static Mono<Void> writeOrRedirect(
             ServerWebExchange exchange,
             ServerResponse.Context context,

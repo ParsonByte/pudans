@@ -73,7 +73,6 @@ pudans:
     monitor:
       tick: 5s
       default-interval: 60s
-      min-interval: 30s
       live-interval: 30s
       max-per-tick: 20
       resolve-concurrency: 4
@@ -87,7 +86,6 @@ pudans:
       work-dir: ${pudans.work-dir}/live-recordings
       segment-seconds: 30
       merge:
-        interval: 1h
         max-local-bytes: 6GB
         max-local-segments: 360
         max-pending-parts: 2
@@ -98,7 +96,6 @@ pudans:
       retry-backoff: 1s
       max-retry-backoff: 30s
       retry-jitter: 0.2
-      upload-concurrency: 1
       upload-retries: 3
       finalize-timeout: 5m
       min-free-disk-bytes: 8GB
@@ -110,7 +107,6 @@ pudans:
       batch-size: 100
     alert:
       dedupe: 10m
-      stream-interrupt-threshold: 60s
       rate-limit-threshold: 3
   storage:
     cleanup-interval-seconds: ${PUDANS_STORAGE_CLEANUP_INTERVAL:300}

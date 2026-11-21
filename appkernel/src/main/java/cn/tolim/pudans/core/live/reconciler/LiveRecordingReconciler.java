@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import cn.tolim.pudans.contract.live.LiveRecording;
-import cn.tolim.pudans.contract.live.LiveRecordingState;
 import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.extension.contract.ExtensionClient;
 import cn.tolim.pudans.extension.contract.ExtensionUtil;
@@ -66,6 +65,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
 
     private final LiveAlerts liveAlerts;
 
+    // 补齐 finalizer，删除中的录制等待停止后再清理
     @Override
     public Result reconcile(Reconciler.Request request) {
         var optional = client.fetch(LiveRecording.class, request.name());
@@ -81,7 +81,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
         }
         var name = recording.getMetadata().getName();
         var state = recording.getStatus() == null ? null : recording.getStatus().getState();
-        if (isActive(state)) {
+        if (state != null && state.isActive()) {
             if (registry.isActive(name)) {
                 return stopAndRequeue(name);
             }
@@ -93,11 +93,13 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
         return cleanup(recording);
     }
 
+    // 绑定录制扩展类型到协调器
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new LiveRecording()).build();
     }
 
+    // 请求本实例录制停止，稍后重新入队
     private Result stopAndRequeue(String name) {
         try {
             registry.requestStop(name).block(STOP_TIMEOUT);
@@ -107,6 +109,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
         return Result.requeue(STOP_REQUEUE);
     }
 
+    // 本实例无任务时把该录制标记为录制器失联
     private void markRecorderLost(String name) {
         try {
             recordingStatus.fail(name, LiveErrorCode.LIVE_RECORDER_LOST, "录制器实例已失联").block(LOOKUP_TIMEOUT);
@@ -115,6 +118,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
         }
     }
 
+    // 清理对象与本地文件，全部成功才移除 finalizer
     private Result cleanup(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         try {
@@ -143,6 +147,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
         }
     }
 
+    // 删除该录制的临时文件、成品与工作目录
     private void deleteLocalFiles(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         try {
@@ -156,6 +161,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
         }
     }
 
+    // 累加清理失败次数，超过上限后放慢重试并告警
     private Result recordFailure(String name, RuntimeException error) {
         metrics.cleanupFailed();
         log.warn("直播录制清理失败 [{}]：{}", name, error.getMessage());
@@ -183,6 +189,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
         return Result.requeue(FAILURE_RETRY);
     }
 
+    // 读取已记录的清理失败次数，缺失按零处理
     private int currentAttempts(String name) {
         return client.fetch(LiveRecording.class, name)
                 .map(LiveRecording::getStatus)
@@ -199,12 +206,7 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
         return status.getHeartbeatAt().plus(HEARTBEAT_TIMEOUT).isBefore(Instant.now());
     }
 
-    private static boolean isActive(LiveRecordingState state) {
-        return state == LiveRecordingState.QUEUED
-                || state == LiveRecordingState.RECORDING
-                || state == LiveRecordingState.FINALIZING;
-    }
-
+    // 安全读取成品列表，缺失时返回空列表
     private static List<LiveRecording.Part> parts(LiveRecording recording) {
         var status = recording.getStatus();
         if (status == null || status.getParts() == null) {

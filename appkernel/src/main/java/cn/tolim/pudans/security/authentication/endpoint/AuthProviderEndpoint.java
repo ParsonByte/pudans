@@ -25,11 +25,13 @@ public class AuthProviderEndpoint implements CustomEndpoint {
 
     private final AuthProviders authProviders;
 
+    // 复用统一分组版本，保证接口路径前缀一致
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
+    // 注册认证提供方的列表、启用与禁用路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         final var tag = "AuthProviderV1alpha1";
@@ -70,6 +72,7 @@ public class AuthProviderEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 启用指定提供方并返回更新后的状态
     private Mono<ServerResponse> enableAuthProvider(ServerRequest request) {
         String name = request.pathVariable("name");
         return authProviders
@@ -77,6 +80,7 @@ public class AuthProviderEndpoint implements CustomEndpoint {
                 .flatMap(authProvider -> ServerResponse.ok().bodyValue(authProvider));
     }
 
+    // 停用指定提供方并返回更新后的状态
     private Mono<ServerResponse> disableAuthProvider(ServerRequest request) {
         String name = request.pathVariable("name");
         return authProviders
@@ -84,6 +88,7 @@ public class AuthProviderEndpoint implements CustomEndpoint {
                 .flatMap(authProvider -> ServerResponse.ok().bodyValue(authProvider));
     }
 
+    // 列出全部提供方，供前端登录页选择展示
     Mono<ServerResponse> listAuthProviders(ServerRequest request) {
         return authProviders
                 .listAll()

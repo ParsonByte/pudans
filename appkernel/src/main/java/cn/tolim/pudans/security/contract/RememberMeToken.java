@@ -22,6 +22,8 @@ import org.jspecify.annotations.Nullable;
         singular = "remembermetoken")
 public class RememberMeToken extends AbstractExtension {
 
+    public static final String KIND = "RememberMeToken";
+
 
     @Schema(requiredMode = REQUIRED)
     private Spec spec;

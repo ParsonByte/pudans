@@ -6,6 +6,7 @@ import org.springframework.util.StringUtils;
 
 public record GroupVersion(String group, String version) {
 
+    // 解析 group/version，单段字符串视为核心组。
     public static GroupVersion parseAPIVersion(String apiVersion) {
         Assert.hasText(apiVersion, "API 版本不能为空");
 

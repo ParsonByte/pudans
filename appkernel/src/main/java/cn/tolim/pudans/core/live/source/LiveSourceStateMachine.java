@@ -20,11 +20,13 @@ public class LiveSourceStateMachine {
 
     public record Transition(LiveSourceState from, LiveSourceState to, String reason) {
 
+        // 判断迁移是否真正改变了状态
         public boolean changed() {
             return from != to;
         }
     }
 
+    // 纯函数映射事件到目标状态，未知状态按空闲处理
     public Transition next(LiveSourceState current, Event event) {
         var from = current == null ? LiveSourceState.IDLE : current;
         return switch (event) {

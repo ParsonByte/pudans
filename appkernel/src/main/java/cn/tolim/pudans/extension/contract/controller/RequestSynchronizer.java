@@ -29,6 +29,7 @@ public class RequestSynchronizer implements Synchronizer<Request> {
     @Getter
     private volatile boolean started = false;
 
+    // 保存同步范围与监听器，并推导扩展类型。
     public RequestSynchronizer(
             boolean syncAllOnStart,
             ExtensionClient client,
@@ -42,6 +43,7 @@ public class RequestSynchronizer implements Synchronizer<Request> {
         this.listOptions = listOptions;
     }
 
+    // 先注册监听再分批全量同步，避免漏事件。
     @Override
     public void start() {
         if (isDisposed() || started) {
@@ -71,12 +73,14 @@ public class RequestSynchronizer implements Synchronizer<Request> {
         log.info("请求({})同步器已启动。", type);
     }
 
+    // 标记销毁并释放监听器。
     @Override
     public void dispose() {
         disposed = true;
         watcher.dispose();
     }
 
+    // 返回是否已销毁。
     @Override
     public boolean isDisposed() {
         return this.disposed;

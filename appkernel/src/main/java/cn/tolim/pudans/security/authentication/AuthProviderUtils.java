@@ -8,6 +8,7 @@ public final class AuthProviderUtils {
 
     private AuthProviderUtils() {}
 
+    // 判断提供方是否带特权标记，特权提供方禁止停用。
     public static boolean isPrivileged(AuthProvider authProvider) {
         return BooleanUtils.TRUE.equals(
                 MetadataUtil.nullSafeLabels(authProvider).get(AuthProvider.PRIVILEGED_LABEL));

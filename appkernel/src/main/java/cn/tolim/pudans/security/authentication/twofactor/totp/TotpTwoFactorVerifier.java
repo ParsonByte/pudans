@@ -15,10 +15,12 @@ public class TotpTwoFactorVerifier {
 
     private final TotpConsumptions totpConsumptions;
 
+    // 返回验证器类型标识，用于匹配请求的验证方式。
     public String getType() {
         return TYPE;
     }
 
+    // 解析验证码并委托消费器校验，异常统一按失败处理。
     public Mono<Boolean> verify(User user, String code) {
         var spec = user.getSpec();
         var secret = spec == null ? null : spec.getTotpEncryptedSecret();

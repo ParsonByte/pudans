@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.storage.endpoint;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -10,14 +11,18 @@ import static org.mockito.Mockito.when;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
@@ -28,6 +33,7 @@ import cn.tolim.pudans.core.storage.driver.StorageObject;
 import cn.tolim.pudans.core.storage.driver.StorageReadOptions;
 import cn.tolim.pudans.core.storage.driver.StorageReadResult;
 import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
+import cn.tolim.pudans.core.storage.upload.StorageUploadRequest;
 import cn.tolim.pudans.core.storage.upload.UploadTicket;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -43,7 +49,12 @@ class StorageTransferEndpointTest {
     @BeforeEach
     void setUp() {
         var endpoint = new StorageTransferEndpoint(storageTransfer);
-        client = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
+        client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
+                .webFilter((exchange, chain) -> chain.filter(exchange)
+                        .contextWrite(ReactiveSecurityContextHolder.withAuthentication(
+                                UsernamePasswordAuthenticationToken.authenticated(
+                                        "alice", "n/a", List.of()))))
+                .build();
     }
 
     @Test
@@ -72,6 +83,10 @@ class StorageTransferEndpointTest {
                 .isEqualTo("file-1")
                 .jsonPath("$.uploadToken")
                 .isEqualTo("token");
+
+        var captor = ArgumentCaptor.forClass(StorageUploadRequest.class);
+        verify(storageTransfer).initiateUpload(captor.capture());
+        assertThat(captor.getValue().owner()).isEqualTo("alice");
     }
 
     @Test

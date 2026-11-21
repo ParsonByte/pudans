@@ -17,6 +17,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
+import org.springframework.mock.web.server.MockServerWebExchange;
+import org.springframework.mock.web.server.MockWebSession;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -64,7 +67,7 @@ class OneDriveOAuthTest {
         when(transferTokens.signOAuthState(eq("od"), any(Duration.class))).thenReturn("state-token");
         when(externalUrl.get()).thenReturn(URI.create("https://pudans.example.com"));
 
-        var result = service.authorizeUrl("od").block();
+        var result = service.authorizeUrl("od", exchange()).block();
 
         assertThat(result).isNotNull();
         assertThat(result.url())
@@ -99,6 +102,7 @@ class OneDriveOAuthTest {
     @Test
     void storesTheRefreshTokenEncrypted() {
         var policy = policy(true);
+        when(transferTokens.signOAuthState(eq("od"), any(Duration.class))).thenReturn("state");
         when(transferTokens.verifyOAuthState("state")).thenReturn("od");
         when(policies.get("od")).thenReturn(Mono.just(policy));
         when(secretCipher.decrypt("client-secret")).thenReturn("client-secret");
@@ -107,13 +111,30 @@ class OneDriveOAuthTest {
         when(externalUrl.get()).thenReturn(URI.create("https://pudans.example.com"));
         when(exchangeFunction.exchange(any()))
                 .thenReturn(Mono.just(response("{\"refresh_token\":\"new-refresh\"}")));
+        var exchange = exchange();
+        service.authorizeUrl("od", exchange).block();
 
-        var result = service.callback("code", "state").block();
+        var result = service.callback("code", "state", exchange).block();
 
         assertThat(result).isNotNull();
         assertThat(result.authorized()).isTrue();
         assertThat(policy.getSpec().getCredentials().getToken()).isEqualTo("enc:new-refresh");
         verify(driverResolver).evict("od");
+    }
+
+    // 回调状态必须来自发起授权的同一个会话。
+    @Test
+    void rejectsCallbackFromAnotherSession() {
+        var policy = policy(true);
+        when(transferTokens.signOAuthState(eq("od"), any(Duration.class))).thenReturn("state");
+        when(transferTokens.verifyOAuthState("state")).thenReturn("od");
+        when(policies.get("od")).thenReturn(Mono.just(policy));
+        when(externalUrl.get()).thenReturn(URI.create("https://pudans.example.com"));
+        service.authorizeUrl("od", exchange()).block();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> service.callback("code", "state", exchange()).block())
+                .hasMessageContaining("授权状态无效");
     }
 
     @Test
@@ -136,6 +157,12 @@ class OneDriveOAuthTest {
         return ClientResponse.create(HttpStatus.OK)
                 .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .body(body)
+                .build();
+    }
+
+    private static MockServerWebExchange exchange() {
+        return MockServerWebExchange.builder(MockServerHttpRequest.get("/").build())
+                .session(new MockWebSession())
                 .build();
     }
 

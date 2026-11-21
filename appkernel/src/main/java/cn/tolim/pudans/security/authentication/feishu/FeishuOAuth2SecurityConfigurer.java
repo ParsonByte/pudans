@@ -32,6 +32,7 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
 
     private final ServerResponse.Context context;
 
+    // 显式构造以按注册顺序注入过滤器所需的全部协作者
     public FeishuOAuth2SecurityConfigurer(
             SecurityParameters securitySettings,
             FeishuClient feishuClient,
@@ -49,6 +50,7 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
         this.context = context;
     }
 
+    // 在授权码过滤器位置插入飞书登录过滤器
     @Override
     public void configure(ServerHttpSecurity http) {
         var filter = new FeishuOAuth2LoginWebFilter(

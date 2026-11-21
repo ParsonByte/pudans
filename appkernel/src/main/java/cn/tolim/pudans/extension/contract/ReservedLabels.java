@@ -9,6 +9,7 @@ public final class ReservedLabels {
 
     private ReservedLabels() {}
 
+    // 提取保留前缀下的标签，供内部逻辑使用。
     public static Map<String, String> of(Map<String, String> labels) {
         if (labels == null || labels.isEmpty()) {
             return Map.of();

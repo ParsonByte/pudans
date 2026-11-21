@@ -4,10 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import cn.tolim.pudans.infra.properties.PudansProperties;
-import java.nio.charset.StandardCharsets;
+import cn.tolim.pudans.infra.utils.Digests;
 import java.nio.file.Path;
-import java.security.MessageDigest;
-import java.util.HexFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,7 +27,7 @@ class MasterKeysTest {
     void legacyTokensWorkOnlyBeforeTheFirstRotation(@TempDir Path workDir) {
         var service = service(workDir);
         service.initialize("key-1");
-        var legacyHash = sha256("secret");
+        var legacyHash = Digests.sha256Hex("secret");
 
         assertThat(service.matches(legacyHash, "secret", null)).isTrue();
 
@@ -56,14 +54,5 @@ class MasterKeysTest {
         var properties = new PudansProperties();
         properties.setWorkDir(workDir);
         return new MasterKeys(mock(ParameterGroups.class), properties);
-    }
-
-    private static String sha256(String value) {
-        try {
-            return HexFormat.of().formatHex(
-                    MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
     }
 }

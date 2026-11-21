@@ -37,6 +37,7 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
 
     private final SecurityProperties securityProperties;
 
+    // 注入过滤器所需依赖，保证认证流程与全局登录逻辑一致。
     public TwoFactorAuthSecurityConfigurer(
             ServerSecurityContextRepository securityContextRepository,
             TwoFactorAuthenticationManager twoFactorAuthenticationManager,
@@ -56,6 +57,7 @@ public class TwoFactorAuthSecurityConfigurer implements SecurityConfigurer {
         this.securityProperties = securityProperties;
     }
 
+    // 注册双重验证过滤器，仅拦截挑战端点并复用统一处理逻辑。
     @Override
     public void configure(ServerHttpSecurity http) {
         var filter = new AuthenticationWebFilter(twoFactorAuthenticationManager);

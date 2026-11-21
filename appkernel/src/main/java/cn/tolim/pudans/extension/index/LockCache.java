@@ -9,6 +9,7 @@ final class LockCache {
 
     private final ConcurrentMap<String, Entry> entries = new ConcurrentHashMap<>();
 
+    // 获取主键写锁并增加引用计数。
     Handle acquire(String key) {
         var entry = entries.compute(key, (ignored, existing) -> {
             var result = existing == null ? new Entry() : existing;
@@ -20,6 +21,7 @@ final class LockCache {
         return new Handle(key, entry, lock);
     }
 
+    // 减少引用计数，归零时移除条目。
     private void release(String key, Entry entry) {
         entries.computeIfPresent(key, (ignored, current) -> {
             if (current != entry) {
@@ -30,10 +32,12 @@ final class LockCache {
         });
     }
 
+    // 返回缓存中的锁条目数量。
     int size() {
         return entries.size();
     }
 
+    // 清空全部锁条目。
     void clear() {
         entries.clear();
     }
@@ -48,12 +52,14 @@ final class LockCache {
 
         private boolean closed;
 
+        // 保存锁与键，供关闭时释放。
         private Handle(String key, Entry entry, Lock lock) {
             this.key = key;
             this.entry = entry;
             this.lock = lock;
         }
 
+        // 幂等释放写锁并减少引用计数。
         @Override
         public void close() {
             if (closed) {

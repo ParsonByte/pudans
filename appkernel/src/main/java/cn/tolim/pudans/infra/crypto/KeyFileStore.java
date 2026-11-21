@@ -17,6 +17,7 @@ public final class KeyFileStore {
 
     private KeyFileStore() {}
 
+    // 密钥文件不存在时生成并以最小权限持久化。
     public static byte[] loadOrCreate(Path keyFile) {
         try {
             if (Files.exists(keyFile)) {

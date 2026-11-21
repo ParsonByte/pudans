@@ -19,11 +19,13 @@ public class YamlUnstructuredLoader extends YamlProcessor {
         return MatchStatus.NOT_FOUND;
     };
 
+    // 配置资源并启用 Kubernetes 风格文档匹配。
     public YamlUnstructuredLoader(Resource... resources) {
         setResources(resources);
         setDocumentMatchers(DEFAULT_UNSTRUCTURED_MATCHER);
     }
 
+    // 逐个解析匹配的 YAML 文档为扩展对象。
     public List<Unstructured> load() {
         List<Unstructured> unstructuredList = new ArrayList<>();
         process((properties, map) -> {

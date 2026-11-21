@@ -32,6 +32,7 @@ public class DeviceReconciler implements ReactiveReconciler<Reconciler.Request> 
 
     private final InternalReactiveExtensionClient client;
 
+    // 删除时清理会话，否则补齐终结器并回收超限设备
     @Override
     public Mono<Result> reconcileReactive(Request request) {
         return client.fetch(Device.class, request.name())
@@ -54,6 +55,7 @@ public class DeviceReconciler implements ReactiveReconciler<Reconciler.Request> 
                 .switchIfEmpty(Mono.just(Result.doNotRetry()));
     }
 
+    // 仅保留最近十个设备，清理会话已不存在的记录
     private Mono<Void> revokeInactiveDevices(String principalName) {
         var listOptions = new ListOptions();
         listOptions.setFieldSelector(FieldSelector.of(equal("spec.principalName", principalName)));
@@ -67,6 +69,7 @@ public class DeviceReconciler implements ReactiveReconciler<Reconciler.Request> 
                 .then();
     }
 
+    // 注册设备协调器，启动时不做全量同步以省开销
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new Device()).syncAllOnStart(false).build();

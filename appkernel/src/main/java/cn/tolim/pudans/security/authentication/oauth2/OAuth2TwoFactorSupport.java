@@ -7,11 +7,13 @@ import cn.tolim.pudans.security.contract.authentication.oauth2.PudansOAuth2Authe
 import cn.tolim.pudans.security.authentication.PudansUserDetailsContract;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 
 final class OAuth2TwoFactorSupport {
 
     private OAuth2TwoFactorSupport() {}
 
+    // 判断当前身份是否仍缺少双重验证。
     static boolean requiresTwoFactor(Authentication authentication) {
         if (authentication instanceof TwoFactorAuthentication) {
             return true;
@@ -25,11 +27,16 @@ final class OAuth2TwoFactorSupport {
                 && !hasFactor(authentication);
     }
 
-    // 前置认证缺失（未登录）时不能视为已满足双重验证，需由目标用户的双重验证设置决定。
-    static boolean twoFactorSatisfied(Object previousAuthentication) {
-        return previousAuthentication instanceof Authentication previous && !requiresTwoFactor(previous);
+    // 只有同一用户且已完成双重验证的前置登录，才能满足目标账号的双重验证。
+    static boolean twoFactorSatisfied(Object previousAuthentication, String targetUsername) {
+        return previousAuthentication instanceof Authentication previous
+                && previous.isAuthenticated()
+                && !(previous instanceof JwtAuthenticationToken)
+                && previous.getName().equals(targetUsername)
+                && !requiresTwoFactor(previous);
     }
 
+    // 以双因素角色标识确认验证已经完成。
     static boolean hasFactor(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .anyMatch(authority -> (ROLE_PREFIX + TWO_FACTOR_AUTHENTICATED_ROLE_NAME)

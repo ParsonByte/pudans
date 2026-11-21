@@ -15,6 +15,7 @@ public class WatcherExtensionMatchers {
     private final ExtensionMatcher onDeleteMatcher;
 
 
+    // 校验必需依赖，未提供匹配器时按 GVK 兜底。
     @Builder(builderMethodName = "internalBuilder")
     public WatcherExtensionMatchers(
             ExtensionClient client,
@@ -31,30 +32,37 @@ public class WatcherExtensionMatchers {
         this.onDeleteMatcher = Objects.requireNonNullElseGet(onDeleteMatcher, () -> emptyMatcher(client, gvk));
     }
 
+    // 以客户端与 GVK 为必需条件创建构建器。
     public static WatcherExtensionMatchersBuilder builder(ExtensionClient client, GroupVersionKind gvk) {
         return internalBuilder().gvk(gvk).client(client);
     }
 
+    // 默认匹配器仅校验 GVK。
     static ExtensionMatcher emptyMatcher(ExtensionClient client, GroupVersionKind gvk) {
         return DefaultExtensionMatcher.builder(client, gvk).build();
     }
 
+    // 返回监听器绑定的 GVK。
     public GroupVersionKind getGroupVersionKind() {
         return this.gvk;
     }
 
+    // 返回包装后的新增匹配器。
     public ExtensionMatcher onAddMatcher() {
         return delegateExtensionMatcher(this.onAddMatcher);
     }
 
+    // 返回包装后的更新匹配器。
     public ExtensionMatcher onUpdateMatcher() {
         return delegateExtensionMatcher(this.onUpdateMatcher);
     }
 
+    // 返回包装后的删除匹配器。
     public ExtensionMatcher onDeleteMatcher() {
         return delegateExtensionMatcher(this.onDeleteMatcher);
     }
 
+    // 先校验 GVK，再委托具体匹配器判断。
     ExtensionMatcher delegateExtensionMatcher(ExtensionMatcher matcher) {
         return extension -> extension.groupVersionKind().equals(gvk) && matcher.match(extension);
     }

@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import cn.tolim.pudans.core.rbac.SessionInvalidator;
 import reactor.core.publisher.Flux;
 import cn.tolim.pudans.core.rbac.permission.RbacCache;
 
@@ -37,11 +38,14 @@ class GroupsTest {
     @Mock
     DomainEventPublisher domainEventPublisher;
 
+    @Mock
+    SessionInvalidator sessionInvalidator;
+
     private Groups service;
 
     @BeforeEach
     void setUp() {
-        service = new Groups(client, rbacCache, builtinEntityPolicy, domainEventPublisher);
+        service = new Groups(client, rbacCache, builtinEntityPolicy, domainEventPublisher, sessionInvalidator);
     }
 
     private static UserGroup group(String name) {

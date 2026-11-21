@@ -17,11 +17,13 @@ public class RequestInfoAuthorizationManager implements ReactiveAuthorizationMan
 
     private final AuthorizationRuleResolver ruleResolver;
 
+    // 使用角色、临时授权与审计构建解析器
     public RequestInfoAuthorizationManager(
             Roles roles, TempGrants tempGrants, AuditLog auditLog) {
         this.ruleResolver = new DefaultRuleResolver(roles, tempGrants, auditLog);
     }
 
+    // 解析请求信息后交由规则解析器判定
     @Override
     public Mono<AuthorizationResult> authorize(Mono<Authentication> authentication, AuthorizationContext context) {
         var request = context.getExchange().getRequest();
@@ -37,6 +39,7 @@ public class RequestInfoAuthorizationManager implements ReactiveAuthorizationMan
                 .map(AuthorizationDecision::new);
     }
 
+    // 规则解析错误只记录，不影响最终判定
     private void showErrorMessage(List<Throwable> errors) {
         if (errors != null) {
             errors.forEach(error -> log.error("访问决策错误", error));

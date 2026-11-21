@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 
 public class ProblemDetailErrorAttributes extends DefaultErrorAttributes {
 
+    // 用统一问题详情替换默认错误属性。
     @Override
     public Map<String, Object> getErrorAttributes(ServerRequest request, ErrorAttributeOptions options) {
         final var errAttributes = super.getErrorAttributes(request, options);

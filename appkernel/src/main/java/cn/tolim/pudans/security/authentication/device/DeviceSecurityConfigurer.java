@@ -13,6 +13,7 @@ class DeviceSecurityConfigurer implements SecurityConfigurer {
 
     private final DeviceSessions deviceSessions;
 
+    // 认证前插入过滤器，及时捕获会话标识变化
     @Override
     public void configure(ServerHttpSecurity http) {
         var filter = new DeviceSessionFilter(deviceSessions);

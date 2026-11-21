@@ -47,15 +47,18 @@ public class SourceStatus {
 
     private final LiveProperties properties;
 
+    // 通用状态修改，冲突时重试并广播事件
     public Mono<LiveSource> update(String name, Consumer<LiveSource> mutation) {
         return mutate(name, "update", mutation);
     }
 
+    // 按事件驱动状态机迁移并广播变更
     public Mono<LiveSource> transition(
             String name, LiveSourceStateMachine.Event event, String message) {
         return mutate(name, reasonOf(event), source -> applyEvent(source, event, message));
     }
 
+    // 写在线信息并顺延下次检查时间
     public Mono<LiveSource> applyLive(String name, LiveRoomInfo info) {
         return mutate(name, "resolve_online", source -> {
             var now = Instant.now();
@@ -80,6 +83,7 @@ public class SourceStatus {
         });
     }
 
+    // 写离线信息并按源间隔顺延检查
     public Mono<LiveSource> applyOffline(String name, String message) {
         return mutate(name, "resolve_offline", source -> {
             var now = Instant.now();
@@ -98,6 +102,7 @@ public class SourceStatus {
         });
     }
 
+    // 限流走冷却分支，其余累加失败次数
     public Mono<LiveSource> applyError(String name, String code, String message) {
         if (LiveErrorCode.LIVE_RATE_LIMITED.name().equals(code)) {
             return client.fetch(LiveSource.class, name)
@@ -137,6 +142,7 @@ public class SourceStatus {
         });
     }
 
+    // 记录当前录制并标记源为在线
     public Mono<LiveSource> markRecording(String name, String recordingName) {
         return mutate(name, "recording_started", source -> {
             var now = Instant.now();
@@ -150,6 +156,7 @@ public class SourceStatus {
         });
     }
 
+    // 录制结束清除指针并恢复在线检查
     public Mono<LiveSource> recordingEnded(String name) {
         return mutate(name, "recording_ended", source -> {
             var now = Instant.now();
@@ -161,6 +168,7 @@ public class SourceStatus {
         });
     }
 
+    // 录制失败清除指针并缩短下次检查
     public Mono<LiveSource> recordingFailed(String name, String code, String message) {
         return mutate(name, "recording_failed", source -> {
             var now = Instant.now();
@@ -174,6 +182,7 @@ public class SourceStatus {
         });
     }
 
+    // 读最新版本执行修改，写回后同步注册表与事件
     private Mono<LiveSource> mutate(String name, String reason, Consumer<LiveSource> mutation) {
         if (!StringUtils.hasText(name)) {
             return Mono.error(LiveErrorCode.LIVE_SOURCE_NOT_FOUND.exception());
@@ -191,6 +200,7 @@ public class SourceStatus {
                 .map(Applied::source);
     }
 
+    // 应用状态机迁移并维护检查时间
     private void applyEvent(LiveSource source, LiveSourceStateMachine.Event event, String message) {
         var status = source.getStatus();
         var transition = stateMachine.next(status.getState(), event);
@@ -207,6 +217,7 @@ public class SourceStatus {
         }
     }
 
+    // 状态变化后同步快照并发布两类事件
     private void afterApply(Applied applied) {
         var source = applied.source();
         registry.upsert(source);
@@ -236,12 +247,14 @@ public class SourceStatus {
         }
     }
 
+    // 离线检查间隔不低于默认值
     private Duration offlineInterval(LiveSource source) {
         var checkInterval = Duration.ofSeconds(Math.max(source.getSpec().getCheckIntervalSeconds(), 1));
         var defaultInterval = properties.getMonitor().getDefaultInterval();
         return checkInterval.compareTo(defaultInterval) >= 0 ? checkInterval : defaultInterval;
     }
 
+    // 连续失败超过阈值后指数退避并封顶
     private Duration failureBackoff(int failures) {
         var threshold = properties.getMonitor().getErrorThreshold();
         var exponent = Math.min(Math.max(failures - threshold, 0), 10);
@@ -250,6 +263,7 @@ public class SourceStatus {
         return Duration.ofMillis(Math.min(base * (1L << exponent), max));
     }
 
+    // 只对乐观锁冲突按预定延迟重试
     private <T> Mono<T> retryOnConflict(Mono<T> source) {
         return source.retryWhen(Retry.from(signals -> signals.concatMap(signal -> {
             var failure = signal.failure();
@@ -265,6 +279,7 @@ public class SourceStatus {
         })));
     }
 
+    // 事件名与状态变化原因保持一致
     private static String reasonOf(LiveSourceStateMachine.Event event) {
         return switch (event) {
             case ENABLED -> "enabled";

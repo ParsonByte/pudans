@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.PartState;
@@ -17,7 +16,6 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 
 // 分片落盘前的磁盘水位判定，只负责判断与拒绝，不删除任何已有文件
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class LiveDiskGuard {
@@ -42,16 +40,19 @@ public class LiveDiskGuard {
 
     public record DiskPressure(DiskDecision decision, LiveErrorCode errorCode, String message) {
 
+        // 判断该压力是否需要停止拉流
         public boolean blocked() {
             return decision == DiskDecision.STOP_DISK_FULL || decision == DiskDecision.STOP_STORAGE_BACKLOG;
         }
     }
 
+    // 确保录制目录存在并返回其绝对路径
     public Path ensureRecordingDir(String recordingName) {
         workspace.ensureRecordingDir(recordingName);
         return workspace.recordingDir(recordingName);
     }
 
+    // 评估磁盘水位与积压，给出继续、合并或停止决策
     public DiskPressure assess(String recordingName, LiveRecording recording) {
         var config = properties.getRecorder();
         var merge = config.getMerge();
@@ -95,6 +96,7 @@ public class LiveDiskGuard {
         return pressure;
     }
 
+    // 读取目录所在文件系统的可用空间，失败按磁盘满处理
     public long usableBytes(Path dir) {
         try {
             return Files.getFileStore(dir).getUsableSpace();
@@ -114,6 +116,7 @@ public class LiveDiskGuard {
                 .count();
     }
 
+    // 按历史成品估算单个分片大小，无数据用默认值
     private static long estimatedSegmentBytes(LiveRecording.Status status) {
         var parts = status.getParts();
         if (parts == null) {

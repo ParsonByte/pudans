@@ -27,11 +27,13 @@ public class RoleReconciler implements Reconciler<Request> {
 
     private final BuiltinRoleDefinitions builtinRoleDefinitions;
 
+    // 注入扩展客户端与内置定义，用于恢复校验。
     public RoleReconciler(ExtensionClient client, BuiltinRoleDefinitions builtinRoleDefinitions) {
         this.client = client;
         this.builtinRoleDefinitions = builtinRoleDefinitions;
     }
 
+    // 恢复被篡改的内置角色，否则同步依赖注解。
     @Override
     public Result reconcile(Request request) {
         client.fetch(Role.class, request.name()).ifPresent(role -> {
@@ -45,11 +47,13 @@ public class RoleReconciler implements Reconciler<Request> {
         return Result.doNotRetry();
     }
 
+    // 声明该协调器负责角色资源。
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new Role()).build();
     }
 
+    // 恢复内置角色定义，返回是否发生修复。
     private boolean restore(Role role) {
         return builtinRoleDefinitions.role(role.getMetadata().getName())
                 .map(canonical -> {
@@ -101,6 +105,7 @@ public class RoleReconciler implements Reconciler<Request> {
                 .orElse(false);
     }
 
+    // 按顺序逐条比较规则内容是否一致。
     private static boolean sameRules(List<PolicyRule> left, List<PolicyRule> right) {
         if (left == null || right == null) {
             return left == right;
@@ -122,10 +127,12 @@ public class RoleReconciler implements Reconciler<Request> {
         return true;
     }
 
+    // 比较数组内容，空数组与空值等价。
     private static boolean sameValues(String[] left, String[] right) {
         return Arrays.equals(left == null ? new String[0] : left, right == null ? new String[0] : right);
     }
 
+    // 在最新对象上回写标签与注解，避免并发覆盖。
     private void updateLabelsAndAnnotations(Role role) {
         var annotations = role.getMetadata().getAnnotations();
         var labels = role.getMetadata().getLabels();

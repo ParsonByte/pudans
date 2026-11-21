@@ -10,6 +10,7 @@ import org.springframework.util.CollectionUtils;
 
 public class LabelSelectorConverter implements Converter<SelectorCriteria, LabelCondition> {
 
+    // 把标签选择器条件转换为标签查询。
     @Override
     public LabelCondition convert(SelectorCriteria criteria) {
         switch (criteria.operator()) {
@@ -33,6 +34,7 @@ public class LabelSelectorConverter implements Converter<SelectorCriteria, Label
         }
     }
 
+    // 取单个值，缺失时抛出参数错误。
     String getSingleValue(SelectorCriteria criteria) {
         if (CollectionUtils.isEmpty(criteria.values())) {
             throw new IllegalArgumentException("标签键没有对应的值：" + criteria.key());

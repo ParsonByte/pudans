@@ -16,10 +16,12 @@ final class SecurityClientRegistrationRepository implements ReactiveClientRegist
 
     private final SecurityParameters securitySettings;
 
+    // 保存安全参数，注册信息按配置即时生成。
     SecurityClientRegistrationRepository(SecurityParameters securitySettings) {
         this.securitySettings = securitySettings;
     }
 
+    // 只收集字段完整的 OAuth2 与 OIDC 提供商。
     static List<ClientRegistration> registrations(
             SecurityParameters securitySettings) {
         var registrations = new ArrayList<ClientRegistration>();
@@ -36,6 +38,7 @@ final class SecurityClientRegistrationRepository implements ReactiveClientRegist
         return registrations;
     }
 
+    // 将 OAuth2 参数转换为 Spring 客户端注册。
     static ClientRegistration oauth2Registration(ParameterSetting.OAuth2Provider provider) {
         return registration(
                 provider.getRegistrationId(),
@@ -49,6 +52,7 @@ final class SecurityClientRegistrationRepository implements ReactiveClientRegist
                 scopes(provider.getScopes(), List.of()));
     }
 
+    // 将 OIDC 参数转换为客户端注册，缺省使用标准声明。
     static ClientRegistration oidcRegistration(OidcProperties.Provider provider) {
         return registration(
                 provider.getRegistrationId(),
@@ -62,6 +66,7 @@ final class SecurityClientRegistrationRepository implements ReactiveClientRegist
                 provider.getScopes() == null ? List.of("openid", "profile", "email") : provider.getScopes());
     }
 
+    // 有密钥时使用基本认证，否则按公开客户端处理。
     private static ClientRegistration registration(
             String registrationId,
             String displayName,
@@ -90,6 +95,7 @@ final class SecurityClientRegistrationRepository implements ReactiveClientRegist
                 .build();
     }
 
+    // 必要字段齐全才注册，避免产生无效客户端。
     private static boolean isCompleteOAuth2(ParameterSetting.OAuth2Provider provider) {
         return StringUtils.hasText(provider.getRegistrationId())
                 && StringUtils.hasText(provider.getClientId())
@@ -98,6 +104,7 @@ final class SecurityClientRegistrationRepository implements ReactiveClientRegist
                 && StringUtils.hasText(provider.getUserInfoUri());
     }
 
+    // OIDC 至少需要标识与三个端点地址。
     private static boolean isCompleteOidc(OidcProperties.Provider provider) {
         return StringUtils.hasText(provider.getRegistrationId())
                 && StringUtils.hasText(provider.getAuthorizationUri())
@@ -105,6 +112,7 @@ final class SecurityClientRegistrationRepository implements ReactiveClientRegist
                 && StringUtils.hasText(provider.getUserInfoUri());
     }
 
+    // 按空白拆分作用域，空值时使用回退列表。
     private static List<String> scopes(String scopes, List<String> fallback) {
         if (!StringUtils.hasText(scopes)) {
             return fallback;
@@ -112,10 +120,12 @@ final class SecurityClientRegistrationRepository implements ReactiveClientRegist
         return List.of(scopes.trim().split("\\s+"));
     }
 
+    // 空白值回退到默认值，保证注册字段可用。
     private static String defaultIfBlank(String value, String fallback) {
         return StringUtils.hasText(value) ? value : fallback;
     }
 
+    // 按注册标识查找，未命中返回空信号。
     @Override
     public Mono<ClientRegistration> findByRegistrationId(String registrationId) {
         return Mono.justOrEmpty(registrations(securitySettings).stream()

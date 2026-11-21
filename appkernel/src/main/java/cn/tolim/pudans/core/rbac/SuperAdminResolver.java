@@ -36,14 +36,17 @@ public class SuperAdminResolver {
 
     private final InternalReactiveExtensionClient internalClient;
 
+    // 按用户名生成超管成员绑定的规范名称。
     public static String bindingName(String username) {
         return username + BINDING_NAME_SUFFIX;
     }
 
+    // 判断名称是否具有超管成员绑定的后缀特征。
     public static boolean isSuperAdminBindingName(String name) {
         return name != null && name.endsWith(BINDING_NAME_SUFFIX) && !name.equals(BINDING_NAME_SUFFIX);
     }
 
+    // 从规范绑定名反解用户名，非规范名返回空。
     public String ownerOf(String bindingName) {
         if (!isSuperAdminBindingName(bindingName)) {
             return null;
@@ -52,6 +55,7 @@ public class SuperAdminResolver {
         return StringUtils.hasText(username) ? username : null;
     }
 
+    // 从绑定对象读取所属用户名，缺失时返回空。
     public String ownerOf(UserGroupBinding binding) {
         if (binding == null || binding.getMetadata() == null) {
             return null;
@@ -59,6 +63,7 @@ public class SuperAdminResolver {
         return ownerOf(binding.getMetadata().getName());
     }
 
+    // 规范绑定必须未删除且主体与角色引用一致。
     public boolean isCanonicalBinding(UserGroupBinding binding) {
         if (binding == null || isDeleted(binding)) {
             return false;
@@ -80,6 +85,7 @@ public class SuperAdminResolver {
                 && owner.equals(subjects.get(0).getName());
     }
 
+    // 异步判断用户是否存在未删除的超管绑定。
     public Mono<Boolean> hasSuperAdminBinding(String username) {
         if (!StringUtils.hasText(username)) {
             return Mono.just(false);
@@ -90,6 +96,7 @@ public class SuperAdminResolver {
                 .defaultIfEmpty(false);
     }
 
+    // 同步判断规范超管绑定，供协调器删除时使用。
     public boolean hasCanonicalBindingBlocking(String username) {
         if (!StringUtils.hasText(username)) {
             return false;
@@ -100,6 +107,7 @@ public class SuperAdminResolver {
                 .isPresent();
     }
 
+    // 判断用户是否为规范超管，查询异常按否处理。
     public Mono<Boolean> isCanonicalSuperAdmin(String username) {
         if (!StringUtils.hasText(username)) {
             return Mono.just(false);
@@ -111,6 +119,7 @@ public class SuperAdminResolver {
                 .onErrorResume(error -> Mono.just(false));
     }
 
+    // 构造受系统终结器保护的规范超管成员绑定。
     public UserGroupBinding canonicalBinding(String username) {
         var binding = UserGroupBinding.membership(username, BuiltinEntities.SUPER_ADMINS_GROUP);
         var metadata = new Metadata();
@@ -120,6 +129,7 @@ public class SuperAdminResolver {
         return binding;
     }
 
+    // 把被篡改的绑定恢复为规范主体与角色引用。
     public UserGroupBinding restore(UserGroupBinding binding, String owner) {
         binding.setSubjects(new LinkedList<>(List.of(UserGroupBinding.Subject.user(owner))));
         binding.setRoleRef(UserGroupBinding.RoleRef.userGroup(BuiltinEntities.SUPER_ADMINS_GROUP));
@@ -127,6 +137,7 @@ public class SuperAdminResolver {
         return binding;
     }
 
+    // 确保超管只保留规范绑定并清理其它组成员关系。
     public Mono<Void> initialize(String username) {
         return Mono.defer(() -> {
                     var name = bindingName(username);
@@ -144,6 +155,7 @@ public class SuperAdminResolver {
                 .then(removeOtherMemberships(username));
     }
 
+    // 删除超管用户在其他用户组中的成员绑定。
     private Mono<Void> removeOtherMemberships(String username) {
         var options = ListOptions.builder()
                 .andQuery(in("subjects", UserGroupBinding.Subject.user(username).toString()))
@@ -160,6 +172,7 @@ public class SuperAdminResolver {
                 .then();
     }
 
+    // 判断除指定用户外是否还有其它规范超管。
     public boolean hasOtherCanonicalSuperAdmin(String username) {
         var options = ListOptions.builder().andQuery(notDeleting()).build();
         return client.listAll(UserGroupBinding.class, options, defaultSort()).stream()

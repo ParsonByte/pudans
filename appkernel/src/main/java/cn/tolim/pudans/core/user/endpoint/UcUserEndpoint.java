@@ -5,9 +5,9 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 
 import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.user.Accounts;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.extension.contract.GroupVersion;
-import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +36,9 @@ class UcUserEndpoint implements CustomEndpoint {
 
     private final Accounts accounts;
 
-    private final Groups groups;
+    private final UserRoles userRoles;
 
+    // 注册当前用户资料、权限与密码路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "UserV1alpha1";
@@ -63,6 +64,7 @@ class UcUserEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 返回当前登录用户的资料视图
     private Mono<ServerResponse> me(ServerRequest request) {
         return authenticated()
                 .map(Authentication::getName)
@@ -70,16 +72,18 @@ class UcUserEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user)));
     }
 
+    // 返回当前用户的角色与权限
     private Mono<ServerResponse> permissions(ServerRequest request) {
         return authenticated()
                 .map(Authentication::getName)
-                .flatMap(username -> groups
-                        .getRoleNamesByUsername(username)
+                .flatMap(username -> userRoles
+                        .list(username)
                         .collectList()
                         .map(roles -> new UserPermissionVo(username, roles)))
                 .flatMap(vo -> ServerResponse.ok().bodyValue(vo));
     }
 
+    // 设置过密码时先校验旧密码再更新
     private Mono<ServerResponse> changeMyPassword(ServerRequest request) {
         return authenticated()
                 .map(Authentication::getName)
@@ -96,6 +100,7 @@ class UcUserEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user)));
     }
 
+    // 旧密码缺失或不匹配时拒绝
     private Mono<Boolean> verifyOldPassword(String username, String oldPassword) {
         if (!StringUtils.hasText(oldPassword)) {
             return Mono.error(new UnsatisfiedAttributeValueException(
@@ -108,6 +113,7 @@ class UcUserEndpoint implements CustomEndpoint {
                         "旧密码不匹配。")));
     }
 
+    // 要求已认证用户，匿名访问时报错
     private Mono<Authentication> authenticated() {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
@@ -116,6 +122,7 @@ class UcUserEndpoint implements CustomEndpoint {
                         HttpStatus.FORBIDDEN, "匿名用户不能访问用户资料。")));
     }
 
+    // 返回当前用户接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

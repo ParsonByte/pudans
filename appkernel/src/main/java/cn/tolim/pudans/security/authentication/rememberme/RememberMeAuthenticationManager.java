@@ -14,6 +14,7 @@ public class RememberMeAuthenticationManager implements ReactiveAuthenticationMa
 
     private final CookieSignatureKeyResolver cookieSignatureKeyResolver;
 
+    // 只处理记住我令牌，其余类型返回空交给后续管理器。
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         return Mono.justOrEmpty(authentication)
@@ -22,6 +23,7 @@ public class RememberMeAuthenticationManager implements ReactiveAuthenticationMa
                 .flatMap(this::doAuthenticate);
     }
 
+    // 校验令牌携带的密钥哈希与当前密钥一致。
     private Mono<Authentication> doAuthenticate(RememberMeAuthenticationToken token) {
         return cookieSignatureKeyResolver
                 .resolveSigningKey()

@@ -22,6 +22,7 @@ public class FeishuAlertNotifier {
 
     private final FeishuProperties properties;
 
+    // 未启用或未配置群聊时静默跳过，发送失败不阻断业务。
     public Mono<Void> send(RiskAlert alert) {
         if (!properties.isEnabled() || !StringUtils.hasText(properties.getAlertChatId())) {
             return Mono.empty();
@@ -33,6 +34,7 @@ public class FeishuAlertNotifier {
                 .onErrorResume(error -> Mono.empty());
     }
 
+    // 构造包含场景、主题与时间字段的告警卡片。
     private Map<String, Object> card(RiskAlert alert) {
         var card = new LinkedHashMap<String, Object>();
         card.put("config", Map.of("wide_screen_mode", true));

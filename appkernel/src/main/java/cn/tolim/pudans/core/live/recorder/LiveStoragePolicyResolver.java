@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.Policies;
@@ -46,10 +45,6 @@ public class LiveStoragePolicyResolver {
                 .flatMap(this::requireRecordable);
     }
 
-    public Mono<StoragePolicy> resolveForRecording(LiveRecording recording) {
-        return Mono.defer(() -> resolve(recording.getSpec().getStoragePolicy()));
-    }
-
     // 上传前复用同一判定，禁止把本地策略当作对象存储
     public static boolean isRecordable(StoragePolicy policy) {
         if (policy == null) {
@@ -63,6 +58,7 @@ public class LiveStoragePolicyResolver {
                 && status.isReady();
     }
 
+    // 不可用策略直接拒绝，避免录制落到本地或未就绪存储
     private Mono<StoragePolicy> requireRecordable(StoragePolicy policy) {
         if (isRecordable(policy)) {
             return Mono.just(policy);
@@ -73,6 +69,7 @@ public class LiveStoragePolicyResolver {
         return Mono.error(LIVE_STORAGE_POLICY_INVALID.exception());
     }
 
+    // 仅将 404 视为策略不存在，其余错误原样上抛
     private static boolean isNotFound(Throwable error) {
         return error instanceof ApiException apiException
                 && apiException.getStatusCode().value() == HttpStatus.NOT_FOUND.value();

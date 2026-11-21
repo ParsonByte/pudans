@@ -39,6 +39,7 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
 
     private final OneDriveOAuth oneDriveOAuth;
 
+    // 注册策略类型、校验、测试、跨域与授权路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "StoragePolicyV1alpha1";
@@ -90,16 +91,19 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 返回已注册存储类型的能力描述。
     private Mono<ServerResponse> types(ServerRequest request) {
         return ServerResponse.ok().bodyValue(registry.descriptors());
     }
 
+    // 校验请求中的策略配置但不落库。
     private Mono<ServerResponse> validate(ServerRequest request) {
         return request.bodyToMono(StoragePolicy.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
                 .flatMap(policy -> ServerResponse.ok().bodyValue(validator.validatePolicy(policy)));
     }
 
+    // 测试策略连通性并记录最近测试结果。
     private Mono<ServerResponse> test(ServerRequest request) {
         var name = request.pathVariable("name");
         return storageTransfer
@@ -108,6 +112,7 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 为指定策略配置跨域来源。
     private Mono<ServerResponse> cors(ServerRequest request) {
         var name = request.pathVariable("name");
         return request.bodyToMono(CorsRequest.class)
@@ -116,12 +121,14 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
                 .then(ServerResponse.status(HttpStatus.NO_CONTENT).build());
     }
 
+    // 生成 OneDrive 授权地址并写入会话状态。
     private Mono<ServerResponse> oauthAuthorize(ServerRequest request) {
         return oneDriveOAuth
-                .authorizeUrl(request.pathVariable("name"))
+                .authorizeUrl(request.pathVariable("name"), request.exchange())
                 .flatMap(url -> ServerResponse.ok().bodyValue(url));
     }
 
+    // 处理授权回调并保存刷新令牌。
     private Mono<ServerResponse> oauthCallback(ServerRequest request) {
         var error = request.queryParam("error").filter(StringUtils::hasText);
         if (error.isPresent()) {
@@ -136,15 +143,17 @@ public class StoragePolicyEndpoint implements CustomEndpoint {
         var state = request.queryParam("state").filter(StringUtils::hasText)
                 .orElseThrow(() -> new ApiException(
                         HttpStatus.BAD_REQUEST, "storage-onedrive-state-missing", "缺少 OneDrive 授权状态。"));
-        return oneDriveOAuth.callback(code, state).flatMap(status -> ServerResponse.ok().bodyValue(status));
+        return oneDriveOAuth.callback(code, state, request.exchange()).flatMap(status -> ServerResponse.ok().bodyValue(status));
     }
 
+    // 返回策略的 OneDrive 授权状态。
     private Mono<ServerResponse> oauthStatus(ServerRequest request) {
         return oneDriveOAuth
                 .status(request.pathVariable("name"))
                 .flatMap(status -> ServerResponse.ok().bodyValue(status));
     }
 
+    // 将站点地址解析为驱动器标识。
     private Mono<ServerResponse> oauthRoot(ServerRequest request) {
         var url = request.queryParam("url").filter(StringUtils::hasText)
                 .orElseThrow(() -> new ApiException(

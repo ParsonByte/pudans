@@ -40,17 +40,20 @@ class JSONExtensionConverter implements ExtensionConverter {
     @Getter
     public ObjectMapper objectMapper;
 
+    // 注入方案管理器并绑定默认序列化器。
     public JSONExtensionConverter(SchemeManager schemeManager) {
         this.schemeManager = schemeManager;
         setObjectMapper(OBJECT_MAPPER);
     }
 
 
+    // 替换 JSON 序列化器并拒绝空值。
     void setObjectMapper(ObjectMapper objectMapper) {
         Assert.notNull(objectMapper, "ObjectMapper 不能为 null");
         this.objectMapper = objectMapper;
     }
 
+    // 按方案校验扩展后再序列化为存储记录。
     @Override
     public <E extends Extension> ExtensionStore convertTo(E extension) {
         var gvk = extension.groupVersionKind();
@@ -86,6 +89,7 @@ class JSONExtensionConverter implements ExtensionConverter {
         }
     }
 
+    // 反序列化存储字节并回填元数据版本。
     @Override
     public <E extends Extension> E convertFrom(Class<E> type, ExtensionStore extensionStore) {
         try {
@@ -97,6 +101,7 @@ class JSONExtensionConverter implements ExtensionConverter {
         }
     }
 
+    // 方案移除后清理对应校验器缓存。
     @EventListener
     void onSchemeRemovedEvent(SchemeRemovedEvent event) {
         var removed = validatorMap.remove(event.getScheme());
@@ -114,6 +119,7 @@ class JSONExtensionConverter implements ExtensionConverter {
         }
     }
 
+    // 惰性创建并缓存方案对应的校验器。
     private SchemaValidator getValidator(Scheme scheme) throws MalformedURLException, ResolutionException {
         return validatorMap.computeIfAbsent(scheme, s -> {
             try {

@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 public class KeyComparator implements Comparator<String> {
     public static final KeyComparator INSTANCE = new KeyComparator();
 
+    // 比较两个键，空值排在末尾。
     @Override
     public int compare(@Nullable String a, @Nullable String b) {
         if (a == null && b == null) {
@@ -20,6 +21,7 @@ public class KeyComparator implements Comparator<String> {
         return compareStrings(a, b);
     }
 
+    // 逐字符比较，数字段按数值大小排序。
     private int compareStrings(String a, String b) {
         int i = 0;
         int j = 0;
@@ -56,6 +58,7 @@ public class KeyComparator implements Comparator<String> {
         return Integer.compare(a.length(), b.length());
     }
 
+    // 比较连续数字段，位数多者更大。
     private int compareNumbers(String a, String b, int startA, int startB) {
         int i = startA;
         int j = startB;
@@ -86,6 +89,7 @@ public class KeyComparator implements Comparator<String> {
         return 0;
     }
 
+    // 比较带小数点的数字段。
     private int compareDecimalNumbers(String a, String b, int startA, int startB) {
 
         int pointA = a.indexOf('.', startA);
@@ -101,6 +105,7 @@ public class KeyComparator implements Comparator<String> {
         return compareFractionalPart(a, b, pointA + 1, pointB + 1);
     }
 
+    // 比较小数点前的整数部分。
     private int compareIntegerPart(String a, String b, int startA, int startB, int pointA, int pointB) {
         int i = startA;
         int j = startB;
@@ -124,6 +129,7 @@ public class KeyComparator implements Comparator<String> {
         return 0;
     }
 
+    // 比较小数部分，忽略末尾零。
     private int compareFractionalPart(String a, String b, int i, int j) {
         while (i < a.length() && j < b.length() && Character.isDigit(a.charAt(i)) && Character.isDigit(b.charAt(j))) {
             if (a.charAt(i) != b.charAt(j)) {
@@ -150,6 +156,7 @@ public class KeyComparator implements Comparator<String> {
         return 0;
     }
 
+    // 统计从指定位置起的连续数字位数。
     private int countDigits(String s, int start) {
         int count = 0;
         while (start < s.length() && Character.isDigit(s.charAt(start))) {
@@ -159,6 +166,7 @@ public class KeyComparator implements Comparator<String> {
         return count;
     }
 
+    // 跳过数字与小数点，定位下一段。
     private int moveIndexToNextNonDigit(String s, int index) {
         while (index < s.length() && (Character.isDigit(s.charAt(index)) || s.charAt(index) == '.')) {
             index++;

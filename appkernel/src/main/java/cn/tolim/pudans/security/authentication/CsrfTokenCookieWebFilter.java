@@ -9,6 +9,7 @@ import reactor.core.publisher.Mono;
 // 安全方法请求也订阅令牌属性，让令牌落盘到 Cookie，供前端回填请求头
 final class CsrfTokenCookieWebFilter implements WebFilter {
 
+    // 提前订阅令牌属性，触发 Cookie 写入，便于前端读取。
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         Mono<CsrfToken> csrfToken = exchange.getAttribute(CsrfToken.class.getName());

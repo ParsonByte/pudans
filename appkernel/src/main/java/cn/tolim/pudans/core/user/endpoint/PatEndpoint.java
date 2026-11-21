@@ -21,10 +21,12 @@ class PatEndpoint implements CustomEndpoint {
 
     private final UserScopedPatHandler patHandler;
 
+    // 注入用户作用域的令牌处理器
     public PatEndpoint(UserScopedPatHandler patHandler) {
         this.patHandler = patHandler;
     }
 
+    // 注册个人访问令牌的全部路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = PersonalAccessToken.KIND + "V1alpha1";
@@ -98,6 +100,7 @@ class PatEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 返回当前令牌接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

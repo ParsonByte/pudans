@@ -44,6 +44,7 @@ class UcUserPreferenceEndpoint implements CustomEndpoint {
 
     private final JsonMapper mapper;
 
+    // 注册用户偏好的读取与更新路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "UserPreferenceV1alpha1";
@@ -82,6 +83,7 @@ class UcUserPreferenceEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 合并分组偏好，无变化时跳过写入
     private Mono<ServerResponse> updateMyPreference(ServerRequest serverRequest) {
         var group = serverRequest.pathVariable("group");
         return authenticated()
@@ -117,6 +119,7 @@ class UcUserPreferenceEndpoint implements CustomEndpoint {
                 .flatMap(cm -> ServerResponse.noContent().build());
     }
 
+    // 读取指定分组偏好，缺失时返回空值
     private Mono<ServerResponse> getMyPreference(ServerRequest serverRequest) {
         var group = serverRequest.pathVariable("group");
         return authenticated()
@@ -129,6 +132,7 @@ class UcUserPreferenceEndpoint implements CustomEndpoint {
                 .flatMap(jsonNode -> ServerResponse.ok().bodyValue(jsonNode));
     }
 
+    // 要求已认证用户，匿名访问时报错
     private Mono<Authentication> authenticated() {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
@@ -137,6 +141,7 @@ class UcUserPreferenceEndpoint implements CustomEndpoint {
                         HttpStatus.FORBIDDEN, "匿名用户不能访问用户偏好设置。")));
     }
 
+    // 返回当前偏好接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

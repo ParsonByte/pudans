@@ -6,10 +6,12 @@ import org.springframework.util.Assert;
 
 public record InCondition(String indexName, Collection<Object> keys) implements IndexCondition {
 
+    // 校验键集合非空。
     public InCondition {
         Assert.notNull(keys, "索引 " + indexName + " 的键不能为空");
     }
 
+    // 取反得到不在集合中的条件。
     @Override
     public Condition not() {
         return new NotInCondition(indexName, keys);

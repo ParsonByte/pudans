@@ -1,5 +1,7 @@
 package cn.tolim.pudans.core.storage.driver.oss;
 
+import cn.tolim.pudans.core.storage.driver.StorageDriverErrors;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -58,17 +60,20 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
 
     private final Path tempDirectory;
 
+    // 保存策略、OSS 客户端与临时目录。
     public OssStorageDriver(StoragePolicy policy, OSS client, Path tempDirectory) {
         this.policy = policy;
         this.client = client;
         this.tempDirectory = tempDirectory;
     }
 
+    // 标识该驱动处理 OSS 类型策略。
     @Override
     public StoragePolicyType type() {
         return StoragePolicyType.OSS;
     }
 
+    // 声明 OSS 支持的直链、多段与范围读取能力。
     @Override
     public Set<StorageCapability> capabilities() {
         return Set.of(
@@ -78,24 +83,27 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 StorageCapability.CORS_CONFIGURABLE);
     }
 
+    // 检查覆盖冲突后暂存并上传整个对象。
     @Override
     public Mono<StorageObject> put(StoragePutRequest request) {
         return Mono.fromCallable(() -> client.doesObjectExist(bucket(), request.key()))
                 .subscribeOn(Schedulers.boundedElastic())
-                .flatMap(exists -> exists && !request.overwrite() ? Mono.error(conflict()) : Mono.empty())
+                .flatMap(exists -> exists && !request.overwrite() ? Mono.error(StorageDriverErrors.conflict()) : Mono.empty())
                 .then(StorageIo.spool(request.body(), tempDirectory))
                 .flatMap(path -> Mono.fromCallable(() -> {
+                            var size = Files.size(path);
                             var metadata = new ObjectMetadata();
-                            metadata.setContentLength(request.size());
+                            metadata.setContentLength(size);
                             metadata.setContentType(contentType(request.contentType()));
                             var result = client.putObject(new PutObjectRequest(bucket(), request.key(), path.toFile(), metadata));
-                            return new StorageObject(request.key(), request.size(), Instant.now(), result.getETag());
+                            return new StorageObject(request.key(), size, Instant.now(), result.getETag());
                         })
                         .subscribeOn(Schedulers.boundedElastic())
                         .doFinally(signal -> StorageIo.deleteQuietly(path))
                         .onErrorMap(ServiceException.class, this::mapError));
     }
 
+    // 按可选字节范围读取对象并返回元数据。
     @Override
     public Mono<StorageReadResult> get(String key, StorageReadOptions options) {
         var range = options == null ? null : options.range();
@@ -127,6 +135,7 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 .onErrorMap(ServiceException.class, this::mapError);
     }
 
+    // 查询 OSS 对象元数据。
     @Override
     public Mono<StorageObject> stat(String key) {
         return Mono.fromCallable(() -> {
@@ -141,6 +150,7 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 .onErrorMap(ServiceException.class, this::mapError);
     }
 
+    // 逐个删除对象并映射客户端异常。
     @Override
     public Mono<Void> delete(Collection<String> keys) {
         return Flux.fromIterable(keys)
@@ -150,6 +160,7 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 .onErrorMap(ServiceException.class, this::mapError);
     }
 
+    // 生成 OSS 预签名下载地址。
     @Override
     public Mono<StorageSource> source(String key, StorageSourceOptions options) {
         var ttl = options != null && options.ttl() != null ? options.ttl() : DEFAULT_SOURCE_TTL;
@@ -161,6 +172,7 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
+    // 通过存储桶是否存在判断连接状态。
     @Override
     public Mono<StorageTestResult> testConnection() {
         return Mono.fromCallable(() -> {
@@ -175,6 +187,7 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                         false, "存储连接失败：" + safeMessage(error), Instant.now())));
     }
 
+    // 为存储桶写入统一的跨域规则。
     @Override
     public Mono<Void> configureCors(List<String> origins) {
         return Mono.fromCallable(() -> {
@@ -193,6 +206,7 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 .onErrorMap(ServiceException.class, this::mapError);
     }
 
+    // 初始化 OSS 多段上传。
     @Override
     public Mono<NativeMultipartUpload> createMultipart(StorageMultipartRequest request) {
         return Mono.fromCallable(() -> {
@@ -207,12 +221,14 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 .onErrorMap(ServiceException.class, this::mapError);
     }
 
+    // 该驱动不支持预签名分片，直接返回错误。
     @Override
     public Mono<UploadPartUrl> presignPart(NativeMultipartUpload upload, int partNumber, Duration ttl) {
         return Mono.error(new ApiException(
                 HttpStatus.BAD_REQUEST, "storage-presign-unsupported", "当前存储不支持预签名分片。"));
     }
 
+    // 暂存分片后通过 OSS 客户端上传。
     @Override
     public Mono<UploadedPart> putPart(
             NativeMultipartUpload upload, int partNumber, Flux<org.springframework.core.io.buffer.DataBuffer> body, long size) {
@@ -231,6 +247,7 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                         .onErrorMap(ServiceException.class, this::mapError));
     }
 
+    // 提交分片 ETag 并返回完成后的对象信息。
     @Override
     public Mono<StorageObject> completeMultipart(NativeMultipartUpload upload, List<UploadedPart> parts) {
         return Mono.fromCallable(() -> {
@@ -246,6 +263,7 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 .onErrorMap(ServiceException.class, this::mapError);
     }
 
+    // 终止 OSS 多段上传。
     @Override
     public Mono<Void> abortMultipart(NativeMultipartUpload upload) {
         return Mono.fromRunnable(() -> client.abortMultipartUpload(new AbortMultipartUploadRequest(
@@ -255,11 +273,13 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 .onErrorMap(ServiceException.class, this::mapError);
     }
 
+    // 分页列出 OSS 已接收的分片。
     @Override
     public Mono<List<UploadedPart>> listParts(NativeMultipartUpload upload) {
         return listPartsPage(upload, null);
     }
 
+    // 递归拉取全部分片页并合并结果。
     private Mono<List<UploadedPart>> listPartsPage(NativeMultipartUpload upload, Integer marker) {
         return Mono.fromCallable(() -> {
                     var request = new ListPartsRequest(bucket(), upload.key(), upload.uploadId());
@@ -282,16 +302,19 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 .onErrorMap(ServiceException.class, this::mapError);
     }
 
+    // 关闭 OSS 客户端连接。
     @Override
     public void close() {
         client.shutdown();
     }
 
+    // 返回策略分片大小，未配置时使用默认值。
     private long chunkSize() {
         var configured = policy.getSpec().getChunkSize();
         return configured > 0 ? configured : DEFAULT_CHUNK_SIZE;
     }
 
+    // 同步查询元数据，供完成上传后使用。
     private StorageObject statBlocking(String key) {
         var metadata = client.getObjectMetadata(bucket(), key);
         return new StorageObject(
@@ -301,18 +324,21 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 metadata.getETag());
     }
 
+    // 返回策略配置的存储桶名称。
     private String bucket() {
         return policy.getSpec().getBucketName();
     }
 
+    // 返回内容类型，缺失时使用二进制流。
     private static String contentType(String value) {
         return StringUtils.hasText(value) ? value : "application/octet-stream";
     }
 
+    // 将 OSS 错误码映射为统一的 API 错误。
     private ApiException mapError(ServiceException error) {
         var code = error.getErrorCode();
         if ("NoSuchKey".equals(code) || "NoSuchObject".equals(code)) {
-            return notFound();
+            return StorageDriverErrors.notFound();
         }
         if ("AccessDenied".equals(code) || "InvalidAccessKeyId".equals(code)
                 || "SignatureDoesNotMatch".equals(code)) {
@@ -325,17 +351,12 @@ public class OssStorageDriver implements StorageDriver, MultipartStorageDriver, 
                 error);
     }
 
+    // 提取可安全展示的错误信息。
     private static String safeMessage(Throwable error) {
         return error instanceof ServiceException service && StringUtils.hasText(service.getErrorMessage())
                 ? service.getErrorMessage()
                 : "存储服务不可用。";
     }
 
-    private static ApiException notFound() {
-        return new ApiException(HttpStatus.NOT_FOUND, "storage-object-not-found", "文件不存在。");
-    }
 
-    private static ApiException conflict() {
-        return new ApiException(HttpStatus.CONFLICT, "storage-object-exists", "文件已存在。");
-    }
 }

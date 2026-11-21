@@ -37,6 +37,7 @@ public class CacheMigrator implements DisposableBean {
 
     private Disposable subscription;
 
+    // 启动订阅，按并发上限异步写回旧缓存。
     @PostConstruct
     void start() {
         var latch = new CountDownLatch(1);
@@ -50,6 +51,7 @@ public class CacheMigrator implements DisposableBean {
                 .subscribe();
     }
 
+    // 去重后入队，队列满时保留延迟迁移机会。
     public void schedule(Cache cache, Object key, Object value) {
         if (value == null) {
             return;
@@ -68,6 +70,7 @@ public class CacheMigrator implements DisposableBean {
         }
     }
 
+    // 写回失败仅记录日志，避免影响读取路径。
     private void migrate(MigrationTask task) {
         try {
             task.cache().put(task.key(), task.value());
@@ -78,6 +81,7 @@ public class CacheMigrator implements DisposableBean {
         }
     }
 
+    // 关闭时完成剩余迁移并限时等待排空。
     @Override
     public void destroy() {
         sink.tryEmitComplete();

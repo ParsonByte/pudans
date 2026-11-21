@@ -32,6 +32,7 @@ public class CaptchaRenderer {
         new Color(110, 70, 140), new Color(160, 100, 30)
     };
 
+    // 按配置生成文字或算术验证码图片
     public RenderedCaptcha render(ParameterSetting.Captcha config) {
         var mode = config.getCaptchaMode() == null ? "TEXT" : config.getCaptchaMode().toUpperCase(Locale.ROOT);
         var payload = "MATH".equals(mode)
@@ -43,11 +44,13 @@ public class CaptchaRenderer {
                 payload.answer(), "data:image/png;base64," + Base64.getEncoder().encodeToString(image));
     }
 
+    // 限制验证码长度在可渲染范围内
     private static int captchaLength(ParameterSetting.Captcha config) {
         var length = config.getCaptchaLength() == null ? 5 : config.getCaptchaLength();
         return Math.max(3, Math.min(8, length));
     }
 
+    // 从易混淆字符集中随机生成答案
     private static String textAnswer(int length) {
         var builder = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
@@ -56,6 +59,7 @@ public class CaptchaRenderer {
         return builder.toString();
     }
 
+    // 生成个位数加减法题目与答案
     private static CaptchaPayload mathPayload() {
         var left = 1 + RANDOM.nextInt(9);
         var right = 1 + RANDOM.nextInt(9);
@@ -67,6 +71,7 @@ public class CaptchaRenderer {
         return new CaptchaPayload(minuend + " - " + subtrahend + " = ?", String.valueOf(minuend - subtrahend));
     }
 
+    // 绘制底图、干扰元素与文字并编码
     private byte[] draw(String display, ParameterSetting.Captcha config) {
         var image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_RGB);
         var graphics = image.createGraphics();
@@ -89,6 +94,7 @@ public class CaptchaRenderer {
         }
     }
 
+    // 逐字符随机旋转着色，增加识别难度
     private void drawAnswer(Graphics2D graphics, String display) {
         var fontSize = Math.max(20, Math.min(34, 150 / Math.max(1, display.length())));
         var font = new Font(Font.SANS_SERIF, Font.BOLD, fontSize);
@@ -107,6 +113,7 @@ public class CaptchaRenderer {
         }
     }
 
+    // 按配置叠加噪点、曲线与干扰文字
     private void drawInterference(Graphics2D graphics, ParameterSetting.Captcha config) {
         if (Boolean.TRUE.equals(config.getCaptchaUseNoise())
                 || Boolean.TRUE.equals(config.getCaptchaInterferenceDots())) {
@@ -139,6 +146,7 @@ public class CaptchaRenderer {
         }
     }
 
+    // 绘制随机相位的波浪干扰线
     private void drawWave(Graphics2D graphics, int lines, int amplitude) {
         for (int line = 0; line < lines; line++) {
             var path = new Path2D.Double();
@@ -152,6 +160,7 @@ public class CaptchaRenderer {
         }
     }
 
+    // 绘制正弦曲线干扰线
     private void drawSine(Graphics2D graphics, int lines, int amplitude) {
         for (int line = 0; line < lines; line++) {
             var path = new Path2D.Double();
@@ -165,6 +174,7 @@ public class CaptchaRenderer {
         }
     }
 
+    // 绘制双层线条形成空心干扰线
     private void drawHollowLine(Graphics2D graphics) {
         var y = 10 + RANDOM.nextInt(HEIGHT - 20);
         graphics.setColor(randomLightColor());
@@ -175,6 +185,7 @@ public class CaptchaRenderer {
         graphics.drawLine(0, y, WIDTH, y);
     }
 
+    // 干扰元素使用半透明浅色避免遮挡
     private static Color randomLightColor() {
         var color = COLORS[RANDOM.nextInt(COLORS.length)];
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), 110);

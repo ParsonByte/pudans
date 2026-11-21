@@ -29,6 +29,7 @@ public class RecordingQueries {
 
     private final ReactiveExtensionClient client;
 
+    // 归一化分页与过滤条件后执行分页查询
     public Mono<ListResult<LiveRecording>> query(LiveRecordingQuery query) {
         var page = query == null || query.page() < 1 ? 1 : query.page();
         var requestedSize = query == null || query.size() < 1 ? DEFAULT_PAGE_SIZE : query.size();

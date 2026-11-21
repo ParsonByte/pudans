@@ -27,14 +27,13 @@ public class AuditWebFilter implements WebFilter {
 
     private static final String AUDITED_ATTRIBUTE = AuditWebFilter.class.getName() + ".AUDITED";
 
-    private static final int MAX_ID_LENGTH = 64;
-
     private final AuditLog auditLog;
 
     private final ReactiveExtensionClient client;
 
     private final AuditRecordRuleEvaluator ruleEvaluator;
 
+    // 为每个请求建立审计轨迹并确保结束时落库
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         if (StaticRequestPaths.isStatic(exchange)) {
@@ -47,25 +46,17 @@ public class AuditWebFilter implements WebFilter {
         }
         var start = System.currentTimeMillis();
         var traceId = AuditLog.traceId(exchange);
-        var inheritedFlowId = truncate(
-                exchange.getRequest().getHeaders().getFirst(AuditLog.TRACE_FLOW_ID_HEADER), MAX_ID_LENGTH);
         var existingFlowId = (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE);
+        // 不信任客户端提供的链路标识，避免伪造审计分组或审计关系。
         var traceFlowId = existingFlowId != null && !existingFlowId.isBlank()
                 ? existingFlowId
-                : inheritedFlowId == null || inheritedFlowId.isBlank()
-                        ? cn.tolim.pudans.infra.audit.AuditIdGenerator.next()
-                        : inheritedFlowId;
+                : cn.tolim.pudans.infra.audit.AuditIdGenerator.next();
         var rootAuditId = cn.tolim.pudans.infra.audit.AuditIdGenerator.next();
         var trail = new cn.tolim.pudans.core.audit.AuditTrail(traceFlowId, rootAuditId);
         exchange.getAttributes().putIfAbsent(AuditLog.TRACE_FLOW_ID_ATTRIBUTE, traceFlowId);
         exchange.getAttributes().put(AuditLog.AUDIT_ID_ATTRIBUTE, rootAuditId);
         exchange.getAttributes().put(AuditLog.STEP_INDEX_ATTRIBUTE, 1);
         exchange.getAttributes().put(AuditLog.AUDIT_TRAIL_ATTRIBUTE, trail);
-        var inheritedParent = truncate(
-                exchange.getRequest().getHeaders().getFirst(AuditLog.PARENT_AUDIT_ID_HEADER), MAX_ID_LENGTH);
-        if (inheritedParent != null && !inheritedParent.isBlank()) {
-            exchange.getAttributes().put(AuditLog.PARENT_AUDIT_ID_ATTRIBUTE, inheritedParent);
-        }
         exchange.getResponse().getHeaders().set(AuditLog.TRACE_ID_HEADER, traceId);
         exchange.getResponse().getHeaders().set(AuditLog.TRACE_FLOW_ID_HEADER, traceFlowId);
         return chain.filter(exchange)
@@ -76,6 +67,7 @@ public class AuditWebFilter implements WebFilter {
                 .onErrorResume(error -> write(exchange, start, error).then(Mono.error(error)));
     }
 
+    // 解析操作者并按规则写入本次请求审计
     private Mono<Void> write(ServerWebExchange exchange, long start, Throwable error) {
         var username = (String) exchange.getAttributes().get(AuditLog.USERNAME_ATTRIBUTE);
         var uidMono = username == null
@@ -114,11 +106,13 @@ public class AuditWebFilter implements WebFilter {
                 .then();
     }
 
+    // 业务代码显式设置的操作用途优先于推断
     private static String resolvedOperation(ServerWebExchange exchange) {
         var overridden = (String) exchange.getAttributes().get(AuditLog.OPERATION_ATTRIBUTE);
         return overridden != null ? overridden : operation(exchange);
     }
 
+    // 结合异常与响应状态判定审计结果
     private static String result(ServerWebExchange exchange, Throwable error) {
         var status = exchange.getResponse().getStatusCode();
         var overriddenResult = (String) exchange.getAttributes().get(AuditLog.RESULT_ATTRIBUTE);
@@ -137,6 +131,7 @@ public class AuditWebFilter implements WebFilter {
         return "FAILURE";
     }
 
+    // 汇总身份、状态与提权信息作为审计上下文
     private static Map<String, Object> context(ServerWebExchange exchange, String username, Throwable error) {
         var status = exchange.getResponse().getStatusCode();
         var context = new LinkedHashMap<String, Object>();
@@ -163,13 +158,7 @@ public class AuditWebFilter implements WebFilter {
         return context;
     }
 
-    private static String truncate(String value, int maxLength) {
-        if (value == null || value.length() <= maxLength) {
-            return value;
-        }
-        return value.substring(0, maxLength);
-    }
-
+    // 依据路径与方法推断审计操作类型
     static String operation(ServerWebExchange exchange) {
         var path = exchange.getRequest().getPath().value();
         var method = exchange.getRequest().getMethod();
@@ -204,6 +193,7 @@ public class AuditWebFilter implements WebFilter {
         return methodOperation(method.name());
     }
 
+    // 将 HTTP 方法映射为粗粒度操作动词
     private static String methodOperation(String method) {
         return switch (method) {
             case "GET", "HEAD" -> "READ";
@@ -214,6 +204,7 @@ public class AuditWebFilter implements WebFilter {
         };
     }
 
+    // 将 API 路径段映射为审计资源类型
     static String resourceType(ServerWebExchange exchange) {
         var overridden = overriddenAttribute(exchange, AuditLog.RESOURCE_TYPE_ATTRIBUTE);
         if (overridden != null) {
@@ -243,6 +234,7 @@ public class AuditWebFilter implements WebFilter {
         return "NAVIGATION".equals(operation(exchange)) ? "Page" : "Request";
     }
 
+    // 提取资源名称，导航请求回退到页面路径
     static String resourceName(ServerWebExchange exchange) {
         var overridden = overriddenAttribute(exchange, AuditLog.RESOURCE_NAME_ATTRIBUTE);
         if (overridden != null) {
@@ -258,11 +250,13 @@ public class AuditWebFilter implements WebFilter {
         return null;
     }
 
+    // 读取业务代码覆盖的审计属性并忽略空值
     private static String overriddenAttribute(ServerWebExchange exchange, String key) {
         var value = (String) exchange.getAttributes().get(key);
         return value == null || value.isBlank() ? null : value;
     }
 
+    // 拆分应用内路径并忽略空路径段
     private static java.util.List<String> apiParts(ServerWebExchange exchange) {
         var path = exchange.getRequest().getPath().pathWithinApplication().value();
         return java.util.Arrays.stream(path.split("/"))

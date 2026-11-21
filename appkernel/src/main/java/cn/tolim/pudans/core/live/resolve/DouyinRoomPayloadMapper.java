@@ -1,6 +1,5 @@
 package cn.tolim.pudans.core.live.resolve;
 
-import cn.tolim.pudans.contract.live.LivePlatform;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.contract.live.dto.LiveStreamProtocol;
@@ -22,6 +21,7 @@ public class DouyinRoomPayloadMapper {
 
     private final LiveStreamUrlValidator validator;
 
+    // 从房间载荷提取标题、主播与可用流地址
     public LiveRoomInfo map(JsonNode payload, String expectedRoomId) {
         var roomInfo = payload.path("state").path("roomStore").path("roomInfo");
         if (!roomInfo.isObject()) {
@@ -48,6 +48,7 @@ public class DouyinRoomPayloadMapper {
                 Instant.now());
     }
 
+    // 收集 HLS 与 FLV 地址并按优先级排序
     private List<LiveStreamUrl> streams(JsonNode webStreamUrl) {
         var streams = new ArrayList<LiveStreamUrl>();
         var seen = new LinkedHashMap<String, Boolean>();
@@ -56,6 +57,7 @@ public class DouyinRoomPayloadMapper {
         return List.copyOf(streams);
     }
 
+    // 按画质顺序加入去重后的合法地址
     private void addQuality(
             List<LiveStreamUrl> streams,
             LinkedHashMap<String, Boolean> seen,
@@ -70,6 +72,7 @@ public class DouyinRoomPayloadMapper {
         }
     }
 
+    // 读取文本字段，缺失或空白返回空
     private static String text(JsonNode node, String field) {
         if (node == null || !node.isObject()) {
             return null;
@@ -82,6 +85,7 @@ public class DouyinRoomPayloadMapper {
         return StringUtils.hasText(text) ? text : null;
     }
 
+    // 读取数组指定下标文本，越界返回空
     private static String text(JsonNode node, int index) {
         if (node == null || !node.isArray() || node.size() <= index) {
             return null;

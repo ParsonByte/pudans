@@ -33,6 +33,7 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
     @Nullable
     private URL externalUrl;
 
+    // 注入配置读取与属性，供外部地址解析。
     public ParameterSettingExternalUrlSupplier(
             PudansProperties pudansProperties,
             WebFluxProperties webFluxProperties,
@@ -42,6 +43,7 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
         this.systemConfigFetcher = systemConfigFetcher;
     }
 
+    // 将外部地址转换为标准字符形式，失败时保留原值。
     @Nullable
     private static URL normalizeUrl(@Nullable URL url) {
         if (url == null) {
@@ -61,16 +63,19 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
         }
     }
 
+    // 扩展初始化后重新读取站点外部地址。
     @EventListener
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
         refetchExternalUrl().ifPresent(externalUrl -> this.externalUrl = externalUrl);
     }
 
+    // 立即更新缓存的外部地址并规范化。
     @EventListener
     void onExternalUrlChanged(ExternalUrlChangedEvent event) {
         this.externalUrl = normalizeUrl(event.getExternalUrl());
     }
 
+    // 优先读取站点地址，回退到基础配置中的地址。
     Optional<URL> refetchExternalUrl() {
         return systemConfigFetcher
                 .fetch(ParameterSetting.Site.GROUP, ParameterSetting.Site.class)
@@ -95,6 +100,7 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
                 .blockOptional(Duration.ofSeconds(10));
     }
 
+    // 按绝对链接配置决定返回外部地址还是基础路径。
     @Override
     public URI get() {
         try {
@@ -110,6 +116,7 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
         }
     }
 
+    // 依次使用已配置地址、属性地址与请求地址。
     @Override
     public URL getURL(HttpRequest request) {
         if (this.externalUrl != null) {
@@ -127,12 +134,14 @@ class ParameterSettingExternalUrlSupplier implements ExternalUrlSupplier {
         return url;
     }
 
+    // 返回规范化后的原始外部地址，可能为空。
     @Nullable
     @Override
     public URL getRaw() {
         return normalizeUrl(externalUrl != null ? externalUrl : pudansProperties.getExternalUrl());
     }
 
+    // 返回配置的基础路径，未配置时使用根路径。
     private String getBasePath() {
         var basePath = webFluxProperties.getBasePath();
         if (!StringUtils.hasText(basePath)) {

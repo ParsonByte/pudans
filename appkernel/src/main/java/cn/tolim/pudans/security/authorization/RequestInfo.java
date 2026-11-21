@@ -27,10 +27,12 @@ public class RequestInfo {
 
     String[] parts;
 
+    // 仅携带动作与路径，其余字段留空
     public RequestInfo(boolean isResourceRequest, String path, String verb) {
         this(isResourceRequest, path, null, null, verb, null, null, null, null, null, null, null, null);
     }
 
+    // 统一空值处理，避免授权匹配空引用
     public RequestInfo(
             boolean isResourceRequest,
             String path,

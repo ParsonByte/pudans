@@ -51,12 +51,14 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
 
     private final BuiltinRoleDefinitions builtinRoleDefinitions;
 
+    // 注入上下文与角色定义以执行启动自检。
     public EndpointApiGroupSelfCheck(
             ApplicationContext applicationContext, BuiltinRoleDefinitions builtinRoleDefinitions) {
         this.applicationContext = applicationContext;
         this.builtinRoleDefinitions = builtinRoleDefinitions;
     }
 
+    // 启动时校验路由格式与角色资源覆盖关系。
     @Override
     public void run(ApplicationArguments args) {
         var endpoints = applicationContext.getBeansOfType(CustomEndpoint.class).values();
@@ -132,6 +134,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
         }
     }
 
+    // 遍历路由函数并汇总所有相对路径。
     private static Set<String> extractRelativePaths(
             RouterFunction<ServerResponse> routerFunction,
             String endpointName,
@@ -139,12 +142,14 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
         var routes = new LinkedHashSet<String>();
         Deque<String> nestedPrefixes = new ArrayDeque<>();
         routerFunction.accept(new RouterFunctions.Visitor() {
+            // 记录嵌套路由前缀，便于还原完整路径。
             @Override
             public void startNested(RequestPredicate predicate) {
                 var paths = pathsOf(predicate);
                 nestedPrefixes.addLast(paths.stream().findFirst().orElse(""));
             }
 
+            // 离开嵌套层级时移除对应前缀。
             @Override
             public void endNested(RequestPredicate predicate) {
                 if (!nestedPrefixes.isEmpty()) {
@@ -152,6 +157,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                 }
             }
 
+            // 收集路由路径，缺少路径时回退到嵌套前缀。
             @Override
             public void route(RequestPredicate predicate, HandlerFunction<?> handler) {
                 var text = predicate.toString();
@@ -188,6 +194,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
         return routes;
     }
 
+    // 从谓词文本中提取路由路径。
     private static Set<String> pathsOf(RequestPredicate predicate) {
         var paths = new LinkedHashSet<String>();
         var matcher = ROUTE_PATH_PATTERN.matcher(predicate.toString());
@@ -197,6 +204,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
         return paths;
     }
 
+    // 汇总内置角色已覆盖的资源名。
     private Set<String> coveredResources() {
         return builtinRoleDefinitions.allRoles().stream()
                 .flatMap(role -> role.getRules().stream())
@@ -211,6 +219,7 @@ public class EndpointApiGroupSelfCheck implements ApplicationRunner {
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
+    // 取路由首段作为资源名。
     private static String topLevelResource(String route) {
         var path = route.startsWith("/") ? route.substring(1) : route;
         var separator = path.indexOf('/');

@@ -6,7 +6,6 @@ import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
 import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.dao.ConcurrencyFailureException;
@@ -22,7 +21,6 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.server.ServerWebExchange;
 
-@Slf4j
 public enum Exceptions {
     ;
 
@@ -41,6 +39,7 @@ public enum Exceptions {
             RequestNotPermitted.class, REQUEST_NOT_PERMITTED_TYPE,
             BadCredentialsException.class, INVALID_CREDENTIAL_TYPE);
 
+    // 将任意异常规范化为带请求上下文的问题详情响应。
     public static ErrorResponse createErrorResponse(
             Throwable t, @Nullable HttpStatusCode status, ServerWebExchange exchange) {
         final ErrorResponse errorResponse;
@@ -66,6 +65,7 @@ public enum Exceptions {
         return errorResponse;
     }
 
+    // 用本地化标题与详情覆盖框架默认英文文案。
     private static void applyChineseText(ErrorResponse errorResponse, ProblemDetail problemDetail) {
         var titleCode = errorResponse.getTitleMessageCode();
         var title = titleCode == null ? null : ProblemDetailMessages.title(titleCode);
@@ -82,6 +82,7 @@ public enum Exceptions {
         }
     }
 
+    // 按状态码提供兜底中文标题。
     private static String statusTitle(int status) {
         return switch (status) {
             case 400 -> "请求参数有误";
@@ -97,6 +98,7 @@ public enum Exceptions {
         };
     }
 
+    // 根据异常类型与响应状态构造问题详情。
     private static ErrorResponse handleException(Throwable t, @Nullable HttpStatusCode status) {
         var responseStatusAnno =
                 MergedAnnotations.from(t.getClass(), TYPE_HIERARCHY).get(ResponseStatus.class);
@@ -119,6 +121,7 @@ public enum Exceptions {
         return builder.build();
     }
 
+    // 将并发失败转换为冲突响应。
     private static @Nullable ErrorResponse handleConflictException(Throwable t) {
         if (t instanceof ConcurrencyFailureException) {
             return ErrorResponse.builder(t, ProblemDetail.forStatus(HttpStatus.CONFLICT))
