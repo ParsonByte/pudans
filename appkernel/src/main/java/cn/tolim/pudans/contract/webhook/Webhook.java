@@ -38,6 +38,7 @@ public class Webhook extends AbstractExtension {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private Spec spec = new Spec();
 
+    // 判断钩子是否订阅该事件，兼容旧事件名。
     public boolean subscribes(String eventType) {
         var events = spec.getEvents();
         if (events == null || events.isEmpty()) {

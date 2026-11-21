@@ -24,10 +24,12 @@ public class OidcClient {
 
     private final WebClient webClient = WebClient.builder().build();
 
+    // 将声明值安全转换为字符串，空值保持为空。
     private static String asString(Object value) {
         return value == null ? null : String.valueOf(value);
     }
 
+    // 按注册标识查找配置，未知标识直接报错。
     public OidcProperties.Provider provider(String registrationId) {
         return securitySettings.oidcProviders().stream()
                 .filter(provider -> registrationId.equals(provider.getRegistrationId()))
@@ -35,6 +37,7 @@ public class OidcClient {
                 .orElseThrow(() -> new IllegalArgumentException("未知的 OIDC 提供方：" + registrationId));
     }
 
+    // 拼接携带状态参数的授权码跳转地址。
     public String authorizationUrl(String registrationId, String redirectUri, String state) {
         var provider = provider(registrationId);
         return UriComponentsBuilder.fromUriString(provider.getAuthorizationUri())
@@ -48,6 +51,7 @@ public class OidcClient {
                 .toUriString();
     }
 
+    // 用授权码换取令牌，再拉取用户信息声明。
     public Mono<OidcUserInfo> exchange(String registrationId, String code, String redirectUri) {
         var provider = provider(registrationId);
         var form = new LinkedMultiValueMap<String, String>();
@@ -102,6 +106,7 @@ public class OidcClient {
 
 
     public static class OidcException extends RuntimeException {
+        // 表示协议响应缺少登录所需字段。
         public OidcException(String message) {
             super(message);
         }

@@ -16,6 +16,7 @@ public abstract class AbstractValueIndexSpecBuilder<
 
     protected boolean nullable = true;
 
+    // 校验索引名称与键类型后保存配置。
     protected AbstractValueIndexSpecBuilder(String name, Class<K> keyType) {
         Assert.hasText(name, "索引名称不能为空");
         Assert.notNull(keyType, "键类型不能为 null");
@@ -23,11 +24,13 @@ public abstract class AbstractValueIndexSpecBuilder<
         this.keyType = keyType;
     }
 
+    // 设置唯一性约束，返回构建器本身。
     public B unique(boolean unique) {
         this.unique = unique;
         return (B) this;
     }
 
+    // 设置是否允许空值，返回构建器本身。
     public B nullable(boolean nullable) {
         this.nullable = nullable;
         return (B) this;

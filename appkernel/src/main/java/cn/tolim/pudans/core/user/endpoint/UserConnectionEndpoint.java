@@ -21,6 +21,7 @@ import org.springframework.security.authentication.AuthenticationTrustResolverIm
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -42,10 +43,12 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     private final AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
 
+    // 为每个提供方生成会话内状态键
     private static String stateKey(String registrationId) {
         return UserConnectionEndpoint.class.getName() + ".STATE." + registrationId;
     }
 
+    // 注册身份连接查询、绑定与解绑路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "UserConnectionV1alpha1";
@@ -83,6 +86,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 列出当前用户的全部身份连接
     private Mono<ServerResponse> list(ServerRequest request) {
         return currentUsername()
                 .flatMapMany(connectionService::listConnections)
@@ -90,6 +94,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .flatMap(connections -> ServerResponse.ok().bodyValue(connections));
     }
 
+    // 返回已配置的外部身份提供方
     private Mono<ServerResponse> listOidcProviders(ServerRequest request) {
         return currentUsername()
                 .map(username -> securitySettings.oidcProviders().stream()
@@ -101,6 +106,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .flatMap(providers -> ServerResponse.ok().bodyValue(providers));
     }
 
+    // 生成并缓存授权地址与状态
     private Mono<ServerResponse> authorizeUrl(ServerRequest request) {
         var registrationId = request.pathVariable("registrationId");
         var redirectUri = request.queryParam("redirectUri").orElseThrow(
@@ -116,6 +122,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .flatMap(vo -> ServerResponse.ok().bodyValue(vo));
     }
 
+    // 校验状态后用授权码绑定外部身份
     private Mono<ServerResponse> bindOidc(ServerRequest request) {
         return currentUsername().flatMap(username -> request.bodyToMono(OidcBindRequest.class)
                         .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
@@ -137,6 +144,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .flatMap(connection -> ServerResponse.ok().bodyValue(connection));
     }
 
+    // 用外部用户信息构造身份连接
     private Mono<UserConnection> createConnection(
             String username, String registrationId, OidcClient.OidcUserInfo userInfo) {
         var connection = new UserConnection();
@@ -149,6 +157,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
         return connectionService.createConnection(connection);
     }
 
+    // 删除当前用户的指定身份连接
     private Mono<ServerResponse> unbind(ServerRequest request) {
         return currentUsername()
                 .flatMap(username -> connectionService.removeConnection(
@@ -156,15 +165,18 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .flatMap(deleted -> ServerResponse.ok().bodyValue(deleted));
     }
 
+    // 要求浏览器会话认证，令牌不能增删持久登录方式
     private Mono<String> currentUsername() {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 .filter(authenticationTrustResolver::isAuthenticated)
+                .filter(authentication -> !(authentication instanceof JwtAuthenticationToken))
                 .map(Authentication::getName)
                 .switchIfEmpty(Mono.error(
-                        new ResponseStatusException(HttpStatus.FORBIDDEN, "需要身份认证。")));
+                        new ResponseStatusException(HttpStatus.FORBIDDEN, "需要浏览器会话认证。")));
     }
 
+    // 返回当前连接接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

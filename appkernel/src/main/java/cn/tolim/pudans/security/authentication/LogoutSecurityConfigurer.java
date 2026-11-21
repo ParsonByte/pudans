@@ -28,12 +28,14 @@ class LogoutSecurityConfigurer implements SecurityConfigurer {
 
     private final ServerSecurityContextRepository securityContextRepository;
 
+    // 注册登出处理器与登出成功后的响应处理。
     @Override
     public void configure(ServerHttpSecurity http) {
         http.logout(
                 logout -> logout.logoutHandler(getLogoutHandler()).logoutSuccessHandler(new LogoutSuccessHandler()));
     }
 
+    // 组合默认上下文清理与容器内自定义登出处理器。
     private ServerLogoutHandler getLogoutHandler() {
         var defaultLogoutHandler = new SecurityContextServerLogoutHandler();
         defaultLogoutHandler.setSecurityContextRepository(securityContextRepository);
@@ -48,6 +50,7 @@ class LogoutSecurityConfigurer implements SecurityConfigurer {
 
     private class LogoutSuccessHandler implements ServerLogoutSuccessHandler {
 
+        // 登出成功后执行登出业务处理并返回无内容状态。
         @Override
         public Mono<Void> onLogoutSuccess(WebFilterExchange exchange, Authentication authentication) {
             return userLoginOrLogoutProcessing

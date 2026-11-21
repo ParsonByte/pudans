@@ -31,6 +31,7 @@ public class Downloads {
 
     private final Policies policies;
 
+    // 聚合文件记录、驱动解析与令牌签发依赖。
     public Downloads(
             FileRecords fileRecords,
             StorageDriverResolver driverResolver,
@@ -44,6 +45,7 @@ public class Downloads {
         this.policies = policies;
     }
 
+    // 生成受令牌保护且有效期受限的下载地址。
     public Mono<DownloadUrl> downloadUrl(String fileId, Duration requestedTtl) {
         return fileRecords.get(fileId).flatMap(file -> {
             ensureActive(file);
@@ -74,6 +76,7 @@ public class Downloads {
         });
     }
 
+    // 读取文件内容前先校验文件可读。
     public Mono<StorageReadResult> open(String fileId, StorageReadOptions options) {
         return fileRecords.get(fileId).flatMap(file -> {
             ensureActive(file);
@@ -83,6 +86,7 @@ public class Downloads {
         });
     }
 
+    // 仅在策略允许且驱动支持时返回预签名直链。
     public Mono<StorageSource> sourceUrl(String fileId, StorageSourceOptions options) {
         return fileRecords.get(fileId).flatMap(file -> {
             ensureActive(file);
@@ -101,10 +105,12 @@ public class Downloads {
         });
     }
 
+    // 校验下载令牌与目标文件是否匹配。
     public void verify(String token, String fileId) {
         transferTokens.verifyDownload(token, fileId);
     }
 
+    // 非可读状态统一按文件不存在处理。
     private void ensureActive(StorageFile file) {
         if (file.getSpec().getState() != StorageFileState.ACTIVE) {
             throw new ApiException(HttpStatus.NOT_FOUND, "storage-file-not-found", "文件不存在。");

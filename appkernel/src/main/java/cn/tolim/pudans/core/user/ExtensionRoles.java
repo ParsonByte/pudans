@@ -43,16 +43,19 @@ public class ExtensionRoles implements Roles {
 
     private final cn.tolim.pudans.core.rbac.permission.RbacCache rbacCache;
 
+    // 注入扩展客户端与角色缓存
     public ExtensionRoles(
             ReactiveExtensionClient client, cn.tolim.pudans.core.rbac.permission.RbacCache rbacCache) {
         this.client = client;
         this.rbacCache = rbacCache;
     }
 
+    // 只接受角色类型的引用
     private static boolean isRoleKind(RoleRef roleRef) {
         return Role.GROUP.equals(roleRef.getApiGroup()) && Role.KIND.equals(roleRef.getKind());
     }
 
+    // 将用户名转换为角色绑定主题
     private static Subject toUserSubject(String username) {
         var subject = new Subject();
         subject.setApiGroup(User.GROUP);
@@ -61,6 +64,7 @@ public class ExtensionRoles implements Roles {
         return subject;
     }
 
+    // 按需构造排除隐藏角色的条件
     private static ListOptions shouldExcludeHidden(boolean excludeHidden) {
         if (!excludeHidden) {
             return null;
@@ -72,20 +76,12 @@ public class ExtensionRoles implements Roles {
                 .build();
     }
 
-    private static boolean matchSubject(Subject targetSubject, Subject subject) {
-        if (targetSubject == null || subject == null) {
-            return false;
-        }
-        return StringUtils.equals(targetSubject.getKind(), subject.getKind())
-                && StringUtils.equals(targetSubject.getName(), subject.getName())
-                && StringUtils.defaultString(targetSubject.getApiGroup())
-                .equals(StringUtils.defaultString(subject.getApiGroup()));
-    }
-
+    // 提取绑定中的角色引用
     private Flux<RoleRef> listRoleRefs(Subject subject) {
         return listRoleBindings(subject).map(RoleBinding::getRoleRef);
     }
 
+    // 列出主题关联且未删除的绑定
     @Override
     public Flux<RoleBinding> listRoleBindings(Subject subject) {
         var listOptions = ListOptions.builder()
@@ -95,6 +91,7 @@ public class ExtensionRoles implements Roles {
         return client.listAll(RoleBinding.class, listOptions, defaultSort());
     }
 
+    // 返回用户直接绑定的角色名
     @Override
     public Flux<String> getRolesByUsername(String username) {
         return listRoleRefs(toUserSubject(username))
@@ -102,6 +99,7 @@ public class ExtensionRoles implements Roles {
                 .map(RoleRef::getName);
     }
 
+    // 批量聚合并返回每个用户的角色集合
     @Override
     public Mono<Map<String, Collection<String>>> getRolesByUsernames(Collection<String> usernames) {
         if (CollectionUtils.isEmpty(usernames)) {
@@ -132,6 +130,7 @@ public class ExtensionRoles implements Roles {
                 });
     }
 
+    // 超级管理员直接通过，否则展开依赖比较
     @Override
     public Mono<Boolean> contains(Collection<String> source, Collection<String> candidates) {
         if (source.contains(SuperAdminInitializer.SUPER_ROLE_NAME)) {
@@ -148,6 +147,7 @@ public class ExtensionRoles implements Roles {
                 .map(roleNames -> roleNames.containsAll(candidates));
     }
 
+    // 展开角色依赖并返回对应权限
     @Override
     public Flux<Role> listPermissions(Set<String> names) {
         if (containsSuperRole(names)) {
@@ -157,6 +157,7 @@ public class ExtensionRoles implements Roles {
         return listWithDependencies(names, shouldExcludeHidden(true));
     }
 
+    // 通过缓存展开角色依赖
     @Override
     public Flux<Role> listDependenciesFlux(Set<String> names) {
         return rbacCache
@@ -165,6 +166,7 @@ public class ExtensionRoles implements Roles {
                 .flatMapMany(Flux::fromIterable);
     }
 
+    // 按名称批量查询未删除角色
     private Flux<Role> listRoles(Set<String> names, ListOptions additionalListOptions) {
         if (CollectionUtils.isEmpty(names)) {
             return Flux.empty();
@@ -180,6 +182,7 @@ public class ExtensionRoles implements Roles {
         return client.listAll(Role.class, listOptions, ExtensionUtil.defaultSort());
     }
 
+    // 递归展开依赖并补充聚合角色
     private Flux<Role> listWithDependencies(Set<String> names, ListOptions additionalListOptions) {
         var visited = new HashSet<String>();
         return listRoles(names, additionalListOptions)
@@ -204,6 +207,7 @@ public class ExtensionRoles implements Roles {
                 .concatWith(Flux.defer(() -> listAggregatedRoles(visited, additionalListOptions)));
     }
 
+    // 查出标记为聚合到这些角色的角色
     private Flux<Role> listAggregatedRoles(Set<String> roleNames, ListOptions additionalListOptions) {
         if (CollectionUtils.isEmpty(roleNames)) {
             return Flux.empty();
@@ -216,11 +220,13 @@ public class ExtensionRoles implements Roles {
         return client.listAll(Role.class, listOptions, ExtensionUtil.defaultSort());
     }
 
+    // 默认包含隐藏角色
     @Override
     public Flux<Role> list(Set<String> roleNames) {
         return list(roleNames, false);
     }
 
+    // 按名称列出角色并可选排除隐藏项
     @Override
     public Flux<Role> list(Set<String> roleNames, boolean excludeHidden) {
         if (CollectionUtils.isEmpty(roleNames)) {
@@ -233,6 +239,7 @@ public class ExtensionRoles implements Roles {
         return client.listAll(Role.class, builder.build(), defaultSort());
     }
 
+    // 解析依赖注解中的列表配置
     private List<String> stringToList(String str) {
         if (StringUtils.isBlank(str)) {
             return Collections.emptyList();

@@ -10,6 +10,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.security.web.server.authentication.logout.SecurityContextServerLogoutHandler;
 import org.springframework.security.web.server.authentication.logout.ServerLogoutHandler;
@@ -36,6 +37,7 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
     @Setter
     private AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
 
+    // 建立第三方连接映射并在登出时清理安全上下文。
     public MapOAuth2AuthenticationFilter(
             ServerSecurityContextRepository securityContextRepository,
             Connections connections,
@@ -50,12 +52,15 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
         this.logoutHandler = logoutHandler;
     }
 
+    // 保留前置身份并在回调后建立本地登录会话。
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
                 .filter(authenticationTrustResolver::isAuthenticated)
                 .filter(authentication -> !(authentication instanceof OAuth2AuthenticationToken))
+                // 令牌认证不能作为 OAuth2 绑定的前置身份，避免 bearer 凭据扩展持久登录方式。
+                .filter(authentication -> !(authentication instanceof JwtAuthenticationToken))
                 .doOnNext(authentication -> exchange.getAttributes().put(
                         OAuth2LoginAttributes.PRE_AUTHENTICATION, authentication))
                 .then(chain.filter(exchange))
@@ -81,6 +86,7 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
                         .then()));
     }
 
+    // 未绑定账号时先登出再提示用户完成绑定。
     private Mono<Void> logoutAndRequireConnection(
             ServerWebExchange exchange, WebFilterChain chain, OAuth2AuthenticationToken token) {
         var webFilterExchange = new WebFilterExchange(exchange, chain);

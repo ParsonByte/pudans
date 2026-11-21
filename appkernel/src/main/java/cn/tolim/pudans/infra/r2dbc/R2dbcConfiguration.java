@@ -14,9 +14,11 @@ import org.springframework.data.r2dbc.mapping.R2dbcMappingContext;
 class R2dbcConfiguration {
 
 
+    // 关闭标识符强制加引号，保持表列名小写映射。
     @Bean
     static BeanPostProcessor r2dbcMappingContextQuoteModifier() {
         return new BeanPostProcessor() {
+            // 仅调整数据库映射上下文，不影响其他组件。
             @Override
             public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
                 if (bean instanceof R2dbcMappingContext mappingContext) {

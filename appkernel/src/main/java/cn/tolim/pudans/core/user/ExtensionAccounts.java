@@ -61,16 +61,19 @@ public class ExtensionAccounts implements Accounts {
 
     private Clock clock = Clock.systemUTC();
 
+    // 替换时钟便于测试账号逻辑
     void setClock(Clock clock) {
         this.clock = clock;
     }
 
+    // 读取用户并转换底层缺失错误
     @Override
     public Mono<User> getUser(String username) {
         return client.get(User.class, username)
                 .onErrorMap(ExtensionNotFoundException.class, e -> new UserNotFoundException(username));
     }
 
+    // 按标识查询用户，空值返回空结果
     @Override
     public Mono<User> getUserByUid(String uid) {
         if (!StringUtils.hasText(uid)) {
@@ -82,6 +85,7 @@ public class ExtensionAccounts implements Accounts {
         return client.listAll(User.class, listOptions, defaultSort()).next();
     }
 
+    // 只返回邮箱已验证且匹配的用户
     @Override
     public Mono<User> findUserByVerifiedEmail(String email) {
         if (!StringUtils.hasText(email)) {
@@ -94,6 +98,7 @@ public class ExtensionAccounts implements Accounts {
         return client.listAll(User.class, listOptions, defaultSort()).next();
     }
 
+    // 仅保存已加密密码，用于登录时的哈希升级，不触发凭据吊销
     @Override
     public Mono<User> updatePassword(String username, String newPassword) {
         return getUser(username)
@@ -101,15 +106,16 @@ public class ExtensionAccounts implements Accounts {
                 .flatMap(user -> {
                     user.getSpec().setPassword(newPassword);
                     return client.update(user);
-                })
-                .doOnNext(user -> publishPasswordChangedEvent(username));
+                });
     }
 
+    // 校验原始密码后加密并更新
     @Override
     public Mono<User> updateWithRawPassword(String username, String rawPassword) {
         return updateWithRawPasswordInternal(username, rawPassword);
     }
 
+    // 统一校验长度与字符并避免新旧密码相同
     private Mono<User> updateWithRawPasswordInternal(String username, String rawPassword) {
         if (!ValidationUtils.isPasswordLengthValid(rawPassword)) {
             return Mono.error(new UnsatisfiedAttributeValueException("密码长度必须在 8 到 257 之间"));
@@ -134,6 +140,7 @@ public class ExtensionAccounts implements Accounts {
                 .doOnNext(user -> publishPasswordChangedEvent(username));
     }
 
+    // 根据当前安全上下文判断角色是否足够
     @Override
     public Mono<Boolean> hasSufficientRoles(Collection<String> roles) {
         return ReactiveSecurityContextHolder.getContext()
@@ -143,6 +150,7 @@ public class ExtensionAccounts implements Accounts {
                 .defaultIfEmpty(false);
     }
 
+    // 先检查名称占用再创建用户
     @Override
     public Mono<User> createUser(User user) {
         Assert.notNull(user, "用户不能为 null");
@@ -157,6 +165,7 @@ public class ExtensionAccounts implements Accounts {
                 });
     }
 
+    // 未设置密码时放行，否则校验原始密码
     @Override
     public Mono<Boolean> confirmPassword(String username, String rawPassword) {
         return getUser(username)
@@ -174,6 +183,7 @@ public class ExtensionAccounts implements Accounts {
                 .defaultIfEmpty(false);
     }
 
+    // 按小写邮箱列出全部匹配用户
     @Override
     public Flux<User> listByEmail(String email) {
         var listOptions = new ListOptions();
@@ -181,6 +191,7 @@ public class ExtensionAccounts implements Accounts {
         return client.listAll(User.class, listOptions, defaultSort());
     }
 
+    // 判断邮箱是否已被验证账号占用
     @Override
     public Mono<Boolean> checkEmailAlreadyVerified(String email) {
         return listByEmail(email)
@@ -188,11 +199,13 @@ public class ExtensionAccounts implements Accounts {
                 .hasElements();
     }
 
+    // 使用配置的编码器加密密码
     @Override
     public String encryptPassword(String rawPassword) {
         return passwordEncoder.encode(rawPassword);
     }
 
+    // 事务内禁用用户并撤销全部会话
     @Override
     public Mono<User> disable(String username) {
         var tx = TransactionalOperator.create(transactionManager);
@@ -202,9 +215,14 @@ public class ExtensionAccounts implements Accounts {
                 .doOnNext(user -> user.getSpec().setDisabled(true))
                 .flatMap(client::update)
                 .as(tx::transactional)
-                .doOnNext(this::publishDisabled);
+                .doOnNext(user -> {
+                    publishDisabled(user);
+                    // 复用凭据吊销流程，撤销刷新令牌、记住我令牌和个人访问令牌。
+                    eventPublisher.publishEvent(new PasswordChangedEvent(this, username));
+                });
     }
 
+    // 同时撤销设备会话和注册表会话
     private Mono<Void> revokeSessions(String username) {
         var revokeDevices = deviceSessions.revoke(username);
         var invalidateSessions = sessionRegistry
@@ -218,6 +236,7 @@ public class ExtensionAccounts implements Accounts {
         return revokeDevices.then(invalidateSessions);
     }
 
+    // 仅对已禁用用户重新启用
     @Override
     public Mono<User> enable(String username) {
         return client.fetch(User.class, username)
@@ -227,14 +246,17 @@ public class ExtensionAccounts implements Accounts {
                 .doOnNext(this::publishEnabled);
     }
 
+    // 发布用户被禁用事件
     private void publishDisabled(User user) {
         publishAccountState(user, "user.disabled");
     }
 
+    // 发布用户被启用事件
     private void publishEnabled(User user) {
         publishAccountState(user, "user.enabled");
     }
 
+    // 统一组装并发布账号状态事件
     private void publishAccountState(User user, String type) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", user.getMetadata().getName());
@@ -243,6 +265,7 @@ public class ExtensionAccounts implements Accounts {
         domainEventPublisher.publish(type, payload, null);
     }
 
+    // 发布密码变更事件供下游处理
     void publishPasswordChangedEvent(String username) {
         eventPublisher.publishEvent(new PasswordChangedEvent(this, username));
     }

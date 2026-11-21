@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 
 public record UnknownKey(@Nullable String value) implements Comparable<UnknownKey> {
 
+    // 按自然排序规则比较包装的键值。
     @Override
     public int compareTo(UnknownKey o) {
         return KeyComparator.INSTANCE.compare(this.value, o.value);

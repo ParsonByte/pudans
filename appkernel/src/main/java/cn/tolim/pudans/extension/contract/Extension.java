@@ -6,6 +6,7 @@ import java.util.Objects;
 
 public interface Extension extends ExtensionOperator, Comparable<Extension> {
 
+    // 按名称比较，元数据缺失的实例排在末尾。
     @Override
     default int compareTo(Extension another) {
         if (another == null || another.getMetadata() == null) {

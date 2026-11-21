@@ -63,6 +63,7 @@ public class LiveRecordingCleanupTask {
 
     private volatile Disposable subscription;
 
+    // 启动保留期定时清理，并异步清理孤儿目录
     @PostConstruct
     public void start() {
         var interval = interval();
@@ -84,6 +85,7 @@ public class LiveRecordingCleanupTask {
                 error -> log.warn("直播录制孤儿目录清理失败：{}", error.getMessage())));
     }
 
+    // 停止定时清理并释放订阅
     @PreDestroy
     public void stop() {
         var current = subscription;
@@ -93,6 +95,7 @@ public class LiveRecordingCleanupTask {
         }
     }
 
+    // 按保留天数分批删除过期录制
     public Mono<Integer> cleanupRetention() {
         var days = properties.getRetention().getDays();
         if (days <= 0) {
@@ -142,6 +145,7 @@ public class LiveRecordingCleanupTask {
                 .then(Mono.fromSupplier(deleted::get));
     }
 
+    // 先删对象再删本地与记录，失败则保留并告警
     private Mono<Integer> deleteExpired(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         return purgeObjects(recording)
@@ -151,6 +155,7 @@ public class LiveRecordingCleanupTask {
                 .onErrorResume(error -> retainFailed(recording, error).thenReturn(0));
     }
 
+    // 删除录制所有已上传对象
     private Mono<Void> purgeObjects(LiveRecording recording) {
         var status = recording.getStatus();
         var parts = status == null || status.getParts() == null ? List.<LiveRecording.Part>of() : status.getParts();
@@ -160,6 +165,7 @@ public class LiveRecordingCleanupTask {
                 .then();
     }
 
+    // 清理失败时累加次数并发送告警
     private Mono<Void> retainFailed(LiveRecording recording, Throwable error) {
         var name = recording.getMetadata().getName();
         var code = error instanceof ApiException apiException ? apiException.getCode() : errorCode(error);
@@ -179,17 +185,20 @@ public class LiveRecordingCleanupTask {
                         .onErrorResume(alertError -> Mono.empty()));
     }
 
+    // 本地目录存在时才执行删除
     private void deleteLocalDir(String name) {
         if (Files.exists(workspace.recordingDir(name))) {
             workspace.deleteRecordingDir(name);
         }
     }
 
+    // 以有效结束时间判断是否超过保留期
     private boolean isExpired(LiveRecording recording, Instant threshold) {
         var endedAt = effectiveEnd(recording);
         return endedAt != null && endedAt.isBefore(threshold);
     }
 
+    // 依次回退到状态、期望与创建时间
     private static Instant effectiveEnd(LiveRecording recording) {
         var status = recording.getStatus();
         if (status != null && status.getEndedAt() != null) {
@@ -215,6 +224,7 @@ public class LiveRecordingCleanupTask {
         }
     }
 
+    // 只把超过孤儿时限的目录纳入清理
     private boolean isOrphanCandidate(Path entry) {
         try {
             if (!Files.isDirectory(entry)) {
@@ -244,6 +254,7 @@ public class LiveRecordingCleanupTask {
                 });
     }
 
+    // 列出工作目录下的一级子目录
     private List<Path> directories(Path workDir) throws IOException {
         if (!Files.isDirectory(workDir)) {
             return List.of();
@@ -253,6 +264,7 @@ public class LiveRecordingCleanupTask {
         }
     }
 
+    // 读取录制工作目录，未配置时跳过清理
     private Path workDir() {
         var configured = properties.getRecorder().getWorkDir();
         if (!StringUtils.hasText(configured)) {
@@ -262,6 +274,7 @@ public class LiveRecordingCleanupTask {
         return Path.of(configured);
     }
 
+    // 清理间隔缺失或非法时使用默认值
     private Duration interval() {
         var configured = properties.getRetention().getInterval();
         return configured == null || configured.isZero() || configured.isNegative()
@@ -269,6 +282,7 @@ public class LiveRecordingCleanupTask {
                 : configured;
     }
 
+    // 未知异常用类名作为告警错误码
     private static String errorCode(Throwable error) {
         return error.getClass().getSimpleName();
     }

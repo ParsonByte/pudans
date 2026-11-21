@@ -34,6 +34,7 @@ public class BuiltinRoleDefinitions {
 
     private final List<UserGroup> builtinGroups;
 
+    // 启动时加载扩展目录中的内置角色与用户组定义。
     public BuiltinRoleDefinitions() {
         var roles = new ArrayList<Role>();
         var builtinRoles = new ArrayList<Role>();
@@ -62,30 +63,36 @@ public class BuiltinRoleDefinitions {
         this.builtinGroups = List.copyOf(builtinGroups);
     }
 
+    // 返回启动时加载的内置角色定义。
     public List<Role> builtinRoles() {
         return builtinRoles;
     }
 
+    // 按名称查找内置角色定义。
     public Optional<Role> role(String name) {
         return builtinRoles.stream()
                 .filter(role -> Objects.equals(name, role.getMetadata().getName()))
                 .findFirst();
     }
 
+    // 返回启动时加载的内置用户组定义。
     public List<UserGroup> builtinGroups() {
         return builtinGroups;
     }
 
+    // 按名称查找内置用户组定义。
     public Optional<UserGroup> group(String name) {
         return builtinGroups.stream()
                 .filter(group -> Objects.equals(name, group.getMetadata().getName()))
                 .findFirst();
     }
 
+    // 返回扩展目录中的全部角色定义。
     public List<Role> allRoles() {
         return allRoles;
     }
 
+    // 扫描扩展目录并按文件名排序加载全部文档。
     private static List<Unstructured> loadDocuments() {
         var resolver = new PathMatchingResourcePatternResolver();
         var resources = new ArrayList<Resource>();
@@ -100,6 +107,7 @@ public class BuiltinRoleDefinitions {
         return new YamlUnstructuredLoader(resources.toArray(Resource[]::new)).load();
     }
 
+    // 通过内置标签判断资源是否受系统保护。
     private static boolean isBuiltin(AbstractExtension extension) {
         return extension.getMetadata() != null
                 && Boolean.parseBoolean(

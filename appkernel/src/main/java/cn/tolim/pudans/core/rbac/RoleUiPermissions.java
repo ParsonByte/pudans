@@ -14,6 +14,7 @@ public final class RoleUiPermissions {
 
     private RoleUiPermissions() {}
 
+    // 解析角色注解中的界面权限，解析失败返回空。
     public static List<String> of(Role role) {
         var annotations = role.getMetadata() == null ? null : role.getMetadata().getAnnotations();
         if (annotations == null) {

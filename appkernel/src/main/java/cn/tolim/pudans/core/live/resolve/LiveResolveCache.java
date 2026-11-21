@@ -30,6 +30,7 @@ public class LiveResolveCache {
 
     private final LiveMetrics metrics;
 
+    // 注入 Redis、配置与指标组件
     public LiveResolveCache(
             ReactiveStringRedisTemplate redisTemplate, LiveProperties properties, LiveMetrics metrics) {
         this.redisTemplate = redisTemplate;
@@ -37,6 +38,7 @@ public class LiveResolveCache {
         this.metrics = metrics;
     }
 
+    // 读取解析缓存，Redis 异常降级为未命中
     public Mono<Optional<LiveRoomInfo>> cached(LivePlatform platform, String roomId) {
         return redisTemplate
                 .opsForValue()
@@ -50,6 +52,7 @@ public class LiveResolveCache {
                 .defaultIfEmpty(Optional.empty());
     }
 
+    // 在线与离线使用不同 TTL 写入解析结果
     public Mono<Void> cache(LivePlatform platform, String roomId, LiveRoomInfo info) {
         var ttl = info.live() ? properties.getResolve().getCacheTtl() : properties.getResolve().getOfflineCacheTtl();
         return redisTemplate
@@ -63,6 +66,7 @@ public class LiveResolveCache {
                 });
     }
 
+    // 读取限流冷却截止时间，异常按无冷却处理
     public Mono<Optional<Instant>> cooldownUntil(LivePlatform platform, String roomId) {
         return redisTemplate
                 .opsForValue()
@@ -75,6 +79,7 @@ public class LiveResolveCache {
                 .defaultIfEmpty(Optional.empty());
     }
 
+    // 仅在截止时间未过时写入冷却键
     public Mono<Instant> setCooldown(LivePlatform platform, String roomId, Instant until) {
         var ttl = Duration.between(Instant.now(), until);
         if (ttl.isNegative() || ttl.isZero()) {
@@ -90,6 +95,7 @@ public class LiveResolveCache {
                 });
     }
 
+    // 读取连续限流次数，缺失按零处理
     public Mono<Long> streak(LivePlatform platform, String roomId) {
         return redisTemplate
                 .opsForValue()
@@ -99,6 +105,7 @@ public class LiveResolveCache {
                 .defaultIfEmpty(0L);
     }
 
+    // 自增限流次数并设置上限为一小时
     public Mono<Long> incrementStreak(LivePlatform platform, String roomId) {
         var key = rateLimitKey(platform, roomId);
         return redisTemplate
@@ -108,10 +115,12 @@ public class LiveResolveCache {
                 .onErrorResume(error -> Mono.just(1L));
     }
 
+    // 解析成功后清除连续限流计数
     public Mono<Void> clearStreak(LivePlatform platform, String roomId) {
         return redisTemplate.delete(rateLimitKey(platform, roomId)).then();
     }
 
+    // 抢解析锁，Redis 异常时降级为直接解析
     public Mono<Boolean> acquireLock(LivePlatform platform, String roomId, String owner) {
         return redisTemplate
                 .opsForValue()
@@ -123,6 +132,7 @@ public class LiveResolveCache {
                 });
     }
 
+    // 仅释放自己持有的解析锁
     public Mono<Void> releaseLock(LivePlatform platform, String roomId, String owner) {
         return redisTemplate
                 .execute(RELEASE_SCRIPT, java.util.List.of(lockKey(platform, roomId)), owner)
@@ -130,18 +140,22 @@ public class LiveResolveCache {
                 .onErrorResume(error -> Mono.empty());
     }
 
+    // 解析缓存键按平台与房间隔离
     private static String resolveKey(LivePlatform platform, String roomId) {
         return PREFIX + "resolve:" + platform.name().toLowerCase() + ":" + roomId;
     }
 
+    // 解析锁键与缓存键分开命名
     private static String lockKey(LivePlatform platform, String roomId) {
         return PREFIX + "resolve:lock:" + platform.name().toLowerCase() + ":" + roomId;
     }
 
+    // 冷却键记录平台限流的恢复时间
     private static String cooldownKey(LivePlatform platform, String roomId) {
         return PREFIX + "cooldown:" + platform.name().toLowerCase() + ":" + roomId;
     }
 
+    // 限流计数键按平台与房间隔离
     private static String rateLimitKey(LivePlatform platform, String roomId) {
         return PREFIX + "ratelimit:streak:" + platform.name().toLowerCase() + ":" + roomId;
     }

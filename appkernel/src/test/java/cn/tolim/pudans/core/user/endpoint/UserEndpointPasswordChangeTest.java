@@ -31,7 +31,7 @@ class UserEndpointPasswordChangeTest {
     @BeforeEach
     void setUp() {
         var endpoint = new UserEndpoint(
-                null, accounts, null, null, null, null, null, null, null, null, null, null);
+                null, accounts, null, null, null, null, null, null, null, null, null, null, null);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter(authenticatedAs("admin"))
                 .build();
@@ -72,7 +72,7 @@ class UserEndpointPasswordChangeTest {
     @Test
     void selfServicePasswordChangeWithoutLoginIsNotAnInternalError() {
         var endpoint = new UserEndpoint(
-                null, accounts, null, null, null, null, null, null, null, null, null, null);
+                null, accounts, null, null, null, null, null, null, null, null, null, null, null);
         var anonymousClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
 
         anonymousClient

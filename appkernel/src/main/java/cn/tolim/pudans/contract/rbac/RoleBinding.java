@@ -39,6 +39,7 @@ public class RoleBinding extends AbstractExtension {
 
     RoleRef roleRef;
 
+    // 构造绑定指定用户与角色的默认角色绑定。
     public static RoleBinding create(String username, String roleName) {
         var metadata = new Metadata();
         metadata.setName(String.join("-", username, roleName, "binding"));
@@ -65,11 +66,13 @@ public class RoleBinding extends AbstractExtension {
         return binding;
     }
 
+    // 过滤出仍有效且包含指定用户的绑定。
     public static Predicate<RoleBinding> containsUser(String username) {
         return ExtensionOperator.<RoleBinding>isNotDeleted()
                 .and(binding -> binding.getSubjects().stream().anyMatch(Subject.isUser(username)));
     }
 
+    // 过滤出仍有效且包含任一目标用户的绑定。
     public static Predicate<RoleBinding> containsUser(Set<String> usernames) {
         return ExtensionOperator.<RoleBinding>isNotDeleted()
                 .and(binding -> binding.getSubjects().stream().anyMatch(Subject.containsUser(usernames)));
@@ -102,12 +105,14 @@ public class RoleBinding extends AbstractExtension {
 
         String apiGroup;
 
+        // 判断主体是否指向指定用户。
         public static Predicate<Subject> isUser(String username) {
             return subject -> User.KIND.equals(subject.getKind())
                     && User.GROUP.equals(subject.getApiGroup())
                     && username.equals(subject.getName());
         }
 
+        // 判断主体是否属于给定用户集合。
         public static Predicate<Subject> containsUser(Set<String> usernames) {
             return subject -> User.KIND.equals(subject.getKind())
                     && User.GROUP.equals(subject.apiGroup)

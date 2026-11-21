@@ -23,10 +23,12 @@ public class TotpConsumptions {
 
     private Clock clock = Clock.systemUTC();
 
+    // 供测试替换时钟，控制验证码时间步的边界行为。
     void setClock(Clock clock) {
         this.clock = clock;
     }
 
+    // 校验并消费验证码，乐观锁重试防止并发重放。
     public Mono<User> consume(User user, int code) {
         var username = user.getMetadata().getName();
         return Mono.defer(() -> client.fetch(User.class, username)
@@ -55,6 +57,7 @@ public class TotpConsumptions {
                         error -> Mono.error(new TwoFactorAuthException("TOTP 验证码已使用。", error)));
     }
 
+    // 绑定阶段仅校验验证码有效性，不记录已用步长。
     public long matchEnrollmentStep(String rawSecret, int code) {
         var step = totpSecrets.matchStep(rawSecret, code, clock.millis());
         if (step == null) {

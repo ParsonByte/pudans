@@ -51,12 +51,14 @@ public class QueryVisitor<E extends Extension> implements Visitor {
 
     private Set<String> result;
 
+    // 保存索引与类型转换服务。
     public QueryVisitor(Indices<E> indices, ConversionService conversionService) {
         this.indices = indices;
         this.result = new HashSet<>();
         this.conversionService = conversionService;
     }
 
+    // 访问条件并把结果汇总到当前实例。
     @Override
     public void enter(Visitable segment) {
         var visitor = new ConditionVisitor();
@@ -64,6 +66,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
         this.result = visitor.getResult();
     }
 
+    // 返回最近一次查询的主键集合。
     public Set<String> getResult() {
         return result;
     }
@@ -73,14 +76,17 @@ public class QueryVisitor<E extends Extension> implements Visitor {
         @Getter
         private Set<String> result;
 
+        // 以空结果初始化条件访问器。
         ConditionVisitor() {
             result = new HashSet<>();
         }
 
+        // 替换条件访问器的结果集。
         private void setResult(Set<String> result) {
             this.result = result;
         }
 
+        // 按条件类型分派到对应索引查询。
         @Override
         public void enter(Visitable segment) {
             switch (segment) {
@@ -145,6 +151,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             }
         }
 
+        // 取两侧结果的交集，并优先保留较小集合。
         private void visitAnd(Condition left, Condition right) {
             if (left instanceof EmptyCondition) {
                 right.visit(this);
@@ -175,6 +182,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             }
         }
 
+        // 取两侧结果的并集，并优先保留较大集合。
         private void visitOr(Condition left, Condition right) {
             if (left instanceof EmptyCondition) {
                 left.visit(this);
@@ -204,6 +212,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             }
         }
 
+        // 按是否取反调用标签集合查询。
         private Set<String> labelInQuery(String labelKey, Collection<String> labelValues, boolean negated) {
             var index = this.getLabelIndexQuery();
             if (negated) {
@@ -212,6 +221,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             return index.in(labelKey, labelValues);
         }
 
+        // 按是否取反调用标签相等查询。
         private Set<String> labelEqualsQuery(String labelKey, String labelValue, boolean negated) {
             var index = this.getLabelIndexQuery();
             if (negated) {
@@ -220,11 +230,13 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             return index.equal(labelKey, labelValue);
         }
 
+        // 查询包含指定标签键的主键。
         private Set<String> labelExistsQuery(String labelKey) {
             var index = getLabelIndexQuery();
             return index.exists(labelKey);
         }
 
+        // 按是否取反调用后缀查询。
         private Set<String> stringEndsWithQuery(String indexName, String suffix, boolean negated) {
             var index = getValueIndexQuery(indexName);
             if (negated) {
@@ -233,6 +245,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             return index.stringEndsWith(suffix);
         }
 
+        // 取反时返回空集，否则返回全部主键。
         private Set<String> allQuery(String indexName, boolean negated) {
             var index = getValueIndexQuery(indexName);
             if (negated) {
@@ -241,6 +254,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             return index.all();
         }
 
+        // 按是否取反调用前缀查询。
         private Set<String> stringStartsWithQuery(String indexName, String prefix, boolean negated) {
             var index = getValueIndexQuery(indexName);
             if (negated) {
@@ -249,6 +263,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             return index.stringStartsWith(prefix);
         }
 
+        // 按是否取反调用包含查询。
         private Set<String> stringContainsQuery(String indexName, String keyword, boolean negated) {
             var index = getValueIndexQuery(indexName);
             if (negated) {
@@ -257,6 +272,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             return index.stringContains(keyword);
         }
 
+        // 按是否取反调用空值查询。
         private <K extends Comparable<K>> Set<String> isNullQuery(String indexName, boolean negated) {
             var index = this.<K>getValueIndexQuery(indexName);
             if (negated) {
@@ -265,6 +281,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             return index.isNull();
         }
 
+        // 转换边界类型后执行区间查询。
         private <K extends Comparable<K>> Set<String> betweenQuery(
                 String indexName,
                 Object fromKey,
@@ -295,6 +312,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             }
         }
 
+        // 转换边界类型后执行范围查询。
         private <K extends Comparable<K>> Set<String> lessThanQuery(
                 String indexName, Object bound, boolean inclusive, boolean negated) {
             var index = this.<K>getValueIndexQuery(indexName);
@@ -308,6 +326,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             }
         }
 
+        // 转换键类型后执行相等查询。
         private <K extends Comparable<K>> Set<String> equalQuery(String indexName, Object key, boolean negated) {
             var index = this.<K>getValueIndexQuery(indexName);
             if (!conversionService.canConvert(key.getClass(), index.getKeyType())) {
@@ -320,6 +339,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             }
         }
 
+        // 转换全部键类型后执行集合查询。
         private <K extends Comparable<K>> Set<String> inQuery(
                 String indexName, Collection<Object> keys, boolean negated) {
             var index = this.<K>getValueIndexQuery(indexName);
@@ -339,6 +359,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             }
         }
 
+        // 获取值索引并校验查询能力。
         private <K extends Comparable<K>> ValueIndexQuery<K> getValueIndexQuery(String indexName) {
             var index = indices.<K>getIndex(indexName);
             if (!(index instanceof ValueIndexQuery<?> valueIndexQuery)) {
@@ -347,6 +368,7 @@ public class QueryVisitor<E extends Extension> implements Visitor {
             return (ValueIndexQuery<K>) valueIndexQuery;
         }
 
+        // 获取标签索引并校验查询能力。
         private LabelIndexQuery getLabelIndexQuery() {
             var indexName = "metadata.labels";
             var index = indices.<String>getIndex(indexName);

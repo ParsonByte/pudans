@@ -36,6 +36,7 @@ public class UserGroupBinding extends AbstractExtension {
     @Schema(requiredMode = Schema.RequiredMode.REQUIRED)
     private RoleRef roleRef;
 
+    // 构造用户加入用户组的成员绑定。
     public static UserGroupBinding membership(String username, String groupName) {
         var binding = new UserGroupBinding();
         binding.setSubjects(new LinkedList<>(List.of(Subject.user(username))));
@@ -43,6 +44,7 @@ public class UserGroupBinding extends AbstractExtension {
         return binding;
     }
 
+    // 构造用户组获得角色的授权绑定。
     public static UserGroupBinding grant(String groupName, String roleName) {
         var binding = new UserGroupBinding();
         binding.setSubjects(new LinkedList<>(List.of(Subject.userGroup(groupName))));
@@ -64,10 +66,12 @@ public class UserGroupBinding extends AbstractExtension {
 
         private String apiGroup;
 
+        // 构造用户类型的主体引用。
         public static Subject user(String name) {
             return new Subject(User.KIND, name, User.GROUP);
         }
 
+        // 构造用户组类型的主体引用。
         public static Subject userGroup(String name) {
             return new Subject(UserGroup.KIND, name, UserGroup.GROUP);
         }
@@ -92,10 +96,12 @@ public class UserGroupBinding extends AbstractExtension {
 
         private String apiGroup;
 
+        // 构造指向用户组的引用。
         public static RoleRef userGroup(String name) {
             return new RoleRef(UserGroup.KIND, name, UserGroup.GROUP);
         }
 
+        // 构造指向 RBAC 角色的引用。
         public static RoleRef role(String name) {
             return new RoleRef(Role.KIND, name, Role.GROUP);
         }

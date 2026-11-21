@@ -27,12 +27,14 @@ public class AvatarResourceEndpoint implements CustomEndpoint {
 
     private final AvatarStorage avatarStorage;
 
+    // 保留旧路径的头像访问能力
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 100)
     RouterFunction<ServerResponse> legacyAvatarResourceRouter() {
         return RouterFunctions.route(GET("/avatars/{filename}"), this::serve);
     }
 
+    // 注册头像资源访问路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "AvatarV1alpha1";
@@ -47,6 +49,7 @@ public class AvatarResourceEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 读取头像文件并按图片格式返回
     private Mono<ServerResponse> serve(ServerRequest request) {
         return avatarStorage
                 .load(request.pathVariable("filename"))
@@ -55,6 +58,7 @@ public class AvatarResourceEndpoint implements CustomEndpoint {
                         .bodyValue(resource));
     }
 
+    // 返回当前头像接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

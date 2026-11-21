@@ -13,6 +13,7 @@ final class OAuth2ConnectionMapping {
 
     private final Connections connections;
 
+    // 已有绑定直接复用，否则在已登录前提下创建绑定。
     Mono<UserConnection> map(ServerWebExchange exchange, OAuth2AuthenticationToken token) {
         var registrationId = token.getAuthorizedClientRegistrationId();
         var oauth2User = token.getPrincipal();

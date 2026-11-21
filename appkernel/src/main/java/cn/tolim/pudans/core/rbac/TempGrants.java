@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Range;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
@@ -21,7 +20,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.core.rbac.permission.RbacCache;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TempGrants {
@@ -52,14 +50,17 @@ public class TempGrants {
 
     private Clock clock = Clock.systemUTC();
 
+    // 拼出用户临时角色的有序集合键。
     public static String keyOf(String username) {
         return KEY_PREFIX + username;
     }
 
+    // 把绑定名与角色名编码为集合成员。
     private static String memberOf(String bindingName, String roleName) {
         return bindingName + MEMBER_SEPARATOR + roleName;
     }
 
+    // 解析集合成员与过期分数，非法成员返回空。
     private static TempRoleGrant toGrant(String member, Double score) {
         if (member == null || score == null) {
             return null;
@@ -73,10 +74,12 @@ public class TempGrants {
         return new TempRoleGrant(bindingName, roleName, Instant.ofEpochMilli(score.longValue()));
     }
 
+    // 替换时钟，便于测试控制过期时间。
     void setClock(Clock clock) {
         this.clock = clock;
     }
 
+    // 写入未过期授权，并延长集合键的存活时间。
     public Mono<Void> grant(TempRoleBinding binding) {
         var spec = binding.getSpec();
         if (spec == null || spec.getUsername() == null || CollectionUtils.isEmpty(spec.getRoleNames())) {
@@ -106,6 +109,7 @@ public class TempGrants {
                 .doOnSuccess(ignored -> grantCache.invalidate(spec.getUsername()));
     }
 
+    // 从集合移除该绑定授予的临时角色。
     public Mono<Void> revoke(TempRoleBinding binding) {
         var spec = binding.getSpec();
         if (spec == null || spec.getUsername() == null || CollectionUtils.isEmpty(spec.getRoleNames())) {
@@ -122,6 +126,7 @@ public class TempGrants {
                 .doOnSuccess(ignored -> grantCache.invalidate(spec.getUsername()));
     }
 
+    // 返回当前有效授权，短期本地缓存降低读压力。
     public Flux<TempRoleGrant> activeGrants(String username) {
         if (username == null || username.isBlank()) {
             return Flux.empty();
@@ -137,6 +142,7 @@ public class TempGrants {
                 .flatMapMany(Flux::fromIterable);
     }
 
+    // 清理过期成员后读取仍有效的授权条目。
     private Flux<TempRoleGrant> loadGrants(String username) {
         var key = keyOf(username);
         var now = clock.millis();
@@ -150,6 +156,7 @@ public class TempGrants {
                 .filter(grant -> grant != null);
     }
 
+    // 返回用户当前有效的临时角色名列表。
     public Mono<List<String>> activeRoleNames(String username) {
         return activeGrants(username)
                 .map(TempRoleGrant::roleName)
@@ -157,6 +164,7 @@ public class TempGrants {
                 .collectList();
     }
 
+    // 返回去重后的临时角色名集合。
     public Mono<Set<String>> activeRoleNameSet(String username) {
         return activeRoleNames(username).map(roles -> roles.stream().collect(Collectors.toSet()));
     }

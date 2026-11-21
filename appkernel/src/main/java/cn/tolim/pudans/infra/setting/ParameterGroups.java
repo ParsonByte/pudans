@@ -1,15 +1,14 @@
 package cn.tolim.pudans.infra.setting;
 
+import cn.tolim.pudans.infra.utils.SettingUtils;
+
 import cn.tolim.pudans.extension.contract.ConfigMap;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.infra.exception.RequestBodyValidationException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import cn.tolim.pudans.infra.utils.Digests;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +62,7 @@ public class ParameterGroups {
 
     private final ParameterSettingSecretCipher secretCipher;
 
+    // 注入配置读写、校验与加解密依赖。
     public ParameterGroups(
             ParameterSettingFetcher fetcher,
             ReactiveExtensionClient client,
@@ -76,14 +76,17 @@ public class ParameterGroups {
         this.secretCipher = secretCipher;
     }
 
+    // 判断参数组是否受支持，包括历史组名。
     public static boolean isKnownGroup(String group) {
         return NEW_GROUPS.contains(group) || LEGACY_GROUPS.contains(group);
     }
 
+    // 对未知参数组返回统一的输入错误。
     private static <T> Mono<T> unknownGroupError(String group) {
         return Mono.error(new ServerWebInputException("未知的参数设置组：" + group));
     }
 
+    // 读取参数组，脱敏后返回给管理端。
     public Mono<ObjectNode> getGroup(String group) {
         if (!isKnownGroup(group)) {
             return unknownGroupError(group);
@@ -92,7 +95,7 @@ public class ParameterGroups {
                 .switchIfEmpty(Mono.fromSupplier(JsonMapper.shared()::createObjectNode))
                 .map(node -> {
                     if (ParameterSetting.Site.GROUP.equals(group)) {
-                        node.put("announcementVersion", announcementVersion(text(node, "siteAnnouncement")));
+                        node.put("announcementVersion", announcementVersion(SettingUtils.text(node, "siteAnnouncement")));
                     }
                     ParameterSettingSensitiveFields.mask(node, group);
                     if (ParameterSetting.Authentication.GROUP.equals(group)) {
@@ -102,6 +105,7 @@ public class ParameterGroups {
                 });
     }
 
+    // 兼容旧接口读取参数组，返回结构保持一致。
     public Mono<ObjectNode> getLegacyGroup(String group) {
         if (!isKnownGroup(group)) {
             return unknownGroupError(group);
@@ -110,7 +114,7 @@ public class ParameterGroups {
                 .switchIfEmpty(Mono.fromSupplier(JsonMapper.shared()::createObjectNode))
                 .map(node -> {
                     if (ParameterSetting.Site.GROUP.equals(group)) {
-                        node.put("announcementVersion", announcementVersion(text(node, "siteAnnouncement")));
+                        node.put("announcementVersion", announcementVersion(SettingUtils.text(node, "siteAnnouncement")));
                     }
                     ParameterSettingSensitiveFields.mask(node, group);
                     if (ParameterSetting.Authentication.GROUP.equals(group)) {
@@ -120,6 +124,7 @@ public class ParameterGroups {
                 });
     }
 
+    // 兼容旧接口写入参数组，并同步新旧字段。
     public Mono<UpdateResult> updateLegacyGroup(String group, ObjectNode incoming) {
         if (!isKnownGroup(group)) {
             return unknownGroupError(group);
@@ -156,6 +161,7 @@ public class ParameterGroups {
                         .filter(OptimisticLockingFailureException.class::isInstance));
     }
 
+    // 校验并保存参数组，冲突时自动重试。
     public Mono<UpdateResult> updateGroup(String group, ObjectNode incoming) {
         if (!isKnownGroup(group)) {
             return unknownGroupError(group);
@@ -171,6 +177,7 @@ public class ParameterGroups {
                         .filter(OptimisticLockingFailureException.class::isInstance));
     }
 
+    // 合并默认值后校验、加密并持久化参数组。
     private Mono<UpdateResult> updateConfigMap(String group, ObjectNode incoming, ConfigMap configMap) {
         if (configMap.getData() == null) {
             configMap.setData(new HashMap<>());
@@ -204,6 +211,7 @@ public class ParameterGroups {
                         .thenReturn(new UpdateResult(restart)));
     }
 
+    // 写入公告版本与站点标识等派生字段。
     private void applyComputedValues(
             String group,
             ObjectNode persisted,
@@ -211,7 +219,7 @@ public class ParameterGroups {
             ObjectNode existing,
             ObjectNode incoming) {
         if (ParameterSetting.Site.GROUP.equals(group)) {
-            var version = announcementVersion(text(persisted, "siteAnnouncement"));
+            var version = announcementVersion(SettingUtils.text(persisted, "siteAnnouncement"));
             persisted.put("announcementVersion", version);
             effective.put("announcementVersion", version);
         }
@@ -220,9 +228,10 @@ public class ParameterGroups {
         }
     }
 
+    // 站点标识只读，缺失时生成一次并保持不变。
     private void applySiteId(ObjectNode persisted, ObjectNode effective, ObjectNode existing, ObjectNode incoming) {
-        var existingSiteId = text(existing, "siteId");
-        var requestedSiteId = text(incoming, "siteId");
+        var existingSiteId = SettingUtils.text(existing, "siteId");
+        var requestedSiteId = SettingUtils.text(incoming, "siteId");
         if (StringUtils.hasText(existingSiteId)
                 && StringUtils.hasText(requestedSiteId)
                 && !existingSiteId.equals(requestedSiteId)) {
@@ -238,6 +247,7 @@ public class ParameterGroups {
         effective.put("siteId", siteId);
     }
 
+    // 转换为设置模型后执行通用与专项校验。
     private void validate(String group, ObjectNode effective) {
         var type = GROUP_TYPES.get(group);
         if (type == null) {
@@ -264,6 +274,7 @@ public class ParameterGroups {
         }
     }
 
+    // 校验审计规则模式与条目数量约束。
     private static void validateAuditRules(
             ParameterSetting.AuditRecordRules rules, BeanPropertyBindingResult errors) {
         if (rules == null) {
@@ -279,6 +290,7 @@ public class ParameterGroups {
         validateRuleList(rules.getResourceTypes(), "auditRecordRules.resourceTypes", errors);
     }
 
+    // 限制规则条目数量与单条长度。
     private static void validateRuleList(List<String> values, String field, BeanPropertyBindingResult errors) {
         if (values == null) {
             return;
@@ -291,6 +303,7 @@ public class ParameterGroups {
         }
     }
 
+    // 主密钥或盐值变化时要求重启生效。
     private boolean restartRequired(String group, ObjectNode incoming, ObjectNode existing) {
         if (!ParameterSetting.Server.GROUP.equals(group)) {
             return false;
@@ -299,6 +312,7 @@ public class ParameterGroups {
                 || sensitiveValueChanged(incoming, existing, "hashIdSalt");
     }
 
+    // 比较脱敏后的敏感值，判断是否真实变更。
     private boolean sensitiveValueChanged(ObjectNode incoming, ObjectNode existing, String field) {
         var requested = incoming.get(field);
         if (requested == null || !requested.isString()) {
@@ -316,6 +330,7 @@ public class ParameterGroups {
         return !Objects.equals(value, storedValue);
     }
 
+    // 将新旧字段名互相同步，保持历史兼容。
     private static void mirrorLegacyFields(String group, ObjectNode node) {
         if (ParameterSetting.Captcha.GROUP.equals(group)) {
             mirror(node, "loginCaptchaEnabled", "enabled");
@@ -331,6 +346,7 @@ public class ParameterGroups {
         }
     }
 
+    // 复制字段值，源字段缺失时跳过。
     private static void mirror(ObjectNode node, String source, String target) {
         var value = node.get(source);
         if (value != null) {
@@ -338,12 +354,14 @@ public class ParameterGroups {
         }
     }
 
+    // 仅当目标字段缺失时才复制，避免覆盖新值。
     private static void mirrorIfAbsent(ObjectNode node, String source, String target) {
         if (!node.has(target)) {
             mirror(node, source, target);
         }
     }
 
+    // 将站点配置同步到基础组的兼容字段。
     private static void mirrorSiteToBasic(ObjectNode site, Map<String, String> data) {
         var basic = readObject(data.get(ParameterSetting.Basic.GROUP));
         copyText(site, "siteName", basic, "title");
@@ -354,6 +372,7 @@ public class ParameterGroups {
         data.put(ParameterSetting.Basic.GROUP, basic.toString());
     }
 
+    // 将历史组字段回填到新组，保持双向兼容。
     private static void mirrorLegacyToNew(String group, ObjectNode node, Map<String, String> data) {
         if (ParameterSetting.Captcha.GROUP.equals(group)) {
             mirrorIfAbsent(node, "enabled", "loginCaptchaEnabled");
@@ -379,6 +398,7 @@ public class ParameterGroups {
         }
     }
 
+    // 仅复制非空字符串字段。
     private static void copyText(ObjectNode source, String sourceField, ObjectNode target, String targetField) {
         var value = source.get(sourceField);
         if (value != null && value.isString() && !value.asString().isEmpty()) {
@@ -386,6 +406,7 @@ public class ParameterGroups {
         }
     }
 
+    // 返回站点设置，并用基础设置补全缺失项。
     public Mono<ParameterSetting.Site> getSite() {
         return fetcher.fetch(ParameterSetting.Site.GROUP, ParameterSetting.Site.class)
                 .defaultIfEmpty(new ParameterSetting.Site())
@@ -394,6 +415,7 @@ public class ParameterGroups {
                         .map(basic -> fillSiteFallback(site, basic)));
     }
 
+    // 站点字段为空时从基础设置回退取值。
     private static ParameterSetting.Site fillSiteFallback(ParameterSetting.Site site, ParameterSetting.Basic basic) {
         if (!StringUtils.hasText(site.getSiteName()) && StringUtils.hasText(basic.getTitle())) {
             site.setSiteName(basic.getTitle());
@@ -417,16 +439,19 @@ public class ParameterGroups {
         return site;
     }
 
+    // 返回会话设置，未配置时给出默认值。
     public Mono<ParameterSetting.Session> getSession() {
         return fetcher.fetch(ParameterSetting.Session.GROUP, ParameterSetting.Session.class)
                 .defaultIfEmpty(new ParameterSetting.Session());
     }
 
+    // 返回存储设置，未配置时给出默认值。
     public Mono<ParameterSetting.Storage> getStorage() {
         return fetcher.fetch(ParameterSetting.Storage.GROUP, ParameterSetting.Storage.class)
                 .defaultIfEmpty(new ParameterSetting.Storage());
     }
 
+    // 返回验证码设置，并兼容历史字段名。
     public Mono<ParameterSetting.Captcha> getCaptcha() {
         return fetcher.fetch(ParameterSetting.Captcha.GROUP, ParameterSetting.Captcha.class)
                 .defaultIfEmpty(new ParameterSetting.Captcha())
@@ -435,6 +460,7 @@ public class ParameterGroups {
                         .map(node -> fillCaptchaFallback(captcha, node)));
     }
 
+    // 从历史字段回填新版验证码配置。
     private static ParameterSetting.Captcha fillCaptchaFallback(
             ParameterSetting.Captcha captcha, ObjectNode node) {
         if (captcha.getLoginCaptchaEnabled() == null && node.has("enabled")) {
@@ -446,6 +472,7 @@ public class ParameterGroups {
         return captcha;
     }
 
+    // 返回邮件设置，并解密密钥字段。
     public Mono<ParameterSetting.Mail> getMail() {
         return fetcher.fetch(ParameterSetting.Mail.GROUP, ParameterSetting.Mail.class)
                 .defaultIfEmpty(new ParameterSetting.Mail())
@@ -454,21 +481,22 @@ public class ParameterGroups {
                         .map(node -> fillMailFallback(mail, node)));
     }
 
+    // 从历史字段回填邮件配置并解密密钥。
     private ParameterSetting.Mail fillMailFallback(ParameterSetting.Mail mail, ObjectNode node) {
         if (!StringUtils.hasText(mail.getSmtpHost())) {
-            mail.setSmtpHost(text(node, "host"));
+            mail.setSmtpHost(SettingUtils.text(node, "host"));
         }
         if (mail.getSmtpPort() == null && node.has("port")) {
             mail.setSmtpPort(node.get("port").isNumber() ? node.get("port").asInt() : null);
         }
         if (!StringUtils.hasText(mail.getSmtpUsername())) {
-            mail.setSmtpUsername(decrypt(text(node, "username")));
+            mail.setSmtpUsername(decrypt(SettingUtils.text(node, "username")));
         }
         if (!StringUtils.hasText(mail.getSmtpPassword())) {
-            mail.setSmtpPassword(decrypt(text(node, "password")));
+            mail.setSmtpPassword(decrypt(SettingUtils.text(node, "password")));
         }
         if (!StringUtils.hasText(mail.getMailFromAddress())) {
-            mail.setMailFromAddress(text(node, "from"));
+            mail.setMailFromAddress(SettingUtils.text(node, "from"));
         }
         if (mail.getSmtpForceSsl() == null && node.has("ssl")) {
             mail.setSmtpForceSsl(node.get("ssl").asBoolean(false));
@@ -478,11 +506,13 @@ public class ParameterGroups {
         return mail;
     }
 
+    // 返回审计设置，未配置时给出默认值。
     public Mono<ParameterSetting.Audit> getAudit() {
         return fetcher.fetch(ParameterSetting.Audit.GROUP, ParameterSetting.Audit.class)
                 .defaultIfEmpty(new ParameterSetting.Audit());
     }
 
+    // 返回服务器设置，并解密敏感字段。
     public Mono<ParameterSetting.Server> getServer() {
         return fetcher.fetch(ParameterSetting.Server.GROUP, ParameterSetting.Server.class)
                 .defaultIfEmpty(new ParameterSetting.Server())
@@ -493,10 +523,12 @@ public class ParameterGroups {
                 });
     }
 
+    // 仅当值已加密时解密，否则原样返回。
     private String decrypt(String value) {
         return StringUtils.hasText(value) ? secretCipher.decrypt(value) : value;
     }
 
+    // 读取对象型配置文本，格式错误时返回空对象。
     private static ObjectNode readObject(String json) {
         if (!StringUtils.hasText(json)) {
             return JsonMapper.shared().createObjectNode();
@@ -510,6 +542,7 @@ public class ParameterGroups {
         }
     }
 
+    // 递归合并对象，覆盖项优先且不修改入参。
     private static ObjectNode merge(ObjectNode base, ObjectNode overlay) {
         var result = base.deepCopy();
         overlay.properties().forEach(entry -> {
@@ -525,24 +558,12 @@ public class ParameterGroups {
         return result;
     }
 
-    private static String text(ObjectNode node, String field) {
-        if (node == null) {
-            return null;
-        }
-        var value = node.get(field);
-        return value != null && value.isString() ? value.asString() : null;
-    }
-
+    // 用公告内容哈希作为版本，便于客户端判断更新。
     private static String announcementVersion(String announcement) {
         if (!StringUtils.hasText(announcement)) {
             return "";
         }
-        try {
-            var digest = MessageDigest.getInstance("SHA-256");
-            return HexFormat.of().formatHex(digest.digest(announcement.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 不可用", e);
-        }
+        return Digests.sha256Hex(announcement);
     }
 
     public record UpdateResult(boolean restartRequired) {}

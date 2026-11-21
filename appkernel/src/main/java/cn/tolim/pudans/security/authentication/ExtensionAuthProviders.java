@@ -47,11 +47,13 @@ public class ExtensionAuthProviders implements AuthProviders {
     private final Connections connections;
     private final SecurityParameters securitySettings;
 
+    // 依据标签判断提供方是否支持账号绑定。
     private static boolean supportsBinding(AuthProvider authProvider) {
         return BooleanUtils.TRUE.equals(
                 MetadataUtil.nullSafeLabels(authProvider).get(AuthProvider.AUTH_BINDING_LABEL));
     }
 
+    // 读取或初始化认证参数配置，兼容缺失的分组与状态。
     private static ParameterSetting.AuthProvider getAuthProviderConfig(ConfigMap configMap) {
         if (configMap.getData() == null) {
             configMap.setData(new HashMap<>());
@@ -72,6 +74,7 @@ public class ExtensionAuthProviders implements AuthProviders {
         return authProvider;
     }
 
+    // 启用的前提是提供方具备可用的认证配置。
     @Override
     public Mono<AuthProvider> enable(String name) {
         return client.get(AuthProvider.class, name)
@@ -81,6 +84,7 @@ public class ExtensionAuthProviders implements AuthProviders {
                                 "登录提供方 [" + name + "] 没有可用的认证配置。")));
     }
 
+    // 表单登录与已自动配置的提供方视为直接可用。
     private boolean isAvailable(AuthProvider authProvider) {
         if (AuthProvider.AuthType.FORM.equals(authProvider.getSpec().getAuthType())) {
             return true;
@@ -93,6 +97,7 @@ public class ExtensionAuthProviders implements AuthProviders {
                 && !authenticationUrl.startsWith("/oauth2/authorization/");
     }
 
+    // 判断提供方是否由安全参数自动装配，无需手工启停。
     private boolean isAutoConfigured(String name) {
         if (FEISHU_PROVIDER.equals(name)) {
             return securitySettings.feishu().isConfigured();
@@ -103,6 +108,7 @@ public class ExtensionAuthProviders implements AuthProviders {
                         .anyMatch(provider -> name.equals(provider.getRegistrationId()));
     }
 
+    // 特权或参数托管的提供方不允许在此停用。
     @Override
     public Mono<AuthProvider> disable(String name) {
         return client.get(AuthProvider.class, name)
@@ -114,6 +120,7 @@ public class ExtensionAuthProviders implements AuthProviders {
                         : updateAuthProviderEnabled(name, false).thenReturn(authProvider));
     }
 
+    // 合并提供方配置、绑定关系与启停状态，按优先级排序。
     @Override
     public Mono<List<ListedAuthProvider>> listAll() {
         var listOptions =
@@ -152,6 +159,7 @@ public class ExtensionAuthProviders implements AuthProviders {
                 });
     }
 
+    // 仅返回已启用的提供方，并按配置的优先级排序。
     @Override
     public Flux<AuthProvider> getEnabledProviders() {
         return fetchProviderStates().flatMapMany(states -> {
@@ -175,6 +183,7 @@ public class ExtensionAuthProviders implements AuthProviders {
         });
     }
 
+    // 读取提供方启停状态，配置缺失时返回空列表。
     private Mono<List<ParameterSetting.AuthProviderState>> fetchProviderStates() {
         return getParameterSettingsConfigMap()
                 .map(ExtensionAuthProviders::getAuthProviderConfig)
@@ -182,12 +191,14 @@ public class ExtensionAuthProviders implements AuthProviders {
                 .defaultIfEmpty(List.of());
     }
 
+    // 列出当前登录用户已绑定的外部账号连接。
     Flux<UserConnection> listMyConnections() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(securityContext -> securityContext.getAuthentication().getName())
                 .flatMapMany(connections::listConnections);
     }
 
+    // 转换为列表视图，绑定与启用状态留待汇总时填充。
     private ListedAuthProvider convertTo(AuthProvider authProvider) {
         return ListedAuthProvider.builder()
                 .name(authProvider.getMetadata().getName())
@@ -207,6 +218,7 @@ public class ExtensionAuthProviders implements AuthProviders {
                 .build();
     }
 
+    // 更新启停状态并写回配置，乐观锁冲突时自动重试。
     private Mono<ConfigMap> updateAuthProviderEnabled(String name, boolean enabled) {
         return Mono.defer(() -> getParameterSettingsConfigMap().flatMap(configMap -> {
                     var providerConfig = getAuthProviderConfig(configMap);
@@ -230,6 +242,7 @@ public class ExtensionAuthProviders implements AuthProviders {
                         .filter(OptimisticLockingFailureException.class::isInstance));
     }
 
+    // 获取系统级参数配置，用于读写提供方状态。
     private Mono<ConfigMap> getParameterSettingsConfigMap() {
         var systemFetcher = environmentFetcherProvider.getIfUnique();
         if (systemFetcher == null) {
@@ -244,10 +257,12 @@ public class ExtensionAuthProviders implements AuthProviders {
         private AuthProvider authProvider;
         private int priority;
 
+        // 名称取自元数据，供优先级相同时排序使用。
         public String getName() {
             return authProvider.getMetadata().getName();
         }
 
+        // 先按优先级再按名称排序，保证顺序稳定。
         @Override
         public int compareTo(AuthProviderWithPriority o) {
             return Comparator.comparingInt(AuthProviderWithPriority::getPriority)

@@ -16,6 +16,7 @@ class SudoSecurityConfigurer implements SecurityConfigurer {
 
     private final ServerResponse.Context responseContext;
 
+    // 在匿名认证之后注册安全确认过滤器
     @Override
     public void configure(ServerHttpSecurity http) {
         http.addFilterAfter(

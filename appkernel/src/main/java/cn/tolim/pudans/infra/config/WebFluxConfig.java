@@ -33,8 +33,10 @@ public class WebFluxConfig implements WebFluxConfigurer {
     private final JsonMapper jsonMapper;
 
     @Bean
+    // 用安全适配器替换默认请求映射适配器。
     WebFluxRegistrations webFluxRegistrations() {
         return new WebFluxRegistrations() {
+            // 返回带安全校验的处理器适配器。
             @Override
             public RequestMappingHandlerAdapter getRequestMappingHandlerAdapter() {
 
@@ -44,13 +46,16 @@ public class WebFluxConfig implements WebFluxConfigurer {
     }
 
     @Bean
+    // 为函数式端点提供编解码与视图上下文。
     ServerResponse.Context context(CodecConfigurer codec, ViewResolutionResultHandler resultHandler) {
         return new ServerResponse.Context() {
+            // 复用全局配置的消息写入器。
             @Override
             public List<HttpMessageWriter<?>> messageWriters() {
                 return codec.getWriters();
             }
 
+            // 暴露结果处理器中的视图解析器。
             @Override
             public List<ViewResolver> viewResolvers() {
                 return resultHandler.getViewResolvers();
@@ -58,6 +63,7 @@ public class WebFluxConfig implements WebFluxConfigurer {
         };
     }
 
+    // 提高内存上限并统一使用 Jackson 3 编解码。
     @Override
     public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
         configurer.defaultCodecs().maxInMemorySize((int) DataSize.ofMegabytes(16).toBytes());
@@ -65,6 +71,7 @@ public class WebFluxConfig implements WebFluxConfigurer {
         configurer.defaultCodecs().jacksonJsonEncoder(new JacksonJsonEncoder(jsonMapper));
     }
 
+    // 收集扩展端点并注册为最高优先级路由。
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 100)
     RouterFunction<ServerResponse> customEndpoints(ApplicationContext context) {
@@ -73,12 +80,14 @@ public class WebFluxConfig implements WebFluxConfigurer {
         return builder.build();
     }
 
+    // 让下游可通过上下文访问当前请求。
     @Bean
     @Order(-102)
     ServerWebExchangeContextFilter serverWebExchangeContextFilter() {
         return new ServerWebExchangeContextFilter();
     }
 
+    // 统一处理末尾斜杠，避免重复路由。
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
     UrlHandlerFilter urlHandlerFilter() {

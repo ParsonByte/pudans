@@ -26,6 +26,7 @@ import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.user.UserConnection;
+import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.extension.contract.ConfigMap;
 import cn.tolim.pudans.extension.contract.Extension;
 import cn.tolim.pudans.extension.contract.GroupVersionKind;
@@ -35,6 +36,7 @@ import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.extension.contract.ReservedLabels;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.security.contract.PersonalAccessToken;
+import cn.tolim.pudans.security.contract.RememberMeToken;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import cn.tolim.pudans.extension.contract.Unstructured;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
@@ -53,18 +55,21 @@ public class BuiltinEntityPolicy {
 
     private final RolePermissionPolicy rolePermissionPolicy;
 
+    // 判断角色名是否属于受保护的内置角色。
     public boolean isBuiltinRole(String name) {
         return BuiltinEntities.SUPER_ROLE.equals(name)
                 || BuiltinEntities.SYSTEM_ADMIN_ROLE.equals(name)
                 || BuiltinEntities.NORMAL_ROLE.equals(name);
     }
 
+    // 判断用户组名是否属于内置定义。
     public boolean isBuiltinGroup(String name) {
         return BuiltinEntities.SUPER_ADMINS_GROUP.equals(name)
                 || BuiltinEntities.SYSTEM_ADMINS_GROUP.equals(name)
                 || BuiltinEntities.NORMAL_USERS_GROUP.equals(name);
     }
 
+    // 按资源类型校验创建，阻止绕过专用接口。
     public Mono<Void> checkCreate(GroupVersionKind gvk, Extension extension) {
         var kind = gvk.kind();
         if (StorageFile.KIND.equals(kind)) {
@@ -102,6 +107,19 @@ public class BuiltinEntityPolicy {
         return Mono.empty();
     }
 
+    // JSON Patch 不经过专用接口的字段白名单，敏感资源必须拒绝。
+    public Mono<Void> checkPatch(GroupVersionKind gvk) {
+        var kind = gvk.kind();
+        if (User.KIND.equals(kind)
+                || PersonalAccessToken.KIND.equals(kind)
+                || UserConnection.KIND.equals(kind)
+                || RememberMeToken.KIND.equals(kind)) {
+            return Mono.error(denied("该资源不支持 JSON Patch，请使用专用接口。"));
+        }
+        return Mono.empty();
+    }
+
+    // 按资源类型校验更新，并保护已存储的敏感字段。
     public Mono<Void> checkUpdate(GroupVersionKind gvk, String name, Extension extension) {
         var kind = gvk.kind();
         if (StorageFile.KIND.equals(kind)) {
@@ -109,6 +127,9 @@ public class BuiltinEntityPolicy {
         }
         if (StoragePolicy.KIND.equals(kind)) {
             return checkStoragePolicyUpdate(name, extension);
+        }
+        if (Webhook.KIND.equals(kind)) {
+            return checkWebhookUpdate(name, extension);
         }
         if (UserConnection.KIND.equals(kind)) {
             return Mono.error(denied("身份连接只能通过身份绑定接口维护。"));
@@ -142,6 +163,7 @@ public class BuiltinEntityPolicy {
         return Mono.empty();
     }
 
+    // 更新时沿用已存凭据，避免空值覆盖真实密钥。
     private Mono<Void> checkStoragePolicyUpdate(String name, Extension extension) {
         return client.get(StoragePolicy.class, name).flatMap(existing -> {
             var stored = existing.getSpec().getCredentials();
@@ -159,6 +181,32 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    // 更新 Webhook 时保留请求中不可见的签名密钥，避免 PUT 静默关闭签名。
+    private Mono<Void> checkWebhookUpdate(String name, Extension extension) {
+        return client.get(Webhook.class, name).flatMap(existing -> {
+            var stored = existing.getSpec() == null ? null : existing.getSpec().getSecret();
+            if (!StringUtils.hasText(stored)) {
+                return Mono.empty();
+            }
+            if (extension instanceof Unstructured unstructured) {
+                preserveCredential(ensureChildMap(unstructured.getData(), "spec"), "secret", stored);
+            } else if (extension instanceof JsonExtension jsonExtension) {
+                var root = jsonExtension.getInternal();
+                var spec = root.get("spec") instanceof ObjectNode node ? node : root.putObject("spec");
+                preserveJsonCredential(spec, "secret", stored);
+            } else if (extension instanceof Webhook webhook) {
+                if (webhook.getSpec() == null) {
+                    webhook.setSpec(new Webhook.Spec());
+                }
+                if (!StringUtils.hasText(webhook.getSpec().getSecret())) {
+                    webhook.getSpec().setSecret(stored);
+                }
+            }
+            return Mono.empty();
+        });
+    }
+
+    // 在嵌套配置中定位子映射，不存在时按需创建。
     @SuppressWarnings("unchecked")
     private static Map<String, Object> ensureChildMap(Map<?, ?> parent, String key) {
         var value = parent.get(key);
@@ -170,6 +218,7 @@ public class BuiltinEntityPolicy {
         return created;
     }
 
+    // 把已存凭据补回非结构化请求体，未提交的字段不覆盖。
     private static void preserveUnstructuredCredentials(Unstructured unstructured, StoragePolicy.Credentials stored) {
         var credentials = ensureChildMap(ensureChildMap(unstructured.getData(), "spec"), "credentials");
         preserveCredential(credentials, "accessKey", stored.getAccessKey());
@@ -178,6 +227,7 @@ public class BuiltinEntityPolicy {
         preserveCredential(credentials, "clientSecret", stored.getClientSecret());
     }
 
+    // 字段为空时才回填存储值，显式提交优先。
     private static void preserveCredential(Map<String, Object> credentials, String field, String stored) {
         var current = credentials.get(field);
         if (StringUtils.hasText(stored) && !(current instanceof String value && StringUtils.hasText(value))) {
@@ -185,6 +235,7 @@ public class BuiltinEntityPolicy {
         }
     }
 
+    // 把已存凭据补回通用请求体，避免密钥丢失。
     private static void preserveJsonCredentials(ObjectNode extension, StoragePolicy.Credentials stored) {
         var spec = extension.get("spec") instanceof ObjectNode node ? node : extension.putObject("spec");
         var credentials = spec.get("credentials") instanceof ObjectNode node ? node : spec.putObject("credentials");
@@ -194,6 +245,7 @@ public class BuiltinEntityPolicy {
         preserveJsonCredential(credentials, "clientSecret", stored.getClientSecret());
     }
 
+    // 仅当请求体中的字段为空时回填存储值。
     private static void preserveJsonCredential(ObjectNode credentials, String field, String stored) {
         var current = credentials.get(field);
         if (StringUtils.hasText(stored) && (current == null || !StringUtils.hasText(current.asText()))) {
@@ -201,6 +253,7 @@ public class BuiltinEntityPolicy {
         }
     }
 
+    // 把已存凭据补回强类型策略，避免空字段覆盖。
     private static void preservePolicyCredentials(StoragePolicy policy, StoragePolicy.Credentials stored) {
         var credentials = policy.getSpec().getCredentials();
         if (credentials == null) {
@@ -221,6 +274,7 @@ public class BuiltinEntityPolicy {
         }
     }
 
+    // 按资源类型校验删除，内置与受保护对象不可删。
     public Mono<Void> checkDelete(Extension extension) {
         if (extension instanceof StorageFile) {
             return Mono.error(denied("存储文件由存储服务管理，请使用文件接口。"));
@@ -246,6 +300,7 @@ public class BuiltinEntityPolicy {
         return Mono.empty();
     }
 
+    // 参数设置配置承载全局配置，禁止直接删除。
     private Mono<Void> checkConfigMapDeletion(ConfigMap configMap) {
         if (configMap.getMetadata() != null
                 && (cn.tolim.pudans.infra.contract.ParameterSetting.PARAMETER_SETTINGS.equals(
@@ -261,6 +316,7 @@ public class BuiltinEntityPolicy {
         return Mono.empty();
     }
 
+    // 拒绝非法字符与内置角色名的修改请求。
     public Mono<Void> checkRoleMutation(String name) {
         return Mono.fromRunnable(() -> {
             if (name != null && (name.contains("|") || name.contains("\u0000"))) {
@@ -272,6 +328,7 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    // 校验角色依赖均存在且为模板，避免引用失效。
     private Mono<Void> checkRoleDependencies(Role role) {
         var raw = MetadataUtil.nullSafeAnnotations(role).get(Role.ROLE_DEPENDENCIES_ANNO);
         if (!StringUtils.hasText(raw)) {
@@ -297,6 +354,7 @@ public class BuiltinEntityPolicy {
                 .then();
     }
 
+    // 拒绝修改内置用户组，保持其定义只读。
     public Mono<Void> checkGroupMutation(String name) {
         return Mono.fromRunnable(() -> {
             if (isBuiltinGroup(name)) {
@@ -305,6 +363,7 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    // 内置用户组只允许按规范更新，不能移除内置角色。
     private Mono<Void> checkUserGroupUpdate(String name, UserGroup group) {
         if (BuiltinEntities.SUPER_ADMINS_GROUP.equals(name)) {
             return Mono.error(denied("超级管理员用户组不可修改。"));
@@ -315,6 +374,7 @@ public class BuiltinEntityPolicy {
         return checkUserGroupRoleRefs(group);
     }
 
+    // 校验用户组与内置角色的绑定边界，防止越权。
     private Mono<Void> checkUserGroupRoleRefs(UserGroup group) {
         return Mono.defer(() -> {
             var name = group.getMetadata() == null ? null : group.getMetadata().getName();
@@ -352,10 +412,12 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    // 判断角色名是否对应内置角色定义。
     private boolean isBuiltinRoleDefinition(String name) {
         return StringUtils.hasText(name) && builtinRoleDefinitions.role(name).isPresent();
     }
 
+    // 提取有效角色引用名并去重，忽略无效引用。
     private static List<String> roleRefNames(UserGroup group) {
         var roleRefs = group.getRoleRefs();
         if (CollectionUtils.isEmpty(roleRefs)) {
@@ -370,10 +432,12 @@ public class BuiltinEntityPolicy {
                 .toList();
     }
 
+    // 返回内置用户组规范定义中的角色名集合。
     private static Set<String> canonicalRoleNames(UserGroup group) {
         return Set.copyOf(roleRefNames(group));
     }
 
+    // 校验用户组绑定授予角色的合法性，阻止提权。
     private Mono<Void> checkGroupRoleGrant(UserGroupBinding binding) {
         var roleRef = binding.getRoleRef();
         if (roleRef == null
@@ -404,6 +468,7 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    // 校验绑定中的角色或用户组是否在权限范围内。
     private Mono<Void> checkBindingRoleGrant(UserGroupBinding binding) {
         var roleRef = binding.getRoleRef();
         if (roleRef == null) {
@@ -413,11 +478,33 @@ public class BuiltinEntityPolicy {
             return rolePermissionPolicy.checkGrant(Set.of(roleRef.getName()));
         }
         if (UserGroup.KIND.equals(roleRef.getKind())) {
-            return checkSystemAdminsGrant(roleRef.getName());
+            return checkSystemAdminsGrant(roleRef.getName())
+                    .then(Mono.defer(() -> checkUserGroupGrant(roleRef.getName())));
         }
         return Mono.empty();
     }
 
+    // 自定义用户组也必须经过角色覆盖校验，防止通过通用绑定接口提权。
+    private Mono<Void> checkUserGroupGrant(String groupName) {
+        if (!StringUtils.hasText(groupName)
+                || BuiltinEntities.SYSTEM_ADMINS_GROUP.equals(groupName)) {
+            return Mono.empty();
+        }
+        var canonical = builtinRoleDefinitions.group(groupName);
+        if (canonical.isPresent()) {
+            return rolePermissionPolicy.checkGrant(canonicalRoleNames(canonical.get()));
+        }
+        return client.fetch(UserGroup.class, groupName)
+                .switchIfEmpty(Mono.error(denied("用户组不存在。")))
+                .flatMap(group -> {
+                    var roleNames = roleRefNames(group);
+                    return roleNames.isEmpty()
+                            ? Mono.empty()
+                            : rolePermissionPolicy.checkGrant(Set.copyOf(roleNames));
+                });
+    }
+
+    // 系统管理员用户组只能按规范角色集合授予。
     private Mono<Void> checkSystemAdminsGrant(String groupName) {
         if (!BuiltinEntities.SYSTEM_ADMINS_GROUP.equals(groupName)) {
             return Mono.empty();
@@ -426,6 +513,7 @@ public class BuiltinEntityPolicy {
                 .flatMap(group -> rolePermissionPolicy.checkGrant(canonicalRoleNames(group)));
     }
 
+    // 提取绑定中有效的用户组主体名并去重。
     private static List<String> subjectGroupNames(UserGroupBinding binding) {
         var subjects = binding.getSubjects();
         if (CollectionUtils.isEmpty(subjects)) {
@@ -440,6 +528,7 @@ public class BuiltinEntityPolicy {
                 .toList();
     }
 
+    // 超级管理员账户禁止删除，避免管理入口丢失。
     public Mono<Void> checkUserDeletion(User user) {
         return Mono.defer(() -> superAdminResolver
                 .hasSuperAdminBinding(user.getMetadata().getName())
@@ -448,6 +537,7 @@ public class BuiltinEntityPolicy {
                         : Mono.empty()));
     }
 
+    // 综合校验成员绑定变更，防止伪造或绕过超管约束。
     public Mono<Void> checkBindingMutation(UserGroupBinding binding, boolean deleting) {
         if (binding == null) {
             return Mono.empty();
@@ -474,6 +564,7 @@ public class BuiltinEntityPolicy {
                 .then(denySuperAdminMembership(binding));
     }
 
+    // 校验用户组分配，保证超管归属与授权合法。
     public Mono<Void> checkUserGroupAssignment(String username, String groupName) {
         var targetSuperAdmins = BuiltinEntities.SUPER_ADMINS_GROUP.equals(groupName);
         return superAdminResolver.hasSuperAdminBinding(username).flatMap(superAdmin -> {
@@ -501,6 +592,7 @@ public class BuiltinEntityPolicy {
                 }));
     }
 
+    // 超级管理员不能被移出超管用户组。
     public Mono<Void> checkUserGroupRemoval(String username) {
         return superAdminResolver
                 .hasSuperAdminBinding(username)
@@ -510,6 +602,7 @@ public class BuiltinEntityPolicy {
                         : Mono.empty());
     }
 
+    // 判断绑定目标是否为超级管理员用户组。
     public boolean isSuperAdminsTarget(UserGroupBinding binding) {
         var roleRef = binding.getRoleRef();
         return roleRef != null
@@ -517,6 +610,7 @@ public class BuiltinEntityPolicy {
                 && BuiltinEntities.SUPER_ADMINS_GROUP.equals(roleRef.getName());
     }
 
+    // 按资源类型分派内置对象变更校验。
     private Mono<Void> checkMutation(String kind, String name) {
         if (Role.KIND.equals(kind)) {
             return checkRoleMutation(name);
@@ -527,6 +621,7 @@ public class BuiltinEntityPolicy {
         return Mono.empty();
     }
 
+    // 超管成员绑定必须只包含一个已存在的规范超管。
     private Mono<Void> checkSuperAdminsBinding(UserGroupBinding binding) {
         var subjects = binding.getSubjects();
         if (CollectionUtils.isEmpty(subjects) || subjects.size() != 1) {
@@ -553,6 +648,7 @@ public class BuiltinEntityPolicy {
                                 "只有已存在的超级管理员可以加入 super-admins 用户组。")));
     }
 
+    // 禁止通过普通绑定为超管追加其他成员资格。
     private Mono<Void> denySuperAdminMembership(UserGroupBinding binding) {
         var subjects = binding.getSubjects();
         if (CollectionUtils.isEmpty(subjects)) {
@@ -569,6 +665,7 @@ public class BuiltinEntityPolicy {
                 .switchIfEmpty(Mono.empty());
     }
 
+    // 校验用户创建，保留标签与受保护字段不可写。
     private Mono<Void> checkUserCreate(User user) {
         if (user.getMetadata() == null || !StringUtils.hasText(user.getMetadata().getName())) {
             return Mono.error(new ServerWebInputException("metadata.name 为必填项。"));
@@ -583,6 +680,7 @@ public class BuiltinEntityPolicy {
         return Mono.empty();
     }
 
+    // 校验用户更新，锁定凭据与受保护的元数据。
     private Mono<Void> checkUserUpdate(User user) {
         if (user.getMetadata() == null) {
             return Mono.error(new ServerWebInputException("metadata 为必填项。"));
@@ -607,6 +705,7 @@ public class BuiltinEntityPolicy {
                 });
     }
 
+    // 密码与动态口令只能由专用认证接口修改。
     private Mono<Void> checkProtectedUserSecrets(User requested, User existing) {
         var requestedSpec = requested.getSpec();
         var existingSpec = existing.getSpec();
@@ -625,9 +724,20 @@ public class BuiltinEntityPolicy {
             return Mono.<Void>error(denied(
                     "用户的 spec.totpLastStep 只能通过专用认证接口修改。"));
         }
+        // 身份、邮箱与账号状态有专用接口，通用更新不得直接改写。
+        if (!Objects.equals(requestedSpec.getUid(), existingSpec.getUid())
+                || !Objects.equals(requestedSpec.getEmail(), existingSpec.getEmail())
+                || requestedSpec.isEmailVerified() != existingSpec.isEmailVerified()
+                || !Objects.equals(requestedSpec.getRegisteredAt(), existingSpec.getRegisteredAt())
+                || !Objects.equals(
+                        requestedSpec.getTwoFactorAuthEnabled(), existingSpec.getTwoFactorAuthEnabled())
+                || !Objects.equals(requestedSpec.getDisabled(), existingSpec.getDisabled())) {
+            return Mono.<Void>error(denied("用户身份、邮箱与账号状态只能通过专用接口修改。"));
+        }
         return Mono.empty();
     }
 
+    // 角色绑定必须引用合法角色且权限不超过调用方。
     private Mono<Void> checkRoleBindingGrant(RoleBinding binding) {
         var roleRef = binding.getRoleRef();
         if (roleRef == null
@@ -641,6 +751,7 @@ public class BuiltinEntityPolicy {
         return rolePermissionPolicy.checkGrant(Set.of(roleRef.getName()));
     }
 
+    // 新申请必须待审批，且不能预设审批信息。
     private Mono<Void> checkTempRoleBindingCreate(TempRoleBinding binding) {
         var spec = binding.getSpec();
         if (spec == null) {
@@ -655,6 +766,7 @@ public class BuiltinEntityPolicy {
         return checkTempRoleNames(spec.getRoleNames());
     }
 
+    // 只允许修改待审批申请中非审批相关字段。
     private Mono<Void> checkTempRoleBindingUpdate(TempRoleBinding requested) {
         return client.get(TempRoleBinding.class, nameOf(requested)).flatMap(existing -> {
             var next = requested.getSpec();
@@ -682,6 +794,7 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    // 拒绝非法或超管角色名，防止临时提权。
     private static Mono<Void> checkTempRoleNames(List<String> roleNames) {
         if (roleNames == null) {
             return Mono.empty();
@@ -700,6 +813,7 @@ public class BuiltinEntityPolicy {
         return Mono.empty();
     }
 
+    // 只有超级管理员可以启用或禁用超管账户。
     private Mono<Void> checkSuperAdminDisable(User requested, User existing) {
         var name = requested.getMetadata() == null ? null : requested.getMetadata().getName();
         var requestedSpec = requested.getSpec();
@@ -708,27 +822,32 @@ public class BuiltinEntityPolicy {
                 || Objects.equals(requestedSpec.getDisabled(), existingSpec.getDisabled())) {
             return Mono.empty();
         }
-        return superAdminResolver.isCanonicalSuperAdmin(name).flatMap(superAdmin -> {
-            if (!Boolean.TRUE.equals(superAdmin)) {
-                return Mono.empty();
-            }
-            return currentRoles().flatMap(roles -> AuthorityUtils.containsSuperRole(roles)
-                    ? Mono.empty()
-                    : Mono.error(denied("只有超级管理员可以启用或禁用超级管理员账户。")));
-        });
+        return checkSuperAdminAccountChange(name, "启用或禁用超级管理员账户");
     }
 
-    public Mono<Void> checkUserPasswordReset(String username) {
+    // 只有超级管理员可以变更超管账户的安全状态。
+    public Mono<Void> checkSuperAdminAccountChange(String username) {
+        return checkSuperAdminAccountChange(username, "变更超级管理员账户");
+    }
+
+    // 统一校验调用方是否具备超级管理员角色。
+    private Mono<Void> checkSuperAdminAccountChange(String username, String action) {
         return superAdminResolver.isCanonicalSuperAdmin(username).flatMap(superAdmin -> {
             if (!Boolean.TRUE.equals(superAdmin)) {
                 return Mono.empty();
             }
             return currentRoles().flatMap(roles -> AuthorityUtils.containsSuperRole(roles)
                     ? Mono.empty()
-                    : Mono.error(denied("只有超级管理员可以重置超级管理员密码。")));
+                    : Mono.error(denied("只有超级管理员可以" + action + "。")));
         });
     }
 
+    // 重置超管密码要求调用方本身是超级管理员。
+    public Mono<Void> checkUserPasswordReset(String username) {
+        return checkSuperAdminAccountChange(username, "重置超级管理员密码");
+    }
+
+    // 取当前认证用户名，未认证时直接拒绝。
     private static Mono<String> currentUsername() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
@@ -737,6 +856,7 @@ public class BuiltinEntityPolicy {
                 .switchIfEmpty(Mono.error(denied("未认证。")));
     }
 
+    // 取当前认证角色集合，未认证时返回空集合。
     private static Mono<Set<String>> currentRoles() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
@@ -744,6 +864,7 @@ public class BuiltinEntityPolicy {
                 .defaultIfEmpty(Set.of());
     }
 
+    // 令牌只能归属当前用户，提权能力仅限管理员。
     private Mono<Void> checkPatCreate(PersonalAccessToken pat) {
         var spec = pat.getSpec();
         if (spec == null || !StringUtils.hasText(spec.getUsername())) {
@@ -771,6 +892,7 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    // 锁定令牌归属、权限与生命周期，仅允许本人修改。
     private Mono<Void> checkPatUpdate(PersonalAccessToken requested) {
         return client.get(PersonalAccessToken.class, nameOf(requested)).flatMap(existing -> {
             var requestedSpec = requested.getSpec();
@@ -788,6 +910,10 @@ public class BuiltinEntityPolicy {
                     || !Objects.equals(requestedSpec.getScopes(), existingSpec.getScopes())) {
                 return Mono.<Void>error(denied("PAT 的角色和 scope 不可修改。"));
             }
+            if (!Objects.equals(requestedSpec.getScopeMode(), existingSpec.getScopeMode())
+                    || !Objects.equals(requestedSpec.getGateway(), existingSpec.getGateway())) {
+                return Mono.<Void>error(denied("PAT 的 scope 模式和网关限制不可修改。"));
+            }
             if (!Objects.equals(requestedSpec.getTokenId(), existingSpec.getTokenId())
                     || !Objects.equals(requestedSpec.getKeyVersion(), existingSpec.getKeyVersion())
                     || requestedSpec.isRevoked() != existingSpec.isRevoked()
@@ -802,15 +928,18 @@ public class BuiltinEntityPolicy {
         });
     }
 
+    // 把可空集合复制为不可空集合，避免共享可变状态。
     private static Set<String> nullSafe(Set<String> values) {
         return values == null ? Set.of() : new HashSet<>(values);
     }
 
+    // 安全读取扩展名称，元数据缺失时返回空。
     private static String nameOf(Extension extension) {
         var metadata = extension.getMetadata();
         return metadata == null ? null : metadata.getName();
     }
 
+    // 统一转换为目标类型，解析失败转为请求错误。
     private static <T> Mono<T> convert(Extension extension, Class<T> type) {
         if (type.isInstance(extension)) {
             return Mono.just(type.cast(extension));
@@ -829,6 +958,7 @@ public class BuiltinEntityPolicy {
                                 "无法将请求体读取为 " + type.getSimpleName() + "。"));
     }
 
+    // 构造统一的拒绝异常，保持错误语义一致。
     private static AccessDeniedException denied(String reason) {
         return new AccessDeniedException(reason);
     }

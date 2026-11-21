@@ -25,6 +25,7 @@ public class RememberTokenCleaner {
     private final RememberMeCookieResolver rememberMeCookieResolver;
 
 
+    // 批量删除超过有效期的令牌，防止历史数据无限增长。
     public void cleanUpExpiredTokens() {
         paginatedOperator
                 .deleteInitialBatch(RememberMeToken.class, getExpiredTokensListOptions())
@@ -33,6 +34,7 @@ public class RememberTokenCleaner {
         log.info("已清理过期的记住我令牌。");
     }
 
+    // 只选择未删除且最后使用时间早于阈值的记录。
     ListOptions getExpiredTokensListOptions() {
         var listOptions = new ListOptions();
         listOptions.setFieldSelector(FieldSelector.of(and(
@@ -41,10 +43,12 @@ public class RememberTokenCleaner {
         return listOptions;
     }
 
+    // 以当前时间倒推有效期，作为清理边界。
     protected Instant getExpirationThreshold() {
         return Instant.now().minus(getTokenValidity());
     }
 
+    // 清理有效期与 Cookie 有效期保持一致，避免提前失效。
     protected Duration getTokenValidity() {
         return rememberMeCookieResolver.getCookieMaxAge();
     }

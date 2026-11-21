@@ -4,21 +4,20 @@ import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import cn.tolim.pudans.infra.utils.Digests;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.HexFormat;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -37,20 +36,22 @@ public class RefreshTokens {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    private static final HexFormat HEX = HexFormat.of();
-
     private final ReactiveStringRedisTemplate redisTemplate;
 
     private final ParameterGroups parameterGroups;
 
     private final PersonalTokens personalTokens;
 
-    private final Groups groups;
+    private final UserRoles userRoles;
 
+    private final ReactiveUserDetailsService reactiveUserDetailsService;
+
+    // 按配置的有效期签发刷新令牌
     public Mono<String> issue(String username) {
         return settings().flatMap(settings -> issue(username, settings.refreshTokenTtl()));
     }
 
+    // 消费旧令牌并同时签发新令牌
     public Mono<RefreshResult> rotate(String refreshToken) {
         if (refreshToken == null || refreshToken.isBlank()) {
             return Mono.error(invalidToken());
@@ -59,15 +60,26 @@ public class RefreshTokens {
                 .opsForValue()
                 .getAndDelete(key(refreshToken))
                 .switchIfEmpty(Mono.error(invalidToken()))
-                .flatMap(username -> issueAccessToken(username, settings.accessTokenTtl())
-                        .flatMap(accessToken -> issue(username, settings.refreshTokenTtl())
-                                .map(newRefreshToken -> new RefreshResult(
-                                        accessToken,
-                                        newRefreshToken,
-                                        settings.accessTokenTtl().toSeconds(),
-                                        settings.refreshTokenTtl().toSeconds())))));
+                .flatMap(username -> ensureEnabled(username)
+                        .flatMap(enabled -> issueAccessToken(username, settings.accessTokenTtl())
+                                .flatMap(accessToken -> issue(username, settings.refreshTokenTtl())
+                                        .map(newRefreshToken -> new RefreshResult(
+                                                accessToken,
+                                                newRefreshToken,
+                                                settings.accessTokenTtl().toSeconds(),
+                                                settings.refreshTokenTtl().toSeconds()))))));
     }
- //让指定用户的所有令牌全部失效，相当于把他从所有设备上强制退出登录，并返回删掉了多少个。
+
+    // 已禁用账户不能再通过刷新令牌续期
+    private Mono<String> ensureEnabled(String username) {
+        return reactiveUserDetailsService
+                .findByUsername(username)
+                .filter(UserDetails::isEnabled)
+                .switchIfEmpty(Mono.error(invalidToken()))
+                .onErrorResume(error -> Mono.error(invalidToken()))
+                .thenReturn(username);
+    }
+    // 让指定用户的所有令牌全部失效，相当于把他从所有设备上强制退出登录，并返回删掉了多少个。
     public Mono<Long> revokeAll(String username) {
         var options = ScanOptions.scanOptions()
                 .match(KEY_PREFIX + "*")
@@ -83,6 +95,7 @@ public class RefreshTokens {
                 .reduce(0L, Long::sum);
     }
 
+    // 生成随机令牌并写入缓存映射
     private Mono<String> issue(String username, Duration ttl) {
         return Mono.fromSupplier(RefreshTokens::randomToken)
                 .flatMap(token -> redisTemplate
@@ -91,8 +104,9 @@ public class RefreshTokens {
                         .thenReturn(token));
     }
 
+    // 按用户角色签发短期访问令牌
     private Mono<String> issueAccessToken(String username, Duration ttl) {
-        return groups.getRoleNamesByUsername(username).collectList().flatMap(roles -> {
+        return userRoles.list(username).collectList().flatMap(roles -> {
             var request = new PersonalAccessToken();
             var metadata = new Metadata();
             metadata.setGenerateName("refresh-" + username + "-");
@@ -113,6 +127,7 @@ public class RefreshTokens {
         });
     }
 
+    // 读取有效期配置，缺失时使用默认值
     private Mono<TtlSettings> settings() {
         return parameterGroups
                 .getServer()
@@ -122,30 +137,25 @@ public class RefreshTokens {
                         ttl(server.getRefreshTokenTtlSeconds(), DEFAULT_REFRESH_TOKEN_TTL_SECONDS)));
     }
 
+    // 将秒数限制为至少一分钟
     private static Duration ttl(Integer seconds, long fallback) {
         var value = seconds == null || seconds <= 0 ? fallback : seconds;
         return Duration.ofSeconds(Math.max(60, value));
     }
 
+    // 生成高熵随机刷新令牌
     private static String randomToken() {
         var bytes = new byte[32];
         RANDOM.nextBytes(bytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    // 用哈希做键以避免明文存储
     private static String key(String token) {
-        return KEY_PREFIX + sha256(token);
+        return KEY_PREFIX + Digests.sha256Hex(token);
     }
 
-    private static String sha256(String value) {
-        try {
-            return HEX.formatHex(
-                    MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 不可用", e);
-        }
-    }
-
+    // 构造统一的刷新令牌无效错误
     private static ApiException invalidToken() {
         return new ApiException(
                 HttpStatus.UNAUTHORIZED, "refresh-token-invalid", "刷新令牌无效或已过期。");

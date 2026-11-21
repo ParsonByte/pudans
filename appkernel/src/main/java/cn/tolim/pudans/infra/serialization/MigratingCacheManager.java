@@ -17,6 +17,7 @@ public class MigratingCacheManager extends AbstractCacheManager {
 
     private final CacheMigrator migrator;
 
+    // 保存创建缓存所需的共享配置。
     public MigratingCacheManager(
             RedisCacheWriter writer,
             RedisCacheConfiguration configuration,
@@ -28,11 +29,13 @@ public class MigratingCacheManager extends AbstractCacheManager {
         this.migrator = migrator;
     }
 
+    // 缓存按需创建，启动时不预加载。
     @Override
     protected Collection<? extends Cache> loadCaches() {
         return List.of();
     }
 
+    // 缺失缓存使用迁移实现创建。
     @Override
     protected Cache getMissingCache(String name) {
         return new MigratingCache(name, writer, configuration, serializer, migrator);

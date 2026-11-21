@@ -19,12 +19,14 @@ class ExtensionDeleteHandler implements DeleteHandler {
 
     private final BuiltinEntityPolicy builtinEntityPolicy;
 
+    // 保存方案、客户端与内建实体策略。
     ExtensionDeleteHandler(Scheme scheme, ReactiveExtensionClient client, BuiltinEntityPolicy builtinEntityPolicy) {
         this.scheme = scheme;
         this.client = client;
         this.builtinEntityPolicy = builtinEntityPolicy;
     }
 
+    // 校验删除权限后删除并返回结果。
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
         var name = request.pathVariable("name");
@@ -36,6 +38,7 @@ class ExtensionDeleteHandler implements DeleteHandler {
                         .bodyValue(deleted));
     }
 
+    // 返回单个资源的路径模板。
     @Override
     public String pathPattern() {
         return buildExtensionPathPattern(scheme) + "/{name}";

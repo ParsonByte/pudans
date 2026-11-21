@@ -28,6 +28,7 @@ public class RememberMeConfigurer implements SecurityConfigurer {
 
     private final ServerResponse.Context context;
 
+    // 仅在会话尚未认证时尝试记住我自动登录。
     @Override
     public void configure(ServerHttpSecurity http) {
         var authManager = new RememberMeAuthenticationManager(cookieSignatureKeyResolver);

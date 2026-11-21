@@ -28,6 +28,7 @@ public class Device extends AbstractExtension {
     @Schema(requiredMode = REQUIRED)
     private Status status = new Status();
 
+    // 状态缺省时返回空对象，避免空引用
     public void setStatus(@Nullable Status status) {
         this.status = (status == null ? new Status() : status);
     }

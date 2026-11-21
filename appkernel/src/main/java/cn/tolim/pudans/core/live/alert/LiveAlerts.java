@@ -36,6 +36,7 @@ public class LiveAlerts {
 
     private final LiveMetrics metrics;
 
+    // 按类型与主体去重后发送领域事件告警
     public Mono<Void> alert(String type, String subject, Map<String, Object> payload) {
         if (!StringUtils.hasText(type) || !StringUtils.hasText(subject)) {
             log.warn("直播告警缺少类型或主体，已忽略：type={}，subject={}", type, subject);
@@ -73,6 +74,7 @@ public class LiveAlerts {
                 .then();
     }
 
+    // 滑动窗口内统计被限流房间，超过阈值发全局告警
     private Mono<Void> trackRateLimitedRoom(String roomId) {
         var now = Instant.now();
         var cutoff = now.minus(RATE_LIMIT_WINDOW).toEpochMilli();
@@ -103,6 +105,7 @@ public class LiveAlerts {
                 .then();
     }
 
+    // 补全载荷后发布领域事件并计数
     private void publish(String type, Map<String, Object> payload) {
         var body = payload == null ? new LinkedHashMap<String, Object>() : new LinkedHashMap<>(payload);
         domainEventPublisher.publish(type, body, null);

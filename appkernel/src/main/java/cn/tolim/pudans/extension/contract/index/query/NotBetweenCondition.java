@@ -4,6 +4,7 @@ public record NotBetweenCondition(String indexName, Object fromKey, boolean from
                                   boolean toInclusive)
         implements IndexCondition {
 
+    // 取反得到区间内的条件。
     @Override
     public Condition not() {
         return new BetweenCondition(indexName, fromKey, fromInclusive, toKey, toInclusive);

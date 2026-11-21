@@ -4,22 +4,15 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 import cn.tolim.pudans.setting.contract.Setting;
 import cn.tolim.pudans.extension.contract.ConfigMap;
-import cn.tolim.pudans.extension.contract.ExtensionClient;
-import cn.tolim.pudans.extension.contract.Metadata;
-import cn.tolim.pudans.extension.contract.controller.Reconciler.Result;
-import cn.tolim.pudans.extension.contract.controller.RequeueException;
 import cn.tolim.pudans.infra.contract.utils.JsonParseException;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.fge.jsonpatch.JsonPatchException;
 import com.github.fge.jsonpatch.mergepatch.JsonMergePatch;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
-import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -37,6 +30,7 @@ public enum SettingUtils {
     private static final String NAME_FIELD = "name";
 
 
+    // 从表单结构提取各分组的默认值映射。
     public static Map<String, String> settingDefinedDefaultValueMap(Setting setting) {
         List<Setting.SettingForm> forms = setting.getSpec().getForms();
         if (CollectionUtils.isEmpty(forms)) {
@@ -60,54 +54,7 @@ public enum SettingUtils {
     }
 
 
-    public static void createOrUpdateConfigMap(ExtensionClient client, String settingName, String configMapName) {
-        Assert.notNull(client, "扩展客户端不能为空");
-        Assert.hasText(settingName, "设置名称不能为空");
-        Assert.hasText(configMapName, "ConfigMap 名称不能为空");
-
-        client.fetch(Setting.class, settingName)
-                .ifPresentOrElse(
-                        setting -> {
-                            final var source = SettingUtils.settingDefinedDefaultValueMap(setting);
-                            client.fetch(ConfigMap.class, configMapName)
-                                    .ifPresentOrElse(
-                                            configMap -> {
-                                                Map<String, String> modified =
-                                                        Objects.requireNonNullElse(configMap.getData(), Map.of());
-                                                var copy = new HashMap<>(modified);
-
-                                                var merged = SettingUtils.mergePatch(modified, source);
-                                                configMap.setData(merged);
-
-                                                if (!Objects.equals(copy, configMap.getData())) {
-                                                    client.update(configMap);
-                                                }
-                                            },
-                                            () -> {
-                                                ConfigMap configMap = new ConfigMap();
-                                                configMap.setMetadata(new Metadata());
-                                                configMap.getMetadata().setName(configMapName);
-                                                configMap.setData(source);
-                                                client.create(configMap);
-                                            });
-                        },
-                        () -> {
-
-                            throw new RequeueException(
-                                    Result.requeue(null), "未找到设置 %s".formatted(settingName));
-                        });
-    }
-
-    public static ConfigMap populateDefaultConfig(Setting setting, String configMapName) {
-        var data = settingDefinedDefaultValueMap(setting);
-        ConfigMap configMap = new ConfigMap();
-        configMap.setMetadata(new Metadata());
-        configMap.getMetadata().setName(configMapName);
-        configMap.setData(data);
-        return configMap;
-    }
-
-
+    // 以 JSON Merge Patch 合并配置，修改值优先。
     public static Map<String, String> mergePatch(Map<String, String> modified, Map<String, String> source) {
         var modifiedJson = mapToJsonNode(modified);
 
@@ -124,6 +71,7 @@ public enum SettingUtils {
     }
 
 
+    // 将配置数据转换为 JSON 对象节点。
     public static ObjectNode settingConfigToJson(ConfigMap configMap) {
         if (configMap.getData() == null) {
             return MAPPER.createObjectNode();
@@ -132,11 +80,22 @@ public enum SettingUtils {
     }
 
 
+    // 将 JSON 节点还原为字符串映射。
     public static Map<String, String> settingConfigJsonToMap(ObjectNode node) {
         return jsonNodeToStringMap(node);
     }
 
+    // 读取字符串字段，类型不符时返回空。
+    public static String text(ObjectNode node, String field) {
+        if (node == null) {
+            return null;
+        }
+        var value = node.get(field);
+        return value != null && value.isString() ? value.asString() : null;
+    }
 
+
+    // 尝试解析 JSON，失败时按普通字符串存储。
     private static com.fasterxml.jackson.databind.node.ObjectNode mapToJsonNode(Map<String, String> map) {
         var objectNode = JsonUtils.mapper().createObjectNode();
         map.forEach((k, v) -> {
@@ -155,6 +114,7 @@ public enum SettingUtils {
         return objectNode;
     }
 
+    // 使用 Jackson 3 解析，保持与旧逻辑一致。
     private static ObjectNode mapToObjectNode(Map<String, String> map) {
         var objectNode = MAPPER.createObjectNode();
         map.forEach((k, v) -> {
@@ -173,6 +133,7 @@ public enum SettingUtils {
         return objectNode;
     }
 
+    // 将旧版节点展平为字符串映射。
     private static Map<String, String> jsonNodeToStringMap(com.fasterxml.jackson.databind.JsonNode node) {
         Map<String, String> stringMap = new LinkedHashMap<>();
         node.forEachEntry((k, v) -> {
@@ -193,6 +154,7 @@ public enum SettingUtils {
         return stringMap;
     }
 
+    // 将 Jackson 3 节点展平为字符串映射。
     private static Map<String, String> jsonNodeToStringMap(JsonNode node) {
         Map<String, String> stringMap = new LinkedHashMap<>();
         node.forEachEntry((k, v) -> {

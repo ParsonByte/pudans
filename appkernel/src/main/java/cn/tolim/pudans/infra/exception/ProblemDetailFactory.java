@@ -7,6 +7,7 @@ public final class ProblemDetailFactory {
 
     private ProblemDetailFactory() {}
 
+    // 构造带稳定错误码的标准问题详情。
     public static ProblemDetail create(HttpStatus status, String code, String detail) {
         var problem = ProblemDetail.forStatusAndDetail(status, detail);
         problem.setProperty("code", code);

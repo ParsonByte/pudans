@@ -20,6 +20,7 @@ public class ConfigMap extends AbstractExtension {
     @Nullable
     private Map<String, String> data;
 
+    // 按需创建数据表，避免空配置携带空集合。
     public ConfigMap putDataItem(String key, String dataItem) {
         if (this.data == null) {
             this.data = new LinkedHashMap<>();

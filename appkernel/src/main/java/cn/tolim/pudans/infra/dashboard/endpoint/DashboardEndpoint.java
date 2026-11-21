@@ -75,6 +75,7 @@ public class DashboardEndpoint implements CustomEndpoint {
 
     private final RiskRuleRegistry riskRuleRegistry;
 
+    // 注册仪表盘概览路由并声明响应模型。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "DashboardV1alpha1";
@@ -87,6 +88,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 聚合失败时记录日志并返回统一的服务端错误。
     private Mono<ServerResponse> overview(ServerRequest request) {
         return aggregate()
                 .flatMap(overview -> ServerResponse.ok().bodyValue(overview))
@@ -97,6 +99,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 并行汇总用户、角色、审计与趋势数据。
     Mono<DashboardOverview> aggregate() {
         var now = Instant.now();
         var dayStart = PudansTime.startOfDay(now);
@@ -219,6 +222,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .collectList();
     }
 
+    // 排除角色模板与隐藏角色，只保留可分配角色。
     private static boolean isRealRole(Role role) {
         var labels = role.getMetadata() == null ? null : role.getMetadata().getLabels();
         if (labels == null) {
@@ -228,6 +232,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 && !"true".equals(labels.get(Role.HIDDEN_LABEL_NAME));
     }
 
+    // 将按日计数补全为连续的趋势点序列。
     private static List<LoginTrendPoint> toDailyTrend(Map<LocalDate, Long> daysByCount, Instant now) {
         var today = PudansTime.dateOf(now);
         var points = new ArrayList<LoginTrendPoint>(TREND_DAYS);
@@ -238,6 +243,7 @@ public class DashboardEndpoint implements CustomEndpoint {
         return points;
     }
 
+    // 按创建时间聚合对象数量，生成新增趋势。
     private static List<LoginTrendPoint> toCreationTrend(List<Instant> creationTimestamps, Instant now) {
         var counts = creationTimestamps.stream()
                 .filter(java.util.Objects::nonNull)
@@ -256,6 +262,7 @@ public class DashboardEndpoint implements CustomEndpoint {
     private record Traffic(
             long todayOperations, List<RecentOperation> recentOperations, List<ActiveUser> activeUsers) {}
 
+    // 按操作次数排序并截取最活跃的匿名或已知用户。
     private static List<ActiveUser> toActiveUsers(List<AuditRecord> records, Map<String, String> names) {
         return records.stream()
                 .map(AuditRecord::getUid)
@@ -273,6 +280,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .toList();
     }
 
+    // 依据用户组关系计算各真实角色的成员数量。
     private Mono<List<RoleUserCount>> toRoleDistribution(List<Role> realRoles) {
         if (realRoles.isEmpty()) {
             return Mono.just(List.of());
@@ -291,6 +299,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .onErrorReturn(List.of());
     }
 
+    // 批量查询用户组绑定的角色名称。
     private Mono<Map<String, List<String>>> rolesByGroup(List<String> groupNames) {
         if (groupNames.isEmpty()) {
             return Mono.just(Map.of());
@@ -304,6 +313,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
+    // 汇总每个角色的用户数并按数量降序排列。
     private static List<RoleUserCount> toRoleCounts(
             Map<String, String> groupsByUser,
             Map<String, List<String>> rolesByGroup,
@@ -321,6 +331,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .toList();
     }
 
+    // 优先返回角色显示名，缺省时回退到资源名。
     private static String roleDisplayName(Role role) {
         var annotations = role.getMetadata() == null ? null : role.getMetadata().getAnnotations();
         var displayName = annotations == null ? null : annotations.get(Role.DISPLAY_NAME_ANNO);
@@ -330,6 +341,7 @@ public class DashboardEndpoint implements CustomEndpoint {
         return displayName;
     }
 
+    // 批量解析用户显示名，失败时退化为空映射。
     private Mono<Map<String, String>> displayNamesOf(Collection<String> uids) {
         if (uids.isEmpty()) {
             return Mono.just(Map.of());
@@ -347,12 +359,14 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .onErrorReturn(Map.of());
     }
 
+    // 统计未删除的指定类型资源数量，失败按零处理。
     private Mono<Long> countNotDeleting(Class<? extends cn.tolim.pudans.extension.contract.Extension> type) {
         return client
                 .countBy(type, ListOptions.builder().andQuery(notDeleting()).build())
                 .onErrorReturn(0L);
     }
 
+    // 将审计记录转换为最近操作视图。
     private static List<RecentOperation> toRecentOperations(
             List<AuditRecord> records, Map<String, String> usersByUid) {
         return records.stream()
@@ -360,6 +374,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .toList();
     }
 
+    // 解析操作人显示名并组装单条操作视图。
     private static RecentOperation toRecentOperation(AuditRecord record, Map<String, String> usersByUid) {
         var uid = nullSafeUidOfRecord(record);
         var operator = usersByUid.getOrDefault(uid, uid);
@@ -373,17 +388,20 @@ public class DashboardEndpoint implements CustomEndpoint {
                 record.getTimestamp());
     }
 
+    // 将缺失或空白的用户标识统一为匿名。
     private static String nullSafeUidOfRecord(AuditRecord record) {
         var uid = record.getUid();
         return uid == null || uid.isBlank() ? "anonymous" : uid;
     }
 
+    // 读取用户标识，缺失时返回未知占位值。
     private static String nullSafeUid(User user) {
         var spec = user.getSpec();
         var uid = spec == null ? null : spec.getUid();
         return uid == null || uid.isBlank() ? "unknown" : uid;
     }
 
+    // 优先使用显示名，缺失时回退到用户名。
     private static String displayNameOf(User user) {
         var spec = user.getSpec();
         var displayName = spec == null ? null : spec.getDisplayName();
@@ -394,6 +412,7 @@ public class DashboardEndpoint implements CustomEndpoint {
         return displayName;
     }
 
+    // 将系统信息裁剪为仪表盘需要的公开摘要。
     private static GlobalInfoSummary toSummary(SystemInfo info) {
         return new GlobalInfoSummary(
                 info.getTitle(),
@@ -404,6 +423,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 uptimeSeconds());
     }
 
+    // 读取进程运行时长，不可用时返回零。
     private static long uptimeSeconds() {
         try {
             var uptimeMillis = ManagementFactory.getRuntimeMXBean().getUptime();
@@ -413,6 +433,7 @@ public class DashboardEndpoint implements CustomEndpoint {
         }
     }
 
+    // 声明仪表盘接口所属的版本。
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

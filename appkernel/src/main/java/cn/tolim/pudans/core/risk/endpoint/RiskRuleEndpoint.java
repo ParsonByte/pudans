@@ -28,6 +28,7 @@ public class RiskRuleEndpoint implements CustomEndpoint {
 
     private final AuditLog auditLog;
 
+    // 注册风险封禁查询与解封路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "RiskRuleV1alpha1";
@@ -56,6 +57,7 @@ public class RiskRuleEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 列出当前生效的风险封禁记录。
     private Mono<ServerResponse> bans(ServerRequest request) {
         return riskGuard
                 .listBans()
@@ -63,6 +65,7 @@ public class RiskRuleEndpoint implements CustomEndpoint {
                 .flatMap(bans -> ServerResponse.ok().bodyValue(bans));
     }
 
+    // 校验参数后解除指定主体在场景下的封禁。
     private Mono<ServerResponse> unban(ServerRequest request) {
         var scene = request.queryParam("scene").filter(StringUtils::hasText).orElse(null);
         var subject = request.queryParam("subject").filter(StringUtils::hasText).orElse(null);
@@ -79,6 +82,7 @@ public class RiskRuleEndpoint implements CustomEndpoint {
                 .then(ServerResponse.noContent().build());
     }
 
+    // 把解封操作写入审计，记录删除结果。
     private void recordUnban(ServerRequest request, String scene, String subject, boolean deleted) {
         var context = new LinkedHashMap<String, Object>();
         context.put("scene", scene);
@@ -94,6 +98,7 @@ public class RiskRuleEndpoint implements CustomEndpoint {
                 context);
     }
 
+    // 返回风险接口所属的 API 版本。
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

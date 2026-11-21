@@ -50,6 +50,7 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
 
     private final StorageDriverResolver driverResolver;
 
+    // 补齐终结器、加密凭据并同步策略状态。
     @Override
     public Result reconcile(Request request) {
         var optional = client.fetch(StoragePolicy.class, request.name());
@@ -85,11 +86,13 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         return Result.doNotRetry();
     }
 
+    // 声明该协调器负责存储策略资源。
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new StoragePolicy()).build();
     }
 
+    // 阻止删除仍被引用或受保护的策略。
     private void handleDelete(StoragePolicy policy) {
         var name = policy.getMetadata().getName();
         var builtin = Boolean.parseBoolean(
@@ -113,6 +116,7 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         log.info("存储策略 [{}] 已删除", name);
     }
 
+    // 判断直播源或录像是否仍引用该策略。
     private boolean referencedByLiveResources(String name) {
         var sourceOptions = ListOptions.builder()
                 .andQuery(equal("spec.storagePolicy", name))
@@ -126,6 +130,7 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         return !client.listAll(LiveRecording.class, recordingOptions, defaultSort()).isEmpty();
     }
 
+    // 加密尚未加密的凭据并报告是否变更。
     private boolean encryptCredentials(StoragePolicy policy) {
         var spec = policy.getSpec();
         var credentials = spec.getCredentials();
@@ -154,10 +159,12 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         return changed;
     }
 
+    // 判断凭据值是否需要加密。
     private boolean needsEncryption(String value) {
         return StringUtils.hasText(value) && !secretCipher.isEncrypted(value);
     }
 
+    // 根据校验结果刷新状态，未变化时跳过更新。
     private boolean updateStatus(StoragePolicy policy, StoragePolicyValidator.ValidationResult validation) {
         var current = policy.getStatus();
         var status = new StoragePolicy.Status();
@@ -172,6 +179,7 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         return true;
     }
 
+    // 汇总各类凭据是否已配置。
     private static Map<String, Boolean> credentialConfigured(StoragePolicy.Spec spec) {
         var credentials = spec.getCredentials();
         var configured = new LinkedHashMap<String, Boolean>();
@@ -182,6 +190,7 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
         return configured;
     }
 
+    // 比较两份状态，决定是否需要写回。
     private static boolean sameStatus(StoragePolicy.Status left, StoragePolicy.Status right) {
         if (left == null) {
             return false;
@@ -192,6 +201,7 @@ public class StoragePolicyReconciler implements Reconciler<Reconciler.Request> {
                 && Objects.equals(left.getCredentialConfigured(), right.getCredentialConfigured());
     }
 
+    // 取消其他策略的默认标记，保证默认唯一。
     private void clearOtherDefaults(StoragePolicy policy) {
         var options = ListOptions.builder()
                 .andQuery(equal("spec.defaultPolicy", true))

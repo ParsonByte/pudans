@@ -9,5 +9,6 @@ public interface SingleValueIndexSpecBuilder<E extends Extension, K extends Comp
         extends IndexSpecBuilder<E, K, SingleValueIndexSpecBuilder<E, K>> {
 
 
+    // 设置从扩展提取单值键的函数。
     SingleValueIndexSpecBuilder<E, K> indexFunc(Function<E, @Nullable K> indexFunc);
 }

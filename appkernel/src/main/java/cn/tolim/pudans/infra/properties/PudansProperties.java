@@ -39,11 +39,13 @@ public class PudansProperties implements Validator {
     private Set<String> initialExtensionLocations = new HashSet<>();
     private boolean requiredExtensionDisabled;
 
+    // 仅校验本配置类及其子类。
     @Override
     public boolean supports(Class<?> clazz) {
         return PudansProperties.class.isAssignableFrom(clazz);
     }
 
+    // 校验外部 URL 与绝对永久链接的依赖关系。
     @Override
     public void validate(Object target, Errors errors) {
         var props = (PudansProperties) target;
@@ -61,6 +63,7 @@ public class PudansProperties implements Validator {
         }
     }
 
+    // 外部地址必须是不含片段的 HTTP(S) URL。
     private boolean isValidExternalUrl(URL externalUrl) {
         try {
             var uri = externalUrl.toURI();

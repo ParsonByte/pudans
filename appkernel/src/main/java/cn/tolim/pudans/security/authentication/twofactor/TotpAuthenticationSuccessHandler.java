@@ -6,7 +6,6 @@ import cn.tolim.pudans.security.authentication.oauth2.OAuth2LoginAttributes;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.server.WebFilterExchange;
@@ -15,7 +14,6 @@ import org.springframework.security.web.server.authentication.ServerAuthenticati
 import org.springframework.security.web.server.savedrequest.ServerRequestCache;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuccessHandler {
 
     private final LoginFlowHandler loginEnhancer;
@@ -24,6 +22,7 @@ public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuc
 
     private final AuditLog auditLog;
 
+    // 构建登录后跳转处理器，并复用全局请求缓存恢复原访问页。
     public TotpAuthenticationSuccessHandler(
             LoginFlowHandler loginEnhancer,
             ServerRequestCache serverRequestCache,
@@ -36,6 +35,7 @@ public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuc
         this.successHandler = successHandler;
     }
 
+    // 构造审计快照，记录用户名、认证方式与已授予的权限。
     private static Map<String, Object> snapshot(Authentication authentication) {
         var snapshot = new LinkedHashMap<String, Object>();
         snapshot.put("username", authentication.getName());
@@ -46,6 +46,7 @@ public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuc
         return snapshot;
     }
 
+    // 若登录前存在授权的续跳地址，优先恢复该流程避免中断。
     private Mono<Boolean> resumeOAuth2(WebFilterExchange webFilterExchange) {
         var exchange = webFilterExchange.getExchange();
         return exchange.getSession()
@@ -62,6 +63,7 @@ public class TotpAuthenticationSuccessHandler implements ServerAuthenticationSuc
                 .defaultIfEmpty(false);
     }
 
+    // 完成登录增强与审计后，优先恢复授权流程，否则按默认跳转。
     @Override
     public Mono<Void> onAuthenticationSuccess(WebFilterExchange webFilterExchange, Authentication authentication) {
         var exchange = webFilterExchange.getExchange();

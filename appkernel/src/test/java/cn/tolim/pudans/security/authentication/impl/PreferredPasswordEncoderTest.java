@@ -61,4 +61,27 @@ class PreferredPasswordEncoderTest {
 
         assertThat(encoder.matches("secret", encoded)).isTrue();
     }
+
+    // 旧 BCrypt 哈希在启用 Argon2 后应触发升级。
+    @Test
+    void upgradesBcryptHashesWhenArgon2IsEnabled() {
+        when(securitySettings.isArgon2PasswordStorageEnabled()).thenReturn(true);
+        var bcrypt = "{" + PreferredPasswordEncoder.BCRYPT_ENCODING_ID + "}"
+                + new BCryptPasswordEncoder().encode("secret");
+        var argon2 = "{" + PreferredPasswordEncoder.ARGON2_ENCODING_ID + "}"
+                + Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8().encode("secret");
+
+        assertThat(encoder.upgradeEncoding(bcrypt)).isTrue();
+        assertThat(encoder.upgradeEncoding(argon2)).isFalse();
+    }
+
+    // 关闭 Argon2 时不要降级已有哈希。
+    @Test
+    void doesNotUpgradeWhenArgon2IsDisabled() {
+        when(securitySettings.isArgon2PasswordStorageEnabled()).thenReturn(false);
+        var bcrypt = "{" + PreferredPasswordEncoder.BCRYPT_ENCODING_ID + "}"
+                + new BCryptPasswordEncoder().encode("secret");
+
+        assertThat(encoder.upgradeEncoding(bcrypt)).isFalse();
+    }
 }

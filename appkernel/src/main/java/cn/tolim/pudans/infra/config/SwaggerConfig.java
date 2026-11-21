@@ -32,6 +32,7 @@ import org.springframework.core.annotation.Order;
 public class SwaggerConfig {
 
     @Bean
+    // 汇总构建版本、安全方案与基础服务信息。
     OpenAPI pudansOpenApi(
             ObjectProvider<BuildProperties> buildPropertiesProvider, SpringDocConfigProperties docConfigProperties) {
         var buildProperties = buildPropertiesProvider.getIfAvailable();
@@ -59,11 +60,13 @@ public class SwaggerConfig {
     }
 
     @Bean
+    // 将补丁请求模型注册到文档组件。
     GlobalOpenApiCustomizer openApiCustomizer() {
         return openApi -> JsonPatch.addSchema(openApi.getComponents());
     }
 
     @Bean
+    // 按 API 根路径分组并排除系统配置端点。
     GroupedOpenApi apiV1alpha1Api() {
         return GroupedOpenApi.builder()
                 .group("apis_api_v1alpha1")
@@ -75,11 +78,13 @@ public class SwaggerConfig {
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)
+    // 替换类型名解析以输出稳定的模型名。
     ModelConverter customModelConverter(ObjectMapperProvider objectMapperProvider) {
         return new ModelResolver(objectMapperProvider.jsonMapper(), new CustomTypeNameResolver());
     }
 
     static class CustomTypeNameResolver extends TypeNameResolver {
+        // 将内部类分隔符替换为点号，保持文档类型名稳定。
         @Override
         protected String nameForClass(Class<?> cls, Set<Options> options) {
 

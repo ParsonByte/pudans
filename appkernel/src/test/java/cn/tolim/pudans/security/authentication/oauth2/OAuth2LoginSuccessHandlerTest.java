@@ -33,6 +33,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.server.WebFilterExchange;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
@@ -72,9 +74,9 @@ class OAuth2LoginSuccessHandlerTest {
         return new OAuth2AuthenticationToken(principal, principal.getAuthorities(), REGISTRATION_ID);
     }
 
-    private static Authentication previousAuthentication(boolean withFactor) {
+    private static Authentication previousAuthentication(String username, boolean withFactor) {
         var details = new PudansUserDetails(
-                USERNAME, "encoded", List.of(new SimpleGrantedAuthority("ROLE_authenticated")), false);
+                username, "encoded", List.of(new SimpleGrantedAuthority("ROLE_authenticated")), false);
         var user = new PudansUser(details, true, "encrypted-secret");
         var authorities = withFactor
                 ? List.of(
@@ -135,9 +137,38 @@ class OAuth2LoginSuccessHandlerTest {
     void previousAuthenticationThatPassedTwoFactorIsSatisfied() {
         givenBoundConnection();
         exchange.getAttributes()
-                .put(OAuth2LoginAttributes.PRE_AUTHENTICATION, previousAuthentication(true));
+                .put(OAuth2LoginAttributes.PRE_AUTHENTICATION, previousAuthentication(USERNAME, true));
 
         assertThat(establishedTwoFactorSatisfiedFlag()).isTrue();
+    }
+
+    // 另一个用户的前置登录不能替目标账号满足双重验证。
+    @Test
+    void previousAuthenticationForAnotherUserIsNotSatisfied() {
+        givenBoundConnection();
+        exchange.getAttributes()
+                .put(OAuth2LoginAttributes.PRE_AUTHENTICATION, previousAuthentication("bob", true));
+
+        assertThat(establishedTwoFactorSatisfiedFlag()).isFalse();
+    }
+
+    // PAT/JWT 不能作为 OAuth2 登录的双重验证凭据。
+    @Test
+    void jwtPreviousAuthenticationIsNotSatisfied() {
+        givenBoundConnection();
+        var jwt = Jwt.withTokenValue("pat")
+                .header("alg", "none")
+                .claim("sub", USERNAME)
+                .build();
+        exchange.getAttributes()
+                .put(
+                        OAuth2LoginAttributes.PRE_AUTHENTICATION,
+                        new JwtAuthenticationToken(
+                                jwt,
+                                List.of(new SimpleGrantedAuthority("ROLE_authenticated")),
+                                USERNAME));
+
+        assertThat(establishedTwoFactorSatisfiedFlag()).isFalse();
     }
 
     @Test
@@ -146,7 +177,7 @@ class OAuth2LoginSuccessHandlerTest {
         exchange.getAttributes()
                 .put(
                         OAuth2LoginAttributes.PRE_AUTHENTICATION,
-                        new TwoFactorAuthentication(previousAuthentication(false)));
+                        new TwoFactorAuthentication(previousAuthentication(USERNAME, false)));
 
         assertThat(establishedTwoFactorSatisfiedFlag()).isFalse();
     }

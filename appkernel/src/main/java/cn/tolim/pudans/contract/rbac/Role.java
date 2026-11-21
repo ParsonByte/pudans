@@ -92,6 +92,7 @@ public class Role extends AbstractExtension {
             this(null, null, null, null, null);
         }
 
+        // 空引用归一化为空数组，保证策略比较安全。
         public PolicyRule(
                 String[] apiGroups,
                 String[] resources,
@@ -105,6 +106,7 @@ public class Role extends AbstractExtension {
             this.verbs = nullElseEmpty(verbs);
         }
 
+        // 空引用按空数组处理，避免比较时判空。
         String[] nullElseEmpty(String @Nullable ... items) {
             if (items == null) {
                 return new String[] {};
@@ -112,6 +114,7 @@ public class Role extends AbstractExtension {
             return items;
         }
 
+        // 按字段顺序逐级比较，保证规则排序稳定。
         @Override
         public int compareTo(PolicyRule other) {
             int result = compare(apiGroups, other.apiGroups);

@@ -22,10 +22,12 @@ public class TwoFactorCodeAuthenticationConverter implements ServerAuthenticatio
 
     private final RiskGuard riskGuard;
 
+    // 注入风控守卫，在解析验证码前限制暴力尝试。
     public TwoFactorCodeAuthenticationConverter(RiskGuard riskGuard) {
         this.riskGuard = riskGuard;
     }
 
+    // 取路径最后一段作为验证方式，缺省回退到 TOTP。
     private static String resolveType(ServerWebExchange exchange) {
         var segments = exchange.getRequest().getPath().pathWithinApplication().value().split("/");
         for (var i = segments.length - 1; i >= 0; i--) {
@@ -36,6 +38,7 @@ public class TwoFactorCodeAuthenticationConverter implements ServerAuthenticatio
         return DEFAULT_TYPE;
     }
 
+    // 从表单读取验证码并通过风控后生成待认证令牌。
     @Override
     public Mono<Authentication> convert(ServerWebExchange exchange) {
         return ReactiveSecurityContextHolder.getContext()
@@ -54,6 +57,7 @@ public class TwoFactorCodeAuthenticationConverter implements ServerAuthenticatio
                         .flatMap(riskGate(exchange)));
     }
 
+    // 以会话或客户端地址为维度拦截被风控禁止的尝试。
     private Function<Authentication, Mono<Authentication>> riskGate(ServerWebExchange exchange) {
         return authentication -> exchange.getSession()
                 .map(session -> session.getId())

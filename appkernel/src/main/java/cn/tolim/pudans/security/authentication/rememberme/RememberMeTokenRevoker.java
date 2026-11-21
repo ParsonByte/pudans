@@ -15,6 +15,7 @@ public class RememberMeTokenRevoker {
     private static final Duration BLOCKING_TIMEOUT = ReactiveUtils.DEFAULT_TIMEOUT;
     private final PersistentRememberMeTokenRepository tokenRepository;
 
+    // 密码变更后异步清除用户令牌，强制其他会话重登。
     @Async
     @EventListener(PasswordChangedEvent.class)
     public void onPasswordChanged(PasswordChangedEvent event) {

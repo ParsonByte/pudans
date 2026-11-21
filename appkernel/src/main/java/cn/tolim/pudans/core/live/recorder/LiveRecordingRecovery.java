@@ -23,6 +23,7 @@ import cn.tolim.pudans.extension.contract.ListOptions;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
+import cn.tolim.pudans.core.live.source.SourceStatus;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -52,12 +53,15 @@ public class LiveRecordingRecovery {
 
     private final LiveRecordingWorkspace workspace;
 
+    private final SourceStatus sourceStatus;
+
     private final ReactiveStringRedisTemplate redisTemplate;
 
     private final LiveProperties properties;
 
     private final String instanceId = UUID.randomUUID().toString();
 
+    // 启动时异步恢复失联实例遗留的录制
     @PostConstruct
     public void start() {
         Schedulers.boundedElastic().schedule(() -> recover().subscribe(
@@ -69,6 +73,7 @@ public class LiveRecordingRecovery {
                 error -> log.warn("直播录制启动恢复失败：{}", error.getMessage())));
     }
 
+    // 分页扫描活动录制，逐条尝试恢复并计数
     public Mono<Integer> recover() {
         var options = ListOptions.builder()
                 .andQuery(in("status.state", List.of(
@@ -80,6 +85,7 @@ public class LiveRecordingRecovery {
                 .reduce(0, Integer::sum);
     }
 
+    // 跳过本实例活动、心跳新鲜与未超时的排队录制
     private Mono<Integer> recoverOne(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         if (registry.isActive(name)) {
@@ -110,6 +116,7 @@ public class LiveRecordingRecovery {
                 });
     }
 
+    // 标记失联失败并清理键、空目录与源指针
     private Mono<Integer> failLost(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         var state = recording.getStatus() == null ? null : recording.getStatus().getState();
@@ -118,6 +125,7 @@ public class LiveRecordingRecovery {
                 .fail(name, LiveErrorCode.LIVE_RECORDER_LOST, message)
                 .then(cleanKeys(name))
                 .then(cleanEmptyDir(name))
+                .then(clearSource(recording))
                 .thenReturn(1)
                 .onErrorResume(error -> {
                     log.warn("恢复失联录制失败 [{}]：{}", name, error.getMessage());
@@ -125,6 +133,19 @@ public class LiveRecordingRecovery {
                 });
     }
 
+    // 释放直播源的录制指针，避免失联录制永久阻塞该直播源
+    private Mono<Void> clearSource(LiveRecording recording) {
+        var sourceName = recording.getSpec() == null ? null : recording.getSpec().getSourceName();
+        if (!org.springframework.util.StringUtils.hasText(sourceName)) {
+            return Mono.empty();
+        }
+        return sourceStatus.recordingEnded(sourceName).onErrorResume(error -> {
+            log.warn("清理直播源录制状态失败 [{}]：{}", sourceName, error.getMessage());
+            return Mono.empty();
+        }).then();
+    }
+
+    // 删除该录制的 owner 与停止键
     private Mono<Void> cleanKeys(String name) {
         return redisTemplate
                 .delete(Flux.just(OWNER_KEY_PREFIX + name, STOP_KEY_PREFIX + name))
@@ -148,6 +169,7 @@ public class LiveRecordingRecovery {
                 .then();
     }
 
+    // 目录不可读时按非空处理，避免误删
     private static boolean isEmpty(Path dir) {
         try (Stream<Path> paths = Files.list(dir)) {
             return paths.findAny().isEmpty();
@@ -164,6 +186,7 @@ public class LiveRecordingRecovery {
         return status.getHeartbeatAt().plus(HEARTBEAT_TIMEOUT).isAfter(Instant.now());
     }
 
+    // 排队超过时限仍未开始即视为可恢复
     public static boolean isQueueExpired(LiveRecording recording) {
         var created = recording.getMetadata().getCreationTimestamp();
         return created == null || created.plus(QUEUE_TIMEOUT).isBefore(Instant.now());

@@ -25,10 +25,12 @@ public class OutboundRequestValidator {
     private static final Set<String> FORBIDDEN_HOSTS =
             Set.of("localhost", "localhost.localdomain", "metadata", "metadata.google.internal");
 
+    // 拒绝指向本机与云元数据服务的主机名。
     public static boolean isForbiddenHost(String host) {
         return host != null && FORBIDDEN_HOSTS.contains(host.toLowerCase(Locale.ROOT));
     }
 
+    // 判断地址是否属于内网、回环或保留网段。
     public static boolean isBlocked(InetAddress address) {
         if (address == null) {
             return true;
@@ -63,6 +65,7 @@ public class OutboundRequestValidator {
         return false;
     }
 
+    // 去掉 IPv6 字面量外层的方括号。
     public static String stripBrackets(String host) {
         if (host != null && host.startsWith("[") && host.endsWith("]")) {
             return host.substring(1, host.length() - 1);
@@ -70,12 +73,23 @@ public class OutboundRequestValidator {
         return host;
     }
 
+    // 识别 IPv4、IPv6 及非常规数字字面量。
     public static boolean isIpLiteral(String host) {
-        return host != null && (host.indexOf(':') >= 0 || IPV4_LITERAL.matcher(host).matches());
+        if (host == null) {
+            return false;
+        }
+        if (host.indexOf(':') >= 0 || IPV4_LITERAL.matcher(host).matches()) {
+            return true;
+        }
+        // 纯数字、十六进制和非常规点分形式会被底层解析成 IPv4，必须按字面量处理。
+        return host.matches("\\d+") || host.matches("0[xX][0-9a-fA-F]+") || host.matches("[0-9.]+");
     }
 
     // 无法解析的字面量按不可路由处理，宁可拒绝。
     public static boolean isBlockedLiteral(String host) {
+        if (host != null && host.matches("[0-9.]+") && !IPV4_LITERAL.matcher(host).matches()) {
+            return true;
+        }
         try {
             return isBlocked(InetAddress.getByName(host));
         } catch (UnknownHostException e) {
@@ -83,6 +97,7 @@ public class OutboundRequestValidator {
         }
     }
 
+    // 解析并校验 URL 结构，空值直接拒绝。
     private static URI parse(String url) {
         if (!StringUtils.hasText(url)) {
             throw new IllegalArgumentException("Webhook URL 不能为空。");
@@ -94,6 +109,7 @@ public class OutboundRequestValidator {
         }
     }
 
+    // 校验目标仅使用 HTTP(S) 且解析到可路由地址。
     public void validate(String url) {
         var uri = parse(url);
         var scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
@@ -121,6 +137,7 @@ public class OutboundRequestValidator {
         }
     }
 
+    // 过滤禁止的请求头与内部签名头。
     public Map<String, String> sanitizeHeaders(Map<String, String> headers) {
         var sanitized = new LinkedHashMap<String, String>();
         if (headers == null) {

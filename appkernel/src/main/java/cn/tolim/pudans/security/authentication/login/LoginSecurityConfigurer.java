@@ -74,6 +74,7 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
 
     private final SecurityParameters securitySettings;
 
+    // 汇聚表单登录所需的认证、会话与风控依赖。
     public LoginSecurityConfigurer(
             ObservationRegistry observationRegistry,
             ReactiveUserDetailsService reactiveUserDetailsService,
@@ -111,9 +112,11 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
         this.securitySettings = securitySettings;
     }
 
+    // 装配表单登录过滤器并标记双因素待验证身份。
     @Override
     public void configure(ServerHttpSecurity http) {
         var filter = new AuthenticationWebFilter(authenticationManager()) {
+            // 双因素账号先转为待验证身份再交给成功处理器。
             @Override
             protected Mono<Void> onAuthenticationSuccess(
                     Authentication authentication, WebFilterExchange webFilterExchange) {
@@ -146,10 +149,12 @@ public class LoginSecurityConfigurer implements SecurityConfigurer {
         http.addFilterAt(filter, SecurityWebFiltersOrder.FORM_LOGIN);
     }
 
+    // 为认证管理器补充观测埋点。
     ReactiveAuthenticationManager authenticationManager() {
         return new ObservationReactiveAuthenticationManager(observationRegistry, defaultAuthenticationManager());
     }
 
+    // 构建基于用户详情与密码编码器的认证流程。
     ReactiveAuthenticationManager defaultAuthenticationManager() {
         return new LoginReactiveAuthenticationManager(
                 reactiveUserDetailsService, accounts, passwordEncoder, reactiveUserDetailsPasswordService);

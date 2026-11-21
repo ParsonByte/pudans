@@ -11,8 +11,10 @@ import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
 import cn.tolim.pudans.core.storage.driver.StorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.StoragePolicyTypeDescriptor;
+import cn.tolim.pudans.core.storage.driver.ValidatingOkHttpDns;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import com.obs.services.ObsClient;
+import com.obs.services.ObsConfiguration;
 
 @Component
 @RequiredArgsConstructor
@@ -20,6 +22,7 @@ public class ObsStorageDriverFactory implements StorageDriverFactory {
 
     private final PudansProperties properties;
 
+    // 声明 OBS 类型及其支持的能力。
     @Override
     public List<StoragePolicyTypeDescriptor> descriptors() {
         return List.of(new StoragePolicyTypeDescriptor(
@@ -33,13 +36,17 @@ public class ObsStorageDriverFactory implements StorageDriverFactory {
                         StorageCapability.CORS_CONFIGURABLE)));
     }
 
+    // 按策略端点创建 OBS 客户端。
     @Override
     public StorageDriver create(ResolvedStoragePolicy resolved) {
         var policy = resolved.policy();
+        var configuration = new ObsConfiguration();
+        configuration.setEndPoint(policy.getSpec().getServer());
+        configuration.setCustomizedDnsImpl(new ValidatingOkHttpDns());
         var client = new ObsClient(
                 resolved.credentials().getAccessKey(),
                 resolved.credentials().getSecretKey(),
-                policy.getSpec().getServer());
+                configuration);
         Path tempDirectory = properties.getWorkDir().toAbsolutePath().normalize().resolve("uploads/.tmp");
         return new ObsStorageDriver(policy, client, tempDirectory);
     }

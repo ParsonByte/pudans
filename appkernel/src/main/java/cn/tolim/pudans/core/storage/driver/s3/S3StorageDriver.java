@@ -1,5 +1,7 @@
 package cn.tolim.pudans.core.storage.driver.s3;
 
+import cn.tolim.pudans.core.storage.driver.StorageDriverErrors;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -74,6 +76,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
 
     private final S3Presigner presigner;
 
+    // 保存策略、存储桶、异步客户端与签名器。
     public S3StorageDriver(StoragePolicy policy, S3AsyncClient client, S3Presigner presigner) {
         this.policy = policy;
         this.bucket = policy.getSpec().getBucketName();
@@ -81,11 +84,13 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
         this.presigner = presigner;
     }
 
+    // 返回策略声明的 S3 兼容类型。
     @Override
     public StoragePolicyType type() {
         return policy.getSpec().getType();
     }
 
+    // 声明 S3 支持直链、预签名分片与多段上传。
     @Override
     public Set<StorageCapability> capabilities() {
         return Set.of(
@@ -96,11 +101,12 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 StorageCapability.CORS_CONFIGURABLE);
     }
 
+    // 检查覆盖冲突后异步写入整个对象。
     @Override
     public Mono<StorageObject> put(StoragePutRequest request) {
         return headObject(request.key())
                 .onErrorResume(error -> isNotFound(error) ? Mono.empty() : Mono.error(error))
-                .flatMap(existing -> request.overwrite() ? Mono.empty() : Mono.error(conflict()))
+                .flatMap(existing -> request.overwrite() ? Mono.empty() : Mono.error(StorageDriverErrors.conflict()))
                 .then(Mono.defer(() -> {
                     var builder = PutObjectRequest.builder()
                             .bucket(bucket)
@@ -110,12 +116,12 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                         builder.contentLength(request.size());
                     }
                     return Mono.fromFuture(client.putObject(builder.build(), AsyncRequestBody.fromPublisher(copyBody(request.body()))))
-                            .map(response -> new StorageObject(
-                                    request.key(), request.size(), Instant.now(), etag(response.eTag())))
+                            .then(headObject(request.key()))
                             .onErrorMap(S3Exception.class, this::mapError);
                 }));
     }
 
+    // 按可选字节范围读取对象并返回元数据。
     @Override
     public Mono<StorageReadResult> get(String key, StorageReadOptions options) {
         var range = options == null ? null : options.range();
@@ -142,11 +148,13 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 通过 HEAD 请求查询对象元数据。
     @Override
     public Mono<StorageObject> stat(String key) {
         return headObject(key);
     }
 
+    // 按配置批次批量删除对象。
     @Override
     public Mono<Void> delete(Collection<String> keys) {
         return Flux.fromIterable(keys)
@@ -165,6 +173,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 生成 S3 预签名下载地址。
     @Override
     public Mono<StorageSource> source(String key, StorageSourceOptions options) {
         var ttl = options != null && options.ttl() != null ? options.ttl() : DEFAULT_SOURCE_TTL;
@@ -177,6 +186,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
         return Mono.just(new StorageSource(toUri(url), Instant.now().plus(ttl), false));
     }
 
+    // 优先探测存储桶，失败后回退到列表探测。
     @Override
     public Mono<StorageTestResult> testConnection() {
         return headBucket()
@@ -187,6 +197,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                                 false, "存储连接失败：" + safeMessage(listError), Instant.now()))));
     }
 
+    // 为存储桶写入统一的跨域规则。
     @Override
     public Mono<Void> configureCors(List<String> origins) {
         var allowed = origins == null || origins.isEmpty() ? List.of("*") : origins;
@@ -206,6 +217,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 初始化 S3 多段上传。
     @Override
     public Mono<NativeMultipartUpload> createMultipart(StorageMultipartRequest request) {
         var builder = CreateMultipartUploadRequest.builder()
@@ -217,6 +229,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 生成分片上传的预签名地址。
     @Override
     public Mono<UploadPartUrl> presignPart(NativeMultipartUpload upload, int partNumber, Duration ttl) {
         var request = UploadPartRequest.builder()
@@ -233,6 +246,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
         return Mono.just(new UploadPartUrl(partNumber, toUri(url), Instant.now().plus(ttl)));
     }
 
+    // 通过异步客户端写入单个分片。
     @Override
     public Mono<UploadedPart> putPart(
             NativeMultipartUpload upload, int partNumber, Flux<DataBuffer> body, long size) {
@@ -249,6 +263,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 提交分片列表并返回完成后的对象信息。
     @Override
     public Mono<StorageObject> completeMultipart(NativeMultipartUpload upload, List<UploadedPart> parts) {
         var completed = parts.stream()
@@ -268,6 +283,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 终止 S3 多段上传。
     @Override
     public Mono<Void> abortMultipart(NativeMultipartUpload upload) {
         var request = AbortMultipartUploadRequest.builder()
@@ -280,11 +296,13 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 分页列出 S3 已接收的分片。
     @Override
     public Mono<List<UploadedPart>> listParts(NativeMultipartUpload upload) {
         return listPartsPage(upload, null);
     }
 
+    // 递归拉取全部分片页并合并结果。
     private Mono<List<UploadedPart>> listPartsPage(NativeMultipartUpload upload, Integer marker) {
         var builder = ListPartsRequest.builder()
                 .bucket(bucket)
@@ -309,12 +327,14 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 关闭预签名器与异步客户端。
     @Override
     public void close() {
         presigner.close();
         client.close();
     }
 
+    // 查询对象元数据，缺失时映射为不存在。
     private Mono<StorageObject> headObject(String key) {
         var request = HeadObjectRequest.builder().bucket(bucket).key(key).build();
         return Mono.fromFuture(client.headObject(request))
@@ -323,15 +343,17 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                         response.contentLength() == null ? 0 : response.contentLength(),
                         response.lastModified(),
                         etag(response.eTag())))
-                .onErrorMap(S3Exception.class, error -> isNotFoundStatus(error) ? notFound() : mapError(error));
+                .onErrorMap(S3Exception.class, error -> isNotFoundStatus(error) ? StorageDriverErrors.notFound() : mapError(error));
     }
 
+    // 探测存储桶是否存在且可访问。
     private Mono<Void> headBucket() {
         return Mono.fromFuture(client.headBucket(HeadBucketRequest.builder().bucket(bucket).build()))
                 .then()
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 以单条列表结果探测存储桶可读性。
     private Mono<Void> listBucket() {
         var request = ListObjectsV2Request.builder().bucket(bucket).maxKeys(1).build();
         return Mono.fromFuture(client.listObjectsV2(request))
@@ -339,17 +361,20 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 .onErrorMap(S3Exception.class, this::mapError);
     }
 
+    // 返回策略分片大小，未配置时使用默认值。
     private long chunkSize() {
         var configured = policy.getSpec().getChunkSize();
         return configured > 0 ? configured : DEFAULT_CHUNK_SIZE;
     }
 
+    // 批量删除大小限制在 S3 允许范围内。
     private int deleteBatchSize() {
         var settings = policy.getSpec().getSettings();
         var configured = settings == null ? MAX_DELETE_BATCH_SIZE : settings.getDeleteBatchSize();
         return Math.max(1, Math.min(MAX_DELETE_BATCH_SIZE, configured));
     }
 
+    // 复制数据缓冲区为字节缓冲并释放原缓冲。
     private static Flux<ByteBuffer> copyBody(Flux<DataBuffer> body) {
         return body.map(buffer -> {
             try {
@@ -362,6 +387,7 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
         });
     }
 
+    // 从 Content-Range 解析对象总大小。
     private static long totalSize(String contentRange, Long contentLength) {
         if (StringUtils.hasText(contentRange)) {
             var slash = contentRange.lastIndexOf('/');
@@ -375,14 +401,17 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
         return contentLength == null ? 0 : contentLength;
     }
 
+    // 返回内容类型，缺失时使用二进制流。
     private static String contentType(String value) {
         return StringUtils.hasText(value) ? value : "application/octet-stream";
     }
 
+    // 去掉 ETag 两侧的引号。
     private static String etag(String value) {
         return value == null ? null : value.replace("\"", "");
     }
 
+    // 将预签名地址转为 URI 并映射非法地址。
     private static URI toUri(java.net.URL url) {
         try {
             return url.toURI();
@@ -391,10 +420,11 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
         }
     }
 
+    // 按 HTTP 状态码映射 S3 异常。
     private ApiException mapError(S3Exception error) {
         var status = error.statusCode();
         if (status == 404) {
-            return notFound();
+            return StorageDriverErrors.notFound();
         }
         if (status == 403) {
             return new ApiException(HttpStatus.FORBIDDEN, "storage-access-denied", "存储访问被拒绝。");
@@ -403,25 +433,22 @@ public class S3StorageDriver implements StorageDriver, MultipartStorageDriver, C
                 HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储服务请求失败（" + status + "）。", error);
     }
 
+    // 判断异常状态是否为对象不存在。
     private static boolean isNotFoundStatus(S3Exception error) {
         return error.statusCode() == 404;
     }
 
+    // 判断异常是否已转换为对象不存在。
     private static boolean isNotFound(Throwable error) {
         return error instanceof ApiException api && "storage-object-not-found".equals(api.getCode());
     }
 
+    // 提取可安全展示的错误原因。
     private static String safeMessage(Throwable error) {
         return error instanceof ApiException api && api.getReason() != null
                 ? api.getReason()
                 : "存储服务不可用。";
     }
 
-    private static ApiException notFound() {
-        return new ApiException(HttpStatus.NOT_FOUND, "storage-object-not-found", "文件不存在。");
-    }
 
-    private static ApiException conflict() {
-        return new ApiException(HttpStatus.CONFLICT, "storage-object-exists", "文件已存在。");
-    }
 }

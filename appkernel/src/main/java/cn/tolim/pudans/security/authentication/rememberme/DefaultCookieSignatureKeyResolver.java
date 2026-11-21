@@ -11,6 +11,7 @@ class DefaultCookieSignatureKeyResolver implements CookieSignatureKeyResolver {
 
     private final LoginCipher loginCipher;
 
+    // 签名密钥复用登录加密配置，避免维护独立密钥。
     @Override
     public Mono<String> resolveSigningKey() {
         return Mono.fromSupplier(loginCipher::getKeyId);

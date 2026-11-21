@@ -4,10 +4,12 @@ import java.time.Duration;
 
 public record RiskDecision(boolean allowed, long count, Duration retryAfter, Duration blockFor) {
 
+    // 构造放行决策，不携带重试与封禁时长。
     public static RiskDecision permit() {
         return new RiskDecision(true, 0L, Duration.ZERO, Duration.ZERO);
     }
 
+    // 解析 Redis 返回的决策值，空值视为放行。
     public static RiskDecision parse(String value, long blockSeconds) {
         if (value == null || value.isBlank()) {
             return permit();
@@ -21,6 +23,7 @@ public record RiskDecision(boolean allowed, long count, Duration retryAfter, Dur
                 Duration.ofSeconds(Math.max(0L, blockSeconds)));
     }
 
+    // 安全解析数值片段，缺失或非法时归零。
     private static long parseLong(String[] parts, int index) {
         if (parts.length <= index) {
             return 0L;

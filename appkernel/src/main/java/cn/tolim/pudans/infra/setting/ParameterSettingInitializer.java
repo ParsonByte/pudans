@@ -26,6 +26,7 @@ class ParameterSettingInitializer {
 
     private final ParameterSettingSecretCipher secretCipher;
 
+    // 迁移旧版配置并确保目标配置资源存在。
     @EventListener
     @Order(Ordered.HIGHEST_PRECEDENCE)
     Mono<Void> onApplicationEvent(ExtensionInitializedEvent ignored) {
@@ -37,6 +38,7 @@ class ParameterSettingInitializer {
                 .then(ensureConfigMap(ParameterSetting.PARAMETER_SETTINGS));
     }
 
+    // 目标已存在则跳过，否则从旧版迁移。
     private Mono<Void> migrateConfigMap(String legacyName, String targetName) {
         return client.fetch(ConfigMap.class, targetName)
                 .hasElement()
@@ -56,6 +58,7 @@ class ParameterSettingInitializer {
                 });
     }
 
+    // 复制元数据与数据，并补全新版参数组。
     private ConfigMap migratedConfigMap(ConfigMap legacy, String targetName, String legacyName) {
         var migrated = new ConfigMap();
         var metadata = new Metadata();
@@ -70,6 +73,7 @@ class ParameterSettingInitializer {
         return migrated;
     }
 
+    // 从旧版字段推导站点、会话、验证码与邮件组。
     private void synthesizeNewGroups(LinkedHashMap<String, String> data) {
         var basic = readObject(data.get(ParameterSetting.Basic.GROUP));
         if (!data.containsKey(ParameterSetting.Site.GROUP) && basic != null) {
@@ -108,6 +112,7 @@ class ParameterSettingInitializer {
         }
     }
 
+    // 加密未加密的非空文本字段。
     private void encryptText(ObjectNode node, String field) {
         var value = node.get(field);
         if (value != null
@@ -118,6 +123,7 @@ class ParameterSettingInitializer {
         }
     }
 
+    // 复制同类型字段值。
     private static void copyValue(ObjectNode target, String targetField, String sourceField) {
         var value = target.get(sourceField);
         if (value != null) {
@@ -125,6 +131,7 @@ class ParameterSettingInitializer {
         }
     }
 
+    // 仅在源字段为非空字符串时复制。
     private static void copyText(ObjectNode target, String targetField, ObjectNode source, String sourceField) {
         if (target == null || source == null) {
             return;
@@ -135,6 +142,7 @@ class ParameterSettingInitializer {
         }
     }
 
+    // 解析对象型配置文本，失败时返回空。
     private static ObjectNode readObject(String json) {
         if (json == null || json.isBlank()) {
             return null;
@@ -148,6 +156,7 @@ class ParameterSettingInitializer {
         }
     }
 
+    // 目标配置资源缺失时创建空资源。
     private Mono<Void> ensureConfigMap(String name) {
         return client.fetch(ConfigMap.class, name)
                 .switchIfEmpty(Mono.defer(() -> {
@@ -161,6 +170,7 @@ class ParameterSettingInitializer {
                 .then();
     }
 
+    // 复制映射，空值转换为空映射。
     private static LinkedHashMap<String, String> copyOf(Map<String, String> source) {
         return source == null ? new LinkedHashMap<>() : new LinkedHashMap<>(source);
     }

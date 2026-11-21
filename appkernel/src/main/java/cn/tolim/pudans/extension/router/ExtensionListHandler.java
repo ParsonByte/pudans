@@ -16,11 +16,13 @@ class ExtensionListHandler implements ListHandler {
 
     private final ReactiveExtensionClient client;
 
+    // 保存方案与客户端。
     public ExtensionListHandler(Scheme scheme, ReactiveExtensionClient client) {
         this.scheme = scheme;
         this.client = client;
     }
 
+    // 解析选择与分页参数后查询列表。
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
         var queryParams = new SortableRequest(request.exchange());
@@ -30,6 +32,7 @@ class ExtensionListHandler implements ListHandler {
                         .bodyValue(listResult));
     }
 
+    // 返回集合资源的路径模板。
     @Override
     public String pathPattern() {
         return buildExtensionPathPattern(scheme);

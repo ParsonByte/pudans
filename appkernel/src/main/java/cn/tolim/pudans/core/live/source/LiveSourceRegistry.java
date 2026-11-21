@@ -53,6 +53,7 @@ public class LiveSourceRegistry {
     public record Counts(
             long enabled, long live, long recording, long offline, long error, long rateLimited) {}
 
+    // 启动后加载已启用源到内存快照
     @EventListener(ApplicationReadyEvent.class)
     public void loadEnabled() {
         var options = ListOptions.builder().andQuery(equal("spec.enabled", true)).build();
@@ -64,6 +65,7 @@ public class LiveSourceRegistry {
                 .subscribe();
     }
 
+    // 删除或停用的源移除，其余刷新快照
     public void upsert(LiveSource source) {
         if (source == null || source.getMetadata() == null
                 || !StringUtils.hasText(source.getMetadata().getName())) {
@@ -90,6 +92,7 @@ public class LiveSourceRegistry {
         metrics.sourcesActive(sources.size());
     }
 
+    // 从快照与在途集合中移除该源
     public void remove(String name) {
         if (!StringUtils.hasText(name)) {
             return;
@@ -122,16 +125,19 @@ public class LiveSourceRegistry {
         return due;
     }
 
+    // 解析结束后释放在途标记
     public void release(String name) {
         if (StringUtils.hasText(name)) {
             inFlight.remove(name);
         }
     }
 
+    // 返回内存快照中的源数量
     public int size() {
         return sources.size();
     }
 
+    // 按状态汇总内存快照，供看板展示
     public Counts counts() {
         long enabled = 0;
         long live = 0;

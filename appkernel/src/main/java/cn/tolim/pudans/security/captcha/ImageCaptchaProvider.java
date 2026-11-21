@@ -21,11 +21,13 @@ public class ImageCaptchaProvider implements CaptchaProvider {
 
     private final CaptchaRenderer renderer;
 
+    // 图片验证码的配置标识
     @Override
     public String type() {
         return TYPE;
     }
 
+    // 渲染图片并把答案存入一次性挑战存储
     @Override
     public Mono<Captchas.CaptchaChallenge> challenge(ParameterSetting.Captcha config) {
         var rendered = renderer.render(config);
@@ -36,6 +38,7 @@ public class ImageCaptchaProvider implements CaptchaProvider {
                         challengeId, rendered.imageDataUrl(), CHALLENGE_TTL.toSeconds()));
     }
 
+    // 忽略大小写比对并销毁挑战，防止重放
     @Override
     public Mono<Boolean> verify(String challengeId, String answer) {
         if (challengeId == null

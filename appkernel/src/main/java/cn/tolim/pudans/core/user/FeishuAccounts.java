@@ -10,7 +10,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.reactive.TransactionalOperator;
@@ -31,7 +30,6 @@ import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class FeishuAccounts {
@@ -54,11 +52,13 @@ public class FeishuAccounts {
 
     private Clock clock = Clock.systemUTC();
 
+    // 先找到飞书连接再返回绑定用户
     public Mono<User> findByProviderUserId(String providerUserId) {
         return findConnection(providerUserId).flatMap(connection -> accounts.getUser(
                 connection.getSpec().getUsername()));
     }
 
+    // 按飞书用户标识查找未删除连接
     public Mono<UserConnection> findConnection(String providerUserId) {
         if (!StringUtils.hasText(providerUserId)) {
             return Mono.empty();
@@ -72,12 +72,14 @@ public class FeishuAccounts {
                 .next();
     }
 
+    // 列出全部未删除的飞书连接
     public Flux<UserConnection> listAllConnections() {
         var options = ListOptions.builder().andQuery(notDeleting()).build();
         return client.listAll(UserConnection.class, options, defaultSort())
                 .filter(connection -> PROVIDER.equals(connection.getSpec().getRegistrationId()));
     }
 
+    // 列出指定用户的飞书连接
     public Flux<UserConnection> listConnections(String username) {
         var options = ListOptions.builder()
                 .andQuery(notDeleting())
@@ -89,6 +91,7 @@ public class FeishuAccounts {
 
     
 
+    // 校验资料后创建用户、连接与用户组
     public Mono<User> createFromFeishu(FeishuUserData data, String userGroupName) {
         if (data == null || (!StringUtils.hasText(data.unionId()) && !StringUtils.hasText(data.openId()))) {
             return Mono.error(new ServerWebInputException(
@@ -132,10 +135,12 @@ public class FeishuAccounts {
                 .doOnNext(user -> domainEventPublisher.publish("user.created", UserEventPayloads.created(user), null));
     }
 
+    // 使用默认用户组创建飞书用户
     public Mono<User> createFromFeishu(FeishuUserData data) {
         return createFromFeishu(data, null);
     }
 
+    // 分配默认组，失败时回退内置组
     Mono<Void> assignDefaultUserGroup(String username) {
         return parameterGroups
                 .getSession()
@@ -151,6 +156,7 @@ public class FeishuAccounts {
                 .then();
     }
 
+    // 构造并保存飞书身份连接
     private Mono<UserConnection> createConnection(User user, String providerUserId, String displayName) {
         var connection = new UserConnection();
         var spec = new UserConnection.UserConnectionSpec();
@@ -162,6 +168,7 @@ public class FeishuAccounts {
         return connections.createConnection(connection);
     }
 
+    // 校验身份归属后绑定并同步资料
     public Mono<UserConnection> bindConnection(
             String username,
             String providerUserId,
@@ -188,6 +195,7 @@ public class FeishuAccounts {
 
 
 
+    // 仅更新有变化的资料字段并发布事件
     public Mono<User> syncProfile(
             String username, String displayName, String email, String phone, String avatar) {
         if (!StringUtils.hasText(displayName)
@@ -224,6 +232,7 @@ public class FeishuAccounts {
         });
     }
 
+    // 发布来源为飞书的用户更新事件
     private void publishUpdated(User user, List<String> changedFields) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", user.getMetadata().getName());
@@ -235,6 +244,7 @@ public class FeishuAccounts {
         domainEventPublisher.publish("user.updated", payload, null);
     }
 
+    // 将飞书标识转换为合法本地用户名
     public static String sanitizeUsername(String providerUserId) {
         var sanitized = providerUserId.replaceAll("[^A-Za-z0-9-]", "-").toLowerCase();
         if (sanitized.length() > 40) {
@@ -252,11 +262,13 @@ public class FeishuAccounts {
             String unionId,
             String avatar) {
 
+        // 构造不含头像的飞书用户资料
         public static FeishuUserData of(
                 String username, String displayName, String email, String openId, String unionId) {
             return new FeishuUserData(username, displayName, email, openId, unionId, null);
         }
 
+        // 优先使用联合标识，缺失时回退开放标识
         public String providerUserId() {
             return StringUtils.hasText(unionId) ? unionId : openId;
         }

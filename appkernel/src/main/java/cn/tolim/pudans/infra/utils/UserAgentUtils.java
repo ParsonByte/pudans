@@ -22,6 +22,7 @@ public enum UserAgentUtils {
     }
 
 
+    // 解析请求头并拒绝空值。
     public static Client parse(String agentString) {
         Assert.hasText(agentString, "User-Agent 请求头不能为空");
         return PARSER.parse(agentString);

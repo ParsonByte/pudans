@@ -6,7 +6,6 @@ import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.server.ServerRequest;
 
 @Slf4j
 public class IpAddressUtils {
@@ -23,6 +22,7 @@ public class IpAddressUtils {
 
     private IpAddressUtils() {}
 
+    // 解析并替换受信代理网段列表。
     public static void configure(List<String> proxies) {
         var parsed = new ArrayList<Cidr>();
         if (proxies != null) {
@@ -38,6 +38,7 @@ public class IpAddressUtils {
         trustedProxies = List.copyOf(parsed);
     }
 
+    // 仅信任受信代理的转发头，逐步追溯真实客户端。
     public static String getClientIp(ServerHttpRequest request) {
         var remoteAddress = request.getRemoteAddress();
         var remote = remoteAddress == null || remoteAddress.isUnresolved()
@@ -62,15 +63,7 @@ public class IpAddressUtils {
         return chain.get(chain.size() - 1);
     }
 
-    public static String getIpAddress(ServerRequest request) {
-        try {
-            return getClientIp(request.exchange().getRequest());
-        } catch (Exception e) {
-            log.warn("无法获取客户端 IP，回退为 unknown。", e);
-            return UNKNOWN;
-        }
-    }
-
+    // 判断地址是否落在任一受信网段内。
     public static boolean isTrustedProxy(String ip) {
         if (!StringUtils.hasText(ip)) {
             return false;
@@ -87,6 +80,7 @@ public class IpAddressUtils {
         return false;
     }
 
+    // 从右向左取最近的非空地址并限制跳数。
     private static List<String> forwardedChain(String header) {
         var chain = new ArrayList<String>();
         if (!StringUtils.hasText(header)) {
@@ -104,6 +98,7 @@ public class IpAddressUtils {
         return chain;
     }
 
+    // 去除方括号并规范化为字面 IP 地址。
     private static String normalize(String value) {
         if (value == null) {
             return null;
@@ -116,6 +111,7 @@ public class IpAddressUtils {
         return address == null ? null : address.getHostAddress();
     }
 
+    // 仅接受合法 IP 字面量，避免触发 DNS 解析。
     private static InetAddress parseLiteral(String candidate) {
         if (!StringUtils.hasText(candidate) || !com.google.common.net.InetAddresses.isInetAddress(candidate)) {
             return null;
@@ -125,6 +121,7 @@ public class IpAddressUtils {
 
     private record Cidr(byte[] network, int prefixLength) {
 
+        // 解析单个 IP 或 CIDR，非法输入返回 null。
         static Cidr parse(String value) {
             if (!StringUtils.hasText(value)) {
                 return null;
@@ -157,6 +154,7 @@ public class IpAddressUtils {
             return new Cidr(bytes, prefixLength);
         }
 
+        // 按前缀长度逐字节比较地址是否在网段内。
         boolean contains(InetAddress address) {
             var candidate = address.getAddress();
             if (candidate.length != network.length) {

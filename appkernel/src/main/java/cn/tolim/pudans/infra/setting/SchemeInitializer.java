@@ -46,10 +46,12 @@ class SchemeInitializer implements SmartLifecycle {
 
     private volatile boolean running;
 
+    // 注入索引方案管理器，用于注册资源索引。
     public SchemeInitializer(SchemeManager schemeManager) {
         this.schemeManager = schemeManager;
     }
 
+    // 为各扩展资源注册查询与排序所需的索引。
     @Override
     public void start() {
         if (running) {
@@ -216,16 +218,19 @@ class SchemeInitializer implements SmartLifecycle {
         });
     }
 
+    // 标记索引注册完成，防止重复注册。
     @Override
     public void stop() {
         running = false;
     }
 
+    // 返回索引方案是否已注册。
     @Override
     public boolean isRunning() {
         return running;
     }
 
+    // 在扩展资源加载前完成索引注册。
     @Override
     public int getPhase() {
         return InitializationPhase.SCHEME.getPhase();

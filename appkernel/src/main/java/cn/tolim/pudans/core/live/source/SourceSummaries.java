@@ -19,6 +19,7 @@ public class SourceSummaries {
 
     private final LiveSourceRegistry registry;
 
+    // 总数查库，状态计数直接取内存快照
     public Mono<LiveSourceSummary> summary() {
         var options = ListOptions.builder().andQuery(notDeleting()).build();
         return client.countBy(LiveSource.class, options).map(total -> {

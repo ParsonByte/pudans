@@ -40,6 +40,7 @@ public class AuditArchiveEntity {
     @Column("is_archived_at")
     private OffsetDateTime archivedAt;
 
+    // 将活跃审计记录复制为归档实体并标记归档时间。
     public static AuditArchiveEntity from(AuditRecordEntity active) {
         var archive = new AuditArchiveEntity();
         archive.setId(active.getId());
@@ -65,6 +66,7 @@ public class AuditArchiveEntity {
         return archive;
     }
 
+    // 还原归档实体，缺失的步骤序号按首步处理。
     public AuditRecord toRecord() {
         var record = new AuditRecord();
         var metadata = new cn.tolim.pudans.extension.contract.Metadata();

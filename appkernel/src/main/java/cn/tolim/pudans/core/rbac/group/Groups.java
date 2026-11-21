@@ -10,10 +10,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import cn.tolim.pudans.core.rbac.SessionInvalidator;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -30,7 +29,6 @@ import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.core.rbac.permission.RbacCache;
 
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class Groups {
@@ -43,10 +41,14 @@ public class Groups {
 
     private final DomainEventPublisher domainEventPublisher;
 
+    private final SessionInvalidator sessionInvalidator;
+
+    // 按名称读取用户组，不存在时返回空。
     public Mono<UserGroup> getUserGroup(String name) {
         return client.get(UserGroup.class, name);
     }
 
+    // 批量列出未删除的用户组。
     public Flux<UserGroup> listUserGroups(Collection<String> names) {
         if (CollectionUtils.isEmpty(names)) {
             return Flux.empty();
@@ -60,6 +62,7 @@ public class Groups {
 
     
 
+    // 通过成员绑定反查用户所属用户组。
     public Mono<UserGroup> getUserGroupByUsername(String username) {
         return listMembershipBindings(username)
                 .next()
@@ -70,6 +73,7 @@ public class Groups {
 
     
 
+    // 列出用户作为主体的未删除成员绑定。
     public Flux<UserGroupBinding> listMembershipBindings(String username) {
         var options = ListOptions.builder()
                 .andQuery(notDeleting())
@@ -79,6 +83,7 @@ public class Groups {
                 .filter(Groups::isMembership);
     }
 
+    // 列出指定用户组中的用户名并去重。
     public Flux<String> listUsernamesOfGroups(Collection<String> groupNames) {
         if (CollectionUtils.isEmpty(groupNames)) {
             return Flux.empty();
@@ -94,6 +99,7 @@ public class Groups {
                 .distinct();
     }
 
+    // 批量把用户名映射到其所属用户组。
     public Mono<Map<String, UserGroup>> getGroupsByUsernames(Collection<String> usernames) {
         if (CollectionUtils.isEmpty(usernames)) {
             return Mono.just(Map.of());
@@ -111,7 +117,7 @@ public class Groups {
                 .collect(Collectors.toMap(
                         Groups::memberUsername,
                         binding -> binding.getRoleRef().getName(),
-                        (left, right) -> left))
+                        (left, ignored) -> left))
                 .flatMap(groupsByUser -> listUserGroups(groupsByUser.values())
                         .collectMap(group -> group.getMetadata().getName())
                         .map(groups -> groupsByUser.entrySet().stream()
@@ -122,6 +128,7 @@ public class Groups {
 
     
 
+    // 合并用户组直接引用与绑定授予的角色名。
     public Flux<String> listRoleNamesOfGroup(UserGroup group) {
         var fromGroup = Flux.fromIterable(Optional.ofNullable(group.getRoleRefs()).orElseGet(List::of))
                 .filter(ref -> Role.KIND.equals(ref.getKind()))
@@ -131,6 +138,7 @@ public class Groups {
         return Flux.concat(fromGroup, fromBindings).filter(StringUtils::hasText).distinct();
     }
 
+    // 列出以该用户组为主体且引用角色的绑定。
     public Flux<UserGroupBinding> listGroupRoleBindings(String groupName) {
         var options = ListOptions.builder()
                 .andQuery(notDeleting())
@@ -144,6 +152,7 @@ public class Groups {
 
     
 
+    // 经缓存返回用户通过用户组获得的角色名。
     public Flux<String> getRoleNamesByUsername(String username) {
         var loader = getUserGroupByUsername(username)
                 .flatMapMany(this::listRoleNamesOfGroup)
@@ -152,22 +161,7 @@ public class Groups {
         return rbacCache.cachedUserRoles(username, loader).flatMapMany(Flux::fromIterable);
     }
 
-    public Flux<Role> getRolesByUsername(String username) {
-        return getRoleNamesByUsername(username)
-                .collect(CollectorsHolder.set())
-                .flatMapMany(names -> names.isEmpty()
-                        ? Flux.empty()
-                        : client.listAll(
-                                Role.class,
-                                ListOptions.builder()
-                                        .andQuery(notDeleting())
-                                        .andQuery(in("metadata.name", names))
-                                        .build(),
-                                defaultSort()));
-    }
-
-    
-
+    // 把用户切换到目标组，保证成员关系唯一。
     public Mono<UserGroupBinding> assignUserGroup(String username, String groupName) {
         if (!StringUtils.hasText(groupName)) {
             return Mono.error(new ServerWebInputException("用户组名称不能为空。"));
@@ -184,7 +178,7 @@ public class Groups {
                     var alreadyAssigned = existing.stream()
                             .anyMatch(binding -> groupName.equals(binding.getRoleRef().getName()));
                     if (alreadyAssigned && existing.size() == 1) {
-                        return Mono.just(existing.get(0));
+                        return Mono.just(existing.getFirst());
                     }
                     var fromGroup = existing.stream()
                             .map(binding -> binding.getRoleRef().getName())
@@ -197,11 +191,12 @@ public class Groups {
                     if (alreadyAssigned) {
                         return deleteOthers
                                 .then(rbacCache.evictUserRoles(username))
+                                .then(invalidateSessions(username))
                                 .thenReturn(existing.stream()
                                         .filter(binding -> groupName.equals(binding.getRoleRef().getName()))
                                         .findFirst()
                                         .orElseThrow())
-                                .doOnNext(binding -> publishGroupChanged(username, fromGroup, groupName));
+                                .doOnNext(ignored -> publishGroupChanged(username, fromGroup, groupName));
                     }
                     var binding = UserGroupBinding.membership(username, groupName);
                     var metadata = new cn.tolim.pudans.extension.contract.Metadata();
@@ -210,11 +205,13 @@ public class Groups {
                     return client.create(binding)
                             .flatMap(created -> deleteOthers
                                     .then(rbacCache.evictUserRoles(username))
+                                    .then(invalidateSessions(username))
                                     .thenReturn(created))
-                            .doOnNext(created -> publishGroupChanged(username, fromGroup, groupName));
+                            .doOnNext(ignored -> publishGroupChanged(username, fromGroup, groupName));
                 });
     }
 
+    // 移除用户的全部成员绑定并清理角色缓存。
     public Mono<Void> removeUserGroup(String username) {
         return builtinEntityPolicy
                 .checkUserGroupRemoval(username)
@@ -223,15 +220,22 @@ public class Groups {
                     if (bindings.isEmpty()) {
                         return Mono.empty();
                     }
-                    var fromGroup = bindings.get(0).getRoleRef().getName();
+                    var fromGroup = bindings.getFirst().getRoleRef().getName();
                     return Flux.fromIterable(bindings)
                             .flatMap(client::delete)
                             .then()
                             .doOnSuccess(ignored -> publishGroupChanged(username, fromGroup, null));
                 })
-                .then(rbacCache.evictUserRoles(username));
+                .then(rbacCache.evictUserRoles(username))
+                .then(invalidateSessions(username));
     }
 
+    // 角色变化后立即失效已有会话，避免旧权限继续使用。
+    private Mono<Void> invalidateSessions(String username) {
+        return sessionInvalidator.invalidate(username);
+    }
+
+    // 列出全部有效的用户与用户组成员关系。
     public Flux<Membership> listMemberships() {
         var options = ListOptions.builder().andQuery(notDeleting()).build();
         return client.listAll(UserGroupBinding.class, options, defaultSort())
@@ -243,6 +247,7 @@ public class Groups {
 
     public record Membership(String username, String groupName) {}
 
+    // 判断绑定是否表示用户与用户组的成员关系。
     private static boolean isMembership(UserGroupBinding binding) {
         return Optional.ofNullable(binding.getRoleRef())
                 .map(ref -> UserGroup.KIND.equals(ref.getKind())
@@ -250,6 +255,7 @@ public class Groups {
                 .orElse(false);
     }
 
+    // 取绑定中第一个用户主体名，缺失时返回空串。
     private static String memberUsername(UserGroupBinding binding) {
         return Optional.ofNullable(binding.getSubjects())
                 .stream()
@@ -260,18 +266,12 @@ public class Groups {
                 .orElse("");
     }
 
+    // 发布用户组变更事件，供下游刷新派生数据。
     private void publishGroupChanged(String username, String fromGroup, String toGroup) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", username);
         payload.put("fromGroup", fromGroup);
         payload.put("toGroup", toGroup);
         domainEventPublisher.publish("user.group.changed", payload, null);
-    }
-
-    
-    private static final class CollectorsHolder {
-        static java.util.stream.Collector<String, ?, Set<String>> set() {
-            return java.util.stream.Collectors.toSet();
-        }
     }
 }

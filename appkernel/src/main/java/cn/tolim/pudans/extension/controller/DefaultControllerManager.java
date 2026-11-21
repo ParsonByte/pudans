@@ -23,11 +23,13 @@ public class DefaultControllerManager implements ApplicationContextAware, SmartL
     private ApplicationContext applicationContext;
     private volatile boolean running;
 
+    // 保存扩展客户端并初始化控制器注册表。
     public DefaultControllerManager(ExtensionClient client) {
         this.client = client;
         controllers = new ConcurrentHashMap<>();
     }
 
+    // 关闭控制器并隔离异常以免中断整体停止。
     private static void disposeSilently(Controller controller) {
         if (controller == null) {
             return;
@@ -41,6 +43,7 @@ public class DefaultControllerManager implements ApplicationContextAware, SmartL
         }
     }
 
+    // 启动全部协调器对应的控制器。
     @Override
     public void start() {
         if (this.running) {
@@ -54,6 +57,7 @@ public class DefaultControllerManager implements ApplicationContextAware, SmartL
                 .forEach(this::start);
     }
 
+    // 构建并启动单个协调器的控制器。
     void start(Reconciler<Request> reconciler) {
         var builder = new ControllerBuilder(reconciler, client);
         var controller = reconciler.setupWith(builder);
@@ -61,6 +65,7 @@ public class DefaultControllerManager implements ApplicationContextAware, SmartL
         controller.start();
     }
 
+    // 停止并释放已注册的全部控制器。
     @Override
     public void stop() {
         if (!running) {
@@ -72,16 +77,19 @@ public class DefaultControllerManager implements ApplicationContextAware, SmartL
         log.info("已关闭 {} 个控制器。", controllers.size());
     }
 
+    // 保存应用上下文用于查找协调器实例。
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 
+    // 返回生命周期是否处于运行状态。
     @Override
     public boolean isRunning() {
         return running;
     }
 
+    // 在控制器初始化阶段启动。
     @Override
     public int getPhase() {
         return InitializationPhase.CONTROLLERS.getPhase();

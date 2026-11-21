@@ -59,11 +59,13 @@ class DefaultParameterSettingFetcher
                 return currentValue == null || !currentValue.equals(configMap);
             });
 
+    // 设置变更后立即更新缓存快照。
     @Override
     public void onApplicationEvent(ParameterSettingChangedEvent event) {
         configMapCache.set(event.getNewData());
     }
 
+    // 按键读取配置并转换为目标类型。
     @Override
     public <T> Mono<T> fetch(String key, Class<T> type) {
         return getValuesInternal()
@@ -77,33 +79,39 @@ class DefaultParameterSettingFetcher
                 });
     }
 
+    // 返回基础设置，未配置时给出默认对象。
     @Override
     public Mono<ParameterSetting.Basic> getBasic() {
         return fetch(ParameterSetting.Basic.GROUP, ParameterSetting.Basic.class)
                 .switchIfEmpty(Mono.fromSupplier(ParameterSetting.Basic::new));
     }
 
+    // 复用带失效语义的配置映射缓存。
     private Mono<Map<String, String>> getValuesInternal() {
         return configMapMono;
     }
 
+    // 返回当前生效的配置键值快照。
     @Override
     public Mono<Map<String, String>> getConfig() {
         return configMapMono;
     }
 
 
+    // 直接从扩展客户端读取参数设置资源。
     @Override
     public Mono<ConfigMap> getConfigMap() {
         return extensionClient.fetch(ConfigMap.class, PARAMETER_SETTINGS);
     }
 
 
+    // 为启动期调用方提供阻塞读取，超时返回空。
     @Override
     public Optional<ConfigMap> getConfigMapBlocking() {
         return getConfigMap().blockOptional(BLOCKING_TIMEOUT);
     }
 
+    // 合并默认与覆盖配置，覆盖项优先。
     private Mono<ConfigMap> computeParameterSettings() {
         var getOverrideConfigMap = extensionClient.fetch(ConfigMap.class, PARAMETER_SETTINGS);
         var getDefaultConfigMap = extensionClient
@@ -120,15 +128,5 @@ class DefaultParameterSettingFetcher
                 throw new JsonParseException(e);
             }
         });
-    }
-
-
-    AtomicReference<Map<String, String>> getConfigMapCache() {
-        return configMapCache;
-    }
-
-
-    Mono<Map<String, String>> getConfigMapMono() {
-        return configMapMono;
     }
 }

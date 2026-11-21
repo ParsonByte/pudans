@@ -22,6 +22,7 @@ public class DefaultInitializationStateGetter implements InitializationStateGett
     private final ReactiveExtensionClient client;
     private final AtomicBoolean setupCompleted = new AtomicBoolean(false);
 
+    // 先读系统状态；缺失时根据用户数量推断是否需初始化。
     @Override
     public Mono<Boolean> setupRequired() {
         if (setupCompleted.get()) {
@@ -40,6 +41,7 @@ public class DefaultInitializationStateGetter implements InitializationStateGett
                 .switchIfEmpty(Mono.defer(this::setupRequiredWithoutState));
     }
 
+    // 没有任何有效用户时视为仍需完成初始化。
     private Mono<Boolean> setupRequiredWithoutState() {
         var listOptions = new ListOptions();
         listOptions.setLabelSelector(

@@ -30,6 +30,7 @@ public class RoomResolver {
 
     private final String instanceId = UUID.randomUUID().toString();
 
+    // 注入链接解析、平台解析器、缓存与配置
     public RoomResolver(
             LiveRoomLinkParser linkParser,
             DouyinLiveRoomResolver douyinResolver,
@@ -43,12 +44,14 @@ public class RoomResolver {
         this.metrics = metrics;
     }
 
+    // 解析链接后按平台与房间号查询房间信息
     public Mono<LiveRoomInfo> resolveByUrl(String roomUrl, boolean force) {
         return Mono.fromCallable(() -> linkParser.parse(roomUrl))
                 .subscribeOn(reactor.core.scheduler.Schedulers.boundedElastic())
                 .flatMap(parsed -> resolve(parsed.platform(), parsed.roomId(), force));
     }
 
+    // 优先缓存，冷却期内直接拒绝解析
     public Mono<LiveRoomInfo> resolve(LivePlatform platform, String roomId, boolean force) {
         var cached = force ? Mono.<java.util.Optional<LiveRoomInfo>>just(java.util.Optional.empty())
                 : cache.cached(platform, roomId);
@@ -68,6 +71,7 @@ public class RoomResolver {
         });
     }
 
+    // 抢到锁的实例直接解析，否则等待缓存结果
     private Mono<LiveRoomInfo> acquireAndResolve(LivePlatform platform, String roomId) {
         return cache.acquireLock(platform, roomId, instanceId).flatMap(acquired -> {
             if (acquired) {
@@ -78,6 +82,7 @@ public class RoomResolver {
         });
     }
 
+    // 短暂轮询缓存，仍未命中则自行解析
     private Mono<LiveRoomInfo> waitForCache(LivePlatform platform, String roomId) {
         return Flux.interval(Duration.ofMillis(100))
                 .take(properties.getResolve().getLockWait().toMillis() / 100)
@@ -89,6 +94,7 @@ public class RoomResolver {
                 .switchIfEmpty(Mono.defer(() -> resolveDirect(platform, roomId)));
     }
 
+    // 调用平台解析并写入缓存与清除限流计数
     private Mono<LiveRoomInfo> resolveDirect(LivePlatform platform, String roomId) {
         return douyinResolver
                 .resolve(roomId)
@@ -99,6 +105,7 @@ public class RoomResolver {
                 .onErrorResume(error -> handleFailure(platform, roomId, error));
     }
 
+    // 限流时累加连续次数并设置指数冷却
     private Mono<LiveRoomInfo> handleFailure(LivePlatform platform, String roomId, Throwable error) {
         if (error instanceof ApiException apiException) {
             var code = apiException.getCode();
@@ -118,6 +125,7 @@ public class RoomResolver {
         return Mono.error(LiveErrorCode.LIVE_RESOLVE_FAILED.exception());
     }
 
+    // 冷却时间按限流次数指数增长并封顶
     private Instant cooldownUntil(long streak) {
         var base = properties.getResolve().getCooldown().toMillis();
         var max = properties.getResolve().getMaxCooldown().toMillis();

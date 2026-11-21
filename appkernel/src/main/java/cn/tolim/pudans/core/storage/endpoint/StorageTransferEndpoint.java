@@ -13,6 +13,9 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyExtractors;
@@ -42,6 +45,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
 
     private final StorageTransfer storageTransfer;
 
+    // 注册上传会话、分片、下载与状态查询路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "StorageTransferV1alpha1";
@@ -81,6 +85,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 校验下载令牌，优先重定向直链否则代理下载。
     private Mono<ServerResponse> content(ServerRequest request) {
         var name = request.pathVariable("name");
         storageTransfer.verifyDownload(requireToken(request), name);
@@ -96,6 +101,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
         });
     }
 
+    // 通过后端流式输出内容并支持范围请求。
     private Mono<ServerResponse> proxyDownload(StorageFile file, String rangeHeader) {
         var fileId = file.getMetadata().getName();
         var range = parseRange(rangeHeader, file.getSpec().getSize());
@@ -125,13 +131,35 @@ public class StorageTransferEndpoint implements CustomEndpoint {
         });
     }
 
+    // 上传归属必须来自当前登录用户，不能由请求体指定
     private Mono<ServerResponse> initiateUpload(ServerRequest request) {
-        return request.bodyToMono(StorageUploadRequest.class)
-                .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
+        return ReactiveSecurityContextHolder.getContext()
+                .mapNotNull(SecurityContext::getAuthentication)
+                .map(Authentication::getName)
+                .switchIfEmpty(Mono.error(new ApiException(
+                        HttpStatus.UNAUTHORIZED, "storage-owner-required", "需要身份认证。")))
+                .flatMap(owner -> request.bodyToMono(StorageUploadRequest.class)
+                        .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
+                        .map(body -> withOwner(body, owner)))
                 .flatMap(storageTransfer::initiateUpload)
                 .flatMap(ticket -> ServerResponse.ok().bodyValue(ticket));
     }
 
+    // 复制请求并强制使用认证用户作为归属
+    private static StorageUploadRequest withOwner(StorageUploadRequest body, String owner) {
+        return new StorageUploadRequest(
+                body.policy(),
+                owner,
+                body.module(),
+                body.originPath(),
+                body.originalName(),
+                body.contentType(),
+                body.size(),
+                body.attributes(),
+                body.sha256());
+    }
+
+    // 为上传会话续签上传令牌。
     private Mono<ServerResponse> uploadToken(ServerRequest request) {
         var name = request.pathVariable("name");
         return storageTransfer
@@ -139,12 +167,14 @@ public class StorageTransferEndpoint implements CustomEndpoint {
                 .flatMap(token -> ServerResponse.ok().bodyValue(Map.of("token", token)));
     }
 
+    // 校验上传令牌后返回会话进度。
     private Mono<ServerResponse> uploadStatus(ServerRequest request) {
         var name = request.pathVariable("name");
         verifyUpload(request, name);
         return storageTransfer.uploadStatus(name).flatMap(status -> ServerResponse.ok().bodyValue(status));
     }
 
+    // 校验上传令牌后接收单个分片。
     private Mono<ServerResponse> putPart(ServerRequest request) {
         var name = request.pathVariable("name");
         verifyUpload(request, name);
@@ -155,6 +185,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 校验上传令牌后返回分片预签名地址。
     private Mono<ServerResponse> partUrl(ServerRequest request) {
         var name = request.pathVariable("name");
         verifyUpload(request, name);
@@ -163,6 +194,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 校验上传令牌后完成上传会话。
     private Mono<ServerResponse> complete(ServerRequest request) {
         var name = request.pathVariable("name");
         verifyUpload(request, name);
@@ -172,16 +204,19 @@ public class StorageTransferEndpoint implements CustomEndpoint {
                 .flatMap(file -> ServerResponse.ok().bodyValue(file));
     }
 
+    // 校验上传令牌后终止上传会话。
     private Mono<ServerResponse> abort(ServerRequest request) {
         var name = request.pathVariable("name");
         verifyUpload(request, name);
         return storageTransfer.abortUpload(name).then(ServerResponse.status(HttpStatus.NO_CONTENT).build());
     }
 
+    // 校验请求携带的上传令牌。
     private void verifyUpload(ServerRequest request, String name) {
         storageTransfer.verifyUpload(requireToken(request), name);
     }
 
+    // 读取存储令牌，缺失时拒绝请求。
     private static String requireToken(ServerRequest request) {
         return request.queryParam("token")
                 .filter(StringUtils::hasText)
@@ -189,6 +224,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
                         HttpStatus.UNAUTHORIZED, "storage-token-missing", "缺少存储令牌。"));
     }
 
+    // 解析分片编号，非法值转为参数错误。
     private static int partNumber(ServerRequest request) {
         try {
             return Integer.parseInt(request.pathVariable("part"));
@@ -197,6 +233,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
         }
     }
 
+    // 解析内容类型，非法时回退为二进制流。
     private static MediaType contentType(String value) {
         if (!StringUtils.hasText(value)) {
             return MediaType.APPLICATION_OCTET_STREAM;
@@ -208,6 +245,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
         }
     }
 
+    // 解析单段 Range 头，无法解析时按完整响应处理。
     private static ByteRange parseRange(String header, long size) {
         if (!StringUtils.hasText(header) || size <= 0 || !header.startsWith("bytes=")) {
             return null;
@@ -248,6 +286,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
         }
     }
 
+    // 构造字节范围不可满足错误。
     private static ApiException rangeNotSatisfiable() {
         return new ApiException(
                 HttpStatus.REQUESTED_RANGE_NOT_SATISFIABLE,

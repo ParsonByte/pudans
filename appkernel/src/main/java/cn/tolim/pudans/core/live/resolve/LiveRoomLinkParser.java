@@ -15,6 +15,7 @@ public class LiveRoomLinkParser {
 
     private static final Pattern ROOM_ID = Pattern.compile("[0-9]{1,20}");
 
+    // 只接受抖音 HTTPS 房间链接并提取房间号
     public ParsedLiveRoom parse(String raw) {
         if (!StringUtils.hasText(raw)) {
             throw LiveErrorCode.LIVE_ROOM_LINK_INVALID.exception();

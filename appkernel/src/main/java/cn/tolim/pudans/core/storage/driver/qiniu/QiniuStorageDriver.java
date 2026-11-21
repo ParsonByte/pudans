@@ -1,5 +1,7 @@
 package cn.tolim.pudans.core.storage.driver.qiniu;
 
+import cn.tolim.pudans.core.storage.driver.StorageDriverErrors;
+
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -60,12 +62,13 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
 
     private final WebClient webClient;
 
+    // 初始化客户端，并为代理下载启用地址校验。
     public QiniuStorageDriver(StoragePolicy policy, Auth auth, Path tempDirectory) {
         this(
                 policy,
                 auth,
-                new UploadManager(new Configuration(Region.autoRegion())),
-                new BucketManager(auth, new Configuration(Region.autoRegion())),
+                new UploadManager(configuration()),
+                new BucketManager(auth, configuration()),
                 tempDirectory,
                 // 代理下载在连接期重新校验解析地址，防止下载域名指向内网。
                 WebClient.builder()
@@ -74,6 +77,14 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                         .build());
     }
 
+    // 构造带出站地址校验的七牛配置
+    private static Configuration configuration() {
+        var configuration = new Configuration(Region.autoRegion());
+        configuration.dns = new ValidatingQiniuDns();
+        return configuration;
+    }
+
+    // 注入客户端依赖便于测试替换网络调用。
     QiniuStorageDriver(
             StoragePolicy policy,
             Auth auth,
@@ -89,11 +100,13 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
         this.webClient = webClient;
     }
 
+    // 标识该驱动处理七牛云类型策略。
     @Override
     public StoragePolicyType type() {
         return StoragePolicyType.QINIU;
     }
 
+    // 声明七牛云支持直链、直传与范围读取。
     @Override
     public Set<StorageCapability> capabilities() {
         return Set.of(
@@ -102,6 +115,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                 StorageCapability.RANGE_READ);
     }
 
+    // 生成带大小限制的七牛直传凭证。
     @Override
     public Mono<DirectUploadCredential> createDirectUpload(StorageDirectUploadRequest request) {
         return Mono.fromCallable(() -> {
@@ -128,6 +142,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                 .subscribeOn(Schedulers.boundedElastic());
     }
 
+    // 暂存文件后通过七牛上传管理器写入。
     @Override
     public Mono<StorageObject> put(StoragePutRequest request) {
         return StorageIo.spool(request.body(), tempDirectory)
@@ -142,6 +157,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                         .onErrorMap(QiniuException.class, this::mapError));
     }
 
+    // 通过下载地址读取内容并支持范围请求。
     @Override
     public Mono<StorageReadResult> get(String key, StorageReadOptions options) {
         var range = options == null ? null : options.range();
@@ -155,7 +171,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                     }
                 })
                 .retrieve()
-                .onStatus(status -> status.value() == 404 || status.value() == 612, response -> Mono.error(notFound()))
+                .onStatus(status -> status.value() == 404 || status.value() == 612, response -> Mono.error(StorageDriverErrors.notFound()))
                 .onStatus(status -> status.value() == 401 || status.value() == 403, response -> Mono.error(forbidden()))
                 .onStatus(HttpStatusCode::isError, response -> Mono.error(driverError()))
                 .toEntityFlux(DataBuffer.class)
@@ -178,6 +194,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                 });
     }
 
+    // 查询七牛对象元数据。
     @Override
     public Mono<StorageObject> stat(String key) {
         return Mono.fromCallable(() -> statBlocking(key))
@@ -185,6 +202,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                 .onErrorMap(QiniuException.class, this::mapError);
     }
 
+    // 逐个删除对象并忽略缺失项。
     @Override
     public Mono<Void> delete(Collection<String> keys) {
         return Flux.fromIterable(keys)
@@ -201,6 +219,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                 .onErrorMap(QiniuException.class, this::mapError);
     }
 
+    // 生成七牛下载直链。
     @Override
     public Mono<StorageSource> source(String key, StorageSourceOptions options) {
         var ttl = options != null && options.ttl() != null ? options.ttl() : DEFAULT_SOURCE_TTL;
@@ -208,6 +227,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                 URI.create(downloadUrl(key, ttl)), Instant.now().plus(ttl), false));
     }
 
+    // 通过存储桶列表检测连接状态。
     @Override
     public Mono<StorageTestResult> testConnection() {
         return Mono.fromCallable(() -> {
@@ -223,9 +243,11 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                         false, "存储连接失败：" + safeMessage(error), Instant.now())));
     }
 
+    // 无长期持有的外部连接需要关闭。
     @Override
     public void close() {}
 
+    // 同步查询元数据并转换时间单位。
     private StorageObject statBlocking(String key) throws QiniuException {
         var info = bucketManager.stat(bucket(), key);
         return new StorageObject(
@@ -235,6 +257,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                 info.hash);
     }
 
+    // 拼接下载域名，私有桶附加签名。
     private String downloadUrl(String key, Duration ttl) {
         var base = policy.getSpec().getServer();
         if (!StringUtils.hasText(base)) {
@@ -253,16 +276,19 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
         return url;
     }
 
+    // 返回策略配置的存储桶名称。
     private String bucket() {
         return policy.getSpec().getBucketName();
     }
 
+    // 检查七牛响应，失败时抛出异常。
     private static void ensureOk(Response response) throws QiniuException {
         if (response != null && !response.isOK()) {
             throw new QiniuException(response);
         }
     }
 
+    // 从 Content-Range 解析对象总大小。
     private static long totalSize(String contentRange, long contentLength) {
         if (StringUtils.hasText(contentRange)) {
             var slash = contentRange.lastIndexOf('/');
@@ -276,10 +302,11 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
         return Math.max(0, contentLength);
     }
 
+    // 将七牛错误码映射为统一的 API 错误。
     private ApiException mapError(QiniuException error) {
         var code = error.code();
         if (code == 404 || code == 612) {
-            return notFound();
+            return StorageDriverErrors.notFound();
         }
         if (code == 401 || code == 403) {
             return forbidden();
@@ -288,6 +315,7 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
                 HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储服务请求失败（" + code + "）。", error);
     }
 
+    // 提取可安全展示的错误信息。
     private static String safeMessage(Throwable error) {
         if (error instanceof QiniuException qiniu && StringUtils.hasText(qiniu.error())) {
             return qiniu.error();
@@ -295,14 +323,13 @@ public class QiniuStorageDriver implements StorageDriver, DirectUploadDriver {
         return "存储服务不可用。";
     }
 
-    private static ApiException notFound() {
-        return new ApiException(HttpStatus.NOT_FOUND, "storage-object-not-found", "文件不存在。");
-    }
 
+    // 构造存储访问被拒绝错误。
     private static ApiException forbidden() {
         return new ApiException(HttpStatus.FORBIDDEN, "storage-access-denied", "存储访问被拒绝。");
     }
 
+    // 构造存储服务请求失败错误。
     private static ApiException driverError() {
         return new ApiException(HttpStatus.BAD_GATEWAY, "storage-driver-error", "存储服务请求失败。");
     }

@@ -37,6 +37,7 @@ public class AuditRecordEntity {
     private String contextJson;
     private String actionSnapshot;
 
+    // 将审计记录转换为实体，时间统一存为协调世界时。
     public static AuditRecordEntity from(AuditRecord record) {
         var entity = new AuditRecordEntity();
         entity.setId(record.getMetadata().getName());
@@ -69,6 +70,7 @@ public class AuditRecordEntity {
         return entity;
     }
 
+    // 还原审计记录，并恢复合成流程标记。
     public AuditRecord toRecord(boolean archived) {
         var record = new AuditRecord();
         var metadata = new Metadata();
@@ -98,6 +100,7 @@ public class AuditRecordEntity {
         return record;
     }
 
+    // 解析上下文文本，格式异常时保留原始内容。
     @SuppressWarnings("unchecked")
     static java.util.Map<String, Object> parseContext(String json) {
         if (json == null || json.isBlank()) {

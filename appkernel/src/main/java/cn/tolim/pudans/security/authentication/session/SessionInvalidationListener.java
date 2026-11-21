@@ -22,6 +22,7 @@ public class SessionInvalidationListener {
     private final ReactiveFindByIndexNameSessionRepository<? extends Session> indexedSessionRepository;
     private final ReactiveSessionRepository<? extends Session> sessionRepository;
 
+    // 密码变更后异步清理该用户的全部会话。
     @Async
     @EventListener
     public void onPasswordChanged(PasswordChangedEvent event) {
@@ -30,6 +31,7 @@ public class SessionInvalidationListener {
         invalidateUserSessions(username);
     }
 
+    // 按主体名删除全部会话，使旧登录立即失效。
     private void invalidateUserSessions(String username) {
         indexedSessionRepository
                 .findByPrincipalName(username)

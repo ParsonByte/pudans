@@ -25,6 +25,7 @@ public class ValidationUtils {
 
     public static final int PASSWORD_MAX_LENGTH = 257;
 
+    // 密码长度必须在允许区间内。
     public static boolean isPasswordLengthValid(String password) {
         return password != null
                 && password.length() >= PASSWORD_MIN_LENGTH
@@ -32,12 +33,14 @@ public class ValidationUtils {
     }
 
 
+    // 执行校验并返回绑定结果供调用方读取错误。
     public static BindingResult validate(Object target, String objectName, Validator validator) {
         BindingResult bindingResult = new BeanPropertyBindingResult(target, objectName);
         validator.validate(target, bindingResult);
         return bindingResult;
     }
 
+    // 使用默认表单名执行校验。
     public static BindingResult validate(Object target, Validator validator) {
         return validate(target, "form", validator);
     }

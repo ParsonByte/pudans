@@ -10,6 +10,7 @@ import org.springframework.util.StringUtils;
 @Component
 public class MailAttachmentLoader {
 
+    // 按模板键读取附件配置并加载类路径资源。
     public List<MailAttachment> load(ParameterSetting.Mail mail, String templateKey) {
         if (mail.getMailTemplateAttachments() == null) {
             return List.of();
@@ -21,6 +22,7 @@ public class MailAttachmentLoader {
         return attachments.stream().map(MailAttachmentLoader::load).toList();
     }
 
+    // 校验附件配置并读取文件内容。
     private static MailAttachment load(ParameterSetting.MailTemplateAttachment attachment) {
         if (!StringUtils.hasText(attachment.getClasspath())) {
             throw new TemplateRenderException("邮件附件必须指定类路径");

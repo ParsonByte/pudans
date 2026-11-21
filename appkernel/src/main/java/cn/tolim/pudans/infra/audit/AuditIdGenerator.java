@@ -10,6 +10,7 @@ public final class AuditIdGenerator {
 
     private AuditIdGenerator() {}
 
+    // 生成带时间前缀的唯一标识，便于按时间排序。
     public static String next() {
         var bytes = new byte[16];
         RANDOM.nextBytes(bytes);
@@ -27,6 +28,7 @@ public final class AuditIdGenerator {
         return format(bytes);
     }
 
+    // 按标识的连字符位置格式化十六进制字节。
     private static String format(byte[] bytes) {
         var sb = new StringBuilder(36);
         for (int i = 0; i < bytes.length; i++) {

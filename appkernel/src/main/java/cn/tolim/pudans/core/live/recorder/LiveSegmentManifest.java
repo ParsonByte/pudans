@@ -24,6 +24,7 @@ public class LiveSegmentManifest {
 
     private final LiveRecordingWorkspace workspace;
 
+    // 把分片元数据追加到本地清单供恢复使用
     public void append(String recordingName, LiveSegment segment) {
         appendLine(workspace.segmentsManifest(recordingName), toJson(segment));
     }
@@ -80,6 +81,7 @@ public class LiveSegmentManifest {
         return max + 1;
     }
 
+    // 从分片文件名解析索引，非法名称按零处理
     private static int indexOf(String filename) {
         var trimmed = filename.substring("segment-".length(), filename.length() - ".ts".length());
         try {
@@ -89,6 +91,7 @@ public class LiveSegmentManifest {
         }
     }
 
+    // 解析清单行并确认分片文件仍然存在
     private LiveSegment parse(String recordingName, String line) {
         try {
             var segment = mapper.readValue(line, LiveSegment.class);
@@ -103,6 +106,7 @@ public class LiveSegmentManifest {
         }
     }
 
+    // 序列化分片元数据，失败包装为状态异常
     private String toJson(LiveSegment segment) {
         try {
             return mapper.writeValueAsString(segment);
@@ -111,6 +115,7 @@ public class LiveSegmentManifest {
         }
     }
 
+    // 追加一行并 fsync，保证崩溃后清单不丢
     static void appendLine(Path file, String line) {
         try (var channel = FileChannel.open(file, StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.APPEND)) {
             channel.write(ByteBuffer.wrap((line + "\n").getBytes(StandardCharsets.UTF_8)));

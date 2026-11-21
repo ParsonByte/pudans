@@ -38,6 +38,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
 
     private AuditLog auditLog;
 
+    // 注入角色、临时授权与审计依赖
     public DefaultRuleResolver(
             Roles roles,
             TempGrants tempGrants,
@@ -47,11 +48,13 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         this.auditLog = auditLog;
     }
 
+    // 未提供请求上下文时按空上下文处理
     @Override
     public Mono<AuthorizingVisitor> visitRules(Authentication authentication, RequestInfo requestInfo) {
         return visitRules(authentication, requestInfo, null);
     }
 
+    // 依次校验用户空间、令牌范围与角色规则
     @Override
     public Mono<AuthorizingVisitor> visitRules(
             Authentication authentication, RequestInfo requestInfo, ServerWebExchange exchange) {
@@ -89,6 +92,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
                 });
     }
 
+    // 遍历角色依赖链，命中允许规则后停止
     private Mono<Void> visitRoleRules(
             Authentication authentication,
             Set<String> roleNames,
@@ -115,6 +119,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
                 .then();
     }
 
+    // 会话用户可叠加临时角色，令牌只用基础角色
     private Mono<Set<String>> resolveRoleNames(Authentication authentication) {
         var baseRoles = AuthorityUtils.authoritiesToRoles(authentication.getAuthorities());
         if (!authentication.isAuthenticated()
@@ -136,6 +141,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
                 .switchIfEmpty(Mono.just(baseRoles));
     }
 
+    // 按资源与动作匹配令牌范围，路径可通配
     static boolean scopeAllows(Set<String> scopes, RequestInfo requestInfo) {
         if (scopes.contains("*") || scopes.contains("*:*")) {
             return true;
@@ -169,6 +175,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         return false;
     }
 
+    // 路径范围支持精确匹配与前缀通配
     private static boolean matchesPathScope(String scope, String path) {
         if (scope.equals(path)) {
             return true;
@@ -187,6 +194,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         return scope.endsWith("/*") && path.startsWith(scope.substring(0, scope.length() - 1));
     }
 
+    // 把读写范围动作展开为具体请求动作
     private static boolean verbMatches(String scopeVerb, String requestVerb) {
         if ("*".equals(scopeVerb) || scopeVerb.equals(requestVerb)) {
             return true;
@@ -200,10 +208,12 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         return false;
     }
 
+    // 资源范围要求与候选资源完全相等
     private static boolean matchesResource(String scopeResource, String candidate) {
         return scopeResource.equals(candidate);
     }
 
+    // 拼接子资源得到规则使用的完整资源名
     private static String resourceOf(RequestInfo requestInfo) {
         var resource = requestInfo.getResource();
         if (StringUtils.isBlank(requestInfo.getSubresource())) {
@@ -212,6 +222,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         return resource + '/' + requestInfo.getSubresource();
     }
 
+    // 令牌范围不足时单独记录一条拒绝审计
     private void auditPatDenied(
             Authentication authentication, RequestInfo requestInfo, ServerWebExchange exchange, Set<String> scopes) {
         if (exchange == null || auditLog == null) {
@@ -256,6 +267,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         auditLog.record(auditRecord);
     }
 
+    // 取出令牌名称，仅 PAT 令牌包含该声明
     private static String patName(Authentication authentication) {
         if (authentication instanceof JwtAuthenticationToken jwt) {
             return jwt.getToken().getClaimAsString(PAT_NAME_CLAIM);
@@ -263,6 +275,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         return null;
     }
 
+    // 从令牌声明中读取可选的字符串值
     private static String jwtClaim(Authentication authentication, String claimName) {
         if (authentication instanceof JwtAuthenticationToken jwt) {
             return jwt.getToken().getClaimAsString(claimName);
@@ -270,6 +283,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         return null;
     }
 
+    // 生成规则来源描述，便于定位命中的绑定
     String roleBindingDescriber(String roleName, String subject) {
         return String.format("Binding role [%s] to [%s]", roleName, subject);
     }

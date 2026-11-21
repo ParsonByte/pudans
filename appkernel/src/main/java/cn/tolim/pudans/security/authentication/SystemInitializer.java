@@ -39,6 +39,7 @@ public class SystemInitializer implements SuperAdminInitializer {
 
     private final BuiltinRoleDefinitions builtinRoleDefinitions;
 
+    // 依次补齐内置角色、用户组、超级管理员并完成最终化与绑定。
     @Override
     public Mono<Void> initialize(InitializationParam param) {
         return ensureRoles()
@@ -49,18 +50,21 @@ public class SystemInitializer implements SuperAdminInitializer {
                 .then();
     }
 
+    // 幂等创建全部内置角色，已存在的角色保持不变。
     Mono<Void> ensureRoles() {
         return Flux.fromIterable(builtinRoleDefinitions.builtinRoles())
                 .concatMap(this::ensureRole)
                 .then();
     }
 
+    // 幂等创建全部内置用户组，已存在的用户组保持不变。
     Mono<Void> ensureGroups() {
         return Flux.fromIterable(builtinRoleDefinitions.builtinGroups())
                 .concatMap(this::ensureGroup)
                 .then();
     }
 
+    // 复用已有管理员或新建，并发创建冲突时回查确认。
     Mono<User> ensureSuperAdmin(InitializationParam param) {
         return client.fetch(User.class, param.getUsername())
                 .flatMap(admin -> verifyExistingAdmin(admin, param))
@@ -70,6 +74,7 @@ public class SystemInitializer implements SuperAdminInitializer {
                                 .flatMap(admin -> verifyExistingAdmin(admin, param)))));
     }
 
+    // 为管理员补上系统终结器，防止被误删除。
     Mono<User> ensureSystemFinalizer(User user) {
         if (!ExtensionUtil.addFinalizers(user.getMetadata(), Set.of(MetadataUtil.SYSTEM_FINALIZER))) {
             return Mono.just(user);
@@ -77,12 +82,14 @@ public class SystemInitializer implements SuperAdminInitializer {
         return client.updateInternal(user);
     }
 
+    // 将管理员登记为超级管理员，使权限立即生效。
     Mono<User> bindSuperAdmin(User user) {
         return superAdminResolver
                 .initialize(user.getMetadata().getName())
                 .thenReturn(user);
     }
 
+    // 按名称查找角色，缺失时才创建，避免重复写入。
     private Mono<Role> ensureRole(Role role) {
         var name = role.getMetadata().getName();
         return client.fetch(Role.class, name)
@@ -90,6 +97,7 @@ public class SystemInitializer implements SuperAdminInitializer {
                         .onErrorResume(DuplicateNameException.class, e -> client.get(Role.class, name))));
     }
 
+    // 按名称查找用户组，缺失时才创建，避免重复写入。
     private Mono<UserGroup> ensureGroup(UserGroup group) {
         var name = group.getMetadata().getName();
         return client.fetch(UserGroup.class, name)
@@ -97,6 +105,7 @@ public class SystemInitializer implements SuperAdminInitializer {
                         .onErrorResume(DuplicateNameException.class, e -> client.get(UserGroup.class, name))));
     }
 
+    // 校验已有管理员可登录且密码一致，否则拒绝初始化。
     private Mono<User> verifyExistingAdmin(User admin, InitializationParam param) {
         return Mono.fromCallable(() -> {
             var spec = admin.getSpec();
@@ -111,6 +120,7 @@ public class SystemInitializer implements SuperAdminInitializer {
         });
     }
 
+    // 发布用户创建事件，供审计与下游逻辑消费。
     private void publishCreated(User user) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", user.getMetadata().getName());
@@ -121,6 +131,7 @@ public class SystemInitializer implements SuperAdminInitializer {
         domainEventPublisher.publish("user.created", payload, null);
     }
 
+    // 组装管理员用户对象，密码加密后写入用户规格。
     User createAdmin(InitializationParam param) {
         var metadata = new Metadata();
         metadata.setName(param.getUsername());

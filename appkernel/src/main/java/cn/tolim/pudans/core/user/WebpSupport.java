@@ -13,14 +13,17 @@ public class WebpSupport {
 
     private final boolean available;
 
+    // 按运行时探测结果初始化解码支持
     public WebpSupport() {
         this(hasWebpReader());
     }
 
+    // 允许测试直接指定解码可用性
     WebpSupport(boolean available) {
         this.available = available;
     }
 
+    // 检测是否注册了该格式的图片读取器
     private static boolean hasWebpReader() {
         try {
             Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("webp");
@@ -30,6 +33,7 @@ public class WebpSupport {
         }
     }
 
+    // 启动时提示缺失解码器的影响
     @PostConstruct
     void warnIfUnavailable() {
         if (!available) {
@@ -37,6 +41,7 @@ public class WebpSupport {
         }
     }
 
+    // 返回本机是否支持该图片格式解码
     public boolean isAvailable() {
         return available;
     }

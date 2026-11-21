@@ -25,6 +25,7 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
 
     private final ServerResponse.Context context;
 
+    // 持有连接映射与会话能力以完成第三方登录。
     OAuth2LoginSuccessHandler(
             Connections connections,
             OAuth2AuthenticationSession authenticationSession,
@@ -36,6 +37,7 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
         this.context = context;
     }
 
+    // 以临时重定向返回登录后的落地地址。
     private static Mono<Void> redirect(ServerWebExchange exchange, String location) {
         var response = exchange.getResponse();
         response.setStatusCode(HttpStatus.FOUND);
@@ -43,20 +45,21 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
         return response.setComplete();
     }
 
+    // 绑定账号后建立会话，再按双因素状态决定跳转。
     @Override
     public Mono<Void> onAuthenticationSuccess(
             WebFilterExchange webFilterExchange, Authentication authentication) {
         var exchange = webFilterExchange.getExchange();
         var oauth2 = (OAuth2AuthenticationToken) authentication;
-        var twoFactorSatisfied = OAuth2TwoFactorSupport.twoFactorSatisfied(
-                exchange.getAttribute(OAuth2LoginAttributes.PRE_AUTHENTICATION));
+        var previousAuthentication = exchange.getAttribute(OAuth2LoginAttributes.PRE_AUTHENTICATION);
         return connectionMapping
                 .map(exchange, oauth2)
                 .flatMap(connection -> authenticationSession.establishAndGetAuthentication(
                         exchange,
                         connection.getSpec().getUsername(),
                         oauth2,
-                        twoFactorSatisfied))
+                        OAuth2TwoFactorSupport.twoFactorSatisfied(
+                                previousAuthentication, connection.getSpec().getUsername())))
                 .flatMap(result -> result instanceof TwoFactorAuthentication
                         ? ProblemDetailResponses.writeOrRedirect(
                                 exchange,

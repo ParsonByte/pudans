@@ -42,11 +42,13 @@ public class StoragePolicyValidator {
 
     private final StoragePolicyPathGenerator pathGenerator;
 
+    // 注入驱动注册表与路径规则校验器。
     public StoragePolicyValidator(StorageDriverFactoryRegistry registry, StoragePolicyPathGenerator pathGenerator) {
         this.registry = registry;
         this.pathGenerator = pathGenerator;
     }
 
+    // 汇总策略结构与驱动类型的全部校验错误。
     public ValidationResult validatePolicy(StoragePolicy policy) {
         var errors = new ArrayList<String>();
         if (policy == null || policy.getSpec() == null) {
@@ -81,6 +83,7 @@ public class StoragePolicyValidator {
         return new ValidationResult(errors.isEmpty(), List.copyOf(errors));
     }
 
+    // 校验上传大小、类型与文件名是否符合策略。
     public void validateUpload(StoragePolicy policy, String originalName, long size) {
         var spec = policy.getSpec();
         if (size < 0) {
@@ -121,6 +124,7 @@ public class StoragePolicyValidator {
         }
     }
 
+    // 返回配置的分片大小，未配置时按类型取默认。
     public long chunkSize(StoragePolicy policy) {
         var spec = policy.getSpec();
         if (spec.getChunkSize() > 0) {
@@ -133,6 +137,7 @@ public class StoragePolicyValidator {
         };
     }
 
+    // 计算分片数量并限制在服务端上限内。
     public int partCount(long size, long chunkSize) {
         if (size <= 0) {
             return 1;
@@ -144,6 +149,7 @@ public class StoragePolicyValidator {
         return (int) count;
     }
 
+    // 提取小写扩展名，无扩展名时返回空串。
     public static String normalizeExtension(String fileName) {
         if (!StringUtils.hasText(fileName)) {
             return "";
@@ -155,6 +161,7 @@ public class StoragePolicyValidator {
         return fileName.substring(dot + 1).toLowerCase(Locale.ROOT);
     }
 
+    // 按存储类型校验分片大小的上下限。
     private void validateChunkSize(StoragePolicy.Spec spec, List<String> errors) {
         var minimum = spec.getType() == StoragePolicyType.S3 || spec.getType() == StoragePolicyType.KS3
                 ? S3_MIN_CHUNK
@@ -167,6 +174,7 @@ public class StoragePolicyValidator {
         }
     }
 
+    // 校验文件类型列表的数量、格式与长度。
     private void validateFileTypes(StoragePolicy.Spec spec, List<String> errors) {
         var fileTypes = spec.getFileTypes();
         if (fileTypes == null) {
@@ -190,6 +198,7 @@ public class StoragePolicyValidator {
         }
     }
 
+    // 校验文件名正则的长度与语法。
     private void validateNameRegexp(StoragePolicy.Spec spec, List<String> errors) {
         if (!StringUtils.hasText(spec.getNameRegexp())) {
             return;
@@ -205,6 +214,7 @@ public class StoragePolicyValidator {
         }
     }
 
+    // 校验服务地址格式并拒绝本机或内网地址。
     private void validateEndpoint(StoragePolicy.Spec spec, List<String> errors) {
         if (spec.getType() == null) {
             return;
@@ -278,6 +288,7 @@ public class StoragePolicyValidator {
         }
     }
 
+    // 从服务地址提取主机名，格式错误返回空。
     private static String endpointHost(String server) {
         try {
             return OutboundRequestValidator.stripBrackets(new URI(server).getHost());
@@ -286,6 +297,7 @@ public class StoragePolicyValidator {
         }
     }
 
+    // 按存储类型校验必填凭据是否配置。
     private void validateCredentials(StoragePolicy.Spec spec, List<String> errors) {
         if (spec.getType() == null || spec.getType() == StoragePolicyType.LOCAL) {
             return;
@@ -311,12 +323,14 @@ public class StoragePolicyValidator {
         }
     }
 
+    // 记录缺失的必填配置项。
     private static void require(String value, String label, List<String> errors) {
         if (!StringUtils.hasText(value)) {
             errors.add(label + "不能为空。");
         }
     }
 
+    // 归一化文件类型列表，去重并忽略空值。
     private static List<String> normalizedFileTypes(StoragePolicy.Spec spec) {
         if (CollectionUtils.isEmpty(spec.getFileTypes())) {
             return List.of();

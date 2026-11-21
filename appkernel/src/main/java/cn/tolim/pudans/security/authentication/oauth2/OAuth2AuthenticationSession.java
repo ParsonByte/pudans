@@ -30,15 +30,18 @@ public class OAuth2AuthenticationSession {
 
     private final LoginFlowHandler loginFlowHandler;
 
+    // 建立本地会话，供回调过滤器直接调用。
     public Mono<Void> establish(ServerWebExchange exchange, String username, OAuth2AuthenticationToken original) {
         return establishAndGetAuthentication(exchange, username, original).then();
     }
 
+    // 未声明双因素状态时按未完成处理。
     public Mono<Authentication> establishAndGetAuthentication(
             ServerWebExchange exchange, String username, OAuth2AuthenticationToken original) {
         return establishAndGetAuthentication(exchange, username, original, false);
     }
 
+    // 复核账号状态后保存上下文并触发登录成功流程。
     public Mono<Authentication> establishAndGetAuthentication(
             ServerWebExchange exchange,
             String username,
@@ -67,6 +70,7 @@ public class OAuth2AuthenticationSession {
                         .thenReturn(authentication));
     }
 
+    // 账号不可用时统一返回未授权并引导重新登录。
     static Mono<Void> rejectUnavailableAccount(ServerWebExchange exchange, ServerResponse.Context context) {
         return ProblemDetailResponses.writeOrRedirect(
                 exchange,

@@ -17,6 +17,7 @@ public class EmailTemplateRenderer {
 
     private static final String CLOSE = "}}";
 
+    // 解析并渲染模板，变量缺失时明确报错。
     public String render(String template, Map<String, ?> variables) {
         if (template == null) {
             return "";
@@ -30,6 +31,7 @@ public class EmailTemplateRenderer {
         return output.toString();
     }
 
+    // 递归解析文本、变量与块标签，构建节点树。
     private ParseResult parse(String template, int[] index, String stopTag) {
         var nodes = new ArrayList<Node>();
         while (index[0] < template.length()) {
@@ -102,6 +104,7 @@ public class EmailTemplateRenderer {
         return new ParseResult(nodes, null);
     }
 
+    // 按节点类型输出文本、变量或控制块内容。
     private void renderNodes(List<Node> nodes, Deque<Map<String, ?>> contexts, StringBuilder output) {
         for (var node : nodes) {
             switch (node) {
@@ -119,6 +122,7 @@ public class EmailTemplateRenderer {
         }
     }
 
+    // 为集合元素压入局部作用域，渲染后弹出。
     private void renderEach(EachNode each, Deque<Map<String, ?>> contexts, StringBuilder output) {
         var value = lookup(each.collection(), contexts);
         if (!(value instanceof Collection<?> collection)) {
@@ -138,6 +142,7 @@ public class EmailTemplateRenderer {
         }
     }
 
+    // 解析变量表达式并按顺序应用过滤器。
     private String renderVariable(String expression, Deque<Map<String, ?>> contexts) {
         var parts = expression.split("\\|");
         var key = parts[0].trim();
@@ -149,6 +154,7 @@ public class EmailTemplateRenderer {
         return rendered;
     }
 
+    // 执行内置过滤器，未知过滤器直接报错。
     private static String applyFilter(String filter, String value) {
         return switch (filter.toLowerCase(Locale.ROOT)) {
             case "escape" -> escape(value);
@@ -159,6 +165,7 @@ public class EmailTemplateRenderer {
         };
     }
 
+    // 转义网页特殊字符，防止模板注入标记。
     private static String escape(String value) {
         return value.replace("&", "&amp;")
                 .replace("<", "&lt;")
@@ -167,6 +174,7 @@ public class EmailTemplateRenderer {
                 .replace("'", "&#39;");
     }
 
+    // 跨作用域查找变量，缺失时抛出渲染异常。
     private Object lookup(String key, Deque<Map<String, ?>> contexts) {
         var value = lookupOptional(key, contexts);
         if (value == null && contexts.stream().noneMatch(context -> context.containsKey(key))) {
@@ -175,6 +183,7 @@ public class EmailTemplateRenderer {
         return value;
     }
 
+    // 从内到外查找变量，未找到时返回空。
     private static Object lookupOptional(String key, Deque<Map<String, ?>> contexts) {
         for (var context : contexts) {
             if (context.containsKey(key)) {
@@ -184,6 +193,7 @@ public class EmailTemplateRenderer {
         return null;
     }
 
+    // 按非空规则判断条件值，供条件块使用。
     private static boolean truthy(Object value) {
         if (value == null) {
             return false;

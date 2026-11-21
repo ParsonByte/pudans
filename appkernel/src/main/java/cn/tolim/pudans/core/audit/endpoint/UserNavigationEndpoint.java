@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class UserNavigationEndpoint implements CustomEndpoint {
 
+    // 注册用户页面导航记录接口。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "UserNavigationV1alpha1";
@@ -34,6 +35,7 @@ public class UserNavigationEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 记录页面导航并返回关联的审计编号。
     Mono<ServerResponse> record(ServerRequest request) {
         return request.bodyToMono(NavigationEvent.class)
                 .defaultIfEmpty(new NavigationEvent(null))
@@ -54,6 +56,7 @@ public class UserNavigationEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 校验并截断页面路径，非法路径返回空值。
     private static String normalize(String path) {
         if (!StringUtils.hasText(path) || !path.startsWith("/") || path.startsWith("//")) {
             return null;
@@ -61,6 +64,7 @@ public class UserNavigationEndpoint implements CustomEndpoint {
         return path.length() > 512 ? path.substring(0, 512) : path;
     }
 
+    // 返回导航接口所属的 API 版本。
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

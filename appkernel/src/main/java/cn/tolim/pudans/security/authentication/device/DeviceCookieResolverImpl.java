@@ -19,12 +19,14 @@ class DeviceCookieResolverImpl implements DeviceCookieResolver {
 
     private final Duration cookieMaxAge = Duration.ofDays(100);
 
+    // 只读取不创建，缺失时由调用方决定后续处理
     @Override
     @Nullable
     public HttpCookie resolveCookie(ServerWebExchange exchange) {
         return exchange.getRequest().getCookies().getFirst(getCookieName());
     }
 
+    // 通过响应提交回调写入，确保响应头最终生效
     @Override
     public void setCookie(ServerWebExchange exchange, String value) {
         Assert.notNull(value, "'value' 不能为空");

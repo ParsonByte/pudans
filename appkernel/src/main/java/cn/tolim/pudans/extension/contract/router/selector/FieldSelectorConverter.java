@@ -10,6 +10,7 @@ import org.springframework.util.CollectionUtils;
 
 public class FieldSelectorConverter implements Converter<SelectorCriteria, Condition> {
 
+    // 把字段选择器条件转换为索引查询。
     @Override
     public Condition convert(SelectorCriteria criteria) {
         var key = criteria.key();
@@ -33,6 +34,7 @@ public class FieldSelectorConverter implements Converter<SelectorCriteria, Condi
         }
     }
 
+    // 取单个值，缺失时抛出参数错误。
     String getSingleValue(SelectorCriteria criteria) {
         if (CollectionUtils.isEmpty(criteria.values())) {
             throw new IllegalArgumentException("标签键没有对应的值：" + criteria.key());

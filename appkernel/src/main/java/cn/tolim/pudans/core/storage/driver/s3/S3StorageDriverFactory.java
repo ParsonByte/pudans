@@ -22,6 +22,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 @Component
 public class S3StorageDriverFactory implements StorageDriverFactory {
 
+    // 同时声明 S3 与 KS3 两种兼容类型。
     @Override
     public List<StoragePolicyTypeDescriptor> descriptors() {
         var capabilities = Set.of(
@@ -37,6 +38,7 @@ public class S3StorageDriverFactory implements StorageDriverFactory {
                         StoragePolicyType.KS3, "KS3", "金山云 KS3（兼容 S3 协议）。", true, capabilities));
     }
 
+    // 按区域、端点与路径风格创建客户端。
     @Override
     public StorageDriver create(ResolvedStoragePolicy resolved) {
         var policy = resolved.policy();

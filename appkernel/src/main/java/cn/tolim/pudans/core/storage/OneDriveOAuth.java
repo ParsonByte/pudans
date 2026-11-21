@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,6 +13,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
+import org.springframework.web.server.ServerWebExchange;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.storage.StoragePolicyType;
 import cn.tolim.pudans.extension.contract.ApiGroups;
@@ -36,6 +38,8 @@ public class OneDriveOAuth {
 
     private static final Duration STATE_TTL = Duration.ofMinutes(10);
 
+    private static final String STATE_SESSION_ATTRIBUTE = "pudans.storage.onedrive.state";
+
     private final Policies policies;
 
     private final TransferTokens transferTokens;
@@ -48,6 +52,7 @@ public class OneDriveOAuth {
 
     private final WebClient webClient;
 
+    // 使用默认客户端配置创建生产环境实例。
     @Autowired
     public OneDriveOAuth(
             Policies policies,
@@ -64,6 +69,7 @@ public class OneDriveOAuth {
                 WebClient.builder().build());
     }
 
+    // 注入客户端便于测试替换网络调用。
     OneDriveOAuth(
             Policies policies,
             TransferTokens transferTokens,
@@ -79,8 +85,9 @@ public class OneDriveOAuth {
         this.webClient = webClient;
     }
 
-    public Mono<OAuthUrl> authorizeUrl(String policyName) {
-        return policies.get(policyName).map(policy -> {
+    // 授权状态同时写入会话，回调时必须来自同一个浏览器会话。
+    public Mono<OAuthUrl> authorizeUrl(String policyName, ServerWebExchange exchange) {
+        return policies.get(policyName).flatMap(policy -> {
             ensureOneDrive(policy);
             var redirectUri = callbackUri();
             var state = transferTokens.signOAuthState(policyName, STATE_TTL);
@@ -91,12 +98,29 @@ public class OneDriveOAuth {
                     + "&response_mode=query"
                     + "&scope=" + encode(SCOPE)
                     + "&state=" + encode(state);
-            return new OAuthUrl(url, state, redirectUri);
+            return exchange.getSession()
+                    .doOnNext(session -> session.getAttributes().put(STATE_SESSION_ATTRIBUTE, state))
+                    .thenReturn(new OAuthUrl(url, state, redirectUri));
         });
     }
 
-    public Mono<OAuthStatus> callback(String code, String state) {
+    // 校验签名后消费会话中的状态，防止授权回调被重放或跨会话复用。
+    public Mono<OAuthStatus> callback(String code, String state, ServerWebExchange exchange) {
         var policyName = transferTokens.verifyOAuthState(state);
+        return exchange.getSession().flatMap(session -> {
+            var expectedState = (String) session.getAttributes().remove(STATE_SESSION_ATTRIBUTE);
+            if (!Objects.equals(expectedState, state)) {
+                return Mono.error(new ApiException(
+                        HttpStatus.BAD_REQUEST,
+                        "storage-onedrive-state-invalid",
+                        "OneDrive 授权状态无效或已过期。"));
+            }
+            return completeCallback(policyName, code);
+        });
+    }
+
+    // 用授权码换取刷新令牌并加密保存。
+    private Mono<OAuthStatus> completeCallback(String policyName, String code) {
         return policies.get(policyName).flatMap(policy -> {
             ensureOneDrive(policy);
             var credentials = policy.getSpec().getCredentials();
@@ -136,6 +160,7 @@ public class OneDriveOAuth {
         });
     }
 
+    // 返回策略是否已配置有效授权令牌。
     public Mono<OAuthStatus> status(String policyName) {
         return policies.get(policyName).map(policy -> {
             ensureOneDrive(policy);
@@ -148,6 +173,7 @@ public class OneDriveOAuth {
         });
     }
 
+    // 将站点地址解析为 OneDrive 驱动器标识。
     public Mono<String> resolveRoot(String policyName, String siteUrl) {
         return policies.get(policyName).flatMap(policy -> {
             ensureOneDrive(policy);
@@ -183,6 +209,7 @@ public class OneDriveOAuth {
         });
     }
 
+    // 统一处理 Graph 请求的鉴权与状态码。
     private Mono<String> graphGet(String url, String accessToken) {
         return webClient
                 .get()
@@ -198,10 +225,12 @@ public class OneDriveOAuth {
                 .bodyToMono(String.class);
     }
 
+    // 提取 Graph 响应中的资源标识。
     private static String readId(String body) {
         return JsonMapper.shared().readTree(body).path("id").asString();
     }
 
+    // 将站点地址转换为 Graph 站点资源路径。
     private static String siteGraphUrl(String siteUrl) {
         if (!StringUtils.hasText(siteUrl)) {
             throw new ApiException(
@@ -223,6 +252,7 @@ public class OneDriveOAuth {
         return GRAPH + "/sites/" + host + ":/" + StorageIo.encodePath(path);
     }
 
+    // 读取刷新令牌，缺失时按授权失败处理。
     private String refreshToken(String body) {
         var json = JsonMapper.shared().readTree(body);
         var refreshToken = json.path("refresh_token").asString();
@@ -235,6 +265,7 @@ public class OneDriveOAuth {
         return refreshToken;
     }
 
+    // 拼接对外可访问的 OAuth 回调地址。
     private String callbackUri() {
         var base = externalUrl.get().toString();
         if (base.endsWith("/")) {
@@ -243,10 +274,12 @@ public class OneDriveOAuth {
         return base + ApiGroups.API_PREFIX + "/storagepolicies/-/oauth/callback";
     }
 
+    // 按 URL 查询参数规则编码，空格使用 %20。
     private static String encode(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
     }
 
+    // 未配置租户时回退到通用租户端点。
     private static String tenant(StoragePolicy policy) {
         var settings = policy.getSpec().getSettings();
         return settings != null && StringUtils.hasText(settings.getTenantId())
@@ -254,6 +287,7 @@ public class OneDriveOAuth {
                 : "common";
     }
 
+    // 从存储桶字段读取 OneDrive 客户端标识。
     private static String clientId(StoragePolicy policy) {
         var clientId = policy.getSpec().getBucketName();
         if (!StringUtils.hasText(clientId)) {
@@ -265,6 +299,7 @@ public class OneDriveOAuth {
         return clientId;
     }
 
+    // 仅允许 OneDrive 类型策略执行 OAuth 授权。
     private static void ensureOneDrive(StoragePolicy policy) {
         if (policy.getSpec().getType() != StoragePolicyType.ONEDRIVE) {
             throw new ApiException(

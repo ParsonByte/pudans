@@ -4,9 +4,9 @@ import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STREAM_FAILED
 import static org.bytedeco.ffmpeg.global.avcodec.AV_PKT_FLAG_KEY;
 
 import cn.tolim.pudans.infra.properties.LiveProperties;
+import cn.tolim.pudans.core.storage.driver.StorageIo;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +52,7 @@ public class LiveSegmentWriter implements AutoCloseable {
 
     private long totalDurationMillis;
 
+    // 从抓取器提取流索引并从清单续接分片编号
     public LiveSegmentWriter(
             LiveRecordingWorkspace workspace,
             LiveSegmentManifest manifest,
@@ -83,6 +84,7 @@ public class LiveSegmentWriter implements AutoCloseable {
         return packet.stream_index() == videoStreamIndex && (packet.flags() & AV_PKT_FLAG_KEY) != 0;
     }
 
+    // 只写音视频包，首个关键帧到达时才打开写入器
     public void record(AVPacket packet, Instant now) {
         lastPacketAt = now;
         if (packet.stream_index() != videoStreamIndex && packet.stream_index() != audioStreamIndex) {
@@ -100,35 +102,33 @@ public class LiveSegmentWriter implements AutoCloseable {
         lastWriteAt = now;
     }
 
+    // 切段时关闭当前分片并返回其元数据
     public LiveSegment rotate(Instant now) {
         return closeCurrent(now);
     }
 
+    // 关闭当前分片，供调用方指定结束时间
     public LiveSegment close(Instant now) {
         return closeCurrent(now);
     }
 
+    // 关闭写入器时以当前时间收尾当前分片
     @Override
     public void close() {
         closeCurrent(Instant.now());
     }
 
-    public int currentIndex() {
-        return index;
-    }
-
+    // 已关闭分片数加上正在写入的分片
     public int segmentCount() {
         return closedSegments + (recorder == null ? 0 : 1);
     }
 
+    // 已关闭分片的累计字节数
     public long totalBytes() {
         return totalSize;
     }
 
-    public long totalDurationMillis() {
-        return totalDurationMillis;
-    }
-
+    // 当前分片文件大小，未打开时为零
     public long currentSize() {
         if (recorder == null) {
             return 0;
@@ -140,22 +140,17 @@ public class LiveSegmentWriter implements AutoCloseable {
         }
     }
 
+    // 最近收到媒体包的时间，用于空闲超时判断
     public Instant lastPacketAt() {
         return lastPacketAt;
     }
 
+    // 最近写出媒体包的时间，随心跳上报
     public Instant lastWriteAt() {
         return lastWriteAt;
     }
 
-    public int videoStreamIndex() {
-        return videoStreamIndex;
-    }
-
-    public int audioStreamIndex() {
-        return audioStreamIndex;
-    }
-
+    // 等到关键帧或音频包才创建分片文件
     private boolean openIfReady(AVPacket packet, Instant now) {
         if (videoStreamIndex >= 0) {
             if (packet.stream_index() != videoStreamIndex || (packet.flags() & AV_PKT_FLAG_KEY) == 0) {
@@ -168,6 +163,7 @@ public class LiveSegmentWriter implements AutoCloseable {
         return true;
     }
 
+    // 以流复制参数创建 mpegts 分片写入器
     private void open(Instant now) {
         var path = workspace.segmentPath(recordingName, index);
         try {
@@ -193,6 +189,7 @@ public class LiveSegmentWriter implements AutoCloseable {
         writtenInSegment = false;
     }
 
+    // 收尾当前分片，无有效数据时删除空文件
     private LiveSegment closeCurrent(Instant now) {
         if (recorder == null) {
             return null;
@@ -202,9 +199,9 @@ public class LiveSegmentWriter implements AutoCloseable {
         var hadPackets = writtenInSegment;
         stopQuietly(recorder);
         recorder = null;
-        var size = sizeOf(path);
+        var size = StorageIo.sizeOf(path);
         if (!hadPackets || size <= 0) {
-            deleteQuietly(path);
+            StorageIo.deleteQuietly(path);
             index++;
             return null;
         }
@@ -219,6 +216,7 @@ public class LiveSegmentWriter implements AutoCloseable {
         return segment;
     }
 
+    // 停止失败只告警，仍需释放写入器
     private static void stopQuietly(FFmpegFrameRecorder recorder) {
         try {
             recorder.stop();
@@ -229,27 +227,12 @@ public class LiveSegmentWriter implements AutoCloseable {
         }
     }
 
+    // 释放失败只告警，避免影响主流程
     private static void releaseQuietly(FFmpegFrameRecorder recorder) {
         try {
             recorder.release();
         } catch (Exception error) {
             log.warn("释放分片写入器失败：{}", error.getMessage());
-        }
-    }
-
-    private static long sizeOf(Path path) {
-        try {
-            return Files.isRegularFile(path) ? Files.size(path) : 0;
-        } catch (IOException error) {
-            return 0;
-        }
-    }
-
-    private static void deleteQuietly(Path path) {
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException error) {
-            log.warn("删除空分片失败 [{}]：{}", path, error.getMessage());
         }
     }
 }

@@ -31,6 +31,7 @@ public class PasswordRecoveryEndpoint {
 
     private final Captchas captchas;
 
+    // 通过人机校验后发送密码找回验证码。
     @PostMapping("/send-code")
     @Operation(operationId = "SendPasswordRecoveryCode", summary = "Send a password recovery code.")
     @ApiResponse(responseCode = "204", description = "No Content")
@@ -40,6 +41,7 @@ public class PasswordRecoveryEndpoint {
                 .thenReturn(ResponseEntity.noContent().build());
     }
 
+    // 通过人机校验后使用验证码重置密码。
     @PostMapping("/reset-password")
     @Operation(operationId = "ResetPasswordWithRecoveryCode", summary = "Reset a password with a recovery code.")
     @ApiResponse(responseCode = "204", description = "No Content")
@@ -50,6 +52,7 @@ public class PasswordRecoveryEndpoint {
                 .thenReturn(ResponseEntity.noContent().build());
     }
 
+    // 仅在启用找回校验时执行人机验证。
     private Mono<Void> requireRecoveryCaptcha(String challengeId, String answer) {
         return captchas.recoveryEnabled().flatMap(enabled -> {
             if (!Boolean.TRUE.equals(enabled)) {

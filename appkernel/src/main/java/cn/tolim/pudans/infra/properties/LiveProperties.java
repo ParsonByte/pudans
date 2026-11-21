@@ -1,7 +1,6 @@
 package cn.tolim.pudans.infra.properties;
 
 import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.Min;
 import java.time.Duration;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -56,8 +55,6 @@ public class LiveProperties {
 
         private Duration defaultInterval = Duration.ofSeconds(60);
 
-        private Duration minInterval = Duration.ofSeconds(30);
-
         private Duration liveInterval = Duration.ofSeconds(30);
 
         private int maxPerTick = 20;
@@ -100,8 +97,6 @@ public class LiveProperties {
 
         private double retryJitter = 0.2;
 
-        private int uploadConcurrency = 1;
-
         private int uploadRetries = 3;
 
         private Duration finalizeTimeout = Duration.ofMinutes(5);
@@ -115,8 +110,6 @@ public class LiveProperties {
 
     @Data
     public static class Merge {
-
-        private Duration interval = Duration.ofHours(1);
 
         private DataSize maxLocalBytes = DataSize.ofGigabytes(6);
 
@@ -140,22 +133,16 @@ public class LiveProperties {
 
         private Duration dedupe = Duration.ofMinutes(10);
 
-        private Duration streamInterruptThreshold = Duration.ofSeconds(60);
-
         private int rateLimitThreshold = 3;
     }
 
+    // 分片时长仅允许 10 或 30 秒，便于合并与回放。
     @AssertTrue(message = "录制分片时长只允许 10 或 30 秒")
     public boolean isSegmentSecondsValid() {
         return recorder.getSegmentSeconds() == 10 || recorder.getSegmentSeconds() == 30;
     }
 
-    @AssertTrue(message = "合并间隔只允许 0 或 60 至 21600 秒")
-    public boolean isMergeIntervalValid() {
-        var seconds = recorder.getMerge().getInterval().toSeconds();
-        return seconds == 0 || (seconds >= 60 && seconds <= 21600);
-    }
-
+    // 保留足够空闲磁盘，避免录制中断。
     @AssertTrue(message = "最小空闲磁盘必须大于等于 1GiB")
     public boolean isMinFreeDiskValid() {
         return recorder.getMinFreeDiskBytes().toBytes() >= DataSize.ofGigabytes(1).toBytes();

@@ -39,6 +39,7 @@ public class WebhookSecretCipher {
 
     private final BytesEncryptor encryptor;
 
+    // 读取密钥库密码并初始化加解密器。
     public WebhookSecretCipher(PudansProperties properties) {
         var configuredPassword = properties.getWebhook().getKeystorePassword();
         if (!StringUtils.hasText(configuredPassword)) {
@@ -49,6 +50,7 @@ public class WebhookSecretCipher {
                 properties.getWorkDir().resolve("keys"), configuredPassword.toCharArray());
     }
 
+    // 加载现有密钥库，缺失时创建新密钥。
     private static BytesEncryptor loadOrCreate(Path keysRoot, char[] password) {
         try {
             if (Files.notExists(keysRoot)) {
@@ -87,6 +89,7 @@ public class WebhookSecretCipher {
         }
     }
 
+    // 生成 AES 密钥并写入受保护的密钥库。
     private static BytesEncryptor createNew(Path keyStorePath, char[] password)
             throws GeneralSecurityException, IOException {
         var keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -99,6 +102,7 @@ public class WebhookSecretCipher {
         return encryptor(secretKey);
     }
 
+    // 用配置密码读取密钥，缺失时明确报错。
     private static BytesEncryptor encryptorWithExistingKey(
             KeyStore keyStore, char[] password, Path keyStorePath) throws GeneralSecurityException {
         var secretKey = getAesKey(keyStore, password);
@@ -110,6 +114,7 @@ public class WebhookSecretCipher {
         return encryptor(secretKey);
     }
 
+    // 尝试用给定密码打开密钥库，失败返回空值。
     private static KeyStore load(Path keyStorePath, char[] password) {
         try {
             var keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
@@ -122,6 +127,7 @@ public class WebhookSecretCipher {
         }
     }
 
+    // 从密钥库取出 AES 密钥，类型不符返回空值。
     private static SecretKey getAesKey(KeyStore keyStore, char[] password) throws GeneralSecurityException {
         var entry = keyStore.getEntry(ALIAS, new KeyStore.PasswordProtection(password));
         if (entry instanceof KeyStore.SecretKeyEntry secretKeyEntry
@@ -131,12 +137,14 @@ public class WebhookSecretCipher {
         return null;
     }
 
+    // 生成 256 位 AES 密钥。
     private static SecretKey generateKey() throws GeneralSecurityException {
         var generator = KeyGenerator.getInstance("AES");
         generator.init(256);
         return generator.generateKey();
     }
 
+    // 把密钥库写回磁盘，覆盖旧文件。
     private static void store(KeyStore keyStore, Path keyStorePath, char[] password)
             throws GeneralSecurityException, IOException {
         try (var os = Files.newOutputStream(keyStorePath, CREATE, TRUNCATE_EXISTING)) {
@@ -144,11 +152,13 @@ public class WebhookSecretCipher {
         }
     }
 
+    // 创建使用随机 IV 的 AES-GCM 加解密器。
     private static BytesEncryptor encryptor(SecretKey secretKey) {
         return new AesBytesEncryptor(
                 secretKey, KeyGenerators.secureRandom(32), AesBytesEncryptor.CipherAlgorithm.GCM);
     }
 
+    // 把密钥库权限收紧为仅所有者可读写。
     private static void restrictPermissions(Path keyStorePath) {
         try {
             Files.setPosixFilePermissions(keyStorePath, PosixFilePermissions.fromString(SECURE_PERMISSIONS));
@@ -157,6 +167,7 @@ public class WebhookSecretCipher {
         }
     }
 
+    // 检查密钥库权限，过宽时给出告警。
     private static void warnIfInsecurePermissions(Path keyStorePath) {
         try {
             var permissions = Files.getPosixFilePermissions(keyStorePath);
@@ -175,14 +186,17 @@ public class WebhookSecretCipher {
         }
     }
 
+    // 判断密钥值是否已带加密前缀。
     public boolean isEncrypted(String value) {
         return value != null && value.startsWith(PREFIX);
     }
 
+    // 加密明文密钥并附加可识别前缀。
     public String encrypt(String rawSecret) {
         return PREFIX + new String(Hex.encode(encryptor.encrypt(rawSecret.getBytes(StandardCharsets.UTF_8))));
     }
 
+    // 解密已加密密钥，明文原样返回。
     public String decrypt(String storedSecret) {
         if (!isEncrypted(storedSecret)) {
             return storedSecret;

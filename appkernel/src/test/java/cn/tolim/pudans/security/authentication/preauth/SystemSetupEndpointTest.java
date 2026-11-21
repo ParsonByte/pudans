@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.validation.Validator;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -41,6 +42,9 @@ class SystemSetupEndpointTest {
 
     @Mock
     ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    PasswordEncoder passwordEncoder;
 
     @Test
     void setupPasswordUsesTheUnifiedMinimumLength() throws Exception {
@@ -74,7 +78,8 @@ class SystemSetupEndpointTest {
                 superAdminInitializer,
                 client,
                 validator,
-                eventPublisher);
+                eventPublisher,
+                passwordEncoder);
         var request = new SystemSetupEndpoint.SetupRequest();
         request.setUsername("admin");
         request.setPassword("password");
@@ -88,5 +93,36 @@ class SystemSetupEndpointTest {
         verify(superAdminInitializer).initialize(any());
         verify(client, org.mockito.Mockito.atLeastOnce()).update(any(ConfigMap.class));
         verify(client, org.mockito.Mockito.atLeastOnce()).create(any(ConfigMap.class));
+    }
+
+    // 初始化中断后必须使用首次提交的密码继续，不能被他人接管。
+    @Test
+    void rejectsResumeWithDifferentSetupPassword() {
+        var stateConfig = new ConfigMap();
+        stateConfig.setMetadata(new Metadata());
+        stateConfig.getMetadata().setName("system-states");
+        stateConfig.setData(new HashMap<>(java.util.Map.of(
+                "states",
+                "{\"isSetup\":false,\"setupUsername\":\"admin\",\"setupPasswordHash\":\"stored-hash\"}")));
+        when(client.fetch(ConfigMap.class, "system-states")).thenReturn(Mono.just(stateConfig));
+        when(passwordEncoder.matches("other-password", "stored-hash")).thenReturn(false);
+
+        var endpoint = new SystemSetupEndpoint(
+                initializationStateGetter,
+                parameterSettingFetcher,
+                superAdminInitializer,
+                client,
+                validator,
+                eventPublisher,
+                passwordEncoder);
+        var request = new SystemSetupEndpoint.SetupRequest();
+        request.setUsername("admin");
+        request.setPassword("other-password");
+
+        StepVerifier.create(endpoint.doInitialization(request, "admin"))
+                .expectError(org.springframework.security.authentication.BadCredentialsException.class)
+                .verify();
+
+        verify(superAdminInitializer, org.mockito.Mockito.never()).initialize(any());
     }
 }

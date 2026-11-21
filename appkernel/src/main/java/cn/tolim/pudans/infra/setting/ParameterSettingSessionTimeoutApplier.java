@@ -16,11 +16,13 @@ public class ParameterSettingSessionTimeoutApplier {
 
     private final ReactiveRedisIndexedSessionRepository sessionRepository;
 
+    // 扩展初始化后应用访问令牌有效期。
     @EventListener
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
         apply();
     }
 
+    // 仅当服务器组变化时重新应用会话超时。
     @EventListener
     void onParameterSettingChanged(ParameterSettingChangedEvent event) {
         if (java.util.Objects.equals(
@@ -30,12 +32,14 @@ public class ParameterSettingSessionTimeoutApplier {
         apply();
     }
 
+    // 读取服务器设置并应用访问令牌有效期。
     void apply() {
         parameterGroups.getServer().subscribe(
                 server -> apply(server.getAccessTokenTtlSeconds()),
                 error -> log.warn("无法读取访问令牌 TTL", error));
     }
 
+    // 设置会话默认过期时间，并保证最小为一分钟。
     void apply(Integer accessTokenTtlSeconds) {
         if (accessTokenTtlSeconds == null) {
             return;

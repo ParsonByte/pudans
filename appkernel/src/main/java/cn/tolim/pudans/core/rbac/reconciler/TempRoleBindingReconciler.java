@@ -36,6 +36,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
 
     private final DomainEventPublisher domainEventPublisher;
 
+    // 声明负责临时角色绑定，并设置最迟重排时间。
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new TempRoleBinding())
@@ -43,6 +44,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
                 .build();
     }
 
+    // 读取绑定并协调，对象不存在时停止重试。
     @Override
     public Mono<Result> reconcileReactive(Request request) {
         return client.fetch(TempRoleBinding.class, request.name())
@@ -50,6 +52,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
                 .switchIfEmpty(Mono.just(Result.doNotRetry()));
     }
 
+    // 按状态撤销、到期终止或继续授予并重排。
     private Mono<Result> reconcileBinding(TempRoleBinding binding) {
         var spec = binding.getSpec();
         if (isDeleted(binding) || TempRoleBinding.STATUS_REVOKED.equals(spec.getStatus())) {
@@ -74,6 +77,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
         return Mono.just(Result.doNotRetry());
     }
 
+    // 撤销授权、标记终态并写入审计。
     private Mono<Result> terminate(TempRoleBinding binding, String status, String operation) {
         return tempGrants
                 .revoke(binding)
@@ -88,6 +92,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
                 .thenReturn(Result.doNotRetry());
     }
 
+    // 发布临时角色过期事件，供审计与通知使用。
     private void publishExpired(TempRoleBinding binding) {
         var spec = binding.getSpec();
         var payload = new LinkedHashMap<String, Object>();
@@ -99,6 +104,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
         domainEventPublisher.publish("temprole.expired", payload, null);
     }
 
+    // 构造系统终态审计记录，关联原授权流程。
     private String recordTerminalAudit(TempRoleBinding binding, String operation, String uid) {
         var record = auditLog.newRecord(AuditIdGenerator.next(), uid, operation);
         record.setTraceFlowId(AuditIdGenerator.next());
@@ -115,6 +121,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
         return record.getMetadata().getName();
     }
 
+    // 解析用户内部标识，失败时使用占位值。
     private Mono<String> resolveUid(String username) {
         return client.fetch(User.class, username)
                 .map(user -> user.getSpec().getUid())
@@ -125,6 +132,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
                 });
     }
 
+    // 提取审计所需的授权关键字段。
     private static Map<String, Object> snapshot(TempRoleBinding binding) {
         var spec = binding.getSpec();
         var snapshot = new LinkedHashMap<String, Object>();

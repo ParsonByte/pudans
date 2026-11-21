@@ -37,7 +37,6 @@ public class AuditLog {
     public static final String TRACE_FLOW_ID_ATTRIBUTE = AuditLog.class.getName() + ".TRACE_FLOW_ID";
     public static final String TRACE_FLOW_ID_HEADER = "X-Trace-Flow-Id";
     public static final String PARENT_AUDIT_ID_ATTRIBUTE = AuditLog.class.getName() + ".PARENT_AUDIT_ID";
-    public static final String PARENT_AUDIT_ID_HEADER = "X-Parent-Audit-Id";
     public static final String AUDIT_ID_ATTRIBUTE = AuditLog.class.getName() + ".AUDIT_ID";
     public static final String STEP_INDEX_ATTRIBUTE = AuditLog.class.getName() + ".STEP_INDEX";
     public static final String AUDIT_TRAIL_ATTRIBUTE = AuditLog.class.getName() + ".AUDIT_TRAIL";
@@ -90,6 +89,7 @@ public class AuditLog {
 
     private Disposable writer;
 
+    // 启动审计写入管道，并重放本地 WAL。
     @PostConstruct
     public void start() {
         var latch = new CountDownLatch(1);
@@ -110,6 +110,7 @@ public class AuditLog {
         auditWal.replay(this::record);
     }
 
+    // 停机前排空写入队列，避免丢失审计记录。
     @PreDestroy
     public void stop() {
         sink.tryEmitComplete();
@@ -128,6 +129,7 @@ public class AuditLog {
         }
     }
 
+    // 创建带审计编号与初始步骤的空白记录。
     public AuditRecord newRecord(String traceId, String uid, String operation) {
         var record = new AuditRecord();
         var metadata = new Metadata();
@@ -142,6 +144,7 @@ public class AuditLog {
         return record;
     }
 
+    // 把记录投递到写入队列，失败时改落本地 WAL。
     public void record(AuditRecord record) {
         if (record == null) {
             return;
@@ -160,6 +163,7 @@ public class AuditLog {
         }
     }
 
+    // 在弹性线程池追加 WAL，避免阻塞调用线程。
     private void writeToWal(AuditRecord record) {
         try {
             Schedulers.boundedElastic().schedule(() -> auditWal.append(record));
@@ -168,6 +172,7 @@ public class AuditLog {
         }
     }
 
+    // 补齐追踪流编号并截断超长字段以适配存储。
     private void normalize(AuditRecord record) {
         if (record.getTraceFlowId() == null || record.getTraceFlowId().isBlank()) {
             record.setTraceFlowId(AuditIdGenerator.next());
@@ -187,6 +192,7 @@ public class AuditLog {
         record.setResult(cut(record.getResult(), RESULT_LENGTH));
     }
 
+    // 超长值按上限截断，空值保持原样。
     private static String cut(String value, int maxLength) {
         if (value == null || value.length() <= maxLength) {
             return value;
@@ -194,10 +200,12 @@ public class AuditLog {
         return value.substring(0, maxLength);
     }
 
+    // 安全读取记录名称，供日志定位使用。
     private static String metadataName(AuditRecord record) {
         return record.getMetadata() == null ? null : record.getMetadata().getName();
     }
 
+    // 从请求上下文组装并提交一条完整审计记录。
     public void record(
             ServerWebExchange exchange,
             String operation,
@@ -233,6 +241,7 @@ public class AuditLog {
 
     
 
+    // 异步记录子步骤，不向调用方返回记录内容。
     public Mono<Void> recordChild(
             ServerWebExchange exchange,
             String uid,
@@ -248,6 +257,7 @@ public class AuditLog {
                 .then();
     }
 
+    // 依据请求中的审计轨迹构建子步骤记录。
     public Mono<AuditRecord> prepareChildRecord(
             ServerWebExchange exchange,
             String uid,
@@ -288,66 +298,81 @@ public class AuditLog {
         });
     }
 
+    // 按追踪流编号查询其全部审计记录。
     public Flux<AuditRecord> findByTraceFlowId(String traceFlowId) {
         return auditStore.findByTraceFlowId(traceFlowId);
     }
 
+    // 查询用户在指定时间区间内的审计记录。
     public Flux<AuditRecord> findByUidBetween(String uid, Instant from, Instant to) {
         return auditStore.findByUidBetween(uid, from, to);
     }
 
+    // 按审计编号查询单条记录。
     public Mono<AuditRecord> findById(String auditId) {
         return auditStore.findById(auditId);
     }
 
+    // 获取或生成当前请求的追踪编号。
     public static String traceId(ServerWebExchange exchange) {
         return (String) exchange.getAttributes()
                 .computeIfAbsent(TRACE_ID_ATTRIBUTE, key -> AuditIdGenerator.next());
     }
 
+    // 按查询条件流式返回审计记录。
     public Flux<AuditRecord> query(AuditStore.AuditQuery query) {
         return auditStore.query(query);
     }
 
+    // 按查询条件分页返回活动审计记录。
     public Mono<AuditStore.AuditPageResult> page(AuditStore.AuditQuery query, int page, int size) {
         return auditStore.page(query, page, size);
     }
 
+    // 按查询条件分页返回已归档审计记录。
     public Mono<AuditStore.AuditPageResult> archivePage(
             AuditStore.AuditQuery query, int page, int size) {
         return auditStore.archivePage(query, page, size);
     }
 
+    // 返回活动与归档记录的统计数量。
     public Mono<AuditStore.ArchiveStats> archiveStats() {
         return auditStore.archiveStats();
     }
 
+    // 把截止时间前的记录移入归档并返回数量。
     public Mono<Long> archiveBefore(Instant cutoff) {
         return auditStore.archiveBefore(cutoff);
     }
 
+    // 按追踪流聚合分页返回审计记录组。
     public Mono<AuditStore.TraceFlowPage> traceFlows(AuditStore.AuditQuery query, int page, int size) {
         return auditStore.traceFlows(query, page, size);
     }
 
+    // 统计指定时间之后的审计记录总数。
     public Mono<Long> countSince(Instant from) {
         return auditStore.countSince(from);
     }
 
+    // 按天统计指定操作与结果的记录数。
     public Mono<Map<java.time.LocalDate, Long>> countPerDay(
             Instant since, String operation, String result) {
         return countPerDay(since, null, operation, result);
     }
 
+    // 按用户、操作与结果按天统计记录数。
     public Mono<Map<java.time.LocalDate, Long>> countPerDay(
             Instant since, String uid, String operation, String result) {
         return auditStore.countPerDay(since, uid, operation, result);
     }
 
+    // 返回最近的若干条审计记录。
     public Flux<AuditRecord> findRecent(int limit) {
         return auditStore.findRecent(limit);
     }
 
+    // 从请求属性或用户名解析操作者编号。
     private Mono<String> resolveActorUid(ServerWebExchange exchange) {
         var uid = (String) exchange.getAttributes().get(UID_ATTRIBUTE);
         if (StringUtils.hasText(uid)) {
@@ -362,6 +387,7 @@ public class AuditLog {
                 .defaultIfEmpty("unknown");
     }
 
+    // 提取请求背后的真实客户端地址。
     private static String clientIp(ServerWebExchange exchange) {
         return IpAddressUtils.getClientIp(exchange.getRequest());
     }

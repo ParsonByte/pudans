@@ -34,6 +34,7 @@ public class LiveSourceValidator {
 
     private final LiveStoragePolicyResolver storagePolicyResolver;
 
+    // 校验非空后交给链接解析器提取房间信息
     public ParsedLiveRoom parseRoomUrl(String roomUrl) {
         if (!StringUtils.hasText(roomUrl)) {
             throw LiveErrorCode.LIVE_ROOM_LINK_INVALID.exception();
@@ -46,6 +47,7 @@ public class LiveSourceValidator {
         return room.platform().name().toLowerCase(Locale.ROOT) + "-" + room.roomId();
     }
 
+    // 只允许默认值或上下限，其他值拒绝
     public static int segmentSeconds(Integer value) {
         if (value == null) {
             return DEFAULT_SEGMENT_SECONDS;
@@ -56,6 +58,7 @@ public class LiveSourceValidator {
         return value;
     }
 
+    // 允许零表示按需合并，否则限制在区间内
     public static int mergeIntervalSeconds(Integer value) {
         if (value == null) {
             return DEFAULT_MERGE_INTERVAL_SECONDS;
@@ -66,6 +69,7 @@ public class LiveSourceValidator {
         return value;
     }
 
+    // 同名资源已存在时拒绝创建
     public Mono<Void> ensureAbsent(String name) {
         return client.fetch(LiveSource.class, name)
                 .flatMap(existing -> Mono.<Void>error(LiveErrorCode.LIVE_SOURCE_DUPLICATE.exception()))

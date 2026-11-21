@@ -16,6 +16,7 @@ public class LabelSelector {
 
     private List<LabelCondition> conditions;
 
+    // 创建标签选择器构建器。
     public static LabelSelectorBuilder<?> builder() {
         return new LabelSelectorBuilder<>();
     }
@@ -32,6 +33,7 @@ public class LabelSelector {
                 .toString();
     }
 
+    // 合并两组标签条件，返回新选择器。
     public LabelSelector and(LabelSelector other) {
         var labelSelector = new LabelSelector();
         var newConditions = new ArrayList<LabelCondition>();
@@ -47,48 +49,57 @@ public class LabelSelector {
         public LabelSelectorBuilder() {}
 
 
+        // 复制已有标签条件。
         public LabelSelectorBuilder(List<LabelCondition> conditions) {
             if (conditions != null) {
                 this.conditions.addAll(conditions);
             }
         }
 
+        // 以具体构建器类型返回自身。
         @SuppressWarnings("unchecked")
         private T self() {
             return (T) this;
         }
 
+        // 追加标签相等条件。
         public T eq(String key, String value) {
             conditions.add(Queries.labelEqual(key, value));
             return self();
         }
 
+        // 追加标签不等条件。
         public T notEq(String key, String value) {
             conditions.add(Queries.labelEqual(key, value).not());
             return self();
         }
 
+        // 追加标签值集合条件。
         public T in(String key, String... values) {
             conditions.add(Queries.labelIn(key, Arrays.asList(values)));
             return self();
         }
 
+        // 追加标签值排除条件。
         public T notIn(String key, String... values) {
             conditions.add(Queries.labelIn(key, Arrays.asList(values)).not());
             return self();
         }
 
+        // 追加标签存在条件。
         public T exists(String key) {
             conditions.add(Queries.labelExists(key));
             return self();
         }
 
+        // 追加标签不存在条件。
         public T notExists(String key) {
             conditions.add(Queries.labelExists(key).not());
             return self();
         }
 
 
+        // 生成包含当前条件的标签选择器。
         public LabelSelector build() {
             var labelSelector = new LabelSelector();
             labelSelector.setConditions(conditions);

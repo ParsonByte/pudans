@@ -27,6 +27,7 @@ public class ConfiguredCaptchas implements Captchas {
 
     private final AtomicReference<String> lastWarnedProvider = new AtomicReference<>();
 
+    // 建立提供方索引并要求图片提供方存在
     public ConfiguredCaptchas(
             ParameterGroups parameterGroups, List<CaptchaProvider> providers) {
         this.parameterGroups = parameterGroups;
@@ -38,6 +39,7 @@ public class ConfiguredCaptchas implements Captchas {
         }
     }
 
+    // 读取配置后交给对应提供方生成挑战
     @Override
     public Mono<CaptchaChallenge> newChallenge() {
         return parameterGroups
@@ -46,6 +48,7 @@ public class ConfiguredCaptchas implements Captchas {
                 .flatMap(config -> resolve(config.getCaptchaProvider()).challenge(config));
     }
 
+    // 读取配置后交给对应提供方校验答案
     @Override
     public Mono<Boolean> verify(String challengeId, String answer) {
         return parameterGroups
@@ -54,6 +57,7 @@ public class ConfiguredCaptchas implements Captchas {
                 .flatMap(config -> resolve(config.getCaptchaProvider()).verify(challengeId, answer));
     }
 
+    // 未配置时默认关闭登录验证码
     @Override
     public Mono<Boolean> loginEnabled() {
         return parameterGroups
@@ -62,6 +66,7 @@ public class ConfiguredCaptchas implements Captchas {
                 .defaultIfEmpty(false);
     }
 
+    // 未配置时默认关闭找回验证码
     @Override
     public Mono<Boolean> recoveryEnabled() {
         return parameterGroups
@@ -70,6 +75,7 @@ public class ConfiguredCaptchas implements Captchas {
                 .defaultIfEmpty(false);
     }
 
+    // 扩展初始化后提前校验提供方配置
     @EventListener
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
         parameterGroups.getCaptcha().subscribe(
@@ -77,6 +83,7 @@ public class ConfiguredCaptchas implements Captchas {
                 error -> log.warn("无法校验验证码提供方配置", error));
     }
 
+    // 未知提供方回退图片实现并限制告警频率
     CaptchaProvider resolve(String type) {
         if (!StringUtils.hasText(type)) {
             return fallback;

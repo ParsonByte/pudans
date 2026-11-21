@@ -12,11 +12,13 @@ public class ExtensionWatcher implements Watcher {
     private volatile boolean disposed = false;
     private Runnable disposeHook;
 
+    // 绑定请求队列与事件匹配器。
     public ExtensionWatcher(RequestQueue<Request> queue, WatcherExtensionMatchers matchers) {
         this.queue = queue;
         this.matchers = matchers;
     }
 
+    // 销毁后忽略，否则立即入队。
     @Override
     public void onAdd(Request request) {
         if (isDisposed()) {
@@ -25,6 +27,7 @@ public class ExtensionWatcher implements Watcher {
         queue.addImmediately(request);
     }
 
+    // 匹配新增条件后入队协调请求。
     @Override
     public void onAdd(Extension extension) {
         if (isDisposed() || !matchers.onAddMatcher().match(extension)) {
@@ -34,6 +37,7 @@ public class ExtensionWatcher implements Watcher {
         queue.addImmediately(new Request(extension.getMetadata().getName()));
     }
 
+    // 匹配更新条件后入队协调请求。
     @Override
     public void onUpdate(Extension oldExtension, Extension newExtension) {
         if (isDisposed() || !matchers.onUpdateMatcher().match(newExtension)) {
@@ -43,6 +47,7 @@ public class ExtensionWatcher implements Watcher {
         queue.addImmediately(new Request(newExtension.getMetadata().getName()));
     }
 
+    // 匹配删除条件后入队协调请求。
     @Override
     public void onDelete(Extension extension) {
         if (isDisposed() || !matchers.onDeleteMatcher().match(extension)) {
@@ -52,11 +57,13 @@ public class ExtensionWatcher implements Watcher {
         queue.addImmediately(new Request(extension.getMetadata().getName()));
     }
 
+    // 保存销毁回调，在 dispose 时执行。
     @Override
     public void registerDisposeHook(Runnable dispose) {
         this.disposeHook = dispose;
     }
 
+    // 标记销毁并执行回调。
     @Override
     public void dispose() {
         disposed = true;
@@ -65,6 +72,7 @@ public class ExtensionWatcher implements Watcher {
         }
     }
 
+    // 返回是否已销毁。
     @Override
     public boolean isDisposed() {
         return this.disposed;

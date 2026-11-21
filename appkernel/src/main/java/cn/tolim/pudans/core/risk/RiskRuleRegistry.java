@@ -22,6 +22,7 @@ public class RiskRuleRegistry {
 
     private volatile Map<String, RiskRule.Spec> rules = defaults();
 
+    // 提供内置风险规则，作为扩展配置缺失时的兜底。
     public static Map<String, RiskRule.Spec> defaults() {
         return Map.ofEntries(
                 Map.entry(RiskScene.REQUEST_FLOOD, rule(RiskScene.REQUEST_FLOOD, "Per-IP request flood", 60, 300, 60)),
@@ -38,6 +39,7 @@ public class RiskRuleRegistry {
                         rule(RiskScene.SUDO_CONFIRM, "Per-user sudo confirmation", 300, 5, 300)));
     }
 
+    // 按阈值决定规则的封禁或告警动作。
     private static RiskRule.Spec rule(String scene, String description, long windowSeconds, long threshold,
             long blockSeconds) {
         var spec = new RiskRule.Spec();
@@ -50,14 +52,17 @@ public class RiskRuleRegistry {
         return spec;
     }
 
+    // 按场景读取当前生效的风险规则。
     public RiskRule.Spec rule(String scene) {
         return rules.get(scene);
     }
 
+    // 返回当前生效的规则数量。
     public int ruleCount() {
         return rules.size();
     }
 
+    // 返回已启用规则对应的场景集合。
     public java.util.Set<String> enabledScenes() {
         return rules.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && entry.getValue().isEnabled())
@@ -65,6 +70,7 @@ public class RiskRuleRegistry {
                 .collect(java.util.stream.Collectors.toSet());
     }
 
+    // 从扩展服务重载规则，失败时保留旧配置。
     public void refresh() {
         try {
             var loaded = client.listAll(

@@ -1,5 +1,7 @@
 package cn.tolim.pudans.core.storage.endpoint;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -63,7 +65,7 @@ class StoragePolicyEndpointTest {
 
     @Test
     void returnsTheOneDriveAuthorizeUrl() {
-        when(oneDriveOAuth.authorizeUrl("od")).thenReturn(Mono.just(
+        when(oneDriveOAuth.authorizeUrl(eq("od"), any())).thenReturn(Mono.just(
                 new OneDriveOAuth.OAuthUrl(
                         "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
                         "state-token",

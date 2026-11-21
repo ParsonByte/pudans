@@ -11,6 +11,7 @@ public class ExtensionConfiguration {
 
     @Bean
     @ConditionalOnProperty(name = "pudans.extension.controller.disabled", havingValue = "false", matchIfMissing = true)
+    // 按配置决定是否启用扩展控制器管理器。
     DefaultControllerManager controllerManager(ExtensionClient client) {
         return new DefaultControllerManager(client);
     }

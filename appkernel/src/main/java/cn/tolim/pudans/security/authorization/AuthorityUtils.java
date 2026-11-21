@@ -23,6 +23,7 @@ public enum AuthorityUtils {
     public static final String TWO_FACTOR_AUTHENTICATED_ROLE_NAME = "two-factor-authenticated";
 
 
+    // 剥离角色前缀，得到纯角色名集合
     public static Set<String> authoritiesToRoles(Collection<? extends GrantedAuthority> authorities) {
         return authorities.stream()
                 .map(GrantedAuthority::getAuthority)
@@ -34,6 +35,7 @@ public enum AuthorityUtils {
                 .collect(Collectors.toSet());
     }
 
+    // 剥离范围前缀，得到个人令牌范围
     public static Set<String> authoritiesToScopes(Collection<? extends GrantedAuthority> authorities) {
         return authorities.stream()
                 .map(GrantedAuthority::getAuthority)
@@ -42,6 +44,7 @@ public enum AuthorityUtils {
                 .collect(Collectors.toSet());
     }
 
+    // 超级角色不受普通规则约束
     public static boolean containsSuperRole(Collection<String> roles) {
         return roles.contains(SUPER_ROLE_NAME);
     }

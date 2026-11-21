@@ -37,7 +37,7 @@ class UserEndpointLocalBatchCreateTest {
     @BeforeEach
     void setUp() {
         var endpoint = new UserEndpoint(
-                null, null, null, null, null, auditLog, null, null, null, null, localAccounts, null);
+                null, null, null, null, null, null, auditLog, null, null, null, null, localAccounts, null);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 

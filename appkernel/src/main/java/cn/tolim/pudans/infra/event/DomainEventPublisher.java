@@ -48,6 +48,7 @@ public class DomainEventPublisher implements InitializingBean, DisposableBean {
 
     private Disposable subscription;
 
+    // 启动后台订阅，按顺序串行分发领域事件。
     @Override
     public void afterPropertiesSet() {
         var latch = new CountDownLatch(1);
@@ -62,6 +63,7 @@ public class DomainEventPublisher implements InitializingBean, DisposableBean {
                 .subscribe();
     }
 
+    // 完成队列后等待排空，超时则放弃剩余事件。
     @Override
     public void destroy() {
         sink.tryEmitComplete();
@@ -81,6 +83,7 @@ public class DomainEventPublisher implements InitializingBean, DisposableBean {
         }
     }
 
+    // 缓冲队列满时丢弃事件并记录丢弃计数。
     public void publish(String type, Map<String, Object> payload, String traceFlowId) {
         var event = new DomainEvent(
                 this,
@@ -99,6 +102,7 @@ public class DomainEventPublisher implements InitializingBean, DisposableBean {
         }
     }
 
+    // 事件同时投递给回调与本地应用监听器。
     private void dispatch(DomainEvent event) {
         webhookEventPublisher.publish(
                 event.getEventId(),

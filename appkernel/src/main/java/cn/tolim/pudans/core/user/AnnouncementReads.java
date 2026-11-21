@@ -31,10 +31,12 @@ public class AnnouncementReads {
 
     private Clock clock = Clock.systemUTC();
 
+    // 替换时钟便于测试公告确认时间
     void setClock(Clock clock) {
         this.clock = clock;
     }
 
+    // 读取用户已确认的公告版本状态
     public Mono<AnnouncementState> get(String username) {
         return parameterGroups.getSite().flatMap(site -> {
             var version = site.getAnnouncementVersion();
@@ -45,6 +47,7 @@ public class AnnouncementReads {
         });
     }
 
+    // 记录用户已确认当前公告版本
     public Mono<AnnouncementState> dismiss(String username) {
         return parameterGroups.getSite().flatMap(site -> {
             var version = site.getAnnouncementVersion();
@@ -60,11 +63,13 @@ public class AnnouncementReads {
         });
     }
 
+    // 将确认状态写回已有配置项
     private Mono<ConfigMap> saveState(ConfigMap configMap, String version, Instant dismissedAt) {
         putState(configMap, version, dismissedAt);
         return client.update(configMap);
     }
 
+    // 序列化确认状态并放入配置数据
     private static void putState(ConfigMap configMap, String version, Instant dismissedAt) {
         var state = new StoredState();
         state.setVersion(version);
@@ -75,12 +80,14 @@ public class AnnouncementReads {
         configMap.getData().put(STATE_KEY, JsonUtils.objectToJson(state));
     }
 
+    // 删除用户的公告阅读记录
     public Mono<Void> deleteForUser(String username) {
         return client.fetch(ConfigMap.class, configMapName(username))
                 .flatMap(client::delete)
                 .then();
     }
 
+    // 仅当记录版本与当前版本一致才算已确认
     private static AnnouncementState stateFor(String version, StoredState state) {
         var dismissed = StringUtils.hasText(version)
                 && Objects.equals(version, state.getVersion())
@@ -88,6 +95,7 @@ public class AnnouncementReads {
         return new AnnouncementState(version, dismissed ? state.getDismissedAt() : null, dismissed);
     }
 
+    // 解析已保存状态，损坏时回退为空
     private StoredState readState(ConfigMap configMap) {
         if (configMap.getData() == null || !configMap.getData().containsKey(STATE_KEY)) {
             return new StoredState();
@@ -100,6 +108,7 @@ public class AnnouncementReads {
         }
     }
 
+    // 为用户创建空的公告状态配置项
     private static ConfigMap newConfigMap(String username) {
         var configMap = new ConfigMap();
         var metadata = new Metadata();
@@ -109,6 +118,7 @@ public class AnnouncementReads {
         return configMap;
     }
 
+    // 生成按用户隔离的配置项名称
     private static String configMapName(String username) {
         return CONFIGMAP_PREFIX + username;
     }

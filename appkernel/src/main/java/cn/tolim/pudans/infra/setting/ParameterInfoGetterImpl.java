@@ -26,10 +26,12 @@ public class ParameterInfoGetterImpl implements ParameterInfoGetter {
     private final ServerProperties serverProperties;
     private final WebFluxProperties webFluxProperties;
 
+    // 优先采用站点配置，缺失时回退到基础配置。
     private static String firstText(String first, String second) {
         return StringUtils.isNotBlank(first) ? first : second;
     }
 
+    // 汇总站点、基础、搜索优化与服务器设置。
     @Override
     public Mono<SystemInfo> get() {
         var systemInfo = new SystemInfo()
@@ -70,6 +72,7 @@ public class ParameterInfoGetterImpl implements ParameterInfoGetter {
                 .thenReturn(systemInfo);
     }
 
+    // 未配置外部地址时按本地端口生成回退地址。
     private URL getExternalUrl() {
         var url = externalUrlSupplier.getRaw();
         if (url != null) {

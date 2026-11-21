@@ -62,11 +62,13 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
 
     private final LiveMetrics metrics;
 
+    // 绑定直播源扩展类型到协调器
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new LiveSource()).build();
     }
 
+    // 已删除的源走清理，其余同步 finalizer 与启用状态
     @Override
     public Mono<Result> reconcileReactive(Reconciler.Request request) {
         return client.fetch(LiveSource.class, request.name())
@@ -76,6 +78,7 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
                 .switchIfEmpty(Mono.just(Result.doNotRetry()));
     }
 
+    // 补齐 finalizer 后同步启用状态
     private Mono<Result> reconcileActive(LiveSource source) {
         var name = source.getMetadata().getName();
         var added = addFinalizers(source.getMetadata(), Set.of(FINALIZER_NAME));
@@ -88,6 +91,7 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
                 });
     }
 
+    // 启用时加入注册表，停用时移除并停止录制
     private Mono<Void> syncEnabled(LiveSource source) {
         var name = source.getMetadata().getName();
         if (source.getSpec().isEnabled()) {
@@ -107,6 +111,7 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
                         .then());
     }
 
+    // 停用或删除前停止该源关联的录制
     private Mono<Void> stopCurrentRecording(LiveSource source) {
         var recording = source.getStatus().getCurrentRecording();
         if (!StringUtils.hasText(recording)) {
@@ -121,6 +126,7 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
                 .then();
     }
 
+    // 删除中的源先停止活动录制，再移除 finalizer
     private Mono<Result> cleanup(LiveSource source) {
         var name = source.getMetadata().getName();
         registry.remove(name);
@@ -161,6 +167,7 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
                 });
     }
 
+    // 并发停止该源下所有活动录制
     private Mono<Void> stopAll(List<LiveRecording> recordings) {
         return Flux.fromIterable(recordings)
                 .flatMap(recording -> {
@@ -175,6 +182,7 @@ public class LiveSourceReconciler implements ReactiveReconciler<Reconciler.Reque
                 .then();
     }
 
+    // 仅在 finalizer 移除成功后才写回资源
     private Mono<Void> removeFinalizer(LiveSource source) {
         var removed = removeFinalizers(source.getMetadata(), Set.of(FINALIZER_NAME));
         if (!removed) {

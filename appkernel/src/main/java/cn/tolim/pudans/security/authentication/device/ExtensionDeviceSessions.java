@@ -55,11 +55,13 @@ class ExtensionDeviceSessions implements DeviceSessions {
     private final PersistentRememberMeTokenRepository rememberMeTokenRepository;
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
+    // 读取客户端标识请求头，缺失时返回空值
     @Nullable
     private static String getUserAgent(ServerWebExchange exchange) {
         return exchange.getRequest().getHeaders().getFirst(HttpHeaders.USER_AGENT);
     }
 
+    // 已有设备则续用，否则创建并下发标识与登录事件
     @Override
     public Mono<Void> loginSuccess(ServerWebExchange exchange, Authentication authentication) {
         return updateExistingDevice(exchange, authentication)
@@ -73,6 +75,7 @@ class ExtensionDeviceSessions implements DeviceSessions {
                 .then();
     }
 
+    // 会话标识变化后同步设备，并删除旧会话
     @Override
     public Mono<Void> changeSessionId(ServerWebExchange exchange) {
         var deviceIdCookie = deviceCookieResolver.resolveCookie(exchange);
@@ -106,6 +109,7 @@ class ExtensionDeviceSessions implements DeviceSessions {
                 });
     }
 
+    // 主体不符直接撤销；冲突时退避重试乐观锁更新
     private Mono<Device> updateWithRetry(
             String deviceId, String username, Function<Device, Mono<Device>> updateFunction) {
         return Mono.defer(() -> client.fetch(Device.class, deviceId).flatMap(device -> {
@@ -123,6 +127,7 @@ class ExtensionDeviceSessions implements DeviceSessions {
                         .filter(OptimisticLockingFailureException.class::isInstance));
     }
 
+    // 校验客户端一致，刷新会话与最近登录时间
     private Mono<Device> updateExistingDevice(ServerWebExchange exchange, Authentication authentication) {
         var deviceIdCookie = deviceCookieResolver.resolveCookie(exchange);
         if (deviceIdCookie == null) {
@@ -165,6 +170,7 @@ class ExtensionDeviceSessions implements DeviceSessions {
         });
     }
 
+    // 仅当设备属于该主体时才撤销，避免越权
     @Override
     public Mono<Void> revoke(String principalName, String deviceId) {
         return client.fetch(Device.class, deviceId)
@@ -173,6 +179,7 @@ class ExtensionDeviceSessions implements DeviceSessions {
                 .then();
     }
 
+    // 撤销该主体名下全部设备与其会话记录
     @Override
     public Mono<Void> revoke(String username) {
         var listOptions = ListOptions.builder()
@@ -183,6 +190,7 @@ class ExtensionDeviceSessions implements DeviceSessions {
                 .then();
     }
 
+    // 按请求标识返回设备，已删除的记录视为不存在
     @Override
     public Mono<Device> resolveCurrentDevice(ServerWebExchange exchange) {
         var deviceIdCookie = deviceCookieResolver.resolveCookie(exchange);
@@ -193,6 +201,7 @@ class ExtensionDeviceSessions implements DeviceSessions {
         return client.fetch(Device.class, deviceId).filter(Predicate.not(ExtensionUtil::isDeleted));
     }
 
+    // 依次清理记住我令牌、会话与设备记录，避免残留
     private Mono<Void> doRevoke(Device device) {
         return removeRememberMeToken(device)
                 .then(sessionRepository.deleteById(device.getSpec().getSessionId()))
@@ -200,6 +209,7 @@ class ExtensionDeviceSessions implements DeviceSessions {
                 .then();
     }
 
+    // 设备绑定记住我序列时删除令牌，防止自动登录
     private Mono<Void> removeRememberMeToken(Device device) {
         var seriesId = device.getSpec().getRememberMeSeriesId();
         if (StringUtils.isBlank(seriesId)) {
@@ -212,6 +222,7 @@ class ExtensionDeviceSessions implements DeviceSessions {
         return rememberMeTokenRepository.removeToken(seriesId);
     }
 
+    // 根据请求构建设备元数据，并绑定当前会话
     Mono<Device> createDevice(ServerWebExchange exchange, Authentication authentication) {
         Assert.notNull(authentication, "认证信息不能为空。");
         return Mono.fromSupplier(() -> {
@@ -238,12 +249,14 @@ class ExtensionDeviceSessions implements DeviceSessions {
                         .thenReturn(device));
     }
 
+    // 生成无连字符标识，便于直接作为资源名称
     String generateDeviceId() {
         return UUID.randomUUID().toString().replace("-", "").toLowerCase();
     }
 
     record DeviceInfo(String browser, String os) {
 
+        // 合并浏览器与系统版本，生成可读的设备描述
         public static DeviceInfo parse(String agentString) {
             var client = UserAgentUtils.parse(agentString);
             UserAgent ua = client.userAgent;

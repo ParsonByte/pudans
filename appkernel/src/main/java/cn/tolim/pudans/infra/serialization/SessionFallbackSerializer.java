@@ -17,16 +17,19 @@ public class SessionFallbackSerializer implements RedisSerializer<Object> {
 
     private final RedisSerializer<Object> legacyJson;
 
+    // 保存主序列化器与旧 JSON 回退实现。
     public SessionFallbackSerializer(RedisSerializer<Object> primary, RedisSerializer<Object> legacyJson) {
         this.primary = primary;
         this.legacyJson = legacyJson;
     }
 
+    // 会话写入只使用主序列化器。
     @Override
     public byte[] serialize(Object value) {
         return primary.serialize(value);
     }
 
+    // 拒绝 JDK 序列化并回退旧 JSON 格式。
     @Override
     public Object deserialize(byte[] bytes) {
         if (bytes == null) {
@@ -50,6 +53,7 @@ public class SessionFallbackSerializer implements RedisSerializer<Object> {
         }
     }
 
+    // 通过魔数识别不安全的 JDK 序列化数据。
     public static boolean isJdkSerialized(byte[] bytes) {
         return bytes.length >= 2 && (bytes[0] & 0xFF) == JDK_MAGIC_FIRST && (bytes[1] & 0xFF) == JDK_MAGIC_SECOND;
     }

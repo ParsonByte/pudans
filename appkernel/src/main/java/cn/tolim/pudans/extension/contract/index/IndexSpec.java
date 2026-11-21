@@ -20,15 +20,18 @@ public class IndexSpec<E extends Extension, K extends Comparable<K>> implements 
 
     private boolean unique;
 
+    // 委托索引函数提取键集合。
     public Set<K> getValues(E extension) {
         return indexFunc.getValues(extension);
     }
 
+    // 旧式索引声明默认允许空值。
     @Override
     public boolean isNullable() {
         return true;
     }
 
+    // 从索引函数推导键类型。
     @Override
     public Class<K> getKeyType() {
         return indexFunc.getKeyType();
@@ -51,6 +54,7 @@ public class IndexSpec<E extends Extension, K extends Comparable<K>> implements 
         return Objects.hashCode(name);
     }
 
+    // 按单值或多值属性生成规范化索引描述。
     public ValueIndexSpec<E, K> normalize() {
         if (this.indexFunc.singleValue()) {
             return IndexSpecs.<E, K>single(name, getKeyType())

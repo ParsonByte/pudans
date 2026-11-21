@@ -11,6 +11,7 @@ public record GlobalInfoSummary(
         String version,
         long uptimeSeconds) {
 
+    // 创建空摘要，便于聚合时占位。
     public static GlobalInfoSummary empty() {
         return new GlobalInfoSummary(null, null, null, null, null, 0L);
     }

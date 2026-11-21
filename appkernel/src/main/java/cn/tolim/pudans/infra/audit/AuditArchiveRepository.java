@@ -8,5 +8,6 @@ import reactor.core.publisher.Mono;
 @Repository
 public interface AuditArchiveRepository extends ReactiveCrudRepository<AuditArchiveEntity, String> {
 
+    // 判断归档表中是否已存在相同指纹的记录。
     Mono<Boolean> existsByFingerprint(String fingerprint);
 }

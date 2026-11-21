@@ -32,6 +32,10 @@ public class SystemState {
     private String setupUsername;
 
 
+    private String setupPasswordHash;
+
+
+    // 从配置资源解析系统状态，缺失时返回空状态。
     public static SystemState deserialize(ConfigMap configMap) {
         Map<String, String> data = configMap.getData();
         if (data == null) {
@@ -41,6 +45,7 @@ public class SystemState {
     }
 
 
+    // 以合并补丁方式写回状态，保留未涉及字段。
     public static void update(SystemState systemState, ConfigMap configMap) {
         Map<String, String> data = configMap.getData();
         if (data == null) {
@@ -62,6 +67,7 @@ public class SystemState {
     }
 
 
+    // 读取或创建状态资源，在重试中应用修改。
     public static Mono<Void> upsetSystemState(ReactiveExtensionClient client, Consumer<SystemState> consumer) {
         return Mono.defer(() -> client.fetch(ConfigMap.class, SYSTEM_STATES_CONFIGMAP)
                         .switchIfEmpty(Mono.defer(() -> {
@@ -84,6 +90,7 @@ public class SystemState {
                 .then();
     }
 
+    // 返回空对象字面量作为默认值。
     private static String emptyJsonObject() {
         return "{}";
     }

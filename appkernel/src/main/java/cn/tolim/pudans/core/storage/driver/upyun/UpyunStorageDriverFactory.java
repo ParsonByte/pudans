@@ -22,6 +22,7 @@ public class UpyunStorageDriverFactory implements StorageDriverFactory {
 
     private final PudansProperties properties;
 
+    // 声明又拍云类型及其支持的能力。
     @Override
     public List<StoragePolicyTypeDescriptor> descriptors() {
         return List.of(new StoragePolicyTypeDescriptor(
@@ -32,6 +33,7 @@ public class UpyunStorageDriverFactory implements StorageDriverFactory {
                 Set.of(StorageCapability.DIRECT_UPLOAD, StorageCapability.RANGE_READ)));
     }
 
+    // 按策略端点创建客户端并准备临时目录。
     @Override
     public StorageDriver create(ResolvedStoragePolicy resolved) {
         var policy = resolved.policy();

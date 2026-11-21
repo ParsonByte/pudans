@@ -19,15 +19,15 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.core.rbac.Roles;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
-import cn.tolim.pudans.core.rbac.group.Groups;
 
 @ExtendWith(MockitoExtension.class)
 class UiPermissionsTest {
 
     @Mock
-    Groups groups;
+    UserRoles userRoles;
 
     @Mock
     Roles roles;
@@ -39,7 +39,7 @@ class UiPermissionsTest {
 
     @BeforeEach
     void setUp() {
-        service = new UiPermissions(groups, roles, permissionDirectory);
+        service = new UiPermissions(userRoles, roles, permissionDirectory);
         lenient()
                 .when(permissionDirectory.expand(anyList()))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -56,7 +56,7 @@ class UiPermissionsTest {
 
     @Test
     void superRoleReturnsTheWildcardOnly() {
-        when(groups.getRoleNamesByUsername("root"))
+        when(userRoles.list("root"))
                 .thenReturn(Flux.just(AuthorityUtils.SUPER_ROLE_NAME));
 
         StepVerifier.create(service.uiPermissionsOf("root"))
@@ -66,7 +66,7 @@ class UiPermissionsTest {
 
     @Test
     void permissionsAreAggregatedAndDeduplicatedAcrossRoles() {
-        when(groups.getRoleNamesByUsername("alice"))
+        when(userRoles.list("alice"))
                 .thenReturn(Flux.just("role-a", "role-b"));
         when(roles.listPermissions(anySet()))
                 .thenReturn(Flux.just(
@@ -81,7 +81,7 @@ class UiPermissionsTest {
 
     @Test
     void wildcardAnnotationCollapsesEveryTag() {
-        when(groups.getRoleNamesByUsername("ops"))
+        when(userRoles.list("ops"))
                 .thenReturn(Flux.just("role-ops"));
         when(roles.listPermissions(anySet()))
                 .thenReturn(Flux.just(role("role-ops", "[\"audit:view\", \"*\"]")));
@@ -93,7 +93,7 @@ class UiPermissionsTest {
 
     @Test
     void rolesWithoutTheAnnotationContributeNothing() {
-        when(groups.getRoleNamesByUsername("bob")).thenReturn(Flux.just("role-b"));
+        when(userRoles.list("bob")).thenReturn(Flux.just("role-b"));
         when(roles.listPermissions(anySet())).thenReturn(Flux.just(role("role-b", null)));
 
         StepVerifier.create(service.uiPermissionsOf("bob"))
@@ -103,7 +103,7 @@ class UiPermissionsTest {
 
     @Test
     void malformedAnnotationsAreSkipped() {
-        when(groups.getRoleNamesByUsername("carol")).thenReturn(Flux.just("role-c"));
+        when(userRoles.list("carol")).thenReturn(Flux.just("role-c"));
         when(roles.listPermissions(anySet()))
                 .thenReturn(Flux.just(role("role-c", "not-json"), role("role-c-2", "[\"settings:manage\"]")));
 
@@ -119,7 +119,7 @@ class UiPermissionsTest {
         metadata.setAnnotations(Map.of(Role.DISALLOW_ACCESS_CONSOLE_ANNO, "true"));
         var limitedRole = new Role();
         limitedRole.setMetadata(metadata);
-        when(groups.getRoleNamesByUsername("limited")).thenReturn(Flux.just("limited-role"));
+        when(userRoles.list("limited")).thenReturn(Flux.just("limited-role"));
         when(roles.list(Set.of("limited-role"))).thenReturn(Flux.just(limitedRole));
 
         StepVerifier.create(service.isConsoleAccessDisallowed("limited"))
@@ -129,7 +129,7 @@ class UiPermissionsTest {
 
     @Test
     void expandedPermissionsAreAppliedToTheAggregatedTags() {
-        when(groups.getRoleNamesByUsername("dave")).thenReturn(Flux.just("role-d"));
+        when(userRoles.list("dave")).thenReturn(Flux.just("role-d"));
         when(roles.listPermissions(anySet()))
                 .thenReturn(Flux.just(role("role-d", "[\"users:manage\"]")));
         when(permissionDirectory.expand(List.of("users:manage")))

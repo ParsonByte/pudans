@@ -39,6 +39,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
 
     private final ExternalLogins externalLogins;
 
+    // 注册免密登录的断言选项与校验路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "PasskeyV1alpha1";
@@ -60,6 +61,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 登录开关关闭时拒绝，否则生成断言选项
     private Mono<ServerResponse> assertionOptions(ServerRequest request) {
         return passkeyLoginEnabled()
                 .flatMap(enabled -> Boolean.FALSE.equals(enabled)
@@ -68,6 +70,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                         : doAssertionOptions(request));
     }
 
+    // 默认允许免密登录，除非显式关闭
     private Mono<Boolean> passkeyLoginEnabled() {
         return parameterGroups
                 .getSession()
@@ -75,6 +78,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                 .defaultIfEmpty(true);
     }
 
+    // 生成挑战并保存会话后返回断言选项
     private Mono<ServerResponse> doAssertionOptions(ServerRequest request) {
         return request.bodyToMono(PasskeyAssertionOptionsRequest.class)
                 .defaultIfEmpty(new PasskeyAssertionOptionsRequest(null))
@@ -101,6 +105,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 登录开关关闭时拒绝，否则校验断言
     private Mono<ServerResponse> verifyAssertion(ServerRequest request) {
         return passkeyLoginEnabled()
                 .flatMap(enabled -> Boolean.FALSE.equals(enabled)
@@ -109,6 +114,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                         : doVerifyAssertion(request));
     }
 
+    // 消费会话挑战并完成登录流程
     private Mono<ServerResponse> doVerifyAssertion(ServerRequest request) {
         return request.exchange()
                 .getSession()
@@ -134,6 +140,7 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                                 .bodyValue(Map.of("error", error.getReason())));
     }
 
+    // 返回当前免密登录接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

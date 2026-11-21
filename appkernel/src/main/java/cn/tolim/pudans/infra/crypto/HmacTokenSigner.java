@@ -14,10 +14,12 @@ public final class HmacTokenSigner {
 
     private final SecretKeySpec key;
 
+    // 加载持久化密钥用于 HMAC 签名。
     public HmacTokenSigner(Path keyFile) {
         this.key = new SecretKeySpec(KeyFileStore.loadOrCreate(keyFile), ALGORITHM);
     }
 
+    // 生成 URL 安全的无填充签名。
     public String sign(String payload) {
         try {
             var mac = Mac.getInstance(ALGORITHM);
@@ -29,6 +31,7 @@ public final class HmacTokenSigner {
         }
     }
 
+    // 使用常量时间比较，避免签名侧信道泄露。
     public boolean verify(String payload, String signature) {
         if (payload == null || signature == null) {
             return false;

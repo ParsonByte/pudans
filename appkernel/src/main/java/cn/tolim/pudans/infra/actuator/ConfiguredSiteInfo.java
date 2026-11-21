@@ -23,10 +23,12 @@ public class ConfiguredSiteInfo implements SiteInfo {
 
     private final ExternalUrlSupplier externalUrl;
 
+    // 优先采用站点级配置，缺失时回退到基础配置。
     private static String firstText(String first, String second) {
         return StringUtils.hasText(first) ? first : second;
     }
 
+    // 汇总站点、基础与服务器设置，输出对外公开的面板信息。
     @Override
     public Mono<GlobalInfo> getGlobalInfo() {
         final var info = new GlobalInfo();
@@ -40,6 +42,7 @@ public class ConfiguredSiteInfo implements SiteInfo {
         return Mono.when(publishers).then(Mono.just(info));
     }
 
+    // 参数设置器可能尚未就绪，缺失时保留默认值。
     private Mono<Void> handleSettings(GlobalInfo info) {
         return Optional.ofNullable(parameterSettingFetcher.getIfUnique())
                 .map(fetcher -> Mono.zip(
@@ -57,6 +60,7 @@ public class ConfiguredSiteInfo implements SiteInfo {
                 .orElseGet(Mono::empty);
     }
 
+    // 站点字段按站点配置优先、基础配置兜底的顺序取值。
     private void applySite(GlobalInfo info, ParameterSetting.Site site, ParameterSetting.Basic basic) {
         info.setFavicon(firstText(site.getFavicon(), basic.getFavicon()));
         info.setSiteTitle(firstText(site.getSiteName(), basic.getTitle()));

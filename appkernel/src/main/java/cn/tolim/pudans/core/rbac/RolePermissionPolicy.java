@@ -39,12 +39,14 @@ public class RolePermissionPolicy {
 
     private final PermissionDirectory permissionDirectory;
 
+    // 校验新建角色不超出调用方现有权限范围。
     public Mono<Void> checkCreate(Role requested) {
         return actorContext()
                 .flatMap(actor -> validateAggregateLabels(actor, requested)
                         .then(checkRequestedPermissions(actor, requested, null)));
     }
 
+    // 更新时合并角色原有权限，避免误判为越权。
     public Mono<Void> checkUpdate(Role requested) {
         return actorContext().flatMap(actor -> {
             var name = requested.getMetadata() == null ? null : requested.getMetadata().getName();
@@ -53,6 +55,7 @@ public class RolePermissionPolicy {
         });
     }
 
+    // 授予前确认目标角色权限不超过调用方权限。
     public Mono<Void> checkGrant(Collection<String> roleNames) {
         var names = roleNames == null
                 ? Set.<String>of()
@@ -70,6 +73,7 @@ public class RolePermissionPolicy {
         });
     }
 
+    // 对比请求角色的有效权限与调用方可授予权限。
     private Mono<Void> checkRequestedPermissions(ActorContext actor, Role requested, String existingRoleName) {
         if (actor.superRole()) {
             return Mono.empty();
@@ -80,6 +84,7 @@ public class RolePermissionPolicy {
                 .flatMap(permissions -> validate(permissions.getT1(), permissions.getT2()));
     }
 
+    // 聚合标签会让持有者继承规则，仅超管可设置。
     private Mono<Void> validateAggregateLabels(ActorContext actor, Role requested) {
         var targets = aggregateTargets(requested);
         if (targets.isEmpty()) {
@@ -96,6 +101,7 @@ public class RolePermissionPolicy {
                 .then();
     }
 
+    // 解析角色聚合标签，得到被聚合的目标角色名。
     private static Set<String> aggregateTargets(Role role) {
         if (role == null || role.getMetadata() == null) {
             return Set.of();
@@ -109,6 +115,7 @@ public class RolePermissionPolicy {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
+    // 读取当前认证角色，未认证时拒绝。
     private Mono<ActorContext> actorContext() {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
@@ -120,6 +127,7 @@ public class RolePermissionPolicy {
                 .switchIfEmpty(Mono.error(denied()));
     }
 
+    // 计算调用方权限，更新场景合并角色原有权限。
     private Mono<EffectivePermissions> grantedPermissions(Set<String> actorRoles, String existingRoleName) {
         var actorPermissions = effectivePermissions(actorRoles);
         if (StringUtils.isBlank(existingRoleName)) {
@@ -130,6 +138,7 @@ public class RolePermissionPolicy {
                 .map(permissions -> merge(permissions.getT1(), permissions.getT2()));
     }
 
+    // 聚合指定角色的规则与界面权限并展开。
     private Mono<EffectivePermissions> effectivePermissions(Set<String> roleNames) {
         if (roleNames.isEmpty()) {
             return Mono.just(EffectivePermissions.empty());
@@ -148,6 +157,7 @@ public class RolePermissionPolicy {
                 .map(permissions -> new EffectivePermissions(permissions.getT2(), permissions.getT1()));
     }
 
+    // 汇总请求角色自身、依赖与聚合目标的权限。
     private Mono<EffectivePermissions> requestedPermissions(Role requested) {
         var name = requested.getMetadata() == null ? null : requested.getMetadata().getName();
         return aggregatedRoleNames(name).flatMap(aggregatedNames -> {
@@ -179,6 +189,7 @@ public class RolePermissionPolicy {
         });
     }
 
+    // 按聚合标签反查聚合到该角色的目标角色。
     private Mono<Set<String>> aggregatedRoleNames(String roleName) {
         if (StringUtils.isBlank(roleName)) {
             return Mono.just(Set.of());
@@ -194,6 +205,7 @@ public class RolePermissionPolicy {
                 .collect(Collectors.toSet());
     }
 
+    // 解析角色依赖注解，格式错误时按无依赖处理。
     private static Set<String> dependencies(Role role) {
         var raw = MetadataUtil.nullSafeAnnotations(role).get(Role.ROLE_DEPENDENCIES_ANNO);
         if (StringUtils.isBlank(raw)) {
@@ -212,6 +224,7 @@ public class RolePermissionPolicy {
         }
     }
 
+    // 合并两套有效权限，作为更新时的权限上限。
     private static EffectivePermissions merge(EffectivePermissions left, EffectivePermissions right) {
         var uiPermissions = new LinkedHashSet<>(left.uiPermissions());
         uiPermissions.addAll(right.uiPermissions());
@@ -220,6 +233,7 @@ public class RolePermissionPolicy {
         return new EffectivePermissions(uiPermissions, rules);
     }
 
+    // 界面权限与策略规则都必须被授权集合覆盖。
     private static Mono<Void> validate(EffectivePermissions requested, EffectivePermissions allowed) {
         var allUiPermissionsGranted =
                 allowed.uiPermissions().contains(UiPermissions.ALL_UI_PERMISSIONS);
@@ -232,14 +246,17 @@ public class RolePermissionPolicy {
         return Mono.empty();
     }
 
+    // 把可空规则列表转为不可空列表。
     private static List<PolicyRule> nullSafe(List<PolicyRule> rules) {
         return rules == null ? List.of() : rules;
     }
 
+    // 构造权限越界的统一拒绝异常。
     private static AccessDeniedException denied() {
         return denied("不能授予超出当前账号权限范围的角色权限。");
     }
 
+    // 构造带具体原因的拒绝异常。
     private static AccessDeniedException denied(String message) {
         return new AccessDeniedException(message);
     }
@@ -248,6 +265,7 @@ public class RolePermissionPolicy {
 
     private record EffectivePermissions(Set<String> uiPermissions, List<PolicyRule> rules) {
 
+        // 空权限集合，用于无角色或占位场景。
         static EffectivePermissions empty() {
             return new EffectivePermissions(Set.of(), List.of());
         }

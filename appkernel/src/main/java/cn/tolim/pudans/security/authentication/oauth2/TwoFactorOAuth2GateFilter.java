@@ -19,11 +19,13 @@ final class TwoFactorOAuth2GateFilter implements WebFilter {
 
     private final ServerResponse.Context context;
 
+    // 持有安全上下文与会话响应以拦截未完成的验证。
     TwoFactorOAuth2GateFilter(ServerSecurityContextRepository securityContextRepository, ServerResponse.Context context) {
         this.securityContextRepository = securityContextRepository;
         this.context = context;
     }
 
+    // 未完成双因素的前提登录不得再发起第三方授权。
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         if (!exchange.getRequest().getPath().value().startsWith(AUTHORIZATION_PATH)) {

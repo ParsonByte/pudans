@@ -53,6 +53,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
 
     private Clock clock = Clock.systemUTC();
 
+    // 读取轮换冷却时间，并保留持久化与设备校验依赖。
     public PersistentTokenBasedRememberMeServices(
             CookieSignatureKeyResolver cookieSignatureKeyResolver,
             ReactiveUserDetailsService userDetailsService,
@@ -69,6 +70,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
         setParameterName(SecurityConstant.REMEMBER_ME_PARAMETER_NAME);
     }
 
+    // 校验序列与令牌，检测盗用并轮换后签发新 Cookie。
     @Override
     protected Mono<UserDetails> processAutoLoginCookie(String[] cookieTokens, ServerWebExchange exchange) {
         if (cookieTokens.length != 2) {
@@ -167,6 +169,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                 .flatMap(t -> getReactiveUserDetailsService().findByUsername(t.getSpec().getUsername()));
     }
 
+    // 设备序列需与令牌序列一致，防止跨设备复用。
     private Mono<Void> validateDevice(ServerWebExchange exchange, RememberMeToken token) {
         return deviceSessions
                 .resolveCurrentDevice(exchange)
@@ -193,6 +196,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                 .then();
     }
 
+    // 仅冷却期内的上一代令牌可继续使用，其余视为盗用。
     private boolean isTokenStolen(RememberMeToken token, String presentedToken) {
 
 
@@ -206,6 +210,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
         return true;
     }
 
+    // 最近使用时间超过有效期即视为过期。
     private boolean isTokenExpired(RememberMeToken token) {
         var lastUsed = Optional.ofNullable(token.getSpec().getLastUsed())
                 .orElseGet(() -> token.getMetadata().getCreationTimestamp());
@@ -214,6 +219,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
     }
 
 
+    // 冷却期内跳过轮换，避免并发请求互相失效。
     private boolean isRecentlyRotated(RememberMeToken token) {
         var lastUsed = Optional.ofNullable(token.getSpec().getLastUsed())
                 .orElseGet(() -> token.getMetadata().getCreationTimestamp());
@@ -221,6 +227,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
     }
 
 
+    // 登录成功后新建令牌并写入 Cookie，失败不阻断登录。
     @Override
     protected Mono<Void> onLoginSuccess(ServerWebExchange exchange, Authentication successfulAuthentication) {
         var username = successfulAuthentication.getName();
@@ -250,6 +257,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
                 .then();
     }
 
+    // 退出时删除该用户全部令牌，避免旧 Cookie 复用。
     @Override
     protected Mono<Void> onLogout(WebFilterExchange exchange, Authentication authentication) {
         if (authentication != null) {
@@ -258,18 +266,21 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
         return Mono.empty();
     }
 
+    // 写入 Cookie 并把序列放入请求属性供后续流程使用。
     private void addCookie(RememberMeToken token, ServerWebExchange exchange) {
         var spec = token.getSpec();
         setCookie(new String[] {spec.getSeries(), spec.getTokenValue()}, exchange);
         exchange.getAttributes().put(REMEMBER_ME_SERIES_REQUEST_NAME, spec.getSeries());
     }
 
+    // 生成随机序列，作为令牌记录的唯一索引。
     protected String generateSeriesData() {
         byte[] newSeries = new byte[this.seriesLength];
         this.random.nextBytes(newSeries);
         return new String(Base64.getEncoder().encode(newSeries));
     }
 
+    // 生成随机令牌值，作为 Cookie 的校验凭据。
     protected String generateTokenData() {
         byte[] newToken = new byte[this.tokenLength];
         this.random.nextBytes(newToken);

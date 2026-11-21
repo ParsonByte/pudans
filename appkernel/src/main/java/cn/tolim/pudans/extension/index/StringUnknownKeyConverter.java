@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 class StringUnknownKeyConverter implements Converter<String, UnknownKey> {
 
+    // 把字符串包装为未知键类型。
     @Override
     public UnknownKey convert(String source) {
         return new UnknownKey(source);

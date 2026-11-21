@@ -39,6 +39,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
 
     private final AuthenticationConnectionTester connectionTester;
 
+    // 注册参数读写与连通性测试等管理接口
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         final var tag = "ParameterSettingV1alpha1";
@@ -114,6 +115,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 统一构造分组路径参数的文档描述
     private static org.springdoc.core.fn.builders.parameter.Builder groupParameter(String description) {
         return parameterBuilder()
                 .in(ParameterIn.PATH)
@@ -122,6 +124,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                 .description(description);
     }
 
+    // 使用请求体配置试连，不持久化设置
     private Mono<ServerResponse> testAuthenticationConnection(ServerRequest request) {
         return request
                 .bodyToMono(AuthenticationConnectionTester.ConnectionTestRequest.class)
@@ -130,6 +133,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 校验收件地址后发送测试邮件
     private Mono<ServerResponse> sendTestMail(ServerRequest request) {
         return request.bodyToMono(TestMailRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
@@ -141,11 +145,13 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 读取分组参数并按要求脱敏敏感字段
     private Mono<ServerResponse> getGroup(ServerRequest request) {
         var group = request.pathVariable(GROUP_PARAMETER);
         return parameterGroups.getGroup(group).flatMap(json -> ServerResponse.ok().bodyValue(json));
     }
 
+    // 更新分组参数，敏感字段可保留原值
     private Mono<ServerResponse> updateGroup(ServerRequest request) {
         var group = request.pathVariable(GROUP_PARAMETER);
         return request.bodyToMono(ObjectNode.class)
@@ -155,11 +161,13 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                 .flatMap(result -> noContent(result.restartRequired()));
     }
 
+    // 兼容旧路径读取系统配置
     private Mono<ServerResponse> getLegacyGroup(ServerRequest request) {
         var group = request.pathVariable(GROUP_PARAMETER);
         return parameterGroups.getLegacyGroup(group).flatMap(json -> ServerResponse.ok().bodyValue(json));
     }
 
+    // 兼容旧路径更新系统配置
     private Mono<ServerResponse> updateLegacyGroup(ServerRequest request) {
         var group = request.pathVariable(GROUP_PARAMETER);
         return request.bodyToMono(ObjectNode.class)
@@ -169,6 +177,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
                 .flatMap(result -> noContent(result.restartRequired()));
     }
 
+    // 需要重启时通过响应头提示客户端
     private static Mono<ServerResponse> noContent(boolean restartRequired) {
         var response = ServerResponse.noContent();
         if (restartRequired) {
@@ -179,6 +188,7 @@ public class ParameterSettingEndpoint implements CustomEndpoint {
 
     public record TestMailRequest(String to) {}
 
+    // 端点挂在核心 API 组下
     @Override
     public GroupVersion groupVersion() {
         return new GroupVersion(ApiGroups.API, ApiGroups.VERSION);

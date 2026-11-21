@@ -32,6 +32,7 @@ public class LocalAccounts {
 
     private final ReactiveTransactionManager transactionManager;
 
+    // 事务内创建本地用户并分配用户组
     public Mono<User> create(
             String username,
             String displayName,
@@ -69,6 +70,7 @@ public class LocalAccounts {
                 .doOnNext(user -> domainEventPublisher.publish("user.created", UserEventPayloads.created(user), null));
     }
 
+    // 优先使用显式组，否则取配置默认组
     private Mono<String> resolveGroup(String userGroup) {
         if (StringUtils.hasText(userGroup)) {
             return Mono.just(userGroup);

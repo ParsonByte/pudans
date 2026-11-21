@@ -28,6 +28,7 @@ public class ControllerBuilder {
 
     private int workerCount = 1;
 
+    // 校验必需依赖，默认以协调器类名命名。
     public ControllerBuilder(Reconciler<Request> reconciler, ExtensionClient client) {
         Assert.notNull(reconciler, "协调器不能为 null");
         Assert.notNull(client, "扩展客户端不能为 null");
@@ -36,56 +37,67 @@ public class ControllerBuilder {
         this.client = client;
     }
 
+    // 设置请求重试的最小延迟。
     public ControllerBuilder minDelay(Duration minDelay) {
         this.minDelay = minDelay;
         return this;
     }
 
+    // 设置请求重试的最大延迟。
     public ControllerBuilder maxDelay(Duration maxDelay) {
         this.maxDelay = maxDelay;
         return this;
     }
 
+    // 替换时钟来源，便于测试时间推进。
     public ControllerBuilder nowSupplier(Supplier<Instant> nowSupplier) {
         this.nowSupplier = nowSupplier;
         return this;
     }
 
+    // 设置控制器监听的扩展实例。
     public ControllerBuilder extension(Extension extension) {
         this.extension = extension;
         return this;
     }
 
+    // 设置新增事件的匹配条件。
     public ControllerBuilder onAddMatcher(ExtensionMatcher onAddMatcher) {
         this.onAddMatcher = onAddMatcher;
         return this;
     }
 
+    // 设置删除事件的匹配条件。
     public ControllerBuilder onDeleteMatcher(ExtensionMatcher onDeleteMatcher) {
         this.onDeleteMatcher = onDeleteMatcher;
         return this;
     }
 
+    // 设置更新事件的匹配条件。
     public ControllerBuilder onUpdateMatcher(ExtensionMatcher extensionMatcher) {
         this.onUpdateMatcher = extensionMatcher;
         return this;
     }
 
+    // 控制启动时是否执行全量同步。
     public ControllerBuilder syncAllOnStart(boolean syncAllAtStart) {
         this.syncAllOnStart = syncAllAtStart;
         return this;
     }
 
+    // 设置全量同步使用的选择条件。
     public ControllerBuilder syncAllListOptions(ListOptions syncAllListOptions) {
         this.syncAllListOptions = syncAllListOptions;
         return this;
     }
 
+    // 设置并发处理请求的工作线程数。
     public ControllerBuilder workerCount(int workerCount) {
         this.workerCount = workerCount;
         return this;
     }
 
+    // 组装队列、监听器与控制器实例。
     public Controller build() {
         if (nowSupplier == null) {
             nowSupplier = Instant::now;
@@ -112,6 +124,7 @@ public class ControllerBuilder {
         return new DefaultController<>(name, reconciler, queue, synchronizer, minDelay, maxDelay, workerCount);
     }
 
+    // 未指定全量条件时使用空条件。
     ListOptions determineSyncAllListOptions() {
         if (syncAllListOptions != null) {
             return syncAllListOptions;

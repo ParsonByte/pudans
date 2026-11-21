@@ -25,6 +25,7 @@ public class LoginFlowHandler {
 
     private final UserLoginOrLogoutProcessing userLoginOrLogoutProcessing;
 
+    // 登录成功后依次完成记住我、设备会话、登录记录并清理参数。
     public Mono<Void> onLoginSuccess(ServerWebExchange exchange, Authentication successfulAuthentication) {
         return rememberMeServices
                 .loginSuccess(exchange, successfulAuthentication)
@@ -34,6 +35,7 @@ public class LoginFlowHandler {
                 .then(parameterRequestCache.removeParameter(exchange, "email"));
     }
 
+    // 登录失败时暂存用户名与邮箱，供页面回显并处理记住我失败。
     public Mono<Void> onLoginFailure(ServerWebExchange exchange, AuthenticationException exception) {
         return parameterRequestCache
                 .saveParameter(exchange, USERNAME_PARAMETER_NAME)

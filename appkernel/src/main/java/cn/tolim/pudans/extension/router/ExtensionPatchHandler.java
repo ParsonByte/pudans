@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.github.fge.jsonpatch.JsonPatchException;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -19,7 +18,6 @@ import cn.tolim.pudans.extension.contract.Scheme;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.extension.router.ExtensionRouterFunctionFactory.PatchHandler;
 
-@Slf4j
 public class ExtensionPatchHandler implements PatchHandler {
 
     private static final MediaType JSON_PATCH_MEDIA_TYPE = MediaType.valueOf("application/json-patch+json");
@@ -30,6 +28,7 @@ public class ExtensionPatchHandler implements PatchHandler {
 
     private final BuiltinEntityPolicy builtinEntityPolicy;
 
+    // 保存方案、客户端与内建实体策略。
     public ExtensionPatchHandler(
             Scheme scheme, ReactiveExtensionClient client, BuiltinEntityPolicy builtinEntityPolicy) {
         this.scheme = scheme;
@@ -37,6 +36,7 @@ public class ExtensionPatchHandler implements PatchHandler {
         this.builtinEntityPolicy = builtinEntityPolicy;
     }
 
+    // 校验媒体类型、权限并应用 JSON Patch。
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
         var name = request.pathVariable("name");
@@ -52,10 +52,12 @@ public class ExtensionPatchHandler implements PatchHandler {
 
         return request.bodyToMono(JsonPatch.class)
                 .switchIfEmpty(Mono.error(() -> new ServerWebInputException("请求体不能为空。")))
-                .flatMap(jsonPatch -> client.getJsonExtension(scheme.groupVersionKind(), name)
+                .flatMap(jsonPatch -> builtinEntityPolicy
+                        .checkPatch(scheme.groupVersionKind())
+                        .then(Mono.defer(() -> client.getJsonExtension(scheme.groupVersionKind(), name)))
                         .flatMap(jsonExtension -> {
                             try {
-                                
+
                                 var appliedJsonNode = jsonPatch.apply(jsonExtension.getInternal());
                                 if (!(appliedJsonNode instanceof ObjectNode objectNode)) {
                                     throw new ServerWebInputException("打补丁后的扩展必须是一个对象。");
@@ -64,15 +66,18 @@ public class ExtensionPatchHandler implements PatchHandler {
                                 ExtensionIdentity.requireUnchanged(scheme, name, patchedExtension);
                                 return builtinEntityPolicy
                                         .checkUpdate(scheme.groupVersionKind(), name, patchedExtension)
-                                        .then(Mono.defer(() -> client.update(patchedExtension)));
+                                        .then(Mono.defer(() -> client.update(patchedExtension)))
+                                        .then(client.get(scheme.type(), name));
                             } catch (JsonPatchException e) {
                                 return Mono.error(new ServerWebInputException(
                                         "无法应用 JSON Patch。", null, e));
                             }
                         }))
+                // 返回强类型对象，让响应序列化器应用敏感字段脱敏规则。
                 .flatMap(updated -> ServerResponse.ok().bodyValue(updated));
     }
 
+    // 返回单个资源的路径模板。
     @Override
     public String pathPattern() {
         return buildExtensionPathPattern(scheme) + "/{name}";

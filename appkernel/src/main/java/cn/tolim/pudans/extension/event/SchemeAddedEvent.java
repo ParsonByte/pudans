@@ -10,6 +10,7 @@ public class SchemeAddedEvent extends ApplicationEvent {
     @Getter
     private final Scheme scheme;
 
+    // 携带新增方案发布应用事件。
     public SchemeAddedEvent(Object source, Scheme scheme) {
         super(source);
         this.scheme = scheme;

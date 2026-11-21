@@ -30,6 +30,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
 
     private final SuperAdminResolver superAdminResolver;
 
+    // 校验超管绑定的规范性，必要时修复或删除。
     @Override
     public Result reconcile(Request request) {
         var binding = client.fetch(UserGroupBinding.class, request.name()).orElse(null);
@@ -58,6 +59,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
         return Result.doNotRetry();
     }
 
+    // 超管绑定只能引用唯一规范超管，否则移除。
     private void reconcileSuperAdminBinding(UserGroupBinding binding) {
         var owner = superAdminResolver.ownerOf(binding);
         if (owner == null || client.fetch(User.class, owner).isEmpty()) {
@@ -77,6 +79,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
         restore(binding, owner);
     }
 
+    // 把被篡改的超管绑定原地恢复为规范状态。
     private void restore(UserGroupBinding binding, String owner) {
         var changed = false;
         if (binding.getMetadata().getDeletionTimestamp() != null) {
@@ -99,6 +102,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
         client.update(binding);
     }
 
+    // 判断绑定是否只包含指定的用户主体。
     private boolean hasSingleSubject(UserGroupBinding binding, String owner) {
         var subjects = binding.getSubjects();
         return !CollectionUtils.isEmpty(subjects)
@@ -107,6 +111,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
                 && owner.equals(subjects.get(0).getName());
     }
 
+    // 判断绑定是否指向超级管理员用户组。
     private boolean isSuperAdminsBinding(UserGroupBinding binding) {
         var roleRef = binding.getRoleRef();
         return roleRef != null
@@ -114,6 +119,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
                 && BuiltinEntities.SUPER_ADMINS_GROUP.equals(roleRef.getName());
     }
 
+    // 判断绑定主体中是否包含规范超级管理员。
     private boolean hasSuperAdminSubject(UserGroupBinding binding) {
         if (CollectionUtils.isEmpty(binding.getSubjects())) {
             return false;
@@ -123,6 +129,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
                 .anyMatch(subject -> superAdminResolver.hasCanonicalBindingBlocking(subject.getName()));
     }
 
+    // 标记删除并移除系统终结器，使绑定可被回收。
     private void deleteBinding(UserGroupBinding binding) {
         if (binding.getMetadata().getDeletionTimestamp() == null) {
             binding.getMetadata().setDeletionTimestamp(Instant.now());
@@ -131,6 +138,7 @@ public class UserGroupBindingReconciler implements Reconciler<Request> {
         client.update(binding);
     }
 
+    // 声明该协调器负责用户组成员绑定。
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new UserGroupBinding()).build();

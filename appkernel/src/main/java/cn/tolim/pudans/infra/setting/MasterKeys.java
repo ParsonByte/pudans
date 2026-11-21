@@ -1,17 +1,12 @@
 package cn.tolim.pudans.infra.setting;
 
 import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.utils.Digests;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.PosixFilePermissions;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -33,6 +28,7 @@ public class MasterKeys {
 
     private final AtomicReference<State> state = new AtomicReference<>(new State("", 0));
 
+    // 扩展初始化后读取主密钥并建立版本快照。
     @EventListener
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
         parameterGroups.getServer().subscribe(
@@ -40,6 +36,7 @@ public class MasterKeys {
                 error -> log.warn("无法读取主密钥；令牌签名继续使用旧版哈希", error));
     }
 
+    // 根据密钥指纹判断版本，轮换时自动递增。
     void initialize(String masterKey) {
         var key = masterKey == null ? "" : masterKey;
         var fingerprint = fingerprint(key);
@@ -65,19 +62,22 @@ public class MasterKeys {
         log.info("已捕获主密钥快照，版本 {}", version);
     }
 
+    // 返回当前主密钥版本，供令牌校验使用。
     public int currentVersion() {
         return state.get().version();
     }
 
+    // 判断是否已配置主密钥。
     public boolean hasMasterKey() {
         return StringUtils.hasText(state.get().key());
     }
 
     // 主密钥轮换覆盖 PAT 和刷新访问令牌；RSA JWT 仍使用现有解码器。
     public String hash(String secret) {
-        return hash(secret, state.get().key());
+        return Digests.hmacSha256Hex(state.get().key(), secret);
     }
 
+    // 按令牌版本选择哈希算法并做恒定时间比较。
     public boolean matches(String storedHash, String secret, Integer tokenVersion) {
         if (!StringUtils.hasText(storedHash) || secret == null) {
             return false;
@@ -87,49 +87,25 @@ public class MasterKeys {
             if (current.version() != 0) {
                 return false;
             }
-            return constantTimeEquals(storedHash, sha256(secret));
+            return Digests.constantTimeEquals(storedHash, Digests.sha256Hex(secret));
         }
         if (tokenVersion != current.version()) {
             return false;
         }
-        return constantTimeEquals(storedHash, hash(secret, current.key()));
+        return Digests.constantTimeEquals(storedHash, Digests.hmacSha256Hex(current.key(), secret));
     }
 
-    private static String hash(String secret, String key) {
-        if (!StringUtils.hasText(key)) {
-            return sha256(secret);
-        }
-        try {
-            var mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            return HexFormat.of().formatHex(mac.doFinal(secret.getBytes(StandardCharsets.UTF_8)));
-        } catch (Exception e) {
-            throw new IllegalStateException("无法使用主密钥进行签名", e);
-        }
-    }
-
-    private static String sha256(String value) {
-        try {
-            return HexFormat.of().formatHex(
-                    MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 不可用", e);
-        }
-    }
-
+    // 计算密钥指纹，空密钥使用固定标记。
     private static String fingerprint(String key) {
-        return StringUtils.hasText(key) ? sha256(key) : NO_KEY;
+        return StringUtils.hasText(key) ? Digests.sha256Hex(key) : NO_KEY;
     }
 
-    private static boolean constantTimeEquals(String left, String right) {
-        return MessageDigest.isEqual(
-                left.getBytes(StandardCharsets.UTF_8), right.getBytes(StandardCharsets.UTF_8));
-    }
-
+    // 主密钥版本文件存放在工作目录的密钥子目录。
     private Path versionFile() {
         return pudansProperties.getWorkDir().resolve("keys").resolve(VERSION_FILE);
     }
 
+    // 持久化版本与指纹，并尽量收紧文件权限。
     private static void writeVersion(Path file, int version, String fingerprint) throws IOException {
         var parent = file.getParent();
         if (parent != null) {

@@ -13,10 +13,12 @@ public enum ParameterSettingSensitiveFields {
             "mail", Set.of("smtpUsername", "smtpPassword", "username", "password"),
             "server", Set.of("masterKey", "hashIdSalt"));
 
+    // 判断字段是否属于需要脱敏的敏感项。
     public static boolean isSensitive(String group, String field) {
         return SENSITIVE_FIELDS.getOrDefault(group, Set.of()).contains(field);
     }
 
+    // 对已配置的敏感字段写入掩码。
     public static void mask(ObjectNode node, String group) {
         if (node == null) {
             return;
@@ -29,6 +31,7 @@ public enum ParameterSettingSensitiveFields {
         }
     }
 
+    // 掩码值沿用已保存内容，避免误清空密钥。
     public static void restoreMasked(ObjectNode incoming, ObjectNode existing, String group) {
         for (var field : SENSITIVE_FIELDS.getOrDefault(group, Set.of())) {
             var value = incoming.get(field);
@@ -43,6 +46,7 @@ public enum ParameterSettingSensitiveFields {
         }
     }
 
+    // 仅解密副本用于校验，不修改持久化数据。
     public static void decryptForValidation(ObjectNode node, String group, ParameterSettingSecretCipher cipher) {
         for (var field : SENSITIVE_FIELDS.getOrDefault(group, Set.of())) {
             var value = node.get(field);
@@ -52,6 +56,7 @@ public enum ParameterSettingSensitiveFields {
         }
     }
 
+    // 加密未加密的非空敏感字段。
     public static void encrypt(ObjectNode node, String group, ParameterSettingSecretCipher cipher) {
         for (var field : SENSITIVE_FIELDS.getOrDefault(group, Set.of())) {
             var value = node.get(field);
@@ -64,6 +69,7 @@ public enum ParameterSettingSensitiveFields {
         }
     }
 
+    // 解密单个敏感值，空值原样返回。
     public static String decrypt(String storedValue, ParameterSettingSecretCipher cipher) {
         return storedValue == null ? null : cipher.decrypt(storedValue);
     }

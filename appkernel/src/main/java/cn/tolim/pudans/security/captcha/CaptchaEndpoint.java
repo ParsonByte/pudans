@@ -17,6 +17,7 @@ public class CaptchaEndpoint implements CustomEndpoint {
 
     private final Captchas captchas;
 
+    // 注册获取图片验证码挑战的公开接口
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "CaptchaV1alpha1";
@@ -31,6 +32,7 @@ public class CaptchaEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 端点挂在核心 API 组下
     @Override
     public GroupVersion groupVersion() {
         return new GroupVersion(ApiGroups.API, ApiGroups.VERSION);

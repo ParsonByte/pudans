@@ -11,6 +11,7 @@ public class PacePayloadExtractor {
 
     private static final String MARKER = "self.__pace_f.push(";
 
+    // 提取页面内嵌载荷数组并取最后一个有效状态
     public JsonNode extract(String html) {
         if (html == null || html.isEmpty()) {
             throw LiveErrorCode.LIVE_RESOLVE_FAILED.exception();
@@ -42,6 +43,7 @@ public class PacePayloadExtractor {
         throw LiveErrorCode.LIVE_RESOLVE_FAILED.exception();
     }
 
+    // 解开载荷编码后筛选包含 state 的对象
     private JsonNode parsePayload(String argument) {
         try {
             var array = JsonUtils.mapper().readTree(argument);
@@ -73,6 +75,7 @@ public class PacePayloadExtractor {
         }
     }
 
+    // 按括号与引号状态扫描到匹配的右括号
     private int scanBalanced(String html, int open) {
         if (open < 0) {
             return -1;

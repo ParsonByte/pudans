@@ -51,11 +51,13 @@ public class UserReconciler implements ReactiveReconciler<Request> {
 
     private final AnnouncementReads announcementReads;
 
+    // 声明该协调器负责用户资源
     @Override
     public Controller setupWith(ControllerBuilder builder) {
         return builder.extension(new User()).build();
     }
 
+    // 删除时清理关联数据，否则维护终结器与标识
     @Override
     public Mono<Result> reconcileReactive(Request request) {
         return client.fetch(User.class, request.name())
@@ -82,6 +84,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                 .switchIfEmpty(Mono.just(Result.doNotRetry()));
     }
 
+    // 并行清理用户拥有的全部附属资源
     private Mono<Void> cleanup(User user) {
         var username = user.getMetadata().getName();
         return Mono.when(
@@ -94,6 +97,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                 deleteUserGroupMemberships(username));
     }
 
+    // 删除公告状态，失败不阻塞其他清理
     private Mono<Void> deleteUserAnnouncementState(String username) {
         return announcementReads
                 .deleteForUser(username)
@@ -103,6 +107,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                 });
     }
 
+    // 删除头像文件，失败不阻塞其他清理
     private Mono<Void> deleteUserAvatar(User user) {
         return avatarStorage
                 .deleteForUser(user)
@@ -112,6 +117,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                 });
     }
 
+    // 发布用户删除事件
     private void publishDeleted(User user) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", user.getMetadata().getName());
@@ -122,6 +128,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
         domainEventPublisher.publish("user.deleted", payload, null);
     }
 
+    // 删除该用户的全部身份连接
     private Mono<Void> deleteUserConnections(String username) {
         var listOptions = ListOptions.builder()
                 .andQuery(equal("spec.username", username))
@@ -131,6 +138,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                 .then();
     }
 
+    // 撤销并删除该用户的设备会话
     private Mono<Void> deleteUserDevices(String username) {
         var listOptions = ListOptions.builder()
                 .andQuery(equal("spec.principalName", username))
@@ -141,6 +149,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                 .then();
     }
 
+    // 删除该用户的记住登录令牌
     private Mono<Void> deleteUserRememberMeTokens(String username) {
         var listOptions = ListOptions.builder()
                 .andQuery(equal("spec.username", username))
@@ -150,6 +159,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                 .then();
     }
 
+    // 删除该用户的个人访问令牌
     private Mono<Void> deleteUserPersonalAccessTokens(String username) {
         var listOptions = ListOptions.builder()
                 .andQuery(equal("spec.username", username))
@@ -159,6 +169,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                 .then();
     }
 
+    // 移除该用户的用户组成员关系
     private Mono<Void> deleteUserGroupMemberships(String username) {
         var subject = UserGroupBinding.Subject.user(username).toString();
         var listOptions = ListOptions.builder()

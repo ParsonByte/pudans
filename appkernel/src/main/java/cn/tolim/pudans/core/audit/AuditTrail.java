@@ -15,6 +15,7 @@ public class AuditTrail {
 
     private final AtomicInteger stepCounter = new AtomicInteger(1);
 
+    // 返回下一个步骤序号，供子记录排序使用。
     public int nextStep() {
         return stepCounter.incrementAndGet();
     }

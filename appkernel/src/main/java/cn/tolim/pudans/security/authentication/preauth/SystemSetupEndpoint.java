@@ -54,6 +54,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.util.InMemoryResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.PropertyPlaceholderHelper;
@@ -83,26 +84,32 @@ public class SystemSetupEndpoint {
     private final ReactiveExtensionClient client;
     private final Validator validator;
     private final ApplicationEventPublisher eventPublisher;
+    private final PasswordEncoder passwordEncoder;
 
+    // 注入初始化所需的配置、校验器与扩展客户端。
     public SystemSetupEndpoint(
             InitializationStateGetter initializationStateGetter,
             ParameterSettingFetcher systemConfigFetcher,
             SuperAdminInitializer superAdminInitializer,
             ReactiveExtensionClient client,
             @Qualifier("webFluxValidator") Validator validator,
-            ApplicationEventPublisher eventPublisher) {
+            ApplicationEventPublisher eventPublisher,
+            PasswordEncoder passwordEncoder) {
         this.initializationStateGetter = initializationStateGetter;
         this.systemConfigFetcher = systemConfigFetcher;
         this.superAdminInitializer = superAdminInitializer;
         this.client = client;
         this.validator = validator;
         this.eventPublisher = eventPublisher;
+        this.passwordEncoder = passwordEncoder;
     }
 
+    // 初始化成功返回空响应，避免暴露内部细节。
     private static Mono<ServerResponse> handleSetupSuccessfully() {
         return ServerResponse.noContent().build();
     }
 
+    // 将站点标题与外部地址合并进基础配置并保留已有值。
     private static String mergeToBasicConfig(SetupRequest body, ConfigMap configMap) {
         Map<String, String> data = configMap.getData();
         if (data == null) {
@@ -123,6 +130,7 @@ public class SystemSetupEndpoint {
         return basicSetting.getExternalUrl();
     }
 
+    // 合并站点名称与地址，返回最终生效的外部地址。
     private static String mergeToSiteConfig(SetupRequest body, ConfigMap configMap) {
         Map<String, String> data = configMap.getData();
         if (data == null) {
@@ -141,6 +149,7 @@ public class SystemSetupEndpoint {
         return StringUtils.hasText(site.getSiteUrl()) ? site.getSiteUrl() : body.getExternalUrl();
     }
 
+    // 注册仅在初始化阶段可用的系统设置路由。
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 100)
     RouterFunction<ServerResponse> setupRouter() {
@@ -167,6 +176,7 @@ public class SystemSetupEndpoint {
                 .build();
     }
 
+    // 仅在未初始化时执行初始化，已完成则返回冲突。
     Mono<ServerResponse> setup(ServerRequest request) {
         return initializationStateGetter
                 .setupRequired()
@@ -203,6 +213,7 @@ public class SystemSetupEndpoint {
                                 "系统初始化已完成。")));
     }
 
+    // 按内容类型选择结构化解析或表单绑定。
     private static Mono<SetupRequest> readSetupRequest(ServerRequest request) {
         var json = request
                 .headers()
@@ -212,10 +223,12 @@ public class SystemSetupEndpoint {
         return json ? request.bodyToMono(SetupRequest.class) : request.bind(SetupRequest.class);
     }
 
+    // 将字段校验错误转换为统一参数异常。
     private Mono<ServerResponse> handleValidationErrors(BindingResult bindingResult) {
         return Mono.error(new RequestBodyValidationException(bindingResult));
     }
 
+    // 原子记录初始化凭据，中断后仅允许原密码继续。
     Mono<Void> doInitialization(SetupRequest body, String submittedUsername) {
 
 
@@ -231,6 +244,13 @@ public class SystemSetupEndpoint {
 
             if (!StringUtils.hasText(state.getSetupUsername())) {
                 state.setSetupUsername(submittedUsername);
+                state.setSetupPasswordHash(passwordEncoder.encode(body.getPassword()));
+                return;
+            }
+            // 中断后继续初始化必须使用首次提交的密码，避免他人接管初始化。
+            if (!StringUtils.hasText(state.getSetupPasswordHash())
+                    || !passwordEncoder.matches(body.getPassword(), state.getSetupPasswordHash())) {
+                throw new BadCredentialsException("用户名或密码错误。");
             }
         });
         return checkSetupUsernameAvailable(submittedUsername)
@@ -244,6 +264,7 @@ public class SystemSetupEndpoint {
                 }));
     }
 
+    // 初始化未开始前检查用户名是否已被占用。
     private Mono<Void> checkSetupUsernameAvailable(String submittedUsername) {
         return client.fetch(ConfigMap.class, SystemState.SYSTEM_STATES_CONFIGMAP)
                 .map(SystemState::deserialize)
@@ -254,6 +275,7 @@ public class SystemSetupEndpoint {
                 .then();
     }
 
+    // 依次创建超级管理员、合并配置并加载预置数据。
     private Mono<Void> doInitialize(SetupRequest body, String username) {
         var superUserMono = Mono.defer(
                         () -> superAdminInitializer.initialize(SuperAdminInitializer.InitializationParam.builder()
@@ -294,6 +316,7 @@ public class SystemSetupEndpoint {
                 .then(Mono.defer(() -> SystemState.upsetSystemState(client, state -> state.setIsSetup(true))));
     }
 
+    // 创建预置扩展，已存在的同名扩展直接跳过。
     private Mono<Void> initializeNecessaryData(String username) {
         return loadPresetExtensions(username)
                 .concatMap(extension -> client.create(extension).onErrorResume(DuplicateNameException.class, e -> {
@@ -308,10 +331,12 @@ public class SystemSetupEndpoint {
                 .then();
     }
 
+    // 恢复中断初始化留下的用户名，否则采用提交值。
     Mono<String> resolveSetupUsername(String submittedUsername) {
         return findSetupUsernameInProgress().defaultIfEmpty(submittedUsername);
     }
 
+    // 从系统状态中读取中断初始化时的用户名。
     private Mono<String> findSetupUsernameInProgress() {
         return client.fetch(ConfigMap.class, SystemState.SYSTEM_STATES_CONFIGMAP)
                 .map(SystemState::deserialize)
@@ -319,6 +344,7 @@ public class SystemSetupEndpoint {
                 .filter(StringUtils::hasText);
     }
 
+    // 加载预置扩展模板并替换用户名与时间占位符。
     Flux<Unstructured> loadPresetExtensions(String username) {
         return Mono.fromCallable(() -> {
 

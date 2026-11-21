@@ -9,10 +9,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.Roles;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.extension.contract.ExtensionUtil;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.security.contract.PersonalAccessToken;
-import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.setting.MasterKeys;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import com.nimbusds.jwt.JWTClaimNames;
@@ -51,26 +51,28 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
 
     private final Roles roleService;
 
-    private final Groups groups;
+    private final UserRoles userRoles;
 
     private final MasterKeys masterKeys;
 
     private Clock clock;
 
+    // 组装认证所需的客户端、角色与主密钥依赖。
     public PatAuthenticationManager(
             ReactiveExtensionClient client,
             ReactiveAuthenticationManager delegate,
             Roles roleService,
-            Groups groups,
+            UserRoles userRoles,
             MasterKeys masterKeys) {
         this.client = client;
         this.delegate = delegate;
         this.roleService = roleService;
-        this.groups = groups;
+        this.userRoles = userRoles;
         this.masterKeys = masterKeys;
         this.clock = Clock.systemDefaultZone();
     }
 
+    // 将令牌解码为名称与密钥，格式错误直接拒绝。
     private static String[] parseToken(String token) {
         final String decoded;
         try {
@@ -85,11 +87,13 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
         return new String[] {decoded.substring(0, separator), decoded.substring(separator + 1)};
     }
 
+    // 使用主密钥按密钥版本校验令牌密钥。
     private boolean secretMatches(PersonalAccessToken pat, String secret) {
         return masterKeys.matches(
                 pat.getSpec().getTokenId(), secret, pat.getSpec().getKeyVersion());
     }
 
+    // 角色模式下不附加作用域，其余转为权限。
     private static void addScopeAuthorities(PersonalAccessToken pat, List<GrantedAuthority> authorities) {
         var spec = pat.getSpec();
         if (PersonalAccessToken.SCOPE_MODE_ROLES_ONLY.equals(spec.getScopeMode())) {
@@ -105,6 +109,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 .forEach(authorities::add);
     }
 
+    // 区分新旧两种个人访问令牌分别认证。
     @Override
     public Mono<Authentication> authenticate(Authentication authentication) {
         var sudoUsername = authentication instanceof SudoBearerTokenAuthenticationToken sudo
@@ -125,6 +130,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 });
     }
 
+    // 旧版令牌走标准解析，且不允许代操作。
     private Mono<Authentication> legacyAuthenticate(String token, @Nullable String sudoUsername) {
         if (StringUtils.hasText(sudoUsername)) {
             return Mono.error(new InvalidBearerTokenException("旧版个人访问令牌不支持 sudo。"));
@@ -135,6 +141,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 .map(auth -> auth);
     }
 
+    // 校验不透明令牌有效性后构建认证结果。
     private Mono<Authentication> authenticateOpaque(String token, @Nullable String sudoUsername) {
         return Mono.defer(() -> {
             var parts = parseToken(token);
@@ -152,6 +159,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
         });
     }
 
+    // 依次检查删除、撤销、过期与密钥匹配状态。
     private Mono<Void> opaquePatChecks(PersonalAccessToken pat, String secret) {
         if (ExtensionUtil.isDeleted(pat)) {
             return Mono.error(new InvalidBearerTokenException("个人访问令牌正在删除中。"));
@@ -171,6 +179,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
         return Mono.empty();
     }
 
+    // 按生效角色构建携带代操作声明的认证令牌。
     private Mono<Authentication> buildAuthentication(
             PersonalAccessToken pat, String tokenValue, @Nullable String sudoUsername) {
         return effectiveRoles(pat, sudoUsername).map(roles -> {
@@ -199,6 +208,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
         });
     }
 
+    // 代操作时取双方角色交集，否则沿用令牌角色。
     private Mono<List<String>> effectiveRoles(PersonalAccessToken pat, @Nullable String sudoUsername) {
         var patRoles = pat.getSpec().getRoles();
         if (!StringUtils.hasText(sudoUsername)) {
@@ -214,13 +224,12 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 });
     }
 
+    // 查询用户当前持有的角色名称。
     private Flux<String> rolesOf(String username) {
-        return Flux.concat(
-                        roleService.getRolesByUsername(username),
-                        groups.getRoleNamesByUsername(username))
-                .distinct();
+        return userRoles.list(username);
     }
 
+    // 禁止非超级管理员代操作为超级管理员。
     private Mono<Void> checkSudoTargetRoles(PersonalAccessToken pat, String sudoUsername) {
         return rolesOf(sudoUsername)
                 .collectList()
@@ -234,6 +243,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                         : Mono.empty());
     }
 
+    // 校验代操作开关及目标用户的存在与禁用状态。
     private Mono<Void> checkSudo(PersonalAccessToken pat, @Nullable String sudoUsername) {
         if (!StringUtils.hasText(sudoUsername)) {
             return Mono.empty();
@@ -248,6 +258,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                         : checkSudoTargetRoles(pat, sudoUsername));
     }
 
+    // 旧版令牌重新校验个人令牌并重建权限集合。
     private Mono<JwtAuthenticationToken> checkAndRebuild(JwtAuthenticationToken jat) {
         var jwt = jat.getToken();
         var patName = jwt.getClaimAsString("pat_name");
@@ -280,6 +291,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 });
     }
 
+    // 校验令牌所有者存在、未禁用且角色未越权。
     private Mono<Void> checkUser(String username, List<String> patRoles) {
         return client.fetch(User.class, username)
                 .switchIfEmpty(Mono.error(() -> new InvalidBearerTokenException("用户不存在。")))
@@ -301,6 +313,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 });
     }
 
+    // 节流更新最后使用时间，冲突时重试并忽略失败。
     private Mono<Void> updateLastUsed(String patName) {
 
 
@@ -324,6 +337,7 @@ public class PatAuthenticationManager implements ReactiveAuthenticationManager {
                 .then();
     }
 
+    // 校验令牌标识与撤销状态是否与存储记录一致。
     private Mono<Void> patChecks(PersonalAccessToken pat, String tokenId) {
         if (ExtensionUtil.isDeleted(pat)) {
             return Mono.error(new InvalidBearerTokenException("个人访问令牌正在删除中。"));

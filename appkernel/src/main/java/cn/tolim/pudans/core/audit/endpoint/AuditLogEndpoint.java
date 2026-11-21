@@ -51,6 +51,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
 
     private final AuditLog auditLog;
 
+    // 注册审计日志的查询、追踪与归档路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "AuditLogV1alpha1";
@@ -321,6 +322,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 按游标列出审计记录，未指定页码时走游标分页。
     private Mono<ServerResponse> list(ServerRequest request) {
         if (request.queryParam("page").filter(StringUtils::hasText).isPresent()) {
             return page(request);
@@ -343,6 +345,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(page -> ServerResponse.ok().bodyValue(page));
     }
 
+    // 按页码分页查询活动审计记录。
     private Mono<ServerResponse> page(ServerRequest request) {
         var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
@@ -365,6 +368,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(pageResult -> ServerResponse.ok().bodyValue(pageResult));
     }
 
+    // 分页返回按追踪流聚合的审计摘要。
     private Mono<ServerResponse> traces(ServerRequest request) {
         var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
@@ -382,6 +386,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(pageResult -> ServerResponse.ok().bodyValue(pageResult));
     }
 
+    // 分页返回按用户聚合的访问足迹。
     private Mono<ServerResponse> journeys(ServerRequest request) {
         var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
@@ -397,6 +402,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 补查首页缺失的用户明细并重新组装足迹页。
     private Mono<AuditJourneyPage> refillJourneyDetails(
             ServerRequest request, JourneyScan scan, int page, int size) {
         // 首页条目缺少明细时补查一次，保证返回的足迹仍带完整步骤。
@@ -411,6 +417,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .then(Mono.fromSupplier(() -> scan.toPage(page, size, true)));
     }
 
+    // 排除匿名与未知用户，避免生成无效足迹。
     private static boolean isJourneyUid(AuditRecord record) {
         return StringUtils.hasText(record.getUid())
                 && !"anonymous".equalsIgnoreCase(record.getUid())
@@ -425,10 +432,12 @@ public class AuditLogEndpoint implements CustomEndpoint {
         private int accepted;
         private boolean truncated;
 
+        // 按首页候选窗口决定是否为用户保留明细。
         private JourneyScan(int candidateLimit) {
             this.candidateLimit = candidateLimit;
         }
 
+        // 累计用户足迹，超出总上限后标记截断。
         private JourneyScan add(AuditRecord record) {
             if (accepted >= MAX_JOURNEY_RECORDS) {
                 truncated = true;
@@ -444,11 +453,13 @@ public class AuditLogEndpoint implements CustomEndpoint {
             return this;
         }
 
+        // 判断当前页是否有用户尚未加载明细。
         private boolean needsDetailRefill(int page, int size) {
             return pageAggregates(page, size).stream()
                     .anyMatch(entry -> !entry.getValue().hasDetails());
         }
 
+        // 返回当前页中缺少明细的用户编号。
         private List<String> missingDetailUids(int page, int size) {
             return pageAggregates(page, size).stream()
                     .filter(entry -> !entry.getValue().hasDetails())
@@ -456,11 +467,13 @@ public class AuditLogEndpoint implements CustomEndpoint {
                     .toList();
         }
 
+        // 记录待补查用户的原始条数作为装载上限。
         private Map<String, Long> recordCounts(List<String> uids) {
             return uids.stream()
                     .collect(Collectors.toMap(uid -> uid, uid -> aggregates.get(uid).recordCount()));
         }
 
+        // 把补查到的明细挂回对应用户并遵守条数上限。
         private void attachDetails(Map<String, List<AuditRecord>> grouped, Map<String, Long> limits) {
             for (var entry : grouped.entrySet()) {
                 var aggregate = aggregates.get(entry.getKey());
@@ -470,6 +483,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
             }
         }
 
+        // 组装当前页足迹，可选择是否携带步骤明细。
         private AuditJourneyPage toPage(int page, int size, boolean includeSteps) {
             var items = pageAggregates(page, size).stream()
                     .map(entry -> {
@@ -483,6 +497,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                     items, aggregates.size(), page, size, truncated, pageViews, actionCount);
         }
 
+        // 按最后活动时间倒序截取当前页用户。
         private List<Map.Entry<String, UidAggregate>> pageAggregates(int page, int size) {
             var ordered = aggregates.entrySet().stream()
                     .sorted(Comparator.comparing(
@@ -503,10 +518,12 @@ public class AuditLogEndpoint implements CustomEndpoint {
         private long actionCount;
         private Instant end = Instant.EPOCH;
 
+        // 仅首页窗口内的用户需要保留明细列表。
         private UidAggregate(boolean retainDetails) {
             this.details = retainDetails ? new ArrayList<>() : null;
         }
 
+        // 累计记录、页面访问与操作计数。
         private void accept(AuditRecord record) {
             recordCount++;
             var timestamp = record.getTimestamp() == null ? Instant.EPOCH : record.getTimestamp();
@@ -527,6 +544,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
             }
         }
 
+        // 按审计编号倒序装载明细，并限制总条数。
         private void attach(List<AuditRecord> records, long limit) {
             details = records.stream()
                     .sorted(Comparator.comparing(
@@ -536,26 +554,32 @@ public class AuditLogEndpoint implements CustomEndpoint {
                     .toList();
         }
 
+        // 区分已加载明细与仅累计计数的用户。
         private boolean hasDetails() {
             return details != null;
         }
 
+        // 未加载明细时返回空列表而非空值。
         private List<AuditRecord> details() {
             return details == null ? List.of() : details;
         }
 
+        // 返回该用户累计的原始记录条数。
         private long recordCount() {
             return recordCount;
         }
 
+        // 返回该用户非页面访问的操作条数。
         private long actionCount() {
             return actionCount;
         }
 
+        // 返回该用户最后一条记录的时间。
         private Instant end() {
             return end;
         }
 
+        // 按页面路径与会话间隔去重后统计页面访问数。
         private long pageCount() {
             var ordered = pages.stream().sorted(PAGE_MARK_ORDER).toList();
             var count = 0L;
@@ -581,6 +605,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
             .thenComparing(mark -> mark.stepIndex() == null ? Integer.MAX_VALUE : mark.stepIndex())
             .thenComparing(PageMark::name);
 
+    // 把同一用户的记录整理成页面与操作串联的足迹。
     static AuditJourney toJourney(String uid, List<AuditRecord> records) {        var sorted = records.stream()
                 .sorted(Comparator.comparing(AuditLogEndpoint::traceStart)
                         .thenComparing(record -> record.getStepIndex() == null
@@ -688,6 +713,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 steps);
     }
 
+    // 优先使用页面资源名，缺失时退回请求路径。
     private static String pagePath(AuditRecord record) {
         if ("Page".equals(record.getResourceType()) && StringUtils.hasText(record.getResourceName())) {
             return record.getResourceName();
@@ -695,6 +721,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return record.getRequestPath();
     }
 
+    // 判断记录是否代表一次页面访问。
     private static boolean isPage(AuditRecord record) {
         if ("Page".equals(record.getResourceType())) {
             return true;
@@ -704,6 +731,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 && !record.getRequestPath().startsWith("/apis/");
     }
 
+    // 从记录上下文中取出首个可用用户名。
     private static String usernameOf(List<AuditRecord> records) {
         return records.stream()
                 .map(record -> contextString(record, "username"))
@@ -712,6 +740,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .orElse(null);
     }
 
+    // 安全读取上下文字符串，忽略空值。
     private static String contextString(AuditRecord record, String key) {
         var context = record.getContext();
         if (context == null) {
@@ -721,6 +750,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return value instanceof String text && StringUtils.hasText(text) ? text : null;
     }
 
+    // 按相邻记录的间隔切分会话并计数。
     private static int countSessions(List<AuditRecord> records) {
         if (records.isEmpty()) {
             return 0;
@@ -737,6 +767,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return sessions;
     }
 
+    // 按拒绝、失败与成功的优先级汇总足迹状态。
     private static String journeyStatus(List<AuditRecord> records) {
         if (records.stream().anyMatch(record -> "DENIED".equals(record.getResult()))) {
             return "DENIED";
@@ -751,6 +782,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return "SUCCESS";
     }
 
+    // 按拒绝、失败与成功的优先级汇总追踪状态。
     private static String resultStatus(List<AuditRecord> records) {
         if (records.stream().anyMatch(record -> "DENIED".equals(record.getResult()))) {
             return "DENIED";
@@ -761,10 +793,12 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return "SUCCESS";
     }
 
+    // 同时兼容 FAILURE 与 FAILED 两种失败结果。
     private static boolean isFailure(String result) {
         return "FAILURE".equals(result) || "FAILED".equals(result);
     }
 
+    // 用结束时间减去耗时还原请求开始时间。
     private static Instant traceStart(AuditRecord record) {
         if (record.getTimestamp() == null) {
             return Instant.EPOCH;
@@ -773,6 +807,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return record.getTimestamp().minusMillis(durationMs);
     }
 
+    // 把请求查询参数转换为审计存储查询条件。
     private static AuditStore.AuditQuery auditQuery(
             ServerRequest request, String cursor, int limit, boolean ascending) {
         return new AuditStore.AuditQuery(
@@ -788,6 +823,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 ascending);
     }
 
+    // 解析整数参数并夹在允许区间内。
     private static int intParam(
             ServerRequest request, String name, int defaultValue, int min, int max) {
         return request.queryParam(name)
@@ -804,15 +840,13 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .orElse(defaultValue);
     }
 
+    // 仅显式传入 asc 时才按升序查询。
     private static boolean isAscending(ServerRequest request) {
         return "asc".equalsIgnoreCase(
                 request.queryParam("order").filter(StringUtils::hasText).orElse(DEFAULT_ORDER));
     }
 
-    private AuditTraceSummary toTraceSummary(List<AuditRecord> records) {
-        return toTraceSummary(records, true);
-    }
-
+    // 把一组记录压缩成追踪流摘要，可选携带明细。
     private AuditTraceSummary toTraceSummary(List<AuditRecord> records, boolean includeRecords) {
         var sorted = records.stream()
                 .sorted(Comparator.comparing(AuditLogEndpoint::traceStart)
@@ -872,6 +906,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 includeRecords ? sorted : List.of());
     }
 
+    // 汇总活动与归档记录数量并返回总计。
     private Mono<ServerResponse> archiveStats(ServerRequest request) {
         return auditLog
                 .archiveStats()
@@ -882,6 +917,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 分页返回已归档的审计记录。
     private Mono<ServerResponse> archives(ServerRequest request) {
         var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
         var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
@@ -900,6 +936,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 校验截止时间后把更早的记录移入归档。
     private Mono<ServerResponse> archive(ServerRequest request) {
         return request.bodyToMono(AuditArchiveRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
@@ -917,6 +954,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 按用户与日期构建父子关系审计图。
     private Mono<ServerResponse> graph(ServerRequest request) {
         var uid = request.queryParam("uid")
                 .filter(StringUtils::hasText)
@@ -939,6 +977,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(graph -> ServerResponse.ok().bodyValue(graph));
     }
 
+    // 返回焦点记录所在追踪流的上下文步骤。
     private Mono<ServerResponse> trace(ServerRequest request) {
         var auditId = request.pathVariable("auditId");
         return auditLog
@@ -954,6 +993,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(trace -> ServerResponse.ok().bodyValue(trace));
     }
 
+    // 只读重放追踪流中记录的动作快照。
     private Mono<ServerResponse> replay(ServerRequest request) {
         var traceFlowId = request.pathVariable("traceFlowId");
         return auditLog
@@ -976,6 +1016,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 });
     }
 
+    // 把当日记录组装为节点、边与根节点。
     private AuditGraph toGraph(String uid, LocalDate date, List<AuditRecord> records) {
         var nodes = records.stream()
                 .sorted(Comparator.comparing(AuditRecord::getTimestamp)
@@ -997,6 +1038,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return new AuditGraph(uid, date.toString(), nodes, edges, roots);
     }
 
+    // 把审计记录转换为图节点。
     private AuditNode toNode(AuditRecord record) {
         return new AuditNode(
                 record.getMetadata().getName(),
@@ -1011,6 +1053,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 record.isArchived());
     }
 
+    // 以焦点记录为界拆分前后步骤。
     private AuditTrace toTrace(String auditId, List<AuditRecord> records) {
         var sorted = records.stream()
                 .sorted(Comparator.comparing(
@@ -1054,6 +1097,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
         return new AuditTrace(auditId, traceFlowId, steps, before, after);
     }
 
+    // 把记录转换为重放步骤，保留请求快照。
     private ReplayStep toReplayStep(AuditRecord record) {
         return new ReplayStep(
                 record.getMetadata().getName(),
@@ -1073,6 +1117,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 record.isArchived());
     }
 
+    // 返回审计接口所属的 API 版本。
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
@@ -1127,6 +1172,7 @@ public class AuditLogEndpoint implements CustomEndpoint {
             List<String> operations,
             List<AuditJourneyStep> steps) {
 
+        // 复制足迹摘要并丢弃步骤明细。
         AuditJourney withoutSteps() {
             return new AuditJourney(
                     uid,

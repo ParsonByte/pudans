@@ -1,9 +1,9 @@
 package cn.tolim.pudans.security.authentication.token;
 
 import cn.tolim.pudans.core.rbac.Roles;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.security.contract.authentication.LoginCipher;
-import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.setting.MasterKeys;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import lombok.RequiredArgsConstructor;
@@ -29,16 +29,17 @@ class TokenSecurityConfigurer implements SecurityConfigurer {
 
     private final Roles roles;
 
-    private final Groups groups;
+    private final UserRoles userRoles;
 
     private final MasterKeys masterKeys;
 
+    // 注册基于签名令牌解码的认证过滤器。
     @Override
     public void configure(ServerHttpSecurity http) {
         var jwtDecoder =
                 withJwkSource(signedJWT -> Flux.just(loginCipher.getJwk())).build();
         var tokenAuthenticationManager =
-                new TokenAuthenticationManager(client, jwtDecoder, roles, groups, masterKeys);
+                new TokenAuthenticationManager(client, jwtDecoder, roles, userRoles, masterKeys);
 
         var entryPoint = new BearerTokenServerAuthenticationEntryPoint();
         var failureHandler = new ServerAuthenticationEntryPointFailureHandler(entryPoint);

@@ -8,6 +8,7 @@ public final class CookieSupport {
 
     private CookieSupport() {}
 
+    // 统一 Cookie 属性，路径跟随上下文，HTTPS 下仅安全传输。
     public static ResponseCookie.ResponseCookieBuilder initCookie(
             ServerWebExchange exchange, String name, Duration maxAge, String value) {
         return ResponseCookie.from(name, value)

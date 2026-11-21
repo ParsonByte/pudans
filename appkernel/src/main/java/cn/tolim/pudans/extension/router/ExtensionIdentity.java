@@ -12,6 +12,7 @@ final class ExtensionIdentity {
 
     private ExtensionIdentity() {}
 
+    // 更新时禁止修改 apiVersion、kind 与名称。
     static void requireUnchanged(Scheme scheme, String name, Extension extension) {
         if (!matches(scheme, name, extension)) {
             throw new ServerWebInputException(
@@ -19,12 +20,14 @@ final class ExtensionIdentity {
         }
     }
 
+    // 新建时要求 apiVersion 与 kind 与方案一致。
     static void requireGroupVersionKind(Scheme scheme, Extension extension) {
         if (!matchesGroupVersionKind(scheme, extension)) {
             throw new ServerWebInputException("apiVersion 和 kind 必须与以下对象一致：" + scheme.groupVersionKind());
         }
     }
 
+    // 校验资源标识与名称是否与路径一致。
     static boolean matches(Scheme scheme, String name, Extension extension) {
         if (!matchesGroupVersionKind(scheme, extension)) {
             return false;
@@ -45,6 +48,7 @@ final class ExtensionIdentity {
         }
     }
 
+    // 容错比较扩展的 apiVersion 与 kind。
     static boolean matchesGroupVersionKind(Scheme scheme, Extension extension) {
         if (extension == null) {
             return false;

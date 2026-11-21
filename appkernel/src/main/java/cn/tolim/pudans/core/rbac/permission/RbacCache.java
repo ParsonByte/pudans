@@ -1,11 +1,8 @@
 package cn.tolim.pudans.core.rbac.permission;
 
 import jakarta.annotation.PostConstruct;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +17,7 @@ import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.extension.contract.Watcher;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.infra.cache.ReactiveRedisCacheStore;
+import cn.tolim.pudans.infra.utils.Digests;
 
 @Slf4j
 @Service
@@ -52,19 +50,23 @@ public class RbacCache {
 
     private volatile long generationLoadedAt = 0L;
 
+    // 监听授权资源变化并失效相关缓存。
     @PostConstruct
     void registerWatcher() {
         reactiveExtensionClient.watch(new Watcher() {
+            // 新增资源可能改变授权，需失效缓存。
             @Override
             public void onAdd(Extension extension) {
                 invalidateIfRbac(extension);
             }
 
+            // 更新资源可能改变授权，需失效缓存。
             @Override
             public void onUpdate(Extension oldExtension, Extension newExtension) {
                 invalidateIfRbac(newExtension);
             }
 
+            // 删除资源可能改变授权，需失效缓存。
             @Override
             public void onDelete(Extension extension) {
                 invalidateIfRbac(extension);
@@ -73,6 +75,7 @@ public class RbacCache {
             @Override
             public void dispose() {}
 
+            // 观察者常驻，始终返回未释放状态。
             @Override
             public boolean isDisposed() {
                 return false;
@@ -80,6 +83,7 @@ public class RbacCache {
         });
     }
 
+    // 仅当变更涉及授权资源时才失效缓存。
     private void invalidateIfRbac(Extension extension) {
         if (extension == null) {
             return;
@@ -94,6 +98,7 @@ public class RbacCache {
         invalidateAll().subscribe(ignored -> {}, error -> log.warn("无法失效 RBAC 缓存", error));
     }
 
+    // 递增代际号，使所有节点同时失效缓存。
     public Mono<Void> invalidateAll() {
         return redisTemplate
                 .opsForValue()
@@ -102,6 +107,7 @@ public class RbacCache {
                 .then();
     }
 
+    // 读取缓存代际号，短窗口内复用本地值。
     private Mono<Long> currentGeneration() {
         var loadedAt = generationLoadedAt;
         if (loadedAt != 0L && System.currentTimeMillis() - loadedAt < GENERATION_TTL.toMillis()) {
@@ -124,6 +130,7 @@ public class RbacCache {
                 });
     }
 
+    // 缓存用户角色，未命中时通过加载器回源。
     public Mono<List<String>> cachedUserRoles(String username, Mono<List<String>> loader) {
         return currentGeneration()
                 .flatMap(generationValue -> {
@@ -141,12 +148,14 @@ public class RbacCache {
                 });
     }
 
+    // 删除指定用户的角色缓存。
     public Mono<Void> evictUserRoles(String username) {
         return currentGeneration()
                 .flatMap(generationValue ->
                         cacheStore.evict(USER_ROLES_KEY_PREFIX + generationValue + ':' + username));
     }
 
+    // 按角色名集合缓存角色依赖查询结果。
     public Mono<List<Role>> cachedRoleDependencies(Set<String> roleNames, Mono<List<Role>> loader) {
         if (roleNames == null || roleNames.isEmpty()) {
             return Mono.just(List.of());
@@ -163,20 +172,18 @@ public class RbacCache {
                 });
     }
 
+    // 角色名排序后摘要，保证键与顺序无关。
     private static String hash(Set<String> roleNames) {
-        try {
-            var joined = roleNames.stream().sorted().reduce("", (a, b) -> a + "," + b);
-            var digest = MessageDigest.getInstance("SHA-256").digest(joined.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
-        } catch (Exception e) {
-            return Integer.toHexString(roleNames.hashCode());
-        }
+        var joined = roleNames.stream().sorted().reduce("", (a, b) -> a + "," + b);
+        return Digests.sha256Hex(joined);
     }
 
+    // 把可空数组转换为空数组。
     private static String[] nullSafe(String[] values) {
         return values == null ? new String[0] : values;
     }
 
+    // 只序列化缓存需要的角色名与规则字段。
     private static List<CachedRole> serializeRoles(List<Role> roles) {
         return roles.stream()
                 .map(role -> new CachedRole(
@@ -194,6 +201,7 @@ public class RbacCache {
                 .toList();
     }
 
+    // 从缓存结构重建角色，缺失数组按空处理。
     private static List<Role> deserializeRoles(String json) {
         List<CachedRole> cachedRoles = JsonUtils.jsonToObject(
                 json, new com.fasterxml.jackson.core.type.TypeReference<List<CachedRole>>() {});

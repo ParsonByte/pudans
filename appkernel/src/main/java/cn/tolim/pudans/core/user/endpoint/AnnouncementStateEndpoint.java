@@ -24,6 +24,7 @@ public class AnnouncementStateEndpoint implements CustomEndpoint {
 
     private final AnnouncementReads announcementReads;
 
+    // 注册公告状态查询与确认路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "UserV1alpha1";
@@ -41,18 +42,21 @@ public class AnnouncementStateEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 返回当前用户的公告确认状态
     private Mono<ServerResponse> get(ServerRequest request) {
         return currentUsername()
                 .flatMap(announcementReads::get)
                 .flatMap(state -> ServerResponse.ok().bodyValue(state));
     }
 
+    // 记录当前用户确认当前公告版本
     private Mono<ServerResponse> dismiss(ServerRequest request) {
         return currentUsername()
                 .flatMap(announcementReads::dismiss)
                 .flatMap(state -> ServerResponse.ok().bodyValue(state));
     }
 
+    // 从安全上下文取用户名，未认证时报错
     private Mono<String> currentUsername() {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
@@ -60,6 +64,7 @@ public class AnnouncementStateEndpoint implements CustomEndpoint {
                 .switchIfEmpty(Mono.error(new ServerWebInputException("未认证")));
     }
 
+    // 返回当前用户接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

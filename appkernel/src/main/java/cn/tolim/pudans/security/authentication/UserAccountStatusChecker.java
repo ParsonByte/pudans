@@ -12,6 +12,7 @@ public final class UserAccountStatusChecker {
 
     private UserAccountStatusChecker() {}
 
+    // 依次校验锁定、禁用、过期状态，返回首个对应的认证异常。
     public static Mono<Void> check(UserDetails user) {
         if (!user.isAccountNonLocked()) {
             return Mono.error(new LockedException("用户账户已被锁定"));

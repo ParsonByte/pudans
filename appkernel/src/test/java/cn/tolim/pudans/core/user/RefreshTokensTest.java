@@ -12,9 +12,10 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.infra.contract.ParameterSetting;
 import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +25,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.ReactiveValueOperations;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -44,17 +48,24 @@ class RefreshTokensTest {
     PersonalTokens personalTokens;
 
     @Mock
-    Groups groups;
+    UserRoles userRoles;
+
+    @Mock
+    ReactiveUserDetailsService reactiveUserDetailsService;
 
     private RefreshTokens service;
 
     @BeforeEach
     void setUp() {
-        //lenient() 的作用是让这个打桩不参与严格检查：即使测试里没调用它，也不会报错。
-        // 原本（不加 lenient()）则会报错：如果 opsForValue() 一次都没被调用，Mockito 就会认为这是无用的打桩（UnnecessaryStubbingException），测试直接失败。
+        // lenient() 让公共打桩不参与严格检查，避免未使用时报错。
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
         service = new RefreshTokens(
-                redisTemplate, parameterGroups, personalTokens, groups);
+                redisTemplate, parameterGroups, personalTokens, userRoles, reactiveUserDetailsService);
+    }
+
+    // 构造启用状态的用户详情
+    private static UserDetails enabledUser() {
+        return User.withUsername("alice").password("x").authorities(List.of()).build();
     }
 
     @Test
@@ -76,8 +87,9 @@ class RefreshTokensTest {
     void rotatesTheRefreshTokenAndIssuesAnAccessToken() {
         when(parameterGroups.getServer()).thenReturn(Mono.just(server(900, 3600)));
         when(valueOperations.getAndDelete(anyString())).thenReturn(Mono.just("alice"));
+        when(reactiveUserDetailsService.findByUsername("alice")).thenReturn(Mono.just(enabledUser()));
         var pat = new PersonalAccessToken();
-        when(groups.getRoleNamesByUsername("alice")).thenReturn(Flux.just("normal-role"));
+        when(userRoles.list("alice")).thenReturn(Flux.just("normal-role"));
         when(personalTokens.create(any(PersonalAccessToken.class), eq("alice"))).thenReturn(Mono.just(pat));
         when(personalTokens.generateToken(pat)).thenReturn(Mono.just("access-token"));
         when(personalTokens.deleteExpired("alice")).thenReturn(Mono.just(0L));
@@ -113,8 +125,9 @@ class RefreshTokensTest {
     void aRefreshTokenCanBeUsedOnlyOnce() {
         when(parameterGroups.getServer()).thenReturn(Mono.just(server(900, 3600)));
         when(valueOperations.getAndDelete(anyString())).thenReturn(Mono.just("alice"), Mono.empty());
+        when(reactiveUserDetailsService.findByUsername("alice")).thenReturn(Mono.just(enabledUser()));
         var pat = new PersonalAccessToken();
-        when(groups.getRoleNamesByUsername("alice")).thenReturn(Flux.just("normal-role"));
+        when(userRoles.list("alice")).thenReturn(Flux.just("normal-role"));
         when(personalTokens.create(any(PersonalAccessToken.class), eq("alice"))).thenReturn(Mono.just(pat));
         when(personalTokens.generateToken(pat)).thenReturn(Mono.just("access-token"));
         when(personalTokens.deleteExpired("alice")).thenReturn(Mono.just(0L));
@@ -123,6 +136,26 @@ class RefreshTokensTest {
 
         StepVerifier.create(service.rotate("one-time")).expectNextCount(1).verifyComplete();
         StepVerifier.create(service.rotate("one-time")).expectError(ApiException.class).verify();
+    }
+
+    // 已禁用账户不能通过刷新令牌继续续期。
+    @Test
+    void disabledAccountCannotRotate() {
+        when(parameterGroups.getServer()).thenReturn(Mono.just(server(900, 3600)));
+        when(valueOperations.getAndDelete(anyString())).thenReturn(Mono.just("alice"));
+        var disabled = User.withUsername("alice")
+                .password("x")
+                .authorities(List.of())
+                .disabled(true)
+                .build();
+        when(reactiveUserDetailsService.findByUsername("alice")).thenReturn(Mono.just(disabled));
+
+        StepVerifier.create(service.rotate("old-refresh-token"))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(ApiException.class);
+                    assertThat(((ApiException) error).getCode()).isEqualTo("refresh-token-invalid");
+                })
+                .verify();
     }
 
     @Test

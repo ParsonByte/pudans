@@ -24,6 +24,7 @@ class SystemStateInitializer {
 
     private final ReactiveExtensionClient client;
 
+    // 已初始化则跳过，否则为旧版安装回填状态。
     @EventListener
     Mono<Void> onApplicationEvent(ExtensionInitializedEvent ignored) {
         return client.fetch(ConfigMap.class, SystemState.SYSTEM_STATES_CONFIGMAP)
@@ -37,6 +38,7 @@ class SystemStateInitializer {
                 .then();
     }
 
+    // 存在用户但缺少状态时，标记系统已完成初始化。
     private Mono<Void> backfillLegacyInstallation() {
         return hasUser()
                 .filter(Boolean::booleanValue)
@@ -50,6 +52,7 @@ class SystemStateInitializer {
                 .then();
     }
 
+    // 判断是否存在未删除且未隐藏的用户。
     private Mono<Boolean> hasUser() {
         var listOptions = new ListOptions();
         listOptions.setLabelSelector(

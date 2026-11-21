@@ -20,10 +20,12 @@ public class ExceptionSecurityConfigurer implements SecurityConfigurer {
 
     private final ServerResponse.Context context;
 
+    // 注入响应上下文，供各类异常处理器写出统一响应。
     public ExceptionSecurityConfigurer(ServerResponse.Context context) {
         this.context = context;
     }
 
+    // 按请求类型分派认证入口与拒绝处理器，保证响应格式统一。
     @Override
     public void configure(ServerHttpSecurity http) {
         http.exceptionHandling(exception -> {

@@ -21,6 +21,7 @@ class DefaultIndices<E extends Extension> implements Indices<E> {
 
     private volatile boolean closed;
 
+    // 按名称建立索引映射，重复名称保留先者。
     public DefaultIndices(List<Index<E, ?>> indices) {
         this.indexMap = indices.stream()
                 .collect(Collectors.toMap(
@@ -32,6 +33,7 @@ class DefaultIndices<E extends Extension> implements Indices<E> {
                         LinkedHashMap::new));
     }
 
+    // 关闭全部索引并清理锁缓存。
     @Override
     public void close() throws IOException {
         closed = true;
@@ -39,6 +41,7 @@ class DefaultIndices<E extends Extension> implements Indices<E> {
         lockCache.clear();
     }
 
+    // 在扩展主键锁内事务化写入所有索引。
     @Override
     public void insert(E extension) {
         ensureNotClosed();
@@ -61,6 +64,7 @@ class DefaultIndices<E extends Extension> implements Indices<E> {
         }
     }
 
+    // 在扩展主键锁内事务化更新所有索引。
     @Override
     public void update(E extension) {
         ensureNotClosed();
@@ -81,6 +85,7 @@ class DefaultIndices<E extends Extension> implements Indices<E> {
         }
     }
 
+    // 在扩展主键锁内事务化删除所有索引。
     @Override
     public void delete(E extension) {
         ensureNotClosed();
@@ -101,6 +106,7 @@ class DefaultIndices<E extends Extension> implements Indices<E> {
         }
     }
 
+    // 按名称获取索引，缺失时抛出参数错误。
     @Override
     public <K extends Comparable<K>> Index<E, K> getIndex(String indexName) {
         ensureNotClosed();
@@ -111,6 +117,7 @@ class DefaultIndices<E extends Extension> implements Indices<E> {
         return index;
     }
 
+    // 索引关闭后拒绝任何读写操作。
     private void ensureNotClosed() {
         if (closed) {
             throw new IllegalStateException("索引已关闭");

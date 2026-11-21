@@ -5,6 +5,7 @@ import reactor.core.publisher.Mono;
 
 public interface DirectUploadDriver {
 
+    // 创建客户端直传对象存储所需的凭证。
     Mono<DirectUploadCredential> createDirectUpload(StorageDirectUploadRequest request);
 
     record StorageDirectUploadRequest(String key, long size, String contentType, Instant expiresAt) {}

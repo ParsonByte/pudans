@@ -1,5 +1,7 @@
 package cn.tolim.pudans.core.storage.driver.onedrive;
 
+import cn.tolim.pudans.core.storage.driver.StorageDriverErrors;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -60,6 +62,7 @@ public class OneDriveStorageDriver implements StorageDriver {
 
     private final WebClient webClient = WebClient.builder().build();
 
+    // 初始化令牌客户端并读取驱动器标识。
     public OneDriveStorageDriver(
             StoragePolicy policy, StoragePolicy.Credentials credentials, Path tempDirectory) {
         this.policy = policy;
@@ -72,16 +75,19 @@ public class OneDriveStorageDriver implements StorageDriver {
         this.tempDirectory = tempDirectory;
     }
 
+    // 标识该驱动处理 OneDrive 类型策略。
     @Override
     public StoragePolicyType type() {
         return StoragePolicyType.ONEDRIVE;
     }
 
+    // 该驱动支持直链下载与范围读取。
     @Override
     public Set<StorageCapability> capabilities() {
         return Set.of(StorageCapability.PRESIGNED_SOURCE, StorageCapability.RANGE_READ);
     }
 
+    // 按文件大小选择简单上传或分片会话上传。
     @Override
     public Mono<StorageObject> put(StoragePutRequest request) {
         return StorageIo.spool(request.body(), tempDirectory)
@@ -95,6 +101,7 @@ public class OneDriveStorageDriver implements StorageDriver {
                 .onErrorMap(WebClientResponseException.class, this::mapError);
     }
 
+    // 通过下载地址读取内容并支持范围请求。
     @Override
     public Mono<StorageReadResult> get(String key, StorageReadOptions options) {
         var range = options == null ? null : options.range();
@@ -107,7 +114,7 @@ public class OneDriveStorageDriver implements StorageDriver {
                     }
                 })
                 .retrieve()
-                .onStatus(status -> status.value() == 404, response -> Mono.error(notFound()))
+                .onStatus(status -> status.value() == 404, response -> Mono.error(StorageDriverErrors.notFound()))
                 .onStatus(HttpStatusCode::isError, this::error)
                 .toEntityFlux(DataBuffer.class)
                 .map(entity -> {
@@ -129,6 +136,7 @@ public class OneDriveStorageDriver implements StorageDriver {
                 }));
     }
 
+    // 查询 Graph 对象元数据。
     @Override
     public Mono<StorageObject> stat(String key) {
         return tokenClient.accessToken()
@@ -137,13 +145,14 @@ public class OneDriveStorageDriver implements StorageDriver {
                         .uri(item(key) + "?$select=size,eTag,lastModifiedDateTime")
                         .headers(headers -> headers.setBearerAuth(value))
                         .retrieve()
-                        .onStatus(status -> status.value() == 404, response -> Mono.error(notFound()))
+                        .onStatus(status -> status.value() == 404, response -> Mono.error(StorageDriverErrors.notFound()))
                         .onStatus(HttpStatusCode::isError, this::error)
                         .bodyToMono(String.class)
                         .map(body -> toObject(key, body)))
                 .onErrorMap(WebClientResponseException.class, this::mapError);
     }
 
+    // 逐个删除 Graph 对象，忽略缺失项。
     @Override
     public Mono<Void> delete(Collection<String> keys) {
         return tokenClient.accessToken()
@@ -160,12 +169,14 @@ public class OneDriveStorageDriver implements StorageDriver {
                 .onErrorMap(WebClientResponseException.class, this::mapError);
     }
 
+    // 获取 OneDrive 临时下载直链。
     @Override
     public Mono<StorageSource> source(String key, StorageSourceOptions options) {
         return downloadUrl(key).map(url -> new StorageSource(
                 URI.create(url), Instant.now().plus(DEFAULT_SOURCE_TTL), false));
     }
 
+    // 通过 Graph 驱动器接口检测连接。
     @Override
     public Mono<StorageTestResult> testConnection() {
         return tokenClient.accessToken()
@@ -181,9 +192,11 @@ public class OneDriveStorageDriver implements StorageDriver {
                         false, "存储连接失败：" + safeMessage(error), Instant.now())));
     }
 
+    // 无长期持有的外部连接需要关闭。
     @Override
     public void close() {}
 
+    // 小文件一次性写入 Graph 内容端点。
     private Mono<StorageObject> simpleUpload(StoragePutRequest request, Path path) {
         return tokenClient.accessToken().flatMap(value -> Mono.fromCallable(() -> Files.readAllBytes(path))
                 .subscribeOn(Schedulers.boundedElastic())
@@ -199,6 +212,7 @@ public class OneDriveStorageDriver implements StorageDriver {
                         .then(stat(request.key()))));
     }
 
+    // 大文件通过上传会话分块写入。
     private Mono<StorageObject> sessionUpload(StoragePutRequest request, Path path, long size) {
         return tokenClient.accessToken()
                 .flatMap(value -> createUploadSession(request.key(), value))
@@ -206,6 +220,7 @@ public class OneDriveStorageDriver implements StorageDriver {
                 .then(stat(request.key()));
     }
 
+    // 创建可续传的 Graph 上传会话。
     private Mono<String> createUploadSession(String key, String accessToken) {
         return webClient
                 .post()
@@ -222,6 +237,7 @@ public class OneDriveStorageDriver implements StorageDriver {
                         HttpStatus.BAD_GATEWAY, "storage-driver-error", "无法创建 OneDrive 上传会话。")));
     }
 
+    // 递归上传剩余分块直到文件结束。
     private Mono<Void> uploadChunks(String uploadUrl, Path path, long size, long offset) {
         if (offset >= size) {
             return Mono.empty();
@@ -248,6 +264,7 @@ public class OneDriveStorageDriver implements StorageDriver {
                 .then(Mono.defer(() -> uploadChunks(uploadUrl, path, size, offset + length)));
     }
 
+    // 查询 Graph 对象的一次性下载地址。
     private Mono<String> downloadUrl(String key) {
         return tokenClient.accessToken()
                 .flatMap(value -> webClient
@@ -255,7 +272,7 @@ public class OneDriveStorageDriver implements StorageDriver {
                         .uri(item(key) + "?$select=@microsoft.graph.downloadUrl")
                         .headers(headers -> headers.setBearerAuth(value))
                         .retrieve()
-                        .onStatus(status -> status.value() == 404, response -> Mono.error(notFound()))
+                        .onStatus(status -> status.value() == 404, response -> Mono.error(StorageDriverErrors.notFound()))
                         .onStatus(HttpStatusCode::isError, this::error)
                         .bodyToMono(String.class)
                         .map(body -> JsonMapper.shared()
@@ -263,14 +280,16 @@ public class OneDriveStorageDriver implements StorageDriver {
                                 .path("@microsoft.graph.downloadUrl")
                                 .asString()))
                 .filter(StringUtils::hasText)
-                .switchIfEmpty(Mono.error(notFound()));
+                .switchIfEmpty(Mono.error(StorageDriverErrors.notFound()));
     }
 
+    // 从 Graph JSON 响应构造对象元数据。
     private StorageObject toObject(String key, String body) {
         var json = JsonMapper.shared().readTree(body);
         return new StorageObject(key, json.path("size").asLong(0), parseInstant(json), json.path("eTag").asString());
     }
 
+    // 解析 Graph 时间字段，无法解析时返回空。
     private static Instant parseInstant(JsonNode json) {
         var value = json.path("lastModifiedDateTime").asString();
         if (!StringUtils.hasText(value)) {
@@ -287,14 +306,17 @@ public class OneDriveStorageDriver implements StorageDriver {
         }
     }
 
+    // 拼接对象在 Graph 中的完整路径。
     private String item(String key) {
         return GRAPH + drive() + "/root:/" + StorageIo.encodePath(key);
     }
 
+    // 使用配置的驱动器或当前用户驱动器。
     private String drive() {
         return StringUtils.hasText(driveId) ? "/drives/" + driveId : "/me/drive";
     }
 
+    // 从 Content-Range 解析对象总大小。
     private static long totalSize(String contentRange, long contentLength) {
         if (StringUtils.hasText(contentRange)) {
             var slash = contentRange.lastIndexOf('/');
@@ -308,10 +330,11 @@ public class OneDriveStorageDriver implements StorageDriver {
         return Math.max(0, contentLength);
     }
 
+    // 将响应状态码转换为统一的 API 错误。
     private Mono<ApiException> error(ClientResponse response) {
         var status = response.statusCode();
         if (status.value() == 404) {
-            return Mono.just(notFound());
+            return Mono.just(StorageDriverErrors.notFound());
         }
         if (status.value() == 401 || status.value() == 403) {
             return Mono.just(forbidden());
@@ -322,9 +345,10 @@ public class OneDriveStorageDriver implements StorageDriver {
                 "存储服务请求失败（" + status.value() + "）。"));
     }
 
+    // 映射 WebClient 异常为统一的 API 错误。
     private ApiException mapError(WebClientResponseException error) {
         if (error.getStatusCode().value() == 404) {
-            return notFound();
+            return StorageDriverErrors.notFound();
         }
         if (error.getStatusCode().value() == 401 || error.getStatusCode().value() == 403) {
             return forbidden();
@@ -336,16 +360,15 @@ public class OneDriveStorageDriver implements StorageDriver {
                 error);
     }
 
+    // 提取可安全展示的错误原因。
     private static String safeMessage(Throwable error) {
         return error instanceof ApiException api && api.getReason() != null
                 ? api.getReason()
                 : "存储服务不可用。";
     }
 
-    private static ApiException notFound() {
-        return new ApiException(HttpStatus.NOT_FOUND, "storage-object-not-found", "文件不存在。");
-    }
 
+    // 构造存储访问被拒绝错误。
     private static ApiException forbidden() {
         return new ApiException(HttpStatus.FORBIDDEN, "storage-access-denied", "存储访问被拒绝。");
     }

@@ -21,11 +21,13 @@ class SwitchUserConfigurer implements SecurityConfigurer {
 
     private final ServerResponse.Context context;
 
+    // 注入用户详情服务与响应上下文
     SwitchUserConfigurer(ReactiveUserDetailsService reactiveUserDetailsService, ServerResponse.Context context) {
         this.reactiveUserDetailsService = reactiveUserDetailsService;
         this.context = context;
     }
 
+    // 注册用户模拟过滤器并配置成功与失败响应
     @Override
     public void configure(ServerHttpSecurity http) {
         ServerAuthenticationSuccessHandler successHandler = (exchange, authentication) -> {

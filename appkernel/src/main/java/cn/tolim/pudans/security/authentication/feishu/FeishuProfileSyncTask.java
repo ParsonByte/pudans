@@ -32,6 +32,7 @@ public class FeishuProfileSyncTask {
 
     private volatile Instant lastSyncAt = Instant.EPOCH;
 
+    // 启动后立即同步一次，之后按固定间隔检查是否到期
     @PostConstruct
     public void start() {
         subscription = Flux.concat(Mono.just(0L), Flux.interval(CHECK_INTERVAL, CHECK_INTERVAL))
@@ -41,6 +42,7 @@ public class FeishuProfileSyncTask {
                 .subscribe();
     }
 
+    // 仅在启用且到达同步周期时执行，避免重复拉取资料
     Mono<Void> syncIfDue() {
         var settings = securitySettings.feishu();
         if (!settings.isConfigured() || settings.syncIntervalSeconds() <= 0) {
@@ -54,6 +56,7 @@ public class FeishuProfileSyncTask {
         return syncAll();
     }
 
+    // 逐条同步资料，单个用户失败不影响其余连接
     Mono<Void> syncAll() {
         return feishuAccounts
                 .listAllConnections()
@@ -80,6 +83,7 @@ public class FeishuProfileSyncTask {
                 });
     }
 
+    // 容器关闭时释放调度订阅，避免线程资源泄漏
     @PreDestroy
     public void stop() {
         if (subscription != null) {

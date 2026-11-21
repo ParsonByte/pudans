@@ -10,6 +10,7 @@ public class MigratingCache extends RedisCache {
 
     private final CacheMigrator migrator;
 
+    // 保存序列化器与迁移器以处理旧格式缓存项。
     MigratingCache(
             String name,
             RedisCacheWriter writer,
@@ -21,6 +22,7 @@ public class MigratingCache extends RedisCache {
         this.migrator = migrator;
     }
 
+    // 旧格式命中时调度迁移并返回解码值。
     @Override
     public ValueWrapper get(Object key) {
         var raw = getCacheWriter().get(getName(), serializeCacheKey(createCacheKey(key)));

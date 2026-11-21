@@ -52,6 +52,9 @@ class RecordingsTest {
     @Mock
     private RoomResolver roomResolver;
 
+    @Mock
+    private LiveRecordingLocks recordingLocks;
+
     @InjectMocks
     private Recordings service;
 

@@ -29,6 +29,7 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
 
     private final SecurityProperties securityProperties;
 
+    // 汇总第三方登录所需的仓库、连接与会话依赖。
     public OAuth2SecurityConfigurer(
             ServerSecurityContextRepository securityContextRepository,
             Connections connections,
@@ -44,6 +45,7 @@ class OAuth2SecurityConfigurer implements SecurityConfigurer {
         this.securityProperties = securityProperties;
     }
 
+    // 注册映射过滤器与双因素拦截，再启用第三方登录。
     @Override
     public void configure(ServerHttpSecurity http) {
         var mapOAuth2Filter = new MapOAuth2AuthenticationFilter(

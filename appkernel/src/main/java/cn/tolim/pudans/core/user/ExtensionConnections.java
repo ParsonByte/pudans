@@ -14,13 +14,10 @@ import cn.tolim.pudans.extension.contract.MetadataOperator;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
 import cn.tolim.pudans.infra.exception.IdentityAlreadyBoundException;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import cn.tolim.pudans.infra.utils.Digests;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.context.ApplicationEventPublisher;
@@ -51,15 +48,18 @@ public class ExtensionConnections implements Connections {
 
     private JsonMapper mapper = JsonMapper.shared();
 
+    // 注入扩展客户端与事件发布器
     public ExtensionConnections(ReactiveExtensionClient client, ApplicationEventPublisher eventPublisher) {
         this.client = client;
         this.eventPublisher = eventPublisher;
     }
 
+    // 替换时钟便于测试绑定时间生成
     void setClock(Clock clock) {
         this.clock = clock;
     }
 
+    // 校验必填字段并创建唯一身份绑定
     @Override
     public Mono<UserConnection> createConnection(UserConnection connection) {
         return Mono.defer(() -> {
@@ -91,6 +91,7 @@ public class ExtensionConnections implements Connections {
         });
     }
 
+    // 从外部用户资料构造并保存连接
     @Override
     public Mono<UserConnection> createOAuth2Connection(
             String username, String registrationId, OAuth2User oauth2User) {
@@ -107,6 +108,7 @@ public class ExtensionConnections implements Connections {
         return createConnection(connection);
     }
 
+    // 等待旧连接删除完成后再重试创建
     private Mono<UserConnection> retryCreateWhileDeleting(
             UserConnection connection, DuplicateNameException original, int remainingAttempts) {
         var name = connection.getMetadata().getName();
@@ -129,6 +131,7 @@ public class ExtensionConnections implements Connections {
                 });
     }
 
+    // 刷新显示名与外部资料，保留原有绑定
     private Mono<UserConnection> updateUserConnection(UserConnection connection, OAuth2User oauth2User) {
         connection.getSpec().setUpdatedAt(clock.instant());
         var displayName = displayName(oauth2User);
@@ -139,12 +142,14 @@ public class ExtensionConnections implements Connections {
         return client.update(connection);
     }
 
+    // 仅更新已存在的连接，不新建
     @Override
     public Mono<UserConnection> updateUserConnectionIfPresent(String registrationId, OAuth2User oauth2User) {
         return getByProviderUserId(registrationId, oauth2User.getName())
                 .flatMap(connection -> updateUserConnection(connection, oauth2User));
     }
 
+    // 列出用户未删除的身份连接
     @Override
     public Flux<UserConnection> listConnections(String username) {
         var listOptions = ListOptions.builder()
@@ -154,6 +159,7 @@ public class ExtensionConnections implements Connections {
         return client.listAll(UserConnection.class, listOptions, defaultSort());
     }
 
+    // 校验归属和最后登录方式后删除连接
     @Override
     public Mono<UserConnection> removeConnection(String username, String connectionName) {
         return client.fetch(UserConnection.class, connectionName)
@@ -174,6 +180,7 @@ public class ExtensionConnections implements Connections {
                         new UserConnectionDisconnectedEvent(this, deleted)));
     }
 
+    // 判断删除后是否不再有任何登录凭据
     private Mono<Boolean> isLastSignInMethod(String username, UserConnection target) {
         return listConnections(username)
                 .filter(connection ->
@@ -186,6 +193,7 @@ public class ExtensionConnections implements Connections {
                 .map(canStay -> !canStay);
     }
 
+    // 按提供方和用户标识查找有效连接
     private Mono<UserConnection> getByProviderUserId(String registrationId, String providerUserId) {
         var listOptions = ListOptions.builder()
                 .andQuery(equal("spec.registrationId", registrationId))
@@ -195,16 +203,13 @@ public class ExtensionConnections implements Connections {
         return client.listAll(UserConnection.class, listOptions, defaultSort()).next();
     }
 
+    // 生成稳定且唯一的连接资源名
     private static String connectionName(String registrationId, String providerUserId) {
-        try {
-            var digest = MessageDigest.getInstance("SHA-256")
-                    .digest((registrationId + '\0' + providerUserId).getBytes(StandardCharsets.UTF_8));
-            return registrationId + "-" + HexFormat.of().formatHex(digest, 0, 28);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 不可用", e);
-        }
+        var digest = Digests.sha256Hex(registrationId + '\0' + providerUserId);
+        return registrationId + "-" + digest.substring(0, 56);
     }
 
+    // 依次尝试常见字段获取外部显示名
     private static String displayName(OAuth2User oauth2User) {
         var attributes = oauth2User.getAttributes();
         if (attributes == null) {
@@ -219,6 +224,7 @@ public class ExtensionConnections implements Connections {
         return null;
     }
 
+    // 将外部用户资料记录到连接注解中
     private void updateUserInfo(MetadataOperator metadata, OAuth2User oauth2User) {
         var annotations = Optional.ofNullable(metadata.getAnnotations()).orElseGet(HashMap::new);
         metadata.setAnnotations(annotations);

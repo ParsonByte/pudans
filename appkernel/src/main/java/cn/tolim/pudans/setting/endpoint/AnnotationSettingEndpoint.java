@@ -29,6 +29,7 @@ class AnnotationSettingEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
+    // 注册按 targetRef 查询注解设置的接口
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "AnnotationSettingV1alpha1";
@@ -52,6 +53,7 @@ class AnnotationSettingEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // targetRef 必填，按目标类型筛选设置
     private Mono<ServerResponse> listAvailableAnnotationSettings(ServerRequest serverRequest) {
         var targetRef = serverRequest
                 .queryParam("targetRef")
@@ -67,6 +69,7 @@ class AnnotationSettingEndpoint implements CustomEndpoint {
         return ServerResponse.ok().body(annotationSettings, AnnotationSetting.class);
     }
 
+    // 端点挂在核心 API 版本下
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

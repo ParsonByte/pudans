@@ -71,6 +71,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
 
     private TransactionalOperator transactionalOperator;
 
+    // 装配依赖并创建事务操作器与查询调度器。
     public ReactiveExtensionClientImpl(
             ReactiveExtensionStoreClient client,
             ExtensionConverter converter,
@@ -91,6 +92,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                 "extension-query");
     }
 
+    // 释放查询调度器以免线程泄漏。
     @Override
     public void destroy() {
         this.queryScheduler.dispose();
@@ -98,21 +100,18 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
 
     
 
+    // 替换调度器供测试控制异步执行。
     void setScheduler(Scheduler scheduler) {
         this.scheduler = scheduler;
     }
 
-    
 
-    void setQueryScheduler(Scheduler scheduler) {
-        this.queryScheduler = scheduler;
-    }
-
-    
+    // 替换事务操作器以适配测试事务。
     void setTransactionalOperator(TransactionalOperator transactionalOperator) {
         this.transactionalOperator = transactionalOperator;
     }
 
+    // 按存储前缀读取并过滤排序扩展。
     @Override
     public <E extends Extension> Flux<E> list(Class<E> type, Predicate<E> predicate, Comparator<E> comparator) {
         var scheme = schemeManager.get(type);
@@ -124,6 +123,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                 .sort(comparator == null ? Comparator.naturalOrder() : comparator);
     }
 
+    // 经索引取键后分批读取全部扩展。
     @Override
     public <E extends Extension> Flux<E> listAll(Class<E> type, ListOptions options, Sort sort) {
         var nullSafeSort = Optional.ofNullable(sort).orElseGet(() -> {
@@ -158,6 +158,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                 });
     }
 
+    // 经索引直接返回全部扩展名称。
     @Override
     public <E extends Extension> Flux<String> listAllNames(Class<E> type, ListOptions options, Sort sort) {
         var scheme = schemeManager.get(type);
@@ -166,6 +167,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                 .flatMapMany(Flux::fromIterable);
     }
 
+    // 经索引返回排序靠前的指定数量名称。
     @Override
     public <E extends Extension> Flux<String> listTopNames(Class<E> type, ListOptions options, Sort sort, int topN) {
         var scheme = schemeManager.get(type);
@@ -174,6 +176,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                 .flatMapMany(Flux::fromIterable);
     }
 
+    // 分页读取扩展并附带回填总数。
     @Override
     public <E extends Extension> Mono<ListResult<E>> listBy(Class<E> type, ListOptions options, PageRequest page) {
         var scheme = schemeManager.get(type);
@@ -198,6 +201,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                 .defaultIfEmpty(ListResult.emptyResult());
     }
 
+    // 分页读取扩展名称而不加载实体。
     @Override
     public <E extends Extension> Mono<ListResult<String>> listNamesBy(
             Class<E> type, ListOptions options, PageRequest pageable) {
@@ -206,6 +210,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                 .subscribeOn(this.queryScheduler);
     }
 
+    // 经索引统计满足条件的扩展数量。
     @Override
     public <E extends Extension> Mono<Long> countBy(Class<E> type, ListOptions options) {
         var scheme = schemeManager.get(type);
@@ -213,12 +218,14 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                 .subscribeOn(this.queryScheduler);
     }
 
+    // 按名称读取扩展，不存在时返回空。
     @Override
     public <E extends Extension> Mono<E> fetch(Class<E> type, String name) {
         var storeName = ExtensionStoreUtil.buildStoreName(schemeManager.get(type), name);
         return client.fetchByName(storeName).map(extensionStore -> converter.convertFrom(type, extensionStore));
     }
 
+    // 按资源标识读取非结构化扩展。
     @Override
     public Mono<Unstructured> fetch(GroupVersionKind gvk, String name) {
         var storeName = ExtensionStoreUtil.buildStoreName(schemeManager.get(gvk), name);
@@ -226,12 +233,14 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                 .map(extensionStore -> converter.convertFrom(Unstructured.class, extensionStore));
     }
 
+    // 以 JSON 扩展形式读取原始数据。
     private Mono<JsonExtension> fetchJsonExtension(GroupVersionKind gvk, String name) {
         var storeName = ExtensionStoreUtil.buildStoreName(schemeManager.get(gvk), name);
         return client.fetchByName(storeName)
                 .map(extensionStore -> converter.convertFrom(JsonExtension.class, extensionStore));
     }
 
+    // 读取扩展，缺失时抛出未找到异常。
     @Override
     public <E extends Extension> Mono<E> get(Class<E> type, String name) {
         return fetch(type, name).switchIfEmpty(Mono.error(() -> {
@@ -240,25 +249,30 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         }));
     }
 
+    // 读取非结构化扩展，缺失时报错。
     private Mono<Unstructured> get(GroupVersionKind gvk, String name) {
         return fetch(gvk, name).switchIfEmpty(Mono.error(() -> new ExtensionNotFoundException(gvk, name)));
     }
 
+    // 读取 JSON 扩展，缺失时报错。
     @Override
     public Mono<JsonExtension> getJsonExtension(GroupVersionKind gvk, String name) {
         return fetchJsonExtension(gvk, name).switchIfEmpty(Mono.error(() -> new ExtensionNotFoundException(gvk, name)));
     }
 
+    // 创建扩展并保护客户端可写元数据。
     @Override
     public <E extends Extension> Mono<E> create(E extension) {
         return createExtension(extension, false);
     }
 
+    // 内部创建，跳过用户元数据保护。
     @Override
     public <E extends Extension> Mono<E> createInternal(E extension) {
         return createExtension(extension, true);
     }
 
+    // 规范化元数据，并在名称冲突时重试创建。
     private <E extends Extension> Mono<E> createExtension(E extension, boolean trusted) {
         return Mono.fromCallable(() -> {
                     var metadata = extension.getMetadata();
@@ -301,16 +315,19 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                                 && hasText(extension.getMetadata().getGenerateName())));
     }
 
+    // 更新扩展并保护客户端可写元数据。
     @Override
     public <E extends Extension> Mono<E> update(E extension) {
         return updateExtension(extension, false);
     }
 
+    // 内部更新，跳过用户元数据保护。
     @Override
     public <E extends Extension> Mono<E> updateInternal(E extension) {
         return updateExtension(extension, true);
     }
 
+    // 合并旧元数据后更新，仅状态变化不通知观察者。
     private <E extends Extension> Mono<E> updateExtension(E extension, boolean trusted) {
         return getLatest(extension).flatMap(old -> {
             var oldJsonExt = new JsonExtension(objectMapper, old);
@@ -350,11 +367,17 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         });
     }
 
+    // 拒绝客户端在创建时写入受保护的元数据。
     private static void protectCreateMetadata(Extension extension) {
+        var metadata = extension.getMetadata();
+        if (metadata != null
+                && metadata.getFinalizers() != null
+                && !metadata.getFinalizers().isEmpty()) {
+            throw new AccessDeniedException("metadata.finalizers 是受保护的字段，不能通过 API 请求设置。");
+        }
         if (!isUserKind(extension)) {
             return;
         }
-        var metadata = extension.getMetadata();
         var reserved = ReservedLabels.of(metadata == null ? null : metadata.getLabels());
         if (!reserved.isEmpty()) {
             throw new AccessDeniedException(
@@ -362,6 +385,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         }
     }
 
+    // 拒绝客户端在更新时篡改受保护的元数据。
     private static void protectUpdateMetadata(JsonExtension oldExtension, JsonExtension newExtension) {
         var oldMetadata = oldExtension.getMetadata();
         var newMetadata = newExtension.getMetadata();
@@ -405,6 +429,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         }
     }
 
+    // 仅用户类型需要保护保留标签。
     private static boolean isUserKind(Extension extension) {
         if (extension == null) {
             return false;
@@ -416,6 +441,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         }
     }
 
+    // 按扩展的具体表示读取最新版本。
     private Mono<? extends Extension> getLatest(Extension extension) {
         if (extension instanceof Unstructured) {
             return get(extension.groupVersionKind(), extension.getMetadata().getName());
@@ -427,6 +453,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         return get(extension.getClass(), extension.getMetadata().getName());
     }
 
+    // 标记删除时间戳并持久化删除状态。
     @Override
     public <E extends Extension> Mono<E> delete(E extension) {
         
@@ -442,15 +469,18 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
                         .subscribeOn(this.scheduler));
     }
 
+    // 暴露基于索引的只读查询入口。
     @Override
     public IndexedQueryEngine indexedQueryEngine() {
         return new IndexedQueryEngine() {
+            // 按标识分页查询对象键。
             @Override
             public ListResult<String> retrieve(GroupVersionKind gvk, ListOptions options, PageRequest page) {
                 var scheme = schemeManager.get(gvk);
                 return indexEngine.retrieve(scheme.type(), options, page);
             }
 
+            // 返回符合条件的全部对象键。
             @Override
             public List<String> retrieveAll(GroupVersionKind gvk, ListOptions options, Sort sort) {
                 var scheme = schemeManager.get(gvk);
@@ -466,6 +496,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
 
     
 
+    // 在同一事务内写入存储并更新索引。
     @SuppressWarnings("unchecked")
     <E extends Extension> Mono<E> doCreate(E oldExtension, String name, byte[] data) {
         return Mono.defer(() -> {
@@ -483,6 +514,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
 
     
 
+    // 在同一事务内更新存储与索引数据。
     @SuppressWarnings("unchecked")
     <E extends Extension> Mono<E> doUpdate(E oldExtension, String name, Long version, byte[] data) {
         return Mono.defer(() -> {
@@ -498,6 +530,7 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         });
     }
 
+    // 将通用表示转换为方案注册的真实类型。
     private Extension convertToRealExtension(Extension extension) {
         var gvk = extension.groupVersionKind();
         var realType = schemeManager.get(gvk).type();
@@ -510,11 +543,13 @@ public class ReactiveExtensionClientImpl implements InternalReactiveExtensionCli
         return realExtension;
     }
 
+    // 注册观察者以接收后续变更通知。
     @Override
     public void watch(Watcher watcher) {
         this.watchers.addWatcher(watcher);
     }
 
+    // 仅状态变化时无需通知观察者。
     private static boolean isOnlyStatusChanged(ObjectNode oldNode, ObjectNode newNode) {
         if (Objects.equals(oldNode, newNode)) {
             return false;

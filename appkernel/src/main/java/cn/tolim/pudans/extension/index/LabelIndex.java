@@ -26,27 +26,32 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
 
     private final ConcurrentMap<String, Set<LabelEntry>> invertedIndex;
 
+    // 初始化标签正排与倒排索引。
     public LabelIndex() {
         this.index = new ConcurrentSkipListMap<>();
         this.invertedIndex = new ConcurrentHashMap<>();
     }
 
+    // 清空标签索引数据。
     @Override
     public void close() throws IOException {
         this.index.clear();
         this.invertedIndex.clear();
     }
 
+    // 返回固定标签索引名称。
     @Override
     public String getName() {
         return "metadata.labels";
     }
 
+    // 标签索引键固定为字符串。
     @Override
     public Class<String> getKeyType() {
         return String.class;
     }
 
+    // 准备标签写入事务操作。
     @Override
     public TransactionalOperation prepareInsert(E extension) {
         var primaryKey = extension.getMetadata().getName();
@@ -54,6 +59,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
         return new UpsertTransactionalOperation(primaryKey, labels);
     }
 
+    // 准备标签更新事务操作。
     @Override
     public TransactionalOperation prepareUpdate(E extension) {
         var primaryKey = extension.getMetadata().getName();
@@ -61,11 +67,13 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
         return new UpsertTransactionalOperation(primaryKey, labels);
     }
 
+    // 按主键准备标签删除事务操作。
     @Override
     public TransactionalOperation prepareDelete(String primaryKey) {
         return new DeleteTransactionalOperation(primaryKey);
     }
 
+    // 返回包含指定标签键的主键集合。
     @Override
     public Set<String> exists(String labelKey) {
         return index
@@ -78,12 +86,14 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
                 .collect(Collectors.toCollection(HashSet::new));
     }
 
+    // 返回标签键值完全匹配的主键集合。
     @Override
     public Set<String> equal(String labelKey, String labelValue) {
         var primaryKeys = index.get(new LabelEntry(labelKey, labelValue));
         return primaryKeys == null ? new HashSet<>() : new HashSet<>(primaryKeys);
     }
 
+    // 返回同键但值不同的主键集合。
     @Override
     public Set<String> notEqual(String labelKey, String labelValue) {
 
@@ -100,6 +110,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
                 .collect(Collectors.toCollection(HashSet::new));
     }
 
+    // 返回标签值命中集合的主键。
     @Override
     public Set<String> in(String labelKey, Collection<String> labelValues) {
         if (CollectionUtils.isEmpty(labelValues)) {
@@ -114,6 +125,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
                 .collect(Collectors.toCollection(HashSet::new));
     }
 
+    // 返回标签值不在集合中的主键。
     @Override
     public Set<String> notIn(String labelKey, Collection<String> labelValues) {
         if (CollectionUtils.isEmpty(labelValues)) {
@@ -132,6 +144,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
                 .collect(Collectors.toCollection(HashSet::new));
     }
 
+    // 从正排与倒排索引移除标签。
     private void removeLabels(String primaryKey, Map<String, String> labels) {
         if (CollectionUtils.isEmpty(labels)) {
             return;
@@ -149,6 +162,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
         });
     }
 
+    // 把标签写入正排与倒排索引。
     private void addLabels(String primaryKey, Map<String, String> labels) {
         if (CollectionUtils.isEmpty(labels)) {
             return;
@@ -174,10 +188,12 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
 
     record LabelEntry(String labelKey, @Nullable String labelValue) implements Comparable<LabelEntry> {
 
+        // 校验标签键非空。
         public LabelEntry {
             Objects.requireNonNull(labelKey, "labelKey 不能为 null");
         }
 
+        // 先按键再按值排序，空值优先。
         @Override
         public int compareTo(LabelEntry o) {
             var compare = Comparator.<String>naturalOrder().compare(this.labelKey, o.labelKey);
@@ -198,11 +214,13 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
 
         private boolean committed;
 
+        // 记录主键与目标标签快照。
         UpsertTransactionalOperation(String primaryKey, Map<String, String> labels) {
             this.primaryKey = primaryKey;
             this.labels = labels;
         }
 
+        // 保存旧标签以支持回滚。
         @Override
         public void prepare() {
             this.previousLabels = Optional.ofNullable(invertedIndex.get(primaryKey))
@@ -212,6 +230,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
                     .orElse(null);
         }
 
+        // 幂等提交，替换该主键的标签。
         @Override
         public void commit() {
             if (committed) {
@@ -223,6 +242,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
             addLabels(primaryKey, labels);
         }
 
+        // 撤销提交，恢复旧标签。
         @Override
         public void rollback() {
             if (!committed) {
@@ -241,10 +261,12 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
 
         private boolean committed;
 
+        // 记录待删除的主键。
         DeleteTransactionalOperation(String primaryKey) {
             this.primaryKey = primaryKey;
         }
 
+        // 保存待删除主键的标签。
         @Override
         public void prepare() {
             this.previousLabels = Optional.ofNullable(invertedIndex.get(primaryKey))
@@ -254,6 +276,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
                     .orElse(null);
         }
 
+        // 幂等删除主键的全部标签。
         @Override
         public void commit() {
             if (committed) {
@@ -263,6 +286,7 @@ class LabelIndex<E extends Extension> implements LabelIndexQuery, Index<E, Strin
             removeLabels(primaryKey, previousLabels);
         }
 
+        // 恢复删除前的标签。
         @Override
         public void rollback() {
             if (!committed) {

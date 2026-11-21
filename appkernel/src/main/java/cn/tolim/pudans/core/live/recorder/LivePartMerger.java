@@ -13,6 +13,7 @@ import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import jakarta.annotation.PreDestroy;
+import cn.tolim.pudans.core.storage.driver.StorageIo;
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
@@ -61,6 +62,7 @@ public class LivePartMerger {
 
     private final ExecutorService executor;
 
+    // 创建按录制串行执行的合并线程池
     public LivePartMerger(
             LiveRecordingWorkspace workspace,
             LiveSegmentManifest segmentManifest,
@@ -81,12 +83,14 @@ public class LivePartMerger {
         this.executor = Executors.newCachedThreadPool(new MergerThreadFactory());
     }
 
+    // 登记录制会话并记录合并间隔与起始时间
     public void start(String recordingName, int mergeIntervalSeconds) {
         var session = session(recordingName);
         session.mergeIntervalSeconds = mergeIntervalSeconds;
         session.lastMergeAt = Instant.now();
     }
 
+    // 未失败时按积压、压力或间隔决定是否投递合并
     public void requestMerge(String recordingName, boolean force) {
         var session = session(recordingName);
         if (session.failed) {
@@ -106,6 +110,7 @@ public class LivePartMerger {
         session.queue.execute(() -> runMerge(session));
     }
 
+    // 排空合并队列并上传，超时由配置决定
     public Mono<Void> finalizeRecording(String recordingName) {
         var session = session(recordingName);
         var done = new CompletableFuture<Void>();
@@ -120,33 +125,40 @@ public class LivePartMerger {
         return Mono.fromFuture(done).timeout(properties.getRecorder().getFinalizeTimeout());
     }
 
+    // 查询会话是否已进入失败状态
     public boolean isFailed(String recordingName) {
         var session = sessions.get(recordingName);
         return session != null && session.failed;
     }
 
+    // 返回会话失败码，无会话时用合并失败兜底
     public LiveErrorCode failureCode(String recordingName) {
         var session = sessions.get(recordingName);
         return session == null || session.failureCode == null ? LIVE_MERGE_FAILED : session.failureCode;
     }
 
+    // 估算该录制本地分片与成品占用字节
     public long localBytes(String recordingName) {
         return estimate(recordingName).localBytes();
     }
 
+    // 估算该录制尚未上传的成品数量
     public int pendingParts(String recordingName) {
         return estimate(recordingName).parts();
     }
 
+    // 移除录制会话，后续合并请求重新建会话
     public void stop(String recordingName) {
         sessions.remove(recordingName);
     }
 
+    // 关闭合并线程池，丢弃未执行任务
     @PreDestroy
     public void shutdown() {
         executor.shutdownNow();
     }
 
+    // 反复合并直到无已关闭分片，再上传剩余成品
     private void drain(Session session) {
         for (var round = 0; round < MAX_DRAIN_ROUNDS; round++) {
             if (session.failed) {
@@ -164,6 +176,7 @@ public class LivePartMerger {
         log.warn("录制收尾合并轮次超过上限 [{}]", session.recordingName);
     }
 
+    // 逐个上传未完成成品，任一失败即终止本会话
     private void uploadPending(Session session) {
         var name = session.recordingName;
         LiveRecording recording;
@@ -188,6 +201,7 @@ public class LivePartMerger {
         }
     }
 
+    // 合并一个成品并计时，失败时记录耗时并终止会话
     private void runMerge(Session session) {
         if (session.failed) {
             return;
@@ -214,6 +228,7 @@ public class LivePartMerger {
         }
     }
 
+    // 将已关闭分片合并为一个成品并登记清单
     private LiveRecording.Part merge(LiveRecording recording) {
         var name = recording.getMetadata().getName();
         var closed = segmentManifest.closedSegments(name);
@@ -234,7 +249,7 @@ public class LivePartMerger {
         var target = workspace.partPath(name, index);
         var tmp = workspace.partTempPath(name, index);
         copySegments(name, closed, tmp, target);
-        var size = sizeOf(target);
+        var size = StorageIo.sizeOf(target);
         part.setSize(size);
         part.setDurationMillis(closed.stream().mapToLong(LiveSegment::durationMillis).sum());
         var updated = recordingStatus
@@ -245,9 +260,10 @@ public class LivePartMerger {
                 .block();
         partManifest.append(name, part);
         deleteSegments(name, closed);
-        return findPart(updated, index);
+        return RecordingStatus.findPart(updated, index);
     }
 
+    // 顺序复制分片到临时文件，fsync 后原子改名
     private void copySegments(String name, java.util.List<LiveSegment> closed, Path tmp, Path target) {
         try {
             Files.deleteIfExists(tmp);
@@ -265,17 +281,18 @@ public class LivePartMerger {
             }
             out.force(true);
         } catch (IOException error) {
-            deleteQuietly(tmp);
+            StorageIo.deleteQuietly(tmp);
             throw new IllegalStateException("合并分片失败：" + name, error);
         }
         try {
             Files.move(tmp, target, StandardCopyOption.ATOMIC_MOVE);
         } catch (IOException error) {
-            deleteQuietly(tmp);
+            StorageIo.deleteQuietly(tmp);
             throw new IllegalStateException("成品文件原子改名失败：" + target, error);
         }
     }
 
+    // 校验成品与策略后上传，失败写入会话失败码
     private void upload(Session session, int index) {
         var name = session.recordingName;
         LiveRecording recording;
@@ -285,7 +302,7 @@ public class LivePartMerger {
             fail(session, codeOf(error, LIVE_STORAGE_FAILED), "读取录制记录失败：" + error.getMessage());
             return;
         }
-        var part = findPart(recording, index);
+        var part = RecordingStatus.findPart(recording, index);
         if (part == null) {
             fail(session, LIVE_MERGE_FAILED, "录制成品索引不存在：" + index);
             return;
@@ -316,6 +333,7 @@ public class LivePartMerger {
         }
     }
 
+    // 刷新成品数、已上传字节与本地占用统计
     private void refreshTotals(String name) {
         try {
             recordingStatus
@@ -334,6 +352,7 @@ public class LivePartMerger {
         }
     }
 
+    // 合并成功后删除已消费的分片文件
     private void deleteSegments(String name, java.util.List<LiveSegment> closed) {
         for (var segment : closed) {
             try {
@@ -344,6 +363,7 @@ public class LivePartMerger {
         }
     }
 
+    // 首次失败时固定失败码，后续失败不覆盖
     private void fail(Session session, LiveErrorCode code, String message) {
         if (session.failed) {
             return;
@@ -358,10 +378,12 @@ public class LivePartMerger {
         }
     }
 
+    // 取或创建录制会话，保证同一录制串行
     private Session session(String recordingName) {
         return sessions.computeIfAbsent(recordingName, name -> new Session(name, executor));
     }
 
+    // 间隔为零表示按需合并，否则按秒数判断
     private boolean intervalElapsed(Session session) {
         if (session.mergeIntervalSeconds <= 0) {
             return false;
@@ -369,19 +391,21 @@ public class LivePartMerger {
         return Duration.between(session.lastMergeAt, Instant.now()).toSeconds() >= session.mergeIntervalSeconds;
     }
 
+    // 统计本地分片与成品文件的大小与数量
     private Estimate estimate(String recordingName) {
         long bytes = 0;
         var segments = workspace.listSegmentFiles(recordingName);
         for (var segment : segments) {
-            bytes += sizeOf(segment);
+            bytes += StorageIo.sizeOf(segment);
         }
         var parts = workspace.listPartFiles(recordingName);
         for (var part : parts) {
-            bytes += sizeOf(part);
+            bytes += StorageIo.sizeOf(part);
         }
         return new Estimate(bytes, segments.size(), parts.size());
     }
 
+    // 取记录与现存文件中的最大索引加一
     private int nextPartIndex(LiveRecording recording) {
         var index = 0;
         for (var part : recording.getStatus().getParts()) {
@@ -393,6 +417,7 @@ public class LivePartMerger {
         return index + 1;
     }
 
+    // 从成品文件名解析索引，非法名称按零处理
     private static int indexOf(Path file) {
         var filename = file.getFileName().toString();
         var dash = filename.indexOf('-');
@@ -407,36 +432,13 @@ public class LivePartMerger {
         }
     }
 
-    private static LiveRecording.Part findPart(LiveRecording recording, int index) {
-        for (var part : recording.getStatus().getParts()) {
-            if (part.getIndex() == index) {
-                return part;
-            }
-        }
-        return null;
-    }
-
+    // 取平台名用于指标标签，空平台返回 null
     private static String platformName(LiveRecording recording) {
         var platform = recording.getSpec().getPlatform();
         return platform == null ? null : platform.name();
     }
 
-    private static long sizeOf(Path path) {
-        try {
-            return Files.isRegularFile(path) ? Files.size(path) : 0;
-        } catch (IOException error) {
-            return 0;
-        }
-    }
-
-    private static void deleteQuietly(Path path) {
-        try {
-            Files.deleteIfExists(path);
-        } catch (IOException error) {
-            log.warn("删除临时文件失败 [{}]：{}", path, error.getMessage());
-        }
-    }
-
+    // 优先复用异常携带的直播错误码，否则用兜底码
     private static LiveErrorCode codeOf(Throwable error, LiveErrorCode fallback) {
         if (error instanceof ApiException apiException && apiException.getCode() != null) {
             try {
@@ -464,6 +466,7 @@ public class LivePartMerger {
 
         private volatile LiveErrorCode failureCode;
 
+        // 会话持有录制名与串行队列，状态跨任务共享
         private Session(String recordingName, ExecutorService executor) {
             this.recordingName = recordingName;
             this.queue = new SerialQueue(executor);
@@ -478,10 +481,12 @@ public class LivePartMerger {
 
         private boolean running;
 
+        // 串行队列复用合并线程池，按录制保证顺序
         private SerialQueue(ExecutorService executor) {
             this.executor = executor;
         }
 
+        // 追加任务并在空闲时唤醒消费循环
         private void execute(Runnable task) {
             synchronized (this) {
                 tasks.add(task);
@@ -493,6 +498,7 @@ public class LivePartMerger {
             executor.execute(this::drain);
         }
 
+        // 逐条执行队列任务，单任务失败不中断后续
         private void drain() {
             while (true) {
                 Runnable task;
@@ -516,6 +522,7 @@ public class LivePartMerger {
 
         private final AtomicInteger index = new AtomicInteger();
 
+        // 合并线程按序号命名并设为守护线程
         @Override
         public Thread newThread(Runnable runnable) {
             var thread = new Thread(runnable, "live-merger-" + index.incrementAndGet());

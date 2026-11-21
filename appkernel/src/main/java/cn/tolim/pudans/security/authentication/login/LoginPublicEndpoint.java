@@ -57,11 +57,13 @@ public class LoginPublicEndpoint implements CustomEndpoint {
 
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
+    // 声明登录公开接口归属的接口版本。
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
 
+    // 注册会话、登录提供方与登录状态三个公开路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         final var tag = "LoginV1alpha1";
@@ -84,6 +86,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 已登录时返回真实会话，否则给出匿名视图。
     private Mono<ServerResponse> session(ServerRequest request) {
         return currentAuthentication(request)
                 .filter(this::isSignedIn)
@@ -92,6 +95,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
+    // 汇总用户资料、控制台权限与登录后跳转地址。
     private Mono<SessionView> signedInSession(Authentication authentication) {
         var username = authentication.getName();
         var user = accounts
@@ -126,6 +130,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                         tuple.getT2()));
     }
 
+    // 返回登录页展示的已启用非表单登录方式。
     private Mono<ServerResponse> providers(ServerRequest request) {
         return authProviders
                 .getEnabledProviders()
@@ -142,6 +147,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                 .flatMap(views -> ServerResponse.ok().bodyValue(views));
     }
 
+    // 合并配置来源并剔除无法跳转的提供方条目。
     private List<LoginProviderView> mergeConfiguredProviders(List<LoginProviderView> views) {
         var providers = new LinkedHashMap<String, LoginProviderView>();
         views.forEach(view -> providers.put(view.name(), view));
@@ -193,6 +199,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                 .toList();
     }
 
+    // 仅保留已配置或指向外部地址的提供方。
     private static boolean isReachable(LoginProviderView provider, Set<String> configuredNames) {
         if (configuredNames.contains(provider.name())) {
             return true;
@@ -204,10 +211,12 @@ public class LoginPublicEndpoint implements CustomEndpoint {
         return !authenticationUrl.startsWith("/oauth2/authorization/");
     }
 
+    // 展示名缺失时回退为注册标识。
     private static String displayName(String displayName, String fallback) {
         return StringUtils.hasText(displayName) ? displayName : fallback;
     }
 
+    // 返回首次运行状态与登录页所需的开关信息。
     private Mono<ServerResponse> status(ServerRequest request) {
         var setupRequired = initializationStateGetter.setupRequired().defaultIfEmpty(false);
         var captchaEnabled = captchas.loginEnabled().defaultIfEmpty(false);
@@ -220,6 +229,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
+    // 优先使用请求主体，回退到安全上下文。
     private Mono<Authentication> currentAuthentication(ServerRequest request) {
         return request
                 .principal()
@@ -229,6 +239,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
                         .mapNotNull(SecurityContext::getAuthentication));
     }
 
+    // 排除匿名与未认证身份，仅认定真实登录。
     private boolean isSignedIn(Authentication authentication) {
         return trustResolver.isAuthenticated(authentication)
                 && !trustResolver.isAnonymous(authentication)
@@ -243,6 +254,7 @@ public class LoginPublicEndpoint implements CustomEndpoint {
             String redirectUrl,
             boolean consoleAccessDisallowed,
             List<String> uiPermissions) {
+        // 未登录时返回仅含跳转地址的匿名视图。
         static SessionView anonymous(String redirectUrl) {
             return new SessionView(false, null, null, null, redirectUrl, false, List.of());
         }

@@ -10,6 +10,7 @@ public class ExternalUrlChangedEvent extends ApplicationEvent {
     @Getter
     private final URL externalUrl;
 
+    // 携带新的外部访问地址，通知相关组件刷新。
     public ExternalUrlChangedEvent(Object source, URL externalUrl) {
         super(source);
         this.externalUrl = externalUrl;

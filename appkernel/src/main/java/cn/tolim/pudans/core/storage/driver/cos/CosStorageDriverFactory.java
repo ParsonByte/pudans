@@ -25,6 +25,7 @@ public class CosStorageDriverFactory implements StorageDriverFactory {
 
     private final PudansProperties properties;
 
+    // 声明 COS 类型及其支持的能力。
     @Override
     public List<StoragePolicyTypeDescriptor> descriptors() {
         return List.of(new StoragePolicyTypeDescriptor(
@@ -39,6 +40,7 @@ public class CosStorageDriverFactory implements StorageDriverFactory {
                         StorageCapability.CORS_CONFIGURABLE)));
     }
 
+    // 按策略区域与端点创建 COS 客户端，并禁止服务端重定向。
     @Override
     public StorageDriver create(ResolvedStoragePolicy resolved) {
         var policy = resolved.policy();
@@ -48,6 +50,7 @@ public class CosStorageDriverFactory implements StorageDriverFactory {
                 ? settings.getRegion()
                 : "ap-guangzhou";
         var configuration = new ClientConfig(new Region(region));
+        configuration.setRedirectsEnabled(false);
         if (StringUtils.hasText(spec.getServer())) {
             var endpoint = spec.getServer().replaceFirst("^https?://", "");
             configuration.setEndpointBuilder(new UserSpecifiedEndpointBuilder(endpoint, endpoint));

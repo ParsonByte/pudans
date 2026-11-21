@@ -45,46 +45,57 @@ public class StorageTransfer {
 
     private final ParameterGroups parameterGroups;
 
+    // 创建上传会话并返回客户端上传凭证。
     public Mono<UploadTicket> initiateUpload(StorageUploadRequest request) {
         return uploads.initiate(request);
     }
 
+    // 为仍有效的上传会话续签上传令牌。
     public Mono<String> issueUploadToken(String fileId) {
         return uploads.issueToken(fileId);
     }
 
+    // 查询上传会话已接收的分片与状态。
     public Mono<UploadStatus> uploadStatus(String fileId) {
         return uploads.status(fileId);
     }
 
+    // 将单个分片写入上传会话。
     public Mono<UploadedPart> putPart(String fileId, int partNumber, long contentLength, Flux<org.springframework.core.io.buffer.DataBuffer> body) {
         return uploads.putPart(fileId, partNumber, contentLength, body);
     }
 
+    // 生成单个分片的预签名上传地址。
     public Mono<UploadPartUrl> uploadPartUrl(String fileId, int partNumber) {
         return uploads.partUrl(fileId, partNumber);
     }
 
+    // 合并分片并将文件置为可读状态。
     public Mono<StorageFile> completeUpload(String fileId, List<UploadedPart> parts) {
         return uploads.complete(fileId, parts);
     }
 
+    // 终止上传会话并清理中间数据。
     public Mono<Void> abortUpload(String fileId) {
         return uploads.abort(fileId);
     }
 
+    // 一次性写入内容并创建可读文件记录。
     public Mono<StorageFile> upload(StorageWriteRequest request) {
         return uploads.upload(request);
     }
 
+    // 按标识读取文件记录。
     public Mono<StorageFile> getFile(String fileId) {
         return fileRecords.get(fileId);
     }
 
+    // 按查询条件分页列出文件记录。
     public Mono<ListResult<StorageFile>> listFiles(StorageFileQuery query) {
         return fileRecords.list(query);
     }
 
+    // 将可读文件移入回收站并设置清理时间。
     public Mono<StorageFile> trash(String fileId) {
         return fileRecords.get(fileId).flatMap(file -> {
             if (file.getSpec().getState() != StorageFileState.ACTIVE) {
@@ -104,6 +115,7 @@ public class StorageTransfer {
         });
     }
 
+    // 将回收站文件恢复为可读状态。
     public Mono<StorageFile> restore(String fileId) {
         return fileRecords.get(fileId).flatMap(file -> {
             if (file.getSpec().getState() != StorageFileState.TRASHED) {
@@ -117,6 +129,7 @@ public class StorageTransfer {
         });
     }
 
+    // 彻底删除回收站文件及其存储对象。
     public Mono<Void> purge(String fileId) {
         return fileRecords.fetch(fileId).flatMap(file -> {
             if (file.getSpec().getState() == StorageFileState.UPLOADING) {
@@ -139,6 +152,7 @@ public class StorageTransfer {
         });
     }
 
+    // 先删对象再删记录，便于失败后重试。
     public Mono<Void> purgeObjectFirst(String fileId) {
         return fileRecords.fetch(fileId).flatMap(file -> {
             if (file.getSpec().getState() == StorageFileState.UPLOADING) {
@@ -157,32 +171,39 @@ public class StorageTransfer {
         });
     }
 
+    // 生成带令牌与有效期的下载地址。
     public Mono<DownloadUrl> downloadUrl(String fileId, Duration ttl) {
         return downloads.downloadUrl(fileId, ttl);
     }
 
+    // 打开文件内容供调用方读取。
     public Mono<StorageReadResult> open(String fileId, StorageReadOptions options) {
         return downloads.open(fileId, options);
     }
 
+    // 读取文件内容并限制最大字节数。
     public Mono<byte[]> readBytes(String fileId, int maxBytes) {
         return open(fileId, StorageReadOptions.full())
                 .flatMap(result -> DataBufferUtils.join(result.body(), maxBytes))
                 .map(StorageTransfer::toBytes);
     }
 
+    // 获取预签名直链，不支持时返回空。
     public Mono<StorageSource> sourceUrl(String fileId, StorageSourceOptions options) {
         return downloads.sourceUrl(fileId, options);
     }
 
+    // 校验下载令牌是否匹配目标文件。
     public void verifyDownload(String token, String fileId) {
         downloads.verify(token, fileId);
     }
 
+    // 校验上传令牌是否匹配目标文件。
     public void verifyUpload(String token, String fileId) {
         uploads.verifyUploadToken(token, fileId);
     }
 
+    // 为支持跨域的驱动设置允许来源。
     public Mono<Void> configureCors(String policyName, List<String> origins) {
         return driverResolver.driver(policyName).flatMap(driver -> {
             if (driver instanceof cn.tolim.pudans.core.storage.driver.CorsConfigurable cors) {
@@ -193,10 +214,12 @@ public class StorageTransfer {
         });
     }
 
+    // 测试指定策略的连通性。
     public Mono<StorageTestResult> test(String policyName) {
         return driverResolver.test(policyName);
     }
 
+    // 读取缓冲区并确保其被释放。
     private static byte[] toBytes(DataBuffer buffer) {
         try {
             var bytes = new byte[buffer.readableByteCount()];

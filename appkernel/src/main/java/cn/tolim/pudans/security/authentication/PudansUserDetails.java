@@ -22,6 +22,7 @@ public class PudansUserDetails implements UserDetails, CredentialsContainer, Ser
     private final boolean enabled;
     private String password;
 
+    // 构造完整用户信息，并复制权限集合防止外部修改。
     public PudansUserDetails(
             String username,
             String password,
@@ -39,11 +40,13 @@ public class PudansUserDetails implements UserDetails, CredentialsContainer, Ser
         this.enabled = enabled;
     }
 
+    // 以禁用标记简化构造，其余账户状态默认可用。
     public PudansUserDetails(
             String username, String password, Collection<? extends GrantedAuthority> authorities, boolean disabled) {
         this(username, password, authorities, true, true, true, !disabled);
     }
 
+    // 认证完成后清除密码，降低凭据在内存中泄露的风险。
     @Override
     public void eraseCredentials() {
         this.password = null;

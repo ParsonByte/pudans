@@ -27,6 +27,7 @@ import cn.tolim.pudans.contract.rbac.UserGroupBinding;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.user.UserConnection;
+import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.extension.contract.GroupVersionKind;
 import cn.tolim.pudans.extension.contract.JsonExtension;
@@ -236,6 +237,24 @@ class BuiltinEntityPolicyTest {
 
         StepVerifier.create(policy.checkUpdate(userGvk(), NAME, requested))
                 .expectErrorSatisfies(error -> assertThat(error.getMessage()).contains("totpEncryptedSecret"))
+                .verify();
+    }
+
+    // 邮箱、身份标识和账号状态不能通过通用用户更新绕过专用接口。
+    @Test
+    void updateUserRejectsIdentityAndStatusChanges() {
+        when(client.get(User.class, NAME)).thenReturn(Mono.just(user("encoded-current", null)));
+        var requested = user("encoded-current", null);
+        requested.getSpec().setEmail("attacker@example.com");
+        requested.getSpec().setEmailVerified(true);
+        requested.getSpec().setDisabled(true);
+        requested.getSpec().setUid("spoofed-uid");
+
+        StepVerifier.create(policy.checkUpdate(userGvk(), NAME, requested))
+                .expectErrorSatisfies(error -> {
+                    assertThat(error).isInstanceOf(AccessDeniedException.class);
+                    assertThat(error.getMessage()).contains("专用接口");
+                })
                 .verify();
     }
 
@@ -458,6 +477,31 @@ class BuiltinEntityPolicyTest {
                 .verify();
     }
 
+    // 通用用户组绑定同样要校验目标组的角色覆盖范围。
+    @Test
+    void customGroupBindingRequiresGrantCoverage() {
+        var binding = new UserGroupBinding();
+        var metadata = new Metadata();
+        metadata.setName("alice-operators-binding");
+        binding.setMetadata(metadata);
+        binding.setSubjects(new java.util.LinkedList<>(List.of(UserGroupBinding.Subject.user("alice"))));
+        binding.setRoleRef(UserGroupBinding.RoleRef.userGroup("operators"));
+        var group = new UserGroup();
+        var groupMetadata = new Metadata();
+        groupMetadata.setName("operators");
+        group.setMetadata(groupMetadata);
+        var roleRef = new UserGroup.RoleRef();
+        roleRef.setName("powerful-role");
+        group.getRoleRefs().add(roleRef);
+        when(client.fetch(UserGroup.class, "operators")).thenReturn(Mono.just(group));
+        when(rolePermissionPolicy.checkGrant(Set.of("powerful-role")))
+                .thenReturn(Mono.error(new AccessDeniedException("no coverage")));
+
+        StepVerifier.create(policy.checkBindingMutation(binding, false))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
     @Test
     void assigningAUserToSystemAdminsRequiresGrantCoverage() {
         when(superAdminResolver.hasSuperAdminBinding("bob")).thenReturn(Mono.just(false));
@@ -524,6 +568,50 @@ class BuiltinEntityPolicyTest {
     private static GroupVersionKind storagePolicyGvk() {
         return new GroupVersionKind(
                 StoragePolicy.GROUP, StoragePolicy.VERSION, StoragePolicy.KIND);
+    }
+
+    // 用户、令牌等敏感资源不允许绕过专用接口做 JSON Patch。
+    @Test
+    void jsonPatchIsDeniedForSensitiveKinds() {
+        StepVerifier.create(policy.checkPatch(userGvk()))
+                .expectError(AccessDeniedException.class)
+                .verify();
+        StepVerifier.create(policy.checkPatch(personalAccessTokenGvk()))
+                .expectError(AccessDeniedException.class)
+                .verify();
+        StepVerifier.create(policy.checkPatch(storagePolicyGvk())).verifyComplete();
+    }
+
+    // PUT Webhook 时请求不会携带隐藏的签名密钥，必须保留已存值。
+    @Test
+    void webhookUpdateKeepsSecretThatTheRequestOmits() {
+        when(client.get(Webhook.class, "webhook-1")).thenReturn(Mono.just(webhook("stored-secret")));
+        var spec = new LinkedHashMap<String, Object>();
+        spec.put("displayName", "renamed");
+        var update = new Unstructured(Map.of(
+                "apiVersion", Webhook.GROUP + "/" + Webhook.VERSION,
+                "kind", Webhook.KIND,
+                "metadata", Map.of("name", "webhook-1"),
+                "spec", spec));
+
+        StepVerifier.create(policy.checkUpdate(webhookGvk(), "webhook-1", update))
+                .verifyComplete();
+
+        assertThat(Unstructured.getNestedValue(update.getData(), "spec", "secret"))
+                .contains("stored-secret");
+    }
+
+    private static GroupVersionKind webhookGvk() {
+        return new GroupVersionKind(Webhook.GROUP, Webhook.VERSION, Webhook.KIND);
+    }
+
+    private static Webhook webhook(String secret) {
+        var webhook = new Webhook();
+        var metadata = new Metadata();
+        metadata.setName("webhook-1");
+        webhook.setMetadata(metadata);
+        webhook.getSpec().setSecret(secret);
+        return webhook;
     }
 
     private static StoragePolicy storagePolicy(String accessKey) {

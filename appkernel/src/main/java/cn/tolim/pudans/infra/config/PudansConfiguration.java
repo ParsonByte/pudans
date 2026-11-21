@@ -17,6 +17,7 @@ import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 public class PudansConfiguration {
 
     @Bean
+    // 统一 JSON 包含策略并挂载旧版映射器桥接模块。
     JsonMapperBuilderCustomizer objectMapperCustomizer(ObjectProvider<ObjectMapper> objectMapperProvider) {
         return builder -> {
             builder.changeDefaultPropertyInclusion(

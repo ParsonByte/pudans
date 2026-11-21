@@ -8,7 +8,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -25,7 +24,6 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.audit.AuditRecord;
-import cn.tolim.pudans.infra.utils.PudansTime;
 
 @Slf4j
 @Component
@@ -53,6 +51,7 @@ public class AuditStore {
 
     private final TransactionalOperator transactionalOperator;
 
+    // 注入审计仓储与事务操作器，供归档事务复用。
     public AuditStore(
             AuditRecordRepository activeRepository,
             AuditArchiveRepository archiveRepository,
@@ -68,6 +67,7 @@ public class AuditStore {
         this.transactionalOperator = TransactionalOperator.create(reactiveTransactionManager);
     }
 
+    // 按指纹去重后写入审计，唯一索引兜底并发重复。
     public Mono<Void> append(AuditRecord record) {
         var fingerprint = record.getFingerprint() == null ? AuditFingerprint.of(record) : record.getFingerprint();
         record.setFingerprint(fingerprint);
@@ -85,6 +85,7 @@ public class AuditStore {
                 .then();
     }
 
+    // 合并活跃与归档记录，去重后按游标方向排序。
     public Flux<AuditRecord> query(AuditQuery query) {
         var direction = query.ascending() ? Sort.Direction.ASC : Sort.Direction.DESC;
         var pageable = PageRequest.of(0, Math.max(1, query.limit()), Sort.by(direction, "id"));
@@ -101,6 +102,7 @@ public class AuditStore {
                 .take(query.limit());
     }
 
+    // 通过受限深度扫描实现分页，避免加载整表。
     public Mono<AuditPageResult> page(AuditQuery query, int page, int size) {
         var direction = query.ascending() ? Sort.Direction.ASC : Sort.Direction.DESC;
         // 限制单次拉取深度，避免过大的页码导致全表加载。
@@ -117,6 +119,7 @@ public class AuditStore {
                 .map(tuple -> new AuditPageResult(tuple.getT1(), tuple.getT2()));
     }
 
+    // 仅在归档表中分页查询，供归档列表接口使用。
     public Mono<AuditPageResult> archivePage(AuditQuery query, int page, int size) {
         var direction = query.ascending() ? Sort.Direction.ASC : Sort.Direction.DESC;
         var pageable = PageRequest.of(
@@ -133,6 +136,7 @@ public class AuditStore {
                 .map(tuple -> new AuditPageResult(tuple.getT1(), tuple.getT2()));
     }
 
+    // 统计活跃与已归档的非静态请求记录数量。
     public Mono<ArchiveStats> archiveStats() {
         var query = Query.query(nonStaticRequests());
         return Mono.zip(
@@ -141,6 +145,7 @@ public class AuditStore {
                 .map(tuple -> new ArchiveStats(tuple.getT1(), tuple.getT2()));
     }
 
+    // 汇总追踪流并分页返回，结果过大时标记截断。
     public Mono<TraceFlowPage> traceFlows(AuditQuery query, int page, int size) {
         var pageable = PageRequest.of(
                 0, MAX_TRACE_GROUP_RECORDS, Sort.by(Sort.Direction.DESC, "id"));
@@ -170,6 +175,7 @@ public class AuditStore {
                 });
     }
 
+    // 统计活跃与归档表中满足条件的记录总数。
     private Mono<Long> countMatching(AuditQuery query) {
         var criteria = criteria(query);
         var active = entityOperations
@@ -181,11 +187,13 @@ public class AuditStore {
         return Mono.zip(active, archived).map(tuple -> tuple.getT1() + tuple.getT2());
     }
 
+    // 按审计标识生成升降序比较器。
     private static Comparator<AuditRecord> recordOrder(boolean ascending) {
         Comparator<AuditRecord> order = Comparator.comparing(record -> record.getMetadata().getName());
         return ascending ? order : order.reversed();
     }
 
+    // 组合游标、时间与业务筛选条件，并排除静态资源。
     private static Criteria criteria(AuditQuery query) {
         // 先放置恒真条件，确保 nonStaticRequests 的 OR 被整体括起后再与筛选条件合并。
         var criteria = Criteria.where("id").isNotNull().and(nonStaticRequests());
@@ -218,6 +226,7 @@ public class AuditStore {
         return criteria;
     }
 
+    // 排除静态资源请求，只保留有业务意义的审计。
     private static Criteria nonStaticRequests() {
         return Criteria.where("requestPath")
                 .isNull()
@@ -233,6 +242,7 @@ public class AuditStore {
                         .not("/login-bg.mp4"));
     }
 
+    // 先查活跃表，未命中时回退到归档表。
     public Mono<AuditRecord> findById(String auditId) {
         return activeRepository
                 .findById(auditId)
@@ -240,6 +250,7 @@ public class AuditStore {
                 .switchIfEmpty(archiveRepository.findById(auditId).map(AuditArchiveEntity::toRecord));
     }
 
+    // 统计指定时间之后的非静态请求审计数量。
     public Mono<Long> countSince(Instant from) {
         var criteria = Criteria.where("occurredAt")
                 .greaterThanOrEquals(toOffsetDateTime(from))
@@ -253,10 +264,12 @@ public class AuditStore {
         return Mono.zip(active, archived).map(tuple -> tuple.getT1() + tuple.getT2());
     }
 
+    // 按天统计操作数量，委托给带用户筛选的重载。
     public Mono<Map<LocalDate, Long>> countPerDay(Instant since, String operation, String result) {
         return countPerDay(since, null, operation, result);
     }
 
+    // 跨活跃与归档表按北京时间自然日聚合统计。
     public Mono<Map<LocalDate, Long>> countPerDay(
             Instant since, String uid, String operation, String result) {
         var sql = new StringBuilder("""
@@ -320,6 +333,7 @@ public class AuditStore {
                 .collectMap(Map.Entry::getKey, Map.Entry::getValue);
     }
 
+    // 按时间倒序返回最近的审计记录。
     public Flux<AuditRecord> findRecent(int limit) {
         var pageable = PageRequest.of(0, Math.max(1, limit), Sort.by(Sort.Direction.DESC, "id"));
         return selectBoth(nonStaticRequests(), pageable)
@@ -327,6 +341,7 @@ public class AuditStore {
                 .take(Math.max(1, limit));
     }
 
+    // 按步骤顺序返回同一追踪流的全部记录。
     public Flux<AuditRecord> findByTraceFlowId(String traceFlowId) {
         if (!StringUtils.hasText(traceFlowId)) {
             return Flux.empty();
@@ -341,6 +356,7 @@ public class AuditStore {
                         .thenComparing(record -> record.getMetadata().getName()));
     }
 
+    // 返回指定用户时间区间内的审计记录。
     public Flux<AuditRecord> findByUidBetween(String uid, Instant from, Instant to) {
         if (!StringUtils.hasText(uid) || from == null || to == null) {
             return Flux.empty();
@@ -359,6 +375,7 @@ public class AuditStore {
                         .thenComparing(record -> record.getMetadata().getName()));
     }
 
+    // 同时查询活跃与归档表并去重合并。
     private Flux<AuditRecord> selectBoth(Criteria criteria, PageRequest pageable) {
         var dataQuery = Query.query(criteria).with(pageable);
         var active = entityOperations
@@ -370,6 +387,7 @@ public class AuditStore {
         return Flux.merge(active, archived).distinct(record -> record.getMetadata().getName());
     }
 
+    // 抢占归档锁后分批迁移记录，结束时释放锁。
     public Mono<Long> archiveBefore(Instant cutoff) {
         return acquireArchiveGuard().flatMap(acquired -> {
             if (!acquired) {
@@ -390,10 +408,12 @@ public class AuditStore {
                 .map(count -> count > 0);
     }
 
+    // 释放归档锁，允许其他实例继续归档。
     private Mono<Void> releaseArchiveGuard() {
         return guardRepository.save(new AuditArchiveGuardEntity(1, false)).then();
     }
 
+    // 分批迁移并删除活跃记录，单批使用事务保证一致。
     private Mono<Long> archiveBatch(OffsetDateTime cutoff, long archivedCount) {
         var batchQuery = Query.query(Criteria.where("occurredAt").lessThan(cutoff))
                 .with(PageRequest.of(0, ARCHIVE_BATCH_SIZE, Sort.by(Sort.Direction.ASC, "id")));
@@ -413,6 +433,7 @@ public class AuditStore {
                 });
     }
 
+    // 统一以协调世界时偏移量写入数据库时间字段。
     private static OffsetDateTime toOffsetDateTime(Instant instant) {
         return OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
@@ -429,6 +450,7 @@ public class AuditStore {
             int limit,
             boolean ascending) {
 
+        // 创建升序游标查询，供图表按时间正序读取。
         public static AuditQuery ascending(
                 String cursor,
                 Instant from,

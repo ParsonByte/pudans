@@ -27,6 +27,7 @@ class ParameterSettingSiteIdInitializer {
 
     private final ReactiveExtensionClient client;
 
+    // 首次启动时为服务器组生成并持久化站点标识。
     @EventListener
     @Order(Ordered.HIGHEST_PRECEDENCE + 10)
     Mono<Void> onApplicationEvent(ExtensionInitializedEvent ignored) {
@@ -51,6 +52,7 @@ class ParameterSettingSiteIdInitializer {
                 .then();
     }
 
+    // 读取服务器组对象，格式异常时返回空对象。
     private static ObjectNode readServer(String json) {
         if (!StringUtils.hasText(json)) {
             return JsonMapper.shared().createObjectNode();

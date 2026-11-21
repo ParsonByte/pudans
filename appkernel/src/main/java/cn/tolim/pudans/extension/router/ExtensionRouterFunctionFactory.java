@@ -28,6 +28,7 @@ public class ExtensionRouterFunctionFactory {
 
     private final BuiltinEntityPolicy builtinEntityPolicy;
 
+    // 保存方案、客户端与内建实体策略。
     public ExtensionRouterFunctionFactory(
             Scheme scheme, ReactiveExtensionClient client, BuiltinEntityPolicy builtinEntityPolicy) {
         this.scheme = scheme;
@@ -35,6 +36,7 @@ public class ExtensionRouterFunctionFactory {
         this.builtinEntityPolicy = builtinEntityPolicy;
     }
 
+    // 装配各处理器并生成带文档的路由。
     public RouterFunction<ServerResponse> create() {
         var getHandler = new ExtensionGetHandler(scheme, client);
         var listHandler = new ExtensionListHandler(scheme, client);
@@ -138,6 +140,7 @@ public class ExtensionRouterFunctionFactory {
 
     interface PathPatternGenerator {
 
+        // 拼接版本与复数名生成资源路径。
         static String buildExtensionPathPattern(Scheme scheme) {
             var gvk = scheme.groupVersionKind();
             return ApiGroups.API_ROOT
@@ -147,6 +150,7 @@ public class ExtensionRouterFunctionFactory {
                     + scheme.plural();
         }
 
+        // 返回处理器负责的路径模板。
         String pathPattern();
     }
 

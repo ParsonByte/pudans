@@ -18,11 +18,13 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 class RedisCacheConfiguration {
 
     @Bean
+    // 提供字符串模板供会话迁移与启动探针使用。
     ReactiveStringRedisTemplate reactiveStringRedisTemplate(ReactiveRedisConnectionFactory connectionFactory) {
         return new ReactiveStringRedisTemplate(connectionFactory);
     }
 
     @Bean
+    // 配置 30 分钟缓存并接入序列化迁移器。
     CacheManager cacheManager(RedisConnectionFactory connectionFactory, CacheMigrator migrator) {
         var serializer = JacksonSerialization.cacheSerializer();
         var configuration = org.springframework.data.redis.cache.RedisCacheConfiguration.defaultCacheConfig()

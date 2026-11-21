@@ -22,6 +22,7 @@ public class AuthTokenEndpoint implements CustomEndpoint {
 
     private final RefreshTokens refreshTokens;
 
+    // 注册刷新令牌换取访问令牌的路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "AuthTokenV1alpha1";
@@ -35,6 +36,7 @@ public class AuthTokenEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 校验请求体后轮换刷新令牌
     private Mono<ServerResponse> refresh(ServerRequest request) {
         return request.bodyToMono(RefreshRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
@@ -49,6 +51,7 @@ public class AuthTokenEndpoint implements CustomEndpoint {
 
     public record RefreshRequest(String refreshToken) {}
 
+    // 返回当前认证接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);

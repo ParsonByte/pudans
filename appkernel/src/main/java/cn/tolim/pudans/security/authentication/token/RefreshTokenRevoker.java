@@ -23,11 +23,13 @@ public class RefreshTokenRevoker implements ServerLogoutHandler {
 
     private final RefreshTokens refreshTokens;
 
+    // 注销时吊销该用户的全部刷新令牌。
     @Override
     public Mono<Void> logout(WebFilterExchange exchange, Authentication authentication) {
         return revoke(authentication.getName());
     }
 
+    // 密码变更后异步吊销刷新令牌，失败仅记录日志。
     @Async
     @EventListener
     public void onPasswordChanged(PasswordChangedEvent event) {
@@ -38,6 +40,7 @@ public class RefreshTokenRevoker implements ServerLogoutHandler {
         }
     }
 
+    // 吊销用户全部刷新令牌并等待完成。
     private Mono<Void> revoke(String username) {
         return refreshTokens.revokeAll(username).then();
     }

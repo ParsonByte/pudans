@@ -9,6 +9,7 @@ public final class ExtensionStoreUtil {
     private ExtensionStoreUtil() {}
 
 
+    // 按组与复数名构造存储键前缀。
     public static String buildStoreNamePrefix(Scheme scheme) {
 
         StringBuilder builder = new StringBuilder("/registry/");
@@ -20,6 +21,7 @@ public final class ExtensionStoreUtil {
     }
 
 
+    // 拼出带对象名称的完整存储键。
     public static String buildStoreName(Scheme scheme, String name) {
         return buildStoreNamePrefix(scheme) + "/" + name;
     }

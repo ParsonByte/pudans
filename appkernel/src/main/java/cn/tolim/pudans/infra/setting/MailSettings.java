@@ -47,6 +47,7 @@ public class MailSettings {
 
     private final AtomicReference<CachedSender> cachedSender = new AtomicReference<>();
 
+    // 仅当配置了邮件服务器主机时视为邮件可用。
     public Mono<Boolean> isConfigured() {
         return parameterGroups
                 .getMail()
@@ -54,6 +55,7 @@ public class MailSettings {
                 .defaultIfEmpty(false);
     }
 
+    // 渲染密码重置验证码邮件并发送。
     public Mono<Void> sendPasswordResetCode(String email, String code, long ttlMinutes) {
         return parameterGroups.getSite().flatMap(site -> {
             var variables = new HashMap<String, String>();
@@ -72,6 +74,7 @@ public class MailSettings {
         });
     }
 
+    // 发送测试邮件，用于验证邮件服务器配置。
     public Mono<Void> sendTest(String to) {
         return parameterGroups.getSite().flatMap(site -> {
             var variables = new HashMap<String, String>();
@@ -86,6 +89,7 @@ public class MailSettings {
         });
     }
 
+    // 未配置邮件服务器时返回明确错误，发送失败统一映射。
     public Mono<Void> send(
             String to,
             String subject,
@@ -115,6 +119,7 @@ public class MailSettings {
                 .then();
     }
 
+    // 有附件时使用多部分消息，否则发送纯文本邮件。
     private void sendNow(ParameterSetting.Mail mail, String to, String subject, String templateKey, String text) {
         var sender = sender(mail);
         var attachments = attachmentLoader.load(mail, templateKey);
@@ -137,6 +142,7 @@ public class MailSettings {
         log.info("邮件 [{}] 已通过配置的 SMTP 服务器发送", subject);
     }
 
+    // 构建带附件与回复地址的多部分邮件。
     private static void sendWithAttachments(
             JavaMailSender sender,
             ParameterSetting.Mail mail,
@@ -167,6 +173,7 @@ public class MailSettings {
         }
     }
 
+    // 缓存与配置键匹配的发送器，避免重复建连。
     private JavaMailSender sender(ParameterSetting.Mail mail) {
         var key = senderKey(mail);
         var cached = cachedSender.get();
@@ -178,6 +185,7 @@ public class MailSettings {
         return sender;
     }
 
+    // 生成包含连接与认证参数的缓存键。
     private static String senderKey(ParameterSetting.Mail mail) {
         return String.join(
                 "|",
@@ -189,6 +197,7 @@ public class MailSettings {
                 Objects.toString(mail.getSmtpConnectionTtlSeconds(), ""));
     }
 
+    // 配置了发件人名称时拼接为标准地址格式。
     private static String from(ParameterSetting.Mail mail) {
         if (!StringUtils.hasText(mail.getMailFromAddress())) {
             return null;

@@ -41,6 +41,7 @@ import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.core.rbac.Roles;
+import cn.tolim.pudans.core.rbac.UserRoles;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.extension.contract.GroupVersion;
@@ -78,6 +79,8 @@ public class UserEndpoint implements CustomEndpoint {
 
     private final Groups groups;
 
+    private final UserRoles userRoles;
+
     private final FeishuAccounts feishuAccounts;
 
     private final AuditLog auditLog;
@@ -94,6 +97,7 @@ public class UserEndpoint implements CustomEndpoint {
 
     private final Connections userConnectionService;
 
+    // 注册用户管理的全部接口路由
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "UserV1alpha1";
@@ -230,6 +234,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .build();
     }
 
+    // 从安全上下文取用户名，未认证时报错
     private Mono<String> currentUsername() {
         return ReactiveSecurityContextHolder.getContext()
                 .mapNotNull(SecurityContext::getAuthentication)
@@ -237,11 +242,13 @@ public class UserEndpoint implements CustomEndpoint {
                 .switchIfEmpty(Mono.error(new ServerWebInputException("未认证")));
     }
 
+    // 将短横线占位符解析为当前用户名
     private Mono<String> resolveName(ServerRequest request) {
         var name = request.pathVariable("name");
         return SELF.equals(name) ? currentUsername() : Mono.just(name);
     }
 
+    // 返回当前登录用户的资料视图
     private Mono<ServerResponse> me(ServerRequest request) {
         return currentUsername()
                 .flatMap(accounts::getUser)
@@ -249,6 +256,7 @@ public class UserEndpoint implements CustomEndpoint {
                         .bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user, true)));
     }
 
+    // 按可见性决定是否返回邮箱
     private Mono<ServerResponse> getUserByName(ServerRequest request) {
         return resolveName(request)
                 .flatMap(name -> emailVisibilityFor(name)
@@ -258,6 +266,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
+    // 读取配置是否允许向登录用户展示邮箱
     private Mono<Boolean> emailVisibility() {
         return parameterGroups
                 .getSession()
@@ -265,6 +274,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .defaultIfEmpty(false);
     }
 
+    // 本人或管理员始终可见邮箱
     private Mono<Boolean> emailVisibilityFor(String name) {
         return Mono.zip(
                         emailVisibility(),
@@ -273,17 +283,20 @@ public class UserEndpoint implements CustomEndpoint {
                 .map(tuple -> tuple.getT1() || tuple.getT2() || tuple.getT3().equals(name));
     }
 
+    // 列表在配置允许或管理员时展示邮箱
     private Mono<Boolean> emailVisibilityForList() {
         return Mono.zip(emailVisibility(), canManageUsers())
                 .map(tuple -> tuple.getT1() || tuple.getT2());
     }
 
+    // 判断当前用户是否具备管理能力
     private Mono<Boolean> canManageUsers() {
         return currentUsername()
                 .flatMap(username -> uiPermissionService.hasCapability(username, MANAGE_USERS_CAPABILITY))
                 .defaultIfEmpty(false);
     }
 
+    // 按关键字、状态和用户组过滤并分页
     private Mono<ServerResponse> listUsers(ServerRequest request) {
         var sortable = new SortableRequest(request.exchange());
         var keyword = request.queryParam("keyword").filter(StringUtils::hasText).map(String::trim).orElse(null);
@@ -308,6 +321,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(list -> ServerResponse.ok().bodyValue(list));
     }
 
+    // 组合状态、关键字与用户组过滤条件
     private Mono<ListOptions> listOptionsOf(
             ListOptions base,
             String keyword,
@@ -344,6 +358,7 @@ public class UserEndpoint implements CustomEndpoint {
                                 .build()));
     }
 
+    // 构造带分页信息的空列表
     private static UserList emptyUserList(SortableRequest sortable) {
         return new UserList(
                 Math.max(1, sortable.getPage()),
@@ -353,6 +368,7 @@ public class UserEndpoint implements CustomEndpoint {
                 sortable.getSort().toString());
     }
 
+    // 解析逗号分隔的状态过滤值
     private static Set<String> statusValues(ServerRequest request) {
         return request.queryParams().getOrDefault("status", List.of()).stream()
                 .flatMap(value -> java.util.Arrays.stream(value.split(",")))
@@ -362,6 +378,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .collect(Collectors.toSet());
     }
 
+    // 解析逗号分隔的用户组过滤值
     private static Set<String> userGroupValues(ServerRequest request) {
         return request.queryParams().getOrDefault("userGroup", List.of()).stream()
                 .flatMap(value -> java.util.Arrays.stream(value.split(",")))
@@ -370,11 +387,13 @@ public class UserEndpoint implements CustomEndpoint {
                 .collect(Collectors.toSet());
     }
 
+    // 批量查询用户所属的用户组
     private Mono<Map<String, UserGroup>> groupsOf(List<User> users) {
         return groups.getGroupsByUsernames(
                 users.stream().map(user -> user.getMetadata().getName()).toList());
     }
 
+    // 创建来自飞书身份的用户
     private Mono<ServerResponse> createUser(ServerRequest request) {
         return request.bodyToMono(CreateUserRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
@@ -382,6 +401,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
+    // 逐个创建飞书用户并记录审计
     private Mono<ServerResponse> batchCreateUsers(ServerRequest request) {
         return request.bodyToMono(BatchCreateRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
@@ -411,6 +431,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(response -> ServerResponse.ok().bodyValue(response));
     }
 
+    // 组装飞书用户创建的审计快照
     private Map<String, Object> snapshot(FeishuUserItem item, User user) {
         var snapshot = new LinkedHashMap<String, Object>();
         snapshot.put("before", null);
@@ -426,6 +447,7 @@ public class UserEndpoint implements CustomEndpoint {
         return snapshot;
     }
 
+    // 校验并创建本地密码用户
     private Mono<ServerResponse> createLocalUser(ServerRequest request) {
         return request
                 .bodyToMono(LocalCreateUserRequest.class)
@@ -456,6 +478,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(UserView.from(user, true)));
     }
 
+    // 逐个创建本地用户并收集失败项
     private Mono<ServerResponse> batchCreateLocalUsers(ServerRequest request) {
         return request
                 .bodyToMono(LocalBatchCreateRequest.class)
@@ -481,6 +504,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 创建单个本地用户并记录审计
     private Mono<User> createLocalUserForBatch(ServerRequest request, LocalCreateUserRequest body) {
         return Mono.defer(() -> {
             validateLocalCreate(body);
@@ -506,6 +530,7 @@ public class UserEndpoint implements CustomEndpoint {
         });
     }
 
+    // 校验本地用户的名称、邮箱与密码
     static void validateLocalCreate(LocalCreateUserRequest body) {
         var username = StringUtils.hasText(body.username()) ? body.username().trim() : null;
         if (username == null || username.length() > 63 || !username.matches(ValidationUtils.NAME_REGEX)) {
@@ -533,6 +558,7 @@ public class UserEndpoint implements CustomEndpoint {
         }
     }
 
+    // 限制批量创建的数量与空项
     static void validateLocalBatch(LocalBatchCreateRequest body) {
         if (body == null || CollectionUtils.isEmpty(body.users())) {
             throw new ServerWebInputException("users 不能为空。");
@@ -545,6 +571,7 @@ public class UserEndpoint implements CustomEndpoint {
         }
     }
 
+    // 提取可展示的失败原因
     private static String localCreateFailureMessage(Throwable error) {
         if (error instanceof ResponseStatusException status && StringUtils.hasText(status.getReason())) {
             return status.getReason();
@@ -552,6 +579,7 @@ public class UserEndpoint implements CustomEndpoint {
         return "创建失败，请稍后重试。";
     }
 
+    // 组装本地用户创建的审计快照
     private Map<String, Object> localUserSnapshot(LocalCreateUserRequest request, User user) {
         var snapshot = new LinkedHashMap<String, Object>();
         snapshot.put("before", null);
@@ -567,6 +595,7 @@ public class UserEndpoint implements CustomEndpoint {
 
     private record CreatedLocalUser(LocalCreateUserRequest request, User user) {}
 
+    // 更新当前用户的可编辑资料
     private Mono<ServerResponse> updateSelf(ServerRequest request) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(UpdateProfileRequest.class)
@@ -575,6 +604,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
+    // 更新指定用户的可编辑资料
     private Mono<ServerResponse> updateUser(ServerRequest request) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(UpdateProfileRequest.class)
@@ -583,6 +613,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
+    // 拒绝修改只读字段，仅允许更新简介
     private Mono<User> applyProfileUpdate(
             org.springframework.web.server.ServerWebExchange exchange, String username, UpdateProfileRequest update) {
         return accounts.getUser(username).flatMap(user -> {
@@ -616,6 +647,7 @@ public class UserEndpoint implements CustomEndpoint {
         });
     }
 
+    // 发布来源为本地资料的用户更新事件
     private void publishUpdated(
             org.springframework.web.server.ServerWebExchange exchange, User user, List<String> changedFields) {
         var payload = new LinkedHashMap<String, Object>();
@@ -631,6 +663,7 @@ public class UserEndpoint implements CustomEndpoint {
                 (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
+    // 先检查内置用户保护再删除
     private Mono<ServerResponse> deleteUser(ServerRequest request) {
         return resolveName(request)
                 .flatMap(name -> client.get(User.class, name))
@@ -639,23 +672,27 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
+    // 返回当前用户的角色与权限
     private Mono<ServerResponse> selfPermissions(ServerRequest request) {
         return currentUsername().flatMap(this::buildPermission);
     }
 
+    // 返回当前用户聚合后的界面权限
     private Mono<ServerResponse> uiPermissions(ServerRequest request) {
         return currentUsername()
                 .flatMap(uiPermissionService::uiPermissionsOf)
                 .flatMap(permissions -> ServerResponse.ok().bodyValue(permissions));
     }
 
+    // 返回指定用户的角色与权限
     private Mono<ServerResponse> userPermissions(ServerRequest request) {
         return resolveName(request).flatMap(this::buildPermission);
     }
 
+    // 展开角色得到权限集合并构造响应
     private Mono<ServerResponse> buildPermission(String username) {
-        return groups
-                .getRoleNamesByUsername(username)
+        return userRoles
+                .list(username)
                 .collectList()
                 .flatMap(roleNames -> {
                     var assigned = Set.copyOf(roleNames);
@@ -669,16 +706,19 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(permission -> ServerResponse.ok().bodyValue(permission));
     }
 
+    // 修改当前用户密码时校验旧密码
     private Mono<ServerResponse> changeOwnPassword(ServerRequest request) {
         return currentUsername().flatMap(username -> changePassword(request, username, true));
     }
 
+    // 管理员改密前检查内置用户保护
     private Mono<ServerResponse> changePasswordForUser(ServerRequest request) {
         return resolveName(request).flatMap(username -> builtinEntityPolicy
                 .checkUserPasswordReset(username)
                 .then(changePassword(request, username, false)));
     }
 
+    // 按需要校验旧密码后更新密码
     private Mono<ServerResponse> changePassword(ServerRequest request, String username, boolean verifyOldPassword) {
         return request
                 .bodyToMono(PasswordRequest.class)
@@ -693,6 +733,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
+    // 返回用户所属组，未加入时报错
     private Mono<ServerResponse> getUserGroup(ServerRequest request) {
         return resolveName(request)
                 .flatMap(groups::getUserGroupByUsername)
@@ -700,6 +741,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .switchIfEmpty(Mono.error(new ServerWebInputException("用户未加入任何用户组。")));
     }
 
+    // 返回用户的外部身份连接视图
     private Mono<ServerResponse> listUserConnections(ServerRequest request) {
         return resolveName(request)
                 .flatMap(accounts::getUser)
@@ -709,6 +751,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(connections -> ServerResponse.ok().bodyValue(connections));
     }
 
+    // 统计指定天数内的每日活动量
     private Mono<ServerResponse> userActivity(ServerRequest request) {
         var days = request.queryParam("days")
                 .filter(StringUtils::hasText)
@@ -742,6 +785,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(points -> ServerResponse.ok().bodyValue(points));
     }
 
+    // 将用户替换分配到指定用户组
     private Mono<ServerResponse> assignUserGroup(ServerRequest request) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(AssignGroupRequest.class)
@@ -751,12 +795,14 @@ public class UserEndpoint implements CustomEndpoint {
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
+    // 将用户从当前用户组移除
     private Mono<ServerResponse> removeUserGroup(ServerRequest request) {
         return resolveName(request)
                 .flatMap(username -> groups.removeUserGroup(username).then(accounts.getUser(username)))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
+    // 返回当前用户接口版本
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
@@ -771,6 +817,7 @@ public class UserEndpoint implements CustomEndpoint {
             String unionId,
             String avatar,
             String userGroup) {
+        // 转换为飞书账号创建所需的资料
         FeishuAccounts.FeishuUserData toFeishuData() {
             return new FeishuAccounts.FeishuUserData(username, displayName, email, openId, unionId, avatar);
         }
@@ -806,6 +853,7 @@ public class UserEndpoint implements CustomEndpoint {
             String unionId,
             String avatar,
             String userGroup) {
+        // 转换为飞书账号创建所需的资料
         FeishuAccounts.FeishuUserData toFeishuData() {
             return new FeishuAccounts.FeishuUserData(username, displayName, email, openId, unionId, avatar);
         }
@@ -835,6 +883,7 @@ public class UserEndpoint implements CustomEndpoint {
             String displayName,
             Instant updatedAt,
             Instant createdAt) {
+        // 将身份连接转换为接口视图
         static UserConnectionView from(UserConnection connection) {
             return new UserConnectionView(
                     connection.getMetadata().getName(),
@@ -859,14 +908,17 @@ public class UserEndpoint implements CustomEndpoint {
             boolean disabled,
             String userGroup,
             String userGroupDisplayName) {
+        // 默认展示邮箱生成列表项
         static ListedUser from(User user) {
             return from(user, true, null);
         }
 
+        // 按邮箱可见性生成列表项
         static ListedUser from(User user, boolean exposeEmail) {
             return from(user, exposeEmail, null);
         }
 
+        // 附带用户组信息生成列表项
         static ListedUser from(User user, boolean exposeEmail, UserGroup group) {
             return new ListedUser(
                     user.getMetadata().getName(),
