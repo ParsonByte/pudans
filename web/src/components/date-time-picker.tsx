@@ -62,6 +62,7 @@ export function DateTimePicker({
       <PopoverTrigger asChild>
         <Button
           id={id}
+          type="button"
           variant="outline"
           data-empty={!selected}
           className="w-full justify-start text-start font-normal data-[empty=true]:text-muted-foreground"

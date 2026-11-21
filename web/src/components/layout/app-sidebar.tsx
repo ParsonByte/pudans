@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import {
   Sidebar,
   SidebarContent,
@@ -7,7 +9,6 @@ import {
 } from "@/components/ui/sidebar";
 import { useLayout } from "@/context/layout-provider";
 
-import { ChatLayout } from "./chat/chat-layout";
 import { NavGroup } from "./nav-group";
 import { NavUser } from "./nav-user";
 import type { SidebarData } from "./types";
@@ -15,6 +16,7 @@ import { WorkspaceSwitcher } from "./workspace-switcher";
 
 type AppSidebarProps = Partial<SidebarData> & {
   onSignOut?: () => void;
+  sidebarContent?: ReactNode;
 };
 
 export function AppSidebar({
@@ -23,8 +25,14 @@ export function AppSidebar({
   activeWorkspaceId,
   navGroups,
   onSignOut,
+  sidebarContent,
 }: AppSidebarProps) {
   const { collapsible, variant } = useLayout();
+  const content =
+    sidebarContent ??
+    (navGroups && navGroups.length > 0
+      ? navGroups.map((group) => <NavGroup key={group.title} {...group} />)
+      : null);
 
   return (
     <Sidebar collapsible={collapsible} variant={variant}>
@@ -33,17 +41,7 @@ export function AppSidebar({
           <WorkspaceSwitcher workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} />
         </SidebarHeader>
       ) : null}
-      {activeWorkspaceId === "default" ? (
-        <SidebarContent>
-          <ChatLayout />
-        </SidebarContent>
-      ) : navGroups && navGroups.length > 0 ? (
-        <SidebarContent>
-          {navGroups.map((group) => (
-            <NavGroup key={group.title} {...group} />
-          ))}
-        </SidebarContent>
-      ) : null}
+      {content ? <SidebarContent>{content}</SidebarContent> : null}
       {user ? (
         <SidebarFooter className="mt-auto">
           <NavUser user={user} onSignOut={onSignOut} />

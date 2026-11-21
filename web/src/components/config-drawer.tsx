@@ -95,6 +95,53 @@ function ConfigOption({ item, isTheme = false }: { item: ConfigOptionData; isThe
   );
 }
 
+type ConfigGridProps = {
+  title: string;
+  ariaLabel: string;
+  value: string;
+  defaultValue: string;
+  options: ConfigOptionData[];
+  onValueChange: (value: string) => void;
+  onReset?: () => void;
+  resetAriaLabel: string;
+  isTheme?: boolean;
+  className?: string;
+};
+
+function ConfigGrid({
+  title,
+  ariaLabel,
+  value,
+  defaultValue,
+  options,
+  onValueChange,
+  onReset,
+  resetAriaLabel,
+  isTheme = false,
+  className,
+}: ConfigGridProps) {
+  return (
+    <div className={className}>
+      <SectionTitle
+        title={title}
+        showReset={value !== defaultValue}
+        onReset={onReset ?? (() => onValueChange(defaultValue))}
+        resetAriaLabel={resetAriaLabel}
+      />
+      <RadioGroup
+        value={value}
+        onValueChange={onValueChange}
+        className="grid w-full max-w-md grid-cols-3 gap-4"
+        aria-label={ariaLabel}
+      >
+        {options.map((item) => (
+          <ConfigOption key={item.value} item={item} isTheme={isTheme} />
+        ))}
+      </RadioGroup>
+    </div>
+  );
+}
+
 export function ConfigDrawer() {
   const { setOpen } = useSidebar();
   const { resetDir } = useDirection();
@@ -154,24 +201,16 @@ function ThemeConfig() {
   ];
 
   return (
-    <div>
-      <SectionTitle
-        title="主题"
-        showReset={theme !== defaultTheme}
-        onReset={() => setTheme(defaultTheme)}
-        resetAriaLabel="重置主题为默认值"
-      />
-      <RadioGroup
-        value={theme ?? defaultTheme}
-        onValueChange={(value) => setTheme(value)}
-        className="grid w-full max-w-md grid-cols-3 gap-4"
-        aria-label="选择主题"
-      >
-        {options.map((item) => (
-          <ConfigOption key={item.value} item={item} isTheme />
-        ))}
-      </RadioGroup>
-    </div>
+    <ConfigGrid
+      title="主题"
+      ariaLabel="选择主题"
+      value={theme ?? defaultTheme}
+      defaultValue={defaultTheme}
+      options={options}
+      onValueChange={setTheme}
+      resetAriaLabel="重置主题为默认值"
+      isTheme
+    />
   );
 }
 
@@ -184,31 +223,22 @@ function SidebarConfig() {
   ];
 
   return (
-    <div className="max-md:hidden">
-      <SectionTitle
-        title="侧边栏"
-        showReset={variant !== defaultVariant}
-        onReset={() => setVariant(defaultVariant)}
-        resetAriaLabel="重置侧边栏样式为默认值"
-      />
-      <RadioGroup
-        value={variant}
-        onValueChange={(value) => setVariant(value as LayoutVariant)}
-        className="grid w-full max-w-md grid-cols-3 gap-4"
-        aria-label="选择侧边栏样式"
-      >
-        {options.map((item) => (
-          <ConfigOption key={item.value} item={item} />
-        ))}
-      </RadioGroup>
-    </div>
+    <ConfigGrid
+      title="侧边栏"
+      ariaLabel="选择侧边栏样式"
+      value={variant}
+      defaultValue={defaultVariant}
+      options={options}
+      onValueChange={(value) => setVariant(value as LayoutVariant)}
+      resetAriaLabel="重置侧边栏样式为默认值"
+      className="max-md:hidden"
+    />
   );
 }
 
 function LayoutConfig() {
   const { open, setOpen } = useSidebar();
   const { defaultCollapsible, collapsible, setCollapsible } = useLayout();
-  const radioState = open ? "default" : collapsible;
   const options: ConfigOptionData[] = [
     { value: "default", label: "默认", icon: IconLayoutDefault },
     { value: "icon", label: "紧凑", icon: IconLayoutCompact },
@@ -216,35 +246,28 @@ function LayoutConfig() {
   ];
 
   return (
-    <div className="max-md:hidden">
-      <SectionTitle
-        title="布局"
-        showReset={radioState !== defaultCollapsible}
-        onReset={() => {
-          setOpen(false);
-          setCollapsible(defaultCollapsible);
-        }}
-        resetAriaLabel="重置布局为默认值"
-      />
-      <RadioGroup
-        value={radioState}
-        onValueChange={(value) => {
-          if (value === "default") {
-            setOpen(true);
-            return;
-          }
+    <ConfigGrid
+      title="布局"
+      ariaLabel="选择布局"
+      value={open ? "default" : collapsible}
+      defaultValue={defaultCollapsible}
+      options={options}
+      onValueChange={(value) => {
+        if (value === "default") {
+          setOpen(true);
+          return;
+        }
 
-          setOpen(false);
-          setCollapsible(value as Collapsible);
-        }}
-        className="grid w-full max-w-md grid-cols-3 gap-4"
-        aria-label="选择布局"
-      >
-        {options.map((item) => (
-          <ConfigOption key={item.value} item={item} />
-        ))}
-      </RadioGroup>
-    </div>
+        setOpen(false);
+        setCollapsible(value as Collapsible);
+      }}
+      onReset={() => {
+        setOpen(false);
+        setCollapsible(defaultCollapsible);
+      }}
+      resetAriaLabel="重置布局为默认值"
+      className="max-md:hidden"
+    />
   );
 }
 
@@ -264,23 +287,14 @@ function DirConfig() {
   ];
 
   return (
-    <div>
-      <SectionTitle
-        title="方向"
-        showReset={dir !== defaultDir}
-        onReset={() => setDir(defaultDir)}
-        resetAriaLabel="重置文字方向为默认值"
-      />
-      <RadioGroup
-        value={dir}
-        onValueChange={(value) => setDir(value as Direction)}
-        className="grid w-full max-w-md grid-cols-3 gap-4"
-        aria-label="选择文字方向"
-      >
-        {options.map((item) => (
-          <ConfigOption key={item.value} item={item} />
-        ))}
-      </RadioGroup>
-    </div>
+    <ConfigGrid
+      title="方向"
+      ariaLabel="选择文字方向"
+      value={dir}
+      defaultValue={defaultDir}
+      options={options}
+      onValueChange={(value) => setDir(value as Direction)}
+      resetAriaLabel="重置文字方向为默认值"
+    />
   );
 }

@@ -8,6 +8,7 @@ import { MotionConfig } from "motion/react";
 import { ThemeProvider } from "next-themes";
 
 import { MotionBridge } from "@/components/motion/motion-bridge";
+import { SudoProvider } from "@/components/sudo/sudo-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { DirectionProvider } from "@/context/direction-provider";
 import { installApiInterceptors } from "@/lib/api-interceptor";
@@ -29,7 +30,7 @@ export function Providers({ children }: { children: ReactNode }) {
         <QueryClientProvider client={queryClient}>
           <MotionConfig reducedMotion="user">
             <MotionBridge />
-            {children}
+            <SudoProvider>{children}</SudoProvider>
           </MotionConfig>
           <Toaster position="top-center" richColors />
           <ReactQueryDevtools initialIsOpen={false} />

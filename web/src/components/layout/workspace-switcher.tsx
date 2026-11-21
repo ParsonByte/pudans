@@ -21,6 +21,25 @@ import { cn } from "@/lib/utils";
 
 import type { Workspace } from "./types";
 
+const WORKSPACE_LOGO_STYLES = {
+  trigger: {
+    box: "aspect-square size-8",
+    image: "bg-muted",
+    fallback: "bg-sidebar-primary text-sidebar-primary-foreground",
+    imageIcon: "size-6",
+    fallbackIcon: "size-4",
+  },
+  item: {
+    box: "size-6",
+    image: "bg-muted",
+    fallback: "border",
+    imageIcon: "size-5",
+    fallbackIcon: "size-4 shrink-0",
+  },
+} as const;
+
+type WorkspaceLogoVariant = keyof typeof WORKSPACE_LOGO_STYLES;
+
 type WorkspaceSwitcherProps = {
   workspaces: Workspace[];
   activeWorkspaceId?: string;
@@ -66,16 +85,7 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div
-                className={cn(
-                  "flex aspect-square size-8 items-center justify-center",
-                  activeWorkspace.logoImage
-                    ? "bg-muted"
-                    : "bg-sidebar-primary text-sidebar-primary-foreground",
-                )}
-              >
-                <activeWorkspace.logo className={activeWorkspace.logoImage ? "size-6" : "size-4"} />
-              </div>
+              <WorkspaceLogo workspace={activeWorkspace} variant="trigger" />
               <div className="grid flex-1 text-start text-sm leading-tight">
                 <span className="truncate font-semibold">{activeWorkspace.name}</span>
                 <span className="truncate text-xs">{activeWorkspace.plan}</span>
@@ -96,14 +106,7 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
                 onSelect={() => router.push(workspace.homeUrl)}
                 className="gap-2 p-2"
               >
-                <div
-                  className={cn(
-                    "flex size-6 items-center justify-center",
-                    workspace.logoImage ? "bg-muted" : "border",
-                  )}
-                >
-                  <workspace.logo className={workspace.logoImage ? "size-5" : "size-4 shrink-0"} />
-                </div>
+                <WorkspaceLogo workspace={workspace} variant="item" />
                 <span className="truncate font-medium">{workspace.name}</span>
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
               </DropdownMenuItem>
@@ -112,5 +115,26 @@ export function WorkspaceSwitcher({ workspaces, activeWorkspaceId }: WorkspaceSw
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
+  );
+}
+
+function WorkspaceLogo({
+  workspace,
+  variant,
+}: {
+  workspace: Workspace;
+  variant: WorkspaceLogoVariant;
+}) {
+  const styles = WORKSPACE_LOGO_STYLES[variant];
+  return (
+    <div
+      className={cn(
+        "flex items-center justify-center",
+        styles.box,
+        workspace.logoImage ? styles.image : styles.fallback,
+      )}
+    >
+      <workspace.logo className={workspace.logoImage ? styles.imageIcon : styles.fallbackIcon} />
+    </div>
   );
 }

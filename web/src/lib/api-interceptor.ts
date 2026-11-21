@@ -32,6 +32,18 @@ export function installApiInterceptors() {
     (response) => response,
     (error) => {
       if (
+        isAxiosError<{ type?: string; methods?: string[] }>(error) &&
+        error.response?.status === 403 &&
+        typeof error.response.data?.type === "string" &&
+        error.response.data.type.endsWith("sudo-required")
+      ) {
+        window.dispatchEvent(
+          new CustomEvent("pudans:sudo-required", {
+            detail: { methods: error.response.data.methods ?? [] },
+          }),
+        );
+      }
+      if (
         isAxiosError(error) &&
         error.response?.status === 429 &&
         !IGNORED_PATHS.some((path) => window.location.pathname.startsWith(path))

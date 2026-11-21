@@ -3,6 +3,7 @@ import type { ComponentProps } from "react";
 import { SearchIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Kbd } from "@/components/ui/kbd";
 import { useSearch } from "@/context/search-provider";
 import { cn } from "@/lib/utils";
 
@@ -27,9 +28,7 @@ export function Search({ className, placeholder = "搜索", ...props }: SearchPr
     >
       <SearchIcon aria-hidden="true" className="size-4 shrink-0" />
       <span className="hidden truncate text-start sm:inline">{placeholder}</span>
-      <kbd className="pointer-events-none ms-auto hidden h-5 items-center gap-0.5 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium select-none sm:flex">
-        <span className="text-xs leading-none">/</span>
-      </kbd>
+      <Kbd className="ms-auto hidden sm:inline-flex">/</Kbd>
     </Button>
   );
 }
