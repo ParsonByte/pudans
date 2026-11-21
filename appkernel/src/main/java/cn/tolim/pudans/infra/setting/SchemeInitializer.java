@@ -30,6 +30,10 @@ import cn.tolim.pudans.contract.core.extension.ai.AiSlashCommand;
 import cn.tolim.pudans.contract.core.extension.ai.AiSubagent;
 import cn.tolim.pudans.contract.core.extension.ai.AiTeam;
 import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
+import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
+import cn.tolim.pudans.contract.core.extension.live.LiveRecordingState;
+import cn.tolim.pudans.contract.core.extension.live.LiveSource;
+import cn.tolim.pudans.contract.core.extension.live.LiveSourceState;
 import cn.tolim.pudans.contract.core.extension.rbac.Role;
 import cn.tolim.pudans.contract.core.extension.rbac.RoleBinding;
 import cn.tolim.pudans.contract.core.extension.rbac.TempRoleBinding;
@@ -426,6 +430,35 @@ class SchemeInitializer implements SmartLifecycle {
                             .filter(acl -> acl.getSubjectType() != null && StringUtils.isNotBlank(acl.getSubjectId()))
                             .map(acl -> acl.getSubjectType() + ":" + acl.getSubjectId())
                             .collect(Collectors.toSet())));
+        });
+
+        schemeManager.register(LiveSource.class, is -> {
+            is.add(IndexSpecs.<LiveSource, Boolean>single("spec.enabled", Boolean.class)
+                    .indexFunc(source -> source.getSpec().isEnabled()));
+            is.add(IndexSpecs.<LiveSource, String>single("spec.roomId", String.class)
+                    .indexFunc(source -> source.getSpec().getRoomId()));
+            is.add(IndexSpecs.<LiveSource, LiveSourceState>single("status.state", LiveSourceState.class)
+                    .indexFunc(source -> source.getStatus().getState()));
+            is.add(IndexSpecs.<LiveSource, Boolean>single("status.live", Boolean.class)
+                    .indexFunc(source -> source.getStatus().isLive()));
+            is.add(IndexSpecs.<LiveSource, Boolean>single("status.rateLimited", Boolean.class)
+                    .indexFunc(source -> source.getStatus().isRateLimited()));
+            is.add(IndexSpecs.<LiveSource, Instant>single("status.nextCheckAt", Instant.class)
+                    .indexFunc(source -> source.getStatus().getNextCheckAt()));
+        });
+
+        schemeManager.register(LiveRecording.class, is -> {
+            is.add(IndexSpecs.<LiveRecording, String>single("spec.sourceName", String.class)
+                    .indexFunc(recording -> recording.getSpec().getSourceName()));
+            is.add(IndexSpecs.<LiveRecording, LiveRecordingState>single(
+                            "status.state", LiveRecordingState.class)
+                    .indexFunc(recording -> recording.getStatus().getState()));
+            is.add(IndexSpecs.<LiveRecording, Instant>single("spec.startedAt", Instant.class)
+                    .indexFunc(recording -> recording.getSpec().getStartedAt()));
+            is.add(IndexSpecs.<LiveRecording, String>single("status.ownerInstance", String.class)
+                    .indexFunc(recording -> recording.getStatus().getOwnerInstance()));
+            is.add(IndexSpecs.<LiveRecording, Instant>single("status.heartbeatAt", Instant.class)
+                    .indexFunc(recording -> recording.getStatus().getHeartbeatAt()));
         });
     }
 
