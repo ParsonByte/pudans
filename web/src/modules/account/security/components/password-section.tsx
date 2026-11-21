@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { type Resolver, useForm } from "react-hook-form";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { apiClient } from "@pudans-dev/api-client";
 import { useMutation } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 
+import { FormField } from "@/components/form-field";
 import { PasswordInput } from "@/components/password-input";
+import { useSudo } from "@/components/sudo/sudo-provider";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { resolveApiError } from "@/lib/api-error";
 import {
   ConsoleSection,
@@ -19,77 +22,84 @@ const ERROR_MESSAGES = {
   conflict: "密码修改失败，请稍后重试。",
 };
 
+const passwordSchema = z
+  .object({
+    oldPassword: z.string().min(1, "请输入当前密码。"),
+    password: z.string().min(8, "新密码至少需要 8 位。"),
+    confirmation: z.string().min(1, "请再次输入新密码。"),
+  })
+  .refine((values) => values.password === values.confirmation, {
+    message: "两次输入的新密码不一致。",
+    path: ["confirmation"],
+  });
+
+type PasswordValues = z.infer<typeof passwordSchema>;
+
 export function PasswordSection() {
-  const [oldPassword, setOldPassword] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmation, setConfirmation] = useState("");
+  const { requireSudo } = useSudo();
+  const form = useForm<PasswordValues>({
+    resolver: zodResolver(passwordSchema) as Resolver<PasswordValues>,
+    defaultValues: { oldPassword: "", password: "", confirmation: "" },
+  });
 
   const mutation = useMutation({
-    mutationFn: async () =>
-      (await apiClient.user.changeMyPassword({ passwordRequest: { oldPassword, password } })).data,
+    mutationFn: async (values: PasswordValues) => {
+      await requireSudo();
+      return (
+        await apiClient.user.changeMySelfPassword({
+          changeMyPasswordRequest: { oldPassword: values.oldPassword, password: values.password },
+        })
+      ).data;
+    },
     onSuccess: () => {
       toast.success("密码已更新。");
-      setOldPassword("");
-      setPassword("");
-      setConfirmation("");
+      form.reset();
     },
     onError: (error) => toast.error(resolveApiError(error, ERROR_MESSAGES)),
   });
 
-  const submit = () => {
-    if (!oldPassword || !password || !confirmation) {
-      toast.error("请填写完整的密码信息。");
-      return;
-    }
-    if (password.length < 8) {
-      toast.error("新密码至少需要 8 位。");
-      return;
-    }
-    if (password !== confirmation) {
-      toast.error("两次输入的新密码不一致。");
-      return;
-    }
-    mutation.mutate();
-  };
+  const errors = form.formState.errors;
 
   return (
     <ConsoleSection>
       <ConsoleSectionHeader title="修改密码" description="修改后需要重新使用新密码登录。" />
-      <div className="grid max-w-xl gap-4 p-5">
-        <div className="space-y-2">
-          <Label htmlFor="current-password">当前密码</Label>
+      <form
+        className="grid max-w-xl gap-4 p-5"
+        onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
+        noValidate
+      >
+        <FormField htmlFor="current-password" label="当前密码" error={errors.oldPassword?.message}>
           <PasswordInput
             id="current-password"
             autoComplete="current-password"
-            value={oldPassword}
-            onChange={(event) => setOldPassword(event.target.value)}
+            {...form.register("oldPassword")}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="new-password">新密码</Label>
+        </FormField>
+        <FormField htmlFor="new-password" label="新密码" error={errors.password?.message}>
           <PasswordInput
             id="new-password"
             autoComplete="new-password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            {...form.register("password")}
           />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="confirm-password">确认新密码</Label>
+        </FormField>
+        <FormField
+          htmlFor="confirm-password"
+          label="确认新密码"
+          error={errors.confirmation?.message}
+        >
           <PasswordInput
             id="confirm-password"
             autoComplete="new-password"
-            value={confirmation}
-            onChange={(event) => setConfirmation(event.target.value)}
+            {...form.register("confirmation")}
           />
-        </div>
+        </FormField>
         <div className="flex justify-end">
-          <Button onClick={submit} disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending}>
             {mutation.isPending ? <Loader2 className="animate-spin" /> : null}
             更新密码
           </Button>
         </div>
-      </div>
+      </form>
     </ConsoleSection>
   );
 }

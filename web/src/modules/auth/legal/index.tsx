@@ -1,6 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
+import { MarkdownContent } from "@/components/content/markdown";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -26,21 +27,26 @@ function LegalArticle({ document }: { document: LegalDocument }) {
         </p>
         <h2 className="text-xl font-semibold tracking-tight">{document.title}</h2>
         <p className="text-xs text-muted-foreground">更新时间：{document.updated}</p>
-        <p className="text-sm leading-6 text-muted-foreground">{document.intro}</p>
+        <MarkdownContent
+          content={document.intro}
+          className="text-sm leading-6 text-muted-foreground"
+        />
       </div>
 
       {document.sections.map((section) => (
         <section key={section.heading} className="space-y-2">
           <h3 className="text-sm font-semibold text-foreground">{section.heading}</h3>
-          {section.paragraphs.map((paragraph) => (
-            <p key={paragraph} className="text-sm leading-6 text-muted-foreground">
-              {paragraph}
-            </p>
-          ))}
+          <MarkdownContent
+            content={section.paragraphs.join("\n\n")}
+            className="text-sm leading-6 text-muted-foreground"
+          />
         </section>
       ))}
 
-      <p className="border-t pt-4 text-xs leading-5 text-muted-foreground">{LEGAL_NOTE}</p>
+      <MarkdownContent
+        content={LEGAL_NOTE}
+        className="border-t pt-4 text-xs leading-5 text-muted-foreground"
+      />
     </article>
   );
 }

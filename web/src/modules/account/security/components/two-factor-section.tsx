@@ -1,11 +1,16 @@
 import { useState } from "react";
+import { type Resolver, useForm } from "react-hook-form";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Loader2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
+import { z } from "zod";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { FormField } from "@/components/form-field";
 import { PasswordInput } from "@/components/password-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +29,16 @@ const ERROR_MESSAGES = {
   conflict: "操作失败，请稍后重试。",
 };
 
+const twoFactorSchema = z.object({
+  password: z.string().min(1, "请输入当前密码。"),
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "请输入 6 位验证码。"),
+});
+
+type TwoFactorValues = z.infer<typeof twoFactorSchema>;
+
 export function TwoFactorSection() {
   const queryClient = useQueryClient();
   const settingsQuery = useQuery({
@@ -31,12 +46,22 @@ export function TwoFactorSection() {
     queryFn: async () => (await apiClient.twoFactorAuth.getTwoFactorAuthenticationSettings()).data,
   });
   const settings = settingsQuery.data;
-  const [password, setPassword] = useState("");
-  const [code, setCode] = useState("");
   const [secret, setSecret] = useState("");
   const [authLink, setAuthLink] = useState("");
+  const [removeOpen, setRemoveOpen] = useState(false);
+  const [removePassword, setRemovePassword] = useState("");
+  const [removeCode, setRemoveCode] = useState("");
+  const form = useForm<TwoFactorValues>({
+    resolver: zodResolver(twoFactorSchema) as Resolver<TwoFactorValues>,
+    defaultValues: { password: "", code: "" },
+  });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: TWO_FACTOR_QUERY_KEY });
+  const clearForm = () => {
+    form.reset();
+    setSecret("");
+    setAuthLink("");
+  };
 
   const linkMutation = useMutation({
     mutationFn: async () => (await apiClient.twoFactorAuth.getTotpAuthLink()).data,
@@ -48,43 +73,57 @@ export function TwoFactorSection() {
   });
 
   const configureMutation = useMutation({
-    mutationFn: async () =>
-      (await apiClient.twoFactorAuth.configurerTotp({ totpRequest: { secret, code, password } }))
-        .data,
+    mutationFn: async (values: TwoFactorValues) =>
+      (
+        await apiClient.twoFactorAuth.configurerTotp({
+          totpRequest: { secret, code: values.code, password: values.password },
+        })
+      ).data,
     onSuccess: () => {
       toast.success("TOTP 已配置，请稍候输入新的验证码以启用双重验证。");
-      setCode("");
-      setPassword("");
-      setSecret("");
-      setAuthLink("");
+      clearForm();
       void refresh();
     },
     onError: (error) => toast.error(resolveApiError(error, ERROR_MESSAGES)),
   });
 
   const enableMutation = useMutation({
-    mutationFn: async () => {
-      const passwordRequest = { password, totpCode: code };
+    mutationFn: async (values: TwoFactorValues) => {
+      const passwordRequest = { password: values.password, totpCode: values.code };
       return (await apiClient.twoFactorAuth.enableTwoFactor({ passwordRequest })).data;
     },
     onSuccess: () => {
       toast.success("双重验证已启用。");
-      setCode("");
-      setPassword("");
+      clearForm();
       void refresh();
     },
     onError: (error) => toast.error(resolveApiError(error, ERROR_MESSAGES)),
   });
 
   const disableMutation = useMutation({
-    mutationFn: async () => {
-      const passwordRequest = { password, totpCode: code };
+    mutationFn: async (values: TwoFactorValues) => {
+      const passwordRequest = { password: values.password, totpCode: values.code };
       return (await apiClient.twoFactorAuth.disableTwoFactor({ passwordRequest })).data;
     },
     onSuccess: () => {
       toast.success("双重验证已停用。");
-      setCode("");
-      setPassword("");
+      clearForm();
+      void refresh();
+    },
+    onError: (error) => toast.error(resolveApiError(error, ERROR_MESSAGES)),
+  });
+
+  const removeTotpMutation = useMutation({
+    mutationFn: async () => {
+      const passwordRequest = { password: removePassword, totpCode: removeCode };
+      return (await apiClient.twoFactorAuth.deleteTotp({ passwordRequest })).data;
+    },
+    onSuccess: () => {
+      toast.success("身份验证器已移除。");
+      setRemoveOpen(false);
+      setRemovePassword("");
+      setRemoveCode("");
+      clearForm();
       void refresh();
     },
     onError: (error) => toast.error(resolveApiError(error, ERROR_MESSAGES)),
@@ -92,6 +131,31 @@ export function TwoFactorSection() {
 
   const enabled = Boolean(settings?.enabled);
   const totpConfigured = Boolean(settings?.totpConfigured);
+  const errors = form.formState.errors;
+
+  const confirmRemoveTotp = () => {
+    if (!removePassword.trim()) {
+      toast.error("请输入当前密码。");
+      return;
+    }
+    if (!/^\d{6}$/.test(removeCode.trim())) {
+      toast.error("请输入 6 位验证码。");
+      return;
+    }
+    removeTotpMutation.mutate();
+  };
+
+  const submit = form.handleSubmit((values) => {
+    if (enabled) {
+      disableMutation.mutate(values);
+      return;
+    }
+    if (totpConfigured) {
+      enableMutation.mutate(values);
+      return;
+    }
+    configureMutation.mutate(values);
+  });
 
   return (
     <ConsoleSection>
@@ -104,37 +168,29 @@ export function TwoFactorSection() {
           </Badge>
         }
       />
-      <div className="grid max-w-xl gap-4 p-5">
+      <form className="grid max-w-xl gap-4 p-5" onSubmit={submit} noValidate>
         {enabled ? (
           <>
             <p className="text-sm leading-6 text-muted-foreground">
-              双重验证已启用。停用需要输入当前密码和身份验证器中的验证码。
+              双重验证已启用。停用需要输入当前密码和身份验证器中的验证码；停用后可移除身份验证器。
             </p>
-            <div className="space-y-2">
-              <Label htmlFor="disable-password">当前密码</Label>
+            <FormField htmlFor="disable-password" label="当前密码" error={errors.password?.message}>
               <PasswordInput
                 id="disable-password"
                 autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                {...form.register("password")}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="disable-code">验证码</Label>
+            </FormField>
+            <FormField htmlFor="disable-code" label="验证码" error={errors.code?.message}>
               <Input
                 id="disable-code"
                 inputMode="numeric"
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
                 placeholder="6 位验证码"
+                {...form.register("code")}
               />
-            </div>
+            </FormField>
             <div className="flex justify-end">
-              <Button
-                variant="destructive"
-                onClick={() => disableMutation.mutate()}
-                disabled={disableMutation.isPending}
-              >
+              <Button type="submit" variant="destructive" disabled={disableMutation.isPending}>
                 {disableMutation.isPending ? <Loader2 className="animate-spin" /> : null}
                 停用双重验证
               </Button>
@@ -145,27 +201,31 @@ export function TwoFactorSection() {
             <p className="text-sm leading-6 text-muted-foreground">
               身份验证器已配置。输入当前密码和新的验证码即可启用双重验证。
             </p>
-            <div className="space-y-2">
-              <Label htmlFor="enable-password">当前密码</Label>
+            <FormField htmlFor="enable-password" label="当前密码" error={errors.password?.message}>
               <PasswordInput
                 id="enable-password"
                 autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                {...form.register("password")}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="enable-code">验证码</Label>
+            </FormField>
+            <FormField htmlFor="enable-code" label="验证码" error={errors.code?.message}>
               <Input
                 id="enable-code"
                 inputMode="numeric"
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
                 placeholder="请输入身份验证器中的新验证码"
+                {...form.register("code")}
               />
-            </div>
-            <div className="flex justify-end">
-              <Button onClick={() => enableMutation.mutate()} disabled={enableMutation.isPending}>
+            </FormField>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={removeTotpMutation.isPending}
+                onClick={() => setRemoveOpen(true)}
+              >
+                移除身份验证器
+              </Button>
+              <Button type="submit" disabled={enableMutation.isPending}>
                 {enableMutation.isPending ? <Loader2 className="animate-spin" /> : null}
                 启用双重验证
               </Button>
@@ -178,6 +238,7 @@ export function TwoFactorSection() {
             </p>
             <div>
               <Button
+                type="button"
                 variant="outline"
                 onClick={() => linkMutation.mutate()}
                 disabled={linkMutation.isPending}
@@ -205,37 +266,66 @@ export function TwoFactorSection() {
                 </div>
               </div>
             ) : null}
-            <div className="space-y-2">
-              <Label htmlFor="setup-code">验证码</Label>
+            <FormField htmlFor="setup-code" label="验证码" error={errors.code?.message}>
               <Input
                 id="setup-code"
                 inputMode="numeric"
-                value={code}
-                onChange={(event) => setCode(event.target.value)}
                 placeholder="请输入身份验证器中的验证码"
+                {...form.register("code")}
               />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="setup-password">当前密码</Label>
+            </FormField>
+            <FormField htmlFor="setup-password" label="当前密码" error={errors.password?.message}>
               <PasswordInput
                 id="setup-password"
                 autoComplete="current-password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                {...form.register("password")}
               />
-            </div>
+            </FormField>
             <div className="flex justify-end">
-              <Button
-                onClick={() => configureMutation.mutate()}
-                disabled={configureMutation.isPending || !secret}
-              >
+              <Button type="submit" disabled={configureMutation.isPending || !secret}>
                 {configureMutation.isPending ? <Loader2 className="animate-spin" /> : null}
                 完成配置
               </Button>
             </div>
           </>
         )}
-      </div>
+      </form>
+      <ConfirmDialog
+        open={removeOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRemoveOpen(false);
+            setRemovePassword("");
+            setRemoveCode("");
+          }
+        }}
+        title="移除身份验证器"
+        desc="移除后身份验证器中的密钥失效；如需继续使用双重验证，请重新生成密钥并完成配置。请输入当前密码和身份验证器中的验证码。"
+        destructive
+        confirmText="移除"
+        isLoading={removeTotpMutation.isPending}
+        handleConfirm={confirmRemoveTotp}
+      >
+        <div className="grid gap-3">
+          <FormField htmlFor="remove-totp-password" label="当前密码">
+            <PasswordInput
+              id="remove-totp-password"
+              autoComplete="current-password"
+              value={removePassword}
+              onChange={(event) => setRemovePassword(event.target.value)}
+            />
+          </FormField>
+          <FormField htmlFor="remove-totp-code" label="验证码">
+            <Input
+              id="remove-totp-code"
+              inputMode="numeric"
+              placeholder="6 位验证码"
+              value={removeCode}
+              onChange={(event) => setRemoveCode(event.target.value)}
+            />
+          </FormField>
+        </div>
+      </ConfirmDialog>
     </ConsoleSection>
   );
 }

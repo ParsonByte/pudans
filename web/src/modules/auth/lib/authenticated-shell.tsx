@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { AuthenticatedLayout } from "@/components/layout/authenticated-layout";
 import type { User } from "@/components/layout/types";
+import { AnnouncementBanner } from "@/modules/auth/components/announcement-banner";
 import type { SessionContextValue } from "@/modules/auth/lib/session-context";
 import {
   buildWorkspaceNavGroups,
@@ -45,6 +46,7 @@ export function AuthenticatedShell({
       navGroups={navGroups}
       onSignOut={handleSignOut}
     >
+      <AnnouncementBanner />
       {children}
     </AuthenticatedLayout>
   );

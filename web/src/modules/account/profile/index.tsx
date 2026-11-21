@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MarkdownContent } from "@/components/content/markdown";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,10 @@ import {
   ConsoleSectionHeader,
 } from "@/modules/workspace/console/components/console-page";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
+
+import { AvatarEditor } from "./components/avatar-editor";
+import { ProfilePreferencesSection } from "./components/preferences-section";
+import { DEFAULT_PROFILE_PREFERENCES, useProfilePreferences } from "./lib/preferences";
 
 const PROFILE_QUERY_KEY = ["account-profile"];
 
@@ -32,6 +36,8 @@ export function AccountProfileView() {
     queryFn: async () => (await apiClient.user.getCurrentUser()).data,
   });
   const user = profileQuery.data;
+  const preferencesQuery = useProfilePreferences();
+  const preferences = preferencesQuery.data ?? DEFAULT_PROFILE_PREFERENCES;
   const [bioDraft, setBioDraft] = useState<string | null>(null);
   const bio = bioDraft ?? user?.spec.bio ?? "";
 
@@ -48,24 +54,25 @@ export function AccountProfileView() {
     onError: (error) => toast.error(resolveApiError(error, ERROR_MESSAGES)),
   });
 
-  const initials = (user?.spec.displayName ?? user?.metadata.name ?? "?").slice(0, 2).toUpperCase();
-
   return (
     <ConsolePage title="个人设置">
       <ConsoleSection>
         <ConsoleSectionHeader
           title="个人资料"
-          description="姓名、邮箱、手机号与头像由飞书同步，个人简介可自行维护。"
+          description="姓名、邮箱与手机号来自飞书同步，头像和个人简介可自行维护。"
         />
         <div className="space-y-5 p-5">
           <div className="flex flex-wrap items-center gap-4">
-            <Avatar className="size-16">
-              {user?.spec.avatar ? <AvatarImage src={user.spec.avatar} alt="" /> : null}
-              <AvatarFallback className="text-lg">{initials}</AvatarFallback>
-            </Avatar>
+            <AvatarEditor
+              avatar={user?.spec.avatar}
+              displayName={user?.spec.displayName}
+              onChanged={refresh}
+            />
             <div className="space-y-1">
               <p className="text-sm font-medium">{user?.spec.displayName ?? "—"}</p>
-              <p className="text-xs text-muted-foreground">头像与资料来自飞书，绑定后自动同步。</p>
+              <p className="text-xs text-muted-foreground">
+                头像支持 PNG、JPEG 或 WebP，保存后立即生效。
+              </p>
             </div>
           </div>
 
@@ -94,6 +101,15 @@ export function AccountProfileView() {
             </div>
           </div>
 
+          {preferences.bioPreview && bio.trim() ? (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">简介预览</p>
+              <div className="border bg-muted/30 p-4">
+                <MarkdownContent content={bio} />
+              </div>
+            </div>
+          ) : null}
+
           <div className="flex justify-end">
             <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
               {saveMutation.isPending ? <Loader2 className="animate-spin" /> : null}
@@ -103,23 +119,27 @@ export function AccountProfileView() {
         </div>
       </ConsoleSection>
 
-      <ConsoleSection>
-        <ConsoleSectionHeader title="账号信息" description="账号标识与注册时间不可修改。" />
-        <dl className="grid gap-4 p-5 md:grid-cols-3">
-          <div>
-            <dt className="text-xs text-muted-foreground">用户名</dt>
-            <dd className="mt-1 font-mono text-sm">{user?.metadata.name ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">用户 ID</dt>
-            <dd className="mt-1 font-mono text-sm">{user?.spec.uid ?? "—"}</dd>
-          </div>
-          <div>
-            <dt className="text-xs text-muted-foreground">注册时间</dt>
-            <dd className="mt-1 text-sm">{formatUserDateTime(user?.spec.registeredAt)}</dd>
-          </div>
-        </dl>
-      </ConsoleSection>
+      <ProfilePreferencesSection />
+
+      {preferences.showAccountInfo ? (
+        <ConsoleSection>
+          <ConsoleSectionHeader title="账号信息" description="账号标识与注册时间不可修改。" />
+          <dl className="grid gap-4 p-5 md:grid-cols-3">
+            <div>
+              <dt className="text-xs text-muted-foreground">用户名</dt>
+              <dd className="mt-1 font-mono text-sm">{user?.metadata.name ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">用户 ID</dt>
+              <dd className="mt-1 font-mono text-sm">{user?.spec.uid ?? "—"}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">注册时间</dt>
+              <dd className="mt-1 text-sm">{formatUserDateTime(user?.spec.registeredAt)}</dd>
+            </div>
+          </dl>
+        </ConsoleSection>
+      ) : null}
     </ConsolePage>
   );
 }
