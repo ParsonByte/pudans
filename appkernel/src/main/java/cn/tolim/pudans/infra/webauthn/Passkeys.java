@@ -5,6 +5,7 @@ import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
 import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.user.UserConnection;
+import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.extension.contract.ListOptions;
 import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
@@ -44,6 +45,8 @@ public class Passkeys {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final ReactiveExtensionClient client;
+
+    private final Connections connections;
 
     private final PasskeyProperties properties;
 
@@ -106,11 +109,7 @@ public class Passkeys {
                             signCount,
                             registrationData.getTransports());
                 })
-                .flatMap(connection -> client
-                        .fetch(UserConnection.class, connection.getMetadata().getName())
-                        .flatMap(existing -> Mono.<UserConnection>error(
-                                new PasskeyException("此通行密钥已注册。")))
-                        .switchIfEmpty(Mono.defer(() -> client.create(connection))));
+                .flatMap(connections::createConnection);
     }
 
     public Mono<AuthenticationResult> verifyAssertion(String credentialJson, String challenge) {
@@ -146,14 +145,6 @@ public class Passkeys {
                 .andQuery(equal("spec.providerUserId", credentialId))
                 .build();
         return client.listAll(UserConnection.class, options, defaultSort()).next();
-    }
-
-    public Mono<Void> removePasskey(String username, String name) {
-        return client.fetch(UserConnection.class, name)
-                .filter(connection -> PROVIDER.equals(connection.getSpec().getRegistrationId()))
-                .filter(connection -> username.equals(connection.getSpec().getUsername()))
-                .flatMap(client::delete)
-                .then();
     }
 
     private RegistrationParameters registrationParameters(String challenge) {
