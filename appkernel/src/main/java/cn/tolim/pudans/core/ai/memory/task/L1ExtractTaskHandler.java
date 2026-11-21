@@ -21,7 +21,6 @@ import cn.tolim.pudans.core.ai.memory.SceneSegment;
 import cn.tolim.pudans.core.ai.memory.ai.ExtractionOutcome;
 import cn.tolim.pudans.core.ai.memory.ai.MemoryConflict;
 import cn.tolim.pudans.core.ai.memory.ai.MemoryExtraction;
-import cn.tolim.pudans.core.ai.memory.org.OrgCandidatePolicy;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.core.ai.task.AiTaskHandler;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
@@ -217,7 +216,6 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
                     existingScenes.size(),
                     pool.size(),
                     MemoryTaskPayloads.PERSONA_THRESHOLD);
-            var orgCandidate = OrgCandidatePolicy.hasCandidate(outcome.scenes());
             var request = new L1Pipeline.Request(
                     context,
                     conversation.id(),
@@ -225,7 +223,6 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
                     pool,
                     lastMessageId,
                     MemoryScope.PRIVATE,
-                    orgCandidate,
                     memory.isL2Enabled(),
                     memory.isL3Enabled(),
                     state,

@@ -81,7 +81,6 @@ public class L3PersonaTaskHandler implements AiTaskHandler {
         if (teamId == null || agentId == null) {
             return Mono.error(new IllegalArgumentException("L3 任务缺少团队或 Agent 标识"));
         }
-        var afterL1Id = MemoryTaskPayloads.afterL1Id(task, null);
         var limit = MemoryTaskPayloads.batchLimit(task);
         return Mono.zip(
                         memoryL3Repository
@@ -89,7 +88,7 @@ public class L3PersonaTaskHandler implements AiTaskHandler {
                                 .map(Optional::of)
                                 .defaultIfEmpty(Optional.empty()),
                         memoryL2Repository.findByScope(teamId, agentId).collectList(),
-                        memoryL1Repository.findActiveByScope(teamId, agentId, afterL1Id, limit).collectList())
+                        memoryL1Repository.findLatestActiveByScope(teamId, agentId, limit).collectList())
                 .flatMap(loaded -> apply(teamId, agentId, loaded.getT1(), loaded.getT2(), loaded.getT3()));
     }
 

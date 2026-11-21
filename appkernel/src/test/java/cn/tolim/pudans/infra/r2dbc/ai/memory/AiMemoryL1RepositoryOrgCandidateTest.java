@@ -32,7 +32,7 @@ class AiMemoryL1RepositoryOrgCandidateTest {
     RowsFetchSpec<L1MemoryRecord> fetchSpec;
 
     @Test
-    void queriesActiveOrgCandidatesAfterTheWatermark() {
+    void queriesActiveOrgCandidatesUpToTheWatermark() {
         when(databaseClient.sql(anyString())).thenReturn(spec);
         when(spec.bind(anyString(), any())).thenReturn(spec);
         doReturn(fetchSpec).when(spec).map(any(BiFunction.class));
@@ -50,7 +50,8 @@ class AiMemoryL1RepositoryOrgCandidateTest {
                 .contains("status = 'ACTIVE'")
                 .contains("team_id = :teamId")
                 .contains("agent_id = :agentId")
-                .contains("id >= :afterId");
+                .contains("id <= :afterId")
+                .contains("ORDER BY id DESC");
         verify(spec).bind("teamId", "team-a");
         verify(spec).bind("agentId", "agent-a");
         verify(spec).bind("afterId", 42L);
