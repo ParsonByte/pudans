@@ -24,8 +24,8 @@ class AiUsageButtonTemplatesTest {
                 "ai.usage.overview",
                 "overview",
                 "ai-usage-overview:",
-                3,
-                List.of("view", "export", "use-voucher"));
+                2,
+                List.of("view", "export"));
         assertTemplate(
                 all, "ai.usage.requests", "requests", "ai-usage-requests:", 2, List.of("view", "export"));
         assertTemplate(
@@ -33,7 +33,7 @@ class AiUsageButtonTemplatesTest {
         assertTemplate(
                 all, "ai.usage.context", "context", "ai-usage-context:", 2, List.of("view", "export"));
 
-        assertThat(all).hasSize(9);
+        assertThat(all).hasSize(8);
         assertThat(all.stream().map(role -> role.getMetadata().getName()).toList())
                 .doesNotHaveDuplicates();
     }
@@ -67,12 +67,6 @@ class AiUsageButtonTemplatesTest {
                         .map(role -> annotation(role, Role.UI_OPERATION_ANNO))
                         .toList())
                 .containsExactlyElementsOf(operations);
-        if ("overview".equals(page)) {
-            assertThat(sorted.get(2).getRules())
-                    .allSatisfy(rule -> assertThat(rule.getResources())
-                            .containsAnyOf("aiplan/usage", "aiplan/vouchers"));
-            return;
-        }
         assertThat(roles)
                 .allSatisfy(role -> assertThat(role.getRules())
                         .allSatisfy(rule -> {

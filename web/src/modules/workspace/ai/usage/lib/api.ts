@@ -9,13 +9,13 @@ const USAGE_API_PATH = `${AI_API_PREFIX}/aistats/-/usage`;
 
 const STATS_API_PATH = `${AI_API_PREFIX}/aistats/-`;
 
+const PLAN_API_PATH = `${AI_API_PREFIX}/aiplan`;
+
 const USAGE_SESSION_EXPORT_PAGE_SIZE = 200;
 
 const USAGE_REQUEST_SAMPLE_MAX_ROWS = 2000;
 
 const USAGE_REQUEST_SAMPLE_PAGE_SIZE = 200;
-
-const PLAN_API_PATH = `${AI_API_PREFIX}/aiplan`;
 
 export const USAGE_SESSION_EXPORT_MAX_ROWS = 2000;
 
@@ -185,8 +185,6 @@ export type UsageRequestItem = {
   createdAt: string;
   completedAt: string | null;
   cacheHitRate?: number | null;
-  cacheReadTokens?: number | null;
-  cacheWriteTokens?: number | null;
   retried?: boolean | null;
   retryCount?: number | null;
   servedEffort?: string | null;

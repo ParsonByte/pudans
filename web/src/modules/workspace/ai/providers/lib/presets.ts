@@ -1,4 +1,4 @@
-import { BASE_PATH } from "@/lib/base-path";
+import { assetUrl } from "@/lib/asset-url";
 
 import type { AiProviderVendor } from "./api";
 
@@ -65,7 +65,7 @@ const PRESET_ICON_PATHS: Record<string, string> = {
 
 export function presetIcon(preset: ProviderPreset): string | undefined {
   const path = PRESET_ICON_PATHS[preset.id];
-  return path ? `${BASE_PATH}${path}` : undefined;
+  return path ? assetUrl(path) : undefined;
 }
 
 export function presetRegion(preset: ProviderPreset, regionId: ProviderRegionId): PresetRegion {

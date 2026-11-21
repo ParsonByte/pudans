@@ -3,5 +3,5 @@
 import { AiUsageOverviewView } from "@/modules/workspace/ai/usage/overview";
 
 export default function AiUsageOverviewPage() {
-  return <AiUsageOverviewView />;
+  return <AiUsageOverviewView scopeLock="all" />;
 }

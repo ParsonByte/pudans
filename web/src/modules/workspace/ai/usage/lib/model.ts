@@ -9,7 +9,7 @@ import {
   formatTokenCount,
   requestStatusLabel,
 } from "../../routing/lib/model";
-import type { PlanVoucherKind, UsageBucket, UsageScope, UsageTotals } from "./api";
+import type { PlanVoucherKind, UsageBucket, UsageTotals } from "./api";
 
 const MAX_USAGE_RANGE_DAYS = 366;
 
@@ -31,7 +31,7 @@ export const USAGE_RANGE_OPTIONS: {
   disabled?: boolean;
 }[] = [
   { value: "today", label: "今日" },
-  { value: "24h", label: "近 24 小时" },
+  { value: "24h", label: "近 2 天" },
   { value: "7d", label: "近 7 天" },
   { value: "30d", label: "近 30 天" },
   { value: "90d", label: "近 90 天" },
@@ -41,11 +41,6 @@ export const USAGE_RANGE_OPTIONS: {
 
 export const USAGE_ALL_RANGE_HINT =
   "“全部”时间范围尚未得到用量端点支持，暂不可选；最长可选 366 天。";
-
-export const USAGE_SCOPE_OPTIONS: { value: UsageScope; label: string }[] = [
-  { value: "self", label: "本人" },
-  { value: "all", label: "全站" },
-];
 
 export const USAGE_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "SUCCEEDED", label: requestStatusLabel("SUCCEEDED") },

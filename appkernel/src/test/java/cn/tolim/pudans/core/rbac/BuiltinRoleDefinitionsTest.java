@@ -2,6 +2,17 @@ package cn.tolim.pudans.core.rbac;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import cn.tolim.pudans.contract.rbac.Role;
+import cn.tolim.pudans.extension.api.MetadataUtil;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import com.fasterxml.jackson.core.type.TypeReference;
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
 class BuiltinRoleDefinitionsTest {
@@ -44,5 +55,100 @@ class BuiltinRoleDefinitionsTest {
                 .containsAll(builtinNames)
                 .contains("role-template-view-users");
         assertThat(definitions.allRoles()).hasSizeGreaterThan(builtinNames.size());
+    }
+
+    @Test
+    void aiAdminRoleCoversEveryAiOperationTemplate() {
+        assertThat(dependencyClosure("role-template-ai-admin"))
+                .containsAll(operationTemplates(menu -> menu.startsWith("ai.")));
+    }
+
+    @Test
+    void systemAdminRoleCoversEveryConsoleOperationTemplate() {
+        assertThat(dependencyClosure(BuiltinEntities.SYSTEM_ADMIN_ROLE))
+                .containsAll(operationTemplates(menu -> menu.startsWith("console.")));
+    }
+
+    @Test
+    void systemAdminRoleKeepsPersonalAccountPermissions() {
+        assertThat(dependencyClosure(BuiltinEntities.SYSTEM_ADMIN_ROLE))
+                .contains(BuiltinEntities.NORMAL_ROLE, "role-template-own-user-info");
+    }
+
+    @Test
+    void normalRoleOnlyReceivesPersonalWorkspaceMenus() {
+        var closure = dependencyClosure(BuiltinEntities.NORMAL_ROLE);
+
+        assertThat(closure)
+                .contains(
+                        "role-template-view-my-usage-overview",
+                        "role-template-view-my-usage-requests",
+                        "role-template-view-my-usage-sessions",
+                        "role-template-view-my-usage-context",
+                        "role-template-view-my-plan",
+                        "role-template-view-my-generations");
+        assertThat(closure).doesNotContainAnyElementsOf(workspaceMenuTemplates("ai"));
+        assertThat(closure).doesNotContainAnyElementsOf(workspaceMenuTemplates("console"));
+    }
+
+    @Test
+    void aiOperatorRoleKeepsTheAiConsoleMenus() {
+        assertThat(dependencyClosure(BuiltinEntities.AI_OPERATOR_ROLE))
+                .contains("role-template-view-ai-memory", "role-template-view-ai-knowledge-bases");
+    }
+
+    private Set<String> workspaceMenuTemplates(String workspace) {
+        return definitions.allRoles().stream()
+                .filter(role -> role.getMetadata() != null)
+                .filter(role -> Role.UI_TYPE_MENU.equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_TYPE_ANNO)))
+                .filter(role -> workspace.equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_WORKSPACE_ANNO)))
+                .map(role -> role.getMetadata().getName())
+                .collect(Collectors.toSet());
+    }
+
+    private Set<String> operationTemplates(Predicate<String> menuFilter) {
+        return definitions.allRoles().stream()
+                .filter(role -> role.getMetadata() != null)
+                .filter(role -> {
+                    var type = MetadataUtil.nullSafeAnnotations(role).get(Role.UI_TYPE_ANNO);
+                    return Role.UI_TYPE_BUTTON.equals(type) || Role.UI_TYPE_TABLE.equals(type);
+                })
+                .filter(role -> menuFilter.test(
+                        MetadataUtil.nullSafeAnnotations(role).getOrDefault(Role.UI_MENU_ANNO, "")))
+                .map(role -> role.getMetadata().getName())
+                .collect(Collectors.toSet());
+    }
+
+    private Set<String> dependencyClosure(String root) {
+        var roles = definitions.allRoles().stream()
+                .filter(role -> role.getMetadata() != null)
+                .collect(Collectors.toMap(
+                        role -> role.getMetadata().getName(), role -> role, (first, second) -> first));
+        var visited = new HashSet<String>();
+        var pending = new ArrayDeque<String>();
+        pending.add(root);
+        while (!pending.isEmpty()) {
+            var name = pending.removeFirst();
+            if (!visited.add(name)) {
+                continue;
+            }
+            var role = roles.get(name);
+            if (role == null) {
+                continue;
+            }
+            var raw = MetadataUtil.nullSafeAnnotations(role).get(Role.ROLE_DEPENDENCIES_ANNO);
+            if (raw == null || raw.isBlank()) {
+                continue;
+            }
+            var dependencies = JsonUtils.jsonToObject(raw, new TypeReference<List<String>>() {});
+            if (dependencies != null) {
+                dependencies.stream()
+                        .filter(Objects::nonNull)
+                        .forEach(pending::addLast);
+            }
+        }
+        return visited;
     }
 }

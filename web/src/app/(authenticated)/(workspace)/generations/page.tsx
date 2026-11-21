@@ -2,6 +2,6 @@
 
 import { AiGenerationsView } from "@/modules/workspace/ai/generations";
 
-export default function AiGenerationsPage() {
+export default function MyGenerationsPage() {
   return <AiGenerationsView />;
 }

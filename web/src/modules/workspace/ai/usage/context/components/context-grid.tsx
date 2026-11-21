@@ -31,7 +31,7 @@ export function ContextGrid({ items, selectedRequestId, onSelect }: ContextGridP
   return (
     <div className="space-y-4 p-5">
       <div
-        className="grid w-full max-w-[520px] gap-1"
+        className="grid w-full max-w-[420px] gap-0.5"
         style={{ gridTemplateColumns: `repeat(${GRID_COLUMNS}, minmax(0, 1fr))` }}
       >
         {cells.map((item, index) => {

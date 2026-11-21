@@ -23,7 +23,7 @@ class AiWorkspaceMenuTemplatesTest {
                 .map(document -> Unstructured.OBJECT_MAPPER.convertValue(document.getData(), Role.class))
                 .toList();
 
-        assertThat(roles).hasSize(26);
+        assertThat(roles).hasSize(25);
 
         var workspaces = roles.stream()
                 .filter(role -> Role.UI_TYPE_WORKSPACE.equals(annotation(role, Role.UI_TYPE_ANNO)))

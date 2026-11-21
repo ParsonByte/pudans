@@ -136,7 +136,7 @@ function RankingTable({
       </TableHeader>
       <TableBody>
         {merged.map((row, index) => {
-          const tokens = row.inputTokens + row.cacheTokens + row.outputTokens;
+          const tokens = row.inputTokens + row.outputTokens;
           const share = totalTokens > 0 ? tokens / totalTokens : 0;
           return (
             <TableRow key={`${row.provider ?? ""}-${row.name}-${index}`}>
@@ -207,7 +207,7 @@ function mergeSmallRows(rows: UsageRankingEntry[], totalTokens: number): UsageRa
     return rows;
   }
   const small = rows.filter((row) => {
-    const tokens = row.inputTokens + row.cacheTokens + row.outputTokens;
+    const tokens = row.inputTokens + row.outputTokens;
     return tokens / totalTokens < OTHER_SHARE_THRESHOLD;
   });
   if (small.length < 2) {
@@ -260,7 +260,7 @@ function ModelWeightPopover({
 }: ModelWeightPopoverProps) {
   const matches = models.filter(
     (model) =>
-      model.spec.modelCode === row.name &&
+      (model.spec.modelCode === row.name || model.metadata.name === row.name) &&
       (row.provider == null || model.spec.provider === row.provider),
   );
 

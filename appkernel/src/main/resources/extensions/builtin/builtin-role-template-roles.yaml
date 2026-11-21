@@ -31,6 +31,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/display-name: "系统管理员"
     rbac.authorization.pudans.tolim.cn/dependencies: |
       [
+        "normal-role",
         "role-template-view-dashboard",
         "role-template-manage-settings",
         "role-template-manage-auth-providers",
@@ -72,7 +73,6 @@ metadata:
         "role-template-settings-ai-memory",
         "role-template-prompts-ai-memory",
         "role-template-logs-ai-memory",
-        "role-template-delete-ai-sessions",
         "role-template-gateway-ai-sessions",
         "role-template-create-ai-agent-runtime",
         "role-template-update-ai-agent-runtime",
@@ -88,7 +88,33 @@ metadata:
         "role-template-manage-ai-gateway",
         "role-template-settings-ai-gateway",
         "role-template-sessions-ai-gateway",
-        "role-template-usage-overview-clear"
+        "role-template-usage-overview-clear",
+        "role-template-create-users",
+        "role-template-batch-create-users",
+        "role-template-import-users",
+        "role-template-update-users",
+        "role-template-delete-users",
+        "role-template-reset-user-password",
+        "role-template-assign-usergroup",
+        "role-template-disable-users",
+        "role-template-export-users",
+        "role-template-bulk-operate-users",
+        "role-template-create-roles",
+        "role-template-update-roles",
+        "role-template-delete-roles",
+        "role-template-create-usergroups",
+        "role-template-update-usergroups",
+        "role-template-delete-usergroups",
+        "role-template-create-storage-files",
+        "role-template-delete-storage-files",
+        "role-template-restore-storage-files",
+        "role-template-purge-storage-files",
+        "role-template-download-storage-files",
+        "role-template-create-storage-policies",
+        "role-template-update-storage-policies",
+        "role-template-delete-storage-policies",
+        "role-template-test-storage-policies",
+        "role-template-oauth-storage-policies"
       ]
   finalizers:
     - system-protection
@@ -115,7 +141,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/system-reserved: "true"
   annotations:
     rbac.authorization.pudans.tolim.cn/display-name: "普通用户"
-    rbac.authorization.pudans.tolim.cn/dependencies: '[ "authenticated", "role-template-ai-user", "role-template-delete-ai-sessions" ]'
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "authenticated", "role-template-ai-user" ]'
     rbac.authorization.pudans.tolim.cn/ui-permissions: '["profile:manage","authentications:manage"]'
   finalizers:
     - system-protection
@@ -139,6 +165,14 @@ rules:
       - "create"
       - "update"
       - "patch"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "parameter-settings"
+    resourceNames:
+      - "site"
+    verbs:
+      - "get"
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role

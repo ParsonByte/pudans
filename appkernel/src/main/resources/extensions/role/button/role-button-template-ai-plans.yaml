@@ -109,6 +109,8 @@ rules:
       - "aiplanbindings/bulk"
     verbs:
       - "create"
+      - "update"
+      - "patch"
 ---
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role

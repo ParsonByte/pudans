@@ -32,7 +32,7 @@ export function AuthenticatedLayout({
   const activeWorkspace =
     workspaces?.find((workspace) => workspace.id === activeWorkspaceId) ?? workspaces?.[0];
   const sidebarContent = activeWorkspace?.paths.includes(CHAT_CONVERSATION_PATH) ? (
-    <ChatLayout />
+    <ChatLayout navGroups={navGroups ?? []} />
   ) : undefined;
 
   return (

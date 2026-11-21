@@ -160,7 +160,10 @@ function checkIsActive(href: string, item: NavItem, mainNav = false): boolean {
   return (
     href === item.url ||
     href.split("?")[0] === item.url ||
-    Boolean(item.items?.some((subItem) => subItem.url === href)) ||
+    (Boolean(item.url) && href.startsWith(`${item.url}/`)) ||
+    Boolean(
+      item.items?.some((subItem) => href === subItem.url || href.startsWith(`${subItem.url}/`)),
+    ) ||
     (mainNav && href.split("/")[1] !== "" && href.split("/")[1] === item?.url?.split("/")[1])
   );
 }

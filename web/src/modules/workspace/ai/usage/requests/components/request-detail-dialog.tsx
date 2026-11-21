@@ -131,11 +131,7 @@ function RequestDetailBody({ detail }: { detail: UsageRequestDetail }) {
 
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           <Metric label="输入 Token" value={formatTokenCount(detail.inputTokens ?? undefined)} />
-          <Metric label="缓存读 Token" value={formatTokenCount(detail.cacheTokens ?? undefined)} />
-          <Metric
-            label="缓存写 Token"
-            value={formatTokenCount(detail.cacheWriteTokens ?? undefined)}
-          />
+          <Metric label="缓存 Token" value={formatTokenCount(detail.cacheTokens ?? undefined)} />
           <Metric label="输出 Token" value={formatTokenCount(detail.outputTokens ?? undefined)} />
           <Metric label="总 Token" value={formatTokenCount(detail.totalTokens ?? undefined)} />
           <Metric
@@ -144,7 +140,7 @@ function RequestDetailBody({ detail }: { detail: UsageRequestDetail }) {
               resolveUsageCacheHitRate({
                 cacheHitRate: detail.cacheHitRate,
                 inputTokens: detail.inputTokens ?? 0,
-                cacheTokens: detail.cacheReadTokens ?? detail.cacheTokens ?? 0,
+                cacheTokens: detail.cacheTokens ?? 0,
               }),
             )}
           />

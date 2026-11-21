@@ -1,10 +1,12 @@
+import type { NavGroup } from "@/components/layout/types";
+
 import { ChatConversationList } from "./chat-conversation-list";
 import { ChatSidebarNav } from "./chat-sidebar-nav";
 
-export function ChatLayout() {
+export function ChatLayout({ navGroups }: { navGroups: NavGroup[] }) {
   return (
     <>
-      <ChatSidebarNav />
+      <ChatSidebarNav navGroups={navGroups} />
       <ChatConversationList />
     </>
   );

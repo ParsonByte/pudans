@@ -1,9 +1,10 @@
-import { type ElementType, type ReactNode, useCallback } from "react";
+import { type ElementType, type ReactNode, useCallback, useMemo } from "react";
 
 import { ArrowRight, ChevronRight, Laptop, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 
+import { withoutChatMenus } from "@/components/layout/nav-filter";
 import type { NavGroup } from "@/components/layout/types";
 import {
   Command,
@@ -47,6 +48,7 @@ export function CommandMenu({ navGroups = [] }: CommandMenuProps) {
   const router = useRouter();
   const { setTheme } = useTheme();
   const { open, setOpen } = useSearch();
+  const groups = useMemo(() => withoutChatMenus(navGroups, true), [navGroups]);
 
   const runCommand = useCallback(
     (command: () => unknown) => {
@@ -65,7 +67,7 @@ export function CommandMenu({ navGroups = [] }: CommandMenuProps) {
             <CommandEmpty>
               <ConsoleState variant="empty" title="未找到结果。" className="min-h-0 px-0 py-6" />
             </CommandEmpty>
-            {navGroups.map((group) => (
+            {groups.map((group) => (
               <CommandGroup key={group.title} heading={group.title}>
                 {navCommands(group).map((command) => (
                   <CommandItem
@@ -83,7 +85,7 @@ export function CommandMenu({ navGroups = [] }: CommandMenuProps) {
                 ))}
               </CommandGroup>
             ))}
-            {navGroups.length > 0 ? <CommandSeparator /> : null}
+            {groups.length > 0 ? <CommandSeparator /> : null}
             <CommandGroup heading="主题">
               {THEME_COMMANDS.map((command) => (
                 <CommandItem
