@@ -536,20 +536,30 @@ class BuiltinEntityPolicyTest {
     }
 
     @Test
-    void createUserConnectionForAnotherUserIsDenied() {
-        var connection = userConnection("victim");
+    void genericUserConnectionCreateIsDenied() {
+        var connection = userConnection(NAME);
 
-        StepVerifier.create(authenticated(policy.checkCreate(userConnectionGvk(), connection), NAME))
+        StepVerifier.create(policy.checkCreate(userConnectionGvk(), connection))
                 .expectError(AccessDeniedException.class)
                 .verify();
     }
 
     @Test
-    void createUserConnectionForSelfIsAllowed() {
+    void genericUserConnectionUpdateIsDenied() {
         var connection = userConnection(NAME);
 
-        StepVerifier.create(authenticated(policy.checkCreate(userConnectionGvk(), connection), NAME))
-                .verifyComplete();
+        StepVerifier.create(policy.checkUpdate(userConnectionGvk(), "connection-1", connection))
+                .expectError(AccessDeniedException.class)
+                .verify();
+    }
+
+    @Test
+    void genericUserConnectionDeleteIsDenied() {
+        var connection = userConnection(NAME);
+
+        StepVerifier.create(policy.checkDelete(connection))
+                .expectError(AccessDeniedException.class)
+                .verify();
     }
 
     @Test
