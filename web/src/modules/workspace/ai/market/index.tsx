@@ -4,7 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import Link from "next/link";
 
+import { ContentPreviewButton } from "@/components/content/content-preview";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -14,18 +16,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  ConsoleEmpty,
-  ConsolePage,
-  ConsoleSection,
-} from "@/modules/workspace/console/components/console-page";
+import { ConsolePage } from "@/modules/workspace/console/components/console-page";
+import { ConsoleState } from "@/modules/workspace/console/components/console-state";
 import { useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { ProviderBrandIcon } from "../providers/components/provider-brand-icon";
 import {
   type AiModality,
   type AiModelCapability,
-  type AiModelItem,
   type AiModelTier,
   type AiModelType,
   type AiProviderItem,
@@ -34,6 +32,7 @@ import {
   resolveAiProviderApiError,
 } from "../providers/lib/api";
 import { MODEL_TIER_OPTIONS, formatNumber, modelDisplayName } from "../providers/lib/model";
+import { ModelDetailDialog } from "./components/model-detail-dialog";
 import {
   CAPABILITY_LABELS,
   CONTEXT_FILTER_OPTIONS,
@@ -41,6 +40,7 @@ import {
   MODALITY_LABELS,
   type ModelContextFilter,
   type ModelEnabledFilter,
+  type ModelInfo,
   matchesContextFilter,
   matchesEnabledFilter,
   modelCapabilities,
@@ -51,14 +51,6 @@ import {
   modelTypeLabel,
   toggleSetValue,
 } from "./lib/model";
-
-type ModelInfo = {
-  model: AiModelItem;
-  provider?: AiProviderItem;
-  capabilities: AiModelCapability[];
-  inputs: AiModality[];
-  outputs: AiModality[];
-};
 
 export function ModelMarketView() {
   const providersPath = useMenuPath("ai-providers");
@@ -103,6 +95,7 @@ export function ModelMarketView() {
   const [contextFilter, setContextFilter] = useState<ModelContextFilter>("all");
   const [enabledFilter, setEnabledFilter] = useState<ModelEnabledFilter>("all");
   const [capabilityFilter, setCapabilityFilter] = useState("all");
+  const [selected, setSelected] = useState<ModelInfo | null>(null);
 
   const typeOptions = useMemo(() => {
     const present = new Set(modelInfos.map((info) => info.model.spec.modelType));
@@ -221,7 +214,7 @@ export function ModelMarketView() {
   ]);
 
   return (
-    <ConsolePage title="模型广场">
+    <ConsolePage title="模型广场" description="浏览已配置模型的能力、模态、上下文与计费权重。">
       <div className="flex flex-1 flex-col gap-6 lg:flex-row">
         <aside className="flex w-full shrink-0 flex-col gap-6 lg:w-56">
           {typeOptions.length > 0 ? (
@@ -369,46 +362,53 @@ export function ModelMarketView() {
               ))}
             </div>
           ) : modelsQuery.isError ? (
-            <ConsoleSection className="flex min-h-56 flex-col items-center justify-center gap-3 p-8 text-center">
-              <p className="text-sm font-medium">无法加载模型</p>
-              <p className="text-xs text-muted-foreground">
-                {resolveAiProviderApiError(modelsQuery.error)}
-              </p>
-            </ConsoleSection>
+            <ConsoleState
+              wrapper
+              variant="error"
+              title="无法加载模型"
+              description={resolveAiProviderApiError(modelsQuery.error)}
+              onRetry={() => void modelsQuery.refetch()}
+            />
           ) : models.length === 0 ? (
-            <ConsoleSection>
-              <ConsoleEmpty>
-                <div className="space-y-3">
-                  <p>还没有模型。先到供应商里添加账号并导入模型。</p>
-                  {providersPath ? (
-                    <Link
-                      href={providersPath}
-                      className="inline-flex text-sm font-medium text-primary hover:underline"
-                    >
-                      去供应商配置
-                    </Link>
-                  ) : null}
-                </div>
-              </ConsoleEmpty>
-            </ConsoleSection>
+            <ConsoleState
+              wrapper
+              variant="empty"
+              title="还没有模型。"
+              description="先到供应商里添加账号并导入模型。"
+              action={
+                providersPath ? (
+                  <Button asChild variant="outline" size="sm">
+                    <Link href={providersPath}>去供应商配置</Link>
+                  </Button>
+                ) : null
+              }
+            />
           ) : filtered.length === 0 ? (
-            <ConsoleSection>
-              <ConsoleEmpty>没有匹配的模型，试试调整筛选条件。</ConsoleEmpty>
-            </ConsoleSection>
+            <ConsoleState
+              wrapper
+              variant="empty"
+              title="没有匹配的模型。"
+              description="试试调整筛选条件。"
+            />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
               {filtered.map((info) => (
-                <ModelCard key={info.model.metadata.name} info={info} />
+                <ModelCard
+                  key={info.model.metadata.name}
+                  info={info}
+                  onPreview={() => setSelected(info)}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
+      <ModelDetailDialog info={selected} onClose={() => setSelected(null)} />
     </ConsolePage>
   );
 }
 
-function ModelCard({ info }: { info: ModelInfo }) {
+function ModelCard({ info, onPreview }: { info: ModelInfo; onPreview: () => void }) {
   const { model, provider } = info;
   const capabilityLabels = modelCapabilityLabels(model.spec);
   const contextWindow = model.spec.contextWindow;
@@ -424,9 +424,12 @@ function ModelCard({ info }: { info: ModelInfo }) {
             {model.spec.modelCode}
           </p>
         </div>
-        <Badge variant={model.spec.enabled === false ? "outline" : "secondary"}>
-          {model.spec.enabled === false ? "已停用" : "已启用"}
-        </Badge>
+        <div className="flex shrink-0 items-center gap-1">
+          <Badge variant={model.spec.enabled === false ? "outline" : "secondary"}>
+            {model.spec.enabled === false ? "已停用" : "已启用"}
+          </Badge>
+          <ContentPreviewButton onClick={onPreview} label="查看模型详情" />
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">

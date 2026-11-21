@@ -11,6 +11,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { MarkdownContent } from "@/components/content/markdown";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ import { CommandConsole } from "./command-console";
 import { FilePanel } from "./file-panel";
 import { LogConsole } from "./log-console";
 import { RuntimeProviderBadge, RuntimeStateBadge } from "./runtime-badges";
+import { RuntimeSnapshots } from "./runtime-snapshots";
 
 type AgentRuntimeDetailProps = {
   row: AgentRuntimeRow;
@@ -81,6 +83,7 @@ export function AgentRuntimeDetail({
   const tabs = [
     { value: "exec", label: "命令", enabled: canExec },
     { value: "files", label: "文件", enabled: canFiles },
+    { value: "snapshots", label: "快照", enabled: canFiles },
     { value: "logs", label: "日志", enabled: canLogs },
   ].filter((tab) => tab.enabled);
 
@@ -252,9 +255,9 @@ export function AgentRuntimeDetail({
               {spec?.prompt ? (
                 <div className="space-y-1">
                   <p className="text-xs font-medium text-muted-foreground">系统提示词</p>
-                  <pre className="max-h-40 overflow-auto border bg-muted/40 p-3 text-xs break-words whitespace-pre-wrap">
-                    {spec.prompt}
-                  </pre>
+                  <div className="max-h-40 overflow-auto border bg-muted/40 p-3">
+                    <MarkdownContent content={spec.prompt} className="text-xs leading-relaxed" />
+                  </div>
                 </div>
               ) : null}
             </section>
@@ -292,6 +295,11 @@ export function AgentRuntimeDetail({
                 {canFiles ? (
                   <TabsContent value="files">
                     <FilePanel agent={row.name} running={Boolean(running)} />
+                  </TabsContent>
+                ) : null}
+                {canFiles ? (
+                  <TabsContent value="snapshots">
+                    <RuntimeSnapshots agent={row.name} running={Boolean(running)} />
                   </TabsContent>
                 ) : null}
                 {canLogs ? (

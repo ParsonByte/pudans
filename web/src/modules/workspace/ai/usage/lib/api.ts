@@ -7,6 +7,8 @@ import { AI_API_PREFIX } from "../../providers/lib/api";
 
 const USAGE_API_PATH = `${AI_API_PREFIX}/aistats/-/usage`;
 
+const STATS_API_PATH = `${AI_API_PREFIX}/aistats/-`;
+
 const USAGE_SESSION_EXPORT_PAGE_SIZE = 200;
 
 const USAGE_REQUEST_SAMPLE_MAX_ROWS = 2000;
@@ -449,6 +451,51 @@ export type UsageContextGridQuery = {
   scope?: UsageScope;
 };
 
+export type UnitStatsRow = {
+  day: string;
+  model: string;
+  requests: number;
+  units: number;
+  tokens: number;
+};
+
+export type UnitStats = {
+  rows: UnitStatsRow[];
+};
+
+export type ModelStatsRow = {
+  modelType: string;
+  capability: string;
+  model: string;
+  status: string;
+  requests: number;
+  units: number;
+  images: number;
+  videoSeconds: number;
+  audioSeconds: number;
+  speechCharacters: number;
+  tasks: number;
+};
+
+export type ModelStats = {
+  rows: ModelStatsRow[];
+};
+
+export type MemoryStats = {
+  l1Total: number;
+  l1Active: number;
+  l2Total: number;
+  l3Total: number;
+};
+
+export type KnowledgeBaseStats = {
+  documents: number;
+  ready: number;
+  failed: number;
+  chunks: number;
+  queries: number;
+};
+
 export type UsageClearRequest = {
   before: string;
   provider?: string;
@@ -597,6 +644,30 @@ export async function fetchUsageRequestSample(
     cursor = page.nextCursor;
   }
   return items.slice(0, maxRows);
+}
+
+export async function fetchUnitStats(days = 14): Promise<UnitStats> {
+  const response = await axiosInstance.get<UnitStats>(`${STATS_API_PATH}/units`, {
+    params: { days },
+  });
+  return response.data;
+}
+
+export async function fetchModelStats(days = 14): Promise<ModelStats> {
+  const response = await axiosInstance.get<ModelStats>(`${STATS_API_PATH}/models`, {
+    params: { days },
+  });
+  return response.data;
+}
+
+export async function fetchMemoryStats(): Promise<MemoryStats> {
+  const response = await axiosInstance.get<MemoryStats>(`${STATS_API_PATH}/memory`);
+  return response.data;
+}
+
+export async function fetchKnowledgeBaseStats(): Promise<KnowledgeBaseStats> {
+  const response = await axiosInstance.get<KnowledgeBaseStats>(`${STATS_API_PATH}/kb`);
+  return response.data;
 }
 
 export async function fetchPlanUsage(): Promise<PlanUsage> {

@@ -2,18 +2,11 @@ import { useState } from "react";
 
 import { Loader2 } from "lucide-react";
 
+import { DialogFormShell } from "@/components/dialog-form-shell";
+import { FormField } from "@/components/form-field";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -54,98 +47,18 @@ export function AssetCreateDialog({
     displayName.trim().length > 0 && Boolean(sourceAgentId) && Boolean(currentUserId) && !pending;
 
   return (
-    <Dialog
+    <DialogFormShell
       open
       onOpenChange={(open) => {
         if (!open && !pending) {
           onClose();
         }
       }}
-    >
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>创建记忆资产</DialogTitle>
-          <DialogDescription>
-            以你的 Agent 记忆作用域创建记忆块，当前团队：{team}。
-          </DialogDescription>
-        </DialogHeader>
-
-        {ownedAgents.length === 0 ? (
-          <Alert>
-            <AlertTitle>没有可用的 Agent</AlertTitle>
-            <AlertDescription>
-              创建记忆资产需要选择一个你名下的 Agent 作为来源，请先创建 Agent。
-            </AlertDescription>
-          </Alert>
-        ) : null}
-
-        <div className="space-y-2">
-          <Label htmlFor="memory-asset-name">名称</Label>
-          <Input
-            id="memory-asset-name"
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-            placeholder="例如：客户成功助手记忆"
-            disabled={pending}
-            maxLength={80}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="memory-asset-description">描述（可选）</Label>
-          <Textarea
-            id="memory-asset-description"
-            value={description}
-            onChange={(event) => setDescription(event.target.value)}
-            placeholder="说明该记忆块的用途"
-            className="min-h-20"
-            disabled={pending}
-            maxLength={200}
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="memory-asset-agent">来源 Agent</Label>
-          <Select
-            value={sourceAgentId}
-            onValueChange={setSourceAgentId}
-            disabled={pending || ownedAgents.length === 0}
-          >
-            <SelectTrigger id="memory-asset-agent" className="w-full">
-              <SelectValue placeholder="选择来源 Agent" />
-            </SelectTrigger>
-            <SelectContent>
-              {ownedAgents.map((agent) => {
-                const hint = agentHint(agent);
-                return (
-                  <SelectItem key={agent.metadata.name} value={agent.metadata.name}>
-                    {agentLabel(agent)}
-                    {hint ? ` · ${hint}` : ""}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="memory-asset-visibility">可见性</Label>
-          <Select
-            value={visibility}
-            onValueChange={(value) => setVisibility(value as MemoryAssetVisibility)}
-            disabled={pending}
-          >
-            <SelectTrigger id="memory-asset-visibility" className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="TEAM">{MEMORY_VISIBILITY_LABELS.TEAM}</SelectItem>
-              <SelectItem value="PRIVATE">{MEMORY_VISIBILITY_LABELS.PRIVATE}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <DialogFooter>
+      title="创建记忆资产"
+      description={`以你的 Agent 记忆作用域创建记忆块，当前团队：${team}。`}
+      size="md"
+      footer={
+        <>
           <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
             取消
           </Button>
@@ -167,8 +80,81 @@ export function AssetCreateDialog({
             {pending ? <Loader2 className="animate-spin" /> : null}
             创建
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {ownedAgents.length === 0 ? (
+          <Alert>
+            <AlertTitle>没有可用的 Agent</AlertTitle>
+            <AlertDescription>
+              创建记忆资产需要选择一个你名下的 Agent 作为来源，请先创建 Agent。
+            </AlertDescription>
+          </Alert>
+        ) : null}
+
+        <FormField label="名称" htmlFor="memory-asset-name">
+          <Input
+            id="memory-asset-name"
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+            placeholder="例如：客户成功助手记忆"
+            disabled={pending}
+            maxLength={80}
+          />
+        </FormField>
+
+        <FormField label="描述（可选）" htmlFor="memory-asset-description">
+          <Textarea
+            id="memory-asset-description"
+            value={description}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="说明该记忆块的用途"
+            className="min-h-20"
+            disabled={pending}
+            maxLength={200}
+          />
+        </FormField>
+
+        <FormField label="来源 Agent" htmlFor="memory-asset-agent">
+          <Select
+            value={sourceAgentId}
+            onValueChange={setSourceAgentId}
+            disabled={pending || ownedAgents.length === 0}
+          >
+            <SelectTrigger id="memory-asset-agent" className="w-full">
+              <SelectValue placeholder="选择来源 Agent" />
+            </SelectTrigger>
+            <SelectContent>
+              {ownedAgents.map((agent) => {
+                const hint = agentHint(agent);
+                return (
+                  <SelectItem key={agent.metadata.name} value={agent.metadata.name}>
+                    {agentLabel(agent)}
+                    {hint ? ` · ${hint}` : ""}
+                  </SelectItem>
+                );
+              })}
+            </SelectContent>
+          </Select>
+        </FormField>
+
+        <FormField label="可见性" htmlFor="memory-asset-visibility">
+          <Select
+            value={visibility}
+            onValueChange={(value) => setVisibility(value as MemoryAssetVisibility)}
+            disabled={pending}
+          >
+            <SelectTrigger id="memory-asset-visibility" className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="TEAM">{MEMORY_VISIBILITY_LABELS.TEAM}</SelectItem>
+              <SelectItem value="PRIVATE">{MEMORY_VISIBILITY_LABELS.PRIVATE}</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
+      </div>
+    </DialogFormShell>
   );
 }

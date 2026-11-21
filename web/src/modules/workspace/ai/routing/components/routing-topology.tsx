@@ -1,93 +1,36 @@
 import { useMemo } from "react";
 
 import { Icon } from "@iconify/react";
-import {
-  Background,
-  BaseEdge,
-  Controls,
-  type Edge,
-  type EdgeProps,
-  Handle,
-  type Node,
-  type NodeProps,
-  Position,
-  ReactFlow,
-  getSmoothStepPath,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import { Loader2, RefreshCw, Settings2, UserRound } from "lucide-react";
+import { Loader2, RefreshCw, Settings2 } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "@/components/ui/badge";
+import {
+  SigmaGraph,
+  type SigmaGraphEdge,
+  type SigmaGraphNode,
+} from "@/components/graph/sigma-graph";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { BASE_PATH } from "@/lib/base-path";
-import { cn } from "@/lib/utils";
 import { ConsoleSection } from "@/modules/workspace/console/components/console-page";
 
-import { ProviderBrandIcon } from "../../providers/components/provider-brand-icon";
 import type {
   AiModelItem,
   AiProviderAccountItem,
   AiProviderItem,
   AiRouteGroupItem,
 } from "../../providers/lib/api";
-import { formatNumber, modelDisplayName } from "../../providers/lib/model";
+import { formatNumber } from "../../providers/lib/model";
 import {
   effectiveParentMode,
   parentModeLabel,
   routeGroupRules,
 } from "../../route-groups/lib/model";
-import type { AiRoutingLive, AiRoutingUser } from "../lib/api";
-import {
-  formatTokenCount,
-  routeGroupDisplayName,
-  routeModeLabel,
-  shortIdentifier,
-} from "../lib/model";
+import type { AiRoutingLive } from "../lib/api";
+import { formatTokenCount, routeGroupDisplayName, routeModeLabel } from "../lib/model";
 
 const GATEWAY_NODE_ID = "gateway";
 
-const USER_NODE_X = 0;
-
-const GATEWAY_NODE_X = 330;
-
-const PROVIDER_NODE_X = 660;
-
-const NODE_ROW_GAP = 116;
-
-const USER_NODE_HEIGHT = 88;
-
-const GATEWAY_NODE_HEIGHT = 136;
-
-const PROVIDER_NODE_HEIGHT = 88;
-
 type TopologyTone = "idle" | "active" | "failed";
-
-type TopologyNodeData = {
-  kind: "USER" | "GATEWAY" | "PROVIDER";
-  user?: AiRoutingUser;
-  provider?: AiProviderItem;
-  tone?: TopologyTone;
-  running?: boolean;
-  providerCount?: number;
-  accountCount?: number;
-  modelCount?: number;
-  modelLabel?: string;
-  usage?: number;
-};
-
-type TopologyEdgeData = {
-  tone: TopologyTone;
-};
-
-type TopologyFlowNode = Node<TopologyNodeData, "topologyNode">;
-
-type TopologyFlowEdge = Edge<TopologyEdgeData, "topologyEdge">;
-
-const nodeTypes = { topologyNode: TopologyNodeView };
-
-const edgeTypes = { topologyEdge: TopologyEdgeView };
 
 type RoutingTopologyProps = {
   providers: AiProviderItem[];
@@ -154,48 +97,39 @@ export function RoutingTopology({
   });
 
   const graph = useMemo(() => {
-    const nodes: TopologyFlowNode[] = [];
-    const edges: TopologyFlowEdge[] = [];
+    const nodes: SigmaGraphNode[] = [];
+    const edges: SigmaGraphEdge[] = [];
     const rows = Math.max(liveUsers.length, enabledProviders.length, 1);
-    const center = ((rows - 1) * NODE_ROW_GAP) / 2;
 
-    liveUsers.forEach((user, index) => {
+    liveUsers.forEach((user) => {
       const tone = requestTone(latest?.userId === user.userId, latest?.status);
+      const failed = user.failed > 0 ? ` · ${formatNumber(user.failed)} 失败` : "";
       nodes.push({
         id: userNodeId(user.userId),
-        type: "topologyNode",
-        position: {
-          x: USER_NODE_X,
-          y: center + (index - (liveUsers.length - 1) / 2) * NODE_ROW_GAP - USER_NODE_HEIGHT / 2,
-        },
-        data: { kind: "USER", user, tone },
-        draggable: false,
-        selectable: false,
+        label: `${user.displayName || user.username || "未知用户"} · ${formatNumber(
+          user.requests,
+        )} 请求${failed}`,
+        tone: tone === "failed" ? "destructive" : tone === "active" ? "primary" : undefined,
+        size: 10,
       });
       edges.push({
-        id: `${userNodeId(user.userId)}-${GATEWAY_NODE_ID}`,
         source: userNodeId(user.userId),
         target: GATEWAY_NODE_ID,
-        type: "topologyEdge",
-        data: { tone },
+        tone: tone === "failed" ? "destructive" : tone === "active" ? "primary" : "muted",
+        size: tone === "idle" ? 1 : 2,
       });
     });
 
+    const gatewayTone = requestTone(true, latest?.status);
     nodes.push({
       id: GATEWAY_NODE_ID,
-      type: "topologyNode",
-      position: { x: GATEWAY_NODE_X, y: center - GATEWAY_NODE_HEIGHT / 2 },
-      data: {
-        kind: "GATEWAY",
-        tone: requestTone(true, latest?.status),
-        running: enabledProviders.length > 0,
-        providerCount: enabledProviders.length,
-      },
-      draggable: false,
-      selectable: false,
+      label: `PUDANS 网关 · ${enabledProviders.length} 供应商`,
+      tone:
+        gatewayTone === "failed" ? "destructive" : gatewayTone === "active" ? "primary" : undefined,
+      size: 18,
     });
 
-    enabledProviders.forEach((provider, index) => {
+    enabledProviders.forEach((provider) => {
       const providerAccounts = enabledAccounts.filter(
         (account) => account.spec.provider === provider.metadata.name,
       );
@@ -203,57 +137,30 @@ export function RoutingTopology({
         (model) => model.spec.provider === provider.metadata.name,
       );
       const liveHere = latest?.provider === provider.metadata.name;
-      const latestModel = liveHere ? latest.model : providerModels[0]?.metadata.name;
-      const latestModelItem = latestModel
-        ? models.find((model) => model.metadata.name === latestModel)
-        : undefined;
       const tone = requestTone(liveHere, latest?.status);
+      const usage = providerUsage.get(provider.metadata.name) ?? 0;
       nodes.push({
         id: providerNodeId(provider.metadata.name),
-        type: "topologyNode",
-        position: {
-          x: PROVIDER_NODE_X,
-          y:
-            center +
-            (index - (enabledProviders.length - 1) / 2) * NODE_ROW_GAP -
-            PROVIDER_NODE_HEIGHT / 2,
-        },
-        data: {
-          kind: "PROVIDER",
-          provider,
-          tone,
-          running: liveHere && latest?.status === "RUNNING",
-          accountCount: providerAccounts.length,
-          modelCount: providerModels.length,
-          modelLabel: latestModelItem ? modelDisplayName(latestModelItem) : "未添加模型",
-          usage: providerUsage.get(provider.metadata.name) ?? 0,
-        },
-        draggable: false,
-        selectable: false,
+        label: `${provider.spec.displayName || provider.metadata.name} · ${
+          providerAccounts.length
+        } 账号/${providerModels.length} 模型${usage > 0 ? ` · ${formatNumber(usage)} 次` : ""}`,
+        tone: tone === "failed" ? "destructive" : tone === "active" ? "primary" : undefined,
+        size: 14,
       });
       edges.push({
-        id: `${GATEWAY_NODE_ID}-${providerNodeId(provider.metadata.name)}`,
         source: GATEWAY_NODE_ID,
         target: providerNodeId(provider.metadata.name),
-        type: "topologyEdge",
-        data: { tone },
+        tone: tone === "failed" ? "destructive" : tone === "active" ? "primary" : "muted",
+        size: tone === "idle" ? 1 : 2,
       });
     });
 
     return {
       nodes,
       edges,
-      height: Math.min(520, Math.max(330, rows * NODE_ROW_GAP + 96)),
+      height: Math.min(520, Math.max(360, rows * 70 + 96)),
     };
   }, [enabledAccounts, enabledProviders, latest, liveUsers, models, providerUsage]);
-
-  const nodeSignature = useMemo(
-    () =>
-      `${liveUsers.map((user) => user.userId).join("|")}::${enabledProviders
-        .map((provider) => provider.metadata.name)
-        .join("|")}`,
-    [enabledProviders, liveUsers],
-  );
 
   return (
     <ConsoleSection className="overflow-hidden">
@@ -295,34 +202,19 @@ export function RoutingTopology({
             ) : null}
           </div>
         ) : (
-          <div
-            className="relative w-full overflow-hidden border bg-background [&_.react-flow__controls-button]:border-border [&_.react-flow__controls-button]:bg-background [&_.react-flow__controls-button]:text-foreground [&_.react-flow__controls-button:hover]:bg-muted"
-            style={{ height: graph.height }}
-          >
+          <div className="relative w-full" style={{ height: graph.height }}>
             {live && liveUsers.length === 0 ? (
               <div className="pointer-events-none absolute top-4 left-4 z-10 border bg-background/90 px-3 py-1 text-[11px] text-muted-foreground">
                 最近还没有用户调用
               </div>
             ) : null}
-            <ReactFlow
-              key={nodeSignature}
+            <SigmaGraph
               nodes={graph.nodes}
               edges={graph.edges}
-              nodeTypes={nodeTypes}
-              edgeTypes={edgeTypes}
-              fitView
-              fitViewOptions={{ padding: 0.18 }}
-              minZoom={0.35}
-              maxZoom={1.4}
-              nodesConnectable={false}
-              nodesDraggable={false}
-              elementsSelectable={false}
-              zoomOnScroll={false}
-              proOptions={{ hideAttribution: true }}
-            >
-              <Background gap={22} size={1} color="var(--border)" />
-              <Controls showInteractive={false} />
-            </ReactFlow>
+              height="100%"
+              layout="force"
+              ariaLabel="AI 路由实时拓扑"
+            />
           </div>
         )}
 
@@ -368,223 +260,6 @@ export function RoutingTopology({
         </div>
       </div>
     </ConsoleSection>
-  );
-}
-
-function TopologyNodeView({ data }: NodeProps<TopologyFlowNode>) {
-  if (data.kind === "USER") {
-    return <UserNode data={data} />;
-  }
-  if (data.kind === "GATEWAY") {
-    return <GatewayNode data={data} />;
-  }
-  return <ProviderNode data={data} />;
-}
-
-function UserNode({ data }: { data: TopologyNodeData }) {
-  const user = data.user;
-  if (!user) {
-    return null;
-  }
-  const tone = data.tone ?? "idle";
-
-  return (
-    <div
-      className={cn(
-        "relative flex h-[88px] w-60 items-center gap-3 border bg-card px-4 py-3 shadow-sm transition-colors",
-        tone === "active" && "border-primary/60 ring-2 ring-primary/15",
-        tone === "failed" && "border-destructive/60 ring-2 ring-destructive/15",
-      )}
-    >
-      <span className="flex size-10 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
-        <UserRound className="size-4" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">
-          {user.displayName || user.username || "未知用户"}
-        </p>
-        <p className="truncate text-[11px] text-muted-foreground">
-          {user.username ? `@${user.username}` : shortIdentifier(user.userId, 16)} ·{" "}
-          {formatNumber(user.requests)} 次请求
-        </p>
-      </div>
-      {user.failed > 0 ? (
-        <span className="shrink-0 text-[10px] font-medium text-destructive">
-          {formatNumber(user.failed)} 失败
-        </span>
-      ) : null}
-      {tone !== "idle" ? (
-        <span
-          className={cn(
-            "absolute top-1/2 -right-1 size-2 -translate-y-1/2",
-            tone === "failed" ? "bg-destructive" : "bg-primary",
-          )}
-        />
-      ) : null}
-      <Handle type="source" position={Position.Right} className="opacity-0" />
-    </div>
-  );
-}
-
-function GatewayNode({ data }: { data: TopologyNodeData }) {
-  const tone = data.tone ?? "idle";
-
-  return (
-    <div
-      className={cn(
-        "relative flex h-[136px] w-56 flex-col justify-center gap-3 border bg-card px-4 py-4 shadow-sm transition-colors",
-        tone === "active" && "border-primary/60 ring-2 ring-primary/15",
-        tone === "failed" && "border-destructive/60 ring-2 ring-destructive/15",
-      )}
-    >
-      <div className="flex items-center gap-3">
-        <span className="flex size-11 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
-          <img
-            src={`${BASE_PATH}brand/icon-large.svg`}
-            alt=""
-            className="size-8"
-            aria-hidden="true"
-          />
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">PUDANS</p>
-          <p className="truncate text-[11px] text-muted-foreground">
-            AI 网关 · {data.providerCount ?? 0} 家供应商
-          </p>
-        </div>
-      </div>
-      <Badge variant={data.running ? "secondary" : "outline"} className="w-fit">
-        <span
-          className={cn(
-            "size-1.5",
-            data.running ? "animate-pulse bg-success" : "bg-muted-foreground",
-          )}
-        />
-        {data.running ? "运行中" : "待配置"}
-      </Badge>
-      <Handle type="target" position={Position.Left} className="opacity-0" />
-      <Handle type="source" position={Position.Right} className="opacity-0" />
-    </div>
-  );
-}
-
-function ProviderNode({ data }: { data: TopologyNodeData }) {
-  const provider = data.provider;
-  if (!provider) {
-    return null;
-  }
-  const tone = data.tone ?? "idle";
-  const usage = data.usage ?? 0;
-  const status = data.running
-    ? "回答中"
-    : tone !== "idle"
-      ? "最近调用"
-      : usage > 0
-        ? "今日有请求"
-        : "待调用";
-
-  return (
-    <div
-      className={cn(
-        "relative flex h-[88px] w-64 items-center gap-3 border bg-card px-4 py-3 shadow-sm transition-colors",
-        tone === "active" && "border-primary/60 ring-2 ring-primary/15",
-        tone === "failed" && "border-destructive/60 ring-2 ring-destructive/15",
-      )}
-    >
-      <span className="flex size-10 shrink-0 items-center justify-center bg-background ring-1 ring-border/60">
-        <ProviderBrandIcon provider={provider} className="size-6" />
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold">
-            {provider.spec.displayName || provider.metadata.name}
-          </p>
-          <span
-            className={cn(
-              "inline-flex items-center gap-1 text-[10px] text-muted-foreground",
-              data.running && "text-success",
-              tone === "failed" && "text-destructive",
-            )}
-          >
-            <span
-              className={cn(
-                "size-1.5",
-                data.running
-                  ? "animate-pulse bg-success"
-                  : tone === "failed"
-                    ? "bg-destructive"
-                    : "bg-muted-foreground/60",
-              )}
-            />
-            {status}
-          </span>
-        </div>
-        <p className="truncate text-[11px] text-muted-foreground">
-          {data.accountCount ?? 0} 个账号 · {data.modelCount ?? 0} 个模型
-        </p>
-        <p className="truncate font-mono text-[10px] text-muted-foreground">{data.modelLabel}</p>
-      </div>
-      {tone !== "idle" ? (
-        <span
-          className={cn(
-            "absolute top-1/2 -left-1 size-2 -translate-y-1/2",
-            tone === "failed" ? "bg-destructive" : "bg-primary",
-          )}
-        />
-      ) : null}
-      <Handle type="target" position={Position.Left} className="opacity-0" />
-    </div>
-  );
-}
-
-function TopologyEdgeView({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  data,
-}: EdgeProps) {
-  const tone = (data as TopologyEdgeData | undefined)?.tone ?? "idle";
-  const [path] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 0,
-  });
-  const color =
-    tone === "failed"
-      ? "var(--destructive)"
-      : tone === "active"
-        ? "var(--primary)"
-        : "var(--muted-foreground)";
-  const opacity = tone === "idle" ? 0.35 : 0.85;
-  const duration = tone === "idle" ? 3.6 : 2;
-  const dotCount = tone === "idle" ? 1 : 2;
-
-  return (
-    <>
-      <BaseEdge
-        id={id}
-        path={path}
-        style={{ stroke: color, strokeWidth: tone === "idle" ? 1.5 : 2.25, opacity }}
-      />
-      {Array.from({ length: dotCount }, (_, index) => (
-        <circle key={index} r={tone === "idle" ? 2 : 3} fill={color} opacity={opacity}>
-          <animateMotion
-            dur={`${duration}s`}
-            begin={`${index * (duration / 2)}s`}
-            repeatCount="indefinite"
-            path={path}
-          />
-        </circle>
-      ))}
-    </>
   );
 }
 

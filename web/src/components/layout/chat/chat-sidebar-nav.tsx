@@ -1,24 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-import {
-  Brain,
-  ChevronRight,
-  CircleCheck,
-  Ellipsis,
-  Frame,
-  Lightbulb,
-  MessageCirclePlus,
-  PenLine,
-  ScanSearch,
-  Sparkles,
-} from "lucide-react";
+import { MessageCirclePlus } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Kbd, KbdGroup } from "@/components/ui/kbd";
 import {
   SidebarGroup,
@@ -31,22 +16,8 @@ import type { NavUrl } from "../types";
 
 const NEW_CHAT_URL: NavUrl = "/";
 
-const MAIN_ITEMS = [
-  { label: "我的 DANS", icon: Sparkles },
-  { label: "记忆", icon: Brain },
-  { label: "任务", icon: CircleCheck },
-  { label: "灵感库", icon: Lightbulb },
-  { label: "无限画布", icon: Frame, badge: "即将上线" },
-] as const;
-
-const MORE_ITEMS = [
-  { label: "深度解析", icon: ScanSearch },
-  { label: "贡献灵感", icon: PenLine },
-] as const;
-
 export function ChatSidebarNav() {
   const router = useRouter();
-  const [expanded, setExpanded] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -59,10 +30,6 @@ export function ChatSidebarNav() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [router]);
-
-  const openUnavailable = (label: string) => {
-    toast.info(`${label}功能尚未开放。`);
-  };
 
   return (
     <SidebarGroup>
@@ -83,59 +50,6 @@ export function ChatSidebarNav() {
             </Link>
           </SidebarMenuButton>
         </SidebarMenuItem>
-        {MAIN_ITEMS.map((item) => (
-          <SidebarMenuItem key={item.label}>
-            <SidebarMenuButton className="h-10" onClick={() => openUnavailable(item.label)}>
-              <item.icon className="size-5" />
-              <span>{item.label}</span>
-              {"badge" in item && item.badge ? (
-                <Badge className="ms-auto bg-primary/10 px-1.5 text-[10px] font-medium text-primary">
-                  {item.badge}
-                </Badge>
-              ) : null}
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        ))}
-        <SidebarMenuItem>
-          <HoverCard openDelay={120} closeDelay={120}>
-            <HoverCardTrigger asChild>
-              <SidebarMenuButton className="h-10" onClick={() => setExpanded((value) => !value)}>
-                <Ellipsis className="size-5" />
-                <span>{expanded ? "收起" : "更多"}</span>
-                {!expanded ? (
-                  <ChevronRight className="ms-auto size-4 text-muted-foreground" />
-                ) : null}
-              </SidebarMenuButton>
-            </HoverCardTrigger>
-            <HoverCardContent side="right" align="start" sideOffset={8} className="w-44 p-1">
-              {MORE_ITEMS.map((item) => (
-                <Button
-                  key={item.label}
-                  type="button"
-                  variant="ghost"
-                  className="h-9 w-full justify-start gap-2 px-2"
-                  onClick={() => openUnavailable(item.label)}
-                >
-                  <item.icon className="size-4" />
-                  <span>{item.label}</span>
-                </Button>
-              ))}
-            </HoverCardContent>
-          </HoverCard>
-        </SidebarMenuItem>
-        {expanded
-          ? MORE_ITEMS.map((item) => (
-              <SidebarMenuItem key={item.label}>
-                <SidebarMenuButton
-                  className="h-10 text-muted-foreground"
-                  onClick={() => openUnavailable(item.label)}
-                >
-                  <item.icon className="size-5" />
-                  <span>{item.label}</span>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))
-          : null}
       </SidebarMenu>
     </SidebarGroup>
   );

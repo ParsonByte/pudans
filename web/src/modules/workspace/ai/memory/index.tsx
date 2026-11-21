@@ -19,15 +19,22 @@ import { agentHint, agentLabel } from "@/modules/workspace/ai/library/lib/agents
 import { updateAiSetting } from "@/modules/workspace/ai/providers/lib/api";
 import { useUsageAdminAccess } from "@/modules/workspace/ai/usage/lib/admin";
 import { ConsolePage, ConsoleSection } from "@/modules/workspace/console/components/console-page";
+import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
 import { AllocateMemoryDialog } from "./components/allocate-memory-dialog";
 import { AssetCreateDialog } from "./components/asset-create-dialog";
 import { ImportMemoryDialog } from "./components/import-memory-dialog";
-import { MemoryClearDialog, MemoryConfirmDialog } from "./components/memory-confirm-dialogs";
+import { MemoryAssetDetailDialog } from "./components/memory-asset-detail-dialog";
+import {
+  MemoryAssetDeleteDialog,
+  MemoryClearDialog,
+  MemoryConfirmDialog,
+} from "./components/memory-confirm-dialogs";
 import { MemoryDetailPanel } from "./components/memory-detail-panel";
 import { MemoryListPanel } from "./components/memory-list-panel";
 import { MemoryLogsTab } from "./components/memory-logs-tab";
 import { MemoryPromptsTab } from "./components/memory-prompts-tab";
+import { MemoryReviewTab } from "./components/memory-review-tab";
 import { MemorySettingsDialog } from "./components/memory-settings-dialog";
 import { MemorySplitLayout } from "./components/memory-split-layout";
 import {
@@ -37,6 +44,7 @@ import {
   bindMemoryAsset,
   clearMemoryAsset,
   createMemoryAsset,
+  deleteMemoryAsset,
   importMemoryMessages,
   patchMemoryAsset,
   resolveMemoryApiError,
@@ -62,6 +70,12 @@ type Selection = {
 export function MemoryView() {
   const queryClient = useQueryClient();
   const { isAdmin } = useUsageAdminAccess();
+  const allowedOperations = useAllowedOperations();
+  const canReview = allowedOperations.has("update");
+  const canExecute = allowedOperations.has("execute");
+  const canDelete = allowedOperations.has("delete");
+  const canExport = allowedOperations.has("export");
+  const showReview = canReview || canExecute || canDelete || canExport;
   const userQuery = useCurrentUser();
   const settingQuery = useMemorySetting();
   const currentUserId = userQuery.data?.spec.uid;
@@ -78,6 +92,8 @@ export function MemoryView() {
   } | null>(null);
   const [clearTarget, setClearTarget] = useState<MemoryAssetView | null>(null);
   const [visibilityTarget, setVisibilityTarget] = useState<MemoryAssetView | null>(null);
+  const [detailTarget, setDetailTarget] = useState<MemoryAssetView | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<MemoryAssetView | null>(null);
 
   const selectedAgent = ownedAgents.find((agent) => agent.metadata.name === agentFilter);
   const defaultTeam = settingQuery.data?.spec.defaults?.team || "default";
@@ -151,6 +167,22 @@ export function MemoryView() {
       await invalidateMemoryAssetQueries(queryClient, asset.name);
       toast.success("记忆块已清空");
       setClearTarget(null);
+    },
+    onError: (error) => {
+      toast.error(resolveMemoryApiError(error));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (input: { asset: MemoryAssetView; clear: boolean }) =>
+      deleteMemoryAsset(input.asset.name, team, input.clear),
+    onSuccess: async (_, input) => {
+      await invalidateMemoryAssetQueries(queryClient, input.asset.name);
+      if (selection?.name === input.asset.name) {
+        setSelection(null);
+      }
+      toast.success(input.clear ? "记忆资产与其记忆内容已删除" : "记忆资产已删除");
+      setDeleteTarget(null);
     },
     onError: (error) => {
       toast.error(resolveMemoryApiError(error));
@@ -338,6 +370,11 @@ export function MemoryView() {
             <TabsTrigger value="prompts" className="flex-none">
               提示词
             </TabsTrigger>
+            {showReview ? (
+              <TabsTrigger value="review" className="flex-none">
+                审核
+              </TabsTrigger>
+            ) : null}
           </TabsList>
           <TabsContent value="assets">
             <MemorySplitLayout
@@ -363,11 +400,22 @@ export function MemoryView() {
                   team={team}
                   counts={countsQuery.data}
                   currentUserId={currentUserId}
+                  canDelete={canDelete}
                   refreshing={refreshing}
                   onRefresh={refreshSelected}
+                  onShowDetail={() => {
+                    if (selectedAsset) {
+                      setDetailTarget(selectedAsset);
+                    }
+                  }}
                   onToggleVisibility={() => {
                     if (selectedAsset) {
                       setVisibilityTarget(selectedAsset);
+                    }
+                  }}
+                  onDelete={() => {
+                    if (selectedAsset) {
+                      setDeleteTarget(selectedAsset);
                     }
                   }}
                   onClear={() => {
@@ -383,8 +431,19 @@ export function MemoryView() {
             <MemoryLogsTab assets={assets} team={team} />
           </TabsContent>
           <TabsContent value="prompts">
-            <MemoryPromptsTab team={team} canManage={isAdmin} />
+            <MemoryPromptsTab team={team} canManage={isAdmin} currentUserId={currentUserId} />
           </TabsContent>
+          {showReview ? (
+            <TabsContent value="review">
+              <MemoryReviewTab
+                currentUserId={currentUserId}
+                canReview={canReview}
+                canExecute={canExecute}
+                canDelete={canDelete}
+                canExport={canExport}
+              />
+            </TabsContent>
+          ) : null}
         </Tabs>
       </div>
 
@@ -478,6 +537,24 @@ export function MemoryView() {
           pending={clearMutation.isPending}
           onConfirm={() => clearMutation.mutate(clearTarget)}
           onClose={() => setClearTarget(null)}
+        />
+      ) : null}
+
+      {detailTarget ? (
+        <MemoryAssetDetailDialog
+          assetName={detailTarget.name}
+          team={team}
+          onClose={() => setDetailTarget(null)}
+        />
+      ) : null}
+
+      {deleteTarget ? (
+        <MemoryAssetDeleteDialog
+          assetTitle={memoryAssetTitle(deleteTarget)}
+          counts={deleteTarget.name === selectedAsset?.name ? countsQuery.data : undefined}
+          pending={deleteMutation.isPending}
+          onConfirm={(clear) => deleteMutation.mutate({ asset: deleteTarget, clear })}
+          onClose={() => setDeleteTarget(null)}
         />
       ) : null}
     </ConsolePage>

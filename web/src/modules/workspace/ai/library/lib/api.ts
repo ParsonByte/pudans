@@ -5,10 +5,11 @@ import {
   AI_API_PREFIX,
   AI_API_VERSION,
   type AiMetadata,
+  type JsonPatchOperation,
   listAll,
 } from "@/modules/workspace/ai/providers/lib/api";
 
-export { AI_API_PREFIX, AI_API_VERSION, type AiMetadata };
+export { AI_API_PREFIX, AI_API_VERSION, type AiMetadata, type JsonPatchOperation };
 
 export const AI_AGENT_KIND = "AiAgent";
 
@@ -34,6 +35,19 @@ export type AiAgentItem = {
 
 export function fetchAllAgents(): Promise<AiAgentItem[]> {
   return listAll<AiAgentItem>("/aiagents");
+}
+
+export async function patchLibraryResource<T>(
+  plural: string,
+  name: string,
+  operations: JsonPatchOperation[],
+): Promise<T> {
+  const response = await axiosInstance.patch<T>(
+    `${AI_API_PREFIX}/${plural}/${encodeURIComponent(name)}`,
+    operations,
+    { headers: { "Content-Type": "application/json-patch+json" } },
+  );
+  return response.data;
 }
 
 export function listLibraryResources<T>(plural: string): Promise<T[]> {

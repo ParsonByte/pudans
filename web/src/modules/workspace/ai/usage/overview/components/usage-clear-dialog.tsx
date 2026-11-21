@@ -1,17 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 
 import { clearUsage, resolveUsageApiError } from "../../lib/api";
 import type { UsageDateRangeValue } from "../../lib/model";
@@ -40,30 +30,15 @@ export function UsageClearDialog({ open, range, onOpenChange, onCleared }: Usage
   });
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>清空用量</AlertDialogTitle>
-          <AlertDialogDescription>
-            将删除截至 {range.to} 的 AI
-            聊天请求与模型请求用量记录，操作不可恢复；套餐窗口计数与用量账本不受影响。仅管理员可执行。
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>取消</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={mutation.isPending}
-            onClick={(event) => {
-              event.preventDefault();
-              mutation.mutate();
-            }}
-          >
-            {mutation.isPending ? <Loader2 className="animate-spin" /> : null}
-            确认清空
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ConfirmDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="清空用量"
+      desc={`将删除截至 ${range.to} 的 AI 聊天请求与模型请求用量记录，操作不可恢复；套餐窗口计数与用量账本不受影响。仅管理员可执行。`}
+      destructive
+      isLoading={mutation.isPending}
+      confirmText={mutation.isPending ? "清空中…" : "确认清空"}
+      handleConfirm={() => mutation.mutate()}
+    />
   );
 }

@@ -185,6 +185,25 @@ export type AiRoutingHistoryPage = {
   nextCursor?: number | null;
 };
 
+export type AiRoutingStatsRow = {
+  provider: string;
+  model: string;
+  status: string;
+  requests: number;
+  units: number;
+};
+
+export type AiRoutingStats = {
+  rows: AiRoutingStatsRow[];
+};
+
+export async function fetchRoutingStats(days = 14): Promise<AiRoutingStats> {
+  const response = await axiosInstance.get<AiRoutingStats>(`${API_PREFIX}/aistats/-/routing`, {
+    params: { days },
+  });
+  return response.data;
+}
+
 export async function fetchRoutingHistory(
   query: AiRoutingHistoryQuery = {},
 ): Promise<AiRoutingHistoryPage> {

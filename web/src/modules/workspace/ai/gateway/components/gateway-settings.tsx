@@ -23,8 +23,8 @@ import { MultiSelect } from "../../library/components/multi-select";
 import {
   type AiProviderProtocol,
   type AiSettingItem,
+  patchAiSettingByName,
   resolveAiProviderApiError,
-  updateAiSetting,
 } from "../../providers/lib/api";
 import { isForbiddenError, resolveGatewayApiError } from "../lib/api";
 import { GATEWAY_UPSTREAM_PROTOCOL_OPTIONS } from "../lib/model";
@@ -165,16 +165,16 @@ export function GatewaySettings({
       if (!setting) {
         throw new Error("AI 设置尚未加载。");
       }
-      return updateAiSetting({
-        ...setting,
-        spec: {
-          ...setting.spec,
-          gateway: {
+      return patchAiSettingByName(setting.metadata.name, [
+        {
+          op: "add",
+          path: "/spec/gateway",
+          value: {
             ...(setting.spec.gateway ?? {}),
             ...toGatewaySpec(values),
           },
         },
-      });
+      ]);
     },
     onSuccess: async (updated) => {
       queryClient.setQueryData(["ai-settings", "ai-setting"], updated);

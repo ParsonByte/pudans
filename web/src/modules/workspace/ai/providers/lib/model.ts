@@ -11,7 +11,9 @@ import type {
   AiProviderAccountQuota,
   AiProviderAccountQuotaWindow,
   AiProviderAffinity,
+  AiProviderFilePurpose,
   AiProviderItem,
+  AiProviderModelSyncResult,
   AiProviderRouting,
   AiProviderStatus,
   AiProviderVendor,
@@ -61,6 +63,12 @@ export const QUOTA_UNIT_OPTIONS: Option<AiQuotaUnit>[] = [
   { value: "REQUEST", label: "请求" },
   { value: "CREDIT", label: "点数" },
   { value: "USD", label: "美元" },
+];
+
+export const PROVIDER_FILE_PURPOSE_OPTIONS: Option<AiProviderFilePurpose>[] = [
+  { value: "user_data", label: "用户数据" },
+  { value: "text_recognition", label: "文本识别" },
+  { value: "rich_layout_recognition", label: "复杂版面识别" },
 ];
 
 export const MODEL_TYPE_OPTIONS: Option<AiModelType>[] = [
@@ -263,6 +271,45 @@ export function supportsModelDiscovery(vendor: AiProviderVendor | undefined): bo
       vendor === "MINIMAX" ||
       vendor === "QIANWEN"),
   );
+}
+
+export function supportsModelSync(vendor: AiProviderVendor | undefined): boolean {
+  return Boolean(
+    vendor &&
+    (vendor === "OPENAI" ||
+      vendor === "ANTHROPIC" ||
+      vendor === "DEEPSEEK" ||
+      vendor === "MINIMAX" ||
+      vendor === "QIANWEN"),
+  );
+}
+
+export function supportsProviderFiles(vendor: AiProviderVendor | undefined): boolean {
+  return vendor === "DEEPSEEK";
+}
+
+export function providerFilePurposeLabel(purpose: string | undefined): string {
+  return (
+    PROVIDER_FILE_PURPOSE_OPTIONS.find((option) => option.value === purpose)?.label ??
+    purpose ??
+    "—"
+  );
+}
+
+export function providerFileTime(value: number | undefined): string | undefined {
+  return value == null ? undefined : formatBeijingDateTime(new Date(value * 1000));
+}
+
+export function modelSyncSummary(result: AiProviderModelSyncResult): string {
+  const parts = [
+    `新增 ${result.added} 个`,
+    `更新 ${result.updated} 个`,
+    `未变化 ${result.unchanged} 个`,
+  ];
+  if (result.removed.length > 0) {
+    parts.push(`远端缺失 ${result.removed.length} 个（保留本地）`);
+  }
+  return parts.join("，");
 }
 
 export function modelNameFromCode(code: string): string {

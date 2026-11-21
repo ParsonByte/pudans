@@ -138,6 +138,13 @@ export async function fetchKnowledgeBases(): Promise<KnowledgeBaseItem[]> {
   return response.data.items ?? [];
 }
 
+export async function fetchKnowledgeBaseDetail(name: string): Promise<KnowledgeBaseItem> {
+  const response = await axiosInstance.get<KnowledgeBaseItem>(
+    `${AI_API_PREFIX}/knowledgebases/${encodeURIComponent(name)}`,
+  );
+  return response.data;
+}
+
 export async function createKnowledgeBase(item: KnowledgeBaseItem): Promise<KnowledgeBaseItem> {
   const response = await axiosInstance.post<KnowledgeBaseItem>(
     `${AI_API_PREFIX}/knowledgebases`,
@@ -174,6 +181,16 @@ export async function fetchKnowledgeBaseDocuments(
     total: response.data.total,
     items: response.data.items ?? [],
   };
+}
+
+export async function fetchKnowledgeBaseDocument(
+  name: string,
+  documentId: number,
+): Promise<KnowledgeBaseDocument> {
+  const response = await axiosInstance.get<KnowledgeBaseDocument>(
+    `${AI_API_PREFIX}/knowledgebases/${encodeURIComponent(name)}/documents/${documentId}`,
+  );
+  return response.data;
 }
 
 export async function fetchKnowledgeBaseDocumentCount(name: string): Promise<number> {
@@ -247,6 +264,16 @@ export async function fetchKnowledgeBaseQueryLogs(
     { params: { limit } },
   );
   return response.data ?? [];
+}
+
+export async function fetchKnowledgeDocumentBytes(storageFileId: string): Promise<ArrayBuffer> {
+  const response = await axiosInstance.post<{ url: string }>(
+    `${AI_API_PREFIX}/storagefiles/${encodeURIComponent(storageFileId)}/download-url`,
+  );
+  const download = await axiosInstance.get<ArrayBuffer>(response.data.url, {
+    responseType: "arraybuffer",
+  });
+  return download.data;
 }
 
 export function resolveKnowledgeBaseApiError(error: unknown): string {

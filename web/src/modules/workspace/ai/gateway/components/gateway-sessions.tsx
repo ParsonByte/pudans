@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type MouseEvent, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw, Search } from "lucide-react";
@@ -33,6 +33,7 @@ import {
 import { DEFAULT_SESSION_PAGE_SIZE, sessionStatusLabel } from "../../sessions/lib/model";
 import { useCursorPagination } from "../../sessions/lib/use-cursor-pagination";
 import { UsageCursorPagination } from "../../usage/components/usage-cursor-pagination";
+import { GatewaySessionDetailDialog } from "./gateway-session-detail-dialog";
 
 type GatewaySessionsProps = {
   canDelete: boolean;
@@ -45,6 +46,7 @@ export function GatewaySessions({ canDelete, sessionsPath }: GatewaySessionsProp
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState<AiGatewaySession | null>(null);
+  const [detailTarget, setDetailTarget] = useState<AiGatewaySession | null>(null);
 
   const sessionsQuery = useQuery({
     queryKey: [
@@ -93,6 +95,23 @@ export function GatewaySessions({ canDelete, sessionsPath }: GatewaySessionsProp
     },
   });
 
+  const openDetailFromRow = (event: MouseEvent<HTMLDivElement>) => {
+    const element = event.target as HTMLElement;
+    if (element.closest("button") || element.closest("a")) {
+      return;
+    }
+    const row = element.closest("tbody tr");
+    const body = row?.parentElement;
+    if (!row || !body) {
+      return;
+    }
+    const index = Array.from(body.children).indexOf(row);
+    const session = filtered[index];
+    if (session) {
+      setDetailTarget(session);
+    }
+  };
+
   const refreshing = sessionsQuery.isFetching;
   const hasNext = items.length === pagination.pageSize;
 
@@ -100,7 +119,7 @@ export function GatewaySessions({ canDelete, sessionsPath }: GatewaySessionsProp
     <ConsoleSection className="overflow-hidden">
       <ConsoleSectionHeader
         title="网关会话"
-        description="网关把 Agent 会话映射到平台会话；删除绑定不会删除记忆数据。"
+        description="网关把 Agent 会话映射到平台会话；点击行查看详情，删除绑定不会删除记忆数据。"
         action={
           <div className="flex items-center gap-2">
             {sessionsPath ? (
@@ -183,7 +202,10 @@ export function GatewaySessions({ canDelete, sessionsPath }: GatewaySessionsProp
       ) : filtered.length === 0 ? (
         <ConsoleEmpty>当前页没有匹配的网关会话，试试调整筛选条件或翻页。</ConsoleEmpty>
       ) : (
-        <div className="overflow-x-auto">
+        <div
+          className="overflow-x-auto [&_tbody_tr]:cursor-pointer [&_tbody_tr:hover]:bg-muted/40"
+          onClick={openDetailFromRow}
+        >
           <GatewaySessionTable
             sessions={filtered}
             canDelete={canDelete}
@@ -205,6 +227,10 @@ export function GatewaySessions({ canDelete, sessionsPath }: GatewaySessionsProp
             disabled={refreshing}
           />
         </div>
+      ) : null}
+
+      {detailTarget ? (
+        <GatewaySessionDetailDialog session={detailTarget} onClose={() => setDetailTarget(null)} />
       ) : null}
 
       <ConfirmDialog

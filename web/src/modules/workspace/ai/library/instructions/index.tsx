@@ -4,6 +4,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  type ContentPreview,
+  ContentPreviewButton,
+  ContentPreviewDialog,
+} from "@/components/content/content-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -48,6 +53,7 @@ export function AiInstructionsView() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<InstructionItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<InstructionItem | null>(null);
+  const [preview, setPreview] = useState<ContentPreview | null>(null);
 
   const instructionsQuery = useQuery({
     queryKey: INSTRUCTIONS_QUERY_KEY,
@@ -188,7 +194,20 @@ export function AiInstructionsView() {
                       canDelete={canDelete}
                       onEdit={() => openEdit(instruction)}
                       onDelete={() => setDeleteTarget(instruction)}
-                    />
+                    >
+                      <ContentPreviewButton
+                        label="预览指令"
+                        onClick={() =>
+                          setPreview({
+                            title: instructionDisplayName(instruction),
+                            description: `${INSTRUCTION_SCOPE_LABELS[instruction.spec.scope]} · ${
+                              enabled ? "已启用" : "已停用"
+                            }`,
+                            content: instruction.spec.content,
+                          })
+                        }
+                      />
+                    </ResourceRowActions>
                   </TableCell>
                 </TableRow>
               );
@@ -206,6 +225,8 @@ export function AiInstructionsView() {
           }}
         />
       ) : null}
+
+      <ContentPreviewDialog preview={preview} onClose={() => setPreview(null)} />
 
       <LibraryDeleteDialog
         resourceLabel="指令"

@@ -5,6 +5,7 @@ import { useAllowedOperations } from "@/modules/workspace/lib/permissions";
 
 import { BillingRatiosSection } from "./components/billing-ratios-section";
 import { PlanBindingsSection } from "./components/plan-bindings-section";
+import { PlanUsageLookupSection } from "./components/plan-usage-lookup";
 import { PlansSection } from "./components/plans-section";
 import { VoucherGrantSection } from "./components/voucher-grant-section";
 
@@ -34,6 +35,7 @@ export function AiPlansView() {
             <TabsTrigger value="bindings">批量分配</TabsTrigger>
             <TabsTrigger value="ratios">计费比例</TabsTrigger>
             <TabsTrigger value="vouchers">重置券发放</TabsTrigger>
+            <TabsTrigger value="usage">用户用量</TabsTrigger>
           </TabsList>
           <TabsContent value="plans" className="space-y-5">
             <PlansSection
@@ -53,6 +55,9 @@ export function AiPlansView() {
           </TabsContent>
           <TabsContent value="vouchers" className="space-y-5">
             <VoucherGrantSection canGrant={allowedOperations.has("grant")} />
+          </TabsContent>
+          <TabsContent value="usage" className="space-y-5">
+            <PlanUsageLookupSection />
           </TabsContent>
         </Tabs>
       </div>

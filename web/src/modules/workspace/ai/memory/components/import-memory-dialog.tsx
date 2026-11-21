@@ -2,19 +2,12 @@ import { useState } from "react";
 
 import { FileJson, Loader2 } from "lucide-react";
 
+import { DialogFormShell } from "@/components/dialog-form-shell";
+import { FormField } from "@/components/form-field";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -96,31 +89,40 @@ export function ImportMemoryDialog({
   const canSubmit = Boolean(targetName) && parseResult?.ok && !pending;
 
   return (
-    <Dialog
+    <DialogFormShell
       open
       onOpenChange={(open) => {
         if (!open && !pending) {
           onClose();
         }
       }}
+      title="导入记忆"
+      description={`粘贴 JSON 消息数组或上传 .json/.txt/.md 文件，导入后写入所选记忆块的 L0 并触发 L1 抽取，最多 ${MEMORY_IMPORT_LIMIT} 条。`}
+      size="xl"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
+            取消
+          </Button>
+          <Button
+            type="button"
+            disabled={!canSubmit || assets.length === 0}
+            onClick={() => onConfirm(targetName, messages)}
+          >
+            {pending ? <Loader2 className="animate-spin" /> : null}
+            导入 {messages.length > 0 ? `${messages.length} 条` : ""}
+          </Button>
+        </>
+      }
     >
-      <DialogContent className="sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle>导入记忆</DialogTitle>
-          <DialogDescription>
-            粘贴 JSON 消息数组或上传 .json/.txt/.md 文件，导入后写入所选记忆块的 L0 并触发 L1
-            抽取，最多 {MEMORY_IMPORT_LIMIT} 条。
-          </DialogDescription>
-        </DialogHeader>
-
+      <div className="space-y-4">
         {assets.length === 0 ? (
           <Alert variant="destructive">
             <AlertTitle>没有可导入的记忆资产</AlertTitle>
             <AlertDescription>请先创建记忆块，再执行导入。</AlertDescription>
           </Alert>
         ) : (
-          <div className="space-y-2">
-            <Label htmlFor="memory-import-target">目标记忆块</Label>
+          <FormField label="目标记忆块" htmlFor="memory-import-target">
             <Select value={targetName} onValueChange={setTargetName}>
               <SelectTrigger id="memory-import-target" className="w-full">
                 <SelectValue placeholder="选择记忆块" />
@@ -133,11 +135,10 @@ export function ImportMemoryDialog({
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="memory-import-file">从文件导入</Label>
+        <FormField label="从文件导入" htmlFor="memory-import-file">
           <Input
             id="memory-import-file"
             type="file"
@@ -151,10 +152,9 @@ export function ImportMemoryDialog({
               {fileName}
             </p>
           ) : null}
-        </div>
+        </FormField>
 
-        <div className="space-y-2">
-          <Label htmlFor="memory-import-content">粘贴内容</Label>
+        <FormField label="粘贴内容" htmlFor="memory-import-content">
           <Textarea
             id="memory-import-content"
             value={content}
@@ -175,7 +175,7 @@ export function ImportMemoryDialog({
             />
             按纯文本导入（单条用户消息）
           </label>
-        </div>
+        </FormField>
 
         {parseResult && !parseResult.ok ? (
           <Alert variant="destructive">
@@ -206,21 +206,7 @@ export function ImportMemoryDialog({
             </AlertDescription>
           </Alert>
         ) : null}
-
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
-            取消
-          </Button>
-          <Button
-            type="button"
-            disabled={!canSubmit || assets.length === 0}
-            onClick={() => onConfirm(targetName, messages)}
-          >
-            {pending ? <Loader2 className="animate-spin" /> : null}
-            导入 {messages.length > 0 ? `${messages.length} 条` : ""}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </DialogFormShell>
   );
 }

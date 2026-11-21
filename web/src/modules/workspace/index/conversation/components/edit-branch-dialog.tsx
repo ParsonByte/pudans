@@ -2,16 +2,8 @@ import { useState } from "react";
 
 import { Loader2 } from "lucide-react";
 
+import { DialogFormShell } from "@/components/dialog-form-shell";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
 import type { ChatMessage } from "../../lib/chat-api";
@@ -23,30 +15,28 @@ type EditBranchDialogProps = {
 };
 
 export function EditBranchDialog({ target, onOpenChange, onConfirm }: EditBranchDialogProps) {
+  if (!target) {
+    return null;
+  }
+
   return (
-    <Dialog open={Boolean(target)} onOpenChange={onOpenChange}>
-      <DialogContent>
-        {target ? (
-          <EditBranchForm
-            key={target.id}
-            target={target}
-            onConfirm={onConfirm}
-            onSuccess={() => onOpenChange(false)}
-          />
-        ) : null}
-      </DialogContent>
-    </Dialog>
+    <EditBranchForm
+      key={target.id}
+      target={target}
+      onOpenChange={onOpenChange}
+      onConfirm={onConfirm}
+    />
   );
 }
 
 function EditBranchForm({
   target,
+  onOpenChange,
   onConfirm,
-  onSuccess,
 }: {
   target: ChatMessage;
+  onOpenChange: (open: boolean) => void;
   onConfirm: (message: ChatMessage, content: string) => Promise<boolean>;
-  onSuccess: () => void;
 }) {
   const [content, setContent] = useState(target.content ?? "");
   const [submitting, setSubmitting] = useState(false);
@@ -58,7 +48,7 @@ function EditBranchForm({
     setSubmitting(true);
     try {
       if (await onConfirm(target, content.trim())) {
-        onSuccess();
+        onOpenChange(false);
       }
     } finally {
       setSubmitting(false);
@@ -66,32 +56,39 @@ function EditBranchForm({
   };
 
   return (
-    <>
-      <DialogHeader>
-        <DialogTitle>编辑并分支</DialogTitle>
-        <DialogDescription>将以该消息之前的历史创建新会话，并发送编辑后的内容。</DialogDescription>
-      </DialogHeader>
+    <DialogFormShell
+      open
+      onOpenChange={onOpenChange}
+      title="编辑并分支"
+      description="将以该消息之前的历史创建新会话，并发送编辑后的内容。"
+      size="md"
+      footer={
+        <>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={submitting}
+          >
+            取消
+          </Button>
+          <Button
+            type="button"
+            disabled={!content.trim() || submitting}
+            onClick={() => void confirm()}
+          >
+            {submitting ? <Loader2 className="animate-spin" /> : null}
+            创建分支
+          </Button>
+        </>
+      }
+    >
       <Textarea
         value={content}
         rows={6}
         aria-label="编辑消息内容"
         onChange={(event) => setContent(event.target.value)}
       />
-      <DialogFooter>
-        <DialogClose asChild>
-          <Button type="button" variant="outline">
-            取消
-          </Button>
-        </DialogClose>
-        <Button
-          type="button"
-          disabled={!content.trim() || submitting}
-          onClick={() => void confirm()}
-        >
-          {submitting ? <Loader2 className="animate-spin" /> : null}
-          创建分支
-        </Button>
-      </DialogFooter>
-    </>
+    </DialogFormShell>
   );
 }

@@ -1,10 +1,13 @@
 import { useMemo, useState } from "react";
 
 import { useMutation } from "@tanstack/react-query";
-import { FileJson, Upload } from "lucide-react";
+import { FileJson, Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
+import { DialogFormShell } from "@/components/dialog-form-shell";
+import { FormDialogSection } from "@/components/form-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -19,7 +22,6 @@ import {
   resolveAiProviderApiError,
 } from "../lib/api";
 import { type ProviderBundle, accountHasSecret, parseProviderBundle } from "../lib/bundle";
-import { ProviderDialogSection, ProviderDialogShell } from "./provider-dialog-shell";
 
 type ProviderImportDialogProps = {
   existingProviderNames: ReadonlySet<string>;
@@ -198,8 +200,7 @@ export function ProviderImportDialog({
     onError: (error) => toast.error(resolveAiProviderApiError(error)),
   });
 
-  const submit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const submit = () => {
     if (!preview.bundle) {
       toast.error(preview.error ?? "请先粘贴或选择 JSON 文件。");
       return;
@@ -223,17 +224,30 @@ export function ProviderImportDialog({
   };
 
   return (
-    <ProviderDialogShell
+    <DialogFormShell
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
       title="导入供应商"
       description="导入供应商、账号与模型的 JSON。导出文件默认不包含密钥，可在编辑器中补齐。"
-      icon={<FileJson className="size-4" />}
-      onSubmit={submit}
-      onClose={onClose}
-      isPending={mutation.isPending}
-      submitLabel="导入"
-      className="sm:max-w-3xl"
+      icon={<FileJson className="size-5" />}
+      size="3xl"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
+            取消
+          </Button>
+          <Button type="button" onClick={submit} disabled={mutation.isPending}>
+            {mutation.isPending ? <Loader2 className="animate-spin" /> : null}
+            导入
+          </Button>
+        </>
+      }
     >
-      <ProviderDialogSection title="JSON 文件">
+      <FormDialogSection title="JSON 文件">
         <div className="flex flex-wrap items-center gap-2">
           <Input
             type="file"
@@ -256,9 +270,9 @@ export function ProviderImportDialog({
           aria-label="供应商 JSON"
         />
         {preview.error ? <p className="text-xs text-destructive">{preview.error}</p> : null}
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="预览">
+      <FormDialogSection title="预览">
         {!raw.trim() ? (
           <div className="flex min-h-20 items-center justify-center border border-dashed px-4 py-5 text-center text-xs text-muted-foreground">
             粘贴或选择 JSON 后，这里会显示可导入的资源数量。
@@ -288,7 +302,7 @@ export function ProviderImportDialog({
             </p>
           </div>
         )}
-      </ProviderDialogSection>
-    </ProviderDialogShell>
+      </FormDialogSection>
+    </DialogFormShell>
   );
 }

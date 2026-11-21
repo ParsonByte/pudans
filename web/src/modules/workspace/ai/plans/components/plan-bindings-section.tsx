@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Search, Trash2, UserPlus } from "lucide-react";
+import { Pencil, Plus, Search, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,11 +40,13 @@ import {
   deletePlanBinding,
   fetchAllPlanBindings,
   fetchAllPlans,
+  patchPlanBinding,
   resolvePlanApiError,
   resolvePlanBinding,
   resolvePlanSubjects,
 } from "../lib/api";
 import { planSubjectKindLabel } from "../lib/model";
+import { PlanBindingDialog } from "./plan-binding-dialog";
 import { PlanDeleteDialog } from "./plan-delete-dialog";
 import { SubjectPicker } from "./subject-picker";
 
@@ -77,6 +80,8 @@ export function PlanBindingsSection({ canAssign, canDelete }: PlanBindingsSectio
   const [replaceExisting, setReplaceExisting] = useState(true);
   const [previewUser, setPreviewUser] = useState<string[]>([]);
   const [deleting, setDeleting] = useState<AiPlanBindingItem | null>(null);
+  const [bindingDialog, setBindingDialog] = useState<{ name?: string } | null>(null);
+  const [clearing, setClearing] = useState<AiPlanBindingItem | null>(null);
 
   const plans = useMemo(() => plansQuery.data ?? [], [plansQuery.data]);
   const planValue = planName || plans[0]?.metadata.name || "";
@@ -155,6 +160,20 @@ export function PlanBindingsSection({ canAssign, canDelete }: PlanBindingsSectio
     onSuccess: () => {
       toast.success("套餐绑定已删除。");
       setDeleting(null);
+      invalidateBindings();
+    },
+    onError: (error) => toast.error(resolvePlanApiError(error)),
+  });
+
+  const clearEffectiveMutation = useMutation({
+    mutationFn: (binding: AiPlanBindingItem) =>
+      patchPlanBinding(binding.metadata.name, [
+        { op: "add", path: "/spec/effectiveFrom", value: null },
+        { op: "add", path: "/spec/effectiveTo", value: null },
+      ]),
+    onSuccess: () => {
+      toast.success("套餐绑定已设为长期有效。");
+      setClearing(null);
       invalidateBindings();
     },
     onError: (error) => toast.error(resolvePlanApiError(error)),
@@ -327,16 +346,27 @@ export function PlanBindingsSection({ canAssign, canDelete }: PlanBindingsSectio
               : `共 ${bindings.length} 条绑定，直接用户绑定优先于用户组绑定。`
           }
           action={
-            bindingsQuery.isError ? (
+            <div className="flex items-center gap-1">
+              {bindingsQuery.isError ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => void bindingsQuery.refetch()}
+                >
+                  重试
+                </Button>
+              ) : null}
               <Button
                 type="button"
-                variant="outline"
                 size="sm"
-                onClick={() => void bindingsQuery.refetch()}
+                disabled={!canAssign || plans.length === 0}
+                onClick={() => setBindingDialog({})}
               >
-                重试
+                <Plus />
+                新建绑定
               </Button>
-            ) : null
+            </div>
           }
         />
         {bindingsQuery.isError ? (
@@ -394,16 +424,39 @@ export function PlanBindingsSection({ canAssign, canDelete }: PlanBindingsSectio
                       : "长期有效"}
                   </TableCell>
                   <TableCell className="px-5 py-3 text-end">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={!canDelete}
-                      onClick={() => setDeleting(binding)}
-                    >
-                      <Trash2 />
-                      删除
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={!canAssign}
+                        onClick={() => setBindingDialog({ name: binding.metadata.name })}
+                      >
+                        <Pencil />
+                        编辑
+                      </Button>
+                      {binding.spec.effectiveFrom || binding.spec.effectiveTo ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={!canAssign}
+                          onClick={() => setClearing(binding)}
+                        >
+                          设为长期有效
+                        </Button>
+                      ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={!canDelete}
+                        onClick={() => setDeleting(binding)}
+                      >
+                        <Trash2 />
+                        删除
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -432,6 +485,30 @@ export function PlanBindingsSection({ canAssign, canDelete }: PlanBindingsSectio
           }
         }}
       />
+
+      {bindingDialog ? (
+        <PlanBindingDialog
+          bindingName={bindingDialog.name}
+          plans={plans}
+          onClose={() => setBindingDialog(null)}
+        />
+      ) : null}
+
+      {clearing ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open && !clearEffectiveMutation.isPending) {
+              setClearing(null);
+            }
+          }}
+          title="设为长期有效"
+          desc={`将清除主体「${clearing.spec.subject.name}」的生效时间限制，绑定立即长期生效。`}
+          isLoading={clearEffectiveMutation.isPending}
+          confirmText="确认设置"
+          handleConfirm={() => clearEffectiveMutation.mutate(clearing)}
+        />
+      ) : null}
     </div>
   );
 }

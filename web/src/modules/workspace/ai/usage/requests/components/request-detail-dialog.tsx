@@ -2,7 +2,9 @@ import type { ReactNode } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
+import { DetailDialog } from "@/components/detail-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   CodeBlock,
   CodeBlockContent,
@@ -10,13 +12,6 @@ import {
   CodeBlockHeader,
   CodeBlockTitle,
 } from "@/components/ui/code-block";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
@@ -52,32 +47,33 @@ export function RequestDetailDialog({ requestId, onClose }: RequestDetailDialogP
   const detail = detailQuery.data;
 
   return (
-    <Dialog
+    <DetailDialog
       open
       onOpenChange={(open) => {
         if (!open) {
           onClose();
         }
       }}
+      title="请求详情"
+      description={<span className="font-mono text-xs break-all">{requestId}</span>}
+      footer={
+        <Button type="button" variant="outline" onClick={onClose}>
+          关闭
+        </Button>
+      }
     >
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>请求详情</DialogTitle>
-          <DialogDescription className="font-mono text-xs break-all">{requestId}</DialogDescription>
-        </DialogHeader>
-        {detailQuery.isError ? (
-          <UsageErrorState
-            title="无法加载请求详情"
-            message={resolveUsageApiError(detailQuery.error)}
-            onRetry={() => void detailQuery.refetch()}
-          />
-        ) : detailQuery.isPending ? (
-          <DetailSkeleton />
-        ) : detail ? (
-          <RequestDetailBody detail={detail} />
-        ) : null}
-      </DialogContent>
-    </Dialog>
+      {detailQuery.isError ? (
+        <UsageErrorState
+          title="无法加载请求详情"
+          message={resolveUsageApiError(detailQuery.error)}
+          onRetry={() => void detailQuery.refetch()}
+        />
+      ) : detailQuery.isPending ? (
+        <DetailSkeleton />
+      ) : detail ? (
+        <RequestDetailBody detail={detail} />
+      ) : null}
+    </DetailDialog>
   );
 }
 
@@ -89,7 +85,7 @@ function RequestDetailBody({ detail }: { detail: UsageRequestDetail }) {
         <TabsTrigger value="billing">计费</TabsTrigger>
         <TabsTrigger value="trace">轨迹</TabsTrigger>
       </TabsList>
-      <TabsContent value="overview" className="max-h-[60vh] space-y-4 overflow-y-auto pe-1">
+      <TabsContent value="overview" className="space-y-4">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <DetailField label="Agent" value={detail.agent || "—"} />
           <DetailField label="Agent 来源" value={detail.agentSource || "—"} />
@@ -168,7 +164,7 @@ function RequestDetailBody({ detail }: { detail: UsageRequestDetail }) {
         </div>
       </TabsContent>
 
-      <TabsContent value="billing" className="max-h-[60vh] space-y-4 overflow-y-auto pe-1">
+      <TabsContent value="billing" className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <DetailField label="计费来源" value={usageSourceLabel(detail.billing.source)} />
           <DetailField
@@ -184,7 +180,7 @@ function RequestDetailBody({ detail }: { detail: UsageRequestDetail }) {
         </p>
       </TabsContent>
 
-      <TabsContent value="trace" className="max-h-[60vh] space-y-4 overflow-y-auto pe-1">
+      <TabsContent value="trace" className="space-y-4">
         <JsonTrace
           title="路由轨迹"
           value={detail.routeTrace}

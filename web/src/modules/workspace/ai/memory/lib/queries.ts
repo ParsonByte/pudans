@@ -14,27 +14,45 @@ import { fetchAiSetting } from "@/modules/workspace/ai/providers/lib/api";
 
 import {
   type MemoryAssetListQuery,
+  type MemoryAssetView,
   type MemoryCursor,
   type MemoryGenerationLogItem,
   type MemoryGenerationLogQuery,
   type MemoryLayer,
   type MemoryLayerCounts,
+  type MemoryPipelineStats,
+  type MemoryPromptBindingItem,
   type MemoryPromptItem,
   type MemoryPromptLayer,
   type MemoryPromptLogQuery,
   type MemoryPromptTargetType,
+  type MemoryRecordItem,
+  type MemoryRecordQuery,
+  type MemoryRequestItem,
+  type MemoryRequestQuery,
   type MemorySettingItem,
+  type OrgMemoryItem,
+  type OrgMemoryQuery,
   type ResolvedMemoryPrompt,
+  fetchMemoryAsset,
   fetchMemoryAssets,
   fetchMemoryCounts,
   fetchMemoryGenerationLog,
   fetchMemoryGenerationLogs,
   fetchMemoryLayer,
+  fetchMemoryPipeline,
   fetchMemoryProfile,
+  fetchMemoryPrompt,
+  fetchMemoryPromptBindings,
   fetchMemoryPromptLogs,
   fetchMemoryPromptSetting,
   fetchMemoryPrompts,
+  fetchMemoryRecord,
+  fetchMemoryRecords,
+  fetchMemoryRequests,
   fetchMemorySceneBody,
+  fetchOrgMemories,
+  fetchPendingOrgMemories,
 } from "./api";
 
 const MEMORY_ASSETS_QUERY_KEY = ["ai-memory-assets"] as const;
@@ -57,6 +75,22 @@ const MEMORY_PROMPT_SETTING_QUERY_KEY = "ai-memory-prompt-setting";
 
 const MEMORY_PROMPT_LOGS_QUERY_KEY = "ai-memory-prompt-logs";
 
+const MEMORY_ASSET_DETAIL_QUERY_KEY = "ai-memory-asset-detail";
+
+const MEMORY_PROMPT_DETAIL_QUERY_KEY = "ai-memory-prompt-detail";
+
+const MEMORY_PROMPT_BINDINGS_QUERY_KEY = "ai-memory-prompt-bindings";
+
+const MEMORY_RECORDS_QUERY_KEY = "ai-memory-records";
+
+const MEMORY_RECORD_QUERY_KEY = "ai-memory-record";
+
+const MEMORY_PIPELINE_QUERY_KEY = "ai-memory-pipeline";
+
+const MEMORY_REQUESTS_QUERY_KEY = "ai-memory-requests";
+
+const ORG_MEMORIES_QUERY_KEY = "ai-org-memories";
+
 const ACCOUNT_PROFILE_QUERY_KEY = "account-profile";
 
 const AI_SETTING_QUERY_KEY = ["ai-settings", "ai-setting"] as const;
@@ -67,6 +101,7 @@ export function invalidateMemoryAssetQueries(
 ): Promise<void> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: MEMORY_ASSETS_QUERY_KEY }),
+    queryClient.invalidateQueries({ queryKey: [MEMORY_ASSET_DETAIL_QUERY_KEY, assetName] }),
     queryClient.invalidateQueries({ queryKey: [MEMORY_COUNTS_QUERY_PREFIX, assetName] }),
     queryClient.invalidateQueries({ queryKey: [MEMORY_LAYER_QUERY_PREFIX, assetName] }),
     queryClient.invalidateQueries({ queryKey: [MEMORY_PROFILE_QUERY_KEY, assetName] }),
@@ -77,8 +112,26 @@ export function invalidateMemoryAssetQueries(
 export function invalidateMemoryPromptQueries(queryClient: QueryClient): Promise<void> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: [MEMORY_PROMPTS_QUERY_KEY] }),
+    queryClient.invalidateQueries({ queryKey: [MEMORY_PROMPT_DETAIL_QUERY_KEY] }),
+    queryClient.invalidateQueries({ queryKey: [MEMORY_PROMPT_BINDINGS_QUERY_KEY] }),
     queryClient.invalidateQueries({ queryKey: [MEMORY_PROMPT_SETTING_QUERY_KEY] }),
     queryClient.invalidateQueries({ queryKey: [MEMORY_PROMPT_LOGS_QUERY_KEY] }),
+  ]).then(() => undefined);
+}
+
+export function invalidateMemoryPromptBindingQueries(queryClient: QueryClient): Promise<void> {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: [MEMORY_PROMPT_BINDINGS_QUERY_KEY] }),
+  ]).then(() => undefined);
+}
+
+export function invalidateMemoryReviewQueries(queryClient: QueryClient): Promise<void> {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: [MEMORY_RECORDS_QUERY_KEY] }),
+    queryClient.invalidateQueries({ queryKey: [MEMORY_RECORD_QUERY_KEY] }),
+    queryClient.invalidateQueries({ queryKey: [MEMORY_PIPELINE_QUERY_KEY] }),
+    queryClient.invalidateQueries({ queryKey: [MEMORY_REQUESTS_QUERY_KEY] }),
+    queryClient.invalidateQueries({ queryKey: [ORG_MEMORIES_QUERY_KEY] }),
   ]).then(() => undefined);
 }
 
@@ -196,6 +249,81 @@ export function useMemoryPrompts() {
   return useQuery<MemoryPromptItem[]>({
     queryKey: [MEMORY_PROMPTS_QUERY_KEY],
     queryFn: fetchMemoryPrompts,
+    retry: false,
+  });
+}
+
+export function useMemoryAssetDetail(name: string | undefined, team: string, enabled: boolean) {
+  return useQuery<MemoryAssetView>({
+    queryKey: [MEMORY_ASSET_DETAIL_QUERY_KEY, name ?? "", team],
+    queryFn: () => fetchMemoryAsset(name as string, team),
+    enabled: enabled && Boolean(name),
+    retry: false,
+  });
+}
+
+export function useMemoryPromptDetail(name: string | undefined, enabled: boolean) {
+  return useQuery<MemoryPromptItem>({
+    queryKey: [MEMORY_PROMPT_DETAIL_QUERY_KEY, name ?? ""],
+    queryFn: () => fetchMemoryPrompt(name as string),
+    enabled: enabled && Boolean(name),
+    retry: false,
+  });
+}
+
+export function useMemoryPromptBindings() {
+  return useQuery<MemoryPromptBindingItem[]>({
+    queryKey: [MEMORY_PROMPT_BINDINGS_QUERY_KEY],
+    queryFn: fetchMemoryPromptBindings,
+    retry: false,
+  });
+}
+
+export function useMemoryRecords(query: MemoryRecordQuery, enabled: boolean) {
+  return useQuery<MemoryRecordItem[]>({
+    queryKey: [MEMORY_RECORDS_QUERY_KEY, query],
+    queryFn: () => fetchMemoryRecords(query),
+    enabled,
+    retry: false,
+  });
+}
+
+export function useMemoryRecord(name: string | undefined, enabled: boolean) {
+  return useQuery<MemoryRecordItem>({
+    queryKey: [MEMORY_RECORD_QUERY_KEY, name ?? ""],
+    queryFn: () => fetchMemoryRecord(name as string),
+    enabled: enabled && Boolean(name),
+    retry: false,
+  });
+}
+
+export function useMemoryPipeline(enabled: boolean) {
+  return useQuery<MemoryPipelineStats>({
+    queryKey: [MEMORY_PIPELINE_QUERY_KEY],
+    queryFn: fetchMemoryPipeline,
+    enabled,
+    retry: false,
+  });
+}
+
+export function useMemoryRequests(query: MemoryRequestQuery, enabled: boolean) {
+  return useQuery<MemoryRequestItem[]>({
+    queryKey: [MEMORY_REQUESTS_QUERY_KEY, query],
+    queryFn: () => fetchMemoryRequests(query),
+    enabled,
+    retry: false,
+  });
+}
+
+export function useOrgMemories(
+  trust: "pending" | "verified",
+  query: OrgMemoryQuery,
+  enabled: boolean,
+) {
+  return useQuery<OrgMemoryItem[]>({
+    queryKey: [ORG_MEMORIES_QUERY_KEY, trust, query],
+    queryFn: () => (trust === "pending" ? fetchPendingOrgMemories(query) : fetchOrgMemories(query)),
+    enabled,
     retry: false,
   });
 }

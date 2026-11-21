@@ -7,6 +7,11 @@ import type {
   MemoryLayer,
   MemoryPromptLayer,
   MemoryPromptTargetType,
+  MemoryRebuildLevel,
+  MemoryRecordItem,
+  MemoryRecordStatus,
+  MemoryRequestStatus,
+  MemoryRequestType,
 } from "./api";
 
 export const MEMORY_PANEL_HEIGHT_CLASS = "h-[60vh] min-[960px]:h-[calc(100vh-22rem)]";
@@ -36,6 +41,8 @@ export const MEMORY_IMPORT_LIMIT = 100;
 export const MEMORY_BINDING_LIMIT = 2;
 
 export const MEMORY_CLEAR_CONFIRM_TEXT = "清空";
+
+export const MEMORY_REVIEW_PAGE_SIZE = 50;
 
 export const MEMORY_VISIBILITY_LABELS: Record<MemoryAssetVisibility, string> = {
   TEAM: "团队可见",
@@ -71,6 +78,10 @@ export const MEMORY_PROMPT_TARGET_LABELS: Record<MemoryPromptTargetType, string>
   AGENT: "Agent",
 };
 
+export const MEMORY_PROMPT_TARGET_TYPES = Object.keys(
+  MEMORY_PROMPT_TARGET_LABELS,
+) as MemoryPromptTargetType[];
+
 export const MEMORY_PROMPT_ACTION_LABELS: Record<string, string> = {
   APPLY: "应用",
   CLEAR: "清除",
@@ -78,6 +89,38 @@ export const MEMORY_PROMPT_ACTION_LABELS: Record<string, string> = {
 };
 
 export const MEMORY_PROMPT_LAYER_OPTIONS: readonly MemoryPromptLayer[] = ["L1", "L2", "L3"];
+
+export const MEMORY_RECORD_STATUS_LABELS: Record<MemoryRecordStatus, string> = {
+  ACTIVE: "生效",
+  FROZEN: "已冻结",
+  PENDING_CORRECTION: "待修正",
+  DELETED: "已删除",
+  SUPERSEDED: "已替代",
+};
+
+export const MEMORY_RECORD_STATUS_OPTIONS: readonly { value: MemoryRecordStatus; label: string }[] =
+  (Object.keys(MEMORY_RECORD_STATUS_LABELS) as MemoryRecordStatus[]).map((value) => ({
+    value,
+    label: MEMORY_RECORD_STATUS_LABELS[value],
+  }));
+
+export const MEMORY_REQUEST_STATUS_LABELS: Record<MemoryRequestStatus, string> = {
+  PENDING: "待审核",
+  APPROVED: "已通过",
+  REJECTED: "已驳回",
+};
+
+export const MEMORY_REQUEST_TYPE_LABELS: Record<MemoryRequestType, string> = {
+  DELETE: "删除",
+  CORRECT: "更正",
+};
+
+export const MEMORY_REBUILD_LEVEL_OPTIONS: readonly { value: MemoryRebuildLevel; label: string }[] =
+  [
+    { value: "L1", label: "L1 原子记忆" },
+    { value: "L2", label: "L2 场景记忆" },
+    { value: "L3", label: "L3 核心画像" },
+  ];
 
 export const MEMORY_LOG_SOURCE_OPTIONS: readonly { value: string; label: string }[] = [
   { value: "system", label: "系统默认" },
@@ -128,6 +171,14 @@ export function memoryItemContent(item: MemoryContentLike): string {
 
 function memoryItemTimestamp(item: MemoryTimeLike): string | undefined {
   return item.createdAt ?? item.updatedAt ?? undefined;
+}
+
+export function memoryRecordTimestamp(
+  record: Pick<MemoryRecordItem, "timestamps">,
+): string | undefined {
+  return record.timestamps && record.timestamps.length > 0
+    ? record.timestamps[record.timestamps.length - 1]
+    : undefined;
 }
 
 export function sortMemoryItemsAscending<T extends { id?: number | string } & MemoryTimeLike>(

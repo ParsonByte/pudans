@@ -13,6 +13,8 @@ import type { PlanVoucherKind, UsageBucket, UsageScope, UsageTotals } from "./ap
 
 const MAX_USAGE_RANGE_DAYS = 366;
 
+const USAGE_STATS_MAX_DAYS = 90;
+
 export type UsageRangePreset = "today" | "24h" | "7d" | "30d" | "90d" | "custom";
 
 export type UsageRangeOptionValue = UsageRangePreset | "all";
@@ -83,6 +85,14 @@ export function validateUsageDateRange(from: string, to: string): string | null 
     return `日期范围不能超过 ${MAX_USAGE_RANGE_DAYS} 天。`;
   }
   return null;
+}
+
+export function usageStatsDays(from: string, to: string): number {
+  const span = differenceInCalendarDays(parseISO(to), parseISO(from)) + 1;
+  if (!Number.isFinite(span)) {
+    return 14;
+  }
+  return Math.min(Math.max(span, 1), USAGE_STATS_MAX_DAYS);
 }
 
 export function formatPercent(value: number | null | undefined, digits = 1): string {

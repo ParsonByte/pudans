@@ -5,6 +5,7 @@ import { KeyRound, Loader2, MoreHorizontal, RefreshCw, Search } from "lucide-rea
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { useSudo } from "@/components/sudo/sudo-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -148,6 +149,7 @@ export function GatewayKeys({
   createOpen,
   onCreateOpenChange,
 }: GatewayKeysProps) {
+  const { requireSudo } = useSudo();
   const queryClient = useQueryClient();
   const [keyword, setKeyword] = useState("");
   const [stateFilter, setStateFilter] = useState<"all" | GatewayTokenState>("all");
@@ -172,6 +174,7 @@ export function GatewayKeys({
 
   const actionMutation = useMutation({
     mutationFn: async (action: KeyAction) => {
+      await requireSudo();
       if (action.type === "revoke") {
         await revokeGatewayToken(action.token.metadata.name);
       } else if (action.type === "restore") {

@@ -4,6 +4,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  type ContentPreview,
+  ContentPreviewButton,
+  ContentPreviewDialog,
+  codeFence,
+} from "@/components/content/content-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -38,6 +44,7 @@ export function AiHooksView() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<HookItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<HookItem | null>(null);
+  const [preview, setPreview] = useState<ContentPreview | null>(null);
 
   const hooksQuery = useQuery({
     queryKey: HOOKS_QUERY_KEY,
@@ -174,7 +181,24 @@ export function AiHooksView() {
                       canDelete={canDelete}
                       onEdit={() => openEdit(hook)}
                       onDelete={() => setDeleteTarget(hook)}
-                    />
+                    >
+                      <ContentPreviewButton
+                        label="预览 Hook"
+                        onClick={() =>
+                          setPreview({
+                            title: hookDisplayName(hook),
+                            description: hook.spec.description || "Hook 配置预览",
+                            content: [
+                              `**事件**：${HOOK_EVENT_LABELS[hook.spec.event]}`,
+                              `**匹配器**：\`${hook.spec.matcher || "全部"}\``,
+                              `**超时**：${hook.spec.timeoutSeconds} 秒`,
+                              "",
+                              codeFence(hook.spec.command, "bash"),
+                            ].join("\n"),
+                          })
+                        }
+                      />
+                    </ResourceRowActions>
                   </TableCell>
                 </TableRow>
               );
@@ -192,6 +216,8 @@ export function AiHooksView() {
           }}
         />
       ) : null}
+
+      <ContentPreviewDialog preview={preview} onClose={() => setPreview(null)} />
 
       <LibraryDeleteDialog
         resourceLabel="Hook"

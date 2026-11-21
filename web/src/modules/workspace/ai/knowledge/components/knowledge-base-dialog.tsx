@@ -8,6 +8,8 @@ import { BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { FormDialog, FormDialogSection } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -18,11 +20,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  ProviderDialogSection,
-  ProviderDialogShell,
-  ProviderFieldRow,
-} from "@/modules/workspace/ai/providers/components/provider-dialog-shell";
 import { AI_API_VERSION } from "@/modules/workspace/ai/providers/lib/api";
 
 import {
@@ -157,32 +154,49 @@ export function KnowledgeBaseDialog({ knowledgeBase, onClose, onSaved }: Knowled
   });
 
   return (
-    <ProviderDialogShell
+    <FormDialog
+      open
+      onClose={onClose}
       title={knowledgeBase ? "编辑知识库" : "新建知识库"}
       description="配置知识库的可见范围、向量模型、切片与检索参数。"
-      icon={<BookOpen className="size-4" />}
+      icon={<BookOpen className="size-5" />}
+      form={form}
       onSubmit={submit}
-      onClose={onClose}
       isPending={saveMutation.isPending}
       submitLabel={knowledgeBase ? "保存" : "创建"}
+      contentClassName="sm:max-w-2xl"
     >
-      <ProviderDialogSection title="基本信息">
-        <ProviderFieldRow label="名称" error={form.formState.errors.displayName?.message}>
+      <FormDialogSection title="基本信息">
+        <FormField
+          orientation="horizontal"
+          label="名称"
+          htmlFor="knowledge-base-display-name"
+          error={form.formState.errors.displayName?.message}
+        >
           <Input
+            id="knowledge-base-display-name"
             placeholder="例如：产品手册"
             aria-invalid={Boolean(form.formState.errors.displayName)}
             {...form.register("displayName")}
           />
-        </ProviderFieldRow>
-        <ProviderFieldRow label="描述" error={form.formState.errors.description?.message}>
+        </FormField>
+        <FormField
+          orientation="horizontal"
+          label="描述"
+          htmlFor="knowledge-base-description"
+          error={form.formState.errors.description?.message}
+        >
           <Textarea
+            id="knowledge-base-description"
             placeholder="说明知识库的内容与用途"
             rows={3}
             {...form.register("description")}
           />
-        </ProviderFieldRow>
-        <ProviderFieldRow
+        </FormField>
+        <FormField
+          orientation="horizontal"
           label="可见范围"
+          htmlFor="knowledge-base-visibility"
           hint={VISIBILITY_HINTS[visibility]}
           error={form.formState.errors.visibility?.message}
         >
@@ -194,7 +208,7 @@ export function KnowledgeBaseDialog({ knowledgeBase, onClose, onSaved }: Knowled
                 value={field.value}
                 onValueChange={(value) => field.onChange(value as KnowledgeBaseVisibility)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="knowledge-base-visibility">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -207,25 +221,38 @@ export function KnowledgeBaseDialog({ knowledgeBase, onClose, onSaved }: Knowled
               </Select>
             )}
           />
-        </ProviderFieldRow>
-        <ProviderFieldRow label="资源 ID" hint="创建后自动生成，用于聊天模式与接口引用。">
-          <Input value={resourceName} disabled />
-        </ProviderFieldRow>
-      </ProviderDialogSection>
+        </FormField>
+        <FormField
+          orientation="horizontal"
+          label="资源 ID"
+          htmlFor="knowledge-base-resource-name"
+          hint="创建后自动生成，用于聊天模式与接口引用。"
+        >
+          <Input id="knowledge-base-resource-name" value={resourceName} disabled />
+        </FormField>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="向量与切片">
-        <ProviderFieldRow
+      <FormDialogSection title="向量与切片">
+        <FormField
+          orientation="horizontal"
           label="向量模型"
+          htmlFor="knowledge-base-embedding-model"
           hint="填写模型管理中的向量模型编码；未配置时仍保留关键词检索。"
           error={form.formState.errors.embeddingModel?.message}
         >
           <Input
+            id="knowledge-base-embedding-model"
             placeholder="例如：text-embedding-3-small"
             aria-invalid={Boolean(form.formState.errors.embeddingModel)}
             {...form.register("embeddingModel")}
           />
-        </ProviderFieldRow>
-        <ProviderFieldRow label="切片策略" error={form.formState.errors.chunkStrategy?.message}>
+        </FormField>
+        <FormField
+          orientation="horizontal"
+          label="切片策略"
+          htmlFor="knowledge-base-chunk-strategy"
+          error={form.formState.errors.chunkStrategy?.message}
+        >
           <Controller
             control={form.control}
             name="chunkStrategy"
@@ -234,7 +261,7 @@ export function KnowledgeBaseDialog({ knowledgeBase, onClose, onSaved }: Knowled
                 value={field.value}
                 onValueChange={(value) => field.onChange(value as KnowledgeBaseChunkStrategy)}
               >
-                <SelectTrigger>
+                <SelectTrigger id="knowledge-base-chunk-strategy">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -247,39 +274,63 @@ export function KnowledgeBaseDialog({ knowledgeBase, onClose, onSaved }: Knowled
               </Select>
             )}
           />
-        </ProviderFieldRow>
-        <ProviderFieldRow label="切片大小" error={form.formState.errors.chunkSize?.message}>
+        </FormField>
+        <FormField
+          orientation="horizontal"
+          label="切片大小"
+          htmlFor="knowledge-base-chunk-size"
+          error={form.formState.errors.chunkSize?.message}
+        >
           <Input
+            id="knowledge-base-chunk-size"
             type="number"
             min={1}
             max={10000}
             aria-invalid={Boolean(form.formState.errors.chunkSize)}
             {...form.register("chunkSize", { valueAsNumber: true })}
           />
-        </ProviderFieldRow>
-        <ProviderFieldRow label="切片重叠" error={form.formState.errors.chunkOverlap?.message}>
+        </FormField>
+        <FormField
+          orientation="horizontal"
+          label="切片重叠"
+          htmlFor="knowledge-base-chunk-overlap"
+          error={form.formState.errors.chunkOverlap?.message}
+        >
           <Input
+            id="knowledge-base-chunk-overlap"
             type="number"
             min={0}
             max={9999}
             aria-invalid={Boolean(form.formState.errors.chunkOverlap)}
             {...form.register("chunkOverlap", { valueAsNumber: true })}
           />
-        </ProviderFieldRow>
-      </ProviderDialogSection>
+        </FormField>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="检索参数">
-        <ProviderFieldRow label="召回数量" error={form.formState.errors.topK?.message}>
+      <FormDialogSection title="检索参数">
+        <FormField
+          orientation="horizontal"
+          label="召回数量"
+          htmlFor="knowledge-base-top-k"
+          error={form.formState.errors.topK?.message}
+        >
           <Input
+            id="knowledge-base-top-k"
             type="number"
             min={1}
             max={50}
             aria-invalid={Boolean(form.formState.errors.topK)}
             {...form.register("topK", { valueAsNumber: true })}
           />
-        </ProviderFieldRow>
-        <ProviderFieldRow label="分数阈值" error={form.formState.errors.scoreThreshold?.message}>
+        </FormField>
+        <FormField
+          orientation="horizontal"
+          label="分数阈值"
+          htmlFor="knowledge-base-score-threshold"
+          error={form.formState.errors.scoreThreshold?.message}
+        >
           <Input
+            id="knowledge-base-score-threshold"
             type="number"
             min={0}
             max={1}
@@ -287,56 +338,79 @@ export function KnowledgeBaseDialog({ knowledgeBase, onClose, onSaved }: Knowled
             aria-invalid={Boolean(form.formState.errors.scoreThreshold)}
             {...form.register("scoreThreshold", { valueAsNumber: true })}
           />
-        </ProviderFieldRow>
-        <ProviderFieldRow label="字符预算" error={form.formState.errors.charBudget?.message}>
+        </FormField>
+        <FormField
+          orientation="horizontal"
+          label="字符预算"
+          htmlFor="knowledge-base-char-budget"
+          error={form.formState.errors.charBudget?.message}
+        >
           <Input
+            id="knowledge-base-char-budget"
             type="number"
             min={1}
             max={100000}
             aria-invalid={Boolean(form.formState.errors.charBudget)}
             {...form.register("charBudget", { valueAsNumber: true })}
           />
-        </ProviderFieldRow>
-        <ProviderFieldRow label="启用重排">
+        </FormField>
+        <FormField
+          orientation="horizontal"
+          label="启用重排"
+          htmlFor="knowledge-base-rerank-enabled"
+        >
           <Controller
             control={form.control}
             name="rerankEnabled"
             render={({ field }) => (
               <Switch
+                id="knowledge-base-rerank-enabled"
                 checked={field.value}
                 onCheckedChange={field.onChange}
                 aria-label="启用重排"
               />
             )}
           />
-        </ProviderFieldRow>
+        </FormField>
         {rerankEnabled ? (
-          <ProviderFieldRow label="重排模型" error={form.formState.errors.rerankModel?.message}>
+          <FormField
+            orientation="horizontal"
+            label="重排模型"
+            htmlFor="knowledge-base-rerank-model"
+            error={form.formState.errors.rerankModel?.message}
+          >
             <Input
+              id="knowledge-base-rerank-model"
               placeholder="例如：gte-rerank"
               aria-invalid={Boolean(form.formState.errors.rerankModel)}
               {...form.register("rerankModel")}
             />
-          </ProviderFieldRow>
+          </FormField>
         ) : null}
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="状态">
-        <ProviderFieldRow label="启用" hint="停用后该知识库将不再出现在可读列表，检索也不会命中。">
+      <FormDialogSection title="状态">
+        <FormField
+          orientation="horizontal"
+          label="启用"
+          htmlFor="knowledge-base-enabled"
+          hint="停用后该知识库将不再出现在可读列表，检索也不会命中。"
+        >
           <Controller
             control={form.control}
             name="status"
             render={({ field }) => (
               <Switch
+                id="knowledge-base-enabled"
                 checked={field.value === "ENABLED"}
                 onCheckedChange={(checked) => field.onChange(checked ? "ENABLED" : "DISABLED")}
                 aria-label="启用知识库"
               />
             )}
           />
-        </ProviderFieldRow>
-      </ProviderDialogSection>
-    </ProviderDialogShell>
+        </FormField>
+      </FormDialogSection>
+    </FormDialog>
   );
 }
 

@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { ContentPreviewButton } from "@/components/content/content-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -25,12 +26,13 @@ import { ResourceRowActions } from "../components/resource-row-actions";
 import { resolveLibraryApiError } from "../lib/api";
 import { sortBy } from "../lib/model";
 import { SlashCommandDialog } from "./components/slash-command-dialog";
+import { SlashCommandPreviewDialog } from "./components/slash-command-preview-dialog";
 import {
   SLASH_COMMANDS_QUERY_KEY,
   type SlashCommandItem,
   deleteSlashCommand,
   fetchSlashCommands,
-  updateSlashCommand,
+  patchSlashCommand,
 } from "./lib/api";
 import { slashCommandArgumentHint, slashCommandDisplayName, slashCommandLabel } from "./lib/model";
 
@@ -44,6 +46,7 @@ export function AiSlashCommandsView() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<SlashCommandItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SlashCommandItem | null>(null);
+  const [preview, setPreview] = useState<SlashCommandItem | null>(null);
 
   const commandsQuery = useQuery({
     queryKey: SLASH_COMMANDS_QUERY_KEY,
@@ -59,10 +62,9 @@ export function AiSlashCommandsView() {
 
   const toggleMutation = useMutation({
     mutationFn: (command: SlashCommandItem) =>
-      updateSlashCommand({
-        ...command,
-        spec: { ...command.spec, enabled: command.spec.enabled === false },
-      }),
+      patchSlashCommand(command.metadata.name, [
+        { op: "add", path: "/spec/enabled", value: command.spec.enabled === false },
+      ]),
     onSuccess: async () => {
       await invalidate();
     },
@@ -181,7 +183,12 @@ export function AiSlashCommandsView() {
                       canDelete={canDelete}
                       onEdit={() => openEdit(command)}
                       onDelete={() => setDeleteTarget(command)}
-                    />
+                    >
+                      <ContentPreviewButton
+                        label="预览斜杠命令"
+                        onClick={() => setPreview(command)}
+                      />
+                    </ResourceRowActions>
                   </TableCell>
                 </TableRow>
               );
@@ -198,6 +205,10 @@ export function AiSlashCommandsView() {
             setEditing(null);
           }}
         />
+      ) : null}
+
+      {preview ? (
+        <SlashCommandPreviewDialog command={preview} onClose={() => setPreview(null)} />
       ) : null}
 
       <LibraryDeleteDialog

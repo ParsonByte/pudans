@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
+import { MarkdownContent } from "@/components/content/markdown";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,10 @@ import {
   type MemoryPromptItem,
   type MemoryPromptLayer,
   type MemoryPromptTargetType,
+  buildMemoryPromptItem,
+  createMemoryPrompt,
+  deleteMemoryPrompt,
+  patchMemoryPrompt,
   resolveMemoryApiError,
   setMemoryPrompt,
   updateMemoryPrompt,
@@ -41,23 +46,30 @@ import {
   MEMORY_PROMPT_LAYER_OPTIONS,
   MEMORY_PROMPT_SOURCE_LABELS,
   MEMORY_PROMPT_TARGET_LABELS,
+  MEMORY_PROMPT_TARGET_TYPES,
 } from "../lib/model";
 import {
   invalidateMemoryPromptQueries,
   promptSettingTarget,
+  useMemoryPromptDetail,
   useMemoryPromptLogs,
   useMemoryPromptSetting,
   useMemoryPrompts,
 } from "../lib/queries";
 import { MemoryConfirmDialog } from "./memory-confirm-dialogs";
+import { MemoryPromptBindingsCard } from "./memory-prompt-bindings";
+import {
+  MemoryPromptCreateDialog,
+  type MemoryPromptCreateValues,
+  MemoryPromptRenameDialog,
+} from "./memory-prompt-dialogs";
 import { MemoryEmptyState, MemoryErrorState } from "./memory-states";
 
 type MemoryPromptsTabProps = {
   team: string;
   canManage: boolean;
+  currentUserId?: string;
 };
-
-const TARGET_TYPES: MemoryPromptTargetType[] = ["INSTANCE", "TEAM", "AGENT"];
 
 function PromptEditor({
   item,
@@ -119,13 +131,16 @@ function PromptEditor({
   );
 }
 
-export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
+export function MemoryPromptsTab({ team, canManage, currentUserId }: MemoryPromptsTabProps) {
   const queryClient = useQueryClient();
   const [layer, setLayer] = useState<MemoryPromptLayer>("L1");
   const [targetType, setTargetType] = useState<MemoryPromptTargetType>("TEAM");
   const [agentName, setAgentName] = useState("");
   const [selectedPromptName, setSelectedPromptName] = useState("");
   const [clearOpen, setClearOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const agentsQuery = useAgentsQuery();
   const teamAgents = useMemo(
@@ -141,8 +156,13 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
       ),
     [promptsQuery.data, layer],
   );
-  const selectedPrompt =
+  const selectedSummary =
     promptOptions.find((prompt) => prompt.metadata.name === selectedPromptName) ?? promptOptions[0];
+  const detailQuery = useMemoryPromptDetail(
+    selectedSummary?.metadata.name,
+    Boolean(selectedSummary),
+  );
+  const selectedPrompt = detailQuery.data ?? selectedSummary;
 
   const target = promptSettingTarget(targetType, team, agentName);
   const canResolve = targetType !== "AGENT" || Boolean(agentName);
@@ -188,6 +208,58 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
     onSuccess: async () => {
       await invalidateMemoryPromptQueries(queryClient);
       toast.success("提示词已应用");
+    },
+    onError: (error) => {
+      toast.error(resolveMemoryApiError(error));
+    },
+  });
+
+  const createOpenMutation = useMutation({
+    mutationFn: (values: MemoryPromptCreateValues) =>
+      createMemoryPrompt(
+        buildMemoryPromptItem({
+          name: values.name,
+          displayName: values.displayName,
+          layer: values.layer,
+          prompt: values.prompt,
+        }),
+      ),
+    onSuccess: async (item) => {
+      await invalidateMemoryPromptQueries(queryClient);
+      setLayer(item.spec.layer);
+      setSelectedPromptName(item.metadata.name);
+      setCreateOpen(false);
+      toast.success("提示词已创建");
+    },
+    onError: (error) => {
+      toast.error(resolveMemoryApiError(error));
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: (input: { name: string; displayName: string }) =>
+      patchMemoryPrompt(input.name, [
+        { op: "replace", path: "/spec/name", value: input.displayName },
+      ]),
+    onSuccess: async () => {
+      await invalidateMemoryPromptQueries(queryClient);
+      setRenameOpen(false);
+      toast.success("提示词显示名称已更新");
+    },
+    onError: (error) => {
+      toast.error(resolveMemoryApiError(error));
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (name: string) => deleteMemoryPrompt(name),
+    onSuccess: async (_, name) => {
+      await invalidateMemoryPromptQueries(queryClient);
+      if (selectedPrompt?.metadata.name === name) {
+        setSelectedPromptName("");
+      }
+      setDeleteOpen(false);
+      toast.success("提示词已删除");
     },
     onError: (error) => {
       toast.error(resolveMemoryApiError(error));
@@ -252,7 +324,7 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TARGET_TYPES.map((type) => (
+            {MEMORY_PROMPT_TARGET_TYPES.map((type) => (
               <SelectItem key={type} value={type}>
                 {MEMORY_PROMPT_TARGET_LABELS[type]}
               </SelectItem>
@@ -286,6 +358,15 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
         >
           <RefreshCw className={settingQuery.isFetching ? "animate-spin" : ""} />
           刷新生效
+        </Button>
+        <Button
+          type="button"
+          size="sm"
+          className="ms-auto"
+          disabled={!canManage}
+          onClick={() => setCreateOpen(true)}
+        >
+          新建提示词
         </Button>
       </div>
 
@@ -323,8 +404,17 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
             <AlertDescription>{resolveMemoryApiError(settingQuery.error)}</AlertDescription>
           </Alert>
         ) : (
-          <div className="max-h-44 overflow-y-auto bg-muted/50 p-2 font-mono text-xs leading-relaxed whitespace-pre-wrap">
-            {settingQuery.data?.prompt || "当前层级使用系统默认提示词。"}
+          <div className="max-h-44 overflow-y-auto bg-muted/50 p-2">
+            {settingQuery.data?.prompt ? (
+              <MarkdownContent
+                content={settingQuery.data.prompt}
+                className="text-xs leading-relaxed"
+              />
+            ) : (
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                当前层级使用系统默认提示词。
+              </p>
+            )}
           </div>
         )}
       </div>
@@ -361,7 +451,12 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
                         : "hover:bg-muted/60"
                     }`}
                   >
-                    <span className="block truncate font-mono text-xs">{prompt.metadata.name}</span>
+                    <span className="block truncate text-xs font-medium">
+                      {prompt.spec.name || prompt.metadata.name}
+                    </span>
+                    <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                      {prompt.metadata.name}
+                    </span>
                     <span className="mt-0.5 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                       <Badge variant="outline">v{prompt.spec.version ?? 1}</Badge>
                       {prompt.metadata.creationTimestamp
@@ -376,8 +471,37 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
         </div>
 
         <div className="border bg-card p-3">
-          <div className="mb-2 text-sm font-medium">编辑提示词</div>
-          {selectedPrompt ? (
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium">编辑提示词</span>
+            {selectedPrompt && canManage ? (
+              <div className="ms-auto flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  disabled={renameMutation.isPending || deleteMutation.isPending}
+                  onClick={() => setRenameOpen(true)}
+                >
+                  重命名
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="xs"
+                  disabled={renameMutation.isPending || deleteMutation.isPending}
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  删除
+                </Button>
+              </div>
+            ) : null}
+          </div>
+          {detailQuery.isLoading && selectedSummary ? (
+            <div className="space-y-2">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </div>
+          ) : selectedPrompt ? (
             <PromptEditor
               key={selectedPrompt.metadata.name}
               item={selectedPrompt}
@@ -451,6 +575,44 @@ export function MemoryPromptsTab({ team, canManage }: MemoryPromptsTabProps) {
           </Table>
         )}
       </div>
+
+      {canManage ? (
+        <MemoryPromptBindingsCard prompts={promptsQuery.data ?? []} currentUserId={currentUserId} />
+      ) : null}
+
+      {createOpen ? (
+        <MemoryPromptCreateDialog
+          pending={createOpenMutation.isPending}
+          onCreate={(values) => createOpenMutation.mutate(values)}
+          onClose={() => setCreateOpen(false)}
+        />
+      ) : null}
+
+      {renameOpen && selectedPrompt ? (
+        <MemoryPromptRenameDialog
+          currentName={selectedPrompt.spec.name || selectedPrompt.metadata.name}
+          pending={renameMutation.isPending}
+          onRename={(displayName) =>
+            renameMutation.mutate({
+              name: selectedPrompt.metadata.name,
+              displayName,
+            })
+          }
+          onClose={() => setRenameOpen(false)}
+        />
+      ) : null}
+
+      {deleteOpen && selectedPrompt ? (
+        <MemoryConfirmDialog
+          title="删除提示词"
+          description={`将删除提示词「${selectedPrompt.spec.name || selectedPrompt.metadata.name}」。引用该提示词的绑定将失效并回退到上级策略。`}
+          confirmLabel="删除"
+          destructive
+          pending={deleteMutation.isPending}
+          onConfirm={() => deleteMutation.mutate(selectedPrompt.metadata.name)}
+          onClose={() => setDeleteOpen(false)}
+        />
+      ) : null}
 
       {clearOpen ? (
         <MemoryConfirmDialog

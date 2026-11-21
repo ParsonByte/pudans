@@ -7,6 +7,8 @@ import { Boxes, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { FormDialog } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,7 +39,6 @@ import {
   vendorLabel,
 } from "../lib/presets";
 import { ProviderBrandIcon } from "./provider-brand-icon";
-import { ProviderDialogShell, ProviderFieldRow } from "./provider-dialog-shell";
 
 const customProviderSchema = z.object({
   name: z
@@ -222,7 +223,9 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
   );
 
   return (
-    <ProviderDialogShell
+    <FormDialog
+      open
+      onClose={onClose}
       title={preset ? `添加 ${preset.displayName}` : "自定义供应商"}
       description={
         preset
@@ -236,29 +239,44 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
           <Boxes className="size-4" />
         )
       }
+      form={form}
       onSubmit={onSubmit}
-      onClose={onClose}
       isPending={mutation.isPending}
       submitLabel="添加"
+      contentClassName="sm:max-w-2xl"
     >
-      <ProviderFieldRow label="名称" error={form.formState.errors.displayName?.message}>
-        <Input placeholder="例如 My Relay" {...form.register("displayName")} />
-      </ProviderFieldRow>
-      <ProviderFieldRow
+      <FormField
+        orientation="horizontal"
+        label="名称"
+        htmlFor="custom-provider-display-name"
+        error={form.formState.errors.displayName?.message}
+      >
+        <Input
+          id="custom-provider-display-name"
+          placeholder="例如 My Relay"
+          {...form.register("displayName")}
+        />
+      </FormField>
+      <FormField
+        orientation="horizontal"
         label="ID"
+        htmlFor="custom-provider-name"
         hint={RESOURCE_NAME_HINT}
         error={form.formState.errors.name?.message}
       >
-        <Input {...form.register("name")} />
-      </ProviderFieldRow>
+        <Input id="custom-provider-name" {...form.register("name")} />
+      </FormField>
 
-      <ProviderFieldRow label="供应商">
-        <Badge variant="outline">{vendorLabel(selectedVendor)}</Badge>
-      </ProviderFieldRow>
+      <FormField orientation="horizontal" label="供应商" htmlFor="custom-provider-vendor">
+        <Badge id="custom-provider-vendor" variant="outline">
+          {vendorLabel(selectedVendor)}
+        </Badge>
+      </FormField>
 
       {preset && preset.regions.length > 1 ? (
-        <ProviderFieldRow label="区域 / 套餐">
+        <FormField orientation="horizontal" label="区域 / 套餐" htmlFor="custom-provider-region">
           <Segmented
+            id="custom-provider-region"
             options={preset.regions.map((region) => ({
               value: region.id,
               label: region.label,
@@ -266,23 +284,35 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
             value={regionId}
             onChange={(value) => selectRegion(value as ProviderRegionId)}
           />
-        </ProviderFieldRow>
+        </FormField>
       ) : null}
 
-      <ProviderFieldRow label="Base URL" error={form.formState.errors.baseUrl?.message}>
-        <Input placeholder="https://api.example.com" {...form.register("baseUrl")} />
+      <FormField
+        orientation="horizontal"
+        label="Base URL"
+        htmlFor="custom-provider-base-url"
+        error={form.formState.errors.baseUrl?.message}
+      >
+        <Input
+          id="custom-provider-base-url"
+          placeholder="https://api.example.com"
+          {...form.register("baseUrl")}
+        />
         {endpoint ? (
           <p className="truncate text-xs text-muted-foreground">示例请求：{endpoint}</p>
         ) : null}
-      </ProviderFieldRow>
+      </FormField>
 
-      <ProviderFieldRow
+      <FormField
+        orientation="horizontal"
         label="API 密钥"
+        htmlFor="custom-provider-api-key"
         hint={preset?.kind === "local" ? "本地服务通常无需密钥，可留空。" : undefined}
         error={form.formState.errors.apiKey?.message}
       >
         <div className="flex items-center gap-2">
           <Input
+            id="custom-provider-api-key"
             type={showKey ? "text" : "password"}
             autoComplete="new-password"
             placeholder={preset?.kind === "local" ? "可留空" : "粘贴 API 密钥"}
@@ -305,20 +335,23 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
             </Button>
           ) : null}
         </div>
-      </ProviderFieldRow>
+      </FormField>
 
       {preset?.note ? <p className="text-xs text-muted-foreground">{preset.note}</p> : null}
 
-      <ProviderFieldRow
+      <FormField
+        orientation="horizontal"
         label="模型"
+        htmlFor="custom-provider-model-codes"
         hint="可选；多个模型用逗号或换行分隔，保存后创建为对话模型。"
         error={form.formState.errors.modelCodes?.message}
       >
         <Input
+          id="custom-provider-model-codes"
           placeholder="例如 deepseek-chat, deepseek-reasoner"
           {...form.register("modelCodes")}
         />
-      </ProviderFieldRow>
+      </FormField>
 
       <button
         type="button"
@@ -344,19 +377,20 @@ export function CustomProviderDialog({ preset, onCreated, onClose }: CustomProvi
           </div>
         </div>
       ) : null}
-    </ProviderDialogShell>
+    </FormDialog>
   );
 }
 
 type SegmentedProps<T extends string> = {
+  id?: string;
   options: readonly { value: T; label: string }[];
   value: T;
   onChange: (value: T) => void;
 };
 
-function Segmented<T extends string>({ options, value, onChange }: SegmentedProps<T>) {
+function Segmented<T extends string>({ id, options, value, onChange }: SegmentedProps<T>) {
   return (
-    <div className="inline-flex flex-wrap gap-1 bg-muted p-1">
+    <div id={id} className="inline-flex flex-wrap gap-1 bg-muted p-1">
       {options.map((option) => (
         <button
           key={option.value}

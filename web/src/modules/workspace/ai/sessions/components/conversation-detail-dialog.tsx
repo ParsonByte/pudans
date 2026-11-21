@@ -1,16 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { LongText } from "@/components/data-table";
+import { DetailDialog } from "@/components/detail-dialog";
 import { InfoRow } from "@/components/info-row";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { agentLabel } from "@/modules/workspace/ai/routing/lib/model";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
@@ -40,75 +34,72 @@ export function ConversationDetailDialog({ conversation, onClose }: Conversation
   const detail = detailQuery.data ?? conversation;
 
   return (
-    <Dialog open={conversation !== null} onOpenChange={(open) => (open ? undefined : onClose())}>
-      <DialogContent className="flex max-h-[85vh] flex-col overflow-y-auto sm:max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>{detail ? conversationTitle(detail) : "会话详情"}</DialogTitle>
-          <DialogDescription>
-            {detail
-              ? `会话 #${detail.id} · ${agentLabel(detail.agentSource)} · ${conversationModeLabel(detail.modeCode)}`
-              : ""}
-          </DialogDescription>
-        </DialogHeader>
-
-        {detail ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-4">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <InfoRow
-                label="状态"
-                value={
-                  <Badge variant={sessionStatusBadgeVariant(detail.status)}>
-                    {sessionStatusLabel(detail.status)}
-                  </Badge>
-                }
-              />
-              <InfoRow label="模式" value={conversationModeLabel(detail.modeCode)} />
-              <InfoRow label="路由组" value={detail.routeGroup || "—"} />
-              <InfoRow label="待处理消息" value={detail.pendingCount} />
-              <InfoRow label="最后活动" value={formatUserDateTime(detail.lastActivityAt)} />
-              <InfoRow label="创建时间" value={formatUserDateTime(detail.createdAt)} />
-              <InfoRow label="团队" value={<LongText>{detail.teamId}</LongText>} />
-              <InfoRow
-                label="Agent"
-                value={
-                  <div className="space-y-0.5">
-                    <LongText>{detail.agentId}</LongText>
-                    <p className="text-xs text-muted-foreground">
-                      {agentLabel(detail.agentSource)}
-                    </p>
-                  </div>
-                }
-              />
-              <InfoRow label="用户" value={<LongText>{detail.userId}</LongText>} />
-              <InfoRow
-                className="sm:col-span-2 lg:col-span-3"
-                label="会话键"
-                value={<LongText className="font-mono text-xs">{detail.sessionKey}</LongText>}
-              />
-            </div>
-
-            {detailQuery.isError ? (
-              <div className="flex flex-wrap items-center justify-between gap-2 border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-                <span className="min-w-0">
-                  无法刷新会话信息：{resolveAiSessionApiError(detailQuery.error)}
-                </span>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="xs"
-                  onClick={() => void detailQuery.refetch()}
-                >
-                  重试
-                </Button>
-              </div>
-            ) : null}
-
-            <Separator />
-
-            <ConversationMessageList conversationId={detail.id} />
+    <DetailDialog
+      open={conversation !== null}
+      onOpenChange={(open) => (open ? undefined : onClose())}
+      title={detail ? conversationTitle(detail) : "会话详情"}
+      description={
+        detail
+          ? `会话 #${detail.id} · ${agentLabel(detail.agentSource)} · ${conversationModeLabel(detail.modeCode)}`
+          : undefined
+      }
+      size="4xl"
+    >
+      {detail ? (
+        <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <InfoRow
+              label="状态"
+              value={
+                <Badge variant={sessionStatusBadgeVariant(detail.status)}>
+                  {sessionStatusLabel(detail.status)}
+                </Badge>
+              }
+            />
+            <InfoRow label="模式" value={conversationModeLabel(detail.modeCode)} />
+            <InfoRow label="路由组" value={detail.routeGroup || "—"} />
+            <InfoRow label="待处理消息" value={detail.pendingCount} />
+            <InfoRow label="最后活动" value={formatUserDateTime(detail.lastActivityAt)} />
+            <InfoRow label="创建时间" value={formatUserDateTime(detail.createdAt)} />
+            <InfoRow label="团队" value={<LongText>{detail.teamId}</LongText>} />
+            <InfoRow
+              label="Agent"
+              value={
+                <div className="space-y-0.5">
+                  <LongText>{detail.agentId}</LongText>
+                  <p className="text-xs text-muted-foreground">{agentLabel(detail.agentSource)}</p>
+                </div>
+              }
+            />
+            <InfoRow label="用户" value={<LongText>{detail.userId}</LongText>} />
+            <InfoRow
+              className="sm:col-span-2 lg:col-span-3"
+              label="会话键"
+              value={<LongText className="font-mono text-xs">{detail.sessionKey}</LongText>}
+            />
           </div>
-        ) : null}
-      </DialogContent>
-    </Dialog>
+
+          {detailQuery.isError ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+              <span className="min-w-0">
+                无法刷新会话信息：{resolveAiSessionApiError(detailQuery.error)}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                onClick={() => void detailQuery.refetch()}
+              >
+                重试
+              </Button>
+            </div>
+          ) : null}
+
+          <Separator />
+
+          <ConversationMessageList conversationId={detail.id} />
+        </div>
+      ) : null}
+    </DetailDialog>
   );
 }

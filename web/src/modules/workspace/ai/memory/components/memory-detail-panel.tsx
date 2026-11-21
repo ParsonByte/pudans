@@ -1,4 +1,4 @@
-import { Ellipsis, Eye, EyeOff, RefreshCw, Trash2 } from "lucide-react";
+import { Ellipsis, Eye, EyeOff, Info, RefreshCw, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,9 +22,12 @@ type MemoryDetailPanelProps = {
   team: string;
   counts?: MemoryLayerCounts;
   currentUserId?: string;
+  canDelete: boolean;
   refreshing: boolean;
   onRefresh: () => void;
   onToggleVisibility: () => void;
+  onShowDetail: () => void;
+  onDelete: () => void;
   onClear: () => void;
 };
 
@@ -33,9 +36,12 @@ export function MemoryDetailPanel({
   team,
   counts,
   currentUserId,
+  canDelete,
   refreshing,
   onRefresh,
   onToggleVisibility,
+  onShowDetail,
+  onDelete,
   onClear,
 }: MemoryDetailPanelProps) {
   const agentLabels = useAgentLabels();
@@ -87,16 +93,26 @@ export function MemoryDetailPanel({
                     <Ellipsis />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onSelect={onShowDetail}>
+                    <Info />
+                    资产详情
+                  </DropdownMenuItem>
                   <DropdownMenuItem onSelect={onToggleVisibility}>
                     {asset.visibility === "TEAM" ? <EyeOff /> : <Eye />}
                     {asset.visibility === "TEAM" ? "切换为仅自己" : "切换为团队可见"}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem variant="destructive" onSelect={onClear}>
+                  <DropdownMenuItem onSelect={onClear}>
                     <Trash2 />
                     清空记忆
                   </DropdownMenuItem>
+                  {canDelete ? (
+                    <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+                      <Trash2 />
+                      删除资产
+                    </DropdownMenuItem>
+                  ) : null}
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : null}

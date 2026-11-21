@@ -1,12 +1,12 @@
 import { useState } from "react";
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, RotateCcw, Trash2, Upload } from "lucide-react";
+import { Eye, FileText, Loader2, RefreshCw, RotateCcw, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTablePagination, LongText } from "@/components/data-table";
-import { Badge } from "@/components/ui/badge";
+import { DocumentPreviewDialog } from "@/components/documents/document-preview-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -32,10 +32,12 @@ import {
   type KnowledgeBaseDocument,
   deleteKnowledgeDocument,
   fetchKnowledgeBaseDocuments,
+  fetchKnowledgeDocumentBytes,
   resolveKnowledgeBaseApiError,
   retryKnowledgeDocument,
 } from "../lib/api";
-import { DOCUMENT_STATUS_OPTIONS, documentStatusLabel, formatDocumentSize } from "../lib/model";
+import { DOCUMENT_STATUS_OPTIONS, formatDocumentSize } from "../lib/model";
+import { DocumentDetailDialog, DocumentStatusBadge } from "./document-detail-dialog";
 import { DocumentUploadDialog } from "./document-upload-dialog";
 import { KnowledgeErrorState, KnowledgeTableSkeleton } from "./knowledge-states";
 
@@ -53,6 +55,8 @@ export function DocumentPanel({ knowledgeBaseName, canUpload, canDelete }: Docum
   const [size, setSize] = useState(10);
   const [status, setStatus] = useState<DocumentStatus | "">("");
   const [deleteTarget, setDeleteTarget] = useState<KnowledgeBaseDocument | null>(null);
+  const [previewTarget, setPreviewTarget] = useState<KnowledgeBaseDocument | null>(null);
+  const [detailTarget, setDetailTarget] = useState<KnowledgeBaseDocument | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const documentsQuery = useQuery({
@@ -219,6 +223,26 @@ export function DocumentPanel({ knowledgeBaseName, canUpload, canDelete }: Docum
                       </TableCell>
                       <TableCell className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`查看 ${document.fileName} 详情`}
+                            onClick={() => setDetailTarget(document)}
+                          >
+                            <FileText />
+                          </Button>
+                          {document.storageFileId ? (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-sm"
+                              aria-label={`预览 ${document.fileName}`}
+                              onClick={() => setPreviewTarget(document)}
+                            >
+                              <Eye />
+                            </Button>
+                          ) : null}
                           {document.status === "FAILED" && canUpload ? (
                             <Button
                               type="button"
@@ -267,6 +291,40 @@ export function DocumentPanel({ knowledgeBaseName, canUpload, canDelete }: Docum
         />
       ) : null}
 
+      <DocumentDetailDialog
+        knowledgeBaseName={knowledgeBaseName}
+        document={detailTarget}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailTarget(null);
+          }
+        }}
+        onPreview={(target) => {
+          setDetailTarget(null);
+          setPreviewTarget(target);
+        }}
+      />
+
+      <DocumentPreviewDialog
+        open={Boolean(previewTarget)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewTarget(null);
+          }
+        }}
+        document={
+          previewTarget
+            ? {
+                sourceKey: previewTarget.storageFileId,
+                name: previewTarget.fileName,
+                mimeType: previewTarget.mimeType,
+                size: previewTarget.fileSize,
+                loadBytes: () => fetchKnowledgeDocumentBytes(previewTarget.storageFileId),
+              }
+            : null
+        }
+      />
+
       {uploadOpen ? (
         <DocumentUploadDialog
           knowledgeBaseName={knowledgeBaseName}
@@ -302,21 +360,5 @@ export function DocumentPanel({ knowledgeBaseName, canUpload, canDelete }: Docum
         }}
       />
     </div>
-  );
-}
-
-function DocumentStatusBadge({ status }: { status: DocumentStatus }) {
-  const variant =
-    status === "READY"
-      ? "secondary"
-      : status === "FAILED"
-        ? "destructive"
-        : status === "PENDING"
-          ? "outline"
-          : "outline";
-  return (
-    <Badge variant={variant} className={status === "PENDING" ? "animate-pulse" : undefined}>
-      {documentStatusLabel(status)}
-    </Badge>
   );
 }

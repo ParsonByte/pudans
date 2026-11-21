@@ -2,9 +2,9 @@ import { useMemo } from "react";
 
 import { addDays, format, parseISO } from "date-fns";
 
+import { D3CalendarHeatmap } from "@/components/charts/d3-calendar-heatmap";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
 import { formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
 import { ConsoleEmpty } from "@/modules/workspace/console/components/console-page";
@@ -24,15 +24,7 @@ type RequestHeatmapProps = {
   onRetry: () => void;
 };
 
-const WEEKDAYS = ["一", "二", "三", "四", "五", "六", "日"];
-
 const WEEK_COUNT = 53;
-
-const CELL_SIZE = 11;
-
-const CELL_GAP = 2;
-
-const OPACITY_LEVELS = [0.18, 0.38, 0.62, 1];
 
 function metricValue(bucket: UsageHeatmapBucket, metric: UsageHeatmapMetric): number {
   if (metric === "tokens") {
@@ -84,24 +76,6 @@ export function RequestHeatmap({
     return cells;
   }, [buckets, from, metric, to]);
 
-  const maxValue = useMemo(() => days.reduce((max, day) => Math.max(max, day.value), 0), [days]);
-
-  const monthLabels = useMemo(() => {
-    const labels: { index: number; label: string }[] = [];
-    let previousMonth = "";
-    for (let week = 0; week < WEEK_COUNT; week += 1) {
-      const weekStart = addDays(parseISO(from), week * 7);
-      const month = format(weekStart, "yyyy-MM");
-      if (month !== previousMonth) {
-        labels.push({ index: week, label: format(weekStart, "MM 月") });
-        previousMonth = month;
-      }
-    }
-    return labels;
-  }, [from]);
-
-  const gridWidth = WEEK_COUNT * (CELL_SIZE + CELL_GAP);
-
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2 px-5">
@@ -138,92 +112,14 @@ export function RequestHeatmap({
       ) : days.length === 0 ? (
         <ConsoleEmpty>所选时间范围内没有请求记录。</ConsoleEmpty>
       ) : (
-        <div className="space-y-3 px-5 pb-5">
-          <div className="overflow-x-auto">
-            <div className="min-w-max">
-              <div className="relative mb-1 h-4" style={{ width: gridWidth, marginLeft: 18 }}>
-                {monthLabels.map((month) => (
-                  <span
-                    key={`${month.index}-${month.label}`}
-                    className="absolute top-0 text-[10px] text-muted-foreground"
-                    style={{ left: month.index * (CELL_SIZE + CELL_GAP) }}
-                  >
-                    {month.label}
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-1">
-                <div
-                  className="grid text-[10px] text-muted-foreground"
-                  style={{
-                    gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
-                    rowGap: CELL_GAP,
-                  }}
-                >
-                  {WEEKDAYS.map((weekday) => (
-                    <span key={weekday} className="leading-none">
-                      {weekday}
-                    </span>
-                  ))}
-                </div>
-                <div
-                  className="grid"
-                  style={{
-                    gridAutoFlow: "column",
-                    gridTemplateRows: `repeat(7, ${CELL_SIZE}px)`,
-                    gridAutoColumns: `${CELL_SIZE}px`,
-                    gap: CELL_GAP,
-                  }}
-                >
-                  {days.map((day) => {
-                    const ratio = maxValue > 0 ? day.value / maxValue : 0;
-                    const level =
-                      day.value <= 0
-                        ? -1
-                        : ratio <= 0.25
-                          ? 0
-                          : ratio <= 0.5
-                            ? 1
-                            : ratio <= 0.75
-                              ? 2
-                              : 3;
-                    return (
-                      <Tooltip key={day.date}>
-                        <TooltipTrigger asChild>
-                          <div
-                            className="border border-transparent bg-muted transition-opacity hover:opacity-80"
-                            style={
-                              level < 0
-                                ? undefined
-                                : {
-                                    backgroundColor: "var(--chart-1)",
-                                    opacity: OPACITY_LEVELS[level],
-                                  }
-                            }
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p className="font-medium">{day.date}</p>
-                          <p>{formatHeatmapValue(metric, day.value)}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
-                <span>少</span>
-                {OPACITY_LEVELS.map((opacity) => (
-                  <span
-                    key={opacity}
-                    className="size-[10px]"
-                    style={{ backgroundColor: "var(--chart-1)", opacity }}
-                  />
-                ))}
-                <span>多</span>
-              </div>
-            </div>
-          </div>
+        <div className="px-5 pb-5">
+          <D3CalendarHeatmap
+            from={from}
+            days={days}
+            valueFormatter={(value) => formatHeatmapValue(metric, value)}
+            colorTone="chart1"
+            ariaLabel="请求日历热力图"
+          />
         </div>
       )}
     </div>
