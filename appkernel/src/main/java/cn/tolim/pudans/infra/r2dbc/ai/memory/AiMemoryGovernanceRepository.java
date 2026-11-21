@@ -52,7 +52,7 @@ public class AiMemoryGovernanceRepository {
             @Nullable MemoryStatus status,
             long beforeId,
             int limit) {
-        var spec = databaseClient.sql("SELECT " + L1_COLUMNS + """
+        var spec = databaseClient.sql("SELECT " + L1_COLUMNS + "\n" + """
                          FROM ai_memory_l1
                          WHERE id < :beforeId
                            AND (:teamId IS NULL OR team_id = :teamId)
@@ -89,7 +89,7 @@ public class AiMemoryGovernanceRepository {
             @Nullable Instant from,
             @Nullable Instant to,
             int limit) {
-        var spec = databaseClient.sql("SELECT " + EXPORT_COLUMNS + """
+        var spec = databaseClient.sql("SELECT " + EXPORT_COLUMNS + "\n" + """
                          FROM ai_memory_l1
                          WHERE (:teamId IS NULL OR team_id = :teamId)
                            AND (:agentId IS NULL OR agent_id = :agentId)
@@ -228,7 +228,7 @@ public class AiMemoryGovernanceRepository {
 
     public Flux<MemoryRequestRecord> listRequests(
             @Nullable String userId, @Nullable String status, long beforeId, int limit) {
-        var spec = databaseClient.sql("SELECT " + REQUEST_COLUMNS + """
+        var spec = databaseClient.sql("SELECT " + REQUEST_COLUMNS + "\n" + """
                          FROM ai_memory_request
                          WHERE id < :beforeId
                            AND (:userId IS NULL OR user_id = :userId)
@@ -257,7 +257,7 @@ public class AiMemoryGovernanceRepository {
     }
 
     public Flux<OrgMemoryRecord> listOrgMemories(String trustLevel, long beforeId, int limit) {
-        return databaseClient.sql("SELECT " + ORG_COLUMNS + """
+        return databaseClient.sql("SELECT " + ORG_COLUMNS + "\n" + """
                         FROM ai_org_memory
                         WHERE trust_level = :trustLevel
                           AND is_active = TRUE

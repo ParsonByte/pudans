@@ -40,7 +40,7 @@ public class AiAgentSnapshotRepository {
     }
 
     public Flux<SnapshotRecord> list(String agentName, int limit) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                          FROM ai_agent_snapshot
                          WHERE agent_name = :agentName
                          ORDER BY id DESC

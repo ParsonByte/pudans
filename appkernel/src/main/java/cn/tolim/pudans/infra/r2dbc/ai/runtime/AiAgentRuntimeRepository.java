@@ -31,7 +31,7 @@ public class AiAgentRuntimeRepository {
     }
 
     public Flux<RuntimeRecord> listBefore(long beforeMillis, int limit) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                         FROM ai_agent_runtime
                         WHERE EXTRACT(EPOCH FROM updated_at) * 1000 < :beforeMillis
                         ORDER BY updated_at DESC, agent_name DESC

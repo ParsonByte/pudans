@@ -44,7 +44,7 @@ public class AiAsyncToolTaskRepository {
     }
 
     public Mono<AsyncToolTask> find(String scope, String taskId) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                          FROM ai_async_tool_task
                          WHERE task_id = :taskId AND scope = :scope
                          """)
@@ -55,7 +55,7 @@ public class AiAsyncToolTaskRepository {
     }
 
     public Flux<AsyncToolTask> listByScope(String scope) {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                          FROM ai_async_tool_task
                          WHERE scope = :scope
                          ORDER BY created_at, task_id

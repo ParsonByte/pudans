@@ -61,7 +61,7 @@ public class AiMemoryGenerationLogRepository {
             @Nullable Instant to,
             long beforeId,
             int limit) {
-        var spec = databaseClient.sql("SELECT " + SELECT_COLUMNS + """
+        var spec = databaseClient.sql("SELECT " + SELECT_COLUMNS + "\n" + """
                          FROM ai_memory_generation_log
                          WHERE team_id = :teamId
                            AND agent_id = :agentId

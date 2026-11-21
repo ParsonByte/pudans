@@ -29,7 +29,7 @@ public class AiSkillUsageRepository {
     }
 
     public Flux<NamedUsage> list() {
-        return databaseClient.sql("SELECT " + COLUMNS + """
+        return databaseClient.sql("SELECT " + COLUMNS + "\n" + """
                          FROM ai_skill_usage
                          ORDER BY last_activity_at DESC NULLS LAST, skill_name
                          """)

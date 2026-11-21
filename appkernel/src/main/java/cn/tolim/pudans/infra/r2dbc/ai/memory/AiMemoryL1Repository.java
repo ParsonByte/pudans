@@ -171,7 +171,7 @@ public class AiMemoryL1Repository {
 
     public Flux<L1MemoryRecord> listByUser(
             String teamId, String agentId, String userId, @Nullable MemoryType type, long beforeId, int limit) {
-        var spec = databaseClient.sql("SELECT " + SELECT_COLUMNS + """
+        var spec = databaseClient.sql("SELECT " + SELECT_COLUMNS + "\n" + """
                          FROM ai_memory_l1
                          WHERE team_id = :teamId
                            AND agent_id = :agentId
@@ -196,7 +196,7 @@ public class AiMemoryL1Repository {
         if (ids == null || ids.isEmpty()) {
             return Flux.empty();
         }
-        return databaseClient.sql("SELECT " + SELECT_COLUMNS + """
+        return databaseClient.sql("SELECT " + SELECT_COLUMNS + "\n" + """
                          FROM ai_memory_l1
                          WHERE id = ANY(:ids)
                          """)
@@ -206,7 +206,7 @@ public class AiMemoryL1Repository {
     }
 
     public Flux<L1MemoryRecord> findActiveByScope(String teamId, String agentId, long afterId, int limit) {
-        return databaseClient.sql("SELECT " + SELECT_COLUMNS + """
+        return databaseClient.sql("SELECT " + SELECT_COLUMNS + "\n" + """
                          FROM ai_memory_l1
                          WHERE team_id = :teamId
                            AND agent_id = :agentId
@@ -224,7 +224,7 @@ public class AiMemoryL1Repository {
     }
 
     public Flux<L1MemoryRecord> findOrgCandidates(String teamId, String agentId, long afterId, int limit) {
-        return databaseClient.sql("SELECT " + SELECT_COLUMNS + """
+        return databaseClient.sql("SELECT " + SELECT_COLUMNS + "\n" + """
                          FROM ai_memory_l1
                          WHERE team_id = :teamId
                            AND agent_id = :agentId
@@ -251,7 +251,7 @@ public class AiMemoryL1Repository {
             @Nullable String query,
             long beforeId,
             int limit) {
-        var spec = databaseClient.sql("SELECT " + SELECT_COLUMNS + """
+        var spec = databaseClient.sql("SELECT " + SELECT_COLUMNS + "\n" + """
                          FROM ai_memory_l1
                          WHERE team_id = :teamId
                            AND agent_id = :agentId
