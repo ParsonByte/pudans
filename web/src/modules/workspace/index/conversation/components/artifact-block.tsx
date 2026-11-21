@@ -1,5 +1,11 @@
-import { FileText } from "lucide-react";
+"use client";
 
+import { useState } from "react";
+
+import { Eye, FileText } from "lucide-react";
+
+import { kindOf } from "@/components/documents/document-preview";
+import { DocumentPreviewDialog } from "@/components/documents/document-preview-dialog";
 import {
   Attachment,
   AttachmentContent,
@@ -7,10 +13,11 @@ import {
   AttachmentMedia,
   AttachmentTitle,
 } from "@/components/ui/attachment";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatFileSize } from "@/modules/workspace/console/storage-policies/lib/model";
 
-import { type ChatArtifact, chatAttachmentUrl } from "../../lib/chat-api";
+import { type ChatArtifact, chatAttachmentUrl, fetchChatAttachmentBytes } from "../../lib/chat-api";
 
 type ArtifactBlockProps = {
   artifact: ChatArtifact;
@@ -22,6 +29,23 @@ export function ArtifactBlock({ artifact }: ArtifactBlockProps) {
   const mimeType = artifact.mimeType?.toLowerCase() ?? "";
   const name = artifact.name || "生成内容";
   const showProgress = artifact.progress != null && artifact.progress < 100;
+  const documentKind = kindOf(artifact.name, artifact.mimeType);
+  const previewable = ["docx", "xlsx", "zip", "markdown", "text", "pdf"].includes(documentKind);
+  const [previewOpen, setPreviewOpen] = useState(false);
+
+  const loadPreviewBytes = async (): Promise<ArrayBuffer> => {
+    if (artifact.fileId) {
+      return fetchChatAttachmentBytes(artifact.fileId);
+    }
+    if (artifact.url) {
+      const response = await fetch(artifact.url, { credentials: "include" });
+      if (!response.ok) {
+        throw new Error(`无法加载文件（${response.status}）。`);
+      }
+      return response.arrayBuffer();
+    }
+    throw new Error("文件不可预览。");
+  };
 
   if (!url && !showProgress) {
     return null;
@@ -57,20 +81,43 @@ export function ArtifactBlock({ artifact }: ArtifactBlockProps) {
       !mimeType.startsWith("image/") &&
       !mimeType.startsWith("video/") &&
       !mimeType.startsWith("audio/") ? (
-        <a href={url} download={name} className="w-fit max-w-md">
-          <Attachment className="max-w-full transition-colors hover:bg-muted/50">
-            <AttachmentMedia>
-              <FileText />
-            </AttachmentMedia>
-            <AttachmentContent>
-              <AttachmentTitle>{name}</AttachmentTitle>
-              {artifact.size != null ? (
-                <AttachmentDescription>{formatFileSize(artifact.size)}</AttachmentDescription>
-              ) : null}
-            </AttachmentContent>
-          </Attachment>
-        </a>
+        <div className="flex w-fit max-w-md items-center gap-2">
+          <a href={url} download={name} className="min-w-0">
+            <Attachment className="max-w-full transition-colors hover:bg-muted/50">
+              <AttachmentMedia>
+                <FileText />
+              </AttachmentMedia>
+              <AttachmentContent>
+                <AttachmentTitle>{name}</AttachmentTitle>
+                {artifact.size != null ? (
+                  <AttachmentDescription>{formatFileSize(artifact.size)}</AttachmentDescription>
+                ) : null}
+              </AttachmentContent>
+            </Attachment>
+          </a>
+          {previewable ? (
+            <Button type="button" variant="outline" size="sm" onClick={() => setPreviewOpen(true)}>
+              <Eye />
+              预览
+            </Button>
+          ) : null}
+        </div>
       ) : null}
+      <DocumentPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        document={
+          previewable
+            ? {
+                sourceKey: artifact.fileId ?? artifact.url ?? name,
+                name,
+                mimeType: artifact.mimeType,
+                size: artifact.size,
+                loadBytes: loadPreviewBytes,
+              }
+            : null
+        }
+      />
     </div>
   );
 }

@@ -2,16 +2,9 @@ import { useState } from "react";
 
 import { Loader2 } from "lucide-react";
 
+import { DialogFormShell } from "@/components/dialog-form-shell";
+import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 type LayerEditDialogProps = {
@@ -39,22 +32,31 @@ export function LayerEditDialog({
   const invalid = !allowEmpty && content.trim().length === 0;
 
   return (
-    <Dialog
+    <DialogFormShell
       open
       onOpenChange={(open) => {
         if (!open && !pending) {
           onClose();
         }
       }}
+      title={title}
+      description={description}
+      size="2xl"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
+            取消
+          </Button>
+          <Button type="button" disabled={pending || invalid} onClick={() => onSave(content)}>
+            {pending ? <Loader2 className="animate-spin" /> : null}
+            保存
+          </Button>
+        </>
+      }
     >
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+      <div className="space-y-4">
         {hint ? <p className="text-xs text-muted-foreground">{hint}</p> : null}
-        <div className="space-y-2">
-          <Label htmlFor="memory-layer-content">内容</Label>
+        <FormField label="内容" htmlFor="memory-layer-content">
           <Textarea
             id="memory-layer-content"
             value={content}
@@ -64,17 +66,8 @@ export function LayerEditDialog({
             placeholder="输入记忆内容"
           />
           <p className="text-right text-xs text-muted-foreground">{content.length} 字符</p>
-        </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
-            取消
-          </Button>
-          <Button type="button" disabled={pending || invalid} onClick={() => onSave(content)}>
-            {pending ? <Loader2 className="animate-spin" /> : null}
-            保存
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </FormField>
+      </div>
+    </DialogFormShell>
   );
 }

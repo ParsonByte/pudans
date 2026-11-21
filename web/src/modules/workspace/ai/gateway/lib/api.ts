@@ -4,10 +4,13 @@ import { isAxiosError } from "axios";
 import { resolveApiError } from "@/lib/api-error";
 
 import { AI_API_PREFIX } from "../../providers/lib/api";
+import type { AiGatewaySession } from "../../sessions/lib/api";
 
 const PERSONAL_ACCESS_TOKEN_PATH = `${AI_API_PREFIX}/personalaccesstokens`;
 
 const GATEWAY_STATUS_PATH = `${AI_API_PREFIX}/aigateway/-/status`;
+
+const GATEWAY_SESSIONS_PATH = `${AI_API_PREFIX}/aigatewaysessions`;
 
 const ACCESS_TOKEN_ANNOTATION = "security.pudans.tolim.cn/access-token";
 
@@ -222,6 +225,13 @@ export async function restoreGatewayToken(name: string): Promise<GatewayTokenIte
 
 export async function deleteGatewayToken(name: string): Promise<void> {
   await axiosInstance.delete(`${PERSONAL_ACCESS_TOKEN_PATH}/${encodeURIComponent(name)}`);
+}
+
+export async function fetchGatewaySession(id: number): Promise<AiGatewaySession> {
+  const response = await axiosInstance.get<AiGatewaySession>(
+    `${GATEWAY_SESSIONS_PATH}/${encodeURIComponent(String(id))}`,
+  );
+  return response.data;
 }
 
 export async function fetchGatewayStatus(): Promise<GatewayStatus> {

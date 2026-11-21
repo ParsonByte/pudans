@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Brain, ChevronDown, Loader2 } from "lucide-react";
 
+import { MarkdownContent } from "@/components/content/markdown";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
@@ -35,8 +36,17 @@ export function ThinkingBlock({ reasoning, streaming = false }: ThinkingBlockPro
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="mt-1 max-h-80 overflow-y-auto border-s-2 border-border ps-3 text-xs leading-6 whitespace-pre-wrap text-muted-foreground">
-          {reasoning.trim() || "模型正在思考…"}
+        <div className="mt-1 max-h-80 overflow-y-auto border-s-2 border-border ps-3">
+          {reasoning.trim() ? (
+            <MarkdownContent
+              content={reasoning}
+              className="text-xs leading-6 text-muted-foreground"
+            />
+          ) : (
+            <span className="text-xs leading-6 whitespace-pre-wrap text-muted-foreground">
+              模型正在思考…
+            </span>
+          )}
         </div>
       </CollapsibleContent>
     </Collapsible>

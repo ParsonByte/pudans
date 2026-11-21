@@ -15,6 +15,7 @@ import {
   resolveAiProviderApiError,
 } from "../providers/lib/api";
 import { RoutingAccounts } from "./components/routing-accounts";
+import { RoutingBilling } from "./components/routing-billing";
 import { RoutingContext } from "./components/routing-context";
 import { RoutingDecision } from "./components/routing-decision";
 import { RoutingHistory } from "./components/routing-history";
@@ -116,9 +117,10 @@ export function AiRoutingView() {
           <TabsList>
             <TabsTrigger value="live">实时</TabsTrigger>
             <TabsTrigger value="history">历史</TabsTrigger>
+            <TabsTrigger value="billing">计费</TabsTrigger>
           </TabsList>
           <p className="text-xs text-muted-foreground">
-            实时视图每 5 秒刷新；历史视图支持条件筛选与游标分页。
+            实时视图每 5 秒刷新；历史视图支持条件筛选与游标分页；计费视图汇总标准 Token 消耗。
           </p>
         </div>
         <TabsContent value="live">
@@ -184,6 +186,9 @@ export function AiRoutingView() {
             routeGroups={routeGroups}
             lookups={lookups}
           />
+        </TabsContent>
+        <TabsContent value="billing">
+          <RoutingBilling lookups={lookups} />
         </TabsContent>
       </Tabs>
     </ConsolePage>

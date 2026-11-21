@@ -1,11 +1,13 @@
 import { type Resolver, useForm, useWatch } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Boxes } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { FormDialog, FormDialogSection } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,6 +30,7 @@ import {
   type AiModelType,
   type AiProviderItem,
   createModel,
+  fetchModel,
   resolveAiProviderApiError,
   updateModel,
 } from "../lib/api";
@@ -41,11 +44,6 @@ import {
   formatTestTimestamp,
   statusLabel,
 } from "../lib/model";
-import {
-  ProviderDialogSection,
-  ProviderDialogShell,
-  ProviderFieldRow,
-} from "./provider-dialog-shell";
 
 const MODEL_TYPE_VALUES = MODEL_TYPE_OPTIONS.map((option) => option.value) as [
   AiModelType,
@@ -102,6 +100,14 @@ type ModelDialogProps = {
 
 export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
   const queryClient = useQueryClient();
+  const modelQuery = useQuery({
+    queryKey: ["ai-model", model?.metadata.name],
+    queryFn: () => fetchModel(model?.metadata.name ?? ""),
+    initialData: model,
+    enabled: Boolean(model),
+    retry: false,
+  });
+  const currentModel = modelQuery.data ?? model;
   const form = useForm<ModelFormValues>({
     resolver: zodResolver(modelSchema) as Resolver<ModelFormValues>,
     defaultValues: initialValues(model),
@@ -143,8 +149,8 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
         supportsAsync: values.supportsAsync,
         enabled: values.enabled,
       };
-      if (model) {
-        return updateModel({ ...model, spec });
+      if (model && currentModel) {
+        return updateModel({ ...currentModel, spec });
       }
       return createModel({
         apiVersion: AI_API_VERSION,
@@ -168,42 +174,48 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
   );
 
   return (
-    <ProviderDialogShell
+    <FormDialog
+      open
       onClose={onClose}
       icon={<Boxes />}
       title={model ? "编辑模型" : "添加模型"}
       description={`为供应商 ${provider.spec.displayName || provider.metadata.name} 配置可用模型。`}
+      form={form}
       onSubmit={onSubmit}
       isPending={mutation.isPending}
       submitLabel={model ? "保存模型" : "创建模型"}
-      className="sm:max-w-3xl"
+      contentClassName="sm:max-w-3xl"
     >
-      <ProviderDialogSection title="基础信息">
+      <FormDialogSection title="基础信息">
         <div className="space-y-3">
-          <ProviderFieldRow
+          <FormField
+            orientation="horizontal"
             label="名称"
             htmlFor="ai-model-name"
             hint={model ? "名称创建后不可修改。" : RESOURCE_NAME_HINT}
             error={form.formState.errors.name?.message}
           >
             <Input id="ai-model-name" disabled={Boolean(model)} {...form.register("name")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="模型编码"
             htmlFor="ai-model-code"
             hint="供应商接口使用的模型标识。"
             error={form.formState.errors.modelCode?.message}
           >
             <Input id="ai-model-code" placeholder="gpt-4o-mini" {...form.register("modelCode")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="显示名称"
             htmlFor="ai-model-display-name"
             error={form.formState.errors.displayName?.message}
           >
             <Input id="ai-model-display-name" {...form.register("displayName")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="类型"
             htmlFor="ai-model-type"
             error={form.formState.errors.modelType?.message}
@@ -225,8 +237,9 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
                 ))}
               </SelectContent>
             </Select>
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="档位"
             htmlFor="ai-model-tier"
             error={form.formState.errors.tier?.message}
@@ -247,9 +260,10 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
                 ))}
               </SelectContent>
             </Select>
-          </ProviderFieldRow>
+          </FormField>
           <div className="grid gap-3 sm:grid-cols-3">
-            <ProviderFieldRow
+            <FormField
+              orientation="vertical"
               label="上下文"
               htmlFor="ai-model-context-window"
               hint="0 表示未设置。"
@@ -261,8 +275,9 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
                 min={0}
                 {...form.register("contextWindow")}
               />
-            </ProviderFieldRow>
-            <ProviderFieldRow
+            </FormField>
+            <FormField
+              orientation="vertical"
               label="最大输出"
               htmlFor="ai-model-max-output"
               hint="0 表示未设置。"
@@ -274,9 +289,10 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
                 min={0}
                 {...form.register("maxOutputTokens")}
               />
-            </ProviderFieldRow>
+            </FormField>
             {modelType === "EMBEDDING" ? (
-              <ProviderFieldRow
+              <FormField
+                orientation="vertical"
                 label="向量维度"
                 htmlFor="ai-model-embedding-dim"
                 hint="0 表示未设置。"
@@ -288,20 +304,23 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
                   min={0}
                   {...form.register("embeddingDim")}
                 />
-              </ProviderFieldRow>
+              </FormField>
             ) : null}
           </div>
         </div>
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="能力与模态">
+      <FormDialogSection title="能力与模态">
         <div className="space-y-3">
-          <ProviderFieldRow
+          <FormField
+            orientation="horizontal"
             label="能力"
+            htmlFor="ai-model-capabilities"
             hint="留空时根据模型类型与下方开关自动推导。"
             error={form.formState.errors.capabilities?.message}
           >
             <MultiSelect
+              id="ai-model-capabilities"
               value={capabilities}
               onChange={(value) =>
                 form.setValue("capabilities", value as AiModelCapability[], {
@@ -313,13 +332,16 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
               emptyMessage="没有匹配的能力。"
               searchPlaceholder="搜索能力"
             />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="输入模态"
+            htmlFor="ai-model-input-modalities"
             hint="留空时根据模型类型自动推导。"
             error={form.formState.errors.inputModalities?.message}
           >
             <MultiSelect
+              id="ai-model-input-modalities"
               value={inputModalities}
               onChange={(value) =>
                 form.setValue("inputModalities", value as AiModality[], { shouldDirty: true })
@@ -329,13 +351,16 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
               emptyMessage="没有匹配的模态。"
               searchPlaceholder="搜索模态"
             />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="输出模态"
+            htmlFor="ai-model-output-modalities"
             hint="留空时根据模型类型自动推导。"
             error={form.formState.errors.outputModalities?.message}
           >
             <MultiSelect
+              id="ai-model-output-modalities"
               value={outputModalities}
               onChange={(value) =>
                 form.setValue("outputModalities", value as AiModality[], { shouldDirty: true })
@@ -345,7 +370,7 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
               emptyMessage="没有匹配的模态。"
               searchPlaceholder="搜索模态"
             />
-          </ProviderFieldRow>
+          </FormField>
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <SwitchRow
@@ -379,32 +404,34 @@ export function ModelDialog({ provider, model, onClose }: ModelDialogProps) {
             onChange={(checked) => form.setValue("enabled", checked, { shouldDirty: true })}
           />
         </div>
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      {model ? (
-        <ProviderDialogSection title="最近测试">
+      {model && currentModel ? (
+        <FormDialogSection title="最近测试">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant={model.status?.message ? "destructive" : "secondary"}>
-              {statusLabel(model.status)}
+            <Badge variant={currentModel.status?.message ? "destructive" : "secondary"}>
+              {statusLabel(currentModel.status)}
             </Badge>
-            {model.status?.healthScore == null ? null : (
+            {currentModel.status?.healthScore == null ? null : (
               <span className="text-xs text-muted-foreground">
-                健康度 {Math.round(model.status.healthScore)}%
+                健康度 {Math.round(currentModel.status.healthScore)}%
               </span>
             )}
-            {formatTestTimestamp(model.status?.lastTestedAt) ? (
+            {formatTestTimestamp(currentModel.status?.lastTestedAt) ? (
               <span className="text-xs text-muted-foreground">
-                测试于 {formatTestTimestamp(model.status?.lastTestedAt)}
+                测试于 {formatTestTimestamp(currentModel.status?.lastTestedAt)}
               </span>
             ) : null}
           </div>
-          {model.status?.message ? (
-            <p className="text-xs text-muted-foreground">{model.status.message}</p>
+          {currentModel.status?.message ? (
+            <p className="text-xs text-muted-foreground">{currentModel.status.message}</p>
           ) : null}
-          {!model.status ? <p className="text-xs text-muted-foreground">尚未测试该模型。</p> : null}
-        </ProviderDialogSection>
+          {!currentModel.status ? (
+            <p className="text-xs text-muted-foreground">尚未测试该模型。</p>
+          ) : null}
+        </FormDialogSection>
       ) : null}
-    </ProviderDialogShell>
+    </FormDialog>
   );
 }
 

@@ -4,6 +4,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, PlugZap, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  type ContentPreview,
+  ContentPreviewButton,
+  ContentPreviewDialog,
+} from "@/components/content/content-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -60,6 +65,7 @@ export function AiMcpServersView() {
   const [editing, setEditing] = useState<McpServerItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<McpServerItem | null>(null);
   const [testResult, setTestResult] = useState<TestResultState | null>(null);
+  const [preview, setPreview] = useState<ContentPreview | null>(null);
 
   const serversQuery = useQuery({
     queryKey: MCP_SERVERS_QUERY_KEY,
@@ -239,6 +245,24 @@ export function AiMcpServersView() {
                       onEdit={() => openEdit(server)}
                       onDelete={() => setDeleteTarget(server)}
                     >
+                      <ContentPreviewButton
+                        label="预览 MCP 服务器"
+                        onClick={() =>
+                          setPreview({
+                            title: mcpDisplayName(server),
+                            description: server.spec.description || "MCP 连接配置预览",
+                            content: [
+                              `**传输**：${MCP_TRANSPORT_LABELS[server.spec.transport]}`,
+                              `**地址 / 命令**：\`${endpoint || "—"}\``,
+                              `**工具范围**：${
+                                server.spec.toolAllowlist?.length
+                                  ? server.spec.toolAllowlist.join("、")
+                                  : "全部"
+                              }`,
+                            ].join("\n"),
+                          })
+                        }
+                      />
                       {canTest ? (
                         <Button
                           type="button"
@@ -269,6 +293,8 @@ export function AiMcpServersView() {
           }}
         />
       ) : null}
+
+      <ContentPreviewDialog preview={preview} onClose={() => setPreview(null)} />
 
       <LibraryDeleteDialog
         resourceLabel="MCP 服务器"

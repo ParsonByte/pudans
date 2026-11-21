@@ -4,16 +4,9 @@ import { useQuery } from "@tanstack/react-query";
 import { MessageSquare } from "lucide-react";
 import Link from "next/link";
 
-import { AutoScrollArea } from "@/components/auto-scroll-area";
+import { DetailDialog } from "@/components/detail-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -66,48 +59,43 @@ export function RoutingTraceDetail({ requestId, lookups, onClose }: RoutingTrace
   });
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-5xl">
-        <DialogHeader>
-          <DialogTitle>路由详情</DialogTitle>
-          <DialogDescription className="font-mono text-xs">
-            {shortIdentifier(requestId, 32)}
-          </DialogDescription>
-        </DialogHeader>
-
-        <AutoScrollArea fill>
-          <div className="space-y-4 pb-4">
-            {query.isPending ? (
-              <div className="space-y-3">
-                <Skeleton className="h-24" />
-                <Skeleton className="h-40" />
-                <Skeleton className="h-40" />
-              </div>
-            ) : query.isError ? (
-              <div className="flex flex-col items-center gap-3 border border-dashed px-6 py-10 text-center">
-                <p className="text-sm font-medium">无法加载路由详情</p>
-                <p className="max-w-md text-xs text-muted-foreground">
-                  {resolveApiErrorWithDetail(query.error, {
-                    notFound: "请求不存在或已被删除。",
-                    conflict: "请求状态冲突，请稍后重试。",
-                  })}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => void query.refetch()}
-                >
-                  重试
-                </Button>
-              </div>
-            ) : query.data ? (
-              <DetailContent detail={query.data} lookups={lookups} />
-            ) : null}
+    <DetailDialog
+      open
+      onOpenChange={(open) => !open && onClose()}
+      title="路由详情"
+      description={<span className="font-mono text-xs">{shortIdentifier(requestId, 32)}</span>}
+      size="5xl"
+      footer={
+        <Button type="button" variant="outline" onClick={onClose}>
+          关闭
+        </Button>
+      }
+    >
+      <div className="space-y-4 pb-4">
+        {query.isPending ? (
+          <div className="space-y-3">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
           </div>
-        </AutoScrollArea>
-      </DialogContent>
-    </Dialog>
+        ) : query.isError ? (
+          <div className="flex flex-col items-center gap-3 border border-dashed px-6 py-10 text-center">
+            <p className="text-sm font-medium">无法加载路由详情</p>
+            <p className="max-w-md text-xs text-muted-foreground">
+              {resolveApiErrorWithDetail(query.error, {
+                notFound: "请求不存在或已被删除。",
+                conflict: "请求状态冲突，请稍后重试。",
+              })}
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={() => void query.refetch()}>
+              重试
+            </Button>
+          </div>
+        ) : query.data ? (
+          <DetailContent detail={query.data} lookups={lookups} />
+        ) : null}
+      </div>
+    </DetailDialog>
   );
 }
 

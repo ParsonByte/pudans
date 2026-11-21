@@ -6,6 +6,8 @@ import { Gauge } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { FormDialog, FormDialogSection } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -22,11 +24,6 @@ import {
   updateAccountQuota,
 } from "../lib/api";
 import { QUOTA_UNIT_OPTIONS, formatQuota } from "../lib/model";
-import {
-  ProviderDialogSection,
-  ProviderDialogShell,
-  ProviderFieldRow,
-} from "./provider-dialog-shell";
 
 const quotaSchema = z.object({
   quotaUnit: z.string(),
@@ -91,18 +88,22 @@ export function QuotaDialog({ account, onClose }: QuotaDialogProps) {
   );
 
   return (
-    <ProviderDialogShell
+    <FormDialog
+      open
       onClose={onClose}
       icon={<Gauge />}
       title="调整配额与余额"
       description={`当前用量：${formatQuota(account.spec.quota)}。配额上限留空表示不限制。`}
+      form={form}
       onSubmit={onSubmit}
       isPending={mutation.isPending}
       submitLabel="保存配额"
+      contentClassName="sm:max-w-2xl"
     >
-      <ProviderDialogSection title="配额">
+      <FormDialogSection title="配额">
         <div className="space-y-3">
-          <ProviderFieldRow
+          <FormField
+            orientation="horizontal"
             label="计量单位"
             htmlFor="ai-quota-unit"
             error={form.formState.errors.quotaUnit?.message}
@@ -122,21 +123,23 @@ export function QuotaDialog({ account, onClose }: QuotaDialogProps) {
                 ))}
               </SelectContent>
             </Select>
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="配额上限"
             htmlFor="ai-quota-limit"
             hint="留空表示不限制。"
             error={form.formState.errors.quotaLimit?.message}
           >
             <Input id="ai-quota-limit" type="number" min={0} {...form.register("quotaLimit")} />
-          </ProviderFieldRow>
+          </FormField>
         </div>
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="余额">
+      <FormDialogSection title="余额">
         <div className="space-y-3">
-          <ProviderFieldRow
+          <FormField
+            orientation="horizontal"
             label="余额单位"
             htmlFor="ai-balance-unit"
             error={form.formState.errors.balanceUnit?.message}
@@ -156,16 +159,17 @@ export function QuotaDialog({ account, onClose }: QuotaDialogProps) {
                 ))}
               </SelectContent>
             </Select>
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="剩余余额"
             htmlFor="ai-balance-left"
             error={form.formState.errors.balanceLeft?.message}
           >
             <Input id="ai-balance-left" type="number" min={0} {...form.register("balanceLeft")} />
-          </ProviderFieldRow>
+          </FormField>
         </div>
-      </ProviderDialogSection>
-    </ProviderDialogShell>
+      </FormDialogSection>
+    </FormDialog>
   );
 }

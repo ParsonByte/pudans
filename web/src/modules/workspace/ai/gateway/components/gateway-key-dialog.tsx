@@ -3,21 +3,15 @@ import { Controller, type Resolver, useFieldArray, useForm } from "react-hook-fo
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { FormDialog } from "@/components/form-dialog";
 import { FormField } from "@/components/form-field";
+import { useSudo } from "@/components/sudo/sudo-provider";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -135,6 +129,7 @@ export function GatewayKeyDialog({
   advancedSupported,
   onCreated,
 }: GatewayKeyDialogProps) {
+  const { requireSudo } = useSudo();
   const queryClient = useQueryClient();
   const form = useForm<GatewayKeyFormValues>({
     resolver: zodResolver(keySchema) as Resolver<GatewayKeyFormValues>,
@@ -154,13 +149,15 @@ export function GatewayKeyDialog({
   }, [form, open]);
 
   const mutation = useMutation({
-    mutationFn: (values: GatewayKeyFormValues) =>
-      createGatewayToken({
+    mutationFn: async (values: GatewayKeyFormValues) => {
+      await requireSudo();
+      return createGatewayToken({
         name: values.name.trim(),
         description: values.description.trim() || undefined,
         expiryDays: Number(values.expiryDays),
         ...(advancedSupported ? { gateway: buildGatewaySpec(values) } : {}),
-      }),
+      });
+    },
     onSuccess: async (result) => {
       await queryClient.invalidateQueries({ queryKey: ["ai-gateway", "tokens"] });
       onCreated(result);
@@ -195,340 +192,321 @@ export function GatewayKeyDialog({
   );
   const limitsError =
     form.formState.errors.limits?.message ?? form.formState.errors.limits?.root?.message;
+  const close = () => {
+    if (!mutation.isPending) {
+      onOpenChange(false);
+    }
+  };
 
   return (
-    <Dialog
+    <FormDialog
       open={open}
-      onOpenChange={(next) => {
-        if (!mutation.isPending) {
-          onOpenChange(next);
-        }
-      }}
+      onClose={close}
+      title="生成网关密钥"
+      description="密钥复用个人访问令牌，并固定绑定 AI Agent 网关角色。明文只在创建成功后显示一次。"
+      form={form}
+      onSubmit={onSubmit}
+      isPending={mutation.isPending}
+      maxHeightRatio={0.62}
+      contentClassName="sm:max-w-2xl"
+      formClassName="space-y-4"
+      submitLabel="生成密钥"
     >
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>生成网关密钥</DialogTitle>
-          <DialogDescription>
-            密钥复用个人访问令牌，并固定绑定 AI Agent 网关角色。明文只在创建成功后显示一次。
-          </DialogDescription>
-        </DialogHeader>
+      <div className="space-y-5">
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="sm:col-span-2">
+            <FormField
+              label="名称"
+              htmlFor="gateway-key-name"
+              error={form.formState.errors.name?.message}
+            >
+              <Input
+                id="gateway-key-name"
+                placeholder="例如：Claude Code 笔记本"
+                autoComplete="off"
+                {...form.register("name")}
+              />
+            </FormField>
+          </div>
+          <FormField
+            label="到期天数"
+            htmlFor="gateway-key-expiry"
+            hint={`默认 ${GATEWAY_TOKEN_DEFAULT_DAYS} 天`}
+            error={form.formState.errors.expiryDays?.message}
+          >
+            <Input
+              id="gateway-key-expiry"
+              type="number"
+              min={1}
+              max={3650}
+              {...form.register("expiryDays")}
+            />
+          </FormField>
+        </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          <div className="max-h-[62vh] space-y-5 overflow-y-auto pe-1">
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="sm:col-span-2">
-                <FormField
-                  label="名称"
-                  htmlFor="gateway-key-name"
-                  error={form.formState.errors.name?.message}
-                >
-                  <Input
-                    id="gateway-key-name"
-                    placeholder="例如：Claude Code 笔记本"
-                    autoComplete="off"
-                    {...form.register("name")}
-                  />
-                </FormField>
+        <FormField
+          label="说明"
+          htmlFor="gateway-key-description"
+          error={form.formState.errors.description?.message}
+        >
+          <Textarea
+            id="gateway-key-description"
+            rows={2}
+            placeholder="用途、使用设备或负责人"
+            {...form.register("description")}
+          />
+        </FormField>
+
+        <div className="border bg-muted/25 px-4 py-3">
+          <p className="text-xs text-muted-foreground">固定权限</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <Badge variant="secondary">{GATEWAY_TOKEN_ROLE}</Badge>
+            <Badge variant="outline">RolesOnly</Badge>
+          </div>
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            该令牌只能调用 AI 网关，不会继承你的其他角色；后端返回一次性明文后请立即保存。
+          </p>
+        </div>
+
+        {advancedSupported ? (
+          <div className="space-y-4 border px-4 py-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">密钥级网关限制</p>
+                <p className="text-xs text-muted-foreground">
+                  限制该密钥可用的模型、并发、服务层级与预算；留空表示继承网关默认值。
+                </p>
               </div>
+              <Controller
+                control={form.control}
+                name="gatewayEnabled"
+                render={({ field }) => (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="gateway-key-enabled" className="text-xs">
+                      启用密钥
+                    </Label>
+                    <Switch
+                      id="gateway-key-enabled"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </div>
+                )}
+              />
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField label="可用模型" htmlFor="gateway-key-models">
+                <Controller
+                  control={form.control}
+                  name="gatewayModels"
+                  render={({ field }) => (
+                    <MultiSelect
+                      id="gateway-key-models"
+                      value={field.value}
+                      onChange={field.onChange}
+                      options={modelOptions}
+                      placeholder="全部可用模型"
+                      emptyMessage="没有可用模型"
+                      searchPlaceholder="搜索模型"
+                    />
+                  )}
+                />
+              </FormField>
               <FormField
-                label="到期天数"
-                htmlFor="gateway-key-expiry"
-                hint={`默认 ${GATEWAY_TOKEN_DEFAULT_DAYS} 天`}
-                error={form.formState.errors.expiryDays?.message}
+                label="最大并发"
+                htmlFor="gateway-key-concurrency"
+                hint="留空表示不限制。"
+                error={form.formState.errors.maxConcurrency?.message}
               >
                 <Input
-                  id="gateway-key-expiry"
+                  id="gateway-key-concurrency"
                   type="number"
-                  min={1}
-                  max={3650}
-                  {...form.register("expiryDays")}
+                  min={0}
+                  placeholder="不限制"
+                  {...form.register("maxConcurrency")}
+                />
+              </FormField>
+              <FormField label="服务层级" htmlFor="gateway-key-tier">
+                <Controller
+                  control={form.control}
+                  name="serviceTier"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value as GatewayServiceTier)}
+                    >
+                      <SelectTrigger id="gateway-key-tier" className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {GATEWAY_SERVICE_TIER_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                 />
               </FormField>
             </div>
 
-            <FormField
-              label="说明"
-              htmlFor="gateway-key-description"
-              error={form.formState.errors.description?.message}
-            >
-              <Textarea
-                id="gateway-key-description"
-                rows={2}
-                placeholder="用途、使用设备或负责人"
-                {...form.register("description")}
-              />
-            </FormField>
-
-            <div className="border bg-muted/25 px-4 py-3">
-              <p className="text-xs text-muted-foreground">固定权限</p>
-              <div className="mt-2 flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{GATEWAY_TOKEN_ROLE}</Badge>
-                <Badge variant="outline">RolesOnly</Badge>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium">用量限制</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    最多 {GATEWAY_KEY_LIMIT_MAX} 条；按指定周期聚合 Token、标准 Token 或请求数。
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    limits.append({
+                      period: "DAY",
+                      tokens: "",
+                      units: "",
+                      requests: "",
+                      models: [],
+                      account: "",
+                    })
+                  }
+                  disabled={limits.fields.length >= GATEWAY_KEY_LIMIT_MAX}
+                >
+                  <Plus />
+                  添加限制
+                </Button>
               </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                该令牌只能调用 AI 网关，不会继承你的其他角色；后端返回一次性明文后请立即保存。
-              </p>
-            </div>
+              {limitsError ? <p className="text-xs text-destructive">{limitsError}</p> : null}
 
-            {advancedSupported ? (
-              <div className="space-y-4 border px-4 py-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">密钥级网关限制</p>
-                    <p className="text-xs text-muted-foreground">
-                      限制该密钥可用的模型、并发、服务层级与预算；留空表示继承网关默认值。
-                    </p>
-                  </div>
-                  <Controller
-                    control={form.control}
-                    name="gatewayEnabled"
-                    render={({ field }) => (
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="gateway-key-enabled" className="text-xs">
-                          启用密钥
-                        </Label>
-                        <Switch
-                          id="gateway-key-enabled"
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </div>
-                    )}
-                  />
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <FormField label="可用模型" htmlFor="gateway-key-models">
-                    <Controller
-                      control={form.control}
-                      name="gatewayModels"
-                      render={({ field }) => (
-                        <MultiSelect
-                          id="gateway-key-models"
-                          value={field.value}
-                          onChange={field.onChange}
-                          options={modelOptions}
-                          placeholder="全部可用模型"
-                          emptyMessage="没有可用模型"
-                          searchPlaceholder="搜索模型"
-                        />
-                      )}
-                    />
-                  </FormField>
-                  <FormField
-                    label="最大并发"
-                    htmlFor="gateway-key-concurrency"
-                    hint="留空表示不限制。"
-                    error={form.formState.errors.maxConcurrency?.message}
-                  >
-                    <Input
-                      id="gateway-key-concurrency"
-                      type="number"
-                      min={0}
-                      placeholder="不限制"
-                      {...form.register("maxConcurrency")}
-                    />
-                  </FormField>
-                  <FormField label="服务层级" htmlFor="gateway-key-tier">
-                    <Controller
-                      control={form.control}
-                      name="serviceTier"
-                      render={({ field }) => (
-                        <Select
-                          value={field.value}
-                          onValueChange={(value) => field.onChange(value as GatewayServiceTier)}
-                        >
-                          <SelectTrigger id="gateway-key-tier" className="w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {GATEWAY_SERVICE_TIER_OPTIONS.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </FormField>
-                </div>
-
+              {limits.fields.length === 0 ? (
+                <p className="border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
+                  未配置用量限制。
+                </p>
+              ) : (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <p className="text-sm font-medium">用量限制</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        最多 {GATEWAY_KEY_LIMIT_MAX} 条；按指定周期聚合 Token、标准 Token 或请求数。
-                      </p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        limits.append({
-                          period: "DAY",
-                          tokens: "",
-                          units: "",
-                          requests: "",
-                          models: [],
-                          account: "",
-                        })
-                      }
-                      disabled={limits.fields.length >= GATEWAY_KEY_LIMIT_MAX}
-                    >
-                      <Plus />
-                      添加限制
-                    </Button>
-                  </div>
-                  {limitsError ? <p className="text-xs text-destructive">{limitsError}</p> : null}
-
-                  {limits.fields.length === 0 ? (
-                    <p className="border border-dashed px-3 py-4 text-center text-xs text-muted-foreground">
-                      未配置用量限制。
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {limits.fields.map((field, index) => {
-                        const itemErrors = form.formState.errors.limits?.[index];
-                        return (
-                          <div key={field.id} className="space-y-3 border p-3">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-xs font-medium">限制 {index + 1}</p>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                aria-label={`移除限制 ${index + 1}`}
-                                onClick={() => limits.remove(index)}
-                              >
-                                <Trash2 />
-                              </Button>
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                              <FormField label="周期" htmlFor={`gateway-limit-period-${index}`}>
-                                <Controller
-                                  control={form.control}
-                                  name={`limits.${index}.period`}
-                                  render={({ field: periodField }) => (
-                                    <Select
-                                      value={periodField.value}
-                                      onValueChange={periodField.onChange}
-                                    >
-                                      <SelectTrigger
-                                        id={`gateway-limit-period-${index}`}
-                                        className="w-full"
-                                      >
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {GATEWAY_LIMIT_PERIOD_OPTIONS.map((option) => (
-                                          <SelectItem key={option.value} value={option.value}>
-                                            {option.label}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                  )}
+                  {limits.fields.map((field, index) => {
+                    const itemErrors = form.formState.errors.limits?.[index];
+                    return (
+                      <div key={field.id} className="space-y-3 border p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-xs font-medium">限制 {index + 1}</p>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`移除限制 ${index + 1}`}
+                            onClick={() => limits.remove(index)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                          <FormField label="周期" htmlFor={`gateway-limit-period-${index}`}>
+                            <Controller
+                              control={form.control}
+                              name={`limits.${index}.period`}
+                              render={({ field: periodField }) => (
+                                <Select
+                                  value={periodField.value}
+                                  onValueChange={periodField.onChange}
+                                >
+                                  <SelectTrigger
+                                    id={`gateway-limit-period-${index}`}
+                                    className="w-full"
+                                  >
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {GATEWAY_LIMIT_PERIOD_OPTIONS.map((option) => (
+                                      <SelectItem key={option.value} value={option.value}>
+                                        {option.label}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </FormField>
+                          <FormField
+                            label="Token"
+                            htmlFor={`gateway-limit-tokens-${index}`}
+                            error={
+                              itemErrors?.tokens?.message ??
+                              itemErrors?.units?.message ??
+                              itemErrors?.requests?.message
+                            }
+                          >
+                            <Input
+                              id={`gateway-limit-tokens-${index}`}
+                              type="number"
+                              min={0}
+                              placeholder="不限制"
+                              {...form.register(`limits.${index}.tokens`)}
+                            />
+                          </FormField>
+                          <FormField label="标准 Token" htmlFor={`gateway-limit-units-${index}`}>
+                            <Input
+                              id={`gateway-limit-units-${index}`}
+                              type="number"
+                              min={0}
+                              placeholder="不限制"
+                              {...form.register(`limits.${index}.units`)}
+                            />
+                          </FormField>
+                          <FormField label="请求数" htmlFor={`gateway-limit-requests-${index}`}>
+                            <Input
+                              id={`gateway-limit-requests-${index}`}
+                              type="number"
+                              min={0}
+                              placeholder="不限制"
+                              {...form.register(`limits.${index}.requests`)}
+                            />
+                          </FormField>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <FormField label="限定模型" htmlFor={`gateway-limit-models-${index}`}>
+                            <Controller
+                              control={form.control}
+                              name={`limits.${index}.models`}
+                              render={({ field: modelsField }) => (
+                                <MultiSelect
+                                  id={`gateway-limit-models-${index}`}
+                                  value={modelsField.value}
+                                  onChange={modelsField.onChange}
+                                  options={modelOptions}
+                                  placeholder="全部模型"
+                                  emptyMessage="没有可用模型"
+                                  searchPlaceholder="搜索模型"
                                 />
-                              </FormField>
-                              <FormField
-                                label="Token"
-                                htmlFor={`gateway-limit-tokens-${index}`}
-                                error={
-                                  itemErrors?.tokens?.message ??
-                                  itemErrors?.units?.message ??
-                                  itemErrors?.requests?.message
-                                }
-                              >
-                                <Input
-                                  id={`gateway-limit-tokens-${index}`}
-                                  type="number"
-                                  min={0}
-                                  placeholder="不限制"
-                                  {...form.register(`limits.${index}.tokens`)}
-                                />
-                              </FormField>
-                              <FormField
-                                label="标准 Token"
-                                htmlFor={`gateway-limit-units-${index}`}
-                              >
-                                <Input
-                                  id={`gateway-limit-units-${index}`}
-                                  type="number"
-                                  min={0}
-                                  placeholder="不限制"
-                                  {...form.register(`limits.${index}.units`)}
-                                />
-                              </FormField>
-                              <FormField label="请求数" htmlFor={`gateway-limit-requests-${index}`}>
-                                <Input
-                                  id={`gateway-limit-requests-${index}`}
-                                  type="number"
-                                  min={0}
-                                  placeholder="不限制"
-                                  {...form.register(`limits.${index}.requests`)}
-                                />
-                              </FormField>
-                            </div>
-                            <div className="grid gap-3 sm:grid-cols-2">
-                              <FormField label="限定模型" htmlFor={`gateway-limit-models-${index}`}>
-                                <Controller
-                                  control={form.control}
-                                  name={`limits.${index}.models`}
-                                  render={({ field: modelsField }) => (
-                                    <MultiSelect
-                                      id={`gateway-limit-models-${index}`}
-                                      value={modelsField.value}
-                                      onChange={modelsField.onChange}
-                                      options={modelOptions}
-                                      placeholder="全部模型"
-                                      emptyMessage="没有可用模型"
-                                      searchPlaceholder="搜索模型"
-                                    />
-                                  )}
-                                />
-                              </FormField>
-                              <FormField
-                                label="限定账号"
-                                htmlFor={`gateway-limit-account-${index}`}
-                                hint="留空表示全部账号。"
-                              >
-                                <Input
-                                  id={`gateway-limit-account-${index}`}
-                                  placeholder="供应商账号资源名"
-                                  autoComplete="off"
-                                  {...form.register(`limits.${index}.account`)}
-                                />
-                              </FormField>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
+                              )}
+                            />
+                          </FormField>
+                          <FormField
+                            label="限定账号"
+                            htmlFor={`gateway-limit-account-${index}`}
+                            hint="留空表示全部账号。"
+                          >
+                            <Input
+                              id={`gateway-limit-account-${index}`}
+                              placeholder="供应商账号资源名"
+                              autoComplete="off"
+                              {...form.register(`limits.${index}.account`)}
+                            />
+                          </FormField>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            ) : null}
+              )}
+            </div>
           </div>
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={mutation.isPending}
-            >
-              取消
-            </Button>
-            <Button type="submit" disabled={mutation.isPending}>
-              {mutation.isPending ? <Loader2 className="animate-spin" /> : null}
-              生成密钥
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        ) : null}
+      </div>
+    </FormDialog>
   );
 }

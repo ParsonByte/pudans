@@ -6,12 +6,10 @@ import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { FormDialogSection } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  ProviderDialogSection,
-  ProviderFieldRow,
-} from "@/modules/workspace/ai/providers/components/provider-dialog-shell";
 import {
   type AiModelTier,
   type AiSettingItem,
@@ -181,52 +179,56 @@ function BillingRatiosForm({ setting, canEdit }: BillingRatiosFormProps) {
         <p className="text-xs text-muted-foreground">当前角色只能查看计费比例，无权修改。</p>
       ) : null}
 
-      <ProviderDialogSection title="标准权重">
+      <FormDialogSection title="标准权重">
         <p className="text-xs text-muted-foreground">
           输入、缓存与输出等原始用量乘以对应比例后得到标准权重。
         </p>
         <div className="grid gap-3 sm:grid-cols-3">
           {RATIO_FIELDS.map((field) => (
-            <ProviderFieldRow
+            <FormField
               key={field.key}
               label={field.label}
+              htmlFor={`billing-ratio-${field.key}`}
               hint={field.hint}
               error={form.formState.errors.ratios?.[field.key]?.message}
             >
               <Input
+                id={`billing-ratio-${field.key}`}
                 type="number"
                 min={0}
                 step={0.01}
                 disabled={!canEdit}
                 {...form.register(`ratios.${field.key}`)}
               />
-            </ProviderFieldRow>
+            </FormField>
           ))}
         </div>
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="档位系数">
+      <FormDialogSection title="档位系数">
         <div className="grid gap-3 sm:grid-cols-4">
           {MODEL_TIER_OPTIONS.map((option) => (
-            <ProviderFieldRow
+            <FormField
               key={option.value}
               label={tierMultiplierLabel(option.value)}
+              htmlFor={`billing-tier-${option.value}`}
               hint={`默认 ${tiers[option.value]}`}
               error={form.formState.errors.tiers?.[option.value]?.message}
             >
               <Input
+                id={`billing-tier-${option.value}`}
                 type="number"
                 min={0}
                 step={0.1}
                 disabled={!canEdit}
                 {...form.register(`tiers.${option.value}`)}
               />
-            </ProviderFieldRow>
+            </FormField>
           ))}
         </div>
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="模型覆盖系数">
+      <FormDialogSection title="模型覆盖系数">
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs text-muted-foreground">
             键为模型编码（modelCode），未配置时使用档位系数；模型系数与档位系数相乘。
@@ -288,7 +290,7 @@ function BillingRatiosForm({ setting, canEdit }: BillingRatiosFormProps) {
             ))}
           </div>
         )}
-      </ProviderDialogSection>
+      </FormDialogSection>
 
       {canEdit ? (
         <div className="flex justify-end">

@@ -1,9 +1,14 @@
+import { axiosInstance } from "@pudans-dev/api-client";
+
 import {
+  AI_API_PREFIX,
   AI_API_VERSION,
   type AiMetadata,
+  type JsonPatchOperation,
   createLibraryResource,
   deleteLibraryResource,
   listLibraryResources,
+  patchLibraryResource,
   updateLibraryResource,
 } from "../../lib/api";
 
@@ -52,6 +57,29 @@ export function updateSlashCommand(item: SlashCommandItem): Promise<SlashCommand
   return updateLibraryResource(SLASH_COMMANDS_PLURAL, item);
 }
 
+export function patchSlashCommand(
+  name: string,
+  operations: JsonPatchOperation[],
+): Promise<SlashCommandItem> {
+  return patchLibraryResource<SlashCommandItem>(SLASH_COMMANDS_PLURAL, name, operations);
+}
+
 export function deleteSlashCommand(name: string): Promise<void> {
   return deleteLibraryResource(SLASH_COMMANDS_PLURAL, name);
+}
+
+export type ResolvedSlashCommand = {
+  name: string;
+  expandedPrompt: string;
+};
+
+export async function resolveSlashCommand(
+  agent: string,
+  text: string,
+): Promise<ResolvedSlashCommand> {
+  const response = await axiosInstance.post<ResolvedSlashCommand>(
+    `${AI_API_PREFIX}/${SLASH_COMMANDS_PLURAL}/-/resolve`,
+    { agent, text },
+  );
+  return response.data;
 }

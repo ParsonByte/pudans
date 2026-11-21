@@ -1,27 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { useChat } from "@ai-sdk/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Square } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+
 import { ChatComposer } from "../components/chat-composer";
+import { PudansChatTransport, type PudansUIMessage, toUiMessages } from "../lib/ai-chat-transport";
 import {
-  type ChatArtifact,
-  type ChatAttachmentRef,
   type ChatGenerationKind,
   type ChatMessage,
-  type ChatStreamDone,
-  type ChatStreamDraft,
-  type ChatStreamError,
-  type ChatToolConfirm,
+  type ChatRequest,
   branchConversation,
   confirmChatTool,
   fetchChatConversation,
   fetchChatMessages,
   fetchChatModes,
+  interruptChatRun,
   resolveChatError,
-  streamChat,
 } from "../lib/chat-api";
 import { type ChatRequestBody, parseChatCommand } from "../lib/chat-functions";
 import { type ChatGenerationProgress, createChatArtifact } from "../lib/chat-generation";
@@ -35,7 +35,6 @@ import {
 import { setPendingChat, takePendingChat } from "../lib/pending-chat";
 import { ConversationHeader } from "./components/conversation-header";
 import { ConversationMessages } from "./components/conversation-messages";
-import { ToolConfirmDialog } from "./components/tool-confirm-dialog";
 
 type ChatConversationViewProps = {
   conversationId: string;
@@ -47,15 +46,6 @@ type StreamRequest = ChatRequestBody & {
   routeGroup?: string;
   kbCodes?: string[];
   regenerate?: boolean;
-};
-
-const EMPTY_DRAFT: ChatStreamDraft = {
-  content: "",
-  reasoning: "",
-  toolCalls: [],
-  toolResults: [],
-  artifacts: [],
-  stage: null,
 };
 
 export function ChatConversationView({ conversationId }: ChatConversationViewProps) {
@@ -73,21 +63,14 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
     undefined,
   );
   const [kbCodes, setKbCodes] = useState<string[]>([]);
-  const [optimisticMessage, setOptimisticMessage] = useState<{
-    content: string;
-    attachments: ChatAttachmentRef[];
-  } | null>(null);
-  const [draft, setDraft] = useState<ChatStreamDraft>(EMPTY_DRAFT);
   const [generation, setGeneration] = useState<ChatGenerationProgress | null>(null);
-  const [sending, setSending] = useState(false);
-  const [streamError, setStreamError] = useState<string | null>(null);
-  const [pendingConfirm, setPendingConfirm] = useState<ChatToolConfirm | null>(null);
-  const controllerRef = useRef<AbortController | null>(null);
+  const [requestError, setRequestError] = useState<string | null>(null);
+  const [liveDone, setLiveDone] = useState(false);
   const sendingRef = useRef(false);
+  const generatingRef = useRef(false);
   const mountedRef = useRef(true);
   const pendingStartedRef = useRef(false);
-  const pendingConfirmRef = useRef<ChatToolConfirm | null>(null);
-  const streamIdRef = useRef(0);
+  const lastAssistantIdRef = useRef(0);
 
   const modesQuery = useQuery({
     queryKey: ["chat-modes"],
@@ -123,204 +106,145 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
       ? conversationQuery.data?.routeGroup
       : (routeGroupOverride ?? undefined);
 
+  const transport = useMemo(
+    () =>
+      new PudansChatTransport({
+        conversationId: id,
+        mode,
+        routeGroup,
+        model: modelOverride,
+        kbCodes: kbCodes.length > 0 ? kbCodes : undefined,
+        agentId: conversationQuery.data?.agentId,
+      }),
+    [conversationQuery.data?.agentId, id, kbCodes, mode, modelOverride, routeGroup],
+  );
+
+  const chat = useChat<PudansUIMessage>({
+    transport,
+    messages: [],
+    throttle: 50,
+    sendAutomaticallyWhen: () => false,
+    onFinish: ({ message }) => {
+      void (async () => {
+        await queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
+        await queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
+        const refreshed = queryClient.getQueryData<ChatMessage[]>(["chat-messages", id]) ?? [];
+        const persisted = refreshed.some(
+          (item) => item.role === "assistant" && item.id > lastAssistantIdRef.current,
+        );
+        if (mountedRef.current) {
+          if (persisted || message.metadata?.partial) {
+            setLiveDone(true);
+          } else {
+            setRequestError("流式连接已中断，请重试。");
+          }
+        }
+        if (message.metadata?.partial) {
+          toast.warning("回复未完整结束，已保留已生成的内容。");
+        }
+      })();
+    },
+    onError: (error) => {
+      void queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
+      if (mountedRef.current) {
+        toast.error(resolveChatError(error));
+      }
+    },
+  });
+
   useEffect(
     () => () => {
       mountedRef.current = false;
-      controllerRef.current?.abort();
     },
     [],
   );
 
-  const updatePendingConfirm = useCallback((next: ChatToolConfirm | null) => {
-    pendingConfirmRef.current = next;
-    setPendingConfirm(next);
-  }, []);
-
-  const resolveToolConfirm = useCallback(
-    (approved: boolean) => {
-      const current = pendingConfirmRef.current;
-      if (!current?.runId || !current.toolCallId) {
+  const handleApproval = useCallback(
+    (approvalId: string, approved: boolean) => {
+      const runId = transport.runIdFor(approvalId);
+      if (!runId) {
+        toast.error("工具确认信息已失效，请重新发送。");
         return;
       }
-      updatePendingConfirm(null);
-      void confirmChatTool(current.runId, current.toolCallId, approved).catch(() => {
-        if (mountedRef.current) {
-          toast.error("工具确认失败，请重试。");
-        }
+      void confirmChatTool(runId, approvalId, approved).catch(() => {
+        toast.error("工具确认失败，请重试。");
       });
+      void chat.addToolApprovalResponse({ id: approvalId, approved });
     },
-    [updatePendingConfirm],
+    [chat, transport],
   );
+
+  const handleStop = useCallback(() => {
+    const runId = transport.runId;
+    if (runId) {
+      void interruptChatRun(runId).catch(() => {
+        toast.error("停止生成失败，请重试。");
+      });
+    }
+    chat.stop();
+  }, [chat, transport]);
 
   const sendPrompt = useCallback(
     async (request: StreamRequest) => {
-      if (!valid || sendingRef.current) {
+      if (!valid || sendingRef.current || generatingRef.current) {
+        return;
+      }
+      if (chat.status === "streaming" || chat.status === "submitted") {
         return;
       }
       sendingRef.current = true;
-      const streamId = streamIdRef.current + 1;
-      streamIdRef.current = streamId;
-      setSending(true);
-      setStreamError(null);
-      setDraft(EMPTY_DRAFT);
-      if (!request.regenerate) {
-        setOptimisticMessage({ content: request.prompt, attachments: request.attachments });
-      }
-      const cachedMessages = queryClient.getQueryData<ChatMessage[]>(["chat-messages", id]) ?? [];
-      const lastAssistantId = cachedMessages
+      setRequestError(null);
+      setLiveDone(false);
+      chat.clearError();
+      const cached = queryClient.getQueryData<ChatMessage[]>(["chat-messages", id]) ?? [];
+      lastAssistantIdRef.current = cached
         .filter((message) => message.role === "assistant")
         .reduce((max, message) => Math.max(max, message.id), 0);
-      if (request.regenerate) {
-        const lastAssistant = [...cachedMessages]
-          .reverse()
-          .find((message) => message.role === "assistant");
-        if (lastAssistant) {
-          queryClient.setQueryData(
-            ["chat-messages", id],
-            cachedMessages.filter((message) => message.id !== lastAssistant.id),
-          );
-        }
-      }
-      const controller = new AbortController();
-      controllerRef.current = controller;
-      let completed = false;
       try {
-        await streamChat(
-          {
-            conversationId: id,
-            mode: request.mode ?? mode,
-            routeGroup: request.routeGroup ?? routeGroup,
-            model: request.model ?? modelOverride,
-            kbCodes: request.kbCodes ?? (kbCodes.length > 0 ? kbCodes : undefined),
-            messages: [{ role: "user", content: request.prompt }],
-            attachments: request.attachments.map((attachment) => ({
-              storageFileId: attachment.fileId,
-              type: attachment.type,
-              name: attachment.name,
-              contentType: attachment.contentType,
-              size: attachment.size,
-            })),
-            command: request.command,
-            commandInput: request.commandInput,
-            regenerate: request.regenerate,
-            idempotencyKey: crypto.randomUUID(),
-          },
-          {
-            onDelta: (delta) => {
-              if (!mountedRef.current) {
-                return;
-              }
-              setDraft((current) => ({
-                ...current,
-                content: current.content + (delta.content ?? ""),
-                reasoning: current.reasoning + (delta.reasoning ?? ""),
-                stage: null,
-              }));
-            },
-            onToolCall: (call) => {
-              if (mountedRef.current) {
-                setDraft((current) => ({ ...current, toolCalls: [...current.toolCalls, call] }));
-              }
-            },
-            onToolResult: (result) => {
-              if (mountedRef.current) {
-                setDraft((current) => ({
-                  ...current,
-                  toolResults: [...current.toolResults, result],
-                }));
-              }
-            },
-            onToolConfirm: (confirm) => {
-              if (mountedRef.current && streamIdRef.current === streamId) {
-                updatePendingConfirm(confirm);
-              }
-            },
-            onArtifact: (artifact) => {
-              if (mountedRef.current) {
-                setDraft((current) => ({
-                  ...current,
-                  artifacts: mergeArtifact(current.artifacts, artifact),
-                }));
-              }
-            },
-            onStage: (stage) => {
-              if (mountedRef.current) {
-                setDraft((current) => ({ ...current, stage }));
-              }
-            },
-            onError: (error: ChatStreamError) => {
-              completed = true;
-              updatePendingConfirm(null);
-              void queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
-              const message = error.message || "生成失败，请稍后重试。";
-              if (mountedRef.current && streamIdRef.current === streamId) {
-                setStreamError(message);
-                toast.error(message);
-              }
-            },
-            onDone: (done: ChatStreamDone) => {
-              completed = true;
-              updatePendingConfirm(null);
-              void (async () => {
-                try {
-                  await queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
-                  await queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
-                } finally {
-                  if (mountedRef.current && streamIdRef.current === streamId) {
-                    setOptimisticMessage(null);
-                    setDraft(EMPTY_DRAFT);
-                    if (done.partial) {
-                      toast.warning("回复未完整结束，已保留已生成的内容。");
-                    }
-                  }
-                }
-              })();
-            },
-          },
-          controller.signal,
-        );
-        if (!completed && !controller.signal.aborted && mountedRef.current) {
-          // 流在 done 事件前关闭时，从会话历史补回已经落库的回复。
-          const refreshed = await queryClient.fetchQuery({
-            queryKey: ["chat-messages", id],
-            queryFn: () => fetchChatMessages(id),
-            staleTime: 0,
-          });
-          const persisted = refreshed.some(
-            (message) => message.role === "assistant" && message.id > lastAssistantId,
-          );
-          if (persisted) {
-            await queryClient.invalidateQueries({ queryKey: ["chat-conversations"] });
-            if (mountedRef.current && streamIdRef.current === streamId) {
-              setOptimisticMessage(null);
-              setDraft(EMPTY_DRAFT);
-            }
-          } else {
-            const message = "流式连接已中断，请重试。";
-            setStreamError(message);
-            toast.error(message);
+        const body: Partial<ChatRequest> = {
+          conversationId: id,
+          mode: request.mode ?? mode,
+          routeGroup: request.routeGroup ?? routeGroup,
+          model: request.model ?? modelOverride,
+          kbCodes: request.kbCodes ?? (kbCodes.length > 0 ? kbCodes : undefined),
+          attachments: request.attachments.map((attachment) => ({
+            storageFileId: attachment.fileId,
+            type: attachment.type,
+            name: attachment.name,
+            contentType: attachment.contentType,
+            size: attachment.size,
+          })),
+          command: request.command,
+          commandInput: request.commandInput,
+          idempotencyKey: crypto.randomUUID(),
+        };
+        if (request.regenerate) {
+          const lastAssistant = [...cached]
+            .reverse()
+            .find((message) => message.role === "assistant");
+          const history = lastAssistant
+            ? cached.filter((message) => message.id !== lastAssistant.id)
+            : cached;
+          if (lastAssistant) {
+            queryClient.setQueryData(["chat-messages", id], history);
           }
+          chat.setMessages(toUiMessages(history));
+          await chat.regenerate({ body });
+        } else {
+          chat.setMessages([]);
+          await chat.sendMessage({ text: request.prompt }, { body });
         }
       } catch (error) {
-        if (!controller.signal.aborted) {
-          void queryClient.invalidateQueries({ queryKey: ["chat-messages", id] });
-          const message = resolveChatError(error);
-          if (mountedRef.current) {
-            setStreamError(message);
-          }
-          toast.error(message);
+        const message = resolveChatError(error);
+        if (mountedRef.current) {
+          setRequestError(message);
         }
-        throw error;
+        toast.error(message);
       } finally {
         sendingRef.current = false;
-        if (mountedRef.current) {
-          setSending(false);
-          updatePendingConfirm(null);
-        }
-        controllerRef.current = null;
       }
     },
-    [id, kbCodes, mode, modelOverride, queryClient, routeGroup, updatePendingConfirm, valid],
+    [chat, id, kbCodes, mode, modelOverride, queryClient, routeGroup, valid],
   );
 
   const runGeneration = useCallback(
@@ -330,13 +254,14 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
       format?: "MARKDOWN" | "HTML",
       routeGroupArgument?: string,
     ) => {
-      if (!valid || sendingRef.current) {
+      if (!valid || sendingRef.current || generatingRef.current) {
         return;
       }
-      sendingRef.current = true;
-      setSending(true);
-      setStreamError(null);
-      setOptimisticMessage({ content: prompt, attachments: [] });
+      if (chat.status === "streaming" || chat.status === "submitted") {
+        return;
+      }
+      generatingRef.current = true;
+      setRequestError(null);
       setGeneration({ kind, prompt, stage: "准备生成", progress: 5 });
       try {
         await createChatArtifact({
@@ -362,15 +287,13 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
           toast.error(message);
         }
       } finally {
-        sendingRef.current = false;
+        generatingRef.current = false;
         if (mountedRef.current) {
-          setSending(false);
           setGeneration(null);
-          setOptimisticMessage(null);
         }
       }
     },
-    [id, queryClient, routeGroup, valid],
+    [chat.status, id, queryClient, routeGroup, valid],
   );
 
   useEffect(() => {
@@ -457,6 +380,11 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
     [id, kbCodes, mode, modelOverride, router, queryClient, routeGroupOverride],
   );
 
+  const chatError = chat.error ? resolveChatError(chat.error) : null;
+  const errorMessage = requestError ?? chatError;
+  const chatBusy = chat.status === "streaming" || chat.status === "submitted";
+  const busy = chatBusy || generation !== null;
+
   if (!valid) {
     return (
       <div className="flex h-svh min-h-0 flex-col">
@@ -489,25 +417,28 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
 
   return (
     <div className="flex h-svh min-h-0 flex-col">
-      <ToolConfirmDialog
-        confirm={pendingConfirm}
-        onApprove={() => resolveToolConfirm(true)}
-        onDeny={() => resolveToolConfirm(false)}
-      />
       <ConversationHeader title={conversationQuery.data?.title || "新的对话"} />
       <ConversationMessages
         messages={messagesQuery.data ?? []}
+        liveMessages={liveDone ? [] : chat.messages}
+        liveStatus={chat.status}
         loading={messagesQuery.isPending}
-        error={streamError}
-        optimisticMessage={optimisticMessage}
-        draft={draft}
-        sending={sending}
+        error={errorMessage}
         generation={generation}
         onRetry={retryMessage}
         onEditBranch={editBranch}
+        onApproval={handleApproval}
       />
       <div className="shrink-0 px-6 pb-3">
         <div className="mx-auto w-full max-w-3xl space-y-2">
+          {chatBusy ? (
+            <div className="flex justify-center">
+              <Button type="button" variant="outline" size="sm" onClick={handleStop}>
+                <Square />
+                停止生成
+              </Button>
+            </div>
+          ) : null}
           <ChatComposer
             modes={modes}
             mode={mode}
@@ -538,7 +469,7 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
             onGenerate={(input) => {
               void runGeneration(input.kind, input.prompt, input.format);
             }}
-            sending={sending}
+            sending={busy}
             placeholder="继续对话，Enter 发送，Shift+Enter 换行"
           />
           <p className="text-center text-xs text-muted-foreground">内容由 AI 生成，请仔细甄别</p>
@@ -546,19 +477,4 @@ function ChatConversationPane({ conversationId }: ChatConversationViewProps) {
       </div>
     </div>
   );
-}
-
-function mergeArtifact(list: ChatArtifact[], artifact: ChatArtifact): ChatArtifact[] {
-  const index = list.findIndex(
-    (item) =>
-      (artifact.fileId && item.fileId === artifact.fileId) ||
-      (artifact.url && item.url === artifact.url) ||
-      (artifact.name && item.kind === artifact.kind && item.name === artifact.name),
-  );
-  if (index < 0) {
-    return [...list, artifact];
-  }
-  const next = [...list];
-  next[index] = { ...next[index], ...artifact };
-  return next;
 }

@@ -2,21 +2,14 @@ import type { ReactNode } from "react";
 
 import { Loader2 } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { DetailDialog } from "@/components/detail-dialog";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
 
 import type { MemoryGenerationLogItem } from "../lib/api";
 import { resolveMemoryApiError } from "../lib/api";
 import { MEMORY_LAYER_META, MEMORY_PROMPT_SOURCE_LABELS } from "../lib/model";
 import { useMemoryGenerationLog } from "../lib/queries";
+import { MemoryErrorState } from "./memory-states";
 
 function logLayerLabel(layer: string | null | undefined): string {
   return MEMORY_LAYER_META.find((meta) => meta.id === layer)?.label ?? "—";
@@ -72,40 +65,31 @@ export function GenerationLogDetailSheet({ logId, onClose }: GenerationLogDetail
   const query = useMemoryGenerationLog(logId);
 
   return (
-    <Sheet
+    <DetailDialog
       open
       onOpenChange={(open) => {
         if (!open) {
           onClose();
         }
       }}
+      title="生成日志详情"
+      description="查看记忆生成过程中的提示词、模型与输入输出引用。"
+      size="md"
     >
-      <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
-        <SheetHeader>
-          <SheetTitle>生成日志详情</SheetTitle>
-          <SheetDescription>查看记忆生成过程中的提示词、模型与输入输出引用。</SheetDescription>
-        </SheetHeader>
-        <div className="px-4 pb-6">
-          {query.isLoading ? (
-            <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              加载日志…
-            </div>
-          ) : null}
-          {query.isError ? (
-            <div className="space-y-3 py-4">
-              <Alert variant="destructive">
-                <AlertTitle>无法加载生成日志</AlertTitle>
-                <AlertDescription>{resolveMemoryApiError(query.error)}</AlertDescription>
-              </Alert>
-              <Button type="button" variant="outline" size="sm" onClick={() => query.refetch()}>
-                重试
-              </Button>
-            </div>
-          ) : null}
-          {query.data ? <GenerationLogDetail log={query.data} /> : null}
+      {query.isLoading ? (
+        <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground">
+          <Loader2 className="size-4 animate-spin" />
+          加载日志…
         </div>
-      </SheetContent>
-    </Sheet>
+      ) : null}
+      {query.isError ? (
+        <MemoryErrorState
+          title="无法加载生成日志"
+          message={resolveMemoryApiError(query.error)}
+          onRetry={() => query.refetch()}
+        />
+      ) : null}
+      {query.data ? <GenerationLogDetail log={query.data} /> : null}
+    </DetailDialog>
   );
 }

@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 
-import { AlertCircle, Inbox } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ConsoleBlockSkeleton,
+  ConsoleState,
+} from "@/modules/workspace/console/components/console-state";
 
 import type { MemoryLayer } from "../lib/api";
 
@@ -18,22 +19,7 @@ export function MemoryErrorState({
   message,
   onRetry,
 }: MemoryErrorStateProps) {
-  return (
-    <div className="flex min-h-40 flex-col items-center justify-center gap-3 px-5 py-8 text-center">
-      <span className="flex size-10 items-center justify-center bg-destructive/10 text-destructive">
-        <AlertCircle className="size-5" />
-      </span>
-      <div className="space-y-1">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="max-w-md text-xs text-muted-foreground">{message}</p>
-      </div>
-      {onRetry ? (
-        <Button type="button" variant="outline" size="sm" onClick={onRetry}>
-          重试
-        </Button>
-      ) : null}
-    </div>
-  );
+  return <ConsoleState variant="error" title={title} description={message} onRetry={onRetry} />;
 }
 
 type MemoryEmptyStateProps = {
@@ -43,28 +29,11 @@ type MemoryEmptyStateProps = {
 };
 
 export function MemoryEmptyState({ title, description, action }: MemoryEmptyStateProps) {
-  return (
-    <div className="flex min-h-40 flex-col items-center justify-center gap-3 px-5 py-8 text-center">
-      <span className="flex size-10 items-center justify-center bg-muted text-muted-foreground">
-        <Inbox className="size-5" />
-      </span>
-      <div className="space-y-1">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="max-w-md text-xs text-muted-foreground">{description}</p>
-      </div>
-      {action}
-    </div>
-  );
+  return <ConsoleState variant="empty" title={title} description={description} action={action} />;
 }
 
 export function MemoryLoadingState({ rows = 3 }: { rows?: number }) {
-  return (
-    <div className="space-y-2 p-4">
-      {Array.from({ length: rows }, (_, index) => (
-        <Skeleton key={index} className="h-9 w-full" />
-      ))}
-    </div>
-  );
+  return <ConsoleBlockSkeleton rows={rows} />;
 }
 
 export function MemoryBlockListSkeleton() {

@@ -2,14 +2,10 @@ import type { ReactNode } from "react";
 
 import { useQuery } from "@tanstack/react-query";
 
+import { MarkdownContent } from "@/components/content/markdown";
+import { DetailDialog } from "@/components/detail-dialog";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
@@ -36,32 +32,34 @@ export function SessionDetailDialog({ conversationId, onClose }: SessionDetailDi
   const detail = detailQuery.data;
 
   return (
-    <Dialog
+    <DetailDialog
       open
       onOpenChange={(open) => {
         if (!open) {
           onClose();
         }
       }}
+      title={detail?.conversation.title || "会话详情"}
+      description={`会话 #${conversationId}`}
+      size="2xl"
+      footer={
+        <Button type="button" variant="outline" onClick={onClose}>
+          关闭
+        </Button>
+      }
     >
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{detail?.conversation.title || "会话详情"}</DialogTitle>
-          <DialogDescription>会话 #{conversationId}</DialogDescription>
-        </DialogHeader>
-        {detailQuery.isError ? (
-          <UsageErrorState
-            title="无法加载会话详情"
-            message={resolveUsageApiError(detailQuery.error)}
-            onRetry={() => void detailQuery.refetch()}
-          />
-        ) : detailQuery.isPending ? (
-          <SessionDetailSkeleton />
-        ) : detail ? (
-          <SessionDetailBody detail={detail} />
-        ) : null}
-      </DialogContent>
-    </Dialog>
+      {detailQuery.isError ? (
+        <UsageErrorState
+          title="无法加载会话详情"
+          message={resolveUsageApiError(detailQuery.error)}
+          onRetry={() => void detailQuery.refetch()}
+        />
+      ) : detailQuery.isPending ? (
+        <SessionDetailSkeleton />
+      ) : detail ? (
+        <SessionDetailBody detail={detail} />
+      ) : null}
+    </DetailDialog>
   );
 }
 
@@ -69,7 +67,7 @@ function SessionDetailBody({ detail }: { detail: UsageSessionDetail }) {
   const conversation = detail.conversation;
 
   return (
-    <div className="max-h-[70vh] space-y-5 overflow-y-auto pe-1">
+    <div className="space-y-5">
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <DetailField label="Agent" value={conversation.agent || "—"} />
         <DetailField label="Agent 来源" value={conversation.agentSource || "—"} />
@@ -130,9 +128,12 @@ function SessionDetailBody({ detail }: { detail: UsageSessionDetail }) {
                       </span>
                     ) : null}
                   </div>
+                  message.role === "assistant" && message.content ? (
+                  <MarkdownContent content={message.content} />) : (
                   <p className="text-sm leading-6 break-words whitespace-pre-wrap">
                     {message.content || "（空消息）"}
                   </p>
+                  )
                 </div>
               ))}
             </div>

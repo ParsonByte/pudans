@@ -4,6 +4,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import {
+  type ContentPreview,
+  ContentPreviewButton,
+  ContentPreviewDialog,
+} from "@/components/content/content-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -44,6 +49,7 @@ export function AiSubagentsView() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<SubagentItem | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SubagentItem | null>(null);
+  const [preview, setPreview] = useState<ContentPreview | null>(null);
 
   const subagentsQuery = useQuery({
     queryKey: SUBAGENTS_QUERY_KEY,
@@ -186,7 +192,20 @@ export function AiSubagentsView() {
                       canDelete={canDelete}
                       onEdit={() => openEdit(subagent)}
                       onDelete={() => setDeleteTarget(subagent)}
-                    />
+                    >
+                      <ContentPreviewButton
+                        label="预览子代理"
+                        onClick={() =>
+                          setPreview({
+                            title: subagentDisplayName(subagent),
+                            description: `${subagentTargetLabel(subagent)} · ${
+                              enabled ? "已启用" : "已停用"
+                            }`,
+                            content: subagent.spec.prompt,
+                          })
+                        }
+                      />
+                    </ResourceRowActions>
                   </TableCell>
                 </TableRow>
               );
@@ -204,6 +223,8 @@ export function AiSubagentsView() {
           }}
         />
       ) : null}
+
+      <ContentPreviewDialog preview={preview} onClose={() => setPreview(null)} />
 
       <LibraryDeleteDialog
         resourceLabel="子代理"

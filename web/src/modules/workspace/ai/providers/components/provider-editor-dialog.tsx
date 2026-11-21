@@ -23,18 +23,11 @@ import {
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { AutoScrollArea } from "@/components/auto-scroll-area";
 import { ConfirmDialog } from "@/components/confirm-dialog";
+import { DialogFormShell } from "@/components/dialog-form-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -75,12 +68,14 @@ import {
   fetchProviderModels,
   fetchProviderRemoteModels,
   fetchProviders,
+  patchModel,
+  patchProvider,
   patchProviderAccount,
   resolveAiProviderApiError,
+  syncProviderModels,
   testModel,
   testProvider,
   testProviderAccount,
-  updateModel,
   updateProvider,
 } from "../lib/api";
 import { buildProviderBundle, bundleFileName, downloadJson } from "../lib/bundle";
@@ -93,9 +88,12 @@ import {
   formatTestResult,
   formatTestTimestamp,
   modelNameFromCode,
+  modelSyncSummary,
   providerEndpoints,
   statusLabel,
   supportsModelDiscovery,
+  supportsModelSync,
+  supportsProviderFiles,
   uniqueModelName,
   windowsSummary,
 } from "../lib/model";
@@ -104,6 +102,7 @@ import { useProviderPresetsQuery } from "../lib/queries";
 import { AccountDialog } from "./account-dialog";
 import { ModelDialog } from "./model-dialog";
 import { ProviderBrandIcon } from "./provider-brand-icon";
+import { ProviderFilesSection } from "./provider-files-section";
 import { QuotaDialog } from "./quota-dialog";
 import { ResourceCopyDialog } from "./resource-copy-dialog";
 
@@ -208,6 +207,8 @@ export function ProviderEditorDialog({
   const accounts = accountsQuery.data ?? [];
   const models = modelsQuery.data ?? [];
   const remoteEnabled = supportsModelDiscovery(provider.spec.vendor);
+  const syncEnabled = supportsModelSync(provider.spec.vendor);
+  const filesEnabled = supportsProviderFiles(provider.spec.vendor);
   const canDiscoverModels = canCreate || canUpdate;
   const remoteQuery = useQuery({
     queryKey: ["ai-provider-remote-models", name, provider.spec.vendor],
@@ -298,10 +299,9 @@ export function ProviderEditorDialog({
 
   const toggleProviderMutation = useMutation({
     mutationFn: () =>
-      updateProvider({
-        ...provider,
-        spec: { ...provider.spec, enabled: provider.spec.enabled === false },
-      }),
+      patchProvider(name, [
+        { op: "add", path: "/spec/enabled", value: provider.spec.enabled === false },
+      ]),
     onSuccess: async () => {
       await invalidateProvider();
       await invalidateList();
@@ -437,10 +437,9 @@ export function ProviderEditorDialog({
 
   const toggleModelMutation = useMutation({
     mutationFn: (model: AiModelItem) =>
-      updateModel({
-        ...model,
-        spec: { ...model.spec, enabled: model.spec.enabled === false },
-      }),
+      patchModel(model.metadata.name, [
+        { op: "add", path: "/spec/enabled", value: model.spec.enabled === false },
+      ]),
     onSuccess: async () => {
       await invalidateModels();
     },
@@ -450,7 +449,9 @@ export function ProviderEditorDialog({
   const bulkModelMutation = useMutation({
     mutationFn: (enabled: boolean) =>
       Promise.allSettled(
-        models.map((model) => updateModel({ ...model, spec: { ...model.spec, enabled } })),
+        models.map((model) =>
+          patchModel(model.metadata.name, [{ op: "add", path: "/spec/enabled", value: enabled }]),
+        ),
       ),
     onSuccess: async (results) => {
       await invalidateModels();
@@ -481,6 +482,16 @@ export function ProviderEditorDialog({
     onSuccess: async (result) => {
       await invalidateModels();
       toast.success(formatTestResult(result));
+    },
+    onError: (error) => toast.error(resolveAiProviderApiError(error)),
+  });
+
+  const syncModelsMutation = useMutation({
+    mutationFn: () => syncProviderModels(name),
+    onSuccess: async (result) => {
+      await invalidateModels();
+      await invalidateList();
+      toast.success(`模型同步完成：${modelSyncSummary(result)}。`);
     },
     onError: (error) => toast.error(resolveAiProviderApiError(error)),
   });
@@ -545,731 +556,739 @@ export function ProviderEditorDialog({
   };
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="flex max-h-[90vh] flex-col overflow-hidden sm:max-w-5xl">
-        <DialogHeader>
-          <div className="flex items-start justify-between gap-4 pe-10">
-            <div className="min-w-0 space-y-1">
-              <DialogTitle className="flex items-center gap-2">
-                <span className="flex size-8 shrink-0 items-center justify-center bg-muted">
-                  <ProviderBrandIcon provider={provider} className="size-5" />
-                </span>
-                <span className="truncate">{provider.spec.displayName || name}</span>
-                <Badge variant={provider.spec.enabled === false ? "outline" : "secondary"}>
-                  {provider.spec.enabled === false ? "已停用" : "已启用"}
-                </Badge>
-              </DialogTitle>
-              <DialogDescription>
-                {website ? (
-                  <a href={website} target="_blank" rel="noreferrer">
-                    {hostOf(website)} ↗
-                  </a>
-                ) : provider.spec.baseUrl ? (
-                  <a href={provider.spec.baseUrl} target="_blank" rel="noreferrer">
-                    {provider.spec.baseUrl}
-                  </a>
-                ) : (
-                  "未配置接入地址"
-                )}
-              </DialogDescription>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {toggleProviderMutation.isPending ? (
-                <Loader2 className="size-4 animate-spin text-muted-foreground" />
-              ) : null}
-              <Switch
-                checked={provider.spec.enabled !== false}
-                disabled={!canUpdate || toggleProviderMutation.isPending}
-                onCheckedChange={() => toggleProviderMutation.mutate()}
-                aria-label="启用供应商"
-              />
-              <Button type="button" variant="ghost" size="sm" onClick={exportBundle}>
-                <Download />
-                导出
+    <>
+      <DialogFormShell
+        open
+        onOpenChange={(open) => !open && onClose()}
+        icon={<ProviderBrandIcon provider={provider} className="size-5" />}
+        title={
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate">{provider.spec.displayName || name}</span>
+            <Badge variant={provider.spec.enabled === false ? "outline" : "secondary"}>
+              {provider.spec.enabled === false ? "已停用" : "已启用"}
+            </Badge>
+          </span>
+        }
+        description={
+          website ? (
+            <a href={website} target="_blank" rel="noreferrer">
+              {hostOf(website)} ↗
+            </a>
+          ) : provider.spec.baseUrl ? (
+            <a href={provider.spec.baseUrl} target="_blank" rel="noreferrer">
+              {provider.spec.baseUrl}
+            </a>
+          ) : (
+            "未配置接入地址"
+          )
+        }
+        headerActions={
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {toggleProviderMutation.isPending ? (
+              <Loader2 className="size-4 animate-spin text-muted-foreground" />
+            ) : null}
+            <Switch
+              checked={provider.spec.enabled !== false}
+              disabled={!canUpdate || toggleProviderMutation.isPending}
+              onCheckedChange={() => toggleProviderMutation.mutate()}
+              aria-label="启用供应商"
+            />
+            <Button type="button" variant="ghost" size="sm" onClick={exportBundle}>
+              <Download />
+              导出
+            </Button>
+            {canCreate ? (
+              <Button type="button" variant="ghost" size="sm" onClick={() => setCopyOpen(true)}>
+                <Copy />
+                复制
               </Button>
-              {canCreate ? (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setCopyOpen(true)}>
-                  <Copy />
-                  复制
-                </Button>
-              ) : null}
-              {canDelete ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setDeleteProviderOpen(true)}
-                >
-                  <Trash2 />
-                  移除
-                </Button>
-              ) : null}
-              {canUpdate ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={saveMutation.isPending}
-                  onClick={() => void onSubmit()}
-                >
-                  {saveMutation.isPending ? <Loader2 className="animate-spin" /> : null}
-                  保存
-                </Button>
-              ) : null}
-            </div>
+            ) : null}
+            {canDelete ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setDeleteProviderOpen(true)}
+              >
+                <Trash2 />
+                移除
+              </Button>
+            ) : null}
+            {canUpdate ? (
+              <Button
+                type="button"
+                size="sm"
+                disabled={saveMutation.isPending}
+                onClick={() => void onSubmit()}
+              >
+                {saveMutation.isPending ? <Loader2 className="animate-spin" /> : null}
+                保存
+              </Button>
+            ) : null}
           </div>
-        </DialogHeader>
-
-        <AutoScrollArea fill>
-          <div className="space-y-6 pb-6">
-            <section className="space-y-4 border bg-card/30 p-4">
-              <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
-                <span className="text-sm text-muted-foreground">名称</span>
-                <div className="min-w-0 space-y-1">
-                  <Input
-                    disabled={!canUpdate}
-                    {...form.register("displayName")}
-                    aria-invalid={Boolean(form.formState.errors.displayName)}
-                  />
-                  {form.formState.errors.displayName ? (
-                    <span className="text-xs text-destructive">
-                      {form.formState.errors.displayName.message}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
-                <span className="text-sm text-muted-foreground">ID</span>
-                <Input value={name} disabled />
-              </div>
-              <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
-                <span className="text-sm text-muted-foreground">供应商</span>
-                <Input value={vendorLabel(provider.spec.vendor)} disabled />
-              </div>
-              <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
-                <span className="text-sm text-muted-foreground">Base URL</span>
-                <div className="min-w-0 space-y-1">
-                  <Input
-                    disabled={!canUpdate}
-                    placeholder="https://api.example.com"
-                    {...form.register("baseUrl")}
-                    aria-invalid={Boolean(form.formState.errors.baseUrl)}
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    供应商 API 根地址；请求协议由平台自动选择。
-                  </p>
-                  {form.formState.errors.baseUrl ? (
-                    <span className="text-xs text-destructive">
-                      {form.formState.errors.baseUrl.message}
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            </section>
-
-            <section className="space-y-3 border bg-card/30 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="flex items-center gap-2 text-sm font-semibold">
-                    <KeyRound className="size-4" />
-                    账号
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {accounts.length} 个密钥用于实际调用供应商接口。
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {canCreate ? (
-                    <>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setQuickKeyOpen((open) => !open)}
-                      >
-                        <Plus />
-                        添加另一个密钥
-                      </Button>
-                      <Button type="button" size="sm" onClick={() => setAccountTarget(null)}>
-                        更多设置
-                      </Button>
-                    </>
-                  ) : null}
-                </div>
-              </div>
-
-              {quickKeyOpen && canCreate ? (
-                <div className="flex flex-wrap items-center gap-2 border p-3">
-                  <Input
-                    value={quickKeyName}
-                    onChange={(event) => setQuickKeyName(event.target.value)}
-                    placeholder="名称（可选）"
-                    className="w-40"
-                  />
-                  <Input
-                    type="password"
-                    autoComplete="new-password"
-                    value={quickKeyValue}
-                    onChange={(event) => setQuickKeyValue(event.target.value)}
-                    placeholder="粘贴 API 密钥"
-                    className="min-w-56 flex-1"
-                  />
-                  <Button
-                    type="button"
-                    size="sm"
-                    disabled={quickKeyMutation.isPending}
-                    onClick={addQuickKey}
-                  >
-                    {quickKeyMutation.isPending ? <Loader2 className="animate-spin" /> : null}
-                    添加
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setQuickKeyOpen(false)}
-                  >
-                    取消
-                  </Button>
-                </div>
-              ) : null}
-
-              {accountsQuery.isPending ? (
-                <p className="text-sm text-muted-foreground">正在加载账号…</p>
-              ) : accountsQuery.isError ? (
-                <p className="text-sm text-destructive">
-                  {resolveAiProviderApiError(accountsQuery.error)}
-                </p>
-              ) : accounts.length === 0 ? (
-                <p className="border border-dashed p-4 text-sm text-muted-foreground">
-                  还没有密钥。至少添加一个密钥后才能测试供应商。
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {accounts.map((account) => (
-                    <div
-                      key={account.metadata.name}
-                      className="flex flex-wrap items-center gap-3 border p-3"
-                    >
-                      <Switch
-                        checked={account.spec.enabled}
-                        disabled={!canUpdate || toggleAccountMutation.isPending}
-                        onCheckedChange={() => toggleAccountMutation.mutate(account)}
-                        aria-label={account.spec.enabled ? "停用密钥" : "启用密钥"}
-                      />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <p className="truncate text-sm font-medium">
-                            {account.spec.displayName || account.metadata.name}
-                          </p>
-                          {account.metadata.name === activeAccount?.metadata.name ? (
-                            <Badge variant="outline">使用中</Badge>
-                          ) : null}
-                        </div>
-                        <p className="truncate text-xs text-muted-foreground">
-                          密钥已配置（不可查看） · {vendorLabel(provider.spec.vendor)} · 并发{" "}
-                          {account.spec.maxConcurrency ?? "不限"}
-                          {account.spec.keyName ? ` · 密钥 ${account.spec.keyName}` : ""}
-                        </p>
-                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-                          {account.spec.keyPlan ? (
-                            <Badge variant="outline">{account.spec.keyPlan}</Badge>
-                          ) : null}
-                          {account.spec.windows && account.spec.windows.length > 0 ? (
-                            <span title={windowsSummary(account.spec.windows)}>
-                              {account.spec.windows.length} 个额度窗口
-                            </span>
-                          ) : null}
-                          {account.status?.health ? (
-                            <span>状态 {account.status.health}</span>
-                          ) : null}
-                          {account.status?.healthScore != null ? (
-                            <span>健康 {Math.round(account.status.healthScore)}%</span>
-                          ) : null}
-                          {formatTestTimestamp(account.status?.lastUsedAt) ? (
-                            <span>最近使用 {formatTestTimestamp(account.status?.lastUsedAt)}</span>
-                          ) : null}
-                        </div>
-                        {account.status?.lastError ? (
-                          <p
-                            className="mt-1 truncate text-xs text-destructive"
-                            title={account.status.lastError}
-                          >
-                            {account.status.lastError}
-                          </p>
-                        ) : null}
-                      </div>
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                        <Badge variant="outline">权重 {account.spec.weight}</Badge>
-                        <span>
-                          {account.spec.quota ? formatQuota(account.spec.quota) : "无消费上限"}
-                        </span>
-                        <span>{formatBalance(account.spec.balance)}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {canTest ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            disabled={testAccountMutation.isPending}
-                            onClick={() => testAccountMutation.mutate(account)}
-                          >
-                            {testAccountMutation.isPending ? (
-                              <Loader2 className="animate-spin" />
-                            ) : (
-                              <Zap />
-                            )}
-                            测试
-                          </Button>
-                        ) : null}
-                        {canUpdate ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setQuotaTarget(account)}
-                          >
-                            配额
-                          </Button>
-                        ) : null}
-                        {canUpdate ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setAccountTarget(account)}
-                          >
-                            <Pencil />
-                            编辑
-                          </Button>
-                        ) : null}
-                        {canDelete ? (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => setDeleteAccountTarget(account)}
-                          >
-                            <Trash2 />
-                          </Button>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
-            <section className="space-y-3 border bg-card/30 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="flex items-center gap-2 text-sm font-semibold">
-                    <Boxes className="size-4" />
-                    模型
-                  </h3>
-                  <p className="text-xs text-muted-foreground">
-                    {models.length} 个已导入模型；虚线为供应商返回但尚未导入的模型。
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  {canUpdate ? (
-                    <>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={bulkModelMutation.isPending || models.length === 0}
-                        onClick={() => bulkModelMutation.mutate(true)}
-                      >
-                        全选
-                      </Button>
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={bulkModelMutation.isPending || models.length === 0}
-                        onClick={() => bulkModelMutation.mutate(false)}
-                      >
-                        全不选
-                      </Button>
-                    </>
-                  ) : null}
-                  {remoteEnabled && canDiscoverModels ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={remoteQuery.isFetching}
-                      onClick={() => {
-                        if (!fetchModels) {
-                          setFetchModels(true);
-                          return;
-                        }
-                        void remoteQuery.refetch();
-                      }}
-                    >
-                      {remoteQuery.isFetching ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        <RefreshCw />
-                      )}
-                      重新获取模型
-                    </Button>
-                  ) : null}
-                  {canTest ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={testModelMutation.isPending || !firstTestableModel}
-                      onClick={() => {
-                        if (firstTestableModel) {
-                          testModelMutation.mutate(firstTestableModel);
-                        }
-                      }}
-                    >
-                      {testModelMutation.isPending ? <Loader2 className="animate-spin" /> : <Zap />}
-                      测试模型
-                    </Button>
-                  ) : null}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex gap-1 bg-muted p-1">
-                  <button
-                    type="button"
-                    className={`px-3 py-1 text-sm transition-colors ${
-                      modelView === "all"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => setModelView("all")}
-                  >
-                    供应商列表
-                  </button>
-                  <button
-                    type="button"
-                    className={`px-3 py-1 text-sm transition-colors ${
-                      modelView === "selected"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    onClick={() => setModelView("selected")}
-                  >
-                    仅所选
-                  </button>
-                </div>
-                {remoteEnabled && canDiscoverModels ? (
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Checkbox
-                      checked={fetchModels}
-                      onCheckedChange={(checked) => setFetchModels(checked === true)}
-                    />
-                    拉取模型列表
-                  </label>
+        }
+        size="5xl"
+        fill
+        contentClassName="max-h-[90vh]"
+      >
+        <div className="space-y-6 pb-6">
+          <section className="space-y-4 border bg-card/30 p-4">
+            <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
+              <span className="text-sm text-muted-foreground">名称</span>
+              <div className="min-w-0 space-y-1">
+                <Input
+                  disabled={!canUpdate}
+                  {...form.register("displayName")}
+                  aria-invalid={Boolean(form.formState.errors.displayName)}
+                />
+                {form.formState.errors.displayName ? (
+                  <span className="text-xs text-destructive">
+                    {form.formState.errors.displayName.message}
+                  </span>
                 ) : null}
               </div>
-
-              {remoteQuery.isError ? (
-                <p className="text-xs text-muted-foreground">
-                  无法获取供应商模型列表：{resolveAiProviderApiError(remoteQuery.error)}
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
+              <span className="text-sm text-muted-foreground">ID</span>
+              <Input value={name} disabled />
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
+              <span className="text-sm text-muted-foreground">供应商</span>
+              <Input value={vendorLabel(provider.spec.vendor)} disabled />
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[88px_1fr] sm:items-center">
+              <span className="text-sm text-muted-foreground">Base URL</span>
+              <div className="min-w-0 space-y-1">
+                <Input
+                  disabled={!canUpdate}
+                  placeholder="https://api.example.com"
+                  {...form.register("baseUrl")}
+                  aria-invalid={Boolean(form.formState.errors.baseUrl)}
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  供应商 API 根地址；请求协议由平台自动选择。
                 </p>
-              ) : null}
+                {form.formState.errors.baseUrl ? (
+                  <span className="text-xs text-destructive">
+                    {form.formState.errors.baseUrl.message}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </section>
 
-              <div className="flex flex-wrap gap-1.5">
-                {displayedModels.map((model) => (
-                  <div
-                    key={model.metadata.name}
-                    className={`flex items-center gap-1 border px-3 py-1 text-xs ${
-                      model.spec.enabled === false
-                        ? "border-dashed text-muted-foreground"
-                        : "bg-muted/40"
-                    }`}
-                  >
-                    <button
+          <section className="space-y-3 border bg-card/30 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="flex items-center gap-2 text-sm font-semibold">
+                  <KeyRound className="size-4" />
+                  账号
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {accounts.length} 个密钥用于实际调用供应商接口。
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                {canCreate ? (
+                  <>
+                    <Button
                       type="button"
-                      className="max-w-48 truncate"
-                      title="打开模型设置"
-                      onClick={() => setModelTarget(model)}
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setQuickKeyOpen((open) => !open)}
                     >
-                      {model.spec.modelCode}
-                    </button>
-                    {canUpdate ? (
-                      <button
-                        type="button"
-                        className="flex size-4 items-center justify-center text-muted-foreground hover:text-foreground"
-                        aria-label={model.spec.enabled === false ? "启用模型" : "停用模型"}
-                        title={model.spec.enabled === false ? "启用模型" : "停用模型"}
-                        onClick={() => toggleModelMutation.mutate(model)}
-                      >
-                        <span
-                          className={`block size-2 ${
-                            model.spec.enabled === false ? "bg-muted-foreground/40" : "bg-primary"
-                          }`}
-                        />
-                      </button>
-                    ) : null}
-                    {canDelete ? (
-                      <button
-                        type="button"
-                        className="text-muted-foreground hover:text-destructive"
-                        aria-label="删除模型"
-                        onClick={() => setDeleteModelTarget(model)}
-                      >
-                        <X className="size-3" />
-                      </button>
-                    ) : null}
+                      <Plus />
+                      添加另一个密钥
+                    </Button>
+                    <Button type="button" size="sm" onClick={() => setAccountTarget(null)}>
+                      更多设置
+                    </Button>
+                  </>
+                ) : null}
+              </div>
+            </div>
+
+            {quickKeyOpen && canCreate ? (
+              <div className="flex flex-wrap items-center gap-2 border p-3">
+                <Input
+                  value={quickKeyName}
+                  onChange={(event) => setQuickKeyName(event.target.value)}
+                  placeholder="名称（可选）"
+                  className="w-40"
+                />
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  value={quickKeyValue}
+                  onChange={(event) => setQuickKeyValue(event.target.value)}
+                  placeholder="粘贴 API 密钥"
+                  className="min-w-56 flex-1"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={quickKeyMutation.isPending}
+                  onClick={addQuickKey}
+                >
+                  {quickKeyMutation.isPending ? <Loader2 className="animate-spin" /> : null}
+                  添加
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setQuickKeyOpen(false)}
+                >
+                  取消
+                </Button>
+              </div>
+            ) : null}
+
+            {accountsQuery.isPending ? (
+              <p className="text-sm text-muted-foreground">正在加载账号…</p>
+            ) : accountsQuery.isError ? (
+              <p className="text-sm text-destructive">
+                {resolveAiProviderApiError(accountsQuery.error)}
+              </p>
+            ) : accounts.length === 0 ? (
+              <p className="border border-dashed p-4 text-sm text-muted-foreground">
+                还没有密钥。至少添加一个密钥后才能测试供应商。
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {accounts.map((account) => (
+                  <div
+                    key={account.metadata.name}
+                    className="flex flex-wrap items-center gap-3 border p-3"
+                  >
+                    <Switch
+                      checked={account.spec.enabled}
+                      disabled={!canUpdate || toggleAccountMutation.isPending}
+                      onCheckedChange={() => toggleAccountMutation.mutate(account)}
+                      aria-label={account.spec.enabled ? "停用密钥" : "启用密钥"}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="truncate text-sm font-medium">
+                          {account.spec.displayName || account.metadata.name}
+                        </p>
+                        {account.metadata.name === activeAccount?.metadata.name ? (
+                          <Badge variant="outline">使用中</Badge>
+                        ) : null}
+                      </div>
+                      <p className="truncate text-xs text-muted-foreground">
+                        密钥已配置（不可查看） · {vendorLabel(provider.spec.vendor)} · 并发{" "}
+                        {account.spec.maxConcurrency ?? "不限"}
+                        {account.spec.keyName ? ` · 密钥 ${account.spec.keyName}` : ""}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                        {account.spec.keyPlan ? (
+                          <Badge variant="outline">{account.spec.keyPlan}</Badge>
+                        ) : null}
+                        {account.spec.windows && account.spec.windows.length > 0 ? (
+                          <span title={windowsSummary(account.spec.windows)}>
+                            {account.spec.windows.length} 个额度窗口
+                          </span>
+                        ) : null}
+                        {account.status?.health ? <span>状态 {account.status.health}</span> : null}
+                        {account.status?.healthScore != null ? (
+                          <span>健康 {Math.round(account.status.healthScore)}%</span>
+                        ) : null}
+                        {formatTestTimestamp(account.status?.lastUsedAt) ? (
+                          <span>最近使用 {formatTestTimestamp(account.status?.lastUsedAt)}</span>
+                        ) : null}
+                      </div>
+                      {account.status?.lastError ? (
+                        <p
+                          className="mt-1 truncate text-xs text-destructive"
+                          title={account.status.lastError}
+                        >
+                          {account.status.lastError}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                      <Badge variant="outline">权重 {account.spec.weight}</Badge>
+                      <span>
+                        {account.spec.quota ? formatQuota(account.spec.quota) : "无消费上限"}
+                      </span>
+                      <span>{formatBalance(account.spec.balance)}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {canTest ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={testAccountMutation.isPending}
+                          onClick={() => testAccountMutation.mutate(account)}
+                        >
+                          {testAccountMutation.isPending ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <Zap />
+                          )}
+                          测试
+                        </Button>
+                      ) : null}
+                      {canUpdate ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setQuotaTarget(account)}
+                        >
+                          配额
+                        </Button>
+                      ) : null}
+                      {canUpdate ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setAccountTarget(account)}
+                        >
+                          <Pencil />
+                          编辑
+                        </Button>
+                      ) : null}
+                      {canDelete ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => setDeleteAccountTarget(account)}
+                        >
+                          <Trash2 />
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 ))}
-                {remoteCandidates.map((remote) => (
-                  <button
-                    key={remote.id}
-                    type="button"
-                    disabled={!canCreate || importModelMutation.isPending}
-                    className="border border-dashed px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50"
-                    onClick={() => importModelMutation.mutate(remote)}
-                  >
-                    <Plus className="me-1 inline size-3" />
-                    {remote.id}
-                  </button>
-                ))}
               </div>
-              <p className="text-xs text-muted-foreground">
-                点击模型编码编辑设置；圆点切换启用；× 删除。虚线为供应商返回但尚未导入的模型。
-              </p>
+            )}
+          </section>
 
-              {canCreate ? (
-                <div className="flex flex-wrap items-center gap-2">
-                  <Input
-                    value={modelCode}
-                    onChange={(event) => setModelCode(event.target.value)}
-                    placeholder="添加模型 ID，例如 deepseek-chat"
-                    className="w-64"
-                  />
+          <section className="space-y-3 border bg-card/30 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="flex items-center gap-2 text-sm font-semibold">
+                  <Boxes className="size-4" />
+                  模型
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {models.length} 个已导入模型；虚线为供应商返回但尚未导入的模型。
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {canUpdate ? (
+                  <>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={bulkModelMutation.isPending || models.length === 0}
+                      onClick={() => bulkModelMutation.mutate(true)}
+                    >
+                      全选
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      disabled={bulkModelMutation.isPending || models.length === 0}
+                      onClick={() => bulkModelMutation.mutate(false)}
+                    >
+                      全不选
+                    </Button>
+                  </>
+                ) : null}
+                {remoteEnabled && canDiscoverModels ? (
                   <Button
                     type="button"
                     size="sm"
-                    disabled={quickModelMutation.isPending}
+                    variant="outline"
+                    disabled={remoteQuery.isFetching}
                     onClick={() => {
-                      const code = modelCode.trim();
-                      if (!code) {
-                        toast.error("请输入模型 ID。");
+                      if (!fetchModels) {
+                        setFetchModels(true);
                         return;
                       }
-                      quickModelMutation.mutate(code);
+                      void remoteQuery.refetch();
                     }}
                   >
-                    {quickModelMutation.isPending ? <Loader2 className="animate-spin" /> : null}
-                    添加模型
+                    {remoteQuery.isFetching ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                    重新获取模型
                   </Button>
-                </div>
-              ) : null}
-            </section>
-
-            <section className="space-y-2 border bg-card/30 p-4">
-              <h3 className="flex items-center gap-2 text-sm font-semibold">
-                <Link2 className="size-4" />
-                端点
-              </h3>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                <Badge
-                  variant={provider.status?.message ? "destructive" : "secondary"}
-                  className="font-normal"
-                >
-                  {statusLabel(provider.status)}
-                </Badge>
-                {provider.status?.healthScore == null ? null : (
-                  <span>健康度 {Math.round(provider.status.healthScore)}%</span>
-                )}
-                {formatTestTimestamp(provider.status?.lastTestedAt) ? (
-                  <span>最近测试 {formatTestTimestamp(provider.status?.lastTestedAt)}</span>
+                ) : null}
+                {syncEnabled && canDiscoverModels ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={syncModelsMutation.isPending}
+                    onClick={() => syncModelsMutation.mutate()}
+                  >
+                    {syncModelsMutation.isPending ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <RefreshCw />
+                    )}
+                    同步模型
+                  </Button>
+                ) : null}
+                {canTest ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={testModelMutation.isPending || !firstTestableModel}
+                    onClick={() => {
+                      if (firstTestableModel) {
+                        testModelMutation.mutate(firstTestableModel);
+                      }
+                    }}
+                  >
+                    {testModelMutation.isPending ? <Loader2 className="animate-spin" /> : <Zap />}
+                    测试模型
+                  </Button>
                 ) : null}
               </div>
-              {provider.status?.message ? (
-                <p className="text-xs text-muted-foreground">{provider.status.message}</p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="inline-flex gap-1 bg-muted p-1">
+                <button
+                  type="button"
+                  className={`px-3 py-1 text-sm transition-colors ${
+                    modelView === "all"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setModelView("all")}
+                >
+                  供应商列表
+                </button>
+                <button
+                  type="button"
+                  className={`px-3 py-1 text-sm transition-colors ${
+                    modelView === "selected"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => setModelView("selected")}
+                >
+                  仅所选
+                </button>
+              </div>
+              {remoteEnabled && canDiscoverModels ? (
+                <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Checkbox
+                    checked={fetchModels}
+                    onCheckedChange={(checked) => setFetchModels(checked === true)}
+                  />
+                  拉取模型列表
+                </label>
               ) : null}
-              {endpoints.length === 0 ? (
-                <p className="text-sm text-muted-foreground">配置接入地址后显示端点。</p>
-              ) : (
-                <div className="space-y-2">
-                  {endpoints.map((endpoint) => (
-                    <div
-                      key={endpoint.label}
-                      className="flex flex-wrap items-center justify-between gap-2 text-sm"
+            </div>
+
+            {remoteQuery.isError ? (
+              <p className="text-xs text-muted-foreground">
+                无法获取供应商模型列表：{resolveAiProviderApiError(remoteQuery.error)}
+              </p>
+            ) : null}
+
+            <div className="flex flex-wrap gap-1.5">
+              {displayedModels.map((model) => (
+                <div
+                  key={model.metadata.name}
+                  className={`flex items-center gap-1 border px-3 py-1 text-xs ${
+                    model.spec.enabled === false
+                      ? "border-dashed text-muted-foreground"
+                      : "bg-muted/40"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    className="max-w-48 truncate"
+                    title="打开模型设置"
+                    onClick={() => setModelTarget(model)}
+                  >
+                    {model.spec.modelCode}
+                  </button>
+                  {canUpdate ? (
+                    <button
+                      type="button"
+                      className="flex size-4 items-center justify-center text-muted-foreground hover:text-foreground"
+                      aria-label={model.spec.enabled === false ? "启用模型" : "停用模型"}
+                      title={model.spec.enabled === false ? "启用模型" : "停用模型"}
+                      onClick={() => toggleModelMutation.mutate(model)}
                     >
-                      <span className="text-muted-foreground">{endpoint.label}</span>
-                      <code className="rounded bg-muted px-2 py-1 text-xs">{endpoint.url}</code>
-                    </div>
-                  ))}
+                      <span
+                        className={`block size-2 ${
+                          model.spec.enabled === false ? "bg-muted-foreground/40" : "bg-primary"
+                        }`}
+                      />
+                    </button>
+                  ) : null}
+                  {canDelete ? (
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-destructive"
+                      aria-label="删除模型"
+                      onClick={() => setDeleteModelTarget(model)}
+                    >
+                      <X className="size-3" />
+                    </button>
+                  ) : null}
                 </div>
-              )}
-              {canTest ? (
+              ))}
+              {remoteCandidates.map((remote) => (
+                <button
+                  key={remote.id}
+                  type="button"
+                  disabled={!canCreate || importModelMutation.isPending}
+                  className="border border-dashed px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground disabled:opacity-50"
+                  onClick={() => importModelMutation.mutate(remote)}
+                >
+                  <Plus className="me-1 inline size-3" />
+                  {remote.id}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              点击模型编码编辑设置；圆点切换启用；× 删除。虚线为供应商返回但尚未导入的模型。
+            </p>
+
+            {canCreate ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <Input
+                  value={modelCode}
+                  onChange={(event) => setModelCode(event.target.value)}
+                  placeholder="添加模型 ID，例如 deepseek-chat"
+                  className="w-64"
+                />
                 <Button
                   type="button"
                   size="sm"
-                  variant="outline"
-                  disabled={testProviderMutation.isPending}
-                  onClick={() => testProviderMutation.mutate()}
+                  disabled={quickModelMutation.isPending}
+                  onClick={() => {
+                    const code = modelCode.trim();
+                    if (!code) {
+                      toast.error("请输入模型 ID。");
+                      return;
+                    }
+                    quickModelMutation.mutate(code);
+                  }}
                 >
-                  {testProviderMutation.isPending ? <Loader2 className="animate-spin" /> : <Zap />}
-                  测试供应商
+                  {quickModelMutation.isPending ? <Loader2 className="animate-spin" /> : null}
+                  添加模型
                 </Button>
-              ) : null}
-            </section>
+              </div>
+            ) : null}
+          </section>
 
-            <section className="space-y-3 border bg-card/30 p-4">
-              <button
-                type="button"
-                className="flex items-center gap-2 text-sm font-semibold"
-                onClick={() => setAdvancedOpen((open) => !open)}
+          {filesEnabled ? (
+            <ProviderFilesSection providerName={name} canCreate={canCreate} canDelete={canDelete} />
+          ) : null}
+
+          <section className="space-y-2 border bg-card/30 p-4">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <Link2 className="size-4" />
+              端点
+            </h3>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Badge
+                variant={provider.status?.message ? "destructive" : "secondary"}
+                className="font-normal"
               >
-                <SlidersHorizontal className="size-4" />
-                {advancedOpen ? (
-                  <ChevronDown className="size-4" />
-                ) : (
-                  <ChevronRight className="size-4" />
-                )}
-                高级
-              </button>
-              {advancedOpen ? (
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <label className="space-y-1 text-sm">
-                    <span className="text-xs text-muted-foreground">路由策略</span>
-                    <Select
-                      value={routing}
-                      onValueChange={(value) =>
-                        form.setValue("routing", value as AiProviderRouting, {
-                          shouldDirty: true,
-                        })
-                      }
-                      disabled={!canUpdate}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ROUTING_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </label>
-                  <label className="space-y-1 text-sm">
-                    <span className="text-xs text-muted-foreground">亲和策略</span>
-                    <Select
-                      value={affinity}
-                      onValueChange={(value) =>
-                        form.setValue("affinity", value as AiProviderAffinity, {
-                          shouldDirty: true,
-                        })
-                      }
-                      disabled={!canUpdate}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AFFINITY_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </label>
-                  <label className="space-y-1 text-sm">
-                    <span className="text-xs text-muted-foreground">最大并发</span>
-                    <Input
-                      type="number"
-                      min={1}
-                      disabled={!canUpdate}
-                      {...form.register("maxConcurrency")}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm">
-                    <span className="text-xs text-muted-foreground">每分钟请求上限</span>
-                    <Input
-                      type="number"
-                      min={0}
-                      disabled={!canUpdate}
-                      {...form.register("maxRPM")}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm">
-                    <span className="text-xs text-muted-foreground">连接超时（毫秒）</span>
-                    <Input
-                      type="number"
-                      min={100}
-                      disabled={!canUpdate}
-                      {...form.register("connectTimeoutMs")}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm">
-                    <span className="text-xs text-muted-foreground">读取超时（毫秒）</span>
-                    <Input
-                      type="number"
-                      min={100}
-                      disabled={!canUpdate}
-                      {...form.register("readTimeoutMs")}
-                    />
-                  </label>
-                  <div className="flex items-center justify-between gap-4 border p-4 sm:col-span-2">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">免费供应商</p>
-                      <p className="text-xs text-muted-foreground">参与免费优先调度。</p>
-                    </div>
-                    <Switch
-                      checked={free}
-                      disabled={!canUpdate}
-                      onCheckedChange={(checked) =>
-                        form.setValue("free", checked, { shouldDirty: true })
-                      }
-                      aria-label="免费供应商"
-                    />
-                  </div>
-                  <div className="space-y-1 sm:col-span-2">
-                    <span className="text-xs text-muted-foreground">后备供应商</span>
-                    <MultiSelect
-                      value={fallback}
-                      onChange={setFallback}
-                      options={fallbackOptions}
-                      placeholder="未设置后备供应商"
-                      emptyMessage={
-                        providersQuery.isError ? "无法加载其他供应商。" : "没有其他供应商可选。"
-                      }
-                      searchPlaceholder="搜索供应商"
-                      loading={providersQuery.isPending}
-                      disabled={!canUpdate}
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      当前供应商不可用时，按顺序尝试这些供应商。
-                    </p>
-                  </div>
-                  <div className="space-y-1 sm:col-span-2">
-                    <span className="text-xs text-muted-foreground">自定义请求头</span>
-                    <KeyValueEditor
-                      value={headers}
-                      onChange={setHeaders}
-                      keyPlaceholder="请求头名称"
-                      valuePlaceholder="请求头值"
-                      addLabel="添加请求头"
-                      disabled={!canUpdate}
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      这些请求头会附加到发往供应商的每次调用；键不能为空或重复。
-                    </p>
-                  </div>
-                </div>
+                {statusLabel(provider.status)}
+              </Badge>
+              {provider.status?.healthScore == null ? null : (
+                <span>健康度 {Math.round(provider.status.healthScore)}%</span>
+              )}
+              {formatTestTimestamp(provider.status?.lastTestedAt) ? (
+                <span>最近测试 {formatTestTimestamp(provider.status?.lastTestedAt)}</span>
               ) : null}
-            </section>
-          </div>
-        </AutoScrollArea>
-      </DialogContent>
+            </div>
+            {provider.status?.message ? (
+              <p className="text-xs text-muted-foreground">{provider.status.message}</p>
+            ) : null}
+            {endpoints.length === 0 ? (
+              <p className="text-sm text-muted-foreground">配置接入地址后显示端点。</p>
+            ) : (
+              <div className="space-y-2">
+                {endpoints.map((endpoint) => (
+                  <div
+                    key={endpoint.label}
+                    className="flex flex-wrap items-center justify-between gap-2 text-sm"
+                  >
+                    <span className="text-muted-foreground">{endpoint.label}</span>
+                    <code className="rounded bg-muted px-2 py-1 text-xs">{endpoint.url}</code>
+                  </div>
+                ))}
+              </div>
+            )}
+            {canTest ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={testProviderMutation.isPending}
+                onClick={() => testProviderMutation.mutate()}
+              >
+                {testProviderMutation.isPending ? <Loader2 className="animate-spin" /> : <Zap />}
+                测试供应商
+              </Button>
+            ) : null}
+          </section>
+
+          <section className="space-y-3 border bg-card/30 p-4">
+            <button
+              type="button"
+              className="flex items-center gap-2 text-sm font-semibold"
+              onClick={() => setAdvancedOpen((open) => !open)}
+            >
+              <SlidersHorizontal className="size-4" />
+              {advancedOpen ? (
+                <ChevronDown className="size-4" />
+              ) : (
+                <ChevronRight className="size-4" />
+              )}
+              高级
+            </button>
+            {advancedOpen ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="space-y-1 text-sm">
+                  <span className="text-xs text-muted-foreground">路由策略</span>
+                  <Select
+                    value={routing}
+                    onValueChange={(value) =>
+                      form.setValue("routing", value as AiProviderRouting, {
+                        shouldDirty: true,
+                      })
+                    }
+                    disabled={!canUpdate}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ROUTING_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="text-xs text-muted-foreground">亲和策略</span>
+                  <Select
+                    value={affinity}
+                    onValueChange={(value) =>
+                      form.setValue("affinity", value as AiProviderAffinity, {
+                        shouldDirty: true,
+                      })
+                    }
+                    disabled={!canUpdate}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AFFINITY_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="text-xs text-muted-foreground">最大并发</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    disabled={!canUpdate}
+                    {...form.register("maxConcurrency")}
+                  />
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="text-xs text-muted-foreground">每分钟请求上限</span>
+                  <Input type="number" min={0} disabled={!canUpdate} {...form.register("maxRPM")} />
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="text-xs text-muted-foreground">连接超时（毫秒）</span>
+                  <Input
+                    type="number"
+                    min={100}
+                    disabled={!canUpdate}
+                    {...form.register("connectTimeoutMs")}
+                  />
+                </label>
+                <label className="space-y-1 text-sm">
+                  <span className="text-xs text-muted-foreground">读取超时（毫秒）</span>
+                  <Input
+                    type="number"
+                    min={100}
+                    disabled={!canUpdate}
+                    {...form.register("readTimeoutMs")}
+                  />
+                </label>
+                <div className="flex items-center justify-between gap-4 border p-4 sm:col-span-2">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">免费供应商</p>
+                    <p className="text-xs text-muted-foreground">参与免费优先调度。</p>
+                  </div>
+                  <Switch
+                    checked={free}
+                    disabled={!canUpdate}
+                    onCheckedChange={(checked) =>
+                      form.setValue("free", checked, { shouldDirty: true })
+                    }
+                    aria-label="免费供应商"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <span className="text-xs text-muted-foreground">后备供应商</span>
+                  <MultiSelect
+                    value={fallback}
+                    onChange={setFallback}
+                    options={fallbackOptions}
+                    placeholder="未设置后备供应商"
+                    emptyMessage={
+                      providersQuery.isError ? "无法加载其他供应商。" : "没有其他供应商可选。"
+                    }
+                    searchPlaceholder="搜索供应商"
+                    loading={providersQuery.isPending}
+                    disabled={!canUpdate}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    当前供应商不可用时，按顺序尝试这些供应商。
+                  </p>
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <span className="text-xs text-muted-foreground">自定义请求头</span>
+                  <KeyValueEditor
+                    value={headers}
+                    onChange={setHeaders}
+                    keyPlaceholder="请求头名称"
+                    valuePlaceholder="请求头值"
+                    addLabel="添加请求头"
+                    disabled={!canUpdate}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    这些请求头会附加到发往供应商的每次调用；键不能为空或重复。
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </section>
+        </div>
+      </DialogFormShell>
 
       {accountTarget !== undefined ? (
         <AccountDialog
@@ -1343,7 +1362,7 @@ export function ProviderEditorDialog({
           }
         }}
       />
-    </Dialog>
+    </>
   );
 }
 

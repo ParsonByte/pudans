@@ -3,8 +3,13 @@ import { isAxiosError } from "axios";
 
 import { resolveApiError } from "@/lib/api-error";
 
-import { AI_API_PREFIX, AI_API_VERSION, listAll } from "../../providers/lib/api";
-import type { PlanVoucherKind } from "../../usage/lib/api";
+import {
+  AI_API_PREFIX,
+  AI_API_VERSION,
+  type JsonPatchOperation,
+  listAll,
+} from "../../providers/lib/api";
+import type { PlanUsage, PlanVoucherBalance, PlanVoucherKind } from "../../usage/lib/api";
 
 const AI_PLAN_KIND = "AiPlan";
 
@@ -156,12 +161,59 @@ export type GrantVouchersResult = {
   userIds?: string[];
 };
 
+type PlanVoucherBalanceView = {
+  fiveHour: PlanVoucherBalance;
+  weekly: PlanVoucherBalance;
+};
+
+export type PlanVoucherHistoryItem = {
+  id: number;
+  requestId: string;
+  kind: PlanVoucherKind | string;
+  targetWindowKey: string;
+  windowKeyAfter: string;
+  usedAt: string;
+};
+
+type PlanVoucherHistoryQuery = {
+  limit: number;
+  beforeId?: number;
+};
+
+type PlanBindingCreateValues = {
+  name: string;
+  plan: string;
+  subject: PlanSubject;
+  priority: number;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+};
+
 export function fetchAllPlans(): Promise<AiPlanItem[]> {
   return listAll<AiPlanItem>("/aiplans");
 }
 
 export async function createPlan(plan: AiPlanItem): Promise<AiPlanItem> {
   const response = await axiosInstance.post<AiPlanItem>(`${AI_API_PREFIX}/aiplans`, plan);
+  return response.data;
+}
+
+export async function fetchPlan(name: string): Promise<AiPlanItem> {
+  const response = await axiosInstance.get<AiPlanItem>(
+    `${AI_API_PREFIX}/aiplans/${encodeURIComponent(name)}`,
+  );
+  return response.data;
+}
+
+export async function patchPlan(
+  name: string,
+  operations: JsonPatchOperation[],
+): Promise<AiPlanItem> {
+  const response = await axiosInstance.patch<AiPlanItem>(
+    `${AI_API_PREFIX}/aiplans/${encodeURIComponent(name)}`,
+    operations,
+    { headers: { "Content-Type": "application/json-patch+json" } },
+  );
   return response.data;
 }
 
@@ -179,6 +231,41 @@ export async function deletePlan(name: string): Promise<void> {
 
 export function fetchAllPlanBindings(): Promise<AiPlanBindingItem[]> {
   return listAll<AiPlanBindingItem>("/aiplanbindings");
+}
+
+export async function fetchPlanBinding(name: string): Promise<AiPlanBindingItem> {
+  const response = await axiosInstance.get<AiPlanBindingItem>(
+    `${AI_API_PREFIX}/aiplanbindings/${encodeURIComponent(name)}`,
+  );
+  return response.data;
+}
+
+export async function createPlanBinding(item: AiPlanBindingItem): Promise<AiPlanBindingItem> {
+  const response = await axiosInstance.post<AiPlanBindingItem>(
+    `${AI_API_PREFIX}/aiplanbindings`,
+    item,
+  );
+  return response.data;
+}
+
+export async function updatePlanBinding(item: AiPlanBindingItem): Promise<AiPlanBindingItem> {
+  const response = await axiosInstance.put<AiPlanBindingItem>(
+    `${AI_API_PREFIX}/aiplanbindings/${encodeURIComponent(item.metadata.name)}`,
+    item,
+  );
+  return response.data;
+}
+
+export async function patchPlanBinding(
+  name: string,
+  operations: JsonPatchOperation[],
+): Promise<AiPlanBindingItem> {
+  const response = await axiosInstance.patch<AiPlanBindingItem>(
+    `${AI_API_PREFIX}/aiplanbindings/${encodeURIComponent(name)}`,
+    operations,
+    { headers: { "Content-Type": "application/json-patch+json" } },
+  );
+  return response.data;
 }
 
 export async function deletePlanBinding(name: string): Promise<void> {
@@ -202,6 +289,30 @@ export async function grantPlanVouchers(
 ): Promise<GrantVouchersResult> {
   const response = await axiosInstance.post<GrantVouchersResult>(PLAN_VOUCHER_GRANT_PATH, request);
   return response.data;
+}
+
+export async function fetchPlanUsageByUser(uid: string): Promise<PlanUsage> {
+  const response = await axiosInstance.get<PlanUsage>(
+    `${AI_API_PREFIX}/aiplan/-/usage/${encodeURIComponent(uid)}`,
+  );
+  return response.data;
+}
+
+export async function fetchPlanVoucherBalance(): Promise<PlanVoucherBalanceView> {
+  const response = await axiosInstance.get<PlanVoucherBalanceView>(
+    `${AI_API_PREFIX}/aiplan/-/vouchers`,
+  );
+  return response.data;
+}
+
+export async function fetchPlanVoucherHistory(
+  query: PlanVoucherHistoryQuery,
+): Promise<PlanVoucherHistoryItem[]> {
+  const response = await axiosInstance.get<unknown>(
+    `${AI_API_PREFIX}/aiplan/-/vouchers/-/history`,
+    { params: query },
+  );
+  return Array.isArray(response.data) ? (response.data as PlanVoucherHistoryItem[]) : [];
 }
 
 async function fetchUserUid(username: string): Promise<string> {
@@ -239,6 +350,25 @@ function normalizeResolution(raw: RawPlanResolution): PlanResolution {
       null,
     displayName: nested?.displayName ?? raw.displayName ?? null,
     matchedBy: nested?.matchedBy ?? raw.matchedBy ?? null,
+  };
+}
+
+export function buildPlanBindingItem(
+  input: PlanBindingCreateValues,
+  existing?: AiPlanBindingItem,
+): AiPlanBindingItem {
+  return {
+    apiVersion: existing?.apiVersion ?? AI_API_VERSION,
+    kind: existing?.kind ?? "AiPlanBinding",
+    metadata: existing ? { ...existing.metadata, name: input.name } : { name: input.name },
+    spec: {
+      ...(existing?.spec ?? {}),
+      plan: input.plan,
+      subject: input.subject,
+      priority: input.priority,
+      effectiveFrom: input.effectiveFrom ?? null,
+      effectiveTo: input.effectiveTo ?? null,
+    },
   };
 }
 

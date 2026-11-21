@@ -1,11 +1,21 @@
 import type {
   AiModality,
   AiModelCapability,
+  AiModelItem,
   AiModelSpec,
   AiModelTier,
   AiModelType,
+  AiProviderItem,
 } from "../../providers/lib/api";
 import { MODEL_TIER_OPTIONS, MODEL_TYPE_OPTIONS, optionLabel } from "../../providers/lib/model";
+
+export type ModelInfo = {
+  model: AiModelItem;
+  provider?: AiProviderItem;
+  capabilities: AiModelCapability[];
+  inputs: AiModality[];
+  outputs: AiModality[];
+};
 
 export const CAPABILITY_LABELS: Record<AiModelCapability, string> = {
   CHAT: "文本生成",
@@ -195,6 +205,11 @@ export function matchesEnabledFilter(filter: ModelEnabledFilter, enabled: boolea
 
 export function modelCapabilityLabels(spec: AiModelSpec): string[] {
   return modelCapabilities(spec).map((capability) => CAPABILITY_LABELS[capability]);
+}
+
+export function modelDescription(spec: AiModelSpec): string | undefined {
+  const value = spec.description;
+  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 
 export function toggleSetValue<T>(current: ReadonlySet<T>, value: T): Set<T> {

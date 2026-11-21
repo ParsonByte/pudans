@@ -4,6 +4,7 @@ import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-quer
 import { Download, Eye, EyeOff, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -17,17 +18,27 @@ import {
 import { useAllowedOperations, useMenuPath } from "@/modules/workspace/lib/permissions";
 
 import { fetchAiSetting, fetchAllProviderModels } from "../../providers/lib/api";
+import { UsageAssetStats } from "../components/usage-asset-stats";
 import { UsageCompositionBar } from "../components/usage-composition-bar";
 import { UsageDateRangeFilter } from "../components/usage-date-range";
 import { UsageKpiCards } from "../components/usage-kpi-cards";
+import { UsageModelStatsTable } from "../components/usage-model-stats-table";
 import { UsageRefreshToggle } from "../components/usage-refresh-toggle";
 import { UsageScopeToggle } from "../components/usage-scope-toggle";
 import { UsageErrorState, UsagePageNoPermission } from "../components/usage-state";
 import { UsageTokenChart, type UsageTokenChartMode } from "../components/usage-token-chart";
+import { UsageUnitTrendChart } from "../components/usage-unit-trend-chart";
 import { useScopeChange, useUsageAdminAccess, useUsageScopeFallback } from "../lib/admin";
-import { fetchUsageOverview, resolveUsageApiError } from "../lib/api";
+import {
+  fetchKnowledgeBaseStats,
+  fetchMemoryStats,
+  fetchModelStats,
+  fetchUnitStats,
+  fetchUsageOverview,
+  resolveUsageApiError,
+} from "../lib/api";
 import type { UsageBucket } from "../lib/api";
-import { buildUsageTotalsKpis, usageExportFilename } from "../lib/model";
+import { buildUsageTotalsKpis, usageExportFilename, usageStatsDays } from "../lib/model";
 import {
   usageRangeFromSearch,
   usageRangeSearch,
@@ -104,6 +115,35 @@ export function AiUsageOverviewView() {
     retry: false,
     staleTime: 5 * 60_000,
     enabled: canView,
+  });
+  const statsDays = usageStatsDays(range.from, range.to);
+  const unitStatsQuery = useQuery({
+    queryKey: ["ai-usage", "unit-stats", statsDays],
+    queryFn: () => fetchUnitStats(statsDays),
+    retry: false,
+    staleTime: 60_000,
+    enabled: canView && isAdmin,
+  });
+  const modelStatsQuery = useQuery({
+    queryKey: ["ai-usage", "model-stats", statsDays],
+    queryFn: () => fetchModelStats(statsDays),
+    retry: false,
+    staleTime: 60_000,
+    enabled: canView && isAdmin,
+  });
+  const memoryStatsQuery = useQuery({
+    queryKey: ["ai-usage", "memory-stats"],
+    queryFn: fetchMemoryStats,
+    retry: false,
+    staleTime: 60_000,
+    enabled: canView && isAdmin,
+  });
+  const kbStatsQuery = useQuery({
+    queryKey: ["ai-usage", "kb-stats"],
+    queryFn: fetchKnowledgeBaseStats,
+    retry: false,
+    staleTime: 60_000,
+    enabled: canView && isAdmin,
   });
 
   useUsageScopeFallback(scope, isAdmin, adminResolved, onScopeChange, overviewQuery.isError);
@@ -295,6 +335,115 @@ export function AiUsageOverviewView() {
                 <ConsoleEmpty>所选时间范围内暂无 Token 用量。</ConsoleEmpty>
               )}
             </ConsoleSection>
+
+            {isAdmin ? (
+              <>
+                <ConsoleSection>
+                  <ConsoleSectionHeader
+                    title="模型标准 Token 统计"
+                    description="按模型查看标准 Token 的每日消耗，以及各模型能力、状态和媒体产出。"
+                    action={
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Badge variant="outline">近 {statsDays} 天</Badge>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            void unitStatsQuery.refetch();
+                            void modelStatsQuery.refetch();
+                          }}
+                          disabled={unitStatsQuery.isFetching || modelStatsQuery.isFetching}
+                        >
+                          {unitStatsQuery.isFetching || modelStatsQuery.isFetching ? (
+                            <Loader2 className="animate-spin" />
+                          ) : (
+                            <RefreshCw />
+                          )}
+                          刷新
+                        </Button>
+                      </div>
+                    }
+                  />
+                  {unitStatsQuery.isError ? (
+                    <div className="p-5">
+                      <UsageErrorState
+                        title="无法加载模型 Token 统计"
+                        message={resolveUsageApiError(unitStatsQuery.error)}
+                        onRetry={() => void unitStatsQuery.refetch()}
+                      />
+                    </div>
+                  ) : unitStatsQuery.isPending ? (
+                    <div className="p-5">
+                      <Skeleton className="h-[300px] w-full" />
+                    </div>
+                  ) : (unitStatsQuery.data?.rows.length ?? 0) === 0 ? (
+                    <ConsoleEmpty>所选时间范围内没有模型 Token 记录。</ConsoleEmpty>
+                  ) : (
+                    <UsageUnitTrendChart
+                      rows={unitStatsQuery.data?.rows ?? []}
+                      models={modelsQuery.data ?? []}
+                    />
+                  )}
+
+                  <div className="border-t">
+                    <ConsoleSectionHeader
+                      title="模型能力统计"
+                      description="按模型类型、能力与请求状态聚合请求数、标准 Token 和媒体产出。"
+                    />
+                    {modelStatsQuery.isError ? (
+                      <div className="p-5">
+                        <UsageErrorState
+                          title="无法加载模型能力统计"
+                          message="当前账号可能没有模型统计权限，或服务暂不可用。"
+                          onRetry={() => void modelStatsQuery.refetch()}
+                        />
+                      </div>
+                    ) : modelStatsQuery.isPending ? (
+                      <div className="p-5">
+                        <Skeleton className="h-40 w-full" />
+                      </div>
+                    ) : (modelStatsQuery.data?.rows.length ?? 0) === 0 ? (
+                      <ConsoleEmpty>所选时间范围内没有模型请求记录。</ConsoleEmpty>
+                    ) : (
+                      <UsageModelStatsTable
+                        rows={modelStatsQuery.data?.rows ?? []}
+                        models={modelsQuery.data ?? []}
+                      />
+                    )}
+                  </div>
+                </ConsoleSection>
+
+                <ConsoleSection>
+                  <ConsoleSectionHeader
+                    title="记忆与知识库资产"
+                    description="全站全部记忆层记录与知识库文档、分段和查询总量。"
+                    action={<Badge variant="outline">全站</Badge>}
+                  />
+                  {memoryStatsQuery.isError || kbStatsQuery.isError ? (
+                    <div className="p-5">
+                      <UsageErrorState
+                        title="无法加载记忆与知识库资产"
+                        message="当前账号可能没有资产统计权限，或服务暂不可用。"
+                        onRetry={() => {
+                          void memoryStatsQuery.refetch();
+                          void kbStatsQuery.refetch();
+                        }}
+                      />
+                    </div>
+                  ) : memoryStatsQuery.isPending || kbStatsQuery.isPending ? (
+                    <div className="p-5">
+                      <Skeleton className="h-24 w-full" />
+                    </div>
+                  ) : (
+                    <UsageAssetStats
+                      memory={memoryStatsQuery.data}
+                      knowledgeBase={kbStatsQuery.data}
+                    />
+                  )}
+                </ConsoleSection>
+              </>
+            ) : null}
 
             <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
               <ConsoleSection className="overflow-hidden">

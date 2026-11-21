@@ -1,9 +1,15 @@
 import { useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Power, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  type ContentPreview,
+  ContentPreviewButton,
+  ContentPreviewDialog,
+} from "@/components/content/content-preview";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,7 +27,13 @@ import {
 } from "@/modules/workspace/console/components/console-page";
 
 import { UsageErrorState } from "../../usage/components/usage-state";
-import { type AiPlanItem, deletePlan, fetchAllPlans, resolvePlanApiError } from "../lib/api";
+import {
+  type AiPlanItem,
+  deletePlan,
+  fetchAllPlans,
+  patchPlan,
+  resolvePlanApiError,
+} from "../lib/api";
 import {
   formatUnits,
   planRuntimeSummary,
@@ -43,6 +55,8 @@ export function PlansSection({ canCreate, canUpdate, canDelete }: PlansSectionPr
   const queryClient = useQueryClient();
   const [dialog, setDialog] = useState<PlanDialogState>(null);
   const [deleting, setDeleting] = useState<AiPlanItem | null>(null);
+  const [toggling, setToggling] = useState<AiPlanItem | null>(null);
+  const [preview, setPreview] = useState<ContentPreview | null>(null);
   const plansQuery = useQuery({
     queryKey: ["ai-plans", "all"],
     queryFn: fetchAllPlans,
@@ -57,6 +71,20 @@ export function PlansSection({ canCreate, canUpdate, canDelete }: PlansSectionPr
       await queryClient.invalidateQueries({ queryKey: ["ai-plan-usage"] });
       toast.success("套餐已删除。");
       setDeleting(null);
+    },
+    onError: (error) => toast.error(resolvePlanApiError(error)),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (plan: AiPlanItem) =>
+      patchPlan(plan.metadata.name, [
+        { op: "replace", path: "/spec/enabled", value: plan.spec.enabled === false },
+      ]),
+    onSuccess: async (_, plan) => {
+      await queryClient.invalidateQueries({ queryKey: ["ai-plans"] });
+      await queryClient.invalidateQueries({ queryKey: ["ai-plan-usage"] });
+      toast.success(plan.spec.enabled === false ? "套餐已启用。" : "套餐已禁用。");
+      setToggling(null);
     },
     onError: (error) => toast.error(resolvePlanApiError(error)),
   });
@@ -138,6 +166,28 @@ export function PlansSection({ canCreate, canUpdate, canDelete }: PlansSectionPr
                 </TableCell>
                 <TableCell className="px-5 py-3">
                   <div className="flex items-center justify-end gap-1">
+                    <ContentPreviewButton
+                      label="预览套餐说明"
+                      onClick={() =>
+                        setPreview({
+                          title: plan.spec.displayName || plan.metadata.name,
+                          description: `${formatUnits(plan.spec.quota?.fiveHour?.limit)} / ${formatUnits(
+                            plan.spec.quota?.weekly?.limit,
+                          )}`,
+                          content: plan.spec.description || "该套餐没有描述。",
+                        })
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={!canUpdate}
+                      onClick={() => setToggling(plan)}
+                    >
+                      <Power />
+                      {plan.spec.enabled === false ? "启用" : "禁用"}
+                    </Button>
                     <Button
                       type="button"
                       variant="ghost"
@@ -173,6 +223,8 @@ export function PlansSection({ canCreate, canUpdate, canDelete }: PlansSectionPr
         />
       ) : null}
 
+      <ContentPreviewDialog preview={preview} onClose={() => setPreview(null)} />
+
       <PlanDeleteDialog
         open={deleting != null}
         title="删除套餐"
@@ -193,6 +245,26 @@ export function PlansSection({ canCreate, canUpdate, canDelete }: PlansSectionPr
           }
         }}
       />
+
+      {toggling ? (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open && !toggleMutation.isPending) {
+              setToggling(null);
+            }
+          }}
+          title={toggling.spec.enabled === false ? "启用套餐" : "禁用套餐"}
+          desc={
+            toggling.spec.enabled === false
+              ? `启用后新请求可以重新解析到「${toggling.spec.displayName || toggling.metadata.name}」。`
+              : `禁用后新请求不再解析到「${toggling.spec.displayName || toggling.metadata.name}」，已绑定的用户会回退到其他绑定或默认策略。`
+          }
+          isLoading={toggleMutation.isPending}
+          confirmText="确认"
+          handleConfirm={() => toggleMutation.mutate(toggling)}
+        />
+      ) : null}
     </ConsoleSection>
   );
 }

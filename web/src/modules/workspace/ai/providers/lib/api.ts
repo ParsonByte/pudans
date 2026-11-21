@@ -379,6 +379,59 @@ type AiRemoteModelList = {
   data?: AiRemoteModel[];
 };
 
+type AiProviderModelSyncEntry = {
+  name?: string;
+  modelCode?: string;
+  displayName?: string;
+};
+
+export type AiProviderModelSyncResult = {
+  added: number;
+  updated: number;
+  unchanged: number;
+  removed: string[];
+  models: AiProviderModelSyncEntry[];
+};
+
+export const AI_PROVIDER_FILE_PURPOSES = [
+  "user_data",
+  "text_recognition",
+  "rich_layout_recognition",
+] as const;
+
+export type AiProviderFilePurpose = (typeof AI_PROVIDER_FILE_PURPOSES)[number];
+
+export type AiProviderFile = {
+  id: string;
+  object?: string;
+  bytes?: number;
+  createdAt?: number;
+  filename?: string;
+  purpose?: string;
+  expiresAt?: number;
+};
+
+export type AiProviderFilePage = {
+  object?: string;
+  data?: AiProviderFile[];
+  firstId?: string;
+  lastId?: string;
+  hasMore?: boolean;
+};
+
+export type AiProviderFileListParams = {
+  after?: string;
+  limit?: number;
+  order?: "asc" | "desc";
+  purpose?: AiProviderFilePurpose;
+};
+
+export type AiProviderFileUploadInput = {
+  storageFileId: string;
+  purpose: AiProviderFilePurpose;
+  expiresAfterSeconds?: number;
+};
+
 export type JsonPatchOperation = {
   op: "add" | "replace" | "remove";
   path: string;
@@ -424,11 +477,35 @@ export async function fetchProviders(page = 1, size = 10): Promise<PageResult<Ai
   return toPageResult(response.data);
 }
 
-export async function fetchProvider(name: string): Promise<AiProviderItem> {
-  const response = await axiosInstance.get<AiProviderItem>(
-    `${AI_API_PREFIX}/aiproviders/${encodeURIComponent(name)}`,
+async function fetchAiExtension<T>(plural: string, name: string): Promise<T> {
+  const response = await axiosInstance.get<T>(
+    `${AI_API_PREFIX}/${plural}/${encodeURIComponent(name)}`,
   );
   return response.data;
+}
+
+async function patchAiExtension<T>(
+  plural: string,
+  name: string,
+  operations: JsonPatchOperation[],
+): Promise<T> {
+  const response = await axiosInstance.patch<T>(
+    `${AI_API_PREFIX}/${plural}/${encodeURIComponent(name)}`,
+    operations,
+    { headers: { "Content-Type": "application/json-patch+json" } },
+  );
+  return response.data;
+}
+
+export async function fetchProvider(name: string): Promise<AiProviderItem> {
+  return fetchAiExtension<AiProviderItem>("aiproviders", name);
+}
+
+export function patchProvider(
+  name: string,
+  operations: JsonPatchOperation[],
+): Promise<AiProviderItem> {
+  return patchAiExtension<AiProviderItem>("aiproviders", name, operations);
 }
 
 export async function fetchProviderPresets(): Promise<ProviderPresetCatalog> {
@@ -451,6 +528,10 @@ export function fetchProviderAccounts(providerName: string): Promise<AiProviderA
   });
 }
 
+export function fetchProviderAccount(name: string): Promise<AiProviderAccountItem> {
+  return fetchAiExtension<AiProviderAccountItem>("aiprovideraccounts", name);
+}
+
 export function fetchAllProviderModels(): Promise<AiModelItem[]> {
   return listAll<AiModelItem>("/aimodels");
 }
@@ -459,6 +540,10 @@ export function fetchProviderModels(providerName: string): Promise<AiModelItem[]
   return listAll<AiModelItem>("/aimodels", {
     fieldSelector: [`spec.provider=${providerName}`],
   });
+}
+
+export function fetchModel(name: string): Promise<AiModelItem> {
+  return fetchAiExtension<AiModelItem>("aimodels", name);
 }
 
 export function fetchAllRouteGroups(): Promise<AiRouteGroupItem[]> {
@@ -504,11 +589,12 @@ export async function copyRouteGroup(
   return response.data;
 }
 
-export async function fetchAiSetting(): Promise<AiSettingItem> {
-  const response = await axiosInstance.get<AiSettingItem>(
-    `${AI_API_PREFIX}/aisettings/${AI_SETTING_NAME}`,
-  );
-  return response.data;
+function fetchAiSettingByName(name: string): Promise<AiSettingItem> {
+  return fetchAiExtension<AiSettingItem>("aisettings", name);
+}
+
+export function fetchAiSetting(): Promise<AiSettingItem> {
+  return fetchAiSettingByName(AI_SETTING_NAME);
 }
 
 export async function updateAiSetting(setting: AiSettingItem): Promise<AiSettingItem> {
@@ -517,6 +603,13 @@ export async function updateAiSetting(setting: AiSettingItem): Promise<AiSetting
     setting,
   );
   return response.data;
+}
+
+export function patchAiSettingByName(
+  name: string,
+  operations: JsonPatchOperation[],
+): Promise<AiSettingItem> {
+  return patchAiExtension<AiSettingItem>("aisettings", name, operations);
 }
 
 export async function createProvider(provider: AiProviderItem): Promise<AiProviderItem> {
@@ -575,16 +668,11 @@ export async function createProviderAccount(
   return response.data;
 }
 
-export async function patchProviderAccount(
+export function patchProviderAccount(
   name: string,
   operations: JsonPatchOperation[],
 ): Promise<AiProviderAccountItem> {
-  const response = await axiosInstance.patch<AiProviderAccountItem>(
-    `${AI_API_PREFIX}/aiprovideraccounts/${encodeURIComponent(name)}`,
-    operations,
-    { headers: { "Content-Type": "application/json-patch+json" } },
-  );
-  return response.data;
+  return patchAiExtension<AiProviderAccountItem>("aiprovideraccounts", name, operations);
 }
 
 export async function deleteProviderAccount(name: string): Promise<void> {
@@ -623,6 +711,10 @@ export async function updateModel(model: AiModelItem): Promise<AiModelItem> {
   return response.data;
 }
 
+export function patchModel(name: string, operations: JsonPatchOperation[]): Promise<AiModelItem> {
+  return patchAiExtension<AiModelItem>("aimodels", name, operations);
+}
+
 export async function deleteModel(name: string): Promise<void> {
   await axiosInstance.delete(`${AI_API_PREFIX}/aimodels/${encodeURIComponent(name)}`);
 }
@@ -640,6 +732,51 @@ export async function fetchProviderRemoteModels(name: string): Promise<AiRemoteM
     `${AI_API_PREFIX}/aiproviders/${encoded}/models`,
   );
   return response.data.data ?? [];
+}
+
+export async function syncProviderModels(name: string): Promise<AiProviderModelSyncResult> {
+  const response = await axiosInstance.post<AiProviderModelSyncResult>(
+    `${AI_API_PREFIX}/aiproviders/${encodeURIComponent(name)}/actions/sync-models`,
+  );
+  return response.data;
+}
+
+export async function fetchProviderFiles(
+  name: string,
+  params: AiProviderFileListParams = {},
+): Promise<AiProviderFilePage> {
+  const response = await axiosInstance.get<AiProviderFilePage>(
+    `${AI_API_PREFIX}/aiproviders/${encodeURIComponent(name)}/files`,
+    { params },
+  );
+  return {
+    ...response.data,
+    data: response.data.data ?? [],
+  };
+}
+
+export async function fetchProviderFile(name: string, fileId: string): Promise<AiProviderFile> {
+  const response = await axiosInstance.get<AiProviderFile>(
+    `${AI_API_PREFIX}/aiproviders/${encodeURIComponent(name)}/files/${encodeURIComponent(fileId)}`,
+  );
+  return response.data;
+}
+
+export async function uploadProviderFile(
+  name: string,
+  input: AiProviderFileUploadInput,
+): Promise<AiProviderFile> {
+  const response = await axiosInstance.post<AiProviderFile>(
+    `${AI_API_PREFIX}/aiproviders/${encodeURIComponent(name)}/files`,
+    input,
+  );
+  return response.data;
+}
+
+export async function deleteProviderFile(name: string, fileId: string): Promise<void> {
+  await axiosInstance.delete(
+    `${AI_API_PREFIX}/aiproviders/${encodeURIComponent(name)}/files/${encodeURIComponent(fileId)}`,
+  );
 }
 
 type AiProviderBalanceInfo = {

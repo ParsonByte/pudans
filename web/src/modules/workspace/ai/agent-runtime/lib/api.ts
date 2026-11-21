@@ -1,6 +1,7 @@
 import { axiosInstance } from "@pudans-dev/api-client";
 
 import { resolveApiErrorWithDetail } from "@/lib/api-error";
+import { type SseEvent, readSseEvents } from "@/lib/sse";
 import { AI_AGENT_KIND, type AiAgentSpec } from "@/modules/workspace/ai/library/lib/api";
 import {
   AI_API_PREFIX,
@@ -18,6 +19,10 @@ export const AI_SANDBOX_PROVIDER_KIND = "AiSandboxProvider";
 export const AGENT_RUNTIME_AGENTS_QUERY_KEY = ["ai-agent-runtime-agents", "all"] as const;
 
 export const AI_RUNTIMES_QUERY_KEY = ["ai-runtimes", "all"] as const;
+
+export function aiRuntimeSnapshotsQueryKey(agent: string) {
+  return ["ai-runtime-snapshots", agent] as const;
+}
 
 export const AI_SANDBOX_PROVIDERS_QUERY_KEY = ["ai-sandbox-providers", "all"] as const;
 
@@ -86,6 +91,15 @@ export type AiRuntimeView = {
   createdAt?: string | null;
   updatedAt?: string | null;
   lastActiveAt?: string | null;
+};
+
+export type AiRuntimeSnapshotView = {
+  id: number;
+  agent: string;
+  name: string;
+  sizeBytes: number;
+  createdBy?: string | null;
+  createdAt: string;
 };
 
 export type AiRuntimeProviderInfo = {
@@ -245,6 +259,13 @@ export async function fetchAllRuntimes(): Promise<AiRuntimeView[]> {
   return items;
 }
 
+export async function fetchRuntime(agent: string): Promise<AiRuntimeView> {
+  const response = await axiosInstance.get<AiRuntimeView>(
+    `${AI_API_PREFIX}/airuntimes/${encodeURIComponent(agent)}`,
+  );
+  return response.data;
+}
+
 export async function startRuntime(agent: string): Promise<AiRuntimeView> {
   const response = await axiosInstance.post<AiRuntimeView>(
     `${AI_API_PREFIX}/airuntimes/${encodeURIComponent(agent)}/start`,
@@ -268,6 +289,41 @@ export async function restartRuntime(agent: string): Promise<AiRuntimeView> {
 
 export async function deleteRuntime(agent: string): Promise<void> {
   await axiosInstance.delete(`${AI_API_PREFIX}/airuntimes/${encodeURIComponent(agent)}`);
+}
+
+export async function fetchRuntimeSnapshots(agent: string): Promise<AiRuntimeSnapshotView[]> {
+  const response = await axiosInstance.get<AiRuntimeSnapshotView[]>(
+    `${AI_API_PREFIX}/airuntimes/${encodeURIComponent(agent)}/snapshots`,
+  );
+  return response.data ?? [];
+}
+
+export async function createRuntimeSnapshot(
+  agent: string,
+  name?: string,
+): Promise<AiRuntimeSnapshotView> {
+  const trimmed = name?.trim();
+  const response = await axiosInstance.post<AiRuntimeSnapshotView>(
+    `${AI_API_PREFIX}/airuntimes/${encodeURIComponent(agent)}/snapshots`,
+    trimmed ? { name: trimmed } : {},
+  );
+  return response.data;
+}
+
+export async function restoreRuntimeSnapshot(agent: string, snapshotId: number): Promise<void> {
+  await axiosInstance.post(
+    `${AI_API_PREFIX}/airuntimes/${encodeURIComponent(agent)}/snapshots/${encodeURIComponent(
+      String(snapshotId),
+    )}/restore`,
+  );
+}
+
+export async function deleteRuntimeSnapshot(agent: string, snapshotId: number): Promise<void> {
+  await axiosInstance.delete(
+    `${AI_API_PREFIX}/airuntimes/${encodeURIComponent(agent)}/snapshots/${encodeURIComponent(
+      String(snapshotId),
+    )}`,
+  );
 }
 
 export async function execRuntimeCommand(
@@ -387,35 +443,11 @@ export async function streamRuntimeLogs(
   if (!response.body) {
     throw new Error("日志流没有返回响应内容。");
   }
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-      buffer += decoder.decode(value, { stream: true });
-      let boundary = findSseBoundary(buffer);
-      while (boundary) {
-        const block = buffer.slice(0, boundary.index);
-        buffer = buffer.slice(boundary.index + boundary.length);
-        const event = parseLogBlock(block);
-        if (event) {
-          options.onEvent(event);
-        }
-        boundary = findSseBoundary(buffer);
-      }
+  for await (const event of readSseEvents(response.body)) {
+    const log = parseLogEvent(event);
+    if (log) {
+      options.onEvent(log);
     }
-    if (buffer.trim()) {
-      const event = parseLogBlock(buffer);
-      if (event) {
-        options.onEvent(event);
-      }
-    }
-  } finally {
-    reader.releaseLock();
   }
 }
 
@@ -426,33 +458,12 @@ export function resolveAgentRuntimeError(error: unknown): string {
   });
 }
 
-function findSseBoundary(buffer: string): { index: number; length: number } | null {
-  const lf = buffer.indexOf("\n\n");
-  const crlf = buffer.indexOf("\r\n\r\n");
-  if (lf < 0 && crlf < 0) {
-    return null;
-  }
-  if (crlf >= 0 && (lf < 0 || crlf < lf)) {
-    return { index: crlf, length: 4 };
-  }
-  return { index: lf, length: 2 };
-}
-
-function parseLogBlock(block: string): AiRuntimeLogEvent | null {
-  let eventName = "message";
-  const data: string[] = [];
-  for (const line of block.split(/\r?\n/)) {
-    if (line.startsWith("event:")) {
-      eventName = line.slice(6).trim();
-    } else if (line.startsWith("data:")) {
-      data.push(line.slice(5).trimStart());
-    }
-  }
-  if (eventName !== "log" || data.length === 0) {
+function parseLogEvent(event: SseEvent): AiRuntimeLogEvent | null {
+  if (event.event !== "log" || !event.data) {
     return null;
   }
   try {
-    return JSON.parse(data.join("\n")) as AiRuntimeLogEvent;
+    return JSON.parse(event.data) as AiRuntimeLogEvent;
   } catch {
     return null;
   }

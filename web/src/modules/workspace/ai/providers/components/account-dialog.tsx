@@ -8,11 +8,13 @@ import {
 } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { KeyRound, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { FormDialog, FormDialogSection } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -36,6 +38,7 @@ import {
   type AiQuotaUnit,
   type JsonPatchOperation,
   createProviderAccount,
+  fetchProviderAccount,
   patchProviderAccount,
   resolveAiProviderApiError,
 } from "../lib/api";
@@ -46,11 +49,6 @@ import {
   RESOURCE_NAME_HINT,
   RESOURCE_NAME_PATTERN,
 } from "../lib/model";
-import {
-  ProviderDialogSection,
-  ProviderDialogShell,
-  ProviderFieldRow,
-} from "./provider-dialog-shell";
 
 const ACCOUNT_TYPE_VALUES = ACCOUNT_TYPE_OPTIONS.map((option) => option.value) as [
   AiAccountType,
@@ -169,6 +167,14 @@ type AccountDialogProps = {
 
 export function AccountDialog({ provider, account, onClose }: AccountDialogProps) {
   const queryClient = useQueryClient();
+  const accountQuery = useQuery({
+    queryKey: ["ai-provider-account", account?.metadata.name],
+    queryFn: () => fetchProviderAccount(account?.metadata.name ?? ""),
+    initialData: account,
+    enabled: Boolean(account),
+    retry: false,
+  });
+  const currentAccount = accountQuery.data ?? account;
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountSchema) as Resolver<AccountFormValues>,
     defaultValues: initialValues(account),
@@ -187,7 +193,7 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
     mutationFn: (values: AccountFormValues) => {
       const windowsValue = toWindows(values.windows);
       const concurrencyRecord = toConcurrencyRecord(values.concurrencyByModel);
-      if (account) {
+      if (account && currentAccount) {
         const operations: JsonPatchOperation[] = [
           { op: "add", path: "/spec/displayName", value: values.displayName },
           { op: "add", path: "/spec/accountType", value: values.accountType },
@@ -198,29 +204,29 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
           { op: "add", path: "/spec/enabled", value: values.enabled },
           { op: "add", path: "/spec/freePlan", value: values.freePlan },
           { op: "add", path: "/spec/creditsEnabled", value: values.creditsEnabled },
-          ...optionalStringOperation("/spec/keyName", values.keyName, account.spec.keyName),
-          ...optionalStringOperation("/spec/keyPlan", values.keyPlan, account.spec.keyPlan),
+          ...optionalStringOperation("/spec/keyName", values.keyName, currentAccount.spec.keyName),
+          ...optionalStringOperation("/spec/keyPlan", values.keyPlan, currentAccount.spec.keyPlan),
           ...optionalNumberOperation(
             "/spec/spendCapPoints",
             parseNumber(values.spendCapPoints),
-            account.spec.spendCapPoints,
+            currentAccount.spec.spendCapPoints,
           ),
           ...arrayOperation(
             "/spec/windows",
             windowsValue.length > 0 ? windowsValue : undefined,
-            account.spec.windows,
+            currentAccount.spec.windows,
           ),
           ...arrayOperation(
             "/spec/concurrencyByModel",
             Object.keys(concurrencyRecord).length > 0 ? concurrencyRecord : undefined,
-            account.spec.concurrencyByModel,
+            currentAccount.spec.concurrencyByModel,
           ),
-          ...balanceProbeOperations(account.spec.balanceProbe, values),
+          ...balanceProbeOperations(currentAccount.spec.balanceProbe, values),
         ];
         if (values.apiKey) {
           operations.push({ op: "add", path: "/spec/apiKey", value: values.apiKey });
         }
-        return patchProviderAccount(account.metadata.name, operations);
+        return patchProviderAccount(currentAccount.metadata.name, operations);
       }
       const balanceProbe = buildBalanceProbe(values);
       const spec: AiProviderAccountInput["spec"] = {
@@ -265,34 +271,39 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
   );
 
   return (
-    <ProviderDialogShell
+    <FormDialog
+      open
       onClose={onClose}
       icon={<KeyRound />}
       title={account ? "编辑账号" : "添加账号"}
       description="账号用于调用供应商接口，可配置密钥标识、并发与额度窗口。"
+      form={form}
       onSubmit={onSubmit}
       isPending={mutation.isPending}
       submitLabel={account ? "保存账号" : "创建账号"}
-      className="sm:max-w-3xl"
+      contentClassName="sm:max-w-3xl"
     >
-      <ProviderDialogSection title="基础信息">
+      <FormDialogSection title="基础信息">
         <div className="space-y-3">
-          <ProviderFieldRow
+          <FormField
+            orientation="horizontal"
             label="名称"
             htmlFor="ai-account-name"
             hint={account ? "名称创建后不可修改。" : RESOURCE_NAME_HINT}
             error={form.formState.errors.name?.message}
           >
             <Input id="ai-account-name" disabled={Boolean(account)} {...form.register("name")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="显示名称"
             htmlFor="ai-account-display-name"
             error={form.formState.errors.displayName?.message}
           >
             <Input id="ai-account-display-name" {...form.register("displayName")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="账号类型"
             htmlFor="ai-account-type"
             error={form.formState.errors.accountType?.message}
@@ -314,8 +325,9 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
                 ))}
               </SelectContent>
             </Select>
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="API Key"
             htmlFor="ai-account-api-key"
             hint={account ? "留空表示保留现有密钥。" : "OAuth 或自定义账号可留空。"}
@@ -327,29 +339,32 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
               autoComplete="new-password"
               {...form.register("apiKey")}
             />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="密钥名称"
             htmlFor="ai-account-key-name"
             hint="用于在多个密钥之间区分来源，例如主账号或备用账号。"
             error={form.formState.errors.keyName?.message}
           >
             <Input id="ai-account-key-name" {...form.register("keyName")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="套餐"
             htmlFor="ai-account-key-plan"
             hint="记录密钥所属套餐，例如免费版或团队版。"
             error={form.formState.errors.keyPlan?.message}
           >
             <Input id="ai-account-key-plan" {...form.register("keyPlan")} />
-          </ProviderFieldRow>
+          </FormField>
         </div>
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="计费">
+      <FormDialogSection title="计费">
         <div className="space-y-3">
-          <ProviderFieldRow
+          <FormField
+            orientation="horizontal"
             label="Token 上限"
             htmlFor="ai-account-spend-cap"
             hint="留空或 0 表示不限制该账号的标准 Token 消耗。"
@@ -361,27 +376,30 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
               min={0}
               {...form.register("spendCapPoints")}
             />
-          </ProviderFieldRow>
+          </FormField>
         </div>
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="调度">
+      <FormDialogSection title="调度">
         <div className="space-y-3">
-          <ProviderFieldRow
+          <FormField
+            orientation="horizontal"
             label="权重"
             htmlFor="ai-account-weight"
             error={form.formState.errors.weight?.message}
           >
             <Input id="ai-account-weight" type="number" min={1} {...form.register("weight")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="优先级"
             htmlFor="ai-account-priority"
             error={form.formState.errors.priority?.message}
           >
             <Input id="ai-account-priority" type="number" min={0} {...form.register("priority")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="最大并发"
             htmlFor="ai-account-max-concurrency"
             error={form.formState.errors.maxConcurrency?.message}
@@ -392,15 +410,16 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
               min={1}
               {...form.register("maxConcurrency")}
             />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="每分钟请求上限"
             htmlFor="ai-account-max-rpm"
             hint="0 表示不限制。"
             error={form.formState.errors.maxRPM?.message}
           >
             <Input id="ai-account-max-rpm" type="number" min={0} {...form.register("maxRPM")} />
-          </ProviderFieldRow>
+          </FormField>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <SwitchRow
@@ -419,9 +438,9 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
             onChange={(checked) => form.setValue("creditsEnabled", checked, { shouldDirty: true })}
           />
         </div>
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection
+      <FormDialogSection
         title={
           <span className="flex items-center justify-between gap-2">
             额度窗口
@@ -464,9 +483,9 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
             ))}
           </div>
         )}
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection
+      <FormDialogSection
         title={
           <span className="flex items-center justify-between gap-2">
             模型并发覆盖
@@ -533,14 +552,15 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
             ))}
           </div>
         )}
-      </ProviderDialogSection>
+      </FormDialogSection>
 
-      <ProviderDialogSection title="余额查询">
+      <FormDialogSection title="余额查询">
         <p className="text-xs text-muted-foreground">
           供应商余额接口与默认实现不同时，可在此指定自定义查询地址与请求头。
         </p>
         <div className="space-y-3">
-          <ProviderFieldRow
+          <FormField
+            orientation="horizontal"
             label="地址"
             htmlFor="ai-account-probe-url"
             hint="完整地址；留空使用供应商默认接口。"
@@ -551,9 +571,10 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
               placeholder="https://api.example.com/user/balance"
               {...form.register("balanceProbeUrl")}
             />
-          </ProviderFieldRow>
+          </FormField>
           <div className="grid gap-3 sm:grid-cols-2">
-            <ProviderFieldRow
+            <FormField
+              orientation="vertical"
               label="路径"
               htmlFor="ai-account-probe-path"
               error={form.formState.errors.balanceProbePath?.message}
@@ -563,8 +584,9 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
                 placeholder="/balance"
                 {...form.register("balanceProbePath")}
               />
-            </ProviderFieldRow>
-            <ProviderFieldRow
+            </FormField>
+            <FormField
+              orientation="vertical"
               label="方法"
               htmlFor="ai-account-probe-method"
               error={form.formState.errors.balanceProbeMethod?.message}
@@ -574,9 +596,10 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
                 placeholder="GET"
                 {...form.register("balanceProbeMethod")}
               />
-            </ProviderFieldRow>
+            </FormField>
           </div>
-          <ProviderFieldRow
+          <FormField
+            orientation="horizontal"
             label="请求头"
             htmlFor="ai-account-probe-header"
             hint="携带令牌的请求头名称，留空使用默认行为。"
@@ -587,8 +610,9 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
               placeholder="Authorization"
               {...form.register("balanceProbeHeaderName")}
             />
-          </ProviderFieldRow>
-          <ProviderFieldRow
+          </FormField>
+          <FormField
+            orientation="horizontal"
             label="令牌"
             htmlFor="ai-account-probe-token"
             hint={account?.spec.balanceProbe ? "留空表示保留现有令牌。" : "可选。"}
@@ -600,10 +624,10 @@ export function AccountDialog({ provider, account, onClose }: AccountDialogProps
               autoComplete="new-password"
               {...form.register("balanceProbeToken")}
             />
-          </ProviderFieldRow>
+          </FormField>
         </div>
-      </ProviderDialogSection>
-    </ProviderDialogShell>
+      </FormDialogSection>
+    </FormDialog>
   );
 }
 

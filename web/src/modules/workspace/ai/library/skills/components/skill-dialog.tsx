@@ -30,6 +30,7 @@ import {
   type SkillItem,
   type SkillSource,
   type SkillSpec,
+  type SkillStatus,
   createSkill,
   updateSkill,
 } from "../lib/api";
@@ -99,7 +100,7 @@ function toFormValues(
   };
 }
 
-function toSpec(values: SkillFormValues): SkillSpec {
+function toSpec(values: SkillFormValues, status?: SkillStatus): SkillSpec {
   const source = values.source;
   const content = values.content.trim() ? values.content : undefined;
   return {
@@ -111,6 +112,7 @@ function toSpec(values: SkillFormValues): SkillSpec {
     path: source === "GIT" ? values.path.trim() || undefined : undefined,
     content,
     enabled: values.enabled,
+    status,
     agents: values.agents,
   };
 }
@@ -125,7 +127,7 @@ export function SkillDialog({ skill, draft, onClose }: SkillDialogProps) {
 
   const saveMutation = useMutation({
     mutationFn: (values: SkillFormValues) => {
-      const spec = toSpec(values);
+      const spec = toSpec(values, skill?.spec.status);
       if (skill) {
         return updateSkill({ ...skill, spec });
       }

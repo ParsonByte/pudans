@@ -4,10 +4,11 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Copy } from "lucide-react";
 import { z } from "zod";
 
+import { FormDialog } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Input } from "@/components/ui/input";
 
 import { RESOURCE_NAME_HINT, RESOURCE_NAME_PATTERN } from "../lib/model";
-import { ProviderDialogShell, ProviderFieldRow } from "./provider-dialog-shell";
 
 const copySchema = z.object({
   name: z
@@ -58,28 +59,43 @@ export function ResourceCopyDialog({
   });
 
   return (
-    <ProviderDialogShell
+    <FormDialog
+      open
       title={title}
       description={description}
       icon={<Copy className="size-4" />}
+      form={form}
       onSubmit={submit}
       onClose={onClose}
       isPending={isPending}
       submitLabel={submitLabel}
+      contentClassName="sm:max-w-2xl"
     >
-      <ProviderFieldRow
+      <FormField
+        orientation="horizontal"
         label="资源 ID"
+        htmlFor="resource-copy-name"
         hint={RESOURCE_NAME_HINT}
         error={form.formState.errors.name?.message}
       >
-        <Input aria-invalid={Boolean(form.formState.errors.name)} {...form.register("name")} />
-      </ProviderFieldRow>
-      <ProviderFieldRow label="名称" error={form.formState.errors.displayName?.message}>
         <Input
+          id="resource-copy-name"
+          aria-invalid={Boolean(form.formState.errors.name)}
+          {...form.register("name")}
+        />
+      </FormField>
+      <FormField
+        orientation="horizontal"
+        label="名称"
+        htmlFor="resource-copy-display-name"
+        error={form.formState.errors.displayName?.message}
+      >
+        <Input
+          id="resource-copy-display-name"
           aria-invalid={Boolean(form.formState.errors.displayName)}
           {...form.register("displayName")}
         />
-      </ProviderFieldRow>
-    </ProviderDialogShell>
+      </FormField>
+    </FormDialog>
   );
 }

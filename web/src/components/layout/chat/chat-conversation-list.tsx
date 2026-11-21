@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -31,8 +31,11 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import {
+  ConsoleBlockSkeleton,
+  ConsoleState,
+} from "@/modules/workspace/console/components/console-state";
 import {
   type ChatConversation as ApiChatConversation,
   deleteChatConversation,
@@ -174,41 +177,39 @@ export function ChatConversationList() {
       ) : null}
       <SidebarGroup>
         <Collapsible open={recentOpen} onOpenChange={setRecentOpen}>
-          <div className="flex h-8 items-center justify-between px-2 group-data-[collapsible=icon]:hidden">
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 px-2 text-xs font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground"
-              >
-                对话
-                <ChevronDown
-                  className={cn("size-3.5 transition-transform", !recentOpen && "-rotate-90")}
-                />
-              </Button>
-            </CollapsibleTrigger>
-            {recent.length > RECENT_PREVIEW ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => setShowAll((value) => !value)}
-              >
-                {showAll ? "收起" : "查看全部"}
-              </Button>
-            ) : null}
-          </div>
+          <ConversationHeader
+            label="对话"
+            open={recentOpen}
+            action={
+              recent.length > RECENT_PREVIEW ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowAll((value) => !value)}
+                >
+                  {showAll ? "收起" : "查看全部"}
+                </Button>
+              ) : null
+            }
+          />
           <CollapsibleContent className="CollapsibleContent">
             {conversationsQuery.isPending ? (
-              <div className="space-y-1 px-2 pt-1">
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-8 w-full" />
-              </div>
+              <ConsoleBlockSkeleton rows={3} className="grid gap-1 px-2 pt-1" itemClassName="h-8" />
             ) : conversationsQuery.isError ? (
-              <p className="px-3 py-2 text-xs text-muted-foreground">无法加载对话。</p>
+              <ConsoleState
+                variant="error"
+                title="无法加载对话。"
+                onRetry={() => void conversationsQuery.refetch()}
+                className="min-h-0 px-2 py-3"
+              />
             ) : visibleRecent.length === 0 && pinned.length === 0 ? (
-              <p className="px-3 py-2 text-xs text-muted-foreground">还没有对话。</p>
+              <ConsoleState
+                variant="empty"
+                title="还没有对话。"
+                description="新建会话后，对话会显示在这里。"
+                className="min-h-0 px-2 py-3"
+              />
             ) : (
               <ConversationRows conversations={visibleRecent} {...rowActions} />
             )}
@@ -237,7 +238,15 @@ export function ChatConversationList() {
   );
 }
 
-function ConversationHeader({ label, open }: { label: string; open: boolean }) {
+function ConversationHeader({
+  label,
+  open,
+  action,
+}: {
+  label: string;
+  open: boolean;
+  action?: ReactNode;
+}) {
   return (
     <div className="flex h-8 items-center justify-between px-2 group-data-[collapsible=icon]:hidden">
       <CollapsibleTrigger asChild>
@@ -250,6 +259,7 @@ function ConversationHeader({ label, open }: { label: string; open: boolean }) {
           <ChevronDown className={cn("size-3.5 transition-transform", !open && "-rotate-90")} />
         </Button>
       </CollapsibleTrigger>
+      {action}
     </div>
   );
 }
@@ -348,9 +358,6 @@ function ConversationRows({
           </SidebarMenuItem>
         );
       })}
-      {conversations.length === 0 ? (
-        <p className="px-3 py-2 text-xs text-muted-foreground">还没有对话。</p>
-      ) : null}
     </SidebarMenu>
   );
 }

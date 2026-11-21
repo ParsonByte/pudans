@@ -8,6 +8,7 @@ import {
   AI_API_VERSION,
   type AiMetadata,
   type AiSettingItem,
+  type JsonPatchOperation,
   listAll,
 } from "@/modules/workspace/ai/providers/lib/api";
 
@@ -16,6 +17,14 @@ const MEMORY_ASSETS = "aimemoryassets";
 const MEMORY_GENERATION_LOGS = "aimemorygenerationlogs";
 
 const MEMORY_PROMPTS = "aimemoryprompts";
+
+const MEMORY_PROMPT_BINDINGS = "aimemorypromptbindings";
+
+const MEMORY_RECORDS = "memoryrecords";
+
+const MEMORY_REQUESTS = "memoryrequests";
+
+const ORG_MEMORIES = "orgmemories";
 
 const MEMORY_ASSET_KIND = "AiMemoryAsset";
 
@@ -216,6 +225,168 @@ export type MemoryPromptLogQuery = {
   limit: number;
 };
 
+export type MemoryPromptBindingItem = {
+  apiVersion: string;
+  kind: string;
+  metadata: AiMetadata;
+  spec: {
+    targetType: MemoryPromptTargetType;
+    team?: string | null;
+    agent?: string | null;
+    layer: MemoryPromptLayer;
+    prompt: string;
+    updatedBy?: string | null;
+  };
+};
+
+export type MemoryRecordType =
+  | "PERSONA"
+  | "EPISODIC"
+  | "INSTRUCTION"
+  | "WORK_FACT"
+  | "WORK_TASK"
+  | "WORK_METHOD"
+  | "WORK_ARTIFACT";
+
+export type MemoryRecordStatus =
+  "ACTIVE" | "FROZEN" | "PENDING_CORRECTION" | "DELETED" | "SUPERSEDED";
+
+type MemoryRecordContext = {
+  teamId?: string | null;
+  userId?: string | null;
+  agentId?: string | null;
+  sessionId?: string | null;
+  taskId?: string | null;
+};
+
+export type MemoryRecordItem = {
+  id: number;
+  recordId: string;
+  context: MemoryRecordContext;
+  conversationId?: number | null;
+  content: string;
+  type: MemoryRecordType | string;
+  priority: number;
+  sceneName?: string | null;
+  sourceMessageIds?: number[] | null;
+  metadata?: Record<string, unknown> | null;
+  dedupHash?: string | null;
+  scope?: string | null;
+  orgCandidate?: boolean;
+  status: MemoryRecordStatus | string;
+  version: number;
+  timestamps?: string[] | null;
+};
+
+export type MemoryRecordQuery = {
+  teamId?: string;
+  agentId?: string;
+  userId?: string;
+  type?: string;
+  status?: string;
+  beforeId?: number;
+  limit: number;
+};
+
+type MemoryExportQuery = {
+  teamId?: string;
+  agentId?: string;
+  userId?: string;
+  type?: string;
+  status?: string;
+  from?: string;
+  to?: string;
+  limit?: number;
+};
+
+export type MemoryRebuildLevel = "L1" | "L2" | "L3";
+
+export type MemoryRebuildInput = {
+  conversationId: number;
+  teamId?: string;
+  agentId?: string;
+  level: MemoryRebuildLevel;
+  afterL1Id?: number;
+};
+
+type MemoryRebuildResult = {
+  level: string;
+  queued: boolean;
+};
+
+type MemoryPipelineTaskType = {
+  taskType: string;
+  pending: number;
+  running: number;
+  done: number;
+  failed: number;
+};
+
+export type MemoryPipelineStats = {
+  pendingTasks: number;
+  runningTasks: number;
+  doneTasks: number;
+  failedTasks: number;
+  pendingConversations: number;
+  taskTypes: MemoryPipelineTaskType[];
+};
+
+export type MemoryRequestType = "DELETE" | "CORRECT";
+
+export type MemoryRequestStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export type MemoryRequestItem = {
+  id: number;
+  userId: string;
+  teamId?: string | null;
+  agentId?: string | null;
+  memoryLevel: string;
+  memoryId: number;
+  requestType: MemoryRequestType | string;
+  reason: string;
+  suggestedContent?: string | null;
+  status: MemoryRequestStatus | string;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  reviewComment?: string | null;
+  createdAt: string;
+};
+
+export type MemoryRequestQuery = {
+  status?: string;
+  beforeId?: number;
+  limit: number;
+};
+
+export type MemoryCorrectionInput = {
+  requestType: MemoryRequestType;
+  reason: string;
+  suggestedContent?: string;
+};
+
+export type OrgMemoryItem = {
+  id: number;
+  content: string;
+  contentType: string;
+  dedupHash: string;
+  trustLevel: string;
+  sourceType: string;
+  sourceTeamIds: string[];
+  sourceUserIds: string[];
+  sourceMemoryIds: number[];
+  crossVoteCount: number;
+  approvedBy?: string | null;
+  approvedAt?: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OrgMemoryQuery = {
+  beforeId?: number;
+  limit: number;
+};
+
 export type MemorySettingItem = Omit<AiSettingItem, "spec"> & {
   spec: AiSettingItem["spec"] & {
     defaults?: { team?: string; agent?: string };
@@ -291,14 +462,20 @@ function normalizeLayerPage<T>(value: unknown, limit?: number): MemoryLayerPage<
   };
 }
 
+function normalizeAsset(value: unknown): MemoryAssetView {
+  const record = asRecord(value);
+  return {
+    ...(record as unknown as MemoryAssetView),
+    counts: normalizeCounts(record?.counts),
+  };
+}
+
 function normalizeAssets(value: unknown[]): MemoryAssetView[] {
-  return value.map((item) => {
-    const record = asRecord(item);
-    return {
-      ...(record as unknown as MemoryAssetView),
-      counts: normalizeCounts(record?.counts),
-    };
-  });
+  return value.map(normalizeAsset);
+}
+
+function normalizeList<T>(value: unknown): T[] {
+  return Array.isArray(value) ? (value as T[]) : [];
 }
 
 export async function fetchMemoryAssets(
@@ -316,6 +493,14 @@ export async function fetchMemoryAssets(
     items,
     total: typeof record?.total === "number" ? record.total : items.length,
   };
+}
+
+export async function fetchMemoryAsset(name: string, team: string): Promise<MemoryAssetView> {
+  const response = await axiosInstance.get<unknown>(
+    `${AI_API_PREFIX}/${MEMORY_ASSETS}/${encodeURIComponent(name)}`,
+    { params: { team } },
+  );
+  return normalizeAsset(response.data);
 }
 
 export async function fetchMemoryCounts(name: string, team: string): Promise<MemoryLayerCounts> {
@@ -440,6 +625,19 @@ export async function patchMemoryAsset(
   );
 }
 
+export async function deleteMemoryAsset(
+  name: string,
+  team: string,
+  clear: boolean,
+): Promise<MemoryLayerCounts> {
+  const response = await axiosInstance.delete<unknown>(
+    `${AI_API_PREFIX}/${MEMORY_ASSETS}/${encodeURIComponent(name)}`,
+    { params: { team, clear } },
+  );
+  const record = asRecord(response.data);
+  return normalizeCounts(record?.counts ?? record);
+}
+
 export async function updateMemoryLayerL1(
   name: string,
   team: string,
@@ -558,8 +756,27 @@ export async function fetchMemoryGenerationLog(id: number): Promise<MemoryGenera
   return record as MemoryGenerationLogItem;
 }
 
+const MEMORY_PROMPT_KIND = "AiMemoryPrompt";
+
+const MEMORY_PROMPT_BINDING_KIND = "AiMemoryPromptBinding";
+
 export function fetchMemoryPrompts(): Promise<MemoryPromptItem[]> {
   return listAll<MemoryPromptItem>(`/${MEMORY_PROMPTS}`);
+}
+
+export async function fetchMemoryPrompt(name: string): Promise<MemoryPromptItem> {
+  const response = await axiosInstance.get<MemoryPromptItem>(
+    `${AI_API_PREFIX}/${MEMORY_PROMPTS}/${encodeURIComponent(name)}`,
+  );
+  return response.data;
+}
+
+export async function createMemoryPrompt(item: MemoryPromptItem): Promise<MemoryPromptItem> {
+  const response = await axiosInstance.post<MemoryPromptItem>(
+    `${AI_API_PREFIX}/${MEMORY_PROMPTS}`,
+    item,
+  );
+  return response.data;
 }
 
 export async function updateMemoryPrompt(item: MemoryPromptItem): Promise<MemoryPromptItem> {
@@ -568,6 +785,117 @@ export async function updateMemoryPrompt(item: MemoryPromptItem): Promise<Memory
     item,
   );
   return response.data;
+}
+
+export async function patchMemoryPrompt(
+  name: string,
+  operations: JsonPatchOperation[],
+): Promise<MemoryPromptItem> {
+  const response = await axiosInstance.patch<MemoryPromptItem>(
+    `${AI_API_PREFIX}/${MEMORY_PROMPTS}/${encodeURIComponent(name)}`,
+    operations,
+    { headers: { "Content-Type": "application/json-patch+json" } },
+  );
+  return response.data;
+}
+
+export async function deleteMemoryPrompt(name: string): Promise<void> {
+  await axiosInstance.delete(`${AI_API_PREFIX}/${MEMORY_PROMPTS}/${encodeURIComponent(name)}`);
+}
+
+export function buildMemoryPromptItem(input: {
+  name: string;
+  displayName: string;
+  layer: MemoryPromptLayer;
+  prompt: string;
+}): MemoryPromptItem {
+  return {
+    apiVersion: AI_API_VERSION,
+    kind: MEMORY_PROMPT_KIND,
+    metadata: { name: input.name },
+    spec: {
+      name: input.displayName,
+      layer: input.layer,
+      prompt: input.prompt,
+      version: 1,
+      status: "ACTIVE",
+    },
+  };
+}
+
+export function fetchMemoryPromptBindings(): Promise<MemoryPromptBindingItem[]> {
+  return listAll<MemoryPromptBindingItem>(`/${MEMORY_PROMPT_BINDINGS}`);
+}
+
+export async function fetchMemoryPromptBinding(name: string): Promise<MemoryPromptBindingItem> {
+  const response = await axiosInstance.get<MemoryPromptBindingItem>(
+    `${AI_API_PREFIX}/${MEMORY_PROMPT_BINDINGS}/${encodeURIComponent(name)}`,
+  );
+  return response.data;
+}
+
+export async function createMemoryPromptBinding(
+  item: MemoryPromptBindingItem,
+): Promise<MemoryPromptBindingItem> {
+  const response = await axiosInstance.post<MemoryPromptBindingItem>(
+    `${AI_API_PREFIX}/${MEMORY_PROMPT_BINDINGS}`,
+    item,
+  );
+  return response.data;
+}
+
+export async function updateMemoryPromptBinding(
+  item: MemoryPromptBindingItem,
+): Promise<MemoryPromptBindingItem> {
+  const response = await axiosInstance.put<MemoryPromptBindingItem>(
+    `${AI_API_PREFIX}/${MEMORY_PROMPT_BINDINGS}/${encodeURIComponent(item.metadata.name)}`,
+    item,
+  );
+  return response.data;
+}
+
+export async function patchMemoryPromptBinding(
+  name: string,
+  operations: JsonPatchOperation[],
+): Promise<MemoryPromptBindingItem> {
+  const response = await axiosInstance.patch<MemoryPromptBindingItem>(
+    `${AI_API_PREFIX}/${MEMORY_PROMPT_BINDINGS}/${encodeURIComponent(name)}`,
+    operations,
+    { headers: { "Content-Type": "application/json-patch+json" } },
+  );
+  return response.data;
+}
+
+export async function deleteMemoryPromptBinding(name: string): Promise<void> {
+  await axiosInstance.delete(
+    `${AI_API_PREFIX}/${MEMORY_PROMPT_BINDINGS}/${encodeURIComponent(name)}`,
+  );
+}
+
+export function buildMemoryPromptBindingItem(
+  input: {
+    name: string;
+    targetType: MemoryPromptTargetType;
+    team?: string;
+    agent?: string;
+    layer: MemoryPromptLayer;
+    prompt: string;
+  },
+  existing?: MemoryPromptBindingItem,
+): MemoryPromptBindingItem {
+  return {
+    apiVersion: existing?.apiVersion ?? AI_API_VERSION,
+    kind: existing?.kind ?? MEMORY_PROMPT_BINDING_KIND,
+    metadata: existing ? { ...existing.metadata, name: input.name } : { name: input.name },
+    spec: {
+      ...(existing?.spec ?? {}),
+      targetType: input.targetType,
+      team: input.targetType === "INSTANCE" ? undefined : input.team,
+      agent: input.targetType === "AGENT" ? input.agent : undefined,
+      layer: input.layer,
+      prompt: input.prompt,
+    },
+  };
 }
 
 export async function setMemoryPrompt(input: {
@@ -581,6 +909,23 @@ export async function setMemoryPrompt(input: {
   await axiosInstance.post(`${AI_API_PREFIX}/${MEMORY_PROMPTS}/-/set`, input);
 }
 
+function normalizeResolvedPrompt(
+  value: unknown,
+  fallbackLayer: MemoryPromptLayer,
+): ResolvedMemoryPrompt {
+  const record = asRecord(value);
+  if (!record) {
+    throw new Error("无法读取生效提示词。");
+  }
+  return {
+    layer: (readString(record.layer) as MemoryPromptLayer | undefined) ?? fallbackLayer,
+    source: readString(record.source) ?? "SYSTEM",
+    promptId: readString(record.promptId) ?? null,
+    version: toNumber(record.version),
+    prompt: readString(record.prompt) ?? null,
+  };
+}
+
 export async function fetchMemoryPromptSetting(query: {
   layer: MemoryPromptLayer;
   team?: string;
@@ -592,17 +937,19 @@ export async function fetchMemoryPromptSetting(query: {
       params: query,
     },
   );
-  const record = asRecord(response.data);
-  if (!record) {
-    throw new Error("无法读取生效提示词。");
-  }
-  return {
-    layer: (readString(record.layer) as MemoryPromptLayer | undefined) ?? query.layer,
-    source: readString(record.source) ?? "SYSTEM",
-    promptId: readString(record.promptId) ?? null,
-    version: toNumber(record.version),
-    prompt: readString(record.prompt) ?? null,
-  };
+  return normalizeResolvedPrompt(response.data, query.layer);
+}
+
+export async function resolveMemoryPrompt(query: {
+  layer: MemoryPromptLayer;
+  team?: string;
+  agent?: string;
+}): Promise<ResolvedMemoryPrompt> {
+  const response = await axiosInstance.get<unknown>(
+    `${AI_API_PREFIX}/${MEMORY_PROMPTS}/-/resolve`,
+    { params: query },
+  );
+  return normalizeResolvedPrompt(response.data, query.layer);
 }
 
 export async function fetchMemoryPromptLogs(
@@ -614,12 +961,175 @@ export async function fetchMemoryPromptLogs(
   return normalizeLayerPage<MemoryPromptLogItem>(response.data);
 }
 
+export async function fetchMemoryRecords(query: MemoryRecordQuery): Promise<MemoryRecordItem[]> {
+  const response = await axiosInstance.get<unknown>(`${AI_API_PREFIX}/${MEMORY_RECORDS}`, {
+    params: query,
+  });
+  return normalizeList<MemoryRecordItem>(response.data);
+}
+
+export async function fetchMemoryRecord(name: string | number): Promise<MemoryRecordItem> {
+  const response = await axiosInstance.get<unknown>(
+    `${AI_API_PREFIX}/${MEMORY_RECORDS}/${encodeURIComponent(String(name))}`,
+  );
+  const record = asRecord(response.data);
+  if (!record) {
+    throw new Error("记忆记录不存在。");
+  }
+  return record as MemoryRecordItem;
+}
+
+export async function freezeMemoryRecord(name: string | number): Promise<MemoryRecordItem> {
+  return recordAction(name, "freeze");
+}
+
+export async function restoreMemoryRecord(name: string | number): Promise<MemoryRecordItem> {
+  return recordAction(name, "restore");
+}
+
+async function recordAction(
+  name: string | number,
+  action: "freeze" | "restore",
+): Promise<MemoryRecordItem> {
+  const response = await axiosInstance.post<MemoryRecordItem>(
+    `${AI_API_PREFIX}/${MEMORY_RECORDS}/${encodeURIComponent(String(name))}/${action}`,
+  );
+  return response.data;
+}
+
+export async function deleteMemoryRecord(
+  name: string | number,
+  reason: string,
+): Promise<MemoryRecordItem> {
+  const response = await axiosInstance.delete<MemoryRecordItem>(
+    `${AI_API_PREFIX}/${MEMORY_RECORDS}/${encodeURIComponent(String(name))}`,
+    { params: { reason } },
+  );
+  return response.data;
+}
+
+export async function rebuildMemoryRecords(
+  input: MemoryRebuildInput,
+): Promise<MemoryRebuildResult> {
+  const response = await axiosInstance.post<MemoryRebuildResult>(
+    `${AI_API_PREFIX}/${MEMORY_RECORDS}/-/rebuild`,
+    input,
+  );
+  return response.data;
+}
+
+export async function flushMemoryPipeline(conversationId: number): Promise<void> {
+  await axiosInstance.post(`${AI_API_PREFIX}/${MEMORY_RECORDS}/-/flush`, { conversationId });
+}
+
+export async function fetchMemoryPipeline(): Promise<MemoryPipelineStats> {
+  const response = await axiosInstance.get<MemoryPipelineStats>(
+    `${AI_API_PREFIX}/${MEMORY_RECORDS}/-/pipeline`,
+  );
+  return response.data;
+}
+
+export async function exportMemoryRecords(query: MemoryExportQuery): Promise<Blob> {
+  const response = await axiosInstance.get<Blob>(`${AI_API_PREFIX}/${MEMORY_RECORDS}/-/export`, {
+    params: query,
+    responseType: "blob",
+  });
+  return response.data;
+}
+
+export async function fetchMemoryRequests(query: MemoryRequestQuery): Promise<MemoryRequestItem[]> {
+  const response = await axiosInstance.get<unknown>(`${AI_API_PREFIX}/${MEMORY_REQUESTS}`, {
+    params: query,
+  });
+  return normalizeList<MemoryRequestItem>(response.data);
+}
+
+export async function approveMemoryRequest(
+  id: number,
+  comment?: string,
+): Promise<MemoryRequestItem> {
+  const response = await axiosInstance.post<MemoryRequestItem>(
+    `${AI_API_PREFIX}/${MEMORY_REQUESTS}/${id}/approve`,
+    { comment: comment?.trim() || undefined },
+  );
+  return response.data;
+}
+
+export async function rejectMemoryRequest(id: number, comment: string): Promise<MemoryRequestItem> {
+  const response = await axiosInstance.post<MemoryRequestItem>(
+    `${AI_API_PREFIX}/${MEMORY_REQUESTS}/${id}/reject`,
+    { comment },
+  );
+  return response.data;
+}
+
+export async function createMemoryCorrectionRequest(
+  name: string,
+  input: MemoryCorrectionInput,
+): Promise<MemoryRequestItem> {
+  const response = await axiosInstance.post<MemoryRequestItem>(
+    `${AI_API_PREFIX}/memories/${encodeURIComponent(name)}/correction-request`,
+    {
+      requestType: input.requestType,
+      reason: input.reason,
+      suggestedContent: input.suggestedContent,
+    },
+  );
+  return response.data;
+}
+
+export function fetchOrgMemories(query: OrgMemoryQuery): Promise<OrgMemoryItem[]> {
+  return fetchOrgMemoryList("", query);
+}
+
+export function fetchPendingOrgMemories(query: OrgMemoryQuery): Promise<OrgMemoryItem[]> {
+  return fetchOrgMemoryList("/-/pending", query);
+}
+
+async function fetchOrgMemoryList(path: string, query: OrgMemoryQuery): Promise<OrgMemoryItem[]> {
+  const response = await axiosInstance.get<unknown>(`${AI_API_PREFIX}/${ORG_MEMORIES}${path}`, {
+    params: query,
+  });
+  return normalizeList<OrgMemoryItem>(response.data);
+}
+
+async function orgMemoryAction(
+  id: number,
+  action: "approve" | "reject" | "revoke",
+): Promise<OrgMemoryItem> {
+  const response = await axiosInstance.post<OrgMemoryItem>(
+    `${AI_API_PREFIX}/${ORG_MEMORIES}/${id}/${action}`,
+  );
+  return response.data;
+}
+
+export function approveOrgMemory(id: number): Promise<OrgMemoryItem> {
+  return orgMemoryAction(id, "approve");
+}
+
+export function rejectOrgMemory(id: number): Promise<OrgMemoryItem> {
+  return orgMemoryAction(id, "reject");
+}
+
+export function revokeOrgMemory(id: number): Promise<OrgMemoryItem> {
+  return orgMemoryAction(id, "revoke");
+}
+
 const MEMORY_ERROR_MESSAGES: Record<string, string> = {
   "ai-memory-asset-not-found": "记忆资产不存在或已被删除。",
   "ai-memory-asset-forbidden": "没有权限操作该记忆资产。",
   "ai-memory-binding-limit": "同一 Agent 最多绑定 2 个记忆资产。",
   "ai-memory-import-invalid": "导入内容不合法，请检查角色与正文。",
   "ai-memory-generation-log-not-found": "生成日志不存在或已被删除。",
+  "ai-memory-prompt-not-found": "提示词不存在或已被删除。",
+  "ai-memory-prompt-invalid": "提示词内容不合法，请检查后重试。",
+  "ai-memory-prompt-conflict": "提示词与当前状态冲突，请刷新后重试。",
+  "ai-memory-not-found": "记忆记录不存在或已被删除。",
+  "ai-memory-forbidden": "没有权限操作该记忆记录。",
+  "ai-memory-request-invalid": "记忆申请不合法，请检查后重试。",
+  "ai-memory-request-conflict": "该记忆申请已被处理。",
+  "ai-org-memory-not-found": "组织记忆不存在或已被删除。",
+  "ai-conversation-not-found": "会话不存在或已被删除。",
 };
 
 export function resolveMemoryApiError(error: unknown): string {

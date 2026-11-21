@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { Loader2, RefreshCw } from "lucide-react";
 
+import { MarkdownContent } from "@/components/content/markdown";
 import { Bubble, BubbleContent } from "@/components/ui/bubble";
 import { Button } from "@/components/ui/button";
 import { Message, MessageContent, MessageFooter, MessageHeader } from "@/components/ui/message";
@@ -10,7 +11,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatTokenCount } from "@/modules/workspace/ai/routing/lib/model";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
-import { MessageMarkdown } from "@/modules/workspace/index/conversation/components/message-markdown";
 
 import { type ChatMessage, fetchConversationMessages, resolveAiSessionApiError } from "../lib/api";
 import { CONVERSATION_MESSAGE_PAGE_SIZE, messageRoleLabel } from "../lib/model";
@@ -134,7 +134,7 @@ function SessionMessage({ message }: { message: ChatMessage }) {
           ) : (
             <Bubble variant="ghost">
               <BubbleContent className="text-sm leading-7">
-                <MessageMarkdown content={content} />
+                <MarkdownContent content={content} />
               </BubbleContent>
             </Bubble>
           )

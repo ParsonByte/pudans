@@ -4,15 +4,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
 
+import { DialogFormShell } from "@/components/dialog-form-shell";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { uploadChatAttachment } from "@/modules/workspace/index/lib/chat-api";
@@ -73,69 +66,18 @@ export function DocumentUploadDialog({
   };
 
   return (
-    <Dialog
+    <DialogFormShell
       open
       onOpenChange={(open) => {
         if (!open) {
           close();
         }
       }}
-    >
-      <DialogContent>
-        <DialogHeader>
-          <div className="flex items-start gap-3 pe-8">
-            <span className="flex size-9 shrink-0 items-center justify-center bg-muted">
-              <Upload className="size-4" />
-            </span>
-            <div className="space-y-1">
-              <DialogTitle>上传文档</DialogTitle>
-              <DialogDescription>
-                支持 TXT 与 Markdown，单个文件不超过 25 MB。上传后会立即解析、切片并生成向量。
-              </DialogDescription>
-            </div>
-          </div>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          <Input
-            type="file"
-            accept={KNOWLEDGE_DOCUMENT_ACCEPT}
-            disabled={uploadMutation.isPending}
-            aria-label="选择文档文件"
-            onChange={(event) => {
-              setFile(event.target.files?.[0] ?? null);
-              setProgress(0);
-            }}
-          />
-          {file ? (
-            <p className="text-xs text-muted-foreground">
-              {file.name} · {formatDocumentSize(file.size)}
-            </p>
-          ) : (
-            <p className="text-xs text-muted-foreground">尚未选择文件。</p>
-          )}
-          {fileError ? <p className="text-xs text-destructive">{fileError}</p> : null}
-
-          {uploading ? (
-            <div className="space-y-2">
-              <Progress
-                value={phase === "uploading" ? progress : 100}
-                className={phase === "ingesting" ? "animate-pulse" : undefined}
-              />
-              <p className="text-xs text-muted-foreground">
-                {phase === "uploading" ? `正在上传 ${progress}%` : "上传完成，正在解析并生成索引…"}
-              </p>
-            </div>
-          ) : null}
-
-          {uploadMutation.isError ? (
-            <p className="text-xs text-destructive">
-              {resolveKnowledgeBaseApiError(uploadMutation.error)}
-            </p>
-          ) : null}
-        </div>
-
-        <DialogFooter>
+      title="上传文档"
+      description="支持 TXT 与 Markdown，单个文件不超过 25 MB。上传后会立即解析、切片并生成向量。"
+      icon={<Upload className="size-5" />}
+      footer={
+        <>
           <Button
             type="button"
             variant="outline"
@@ -156,9 +98,48 @@ export function DocumentUploadDialog({
             {uploadMutation.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
             上传并解析
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Input
+          type="file"
+          accept={KNOWLEDGE_DOCUMENT_ACCEPT}
+          disabled={uploadMutation.isPending}
+          aria-label="选择文档文件"
+          onChange={(event) => {
+            setFile(event.target.files?.[0] ?? null);
+            setProgress(0);
+          }}
+        />
+        {file ? (
+          <p className="text-xs text-muted-foreground">
+            {file.name} · {formatDocumentSize(file.size)}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">尚未选择文件。</p>
+        )}
+        {fileError ? <p className="text-xs text-destructive">{fileError}</p> : null}
+
+        {uploading ? (
+          <div className="space-y-2">
+            <Progress
+              value={phase === "uploading" ? progress : 100}
+              className={phase === "ingesting" ? "animate-pulse" : undefined}
+            />
+            <p className="text-xs text-muted-foreground">
+              {phase === "uploading" ? `正在上传 ${progress}%` : "上传完成，正在解析并生成索引…"}
+            </p>
+          </div>
+        ) : null}
+
+        {uploadMutation.isError ? (
+          <p className="text-xs text-destructive">
+            {resolveKnowledgeBaseApiError(uploadMutation.error)}
+          </p>
+        ) : null}
+      </div>
+    </DialogFormShell>
   );
 }
 

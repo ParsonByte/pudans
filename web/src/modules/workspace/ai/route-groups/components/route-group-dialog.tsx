@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { type Resolver, useForm, useWatch } from "react-hook-form";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +16,9 @@ import {
 import { toast } from "sonner";
 import { z } from "zod";
 
+import { DialogFormShell } from "@/components/dialog-form-shell";
+import { FormDialogSection } from "@/components/form-dialog";
+import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -32,11 +35,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { MultiSelect } from "@/modules/workspace/ai/library/components/multi-select";
 
 import { ProviderBrandIcon } from "../../providers/components/provider-brand-icon";
-import {
-  ProviderDialogSection,
-  ProviderDialogShell,
-  ProviderFieldRow,
-} from "../../providers/components/provider-dialog-shell";
 import {
   AI_API_VERSION,
   AI_ROUTE_GROUP_KIND,
@@ -171,6 +169,7 @@ export function RouteGroupDialog({
   onSaved,
 }: RouteGroupDialogProps) {
   const queryClient = useQueryClient();
+  const formId = useId();
   const existingNames = new Set(
     routeGroups
       .filter((item) => item.metadata.name !== group?.metadata.name)
@@ -448,674 +447,770 @@ export function RouteGroupDialog({
   });
 
   return (
-    <ProviderDialogShell
+    <DialogFormShell
+      open
+      onOpenChange={(open) => {
+        if (!open) {
+          onClose();
+        }
+      }}
       title={group ? "编辑路由组" : "新建组"}
       description="路由组决定网关可以选用哪些模型，以及它们按什么顺序接请求。"
-      icon={<SlidersHorizontal className="size-4" />}
-      onSubmit={submit}
-      onClose={onClose}
-      isPending={mutation.isPending}
-      submitLabel={group ? "保存" : "创建"}
-      className="sm:max-w-3xl"
+      icon={<SlidersHorizontal className="size-5" />}
+      size="3xl"
+      contentClassName="max-h-[90vh]"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
+            取消
+          </Button>
+          <Button type="submit" form={formId} disabled={mutation.isPending}>
+            {mutation.isPending ? <Loader2 className="animate-spin" /> : null}
+            {group ? "保存" : "创建"}
+          </Button>
+        </>
+      }
     >
-      <ProviderDialogSection title="基本信息">
-        <ProviderFieldRow label="名称" error={form.formState.errors.displayName?.message}>
-          <Input
-            placeholder="例如：Opus 多家备份"
-            aria-invalid={Boolean(form.formState.errors.displayName)}
-            {...form.register("displayName")}
-          />
-        </ProviderFieldRow>
-        <ProviderFieldRow
-          label="资源 ID"
-          hint={group ? "资源 ID 创建后不可修改。" : RESOURCE_NAME_HINT}
-          error={form.formState.errors.name?.message}
-        >
-          <Input
-            disabled={Boolean(group)}
-            aria-invalid={Boolean(form.formState.errors.name)}
-            {...form.register("name")}
-          />
-        </ProviderFieldRow>
-        <ProviderFieldRow
-          label="备注"
-          hint="可选，只用于说明这个组的用途。"
-          error={form.formState.errors.description?.message}
-        >
-          <Textarea
-            rows={2}
-            placeholder="例如：给工作 Key 用。"
-            {...form.register("description")}
-          />
-        </ProviderFieldRow>
-        <ProviderFieldRow
-          label="所属模式"
-          hint={
-            forcedParentMode
-              ? "内置固定组由名称决定所属模式，不能修改。"
-              : "快速或进阶模式会列出同模式的自定义组；不关联的组只能由网关显式指定。"
-          }
-        >
-          <Select
-            value={parentMode}
-            disabled={Boolean(forcedParentMode)}
-            onValueChange={(value) =>
-              form.setValue("parentMode", value as AiRouteGroupParentMode, { shouldDirty: true })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ROUTE_GROUP_PARENT_MODE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </ProviderFieldRow>
-        <ProviderFieldRow label="启用" hint="停用后，Agent 不会从这个组选择模型。">
-          <Switch
-            checked={enabled}
-            onCheckedChange={(checked) => form.setValue("enabled", checked)}
-            aria-label="启用路由组"
-          />
-        </ProviderFieldRow>
-      </ProviderDialogSection>
-
-      <ProviderDialogSection title="路由方式">
-        <ProviderFieldRow label="路由方式">
-          <Select
-            value={routeMode}
-            onValueChange={(value) =>
-              form.setValue("routeMode", value as AiRouteGroupMode, { shouldDirty: true })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ROUTE_MODE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </ProviderFieldRow>
-        <ProviderFieldRow label="默认等级" hint="智能路由按等级筛选；「继承」跟随请求或对话模式。">
-          <Select
-            value={defaultTier}
-            onValueChange={(value) =>
-              form.setValue("defaultTier", value as AiRouteGroupTier, { shouldDirty: true })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ROUTE_GROUP_TIER_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </ProviderFieldRow>
-        <ProviderFieldRow label="亲和" hint="同一会话或轮次尽量复用上次选中的账号。">
-          <Select
-            value={affinity}
-            onValueChange={(value) =>
-              form.setValue("affinity", value as AiProviderAffinity, { shouldDirty: true })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {AFFINITY_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </ProviderFieldRow>
-        {routeMode === "MANUAL" ? (
-          <ProviderFieldRow label="手动选择" hint="手动模式固定使用这个成员。">
-            <Select
-              value={manualPick || members[0]?.model || ""}
-              onValueChange={setManualPick}
-              disabled={members.length === 0}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder={members.length === 0 ? "请先添加成员" : "选择成员"} />
-              </SelectTrigger>
-              <SelectContent>
-                {members.map((member) => {
-                  const model = models.find((item) => item.metadata.name === member.model);
-                  return (
-                    <SelectItem key={member.model} value={member.model}>
-                      {model ? modelDisplayName(model) : member.model}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-          </ProviderFieldRow>
-        ) : null}
-      </ProviderDialogSection>
-
-      <ProviderDialogSection title="高级设置">
-        <ProviderFieldRow
-          label="上下文选择"
-          hint={
-            ROUTE_GROUP_CONTEXT_MODE_OPTIONS.find((option) => option.value === contextMode)?.hint
-          }
-        >
-          <Select
-            value={contextMode}
-            onValueChange={(value) =>
-              form.setValue("contextMode", value as AiRouteGroupContextMode, {
-                shouldDirty: true,
-              })
-            }
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ROUTE_GROUP_CONTEXT_MODE_OPTIONS.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </ProviderFieldRow>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <ProviderFieldRow
-            label="等待时间"
-            hint="秒；候选响应过慢时等待的时长，0 表示不额外等待。"
-          >
-            <Input type="number" min={0} {...form.register("patienceSeconds")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
-            label="首字时间"
-            hint="秒；首字在此时间内到达才继续等待，0 表示不限制。"
-          >
-            <Input type="number" min={0} {...form.register("firstTokenSeconds")} />
-          </ProviderFieldRow>
-          <ProviderFieldRow
-            label="质量阈值"
-            hint="0 到 1；候选健康度低于阈值时会被排除，0 表示不按质量排除。"
-            error={form.formState.errors.qualityThreshold?.message}
+      <form id={formId} className="space-y-6" onSubmit={submit} noValidate>
+        <FormDialogSection title="基本信息">
+          <FormField
+            orientation="horizontal"
+            label="名称"
+            htmlFor="route-group-display-name"
+            error={form.formState.errors.displayName?.message}
           >
             <Input
-              type="number"
-              min={0}
-              max={1}
-              step={0.05}
-              {...form.register("qualityThreshold")}
+              id="route-group-display-name"
+              placeholder="例如：Opus 多家备份"
+              aria-invalid={Boolean(form.formState.errors.displayName)}
+              {...form.register("displayName")}
             />
-          </ProviderFieldRow>
-          <ProviderFieldRow
-            label="排序"
-            hint="数字越小越靠前；也可在列表中用箭头调整。"
-            error={form.formState.errors.order?.message}
+          </FormField>
+          <FormField
+            orientation="horizontal"
+            label="资源 ID"
+            htmlFor="route-group-name"
+            hint={group ? "资源 ID 创建后不可修改。" : RESOURCE_NAME_HINT}
+            error={form.formState.errors.name?.message}
           >
-            <Input type="number" min={0} {...form.register("order")} />
-          </ProviderFieldRow>
-        </div>
-        <ProviderFieldRow label="Sink" hint="开启后，被限流的账号会在冷却期内从候选里排除。">
-          <Switch
-            checked={sink}
-            onCheckedChange={(checked) => form.setValue("sink", checked, { shouldDirty: true })}
-            aria-label="Sink"
-          />
-        </ProviderFieldRow>
-        <ProviderFieldRow label="后备组" hint="当前组无法选出候选时，按顺序尝试这些路由组。">
-          <div className="max-h-44 space-y-1 overflow-y-auto border p-2">
-            {fallbackOptions.length === 0 ? (
-              <p className="px-2 py-3 text-xs text-muted-foreground">没有其他路由组可选。</p>
-            ) : (
-              fallbackOptions.map((option) => (
-                <label
-                  key={option.metadata.name}
-                  className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/40"
-                >
-                  <Checkbox
-                    checked={fallbackGroups.includes(option.metadata.name)}
-                    onCheckedChange={(checked) =>
-                      toggleFallback(option.metadata.name, checked === true)
-                    }
-                  />
-                  <span className="min-w-0 flex-1 truncate">
-                    {option.spec.displayName || option.metadata.name}
-                  </span>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
-                    {parentModeLabel(effectiveParentMode(option))}
-                  </span>
-                </label>
-              ))
-            )}
-          </div>
-          {unknownFallback.length > 0 ? (
-            <p className="text-[11px] text-muted-foreground">
-              已保留 {unknownFallback.length} 个当前不存在的后备引用。
-            </p>
-          ) : null}
-        </ProviderFieldRow>
-        <ProviderFieldRow label="限制账号" hint="留空表示不限制；选择后只有这些账号参与本组路由。">
-          <MultiSelect
-            value={selectedAccounts}
-            onChange={setSelectedAccounts}
-            options={accountOptions}
-            placeholder="未限制账号"
-            emptyMessage={accounts.length === 0 ? "还没有供应商账号。" : "没有匹配的账号。"}
-            searchPlaceholder="搜索账号"
-          />
-          {selectedAccounts.some(
-            (name) => !accounts.some((account) => account.metadata.name === name),
-          ) ? (
-            <p className="text-[11px] text-muted-foreground">
-              已保留当前不存在的账号引用，保存后会继续生效。
-            </p>
-          ) : null}
-        </ProviderFieldRow>
-      </ProviderDialogSection>
+            <Input
+              id="route-group-name"
+              disabled={Boolean(group)}
+              aria-invalid={Boolean(form.formState.errors.name)}
+              {...form.register("name")}
+            />
+          </FormField>
+          <FormField
+            orientation="horizontal"
+            label="备注"
+            htmlFor="route-group-description"
+            hint="可选，只用于说明这个组的用途。"
+            error={form.formState.errors.description?.message}
+          >
+            <Textarea
+              id="route-group-description"
+              rows={2}
+              placeholder="例如：给工作 Key 用。"
+              {...form.register("description")}
+            />
+          </FormField>
+          <FormField
+            orientation="horizontal"
+            label="所属模式"
+            htmlFor="route-group-parent-mode"
+            hint={
+              forcedParentMode
+                ? "内置固定组由名称决定所属模式，不能修改。"
+                : "快速或进阶模式会列出同模式的自定义组；不关联的组只能由网关显式指定。"
+            }
+          >
+            <Select
+              value={parentMode}
+              disabled={Boolean(forcedParentMode)}
+              onValueChange={(value) =>
+                form.setValue("parentMode", value as AiRouteGroupParentMode, { shouldDirty: true })
+              }
+            >
+              <SelectTrigger id="route-group-parent-mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROUTE_GROUP_PARENT_MODE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField
+            orientation="horizontal"
+            label="启用"
+            htmlFor="route-group-enabled"
+            hint="停用后，Agent 不会从这个组选择模型。"
+          >
+            <Switch
+              id="route-group-enabled"
+              checked={enabled}
+              onCheckedChange={(checked) => form.setValue("enabled", checked)}
+              aria-label="启用路由组"
+            />
+          </FormField>
+        </FormDialogSection>
 
-      <ProviderDialogSection
-        title={
-          <span className="flex items-center justify-between gap-2">
-            <span>模型成员</span>
-            <span className="text-xs font-normal text-muted-foreground">{members.length} 个</span>
-          </span>
-        }
-      >
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs text-muted-foreground">按当前顺序尝试；权重用于权重模式。</p>
-          <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
-            <PopoverTrigger asChild>
-              <Button type="button" variant="outline" size="sm">
-                <Plus />
-                添加模型
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-[380px] p-0">
-              <div className="flex items-center gap-2 border-b px-3 py-2">
-                <Search className="size-4 shrink-0 text-muted-foreground" />
-                <Input
-                  value={pickerSearch}
-                  onChange={(event) => setPickerSearch(event.target.value)}
-                  placeholder="筛选，或输入模型名称…"
-                  className="h-7 border-0 px-0 shadow-none focus-visible:ring-0"
-                  autoFocus
-                />
-              </div>
-              <div className="max-h-80 overflow-y-auto p-2">
-                {selectableGroups.length === 0 ? (
-                  <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-                    没有可添加的模型。先在供应商里添加账号和模型。
-                  </p>
-                ) : (
-                  selectableGroups.map(({ provider, models: providerModels }) => (
-                    <div key={provider.metadata.name} className="mb-2 last:mb-0">
-                      <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
-                        <ProviderBrandIcon provider={provider} className="size-3" />
-                        {provider.spec.displayName || provider.metadata.name}
-                      </div>
-                      {providerModels.map((model) => (
-                        <button
-                          key={model.metadata.name}
-                          type="button"
-                          onClick={() => addMember(model)}
-                          className="flex w-full items-center gap-2 px-2 py-1.5 text-start transition-colors hover:bg-accent"
-                        >
-                          <ProviderBrandIcon provider={provider} className="size-4" />
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-sm">
-                              {modelDisplayName(model)}
-                            </span>
-                            <span className="block truncate font-mono text-[10px] text-muted-foreground">
-                              {model.spec.modelCode}
-                            </span>
-                          </span>
-                          <span className="shrink-0 text-[10px] text-muted-foreground">
-                            {model.spec.contextWindow
-                              ? `${formatTokenCount(model.spec.contextWindow)} token`
-                              : "未设上下文"}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  ))
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-
-        {members.length === 0 ? (
-          <div className="flex min-h-24 items-center justify-center border border-dashed px-4 py-6 text-center text-xs text-muted-foreground">
-            还没有成员。添加模型后，网关才能从这个组选择。
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {members.map((member, index) => {
-              const model = models.find((item) => item.metadata.name === member.model);
-              const provider = model
-                ? providers.find((item) => item.metadata.name === model.spec.provider)
-                : undefined;
-              return (
-                <div key={member.model} className="border bg-background/40 p-3">
-                  <div className="flex items-center gap-2">
-                    <ProviderBrandIcon provider={provider} className="size-4" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
+        <FormDialogSection title="路由方式">
+          <FormField orientation="horizontal" label="路由方式" htmlFor="route-group-mode">
+            <Select
+              value={routeMode}
+              onValueChange={(value) =>
+                form.setValue("routeMode", value as AiRouteGroupMode, { shouldDirty: true })
+              }
+            >
+              <SelectTrigger id="route-group-mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROUTE_MODE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField
+            orientation="horizontal"
+            label="默认等级"
+            htmlFor="route-group-tier"
+            hint="智能路由按等级筛选；「继承」跟随请求或对话模式。"
+          >
+            <Select
+              value={defaultTier}
+              onValueChange={(value) =>
+                form.setValue("defaultTier", value as AiRouteGroupTier, { shouldDirty: true })
+              }
+            >
+              <SelectTrigger id="route-group-tier">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROUTE_GROUP_TIER_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField
+            orientation="horizontal"
+            label="亲和"
+            htmlFor="route-group-affinity"
+            hint="同一会话或轮次尽量复用上次选中的账号。"
+          >
+            <Select
+              value={affinity}
+              onValueChange={(value) =>
+                form.setValue("affinity", value as AiProviderAffinity, { shouldDirty: true })
+              }
+            >
+              <SelectTrigger id="route-group-affinity">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {AFFINITY_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          {routeMode === "MANUAL" ? (
+            <FormField
+              orientation="horizontal"
+              label="手动选择"
+              htmlFor="route-group-manual-pick"
+              hint="手动模式固定使用这个成员。"
+            >
+              <Select
+                value={manualPick || members[0]?.model || ""}
+                onValueChange={setManualPick}
+                disabled={members.length === 0}
+              >
+                <SelectTrigger id="route-group-manual-pick">
+                  <SelectValue placeholder={members.length === 0 ? "请先添加成员" : "选择成员"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {members.map((member) => {
+                    const model = models.find((item) => item.metadata.name === member.model);
+                    return (
+                      <SelectItem key={member.model} value={member.model}>
                         {model ? modelDisplayName(model) : member.model}
-                      </p>
-                      <p className="truncate text-[10px] text-muted-foreground">
-                        {provider?.spec.displayName || model?.spec.provider || "未知供应商"}
-                        {model ? ` · ${model.spec.modelCode}` : ""}
-                      </p>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </FormField>
+          ) : null}
+        </FormDialogSection>
+
+        <FormDialogSection title="高级设置">
+          <FormField
+            orientation="horizontal"
+            label="上下文选择"
+            htmlFor="route-group-context-mode"
+            hint={
+              ROUTE_GROUP_CONTEXT_MODE_OPTIONS.find((option) => option.value === contextMode)?.hint
+            }
+          >
+            <Select
+              value={contextMode}
+              onValueChange={(value) =>
+                form.setValue("contextMode", value as AiRouteGroupContextMode, {
+                  shouldDirty: true,
+                })
+              }
+            >
+              <SelectTrigger id="route-group-context-mode">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ROUTE_GROUP_CONTEXT_MODE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              orientation="vertical"
+              label="等待时间"
+              htmlFor="route-group-patience"
+              hint="秒；候选响应过慢时等待的时长，0 表示不额外等待。"
+            >
+              <Input
+                id="route-group-patience"
+                type="number"
+                min={0}
+                {...form.register("patienceSeconds")}
+              />
+            </FormField>
+            <FormField
+              orientation="vertical"
+              label="首字时间"
+              htmlFor="route-group-first-token"
+              hint="秒；首字在此时间内到达才继续等待，0 表示不限制。"
+            >
+              <Input
+                id="route-group-first-token"
+                type="number"
+                min={0}
+                {...form.register("firstTokenSeconds")}
+              />
+            </FormField>
+            <FormField
+              orientation="vertical"
+              label="质量阈值"
+              htmlFor="route-group-quality"
+              hint="0 到 1；候选健康度低于阈值时会被排除，0 表示不按质量排除。"
+              error={form.formState.errors.qualityThreshold?.message}
+            >
+              <Input
+                id="route-group-quality"
+                type="number"
+                min={0}
+                max={1}
+                step={0.05}
+                {...form.register("qualityThreshold")}
+              />
+            </FormField>
+            <FormField
+              orientation="vertical"
+              label="排序"
+              htmlFor="route-group-order"
+              hint="数字越小越靠前；也可在列表中用箭头调整。"
+              error={form.formState.errors.order?.message}
+            >
+              <Input id="route-group-order" type="number" min={0} {...form.register("order")} />
+            </FormField>
+          </div>
+          <FormField
+            orientation="horizontal"
+            label="Sink"
+            htmlFor="route-group-sink"
+            hint="开启后，被限流的账号会在冷却期内从候选里排除。"
+          >
+            <Switch
+              id="route-group-sink"
+              checked={sink}
+              onCheckedChange={(checked) => form.setValue("sink", checked, { shouldDirty: true })}
+              aria-label="Sink"
+            />
+          </FormField>
+          <FormField
+            orientation="horizontal"
+            label="后备组"
+            htmlFor="route-group-fallbacks"
+            hint="当前组无法选出候选时，按顺序尝试这些路由组。"
+          >
+            <div
+              id="route-group-fallbacks"
+              className="max-h-44 space-y-1 overflow-y-auto border p-2"
+            >
+              {fallbackOptions.length === 0 ? (
+                <p className="px-2 py-3 text-xs text-muted-foreground">没有其他路由组可选。</p>
+              ) : (
+                fallbackOptions.map((option) => (
+                  <label
+                    key={option.metadata.name}
+                    className="flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/40"
+                  >
+                    <Checkbox
+                      checked={fallbackGroups.includes(option.metadata.name)}
+                      onCheckedChange={(checked) =>
+                        toggleFallback(option.metadata.name, checked === true)
+                      }
+                    />
+                    <span className="min-w-0 flex-1 truncate">
+                      {option.spec.displayName || option.metadata.name}
+                    </span>
+                    <span className="shrink-0 text-[10px] text-muted-foreground">
+                      {parentModeLabel(effectiveParentMode(option))}
+                    </span>
+                  </label>
+                ))
+              )}
+            </div>
+            {unknownFallback.length > 0 ? (
+              <p className="text-[11px] text-muted-foreground">
+                已保留 {unknownFallback.length} 个当前不存在的后备引用。
+              </p>
+            ) : null}
+          </FormField>
+          <FormField
+            orientation="horizontal"
+            label="限制账号"
+            htmlFor="route-group-accounts"
+            hint="留空表示不限制；选择后只有这些账号参与本组路由。"
+          >
+            <MultiSelect
+              id="route-group-accounts"
+              value={selectedAccounts}
+              onChange={setSelectedAccounts}
+              options={accountOptions}
+              placeholder="未限制账号"
+              emptyMessage={accounts.length === 0 ? "还没有供应商账号。" : "没有匹配的账号。"}
+              searchPlaceholder="搜索账号"
+            />
+            {selectedAccounts.some(
+              (name) => !accounts.some((account) => account.metadata.name === name),
+            ) ? (
+              <p className="text-[11px] text-muted-foreground">
+                已保留当前不存在的账号引用，保存后会继续生效。
+              </p>
+            ) : null}
+          </FormField>
+        </FormDialogSection>
+
+        <FormDialogSection
+          title={
+            <span className="flex items-center justify-between gap-2">
+              <span>模型成员</span>
+              <span className="text-xs font-normal text-muted-foreground">{members.length} 个</span>
+            </span>
+          }
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs text-muted-foreground">按当前顺序尝试；权重用于权重模式。</p>
+            <Popover open={pickerOpen} onOpenChange={setPickerOpen}>
+              <PopoverTrigger asChild>
+                <Button type="button" variant="outline" size="sm">
+                  <Plus />
+                  添加模型
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-[380px] p-0">
+                <div className="flex items-center gap-2 border-b px-3 py-2">
+                  <Search className="size-4 shrink-0 text-muted-foreground" />
+                  <Input
+                    value={pickerSearch}
+                    onChange={(event) => setPickerSearch(event.target.value)}
+                    placeholder="筛选，或输入模型名称…"
+                    className="h-7 border-0 px-0 shadow-none focus-visible:ring-0"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-80 overflow-y-auto p-2">
+                  {selectableGroups.length === 0 ? (
+                    <p className="px-2 py-6 text-center text-xs text-muted-foreground">
+                      没有可添加的模型。先在供应商里添加账号和模型。
+                    </p>
+                  ) : (
+                    selectableGroups.map(({ provider, models: providerModels }) => (
+                      <div key={provider.metadata.name} className="mb-2 last:mb-0">
+                        <div className="flex items-center gap-1.5 px-2 py-1 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
+                          <ProviderBrandIcon provider={provider} className="size-3" />
+                          {provider.spec.displayName || provider.metadata.name}
+                        </div>
+                        {providerModels.map((model) => (
+                          <button
+                            key={model.metadata.name}
+                            type="button"
+                            onClick={() => addMember(model)}
+                            className="flex w-full items-center gap-2 px-2 py-1.5 text-start transition-colors hover:bg-accent"
+                          >
+                            <ProviderBrandIcon provider={provider} className="size-4" />
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate text-sm">
+                                {modelDisplayName(model)}
+                              </span>
+                              <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                                {model.spec.modelCode}
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-[10px] text-muted-foreground">
+                              {model.spec.contextWindow
+                                ? `${formatTokenCount(model.spec.contextWindow)} token`
+                                : "未设上下文"}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {members.length === 0 ? (
+            <div className="flex min-h-24 items-center justify-center border border-dashed px-4 py-6 text-center text-xs text-muted-foreground">
+              还没有成员。添加模型后，网关才能从这个组选择。
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {members.map((member, index) => {
+                const model = models.find((item) => item.metadata.name === member.model);
+                const provider = model
+                  ? providers.find((item) => item.metadata.name === model.spec.provider)
+                  : undefined;
+                return (
+                  <div key={member.model} className="border bg-background/40 p-3">
+                    <div className="flex items-center gap-2">
+                      <ProviderBrandIcon provider={provider} className="size-4" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium">
+                          {model ? modelDisplayName(model) : member.model}
+                        </p>
+                        <p className="truncate text-[10px] text-muted-foreground">
+                          {provider?.spec.displayName || model?.spec.provider || "未知供应商"}
+                          {model ? ` · ${model.spec.modelCode}` : ""}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-0.5">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => moveMember(index, -1)}
+                          disabled={index === 0}
+                          aria-label="上移"
+                        >
+                          <ChevronUp />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => moveMember(index, 1)}
+                          disabled={index === members.length - 1}
+                          aria-label="下移"
+                        >
+                          <ChevronDown />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => removeMember(index)}
+                          aria-label="移除"
+                        >
+                          <X />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-0.5">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => moveMember(index, -1)}
-                        disabled={index === 0}
-                        aria-label="上移"
-                      >
-                        <ChevronUp />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => moveMember(index, 1)}
-                        disabled={index === members.length - 1}
-                        aria-label="下移"
-                      >
-                        <ChevronDown />
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => removeMember(index)}
-                        aria-label="移除"
-                      >
-                        <X />
-                      </Button>
+                    <div className="mt-2 flex flex-wrap items-center gap-3 ps-6">
+                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        权重
+                        <Input
+                          type="number"
+                          min={1}
+                          max={1000}
+                          value={member.weight}
+                          onChange={(event) =>
+                            updateMember(index, {
+                              weight: Number(event.target.value) || 1,
+                            })
+                          }
+                          className="h-7 w-16"
+                        />
+                      </label>
+                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        等级
+                        <Select
+                          value={member.tierOverride}
+                          onValueChange={(value) =>
+                            updateMember(index, {
+                              tierOverride: value as AiRouteGroupTier,
+                            })
+                          }
+                        >
+                          <SelectTrigger className="h-7 w-24">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {ROUTE_GROUP_TIER_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </label>
+                      <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                        启用
+                        <Switch
+                          size="sm"
+                          checked={member.enabled}
+                          onCheckedChange={(checked) => updateMember(index, { enabled: checked })}
+                          aria-label="启用成员"
+                        />
+                      </label>
+                    </div>
+                    <div className="mt-2 grid gap-2 ps-6 sm:grid-cols-[minmax(0,1fr)_150px]">
+                      <label className="space-y-1 text-[11px] text-muted-foreground">
+                        能力标签
+                        <Input
+                          value={member.capabilityTags}
+                          onChange={(event) =>
+                            updateMember(index, { capabilityTags: event.target.value })
+                          }
+                          placeholder="例如 vision, tools"
+                          className="h-7"
+                        />
+                      </label>
+                      <label className="space-y-1 text-[11px] text-muted-foreground">
+                        额外上下文
+                        <Input
+                          type="number"
+                          min={0}
+                          value={member.extraContextMargin}
+                          onChange={(event) =>
+                            updateMember(index, {
+                              extraContextMargin: Number(event.target.value) || 0,
+                            })
+                          }
+                          className="h-7"
+                          aria-label="额外上下文"
+                        />
+                      </label>
                     </div>
                   </div>
-                  <div className="mt-2 flex flex-wrap items-center gap-3 ps-6">
-                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      权重
+                );
+              })}
+            </div>
+          )}
+        </FormDialogSection>
+
+        <FormDialogSection
+          title={
+            <span className="flex items-center justify-between gap-2">
+              <span className="flex items-center gap-1.5">
+                <ListChecks className="size-4" />
+                路由规则
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addRule}
+                disabled={members.length === 0}
+              >
+                <Plus />
+                添加规则
+              </Button>
+            </span>
+          }
+        >
+          <p className="text-xs leading-5 text-muted-foreground">
+            条件语法：model:xxx、tier:HIGH、capability:VISION、context&gt;=N、provider:xxx；多个子句用逗号分隔，全部满足才命中。智能体、Token
+            阈值和图片阈值属于结构化条件，可与条件同时使用。优先级高的规则先匹配，暂停的规则不参与匹配。
+          </p>
+          {rules.length === 0 ? (
+            <div className="flex min-h-20 items-center justify-center border border-dashed px-4 py-5 text-center text-xs text-muted-foreground">
+              {members.length === 0
+                ? "先添加模型成员，再配置规则。"
+                : "还没有规则。添加规则后，满足条件的请求会优先选择指定成员。"}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {rules.map((rule, index) => (
+                <div key={index} className="space-y-2 border bg-background/40 p-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={rule.name}
+                      onChange={(event) => updateRule(index, { name: event.target.value })}
+                      placeholder="规则名称（可选）"
+                      className="h-8 flex-1"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      value={rule.priority}
+                      onChange={(event) =>
+                        updateRule(index, { priority: Number(event.target.value) || 0 })
+                      }
+                      placeholder="优先级"
+                      className="h-8 w-24"
+                      aria-label="规则优先级"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => removeRule(index)}
+                      aria-label="删除规则"
+                    >
+                      <X />
+                    </Button>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <label className="space-y-1 text-[11px] text-muted-foreground">
+                      条件
                       <Input
-                        type="number"
-                        min={1}
-                        max={1000}
-                        value={member.weight}
-                        onChange={(event) =>
-                          updateMember(index, {
-                            weight: Number(event.target.value) || 1,
-                          })
-                        }
-                        className="h-7 w-16"
+                        value={rule.condition}
+                        onChange={(event) => updateRule(index, { condition: event.target.value })}
+                        placeholder="例如 capability:VISION,tier:HIGH"
+                        className="h-8"
                       />
                     </label>
-                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      等级
+                    <label className="space-y-1 text-[11px] text-muted-foreground">
+                      成员
                       <Select
-                        value={member.tierOverride}
-                        onValueChange={(value) =>
-                          updateMember(index, {
-                            tierOverride: value as AiRouteGroupTier,
-                          })
-                        }
+                        value={rule.member || undefined}
+                        onValueChange={(value) => updateRule(index, { member: value })}
                       >
-                        <SelectTrigger className="h-7 w-24">
-                          <SelectValue />
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder="选择成员" />
                         </SelectTrigger>
                         <SelectContent>
-                          {ROUTE_GROUP_TIER_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
+                          {members.map((member) => {
+                            const model = models.find(
+                              (item) => item.metadata.name === member.model,
+                            );
+                            return (
+                              <SelectItem key={member.model} value={member.model}>
+                                {model ? modelDisplayName(model) : member.model}
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                     </label>
-                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                      启用
-                      <Switch
-                        size="sm"
-                        checked={member.enabled}
-                        onCheckedChange={(checked) => updateMember(index, { enabled: checked })}
-                        aria-label="启用成员"
-                      />
-                    </label>
                   </div>
-                  <div className="mt-2 grid gap-2 ps-6 sm:grid-cols-[minmax(0,1fr)_150px]">
+                  <div className="grid gap-2 sm:grid-cols-3">
                     <label className="space-y-1 text-[11px] text-muted-foreground">
-                      能力标签
+                      智能体
                       <Input
-                        value={member.capabilityTags}
-                        onChange={(event) =>
-                          updateMember(index, { capabilityTags: event.target.value })
-                        }
-                        placeholder="例如 vision, tools"
-                        className="h-7"
+                        value={rule.agents}
+                        onChange={(event) => updateRule(index, { agents: event.target.value })}
+                        placeholder="agent-a, agent-b"
+                        className="h-8"
                       />
                     </label>
                     <label className="space-y-1 text-[11px] text-muted-foreground">
-                      额外上下文
+                      Token 阈值
                       <Input
                         type="number"
                         min={0}
-                        value={member.extraContextMargin}
-                        onChange={(event) =>
-                          updateMember(index, {
-                            extraContextMargin: Number(event.target.value) || 0,
-                          })
-                        }
-                        className="h-7"
-                        aria-label="额外上下文"
+                        value={rule.tokensGte}
+                        onChange={(event) => updateRule(index, { tokensGte: event.target.value })}
+                        placeholder="不低于"
+                        className="h-8"
+                      />
+                    </label>
+                    <label className="space-y-1 text-[11px] text-muted-foreground">
+                      图片阈值
+                      <Input
+                        type="number"
+                        min={0}
+                        value={rule.imagesGte}
+                        onChange={(event) => updateRule(index, { imagesGte: event.target.value })}
+                        placeholder="不少于"
+                        className="h-8"
                       />
                     </label>
                   </div>
+                  <div className="flex flex-wrap items-end gap-4">
+                    <label className="min-w-48 flex-1 space-y-1 text-[11px] text-muted-foreground">
+                      覆盖成员
+                      <Select
+                        value={rule.use || "NONE"}
+                        onValueChange={(value) =>
+                          updateRule(index, { use: value === "NONE" ? "" : value })
+                        }
+                      >
+                        <SelectTrigger className="h-8">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="NONE">不覆盖</SelectItem>
+                          {members.map((member) => {
+                            const model = models.find(
+                              (item) => item.metadata.name === member.model,
+                            );
+                            return (
+                              <SelectItem key={member.model} value={member.model}>
+                                {model ? modelDisplayName(model) : member.model}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </label>
+                    <label className="flex items-center gap-2 pb-1 text-[11px] text-muted-foreground">
+                      <Switch
+                        size="sm"
+                        checked={rule.pause}
+                        onCheckedChange={(checked) => updateRule(index, { pause: checked })}
+                        aria-label="暂停规则"
+                      />
+                      暂停规则
+                    </label>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        )}
-      </ProviderDialogSection>
+              ))}
+            </div>
+          )}
+        </FormDialogSection>
 
-      <ProviderDialogSection
-        title={
-          <span className="flex items-center justify-between gap-2">
-            <span className="flex items-center gap-1.5">
-              <ListChecks className="size-4" />
-              路由规则
+        <p className="px-1 text-[11px] text-muted-foreground">
+          当前组：{parentModeLabel(parentMode)} · {affinityLabel(affinity)}亲和 ·{" "}
+          {ROUTE_MODE_OPTIONS.find((option) => option.value === routeMode)?.label ?? routeMode} ·{" "}
+          {rules.length} 条规则
+          {mutation.isPending ? (
+            <span className="ms-2 inline-flex items-center gap-1">
+              <Loader2 className="size-3 animate-spin" />
+              正在保存
             </span>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addRule}
-              disabled={members.length === 0}
-            >
-              <Plus />
-              添加规则
-            </Button>
-          </span>
-        }
-      >
-        <p className="text-xs leading-5 text-muted-foreground">
-          条件语法：model:xxx、tier:HIGH、capability:VISION、context&gt;=N、provider:xxx；多个子句用逗号分隔，全部满足才命中。智能体、Token
-          阈值和图片阈值属于结构化条件，可与条件同时使用。优先级高的规则先匹配，暂停的规则不参与匹配。
+          ) : null}
         </p>
-        {rules.length === 0 ? (
-          <div className="flex min-h-20 items-center justify-center border border-dashed px-4 py-5 text-center text-xs text-muted-foreground">
-            {members.length === 0
-              ? "先添加模型成员，再配置规则。"
-              : "还没有规则。添加规则后，满足条件的请求会优先选择指定成员。"}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {rules.map((rule, index) => (
-              <div key={index} className="space-y-2 border bg-background/40 p-3">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={rule.name}
-                    onChange={(event) => updateRule(index, { name: event.target.value })}
-                    placeholder="规则名称（可选）"
-                    className="h-8 flex-1"
-                  />
-                  <Input
-                    type="number"
-                    min={0}
-                    value={rule.priority}
-                    onChange={(event) =>
-                      updateRule(index, { priority: Number(event.target.value) || 0 })
-                    }
-                    placeholder="优先级"
-                    className="h-8 w-24"
-                    aria-label="规则优先级"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => removeRule(index)}
-                    aria-label="删除规则"
-                  >
-                    <X />
-                  </Button>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <label className="space-y-1 text-[11px] text-muted-foreground">
-                    条件
-                    <Input
-                      value={rule.condition}
-                      onChange={(event) => updateRule(index, { condition: event.target.value })}
-                      placeholder="例如 capability:VISION,tier:HIGH"
-                      className="h-8"
-                    />
-                  </label>
-                  <label className="space-y-1 text-[11px] text-muted-foreground">
-                    成员
-                    <Select
-                      value={rule.member || undefined}
-                      onValueChange={(value) => updateRule(index, { member: value })}
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue placeholder="选择成员" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {members.map((member) => {
-                          const model = models.find((item) => item.metadata.name === member.model);
-                          return (
-                            <SelectItem key={member.model} value={member.model}>
-                              {model ? modelDisplayName(model) : member.model}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </label>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <label className="space-y-1 text-[11px] text-muted-foreground">
-                    智能体
-                    <Input
-                      value={rule.agents}
-                      onChange={(event) => updateRule(index, { agents: event.target.value })}
-                      placeholder="agent-a, agent-b"
-                      className="h-8"
-                    />
-                  </label>
-                  <label className="space-y-1 text-[11px] text-muted-foreground">
-                    Token 阈值
-                    <Input
-                      type="number"
-                      min={0}
-                      value={rule.tokensGte}
-                      onChange={(event) => updateRule(index, { tokensGte: event.target.value })}
-                      placeholder="不低于"
-                      className="h-8"
-                    />
-                  </label>
-                  <label className="space-y-1 text-[11px] text-muted-foreground">
-                    图片阈值
-                    <Input
-                      type="number"
-                      min={0}
-                      value={rule.imagesGte}
-                      onChange={(event) => updateRule(index, { imagesGte: event.target.value })}
-                      placeholder="不少于"
-                      className="h-8"
-                    />
-                  </label>
-                </div>
-                <div className="flex flex-wrap items-end gap-4">
-                  <label className="min-w-48 flex-1 space-y-1 text-[11px] text-muted-foreground">
-                    覆盖成员
-                    <Select
-                      value={rule.use || "NONE"}
-                      onValueChange={(value) =>
-                        updateRule(index, { use: value === "NONE" ? "" : value })
-                      }
-                    >
-                      <SelectTrigger className="h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="NONE">不覆盖</SelectItem>
-                        {members.map((member) => {
-                          const model = models.find((item) => item.metadata.name === member.model);
-                          return (
-                            <SelectItem key={member.model} value={member.model}>
-                              {model ? modelDisplayName(model) : member.model}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </label>
-                  <label className="flex items-center gap-2 pb-1 text-[11px] text-muted-foreground">
-                    <Switch
-                      size="sm"
-                      checked={rule.pause}
-                      onCheckedChange={(checked) => updateRule(index, { pause: checked })}
-                      aria-label="暂停规则"
-                    />
-                    暂停规则
-                  </label>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </ProviderDialogSection>
-
-      <p className="px-1 text-[11px] text-muted-foreground">
-        当前组：{parentModeLabel(parentMode)} · {affinityLabel(affinity)}亲和 ·{" "}
-        {ROUTE_MODE_OPTIONS.find((option) => option.value === routeMode)?.label ?? routeMode} ·{" "}
-        {rules.length} 条规则
-        {mutation.isPending ? (
-          <span className="ms-2 inline-flex items-center gap-1">
-            <Loader2 className="size-3 animate-spin" />
-            正在保存
-          </span>
-        ) : null}
-      </p>
-    </ProviderDialogShell>
+      </form>
+    </DialogFormShell>
   );
 }
 

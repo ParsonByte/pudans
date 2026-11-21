@@ -1,80 +1,116 @@
-import { Bar, CartesianGrid, ComposedChart, Line, XAxis, YAxis } from "recharts";
+"use client";
+
+import { useMemo } from "react";
+
+import type { EChartsOption } from "echarts";
 
 import {
-  type ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+  chartAxisLabel,
+  chartGrid,
+  chartLegend,
+  chartSplitLine,
+  chartTooltip,
+} from "@/components/charts/chart-options";
+import { useChartTokens } from "@/components/charts/chart-theme";
+import { EChart } from "@/components/charts/echart";
 import { formatTrendDay } from "@/lib/date";
 import { formatNumber } from "@/modules/workspace/ai/providers/lib/model";
 
 import type { UsageSessionStatsDay } from "../../lib/api";
 
-const CHART_CONFIG = {
-  sessions: { label: "会话数", color: "var(--chart-1)" },
-  messages: { label: "消息数", color: "var(--chart-3)" },
-} satisfies ChartConfig;
+const SERIES_LABELS = ["会话数", "消息数"];
 
 export function SessionActivityChart({ series }: { series: UsageSessionStatsDay[] }) {
-  return (
-    <ChartContainer config={CHART_CONFIG} className="aspect-auto h-[280px] w-full p-4 pt-5">
-      <ComposedChart data={series} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-        <XAxis
-          dataKey="day"
-          stroke="var(--muted-foreground)"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          tickFormatter={(value) => formatTrendDay(String(value))}
-          interval="preserveStartEnd"
-        />
-        <YAxis
-          yAxisId="sessions"
-          stroke="var(--muted-foreground)"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          width={44}
-          allowDecimals={false}
-          tickFormatter={(value) => formatNumber(Number(value))}
-        />
-        <YAxis
-          yAxisId="messages"
-          orientation="right"
-          stroke="var(--muted-foreground)"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          width={52}
-          allowDecimals={false}
-          tickFormatter={(value) => formatNumber(Number(value))}
-        />
-        <ChartTooltip
-          content={
-            <ChartTooltipContent labelFormatter={(value) => formatTrendDay(String(value))} />
+  const tokens = useChartTokens();
+  const option = useMemo<EChartsOption>(() => {
+    const splitLine = chartSplitLine(tokens);
+    return {
+      grid: { ...chartGrid(), bottom: 36 },
+      tooltip: {
+        ...chartTooltip(tokens),
+        trigger: "axis",
+        axisPointer: { type: "shadow" },
+        formatter: (params) => {
+          const items = Array.isArray(params) ? params : [params];
+          const first = items[0];
+          if (!first) {
+            return "";
           }
-        />
-        <ChartLegend content={<ChartLegendContent />} />
-        <Bar
-          yAxisId="sessions"
-          dataKey="sessions"
-          fill="var(--color-sessions)"
-          radius={[3, 3, 0, 0]}
-          barSize={18}
-        />
-        <Line
-          yAxisId="messages"
-          type="monotone"
-          dataKey="messages"
-          stroke="var(--color-messages)"
-          strokeWidth={2}
-          dot={false}
-        />
-      </ComposedChart>
-    </ChartContainer>
+          const entries = new Map(items.map((item) => [String(item.seriesName ?? ""), item]));
+          const rows = SERIES_LABELS.map((label) => {
+            const item = entries.get(label);
+            const value = Number(item?.value ?? 0).toLocaleString("zh-CN");
+            return `${item?.marker ?? ""}${label}：${value}`;
+          });
+          return `${formatTrendDay(String(first.name ?? ""))}<br/>${rows.join("<br/>")}`;
+        },
+      },
+      legend: chartLegend(tokens),
+      xAxis: {
+        type: "category",
+        data: series.map((point) => point.day),
+        axisLabel: {
+          ...chartAxisLabel(tokens),
+          formatter: (value) => formatTrendDay(value),
+        },
+        axisLine: { show: false },
+        axisTick: { show: false },
+      },
+      yAxis: [
+        {
+          type: "value",
+          minInterval: 1,
+          axisLabel: {
+            ...chartAxisLabel(tokens),
+            formatter: (value) => formatNumber(value),
+          },
+          splitLine: {
+            ...splitLine,
+            lineStyle: { ...splitLine.lineStyle, type: "dashed" },
+          },
+          axisLine: { show: false },
+          axisTick: { show: false },
+        },
+        {
+          type: "value",
+          position: "right",
+          minInterval: 1,
+          axisLabel: {
+            ...chartAxisLabel(tokens),
+            formatter: (value) => formatNumber(value),
+          },
+          splitLine: { show: false },
+          axisLine: { show: false },
+          axisTick: { show: false },
+        },
+      ],
+      series: [
+        {
+          type: "bar" as const,
+          name: "会话数",
+          data: series.map((point) => point.sessions),
+          yAxisIndex: 0,
+          barWidth: 18,
+          itemStyle: { color: tokens.chart1, borderRadius: [3, 3, 0, 0] },
+        },
+        {
+          type: "line" as const,
+          name: "消息数",
+          data: series.map((point) => point.messages),
+          yAxisIndex: 1,
+          smooth: true,
+          showSymbol: false,
+          symbolSize: 6,
+          lineStyle: { color: tokens.chart3, width: 2 },
+          itemStyle: { color: tokens.chart3 },
+        },
+      ],
+    };
+  }, [series, tokens]);
+
+  return (
+    <div className="h-[280px] w-full p-4 pt-5">
+      <EChart option={option} height="100%" ariaLabel="会话活跃趋势" />
+    </div>
   );
 }

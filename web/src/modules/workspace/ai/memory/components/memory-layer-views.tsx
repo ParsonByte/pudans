@@ -2,12 +2,12 @@ import { useState } from "react";
 
 import { ChevronDown, Loader2, Pencil, RotateCw } from "lucide-react";
 
+import { MarkdownContent } from "@/components/content/markdown";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatUserDateTime } from "@/modules/workspace/console/users/lib/format";
-import { MessageMarkdown } from "@/modules/workspace/index/conversation/components/message-markdown";
 
 import type { MemoryL0Item, MemoryL1Item, MemoryL2Item } from "../lib/api";
 import {
@@ -91,9 +91,13 @@ export function MemoryChatView({
                     <span className="truncate text-muted-foreground">{item.modelCode}</span>
                   ) : null}
                 </div>
-                <p className="text-[13px] leading-[1.65] break-words whitespace-pre-wrap">
-                  {content}
-                </p>
+                {isUser ? (
+                  <p className="text-[13px] leading-[1.65] break-words whitespace-pre-wrap">
+                    {content}
+                  </p>
+                ) : (
+                  <MarkdownContent content={content} className="text-[13px] leading-[1.65]" />
+                )}
               </div>
             </div>
           </div>
@@ -137,9 +141,10 @@ export function MemoryAtomicView({
                 </Button>
               ) : null}
             </div>
-            <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">
-              {memoryItemContent(item)}
-            </p>
+            <MarkdownContent
+              content={memoryItemContent(item)}
+              className="text-[13px] leading-relaxed"
+            />
           </div>
         </div>
       ))}
@@ -178,8 +183,14 @@ function MemorySceneBody({
   }
   const content = stripScenarioMeta(query.data ?? "");
   return (
-    <div className="border-t bg-muted/30 px-3 py-2.5 text-[13px] leading-relaxed break-words whitespace-pre-wrap">
-      {content || "场景内容为空。"}
+    <div className="border-t bg-muted/30 px-3 py-2.5">
+      {content ? (
+        <MarkdownContent content={content} className="text-[13px] leading-relaxed" />
+      ) : (
+        <p className="text-[13px] leading-relaxed break-words whitespace-pre-wrap">
+          场景内容为空。
+        </p>
+      )}
     </div>
   );
 }
@@ -299,7 +310,7 @@ export function MemoryProfileView({
       </div>
       <div className="p-4">
         {content ? (
-          <MessageMarkdown content={stripScenarioMeta(content)} />
+          <MarkdownContent content={stripScenarioMeta(content)} />
         ) : (
           <p className="text-sm text-muted-foreground">暂无核心画像内容。</p>
         )}
