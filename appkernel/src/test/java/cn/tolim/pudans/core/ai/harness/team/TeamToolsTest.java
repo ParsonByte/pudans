@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.harness.team;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.harness.agent.RuntimeContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Duration;

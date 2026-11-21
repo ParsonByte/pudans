@@ -17,10 +17,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ListResult;
-import cn.tolim.pudans.contract.extension.PageRequest;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ListResult;
+import cn.tolim.pudans.extension.api.PageRequest;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)

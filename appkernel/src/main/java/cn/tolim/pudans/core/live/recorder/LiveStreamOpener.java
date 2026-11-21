@@ -6,7 +6,7 @@ import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.contract.live.dto.LiveStreamProtocol;
 import cn.tolim.pudans.contract.live.dto.LiveStreamUrl;
 import cn.tolim.pudans.core.live.resolve.LiveStreamUrlValidator;
-import cn.tolim.pudans.core.infra.properties.LiveProperties;
+import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.net.URI;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

@@ -4,7 +4,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 
-import cn.tolim.pudans.core.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.properties.PudansProperties;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

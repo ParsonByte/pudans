@@ -12,7 +12,7 @@ import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriver;
 import cn.tolim.pudans.core.storage.driver.StorageDriverFactory;
 import cn.tolim.pudans.core.storage.driver.StoragePolicyTypeDescriptor;
-import cn.tolim.pudans.core.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.properties.PudansProperties;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.ClientConfig;
 import com.qcloud.cos.auth.BasicCOSCredentials;

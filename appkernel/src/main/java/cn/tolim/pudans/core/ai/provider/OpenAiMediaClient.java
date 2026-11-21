@@ -2,8 +2,8 @@ package cn.tolim.pudans.core.ai.provider;
 
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.monitor;
 
-import cn.tolim.pudans.core.infra.properties.LiveProperties;
+import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;

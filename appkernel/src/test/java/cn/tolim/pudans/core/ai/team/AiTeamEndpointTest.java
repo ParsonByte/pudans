@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.team;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiTeam;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

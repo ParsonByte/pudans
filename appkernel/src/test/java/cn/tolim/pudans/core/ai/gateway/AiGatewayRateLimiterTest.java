@@ -9,8 +9,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;

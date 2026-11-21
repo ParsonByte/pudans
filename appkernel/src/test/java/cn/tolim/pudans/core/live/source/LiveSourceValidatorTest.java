@@ -6,12 +6,12 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.live.LivePlatform;
 import cn.tolim.pudans.contract.live.LiveSource;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.core.live.recorder.LiveStoragePolicyResolver;
 import cn.tolim.pudans.core.live.resolve.LiveRoomLinkParser;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

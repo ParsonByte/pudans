@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.user;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.core.security.authorization.AuthorityUtils.containsSuperRole;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.security.authorization.AuthorityUtils.containsSuperRole;
 
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.contract.rbac.RoleBinding;
@@ -10,13 +10,13 @@ import cn.tolim.pudans.contract.rbac.RoleBinding.RoleRef;
 import cn.tolim.pudans.contract.rbac.RoleBinding.Subject;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.contract.extension.ExtensionUtil;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.MetadataUtil;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.index.query.Queries;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.security.authentication.SuperAdminInitializer;
+import cn.tolim.pudans.extension.api.ExtensionUtil;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.MetadataUtil;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.index.query.Queries;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.security.authentication.SuperAdminInitializer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Collection;
 import java.util.Collections;

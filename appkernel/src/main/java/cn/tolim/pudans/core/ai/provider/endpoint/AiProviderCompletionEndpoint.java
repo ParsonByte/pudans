@@ -7,7 +7,7 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import cn.tolim.pudans.contract.ai.AiModel;
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.provider.AiCompletionChunk;
 import cn.tolim.pudans.core.ai.provider.AiCompletionRequest;
 import cn.tolim.pudans.core.ai.provider.AiCompletionResult;
@@ -15,7 +15,7 @@ import cn.tolim.pudans.core.ai.provider.AiProviderJsonSupport;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekCompletionClient;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProtocol;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProviderAccess;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.List;

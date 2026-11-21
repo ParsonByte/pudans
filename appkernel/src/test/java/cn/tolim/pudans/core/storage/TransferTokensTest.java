@@ -8,8 +8,8 @@ import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.properties.PudansProperties;
 
 class TransferTokensTest {
 

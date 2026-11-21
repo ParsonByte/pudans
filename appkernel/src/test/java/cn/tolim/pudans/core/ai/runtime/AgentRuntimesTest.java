@@ -16,7 +16,7 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiAgent;
 import cn.tolim.pudans.contract.ai.AiSandboxProvider;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariables;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxCreateSpec;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxErrors;
@@ -27,10 +27,10 @@ import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxLogEvent;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxProviderAdapter;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxState;
 import cn.tolim.pudans.core.ai.team.Teams;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.properties.AiProperties;
-import cn.tolim.pudans.core.infra.r2dbc.ai.runtime.AiAgentRuntimeRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.runtime.AiAgentRuntimeRepository.RuntimeRecord;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.properties.AiProperties;
+import cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentRuntimeRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentRuntimeRepository.RuntimeRecord;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -68,7 +68,7 @@ class AgentRuntimesTest {
     AiAgentRuntimeRepository repository;
 
     @Mock
-    cn.tolim.pudans.core.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository snapshotRepository;
+    cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository snapshotRepository;
 
     @Mock
     SandboxProviderRegistry registry;
@@ -270,7 +270,7 @@ class AgentRuntimesTest {
                 .thenReturn(Mono.just(new cn.tolim.pudans.core.ai.runtime.sandbox.SandboxFile(
                         "/tmp/snapshot.tgz", "base64", "aGVsbG8=", 5)));
         when(snapshotRepository.insert(eq(AGENT), eq("release"), eq(USER), any()))
-                .thenReturn(Mono.just(new cn.tolim.pudans.core.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository
+                .thenReturn(Mono.just(new cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository
                         .SnapshotRecord(7L, AGENT, "release", null, 5, USER, NOW)));
 
         StepVerifier.create(service.snapshot(AGENT, USER, "release", USER))
@@ -291,7 +291,7 @@ class AgentRuntimesTest {
         when(repository.find(AGENT)).thenReturn(Mono.just(record(SandboxState.RUNNING, "sb-1")));
         when(registry.adapter(AiSandboxProvider.Provider.ALIYUN)).thenReturn(Mono.just(adapter));
         when(snapshotRepository.find(7L, AGENT)).thenReturn(Mono.just(
-                new cn.tolim.pudans.core.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository.SnapshotRecord(
+                new cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentSnapshotRepository.SnapshotRecord(
                         7L, AGENT, "release", "hello".getBytes(), 5, USER, NOW)));
         when(adapter.writeFile(eq("sb-1"), anyString(), any())).thenReturn(Mono.empty());
         when(environmentVariables.resolveValues(AGENT)).thenReturn(Mono.just(Map.of()));

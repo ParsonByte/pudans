@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.agent;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jToolMapper;

@@ -1,19 +1,19 @@
 package cn.tolim.pudans.core.ai.memory.prompt;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
 
 import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
 import cn.tolim.pudans.contract.ai.AiMemoryPromptBinding;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptResolver;
 import cn.tolim.pudans.core.ai.memory.ResolvedMemoryPrompt;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryAssetNames;
 import cn.tolim.pudans.core.ai.team.Teams;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.exception.DuplicateNameException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryPromptLogRepository;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryPromptLogRepository;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

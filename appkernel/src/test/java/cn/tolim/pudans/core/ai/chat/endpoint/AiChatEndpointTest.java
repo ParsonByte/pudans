@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.core.ai.chat.AiChatCompletionResult;
 import cn.tolim.pudans.core.ai.chat.ChatCompletions;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;

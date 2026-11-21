@@ -30,7 +30,7 @@ import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
 import cn.tolim.pudans.core.storage.driver.StorageTestResult;
 import cn.tolim.pudans.core.webhook.OutboundRequestValidator;
 import cn.tolim.pudans.core.webhook.ValidatingAddressResolverGroup;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.qiniu.common.QiniuException;
 import com.qiniu.http.Response;
 import com.qiniu.storage.BucketManager;

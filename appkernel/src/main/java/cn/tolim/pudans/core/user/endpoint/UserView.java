@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.user.endpoint;
 
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.contract.extension.MetadataOperator;
+import cn.tolim.pudans.extension.api.MetadataOperator;
 import java.time.Instant;
 
 

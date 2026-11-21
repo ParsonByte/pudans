@@ -5,8 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiSubagent;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.agent.GatewayChatContext;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayMeta;

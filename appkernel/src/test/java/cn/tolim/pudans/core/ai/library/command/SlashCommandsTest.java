@@ -7,10 +7,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiSlashCommand;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.library.command.SlashCommands.ResolvedSlashCommand;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

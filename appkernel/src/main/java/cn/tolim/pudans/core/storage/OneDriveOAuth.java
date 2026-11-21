@@ -14,12 +14,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.storage.StoragePolicyType;
-import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.infra.ExternalUrlSupplier;
+import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.infra.api.ExternalUrlSupplier;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
 import cn.tolim.pudans.core.storage.driver.StorageIo;
 import cn.tolim.pudans.core.storage.driver.onedrive.OneDriveTokenClient;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.json.JsonMapper;
 

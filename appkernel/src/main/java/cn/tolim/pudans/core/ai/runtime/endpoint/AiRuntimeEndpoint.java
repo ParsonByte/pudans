@@ -6,7 +6,7 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimes;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimes.RuntimeView;
@@ -15,7 +15,7 @@ import cn.tolim.pudans.core.ai.runtime.SandboxProviderRegistry;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxErrors;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxExecResult;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxFile;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;

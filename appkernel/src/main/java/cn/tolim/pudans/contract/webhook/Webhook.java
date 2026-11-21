@@ -1,7 +1,7 @@
 package cn.tolim.pudans.contract.webhook;
 
-import cn.tolim.pudans.contract.extension.AbstractExtension;
-import cn.tolim.pudans.contract.extension.GVK;
+import cn.tolim.pudans.extension.api.AbstractExtension;
+import cn.tolim.pudans.extension.api.GVK;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.ArrayList;

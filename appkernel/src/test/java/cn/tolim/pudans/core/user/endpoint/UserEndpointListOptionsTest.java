@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.index.query.EmptyCondition;
-import cn.tolim.pudans.contract.extension.index.query.EqualCondition;
-import cn.tolim.pudans.contract.extension.index.query.InCondition;
-import cn.tolim.pudans.contract.extension.index.query.OrCondition;
-import cn.tolim.pudans.contract.extension.index.query.StringContainsCondition;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.index.query.EmptyCondition;
+import cn.tolim.pudans.extension.api.index.query.EqualCondition;
+import cn.tolim.pudans.extension.api.index.query.InCondition;
+import cn.tolim.pudans.extension.api.index.query.OrCondition;
+import cn.tolim.pudans.extension.api.index.query.StringContainsCondition;
 import cn.tolim.pudans.core.rbac.group.Groups;
 import java.lang.reflect.Method;
 import java.util.Set;
@@ -101,7 +101,7 @@ class UserEndpointListOptionsTest {
         return (Mono<ListOptions>) method.invoke(endpoint, ListOptions.builder().build(), keyword, statuses, userGroups);
     }
 
-    private cn.tolim.pudans.contract.extension.index.query.Condition condition(Mono<ListOptions> options) {
+    private cn.tolim.pudans.extension.api.index.query.Condition condition(Mono<ListOptions> options) {
         return options.blockOptional().orElseThrow().toCondition();
     }
 }

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.rag;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;

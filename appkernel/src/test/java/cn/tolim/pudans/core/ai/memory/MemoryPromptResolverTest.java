@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
 import cn.tolim.pudans.contract.ai.AiMemoryPromptBinding;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

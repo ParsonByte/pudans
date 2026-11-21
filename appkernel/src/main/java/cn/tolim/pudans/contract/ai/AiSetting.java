@@ -1,7 +1,7 @@
 package cn.tolim.pudans.contract.ai;
 
-import cn.tolim.pudans.contract.extension.AbstractExtension;
-import cn.tolim.pudans.contract.extension.GVK;
+import cn.tolim.pudans.extension.api.AbstractExtension;
+import cn.tolim.pudans.extension.api.GVK;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

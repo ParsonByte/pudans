@@ -4,7 +4,7 @@ import static cn.tolim.pudans.core.ai.provider.AiProviderTestSupport.body;
 import static cn.tolim.pudans.core.ai.provider.AiProviderTestSupport.json;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;

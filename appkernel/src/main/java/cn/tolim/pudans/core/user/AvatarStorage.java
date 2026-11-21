@@ -1,11 +1,11 @@
 package cn.tolim.pudans.core.user;
 
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.infra.ParameterSetting;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.properties.PudansProperties;
-import cn.tolim.pudans.core.infra.setting.ParameterGroups;
+import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;

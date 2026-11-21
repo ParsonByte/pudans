@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.plan;
 
 import cn.tolim.pudans.contract.ai.AiPlan;
-import cn.tolim.pudans.core.infra.r2dbc.ai.plan.PlanCounterRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.plan.PlanCounterRepository.PlanCounterRow;
+import cn.tolim.pudans.infra.r2dbc.ai.plan.PlanCounterRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.plan.PlanCounterRepository.PlanCounterRow;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

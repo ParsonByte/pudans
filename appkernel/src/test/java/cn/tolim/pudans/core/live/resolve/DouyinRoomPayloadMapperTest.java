@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.live.resolve;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import org.junit.jupiter.api.Test;
 
 class DouyinRoomPayloadMapperTest {

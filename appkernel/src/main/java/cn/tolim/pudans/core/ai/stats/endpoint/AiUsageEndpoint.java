@@ -4,7 +4,7 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.stats.AiUsageErrorCodes;
 import cn.tolim.pudans.core.ai.stats.AiUsage;
 import cn.tolim.pudans.core.ai.stats.AiUsage.ClearQuery;
@@ -30,7 +30,7 @@ import cn.tolim.pudans.core.ai.stats.AiUsage.SpeedQuery;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
 import cn.tolim.pudans.core.ai.stats.UsageQueryParameters;
 import cn.tolim.pudans.core.audit.AuditLog;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;

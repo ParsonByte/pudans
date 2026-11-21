@@ -11,7 +11,7 @@ import cn.tolim.pudans.core.ai.generation.TextGenerations;
 import cn.tolim.pudans.core.ai.generation.GenerationRequest;
 import cn.tolim.pudans.core.ai.generation.GenerationResult;
 import cn.tolim.pudans.core.ai.memory.JevGate;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.util.List;

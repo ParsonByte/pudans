@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.KnowledgeBase;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jToolMapper;

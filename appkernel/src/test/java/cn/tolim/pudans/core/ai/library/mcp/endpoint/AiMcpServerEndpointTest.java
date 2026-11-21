@@ -5,12 +5,12 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiAgent;
 import cn.tolim.pudans.contract.ai.AiMcpServer;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.library.mcp.McpClients;
 import cn.tolim.pudans.core.ai.library.mcp.McpServers;
 import cn.tolim.pudans.core.ai.team.Teams;
-import cn.tolim.pudans.core.infra.exception.AccessDeniedException;
+import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

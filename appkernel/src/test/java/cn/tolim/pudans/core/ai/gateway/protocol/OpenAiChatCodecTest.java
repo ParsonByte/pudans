@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cn.tolim.pudans.contract.ai.AiProvider;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import com.fasterxml.jackson.core.JsonProcessingException;

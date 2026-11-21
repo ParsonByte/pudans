@@ -7,9 +7,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.ExtensionClient;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.controller.Reconciler;
+import cn.tolim.pudans.extension.api.ExtensionClient;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.controller.Reconciler;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

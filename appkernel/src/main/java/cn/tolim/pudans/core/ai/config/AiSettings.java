@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.config;
 
 import cn.tolim.pudans.contract.ai.AiSetting;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;

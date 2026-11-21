@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.api.index.query.Queries.in;
 
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
@@ -19,11 +19,11 @@ import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.LiveRecordingState;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
-import cn.tolim.pudans.core.infra.properties.LiveProperties;
+import cn.tolim.pudans.infra.properties.LiveProperties;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;

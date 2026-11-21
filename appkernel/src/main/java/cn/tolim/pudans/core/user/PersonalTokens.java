@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.user;
 
-import cn.tolim.pudans.contract.security.PersonalAccessToken;
+import cn.tolim.pudans.security.api.PersonalAccessToken;
 import reactor.core.publisher.Mono;
 
 

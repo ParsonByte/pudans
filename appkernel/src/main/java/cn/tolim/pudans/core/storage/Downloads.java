@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
-import cn.tolim.pudans.contract.extension.ApiGroups;
+import cn.tolim.pudans.extension.api.ApiGroups;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 import cn.tolim.pudans.core.storage.driver.StorageDriverResolver;
 import cn.tolim.pudans.core.storage.driver.StorageReadOptions;
@@ -14,8 +14,8 @@ import cn.tolim.pudans.core.storage.driver.StorageReadResult;
 import cn.tolim.pudans.core.storage.driver.StorageSource;
 import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
 import cn.tolim.pudans.core.storage.download.DownloadUrl;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.setting.ParameterGroups;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
 import reactor.core.publisher.Mono;
 
 @Service

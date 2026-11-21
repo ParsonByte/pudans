@@ -1,16 +1,16 @@
 package cn.tolim.pudans.core.live.recording;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.greaterThan;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.lessThan;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.index.query.Queries.greaterThan;
+import static cn.tolim.pudans.extension.api.index.query.Queries.in;
+import static cn.tolim.pudans.extension.api.index.query.Queries.lessThan;
 
 import cn.tolim.pudans.contract.live.LiveRecording;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ListResult;
-import cn.tolim.pudans.contract.extension.PageRequestImpl;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ListResult;
+import cn.tolim.pudans.extension.api.PageRequestImpl;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveRecordingQuery;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

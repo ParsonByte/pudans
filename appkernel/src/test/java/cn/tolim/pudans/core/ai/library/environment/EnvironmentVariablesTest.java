@@ -7,8 +7,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiEnvironmentVariable;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
 import java.util.List;

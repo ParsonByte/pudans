@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.memory;
 
 import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL3Repository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL3Repository;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.harness.tool;
 
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
-import cn.tolim.pudans.core.infra.r2dbc.ai.tool.AiAsyncToolTaskRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.tool.AiAsyncToolTaskRepository;
 import java.util.List;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;

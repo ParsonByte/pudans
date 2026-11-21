@@ -6,7 +6,7 @@ import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_RECORDING_NOT
 
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.LiveRecordingState;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import java.time.Duration;
 import java.time.Instant;

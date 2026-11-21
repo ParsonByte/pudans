@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.webhook;
 
-import cn.tolim.pudans.core.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import java.time.Instant;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

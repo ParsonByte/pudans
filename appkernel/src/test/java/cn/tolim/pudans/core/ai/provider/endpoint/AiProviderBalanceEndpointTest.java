@@ -5,8 +5,8 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.provider.AiProviderBalanceProbeClient;
 import cn.tolim.pudans.core.ai.provider.AiProviderBalanceProbeClient.ProbeResult;
 import cn.tolim.pudans.core.ai.provider.balance.ProviderBalanceRegistry;

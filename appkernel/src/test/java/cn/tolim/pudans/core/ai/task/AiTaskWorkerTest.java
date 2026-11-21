@@ -9,8 +9,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
-import cn.tolim.pudans.core.infra.properties.AiProperties;
-import cn.tolim.pudans.core.infra.r2dbc.ai.task.AiTaskRepository;
+import cn.tolim.pudans.infra.properties.AiProperties;
+import cn.tolim.pudans.infra.r2dbc.ai.task.AiTaskRepository;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import java.util.List;

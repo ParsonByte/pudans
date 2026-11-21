@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import org.junit.jupiter.api.Test;
 
 class UserViewEmailVisibilityTest {

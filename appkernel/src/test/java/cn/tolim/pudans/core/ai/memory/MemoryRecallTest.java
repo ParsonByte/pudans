@@ -11,11 +11,11 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
 import cn.tolim.pudans.core.ai.embedding.Embeddings;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL3Repository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryRecallRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryRecallRepository.RecalledMemory;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL3Repository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryRecallRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryRecallRepository.RecalledMemory;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;

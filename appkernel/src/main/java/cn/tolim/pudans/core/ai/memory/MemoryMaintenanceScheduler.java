@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.memory;
 
 import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.core.ai.config.AiSettings;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -28,7 +28,7 @@ import cn.tolim.pudans.core.storage.driver.StorageReadResult;
 import cn.tolim.pudans.core.storage.driver.StorageSource;
 import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
 import cn.tolim.pudans.core.storage.driver.StorageTestResult;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.aliyun.oss.HttpMethod;
 import com.aliyun.oss.OSS;
 import com.aliyun.oss.ServiceException;

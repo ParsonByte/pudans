@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import cn.tolim.pudans.core.ai.harness.compaction.CompactionConfig;
 import cn.tolim.pudans.core.ai.harness.event.AgentEvent;

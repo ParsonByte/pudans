@@ -10,12 +10,12 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.security.device.DeviceSessions;
-import cn.tolim.pudans.core.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.security.api.device.DeviceSessions;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.user.endpoint.UserEndpoint;
-import cn.tolim.pudans.core.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
 import jakarta.validation.constraints.Size;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

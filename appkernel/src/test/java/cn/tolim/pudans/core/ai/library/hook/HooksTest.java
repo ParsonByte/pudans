@@ -12,8 +12,8 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiAgent;
 import cn.tolim.pudans.contract.ai.AiHook;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimes;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxExecResult;
 import cn.tolim.pudans.core.webhook.WebhookEventPublisher;

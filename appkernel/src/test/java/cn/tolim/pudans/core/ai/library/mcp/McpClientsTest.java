@@ -7,8 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiMcpServer;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.infra.exception.ApiException;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.mcp.client.McpApplicationErrorException;

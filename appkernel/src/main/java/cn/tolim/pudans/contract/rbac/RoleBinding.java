@@ -5,10 +5,10 @@ import static cn.tolim.pudans.contract.rbac.RoleBinding.KIND;
 import static cn.tolim.pudans.contract.rbac.RoleBinding.VERSION;
 
 import cn.tolim.pudans.contract.user.User;
-import cn.tolim.pudans.contract.extension.AbstractExtension;
-import cn.tolim.pudans.contract.extension.ExtensionOperator;
-import cn.tolim.pudans.contract.extension.GVK;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.AbstractExtension;
+import cn.tolim.pudans.extension.api.ExtensionOperator;
+import cn.tolim.pudans.extension.api.GVK;
+import cn.tolim.pudans.extension.api.Metadata;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;

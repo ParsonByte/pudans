@@ -2,10 +2,10 @@ package cn.tolim.pudans.core.ai.provider.supplier.qianwen;
 
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.supplier.SupplierWebSocketAccess;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;

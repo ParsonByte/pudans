@@ -1,14 +1,14 @@
 package cn.tolim.pudans.core.ai.library.mcp;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.addFinalizers;
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.isDeleted;
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.removeFinalizers;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.addFinalizers;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.isDeleted;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.removeFinalizers;
 
 import cn.tolim.pudans.contract.ai.AiMcpServer;
-import cn.tolim.pudans.contract.extension.ExtensionClient;
-import cn.tolim.pudans.contract.extension.controller.Controller;
-import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
-import cn.tolim.pudans.contract.extension.controller.Reconciler;
+import cn.tolim.pudans.extension.api.ExtensionClient;
+import cn.tolim.pudans.extension.api.controller.Controller;
+import cn.tolim.pudans.extension.api.controller.ControllerBuilder;
+import cn.tolim.pudans.extension.api.controller.Reconciler;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

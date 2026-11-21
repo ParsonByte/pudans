@@ -13,9 +13,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.audit.AuditRecord;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.infra.audit.AuditStore;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.audit.AuditStore;
 
 @ExtendWith(MockitoExtension.class)
 class AuditLogTest {

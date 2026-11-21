@@ -2,8 +2,8 @@ package cn.tolim.pudans.core.ai.stats;
 
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.security.authorization.AuthorityUtils;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -4,7 +4,7 @@ import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;

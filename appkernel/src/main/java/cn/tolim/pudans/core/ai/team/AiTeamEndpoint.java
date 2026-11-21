@@ -4,7 +4,7 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
 import cn.tolim.pudans.contract.ai.AiTeam;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.http.MediaType;

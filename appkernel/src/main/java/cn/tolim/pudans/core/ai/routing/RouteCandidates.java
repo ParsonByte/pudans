@@ -1,19 +1,19 @@
 package cn.tolim.pudans.core.ai.routing;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.ai.AiModel;
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.ai.AiRouteGroup;
 import cn.tolim.pudans.contract.ai.AiSetting;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import cn.tolim.pudans.core.ai.plan.UsageUnitCalculator;
-import cn.tolim.pudans.core.infra.r2dbc.ai.stats.AiStatsRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.stats.AiStatsRepository.RoutePerformanceRow;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.RoutePerformanceRow;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;

@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiAgent;
 import cn.tolim.pudans.contract.ai.AiHook;
-import cn.tolim.pudans.contract.extension.Metadata;
+import cn.tolim.pudans.extension.api.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.library.hook.Hooks;
 import cn.tolim.pudans.core.ai.team.Teams;

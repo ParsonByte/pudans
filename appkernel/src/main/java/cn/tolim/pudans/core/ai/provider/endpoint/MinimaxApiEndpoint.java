@@ -6,7 +6,7 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.contract.storage.StorageFileState;
 import cn.tolim.pudans.core.ai.provider.AiProviderJsonSupport;
@@ -14,8 +14,8 @@ import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxApiClient;
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxProtocol;
 import cn.tolim.pudans.core.ai.provider.supplier.minimax.MinimaxProviderAccess;
 import cn.tolim.pudans.core.storage.StorageTransfer;
-import cn.tolim.pudans.core.extension.exception.ExtensionNotFoundException;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

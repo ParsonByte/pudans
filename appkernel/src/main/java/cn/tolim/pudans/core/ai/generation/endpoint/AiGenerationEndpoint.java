@@ -5,15 +5,15 @@ import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
 import cn.tolim.pudans.contract.ai.AiModel;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.generation.DocumentGenerations;
 import cn.tolim.pudans.core.ai.generation.AiGenerationCommand;
 import cn.tolim.pudans.core.ai.generation.AiGenerationResult;
 import cn.tolim.pudans.core.ai.generation.Generations;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.model.AiModelRequestRepository;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.List;

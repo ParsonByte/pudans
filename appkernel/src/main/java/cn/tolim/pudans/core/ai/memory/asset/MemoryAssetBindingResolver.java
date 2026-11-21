@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.ai.memory.asset;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
 
 import cn.tolim.pudans.contract.ai.AiMemoryAsset;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import java.util.ArrayList;
 import java.util.Comparator;

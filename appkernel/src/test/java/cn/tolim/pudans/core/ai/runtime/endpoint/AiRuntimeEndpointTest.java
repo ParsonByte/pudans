@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimes;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimes.RuntimeView;
@@ -17,7 +17,7 @@ import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxExecResult;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxFile;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxLogEvent;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxState;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

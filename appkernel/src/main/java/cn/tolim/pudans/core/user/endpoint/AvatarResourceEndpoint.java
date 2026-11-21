@@ -4,9 +4,9 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.extension.GroupVersion;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.api.GroupVersion;
 import cn.tolim.pudans.core.user.AvatarStorage;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;

@@ -2,8 +2,8 @@ package cn.tolim.pudans.contract.ai;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.extension.Unstructured;
-import cn.tolim.pudans.core.infra.utils.YamlUnstructuredLoader;
+import cn.tolim.pudans.extension.api.Unstructured;
+import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
 import java.io.IOException;
 import java.time.DayOfWeek;
 import java.util.function.Function;

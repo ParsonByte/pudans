@@ -3,12 +3,12 @@ package cn.tolim.pudans.core.user.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.extension.GroupVersion;
+import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.api.GroupVersion;
 import cn.tolim.pudans.core.rbac.group.Groups;
-import cn.tolim.pudans.core.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;

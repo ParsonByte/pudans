@@ -1,11 +1,11 @@
 package cn.tolim.pudans.core.ai.provider;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;

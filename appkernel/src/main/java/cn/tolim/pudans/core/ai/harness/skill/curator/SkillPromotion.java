@@ -1,11 +1,11 @@
 package cn.tolim.pudans.core.ai.harness.skill.curator;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
 
 import cn.tolim.pudans.contract.ai.AiSkill;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.infra.exception.ApiException;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

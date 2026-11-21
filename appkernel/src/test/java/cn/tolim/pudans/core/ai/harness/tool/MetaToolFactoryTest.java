@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.harness.tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import java.util.ArrayList;

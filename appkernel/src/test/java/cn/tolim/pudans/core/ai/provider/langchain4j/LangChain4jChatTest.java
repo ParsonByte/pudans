@@ -12,7 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.ai.AiProvider;
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
@@ -146,7 +146,7 @@ class LangChain4jChatTest {
                         request()))
                 .expectErrorSatisfies(error -> assertThat(error)
                         .isInstanceOfSatisfying(
-                                cn.tolim.pudans.core.infra.exception.ApiException.class,
+                                cn.tolim.pudans.infra.exception.ApiException.class,
                                 api -> assertThat(api.getCode())
                                         .isEqualTo(cn.tolim.pudans.core.ai.provider
                                                 .AiProviderConfigSupport.CODE_INVALID)))

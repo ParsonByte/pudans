@@ -20,7 +20,7 @@ import cn.tolim.pudans.core.ai.plan.PlanUsage;
 import cn.tolim.pudans.core.ai.plan.PlanUsage.PlanSummary;
 import cn.tolim.pudans.core.ai.plan.PlanUsage.UsageView;
 import cn.tolim.pudans.core.ai.plan.PlanUsage.WindowUsage;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.security.Principal;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.harness.journal;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;

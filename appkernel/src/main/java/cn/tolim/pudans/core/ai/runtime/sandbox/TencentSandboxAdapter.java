@@ -298,7 +298,7 @@ public final class TencentSandboxAdapter implements SandboxProviderAdapter {
     }
 
     private static boolean isNotFound(Throwable error) {
-        var message = error instanceof cn.tolim.pudans.core.infra.exception.ApiException apiException
+        var message = error instanceof cn.tolim.pudans.infra.exception.ApiException apiException
                 ? apiException.getReason()
                 : error.getMessage();
         return message != null

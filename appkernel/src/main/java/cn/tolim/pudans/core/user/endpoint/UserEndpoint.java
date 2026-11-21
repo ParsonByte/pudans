@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.user.endpoint;
 
-import static cn.tolim.pudans.contract.extension.index.query.Queries.contains;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.or;
+import static cn.tolim.pudans.extension.api.index.query.Queries.contains;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.index.query.Queries.in;
+import static cn.tolim.pudans.extension.api.index.query.Queries.or;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
@@ -39,28 +39,28 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.user.UserConnection;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.PageRequestImpl;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.router.SortableRequest;
-import cn.tolim.pudans.contract.infra.ValidationUtils;
+import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.api.GroupVersion;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.PageRequestImpl;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.router.SortableRequest;
+import cn.tolim.pudans.infra.api.ValidationUtils;
 import cn.tolim.pudans.core.audit.AuditLog;
-import cn.tolim.pudans.core.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
 import cn.tolim.pudans.core.rbac.permission.UiPermissions;
 import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.core.user.FeishuAccounts;
 import cn.tolim.pudans.core.user.LocalAccounts;
 import cn.tolim.pudans.core.user.Connections;
-import cn.tolim.pudans.core.infra.exception.UnsatisfiedAttributeValueException;
-import cn.tolim.pudans.core.infra.setting.ParameterGroups;
-import cn.tolim.pudans.core.infra.utils.PudansTime;
+import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.infra.utils.PudansTime;
 
 @Component
 @RequiredArgsConstructor

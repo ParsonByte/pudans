@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.provider;
 
-import cn.tolim.pudans.core.infra.properties.AiProperties;
+import cn.tolim.pudans.infra.properties.AiProperties;
 import io.netty.channel.ChannelOption;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

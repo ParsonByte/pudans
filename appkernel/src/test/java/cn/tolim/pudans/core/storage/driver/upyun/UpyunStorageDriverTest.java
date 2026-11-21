@@ -22,7 +22,7 @@ import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.DirectUploadDriver.StorageDirectUploadRequest;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import com.UpYun;
 
 @ExtendWith(MockitoExtension.class)

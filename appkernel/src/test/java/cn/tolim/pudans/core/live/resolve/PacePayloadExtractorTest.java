@@ -3,9 +3,9 @@ package cn.tolim.pudans.core.live.resolve;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import org.junit.jupiter.api.Test;
 
 class PacePayloadExtractorTest {

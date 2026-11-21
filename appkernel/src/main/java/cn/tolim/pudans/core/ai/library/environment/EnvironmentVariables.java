@@ -1,11 +1,11 @@
 package cn.tolim.pudans.core.ai.library.environment;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.ai.AiEnvironmentVariable;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;

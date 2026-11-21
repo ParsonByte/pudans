@@ -1,19 +1,19 @@
 package cn.tolim.pudans.core.ai.embedding;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.index.query.Queries.equal;
 
 import cn.tolim.pudans.contract.ai.AiModel;
 import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.ai.AiSetting;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jEmbeddingModelFactory;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import java.util.ArrayList;

@@ -19,8 +19,8 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.core.rbac.Roles;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.security.authorization.AuthorityUtils;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import cn.tolim.pudans.core.rbac.group.Groups;
 
 @ExtendWith(MockitoExtension.class)

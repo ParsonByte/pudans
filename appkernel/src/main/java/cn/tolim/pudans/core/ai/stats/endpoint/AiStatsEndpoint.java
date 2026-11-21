@@ -3,15 +3,15 @@ package cn.tolim.pudans.core.ai.stats.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.stats.AiStats;
 import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryDetail;
 import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryPage;
 import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryQuery;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
 import cn.tolim.pudans.core.ai.stats.UsageQueryParameters;
-import cn.tolim.pudans.core.infra.r2dbc.ai.stats.AiStatsRepository.KnowledgeBaseStatsRow;
-import cn.tolim.pudans.core.infra.r2dbc.ai.stats.AiStatsRepository.MemoryStatsRow;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.KnowledgeBaseStatsRow;
+import cn.tolim.pudans.infra.r2dbc.ai.stats.AiStatsRepository.MemoryStatsRow;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;

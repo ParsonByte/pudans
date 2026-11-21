@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.memory.governance;
 
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

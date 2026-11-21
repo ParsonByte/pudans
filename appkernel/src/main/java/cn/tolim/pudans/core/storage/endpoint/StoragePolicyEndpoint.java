@@ -14,7 +14,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.core.storage.OneDriveOAuth;
 import cn.tolim.pudans.core.storage.Policies;
@@ -22,7 +22,7 @@ import cn.tolim.pudans.core.storage.StoragePolicyValidator;
 import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.driver.StorageDriverFactoryRegistry;
 import cn.tolim.pudans.core.storage.driver.StorageTestResult;
-import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.infra.exception.ApiException;
 import reactor.core.publisher.Mono;
 
 @Component

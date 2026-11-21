@@ -3,9 +3,9 @@ package cn.tolim.pudans.core.ai.memory.governance;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.core.infra.exception.ApiException;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository;
-import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
+import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository;
+import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;

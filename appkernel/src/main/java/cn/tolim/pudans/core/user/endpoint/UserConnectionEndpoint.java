@@ -1,23 +1,23 @@
 package cn.tolim.pudans.core.user.endpoint;
 
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
-import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.api.ExtensionUtil.notDeleting;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.extension.api.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.core.user.Accounts;
-import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.contract.extension.ListOptions;
-import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.extension.index.query.Queries;
+import cn.tolim.pudans.extension.api.ApiGroups;
+import cn.tolim.pudans.extension.api.GroupVersion;
+import cn.tolim.pudans.extension.api.ListOptions;
+import cn.tolim.pudans.extension.api.Metadata;
+import cn.tolim.pudans.extension.api.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.api.index.query.Queries;
 import cn.tolim.pudans.core.user.Connections;
-import cn.tolim.pudans.core.infra.setting.SecurityParameters;
-import cn.tolim.pudans.core.security.authentication.oidc.OidcClient;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
+import cn.tolim.pudans.security.authentication.oidc.OidcClient;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

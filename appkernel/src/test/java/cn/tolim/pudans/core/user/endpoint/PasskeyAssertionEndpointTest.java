@@ -2,11 +2,11 @@ package cn.tolim.pudans.core.user.endpoint;
 
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.infra.ParameterSetting;
-import cn.tolim.pudans.core.infra.properties.PasskeyProperties;
-import cn.tolim.pudans.core.infra.setting.ParameterGroups;
-import cn.tolim.pudans.core.infra.webauthn.Passkeys;
-import cn.tolim.pudans.core.security.authentication.ExternalLogins;
+import cn.tolim.pudans.infra.api.ParameterSetting;
+import cn.tolim.pudans.infra.properties.PasskeyProperties;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.infra.webauthn.Passkeys;
+import cn.tolim.pudans.security.authentication.ExternalLogins;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

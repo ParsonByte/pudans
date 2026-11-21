@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.live.recorder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cn.tolim.pudans.core.infra.properties.LiveProperties;
+import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;

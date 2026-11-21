@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.provider.supplier;
 
 import cn.tolim.pudans.contract.ai.AiProvider;
-import cn.tolim.pudans.contract.extension.ApiGroups;
+import cn.tolim.pudans.extension.api.ApiGroups;
 import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
 import java.net.URI;

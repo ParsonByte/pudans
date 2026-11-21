@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.protocol.a2a;
 
-import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.infra.r2dbc.ai.protocol.AiA2aTaskRepository;
+import cn.tolim.pudans.infra.api.utils.JsonUtils;
+import cn.tolim.pudans.infra.r2dbc.ai.protocol.AiA2aTaskRepository;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.extern.slf4j.Slf4j;
