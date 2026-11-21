@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.StoragePolicy;
+import cn.tolim.pudans.contract.storage.StoragePolicyType;
 
 class StoragePolicyPathGeneratorTest {
 

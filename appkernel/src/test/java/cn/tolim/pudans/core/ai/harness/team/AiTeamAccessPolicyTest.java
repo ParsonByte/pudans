@@ -4,7 +4,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiTeam;
+import cn.tolim.pudans.contract.ai.AiTeam;
 import cn.tolim.pudans.core.ai.team.Teams;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;

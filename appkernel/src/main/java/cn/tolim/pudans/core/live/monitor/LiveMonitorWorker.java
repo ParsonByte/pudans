@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.monitor;
 
-import cn.tolim.pudans.contract.live.resource.LiveSource;
+import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.core.live.alert.LiveAlerts;
@@ -9,8 +9,8 @@ import cn.tolim.pudans.core.live.resolve.LiveResolveCache;
 import cn.tolim.pudans.core.live.resolve.RoomResolver;
 import cn.tolim.pudans.core.live.source.LiveSourceRegistry;
 import cn.tolim.pudans.core.live.source.SourceStatus;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.properties.LiveProperties;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.properties.LiveProperties;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;

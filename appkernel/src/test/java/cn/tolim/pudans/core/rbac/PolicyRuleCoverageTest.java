@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.rbac;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.rbac.resource.Role.PolicyRule;
+import cn.tolim.pudans.contract.rbac.Role.PolicyRule;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

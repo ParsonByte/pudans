@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.ai.provider;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
-import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolException;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;

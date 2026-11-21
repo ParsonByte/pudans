@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.live.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.live.resource.LiveSource;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveSource;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.contract.live.dto.LiveSourceCreateRequest;
 import cn.tolim.pudans.contract.live.dto.LiveSourceHealth;

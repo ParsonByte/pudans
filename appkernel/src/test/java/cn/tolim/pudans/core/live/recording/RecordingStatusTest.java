@@ -6,12 +6,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveRecordingState;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;

@@ -8,7 +8,7 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.team.Teams;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;

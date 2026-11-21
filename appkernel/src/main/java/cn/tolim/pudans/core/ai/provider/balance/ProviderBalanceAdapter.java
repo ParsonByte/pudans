@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.provider.balance;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
-import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.core.ai.provider.AiProviderBalanceProbeClient.ProbeResult;
 import reactor.core.publisher.Mono;
 

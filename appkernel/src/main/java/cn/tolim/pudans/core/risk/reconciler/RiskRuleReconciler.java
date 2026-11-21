@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.risk.reconciler;
 
-import cn.tolim.pudans.contract.risk.resource.RiskRule;
+import cn.tolim.pudans.contract.risk.RiskRule;
 import cn.tolim.pudans.contract.extension.controller.Controller;
 import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
 import cn.tolim.pudans.contract.extension.controller.Reconciler;

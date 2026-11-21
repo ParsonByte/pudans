@@ -11,9 +11,9 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import cn.tolim.pudans.core.rbac.group.Groups;
-import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.core.infra.setting.ParameterGroups;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

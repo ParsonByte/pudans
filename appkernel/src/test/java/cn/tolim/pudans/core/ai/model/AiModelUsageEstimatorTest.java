@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.model;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.AiModel;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.util.List;
 import java.util.Map;

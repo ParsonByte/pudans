@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.runtime.sandbox;
 
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import org.springframework.http.HttpStatus;
 
 public final class SandboxErrors {

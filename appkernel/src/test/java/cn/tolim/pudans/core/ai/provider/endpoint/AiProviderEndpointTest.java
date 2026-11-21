@@ -8,9 +8,9 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiModel;
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
-import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.AiModel;
+import cn.tolim.pudans.contract.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.embedding.Embeddings;

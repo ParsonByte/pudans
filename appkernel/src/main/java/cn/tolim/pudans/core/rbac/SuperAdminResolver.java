@@ -13,16 +13,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.rbac.resource.UserGroup;
-import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.rbac.UserGroup;
+import cn.tolim.pudans.contract.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.MetadataUtil;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.core.infra.exception.DuplicateNameException;
 
 @Component
 @RequiredArgsConstructor

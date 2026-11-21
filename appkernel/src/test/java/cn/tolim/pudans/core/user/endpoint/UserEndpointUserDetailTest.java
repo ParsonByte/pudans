@@ -5,13 +5,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.user.resource.User;
-import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.contract.user.User;
+import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.user.Connections;
-import cn.tolim.pudans.infra.utils.PudansTime;
+import cn.tolim.pudans.core.infra.utils.PudansTime;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Map;

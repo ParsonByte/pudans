@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.prompt;
 
-import cn.tolim.pudans.infra.utils.PudansTime;
+import cn.tolim.pudans.core.infra.utils.PudansTime;
 import java.time.LocalDate;
 
 public final class ChatPrompts {

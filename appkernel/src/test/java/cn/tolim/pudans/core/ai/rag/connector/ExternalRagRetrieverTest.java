@@ -6,8 +6,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
-import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.KnowledgeBase;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.rag.RetrievalOptions;

@@ -1,13 +1,13 @@
 package cn.tolim.pudans.core.ai.plan;
 
-import cn.tolim.pudans.contract.ai.resource.AiPlan;
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.AiPlan;
+import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.core.ai.config.AiSettings;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.r2dbc.ai.plan.PlanCounterRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.plan.PlanCounterRepository.PlanCounterRow;
-import cn.tolim.pudans.infra.r2dbc.ai.plan.UsageLedgerRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.plan.UsageLedgerRepository.LedgerClaim;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.r2dbc.ai.plan.PlanCounterRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.plan.PlanCounterRepository.PlanCounterRow;
+import cn.tolim.pudans.core.infra.r2dbc.ai.plan.UsageLedgerRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.plan.UsageLedgerRepository.LedgerClaim;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;

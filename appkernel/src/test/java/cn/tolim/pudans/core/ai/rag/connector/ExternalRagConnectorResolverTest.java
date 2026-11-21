@@ -5,7 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.KnowledgeBase;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

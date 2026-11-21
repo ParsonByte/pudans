@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.AiAgent;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionBehavior;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionMode;

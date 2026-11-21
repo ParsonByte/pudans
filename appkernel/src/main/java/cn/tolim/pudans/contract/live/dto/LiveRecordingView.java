@@ -1,7 +1,7 @@
 package cn.tolim.pudans.contract.live.dto;
 
-import cn.tolim.pudans.contract.live.resource.LivePlatform;
-import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
+import cn.tolim.pudans.contract.live.LivePlatform;
+import cn.tolim.pudans.contract.live.LiveRecordingState;
 import java.time.Instant;
 
 public record LiveRecordingView(

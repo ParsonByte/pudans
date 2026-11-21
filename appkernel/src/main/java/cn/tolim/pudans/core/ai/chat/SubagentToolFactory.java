@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.chat;
 
-import cn.tolim.pudans.contract.ai.resource.AiAgent;
-import cn.tolim.pudans.contract.ai.resource.AiSubagent;
+import cn.tolim.pudans.contract.ai.AiAgent;
+import cn.tolim.pudans.contract.ai.AiSubagent;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.agent.GatewayChatContext;
 import cn.tolim.pudans.core.ai.agent.GatewayChatModel;

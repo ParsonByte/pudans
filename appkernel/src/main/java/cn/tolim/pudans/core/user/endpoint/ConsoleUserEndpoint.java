@@ -6,7 +6,7 @@ import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.core.infra.exception.UnsatisfiedAttributeValueException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.Objects;
 import org.springdoc.core.fn.builders.parameter.Builder;

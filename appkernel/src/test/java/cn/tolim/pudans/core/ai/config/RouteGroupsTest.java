@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.ai.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import org.junit.jupiter.api.BeforeEach;

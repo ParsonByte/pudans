@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.memory.task;
 
 import cn.tolim.pudans.core.ai.task.AiTask;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
 import org.jspecify.annotations.Nullable;
 
 final class MemoryTaskPayloads {

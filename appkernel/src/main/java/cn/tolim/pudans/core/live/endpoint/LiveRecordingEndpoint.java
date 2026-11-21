@@ -5,9 +5,9 @@ import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
 
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
-import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveRecordingState;
+import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;

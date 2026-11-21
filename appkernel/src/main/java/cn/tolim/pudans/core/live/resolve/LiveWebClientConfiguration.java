@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.resolve;
 
-import cn.tolim.pudans.infra.properties.LiveProperties;
+import cn.tolim.pudans.core.infra.properties.LiveProperties;
 import io.netty.channel.ChannelOption;
 import java.time.Duration;
 import org.springframework.context.annotation.Bean;

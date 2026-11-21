@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.agent;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayEvent;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayInvocation;

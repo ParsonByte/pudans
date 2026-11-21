@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.core.ai.config.AiSettings;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

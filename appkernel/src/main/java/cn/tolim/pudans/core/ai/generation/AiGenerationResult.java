@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.generation;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
-import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
+import cn.tolim.pudans.core.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;

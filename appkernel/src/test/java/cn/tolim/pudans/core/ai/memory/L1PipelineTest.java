@@ -8,11 +8,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryTaskRepository;
+import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryGenerationLogRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryTaskRepository;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;

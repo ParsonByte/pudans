@@ -5,10 +5,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiAgent;
-import cn.tolim.pudans.contract.ai.resource.AiHook;
-import cn.tolim.pudans.contract.ai.resource.AiSubagent;
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.AiAgent;
+import cn.tolim.pudans.contract.ai.AiHook;
+import cn.tolim.pudans.contract.ai.AiSubagent;
+import cn.tolim.pudans.contract.ai.AiProvider;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.AiChatResponse;
@@ -60,8 +60,8 @@ class ChatToolsSubagentTest {
 
     private final MemoryViews memoryViews = mock(MemoryViews.class);
 
-    private final cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository memoryRepository =
-            mock(cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository.class);
+    private final cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository memoryRepository =
+            mock(cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository.class);
 
     private final ChatTools service = new ChatTools(
             libraryView,

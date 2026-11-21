@@ -10,7 +10,7 @@ import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.core.infra.setting.ParameterGroups;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;

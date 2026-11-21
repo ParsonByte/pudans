@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.rag.connector;
 
-import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.KnowledgeBase;
 import reactor.core.publisher.Mono;
 
 public interface ExternalRagConnector {

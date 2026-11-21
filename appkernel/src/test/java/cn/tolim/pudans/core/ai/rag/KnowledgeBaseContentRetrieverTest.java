@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.KnowledgeBase;
 import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import dev.langchain4j.rag.query.Query;
 import java.util.List;

@@ -13,13 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.contract.rbac.Role;
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.Watcher;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.infra.cache.ReactiveRedisCacheStore;
+import cn.tolim.pudans.core.infra.cache.ReactiveRedisCacheStore;
 
 @Slf4j
 @Service
@@ -38,9 +38,9 @@ public class RbacCache {
 
     private static final Set<String> INVALIDATING_KINDS = Set.of(
             Role.KIND,
-            cn.tolim.pudans.contract.rbac.resource.RoleBinding.KIND,
-            cn.tolim.pudans.contract.rbac.resource.UserGroup.KIND,
-            cn.tolim.pudans.contract.rbac.resource.UserGroupBinding.KIND);
+            cn.tolim.pudans.contract.rbac.RoleBinding.KIND,
+            cn.tolim.pudans.contract.rbac.UserGroup.KIND,
+            cn.tolim.pudans.contract.rbac.UserGroupBinding.KIND);
 
     private final ReactiveRedisCacheStore cacheStore;
 

@@ -1,6 +1,6 @@
 package cn.tolim.pudans;
 
-import cn.tolim.pudans.infra.utils.PudansTime;
+import cn.tolim.pudans.core.infra.utils.PudansTime;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.context.metrics.buffering.BufferingApplicationStartup;
@@ -45,7 +45,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
 @SpringBootApplication(scanBasePackages = "cn.tolim.pudans")
-@ConfigurationPropertiesScan(basePackages = "cn.tolim.pudans.infra.properties")
+@ConfigurationPropertiesScan(basePackages = "cn.tolim.pudans.core.infra.properties")
 public class Application {
 
     public static void main(String[] args) {

@@ -22,7 +22,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.StorageFile;
 import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.driver.ByteRange;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadedPart;
@@ -31,7 +31,7 @@ import cn.tolim.pudans.core.storage.driver.StorageSourceOptions;
 import cn.tolim.pudans.core.storage.upload.StorageUploadRequest;
 import cn.tolim.pudans.core.storage.upload.UploadStatus;
 import cn.tolim.pudans.core.storage.upload.UploadTicket;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import reactor.core.publisher.Mono;
 
 @Component

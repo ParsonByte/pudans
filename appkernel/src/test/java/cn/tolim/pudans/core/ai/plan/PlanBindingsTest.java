@@ -9,14 +9,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiPlanBinding;
-import cn.tolim.pudans.contract.rbac.resource.UserGroup;
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.ai.AiPlanBinding;
+import cn.tolim.pudans.contract.rbac.UserGroup;
+import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.rbac.group.Groups;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;

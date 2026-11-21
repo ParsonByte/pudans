@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.harness.workspace;
 
-import cn.tolim.pudans.infra.properties.PudansProperties;
+import cn.tolim.pudans.core.infra.properties.PudansProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;

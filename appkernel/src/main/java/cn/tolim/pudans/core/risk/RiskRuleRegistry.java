@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.risk;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
 
-import cn.tolim.pudans.contract.risk.resource.RiskRule;
+import cn.tolim.pudans.contract.risk.RiskRule;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import java.util.HashMap;

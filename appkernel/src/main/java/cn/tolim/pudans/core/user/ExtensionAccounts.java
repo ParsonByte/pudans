@@ -21,7 +21,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ListOptions;
@@ -29,13 +29,13 @@ import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.router.selector.FieldSelector;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
 import cn.tolim.pudans.contract.security.device.DeviceSessions;
-import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.event.user.PasswordChangedEvent;
-import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
-import cn.tolim.pudans.infra.exception.DuplicateNameException;
-import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
-import cn.tolim.pudans.infra.exception.UserNotFoundException;
-import cn.tolim.pudans.security.authorization.AuthorityUtils;
+import cn.tolim.pudans.core.extension.exception.ExtensionNotFoundException;
+import cn.tolim.pudans.core.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.core.infra.exception.UnsatisfiedAttributeValueException;
+import cn.tolim.pudans.core.infra.exception.UserNotFoundException;
+import cn.tolim.pudans.core.security.authorization.AuthorityUtils;
 
 @Slf4j
 @Service

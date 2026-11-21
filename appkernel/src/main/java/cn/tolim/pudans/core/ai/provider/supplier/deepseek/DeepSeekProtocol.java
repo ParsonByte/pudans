@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.provider.supplier.deepseek;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProvider;
 import java.util.Set;
 
 public final class DeepSeekProtocol {

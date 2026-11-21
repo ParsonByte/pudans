@@ -9,12 +9,12 @@ import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_RECORDING_NOT
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_ROOM_OFFLINE;
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_SOURCE_NOT_FOUND;
 
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.live.resource.LiveRecordingFormat;
-import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
-import cn.tolim.pudans.contract.live.resource.LiveSource;
-import cn.tolim.pudans.contract.live.resource.LiveSourceState;
-import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveRecordingFormat;
+import cn.tolim.pudans.contract.live.LiveRecordingState;
+import cn.tolim.pudans.contract.live.LiveSource;
+import cn.tolim.pudans.contract.live.LiveSourceState;
+import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;

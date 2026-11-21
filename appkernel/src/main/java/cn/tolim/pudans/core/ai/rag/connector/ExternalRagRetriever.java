@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.rag.connector;
 
-import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.KnowledgeBase;
 import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseCodes;
 import cn.tolim.pudans.core.ai.rag.RetrievalCandidate;

@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.generation;
 
-import cn.tolim.pudans.contract.ai.resource.AiModel;
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
-import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.AiModel;
+import cn.tolim.pudans.contract.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.model.AiModelAdapterRegistry;
@@ -10,8 +10,8 @@ import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.core.ai.task.AiTaskHandler;
-import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
+import cn.tolim.pudans.core.infra.r2dbc.ai.model.AiModelRequestRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.model.AiModelRequestRepository.ModelRequestRow;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Duration;

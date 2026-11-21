@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.org;
 
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.memory.L1Deduplication;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
@@ -8,9 +8,9 @@ import cn.tolim.pudans.core.ai.memory.MemoryHashes;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.core.ai.task.AiTaskHandler;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiOrgMemoryRepository.NewOrgMemory;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiOrgMemoryRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiOrgMemoryRepository.NewOrgMemory;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;

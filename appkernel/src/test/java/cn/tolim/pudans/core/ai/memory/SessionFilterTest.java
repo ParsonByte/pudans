@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.memory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.AiSetting;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;

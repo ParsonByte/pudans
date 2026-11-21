@@ -9,13 +9,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
-import cn.tolim.pudans.contract.live.resource.LiveSource;
-import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveRecordingState;
+import cn.tolim.pudans.contract.live.LiveSource;
+import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import cn.tolim.pudans.core.live.recorder.LiveRecorderRegistry;
 import cn.tolim.pudans.core.live.recorder.LiveRecorder;
 import cn.tolim.pudans.core.live.recorder.LiveStoragePolicyResolver;

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.user;
 
-import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.contract.user.UserConnection;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

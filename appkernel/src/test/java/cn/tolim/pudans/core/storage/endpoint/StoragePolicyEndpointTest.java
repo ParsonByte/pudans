@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.OneDriveOAuth;
 import cn.tolim.pudans.core.storage.Policies;
 import cn.tolim.pudans.core.storage.StoragePolicyValidator;

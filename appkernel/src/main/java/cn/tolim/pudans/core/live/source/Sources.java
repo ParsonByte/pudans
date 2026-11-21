@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.live.source;
 
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.live.resource.LiveSource;
-import cn.tolim.pudans.contract.live.resource.LiveSourceState;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveSource;
+import cn.tolim.pudans.contract.live.LiveSourceState;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
@@ -10,9 +10,9 @@ import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.contract.live.dto.LiveSourceHealth;
 import cn.tolim.pudans.core.live.recording.Recordings;
 import cn.tolim.pudans.core.live.resolve.RoomResolver;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.exception.DuplicateNameException;
-import cn.tolim.pudans.infra.properties.LiveProperties;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.DuplicateNameException;
+import cn.tolim.pudans.core.infra.properties.LiveProperties;
 import java.time.Duration;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -217,7 +217,7 @@ public class Sources {
 
     private Mono<LiveSource> createSource(
             String name,
-            cn.tolim.pudans.contract.live.resource.LivePlatform platform,
+            cn.tolim.pudans.contract.live.LivePlatform platform,
             String roomId,
             String roomUrl,
             String alias,

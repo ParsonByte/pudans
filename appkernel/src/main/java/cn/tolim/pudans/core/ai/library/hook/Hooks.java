@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.ai.library.hook;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
 
-import cn.tolim.pudans.contract.ai.resource.AiAgent;
-import cn.tolim.pudans.contract.ai.resource.AiHook;
+import cn.tolim.pudans.contract.ai.AiAgent;
+import cn.tolim.pudans.contract.ai.AiHook;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimes;

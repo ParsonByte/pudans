@@ -6,7 +6,7 @@ import lombok.Getter;
 import org.springframework.context.ApplicationEvent;
 
 @Getter
-public class DomainEvent extends ApplicationEvent {
+public class  DomainEvent extends ApplicationEvent {
 
     private final String eventId;
 

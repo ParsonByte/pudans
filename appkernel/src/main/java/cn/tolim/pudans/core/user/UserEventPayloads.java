@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.user;
 
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.User;
 import java.util.LinkedHashMap;
 import java.util.Map;
 

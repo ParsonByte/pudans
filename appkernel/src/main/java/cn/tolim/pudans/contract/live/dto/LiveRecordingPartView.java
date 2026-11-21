@@ -1,6 +1,6 @@
 package cn.tolim.pudans.contract.live.dto;
 
-import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.live.PartState;
 import java.time.Instant;
 
 public record LiveRecordingPartView(

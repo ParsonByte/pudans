@@ -8,11 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
-import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.storage.StoragePolicy;
+import cn.tolim.pudans.contract.storage.StoragePolicyType;
 import cn.tolim.pudans.core.storage.Policies;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import reactor.core.publisher.Mono;
 
 // 解析录制可用的对象存储策略，本地存储永远不作为录制落盘目标

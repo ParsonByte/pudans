@@ -5,8 +5,8 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
-import cn.tolim.pudans.contract.ai.resource.AiMemoryPromptBinding;
+import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.AiMemoryPromptBinding;
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
@@ -15,7 +15,7 @@ import cn.tolim.pudans.core.ai.memory.MemoryPromptResolver;
 import cn.tolim.pudans.core.ai.memory.ResolvedMemoryPrompt;
 import cn.tolim.pudans.core.ai.memory.prompt.MemoryPromptLog;
 import cn.tolim.pudans.core.ai.memory.prompt.MemoryPromptSettings;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;

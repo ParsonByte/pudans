@@ -2,12 +2,12 @@ package cn.tolim.pudans.core.ai.library.skill;
 
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 
-import cn.tolim.pudans.contract.ai.resource.AiSkill;
+import cn.tolim.pudans.contract.ai.AiSkill;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
 import cn.tolim.pudans.core.ai.provider.AiWebClientConfiguration;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;

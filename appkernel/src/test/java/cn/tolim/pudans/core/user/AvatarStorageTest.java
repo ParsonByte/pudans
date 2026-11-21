@@ -6,12 +6,12 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.properties.PudansProperties;
-import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.properties.PudansProperties;
+import cn.tolim.pudans.core.infra.setting.ParameterGroups;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;

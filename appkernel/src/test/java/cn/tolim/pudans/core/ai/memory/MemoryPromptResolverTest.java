@@ -2,8 +2,8 @@ package cn.tolim.pudans.core.ai.memory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
-import cn.tolim.pudans.contract.ai.resource.AiMemoryPromptBinding;
+import cn.tolim.pudans.contract.ai.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.AiMemoryPromptBinding;
 import cn.tolim.pudans.contract.extension.Metadata;
 import java.util.List;
 import org.junit.jupiter.api.Test;

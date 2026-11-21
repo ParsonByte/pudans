@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.webhook.reconciler;
 
-import cn.tolim.pudans.contract.webhook.resource.Webhook;
+import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.controller.Controller;
 import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;

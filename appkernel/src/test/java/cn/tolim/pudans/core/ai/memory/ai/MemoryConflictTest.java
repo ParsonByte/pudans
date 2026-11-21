@@ -6,7 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.generation.TextGenerations;
 import cn.tolim.pudans.core.ai.generation.GenerationRequest;

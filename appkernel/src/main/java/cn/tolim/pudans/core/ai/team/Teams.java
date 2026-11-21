@@ -1,12 +1,12 @@
 package cn.tolim.pudans.core.ai.team;
 
-import cn.tolim.pudans.contract.ai.resource.AiAgent;
-import cn.tolim.pudans.contract.ai.resource.AiTeam;
+import cn.tolim.pudans.contract.ai.AiAgent;
+import cn.tolim.pudans.contract.ai.AiTeam;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
-import cn.tolim.pudans.infra.exception.AccessDeniedException;
+import cn.tolim.pudans.core.infra.exception.AccessDeniedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;

@@ -4,7 +4,7 @@ import static cn.tolim.pudans.contract.extension.ExtensionUtil.addFinalizers;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.isDeleted;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.removeFinalizers;
 
-import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.controller.Controller;
 import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;

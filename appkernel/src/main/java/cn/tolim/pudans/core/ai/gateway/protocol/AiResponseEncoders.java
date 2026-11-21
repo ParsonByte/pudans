@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.gateway.protocol;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProvider;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Objects;
 

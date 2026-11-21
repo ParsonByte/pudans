@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.ai.runtime.sandbox;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import cn.tolim.pudans.contract.ai.resource.AiSandboxProvider;
+import cn.tolim.pudans.contract.ai.AiSandboxProvider;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.ArrayDeque;
 import java.util.ArrayList;

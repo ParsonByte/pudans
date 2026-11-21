@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.user.endpoint;
 
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.Metadata;
 import java.util.List;

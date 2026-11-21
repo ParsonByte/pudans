@@ -6,8 +6,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
-import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.MetadataUtil;

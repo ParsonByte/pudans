@@ -5,11 +5,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.AiProvider;
-import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.AiProviderAccount;
 import cn.tolim.pudans.core.ai.provider.AiProviderBalanceProbeClient;
 import cn.tolim.pudans.core.ai.provider.AiProviderBalanceProbeClient.ProbeResult;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;

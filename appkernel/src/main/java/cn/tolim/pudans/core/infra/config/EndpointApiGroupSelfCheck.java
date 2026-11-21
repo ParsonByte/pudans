@@ -1,0 +1,219 @@
+package cn.tolim.pudans.core.infra.config;
+
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.ApiGroups;
+import cn.tolim.pudans.contract.extension.SchemeManager;
+import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.server.HandlerFunction;
+import org.springframework.web.reactive.function.server.RequestPredicate;
+import org.springframework.web.reactive.function.server.RouterFunction;
+import org.springframework.web.reactive.function.server.RouterFunctions;
+import org.springframework.web.reactive.function.server.ServerResponse;
+
+@Component
+@Order(0)
+public class EndpointApiGroupSelfCheck implements ApplicationRunner {
+
+    private static final Set<String> ALLOWED_API_GROUPS = ApiGroups.ALL;
+
+    private static final Set<String> EXPLICITLY_ALLOWED_RESOURCES =
+            Set.of("system", "login", "recovery", "oauth2", "passkeys", "captcha", "auth", "avatars");
+
+    private static final String API_GROUP_ALL = "*";
+
+    private static final Pattern API_GROUP_PATTERN = Pattern.compile(
+            "^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)+$");
+
+    private static final Pattern API_VERSION_PATTERN =
+            Pattern.compile("^v[0-9]+(?:(?:alpha|beta)[0-9]+)?$");
+
+    private static final Pattern ROUTE_PATH_PATTERN =
+            Pattern.compile("(?<![A-Za-z0-9_-])(/[A-Za-z0-9_{}.*-]+(?:/[A-Za-z0-9_{}.*-]+)*)");
+
+    private final ApplicationContext applicationContext;
+
+    private final BuiltinRoleDefinitions builtinRoleDefinitions;
+
+    public EndpointApiGroupSelfCheck(
+            ApplicationContext applicationContext, BuiltinRoleDefinitions builtinRoleDefinitions) {
+        this.applicationContext = applicationContext;
+        this.builtinRoleDefinitions = builtinRoleDefinitions;
+    }
+
+    @Override
+    public void run(ApplicationArguments args) {
+        var endpoints = applicationContext.getBeansOfType(CustomEndpoint.class).values();
+        var routeErrors = new ArrayList<String>();
+        var allRoutes = new TreeSet<String>();
+
+        for (var endpoint : endpoints) {
+            var groupVersion = endpoint.groupVersion();
+            if (groupVersion == null) {
+                routeErrors.add(endpoint.getClass().getName() + " 返回了空的 groupVersion。");
+                continue;
+            }
+            if (!API_GROUP_PATTERN.matcher(groupVersion.group()).matches()) {
+                routeErrors.add(endpoint.getClass().getName() + " 的 API 组 '"
+                        + groupVersion.group() + "' 无效。应为包含点号的 DNS 风格组名。");
+            }
+            if (!ALLOWED_API_GROUPS.contains(groupVersion.group())) {
+                routeErrors.add(endpoint.getClass().getName() + " 使用了非规范 API 组 '"
+                        + groupVersion.group() + "'。允许的组：" + ALLOWED_API_GROUPS);
+            }
+            if (!API_VERSION_PATTERN.matcher(groupVersion.version()).matches()) {
+                routeErrors.add(endpoint.getClass().getName() + " 的 API 版本 '"
+                        + groupVersion.version() + "' 无效。");
+            }
+
+            var routePathErrors = new ArrayList<String>();
+            var routes = extractRelativePaths(
+                    endpoint.endpoint(), endpoint.getClass().getName(), routePathErrors);
+            routeErrors.addAll(routePathErrors);
+            if (routes.isEmpty() && routePathErrors.isEmpty()) {
+                routeErrors.add(endpoint.getClass().getName() + " 未暴露任何路由路径。");
+                continue;
+            }
+            for (var route : routes) {
+                allRoutes.add(route);
+                if (!route.startsWith("/")) {
+                    routeErrors.add(endpoint.getClass().getName() + " 的路由 '" + route
+                            + "' 必须以 '/' 开头。");
+                } else if (route.startsWith("/api/") || route.startsWith("/apis/")) {
+                    routeErrors.add(endpoint.getClass().getName() + " 的路由 '" + route
+                            + "' 必须是相对路径；/apis/{group}/{version} 前缀由端点构建器添加。");
+                }
+            }
+        }
+
+        if (!routeErrors.isEmpty()) {
+            throw new IllegalStateException("自定义端点路由注册无效：\n - "
+                    + String.join("\n - ", routeErrors));
+        }
+
+        var coveredResources = coveredResources();
+        var schemeManager = applicationContext.getBeanProvider(SchemeManager.class).getIfAvailable();
+        if (schemeManager != null) {
+            schemeManager.schemes().stream()
+                    .map(scheme -> "/" + scheme.plural())
+                    .forEach(allRoutes::add);
+        }
+        var uncoveredPaths = allRoutes.stream()
+                .filter(route -> !route.startsWith("/api/") && !route.startsWith("/apis/"))
+                .filter(route -> {
+                    var resource = topLevelResource(route);
+                    return !coveredResources.contains(resource) && !EXPLICITLY_ALLOWED_RESOURCES.contains(resource);
+                })
+                .collect(Collectors.toCollection(TreeSet::new));
+        if (!uncoveredPaths.isEmpty()) {
+            throw new IllegalStateException(
+                    "以下自定义端点路径未被角色定义规则或显式"
+                            + "放行规则覆盖："
+                            + uncoveredPaths
+                            + "。请将匹配的资源添加到 extensions/workspace 或 extensions/role 下的角色定义"
+                            + "文件，或将路径添加到显式放行列表。已覆盖的资源："
+                            + coveredResources);
+        }
+    }
+
+    private static Set<String> extractRelativePaths(
+            RouterFunction<ServerResponse> routerFunction,
+            String endpointName,
+            List<String> pathErrors) {
+        var routes = new LinkedHashSet<String>();
+        Deque<String> nestedPrefixes = new ArrayDeque<>();
+        routerFunction.accept(new RouterFunctions.Visitor() {
+            @Override
+            public void startNested(RequestPredicate predicate) {
+                var paths = pathsOf(predicate);
+                nestedPrefixes.addLast(paths.stream().findFirst().orElse(""));
+            }
+
+            @Override
+            public void endNested(RequestPredicate predicate) {
+                if (!nestedPrefixes.isEmpty()) {
+                    nestedPrefixes.removeLast();
+                }
+            }
+
+            @Override
+            public void route(RequestPredicate predicate, HandlerFunction<?> handler) {
+                var text = predicate.toString();
+                var paths = pathsOf(predicate);
+                if (paths.isEmpty()) {
+                    if (nestedPrefixes.isEmpty() || nestedPrefixes.stream().allMatch(String::isEmpty)) {
+                        pathErrors.add(endpointName + " 的路由谓词没有绝对路径：" + text);
+                        return;
+                    }
+                    routes.add(String.join("", nestedPrefixes));
+                    return;
+                }
+                var prefix = String.join("", nestedPrefixes);
+                paths.forEach(path -> routes.add(prefix + path));
+            }
+
+            @Override
+            public void resources(
+                    java.util.function.Function<org.springframework.web.reactive.function.server.ServerRequest,
+                            reactor.core.publisher.Mono<org.springframework.core.io.Resource>> lookupFunction) {
+                // 空实现。
+            }
+
+            @Override
+            public void attributes(Map<String, Object> attributes) {
+                // 空实现。
+            }
+
+            @Override
+            public void unknown(RouterFunction<?> router) {
+                // 空实现。
+            }
+        });
+        return routes;
+    }
+
+    private static Set<String> pathsOf(RequestPredicate predicate) {
+        var paths = new LinkedHashSet<String>();
+        var matcher = ROUTE_PATH_PATTERN.matcher(predicate.toString());
+        while (matcher.find()) {
+            paths.add(matcher.group(1));
+        }
+        return paths;
+    }
+
+    private Set<String> coveredResources() {
+        return builtinRoleDefinitions.allRoles().stream()
+                .flatMap(role -> role.getRules().stream())
+                .filter(rule -> Arrays.asList(rule.getApiGroups()).contains(ApiGroups.API))
+                .flatMap(rule -> Arrays.stream(rule.getResources()))
+                .filter(StringUtils::hasText)
+                .filter(resource -> !API_GROUP_ALL.equals(resource))
+                .map(resource -> {
+                    var separator = resource.indexOf('/');
+                    return separator < 0 ? resource : resource.substring(0, separator);
+                })
+                .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    private static String topLevelResource(String route) {
+        var path = route.startsWith("/") ? route.substring(1) : route;
+        var separator = path.indexOf('/');
+        return separator < 0 ? path : path.substring(0, separator);
+    }
+}

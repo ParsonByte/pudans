@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.routing;
 
-import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.AiModel;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Set;

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.gateway;
 
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.contract.ai.AiSetting;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import dev.langchain4j.exception.AuthenticationException;
 import dev.langchain4j.exception.HttpException;
 import dev.langchain4j.exception.InternalServerException;

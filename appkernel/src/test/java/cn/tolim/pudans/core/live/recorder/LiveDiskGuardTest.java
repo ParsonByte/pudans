@@ -15,11 +15,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.unit.DataSize;
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.properties.LiveProperties;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.properties.LiveProperties;
 
 @ExtendWith(MockitoExtension.class)
 class LiveDiskGuardTest {

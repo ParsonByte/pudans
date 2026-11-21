@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.chat;
 
-import cn.tolim.pudans.contract.ai.resource.AiAgent;
-import cn.tolim.pudans.contract.ai.resource.AiHook;
-import cn.tolim.pudans.contract.ai.resource.AiSubagent;
+import cn.tolim.pudans.contract.ai.AiAgent;
+import cn.tolim.pudans.contract.ai.AiHook;
+import cn.tolim.pudans.contract.ai.AiSubagent;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.agent.GatewayChatContext;
 import cn.tolim.pudans.core.ai.agent.GatewayChatModel;
@@ -30,7 +30,7 @@ import cn.tolim.pudans.core.ai.prompt.ChatPrompts;
 import cn.tolim.pudans.core.ai.runtime.AgentRuntimes;
 import cn.tolim.pudans.core.ai.runtime.RuntimeTools;
 import com.fasterxml.jackson.databind.JsonNode;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;

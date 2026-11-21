@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.gateway;
 
-import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.AiModel;
 
 public record AiGatewayMeta(
         String requestId,

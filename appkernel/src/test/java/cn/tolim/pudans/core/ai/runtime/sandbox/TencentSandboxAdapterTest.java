@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.runtime.sandbox;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.ai.resource.AiSandboxProvider;
+import cn.tolim.pudans.contract.ai.AiSandboxProvider;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
@@ -214,8 +214,8 @@ class TencentSandboxAdapterTest {
         StepVerifier.create(adapter.create(new SandboxCreateSpec(
                         "agent-1", null, null, 1.0, 1024, 600, true, "/workspace", Map.of())))
                 .expectErrorSatisfies(error -> {
-                    assertThat(error).isInstanceOf(cn.tolim.pudans.infra.exception.ApiException.class);
-                    var api = (cn.tolim.pudans.infra.exception.ApiException) error;
+                    assertThat(error).isInstanceOf(cn.tolim.pudans.core.infra.exception.ApiException.class);
+                    var api = (cn.tolim.pudans.core.infra.exception.ApiException) error;
                     assertThat(api.getCode()).isEqualTo(SandboxErrors.PROVIDER_ERROR);
                     assertThat(api.getReason()).contains("InvalidParameter");
                 })

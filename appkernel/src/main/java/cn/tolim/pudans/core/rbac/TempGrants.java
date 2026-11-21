@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.rbac;
 
-import cn.tolim.pudans.contract.rbac.resource.TempRoleBinding;
+import cn.tolim.pudans.contract.rbac.TempRoleBinding;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import java.time.Clock;

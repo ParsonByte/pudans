@@ -4,13 +4,13 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.audit.resource.AuditRecord;
+import cn.tolim.pudans.contract.audit.AuditRecord;
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.core.audit.AuditLog;
-import cn.tolim.pudans.infra.audit.AuditStore;
-import cn.tolim.pudans.infra.utils.PudansTime;
+import cn.tolim.pudans.core.infra.audit.AuditStore;
+import cn.tolim.pudans.core.infra.utils.PudansTime;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Duration;
 import java.time.Instant;

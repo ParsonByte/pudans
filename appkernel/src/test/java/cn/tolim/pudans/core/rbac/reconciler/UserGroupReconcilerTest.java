@@ -6,7 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.rbac.resource.UserGroup;
+import cn.tolim.pudans.contract.rbac.UserGroup;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.Unstructured;
 import cn.tolim.pudans.contract.extension.controller.Reconciler.Request;

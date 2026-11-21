@@ -6,7 +6,7 @@ import cn.tolim.pudans.core.ai.generation.GenerationRequest;
 import cn.tolim.pudans.core.ai.generation.GenerationResult;
 import cn.tolim.pudans.core.ai.memory.DedupAction;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
-import cn.tolim.pudans.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.exception.ApiException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;

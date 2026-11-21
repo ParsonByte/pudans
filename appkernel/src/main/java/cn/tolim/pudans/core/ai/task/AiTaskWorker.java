@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.ai.task;
 
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
-import cn.tolim.pudans.infra.properties.AiProperties;
-import cn.tolim.pudans.infra.r2dbc.ai.task.AiTaskRepository;
-import cn.tolim.pudans.infra.setting.InitializationPhase;
+import cn.tolim.pudans.core.infra.properties.AiProperties;
+import cn.tolim.pudans.core.infra.r2dbc.ai.task.AiTaskRepository;
+import cn.tolim.pudans.core.infra.setting.InitializationPhase;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;

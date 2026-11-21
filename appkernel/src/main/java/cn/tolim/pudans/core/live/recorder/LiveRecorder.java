@@ -4,13 +4,13 @@ import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_RECORDING_LIM
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_RECORDING_NOT_ACTIVE;
 import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STOP_TIMEOUT;
 
-import cn.tolim.pudans.contract.live.resource.LiveRecording;
-import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
-import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.live.LiveRecording;
+import cn.tolim.pudans.contract.live.LiveRecordingState;
+import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.core.live.resolve.RoomResolver;
-import cn.tolim.pudans.infra.properties.LiveProperties;
+import cn.tolim.pudans.core.infra.properties.LiveProperties;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeoutException;

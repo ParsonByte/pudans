@@ -13,10 +13,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.KnowledgeBase;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbChunkRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.rag.AiKbDocumentRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.rag.AiKbChunkRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.rag.AiKbDocumentRepository;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

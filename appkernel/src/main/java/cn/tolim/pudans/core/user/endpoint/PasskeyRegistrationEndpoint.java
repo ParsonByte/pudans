@@ -4,12 +4,12 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
 import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.contract.user.UserConnection;
 import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.infra.properties.PasskeyProperties;
-import cn.tolim.pudans.infra.webauthn.Passkeys;
+import cn.tolim.pudans.core.infra.properties.PasskeyProperties;
+import cn.tolim.pudans.core.infra.webauthn.Passkeys;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;

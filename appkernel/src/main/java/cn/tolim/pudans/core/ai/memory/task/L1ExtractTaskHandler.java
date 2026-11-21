@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory.task;
 
-import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.contract.ai.AiSetting;
 import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.conversation.Conversations;
 import cn.tolim.pudans.core.ai.memory.DedupDecision;
@@ -24,13 +24,13 @@ import cn.tolim.pudans.core.ai.memory.ai.MemoryExtraction;
 import cn.tolim.pudans.core.ai.memory.org.OrgCandidatePolicy;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.core.ai.task.AiTaskHandler;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL2Repository;
-import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL3Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL1Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL2Repository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.memory.AiMemoryL3Repository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

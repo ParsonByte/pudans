@@ -6,11 +6,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository;
-import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository.Message;
+import cn.tolim.pudans.core.infra.exception.ApiException;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository;
+import cn.tolim.pudans.core.infra.r2dbc.ai.chat.AiMessageRepository.Message;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
