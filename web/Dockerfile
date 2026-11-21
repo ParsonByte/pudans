@@ -4,6 +4,7 @@ WORKDIR /app
 
 ARG PUDANS_API_ORIGIN=http://api:8090
 ENV PUDANS_API_ORIGIN=${PUDANS_API_ORIGIN}
+ENV NEXT_TELEMETRY_DISABLED=1
 
 COPY web/package.json web/package-lock.json ./
 COPY web/packages/api-client/package.json packages/api-client/package.json

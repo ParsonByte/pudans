@@ -1,2 +1,10 @@
-.github
 .git
+.gitignore
+.claude
+**/node_modules
+**/.gradle
+**/.DS_Store
+web/.next
+web/build
+web/dist
+web/packages/api-client/dist
