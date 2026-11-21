@@ -16,6 +16,7 @@ import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.core.live.resolve.RoomResolver;
+import cn.tolim.pudans.core.live.source.SourceStatus;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.time.Duration;
@@ -73,7 +74,11 @@ public class LiveRecorderTask implements Runnable {
 
     private final ReactiveStringRedisTemplate redisTemplate;
 
+    private final SourceStatus sourceStatus;
+
     private final String recordingName;
+
+    private final String sourceName;
 
     private final String platform;
 
@@ -117,6 +122,7 @@ public class LiveRecorderTask implements Runnable {
             LiveStoragePolicyResolver policyResolver,
             LiveMetrics metrics,
             ReactiveStringRedisTemplate redisTemplate,
+            SourceStatus sourceStatus,
             LiveRecording recording) {
         this.properties = properties;
         this.recordingStatus = recordingStatus;
@@ -131,7 +137,9 @@ public class LiveRecorderTask implements Runnable {
         this.policyResolver = policyResolver;
         this.metrics = metrics;
         this.redisTemplate = redisTemplate;
+        this.sourceStatus = sourceStatus;
         this.recordingName = recording.getMetadata().getName();
+        this.sourceName = recording.getSpec().getSourceName();
         this.platform = recording.getSpec().getPlatform().name();
         this.roomId = recording.getSpec().getRoomId();
         this.segmentSeconds = recording.getSpec().getSegmentSeconds();
@@ -251,6 +259,17 @@ public class LiveRecorderTask implements Runnable {
         }
         if (merger.isFailed(recordingName)) {
             return Outcome.failure(merger.failureCode(recordingName), "录制成品处理失败");
+        }
+        try {
+            var recording = recordingStatus.findRequired(recordingName).block();
+            if (recording != null) {
+                var pressure = diskGuard.requireWritable(recordingName, recording);
+                if (pressure.decision() == LiveDiskGuard.DiskDecision.MERGE_NOW) {
+                    merger.requestMerge(recordingName, false);
+                }
+            }
+        } catch (ApiException error) {
+            return Outcome.failure(codeOf(error, LIVE_DISK_FULL), error.getReason());
         }
         if (Duration.between(captureStartedAt, Instant.now()).compareTo(properties.getRecorder().getMaxDuration()) >= 0) {
             log.info("录制达到最大时长，正常收尾 [{}]", recordingName);
@@ -434,7 +453,8 @@ public class LiveRecorderTask implements Runnable {
             merger.finalizeRecording(recordingName).block();
         } catch (RuntimeException error) {
             if (error.getCause() instanceof TimeoutException) {
-                log.warn("录制收尾超过 finalize-timeout，保持 FINALIZING [{}]", recordingName);
+                log.warn("录制收尾超过 finalize-timeout，标记失败 [{}]", recordingName);
+                fail(LIVE_STREAM_FAILED, "录制收尾超时");
                 return;
             }
             log.warn("录制收尾失败 [{}]：{}", recordingName, error.getMessage());
@@ -460,6 +480,7 @@ public class LiveRecorderTask implements Runnable {
         if (parts == null || parts.isEmpty()) {
             log.info("录制未产生有效分片，标记取消 [{}]", recordingName);
             recordingStatus.transition(recordingName, LiveRecordingState.CANCELED, LIVE_NO_DATA.message()).block();
+            clearSourceRecording();
             return;
         }
         if (parts.stream().anyMatch(part -> part.getState() != PartState.UPLOADED)) {
@@ -485,6 +506,7 @@ public class LiveRecorderTask implements Runnable {
                 })
                 .block();
         recordingStatus.transition(recordingName, LiveRecordingState.COMPLETED, null).block();
+        clearSourceRecording();
         log.info("录制完成 [{}]，成品 {} 个，字节 {}", recordingName, parts.size(), totalBytes);
     }
 
@@ -493,6 +515,29 @@ public class LiveRecorderTask implements Runnable {
             recordingStatus.fail(recordingName, code, message).block();
         } catch (RuntimeException error) {
             log.warn("写入录制失败状态失败 [{}]：{}", recordingName, error.getMessage());
+        }
+        updateSourceFailed(code, message);
+    }
+
+    private void clearSourceRecording() {
+        if (!org.springframework.util.StringUtils.hasText(sourceName)) {
+            return;
+        }
+        try {
+            sourceStatus.recordingEnded(sourceName).block();
+        } catch (RuntimeException error) {
+            log.warn("清理直播源录制状态失败 [{}]：{}", sourceName, error.getMessage());
+        }
+    }
+
+    private void updateSourceFailed(LiveErrorCode code, String message) {
+        if (!org.springframework.util.StringUtils.hasText(sourceName)) {
+            return;
+        }
+        try {
+            sourceStatus.recordingFailed(sourceName, code.name(), message).block();
+        } catch (RuntimeException error) {
+            log.warn("回写直播源录制失败状态失败 [{}]：{}", sourceName, error.getMessage());
         }
     }
 

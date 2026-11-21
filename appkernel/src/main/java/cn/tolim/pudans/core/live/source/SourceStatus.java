@@ -150,6 +150,17 @@ public class SourceStatus {
         });
     }
 
+    public Mono<LiveSource> recordingEnded(String name) {
+        return mutate(name, "recording_ended", source -> {
+            var now = Instant.now();
+            applyEvent(source, LiveSourceStateMachine.Event.RECORDING_ENDED, null);
+            var status = source.getStatus();
+            status.setCurrentRecording(null);
+            status.setMessage(null);
+            status.setNextCheckAt(now.plus(properties.getMonitor().getLiveInterval()));
+        });
+    }
+
     public Mono<LiveSource> recordingFailed(String name, String code, String message) {
         return mutate(name, "recording_failed", source -> {
             var now = Instant.now();

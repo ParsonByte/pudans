@@ -116,8 +116,17 @@ public class LiveMonitorWorker {
         var name = source.getMetadata().getName();
         return recordings
                 .start(source, info, true, "monitor")
-                .flatMap(recording -> sourceStatus.markRecording(
-                        name, recording.getMetadata().getName()))
+                .flatMap(recording -> recording.getStatus().getState()
+                                == cn.tolim.pudans.contract.live.LiveRecordingState.FAILED
+                        ? sourceStatus
+                                .recordingFailed(
+                                        name,
+                                        LiveErrorCode.LIVE_STREAM_FAILED.name(),
+                                        recording.getStatus().getMessage() == null
+                                                ? "录制启动失败。"
+                                                : recording.getStatus().getMessage())
+                                .then()
+                        : sourceStatus.markRecording(name, recording.getMetadata().getName()))
                 .then()
                 .onErrorResume(error -> handleRecordingFailure(name, error));
     }
