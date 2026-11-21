@@ -33,16 +33,16 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.risk.service.RiskControlService;
-import cn.tolim.pudans.core.risk.service.RiskDecision;
-import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
-import cn.tolim.pudans.core.risk.service.RiskScene;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.risk.RiskGuard;
+import cn.tolim.pudans.core.risk.RiskDecision;
+import cn.tolim.pudans.core.risk.RiskRuleRegistry;
+import cn.tolim.pudans.core.risk.RiskScene;
 import cn.tolim.pudans.infra.feishu.FeishuAlertNotifier;
 
 @ExtendWith(MockitoExtension.class)
@@ -50,7 +50,7 @@ import cn.tolim.pudans.infra.feishu.FeishuAlertNotifier;
 class RiskControlWebFilterTest {
 
     @Mock
-    RiskControlService riskControlService;
+    RiskGuard riskGuard;
 
     @Mock
     RiskRuleRegistry riskRuleRegistry;
@@ -62,7 +62,7 @@ class RiskControlWebFilterTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AuditService auditService;
+    AuditLog auditLog;
 
     @Mock
     FeishuAlertNotifier alertNotifier;
@@ -78,11 +78,11 @@ class RiskControlWebFilterTest {
     @BeforeEach
     void setUp() {
         filter = new RiskControlWebFilter(
-                riskControlService,
+                riskGuard,
                 riskRuleRegistry,
                 securityContextRepository,
                 client,
-                auditService,
+                auditLog,
                 alertNotifier,
                 domainEventPublisher,
                 context);
@@ -91,7 +91,7 @@ class RiskControlWebFilterTest {
         when(securityContextRepository.load(any())).thenReturn(Mono.empty());
         when(alertNotifier.send(any())).thenReturn(Mono.empty());
         when(riskRuleRegistry.enabledScenes()).thenReturn(java.util.Set.of(RiskScene.AUTH_FAILURE));
-        when(auditService.newRecord(anyString(), anyString(), anyString())).thenAnswer(invocation -> {
+        when(auditLog.newRecord(anyString(), anyString(), anyString())).thenAnswer(invocation -> {
             var record = new AuditRecord();
             var metadata = new Metadata();
             metadata.setName("audit-" + System.nanoTime());
@@ -124,9 +124,9 @@ class RiskControlWebFilterTest {
 
     @Test
     void bannedRequestIsRejectedWith429AndNeverReachesTheChain() {
-        when(riskControlService.firstBannedScene(any(Collection.class), anyString()))
+        when(riskGuard.firstBannedScene(any(Collection.class), anyString()))
                 .thenReturn(Mono.just(RiskScene.REQUEST_FLOOD));
-        when(riskControlService.markAlerted(anyString(), anyString(), any(Duration.class)))
+        when(riskGuard.markAlerted(anyString(), anyString(), any(Duration.class)))
                 .thenReturn(Mono.just(false));
         var exchange = exchange();
         var chainInvoked = new AtomicBoolean(false);
@@ -139,15 +139,15 @@ class RiskControlWebFilterTest {
 
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
         assertThat(chainInvoked).isFalse();
-        verify(riskControlService, never()).ban(anyString(), anyString(), any(Duration.class));
-        verify(auditService).record(any(AuditRecord.class));
+        verify(riskGuard, never()).ban(anyString(), anyString(), any(Duration.class));
+        verify(auditLog).record(any(AuditRecord.class));
     }
 
     @Test
     void bannedPageNavigationRedirectsToTheRateLimitPage() {
-        when(riskControlService.firstBannedScene(any(Collection.class), anyString()))
+        when(riskGuard.firstBannedScene(any(Collection.class), anyString()))
                 .thenReturn(Mono.just(RiskScene.REQUEST_FLOOD));
-        when(riskControlService.markAlerted(anyString(), anyString(), any(Duration.class)))
+        when(riskGuard.markAlerted(anyString(), anyString(), any(Duration.class)))
                 .thenReturn(Mono.just(false));
         var exchange = pageExchange();
         var chainInvoked = new AtomicBoolean(false);
@@ -168,9 +168,9 @@ class RiskControlWebFilterTest {
 
     @Test
     void activeBanIsCheckedAgainstEveryEnabledScene() {
-        when(riskControlService.firstBannedScene(any(Collection.class), anyString()))
+        when(riskGuard.firstBannedScene(any(Collection.class), anyString()))
                 .thenReturn(Mono.empty());
-        when(riskControlService.evaluate(RiskScene.REQUEST_FLOOD, "8.8.8.8"))
+        when(riskGuard.evaluate(RiskScene.REQUEST_FLOOD, "8.8.8.8"))
                 .thenReturn(Mono.just(RiskDecision.permit()));
         var exchange = exchange();
         var chainInvoked = new AtomicBoolean(false);
@@ -194,7 +194,7 @@ class RiskControlWebFilterTest {
             StepVerifier.create(filter.filter(exchange, ignored -> Mono.empty())).verifyComplete();
         }
 
-        verify(riskControlService, never()).firstBannedScene(any(Collection.class), anyString());
+        verify(riskGuard, never()).firstBannedScene(any(Collection.class), anyString());
     }
 
     @Test
@@ -203,7 +203,7 @@ class RiskControlWebFilterTest {
 
         StepVerifier.create(filter.filter(exchange, ignored -> Mono.empty())).verifyComplete();
 
-        verify(riskControlService, never()).firstBannedScene(any(Collection.class), anyString());
+        verify(riskGuard, never()).firstBannedScene(any(Collection.class), anyString());
     }
 
     @Test
@@ -224,8 +224,8 @@ class RiskControlWebFilterTest {
 
         assertThat(chainInvoked).isTrue();
         assertThat(exchange.getResponse().getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(riskControlService, never()).firstBannedScene(any(Collection.class), anyString());
-        verify(riskControlService, never()).evaluate(anyString(), anyString());
+        verify(riskGuard, never()).firstBannedScene(any(Collection.class), anyString());
+        verify(riskGuard, never()).evaluate(anyString(), anyString());
     }
 
     @Test
@@ -239,16 +239,16 @@ class RiskControlWebFilterTest {
         spec.setUid("uid-1");
         user.setSpec(spec);
         when(client.fetch(User.class, "alice")).thenReturn(Mono.just(user));
-        when(riskControlService.firstBannedScene(any(Collection.class), anyString()))
+        when(riskGuard.firstBannedScene(any(Collection.class), anyString()))
                 .thenReturn(Mono.just(RiskScene.REQUEST_FLOOD));
-        when(riskControlService.markAlerted(anyString(), anyString(), any(Duration.class)))
+        when(riskGuard.markAlerted(anyString(), anyString(), any(Duration.class)))
                 .thenReturn(Mono.just(false));
         var exchange = exchange();
 
         StepVerifier.create(filter.filter(exchange, ignored -> Mono.empty())).verifyComplete();
 
         var captor = ArgumentCaptor.forClass(AuditRecord.class);
-        verify(auditService).record(captor.capture());
+        verify(auditLog).record(captor.capture());
         assertThat(captor.getValue().getUid()).isEqualTo("uid-1");
         assertThat(captor.getValue().getContext()).containsEntry("username", "alice");
     }

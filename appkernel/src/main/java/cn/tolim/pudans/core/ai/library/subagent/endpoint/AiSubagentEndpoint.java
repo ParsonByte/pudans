@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.ai.library.subagent.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSubagent;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiSubagent;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.subagent.SubagentService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.subagent.Subagents;
+import cn.tolim.pudans.core.ai.team.Teams;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.fn.builders.parameter.Builder;
@@ -26,11 +26,11 @@ public class AiSubagentEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiSubagentV1alpha1";
 
-    private final SubagentService subagentService;
+    private final Subagents subagentService;
 
     private final AiEndpointRequests requests;
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {

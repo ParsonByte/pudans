@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.routing;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiRouteGroup;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiRouteGroup;
 import cn.tolim.pudans.core.ai.routing.classifier.ComplexityLevel;
 import java.time.Instant;
 import java.util.List;

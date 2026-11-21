@@ -1,14 +1,14 @@
 package cn.tolim.pudans.security.authentication;
 
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.extension.user.User.UserSpec;
+import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.contract.rbac.resource.UserGroup;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.resource.User.UserSpec;
 import cn.tolim.pudans.contract.extension.ExtensionUtil;
 import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.MetadataUtil;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
 import cn.tolim.pudans.core.rbac.SuperAdminResolver;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;

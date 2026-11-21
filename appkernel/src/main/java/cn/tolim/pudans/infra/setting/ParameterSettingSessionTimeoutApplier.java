@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ParameterSettingSessionTimeoutApplier {
 
-    private final ParameterSettingGroupService parameterSettingGroupService;
+    private final ParameterGroups parameterGroups;
 
     private final ReactiveRedisIndexedSessionRepository sessionRepository;
 
@@ -31,7 +31,7 @@ public class ParameterSettingSessionTimeoutApplier {
     }
 
     void apply() {
-        parameterSettingGroupService.getServer().subscribe(
+        parameterGroups.getServer().subscribe(
                 server -> apply(server.getAccessTokenTtlSeconds()),
                 error -> log.warn("无法读取访问令牌 TTL", error));
     }

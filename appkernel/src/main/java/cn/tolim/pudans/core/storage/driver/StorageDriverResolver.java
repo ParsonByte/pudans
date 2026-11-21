@@ -7,9 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
 import cn.tolim.pudans.core.storage.StoragePolicySecretCipher;
-import cn.tolim.pudans.core.storage.StoragePolicyService;
+import cn.tolim.pudans.core.storage.Policies;
 import cn.tolim.pudans.core.storage.StoragePolicyValidator;
 import cn.tolim.pudans.infra.exception.ApiException;
 import reactor.core.publisher.Mono;
@@ -19,7 +19,7 @@ import reactor.core.scheduler.Schedulers;
 @Service
 public class StorageDriverResolver {
 
-    private final StoragePolicyService policyService;
+    private final Policies policyService;
 
     private final StorageDriverFactoryRegistry registry;
 
@@ -32,7 +32,7 @@ public class StorageDriverResolver {
     private final Object lock = new Object();
 
     public StorageDriverResolver(
-            StoragePolicyService policyService,
+            Policies policyService,
             StorageDriverFactoryRegistry registry,
             StoragePolicySecretCipher secretCipher,
             StoragePolicyValidator validator) {

@@ -7,14 +7,14 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
-import cn.tolim.pudans.core.ai.memory.L2PipelineService;
+import cn.tolim.pudans.core.ai.memory.L2Pipeline;
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptInput;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptResolver;
 import cn.tolim.pudans.core.ai.memory.MemoryScope;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
-import cn.tolim.pudans.core.ai.memory.ai.MemorySceneAiService;
+import cn.tolim.pudans.core.ai.memory.ai.SceneSegmentation;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
@@ -51,10 +51,10 @@ class L2SceneTaskHandlerTest {
     AiMemoryL2Repository memoryL2Repository;
 
     @Mock
-    MemorySceneAiService sceneAi;
+    SceneSegmentation sceneAi;
 
     @Mock
-    L2PipelineService pipelineService;
+    L2Pipeline pipelineService;
 
     private L2SceneTaskHandler handler;
 
@@ -74,7 +74,7 @@ class L2SceneTaskHandlerTest {
         var conversation = conversation(40L);
         var newL1 = List.of(record(55L, "内容 55"));
         var existing = List.of(block("scene-1", List.of(41L)));
-        var extracted = List.of(new L2PipelineService.ExtractedScene(
+        var extracted = List.of(new L2Pipeline.ExtractedScene(
                 "scene-1", "场景一", "场景摘要", List.of(55L), BigDecimal.ONE));
         when(conversationRepository.findById(CONVERSATION_ID)).thenReturn(Mono.just(conversation));
         when(memoryL1Repository.findActiveByScope("team-a", "agent-a", 40L, 100))
@@ -82,13 +82,13 @@ class L2SceneTaskHandlerTest {
         when(memoryL2Repository.findByScope("team-a", "agent-a")).thenReturn(Flux.fromIterable(existing));
         when(sceneAi.extract("", newL1, existing)).thenReturn(Mono.just(extracted));
         when(pipelineService.process(any(), any()))
-                .thenReturn(Mono.just(new L2PipelineService.Result(List.of(), 55L, 1, 1)));
+                .thenReturn(Mono.just(new L2Pipeline.Result(List.of(), 55L, 1, 1)));
 
         StepVerifier.create(handler.handle(task(Map.of("conversationId", CONVERSATION_ID))))
                 .verifyComplete();
 
-        var requestCaptor = ArgumentCaptor.forClass(L2PipelineService.Request.class);
-        var extractorCaptor = ArgumentCaptor.forClass(L2PipelineService.SceneExtractor.class);
+        var requestCaptor = ArgumentCaptor.forClass(L2Pipeline.Request.class);
+        var extractorCaptor = ArgumentCaptor.forClass(L2Pipeline.SceneExtractor.class);
         verify(pipelineService).process(requestCaptor.capture(), extractorCaptor.capture());
         var request = requestCaptor.getValue();
         assertThat(request.teamId()).isEqualTo("team-a");

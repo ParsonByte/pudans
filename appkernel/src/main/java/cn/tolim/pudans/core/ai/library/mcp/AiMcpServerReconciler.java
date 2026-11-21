@@ -4,7 +4,7 @@ import static cn.tolim.pudans.contract.extension.ExtensionUtil.addFinalizers;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.isDeleted;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.removeFinalizers;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMcpServer;
+import cn.tolim.pudans.contract.ai.resource.AiMcpServer;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.controller.Controller;
 import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
@@ -23,7 +23,7 @@ public class AiMcpServerReconciler implements Reconciler<Reconciler.Request> {
 
     private final ExtensionClient client;
 
-    private final McpClientService mcpClientService;
+    private final McpClients mcpClients;
 
     @Override
     public Result reconcile(Request request) {
@@ -33,7 +33,7 @@ public class AiMcpServerReconciler implements Reconciler<Reconciler.Request> {
         }
         var server = optional.get();
         if (isDeleted(server)) {
-            mcpClientService.close(request.name());
+            mcpClients.close(request.name());
             removeFinalizers(server.getMetadata(), Set.of(FINALIZER));
             client.update(server);
             log.info("MCP 服务器 [{}] 已删除", request.name());

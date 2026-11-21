@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.r2dbc.ai.memory;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
 import cn.tolim.pudans.core.ai.memory.MemoryGenerationLog;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiR2dbcBindings;
 import java.time.Instant;

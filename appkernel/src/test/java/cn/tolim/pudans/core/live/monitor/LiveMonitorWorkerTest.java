@@ -7,18 +7,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.live.LivePlatform;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.LiveSource;
-import cn.tolim.pudans.contract.core.extension.live.LiveSourceState;
+import cn.tolim.pudans.contract.live.resource.LivePlatform;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.LiveSource;
+import cn.tolim.pudans.contract.live.resource.LiveSourceState;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.live.LiveRoomInfo;
-import cn.tolim.pudans.core.live.alert.LiveAlertService;
-import cn.tolim.pudans.core.live.recording.LiveRecordingService;
+import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
+import cn.tolim.pudans.core.live.alert.LiveAlerts;
+import cn.tolim.pudans.core.live.recording.Recordings;
 import cn.tolim.pudans.core.live.resolve.LiveResolveCache;
-import cn.tolim.pudans.core.live.resolve.LiveResolveService;
+import cn.tolim.pudans.core.live.resolve.RoomResolver;
 import cn.tolim.pudans.core.live.source.LiveSourceRegistry;
-import cn.tolim.pudans.core.live.source.LiveSourceStatusService;
+import cn.tolim.pudans.core.live.source.SourceStatus;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.time.Duration;
 import java.time.Instant;
@@ -37,19 +37,19 @@ class LiveMonitorWorkerTest {
     LiveSourceRegistry registry;
 
     @Mock
-    LiveSourceStatusService statusService;
+    SourceStatus statusService;
 
     @Mock
-    LiveResolveService resolveService;
+    RoomResolver resolveService;
 
     @Mock
-    LiveRecordingService recordingService;
+    Recordings recordingService;
 
     @Mock
     LiveResolveCache resolveCache;
 
     @Mock
-    LiveAlertService alertService;
+    LiveAlerts alertService;
 
     @Mock
     LiveMetrics metrics;

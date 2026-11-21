@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.protocol.agui;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.harness.agent.AgentRun;
 import cn.tolim.pudans.core.ai.protocol.ProtocolAgentRuntime;

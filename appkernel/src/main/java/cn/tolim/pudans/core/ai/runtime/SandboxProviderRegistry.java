@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.ai.runtime;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.equal;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSandboxProvider;
+import cn.tolim.pudans.contract.ai.resource.AiSandboxProvider;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.provider.AiProviderSecretCipher;

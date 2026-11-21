@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.ai.provider.supplier.minimax;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
 import cn.tolim.pudans.core.ai.provider.AiProviderJsonSupport;
 import cn.tolim.pudans.core.ai.provider.AiWebClientConfiguration;
@@ -37,7 +37,7 @@ public class MinimaxApiClient extends AbstractMinimaxClient {
     public MinimaxApiClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            AiProviderAccountService accountService) {
+            ProviderAccounts accountService) {
         super(webClient, mapper, accountService, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
     }
 

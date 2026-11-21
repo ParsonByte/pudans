@@ -6,22 +6,22 @@ import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuil
 import static org.springdoc.webflux.core.fn.SpringdocRouteBuilder.route;
 import static org.springframework.web.reactive.function.server.RequestPredicates.path;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.ExternalUrlSupplier;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import cn.tolim.pudans.infra.exception.RequestBodyValidationException;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
 import cn.tolim.pudans.security.authentication.exception.TwoFactorAuthException;
-import cn.tolim.pudans.security.authentication.twofactor.totp.TotpAuthService;
-import cn.tolim.pudans.security.authentication.twofactor.totp.TotpConsumptionService;
+import cn.tolim.pudans.security.authentication.twofactor.totp.TotpSecrets;
+import cn.tolim.pudans.security.authentication.twofactor.totp.TotpConsumptions;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -37,7 +37,7 @@ import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import org.springframework.validation.Validator;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -52,11 +52,11 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
-    private final UserService userService;
+    private final Accounts accounts;
 
-    private final TotpAuthService totpAuthService;
+    private final TotpSecrets totpSecrets;
 
-    private final TotpConsumptionService totpConsumptionService;
+    private final TotpConsumptions totpConsumptions;
 
     private final Validator validator;
 
@@ -64,31 +64,31 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
 
     private final ExternalUrlSupplier externalUrl;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     private final DomainEventPublisher domainEventPublisher;
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     public TwoFactorAuthEndpoint(
             ReactiveExtensionClient client,
-            UserService userService,
-            TotpAuthService totpAuthService,
-            TotpConsumptionService totpConsumptionService,
+            Accounts accounts,
+            TotpSecrets totpSecrets,
+            TotpConsumptions totpConsumptions,
             @Qualifier("webFluxValidator") Validator validator,
             PasswordEncoder passwordEncoder,
             ExternalUrlSupplier externalUrl,
-            AuditService auditService,
+            AuditLog auditLog,
             DomainEventPublisher domainEventPublisher,
-            SecurityParameterSettingService securitySettings) {
+            SecurityParameters securitySettings) {
         this.client = client;
-        this.userService = userService;
-        this.totpAuthService = totpAuthService;
-        this.totpConsumptionService = totpConsumptionService;
+        this.accounts = accounts;
+        this.totpSecrets = totpSecrets;
+        this.totpConsumptions = totpConsumptions;
         this.validator = validator;
         this.passwordEncoder = passwordEncoder;
         this.externalUrl = externalUrl;
-        this.auditService = auditService;
+        this.auditLog = auditLog;
         this.domainEventPublisher = domainEventPublisher;
         this.securitySettings = securitySettings;
     }
@@ -111,7 +111,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
     }
 
     private static String traceFlowId(ServerWebExchange exchange) {
-        return (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE);
+        return (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE);
     }
 
     private static boolean isAuthenticatedUser(Authentication authentication) {
@@ -202,7 +202,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                     spec.setTotpEncryptedSecret(null);
                 })
                 .flatMap(client::update)
-                .flatMap(user -> auditService
+                .flatMap(user -> auditLog
                         .recordChild(
                                 request.exchange(),
                                 user.getSpec().getUid(),
@@ -252,7 +252,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
             var url = externalUrl.getURL(request.exchange().getRequest());
             var authority = url.getAuthority();
             var authKeyId = username + ":" + authority;
-            var rawSecret = totpAuthService.generateTotpSecret();
+            var rawSecret = totpSecrets.generateTotpSecret();
             var authLink = UriComponentsBuilder.fromUriString("otpauth://totp")
                     .path(authKeyId)
                     .queryParam("secret", rawSecret)
@@ -287,8 +287,8 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                     .flatMap(user -> consumeTotpIfConfigured(user, totpRequest.getCurrentTotpCode()))
                     .flatMap(user -> parseTotpCode(totpRequest.getCode())
                             .map(code -> {
-                                var encryptedSecret = totpAuthService.encryptSecret(totpRequest.getSecret());
-                                var step = totpConsumptionService.matchEnrollmentStep(
+                                var encryptedSecret = totpSecrets.encryptSecret(totpRequest.getSecret());
+                                var step = totpConsumptions.matchEnrollmentStep(
                                         totpRequest.getSecret(), code);
                                 user.getSpec().setTotpEncryptedSecret(encryptedSecret);
                                 user.getSpec().setTotpLastStep(step);
@@ -298,7 +298,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                                     TwoFactorAuthException.class,
                                     error -> new UnsatisfiedAttributeValueException(error.getMessage())))
                     .flatMap(client::update)
-                    .flatMap(user -> auditService
+                    .flatMap(user -> auditLog
                             .recordChild(
                                     request.exchange(),
                                     user.getSpec().getUid(),
@@ -331,7 +331,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
             return Mono.just(user);
         }
         return parseTotpCode(totpCode)
-                .flatMap(code -> totpConsumptionService.consume(user, code))
+                .flatMap(code -> totpConsumptions.consume(user, code))
                 .onErrorMap(
                         TwoFactorAuthException.class,
                         error -> new UnsatisfiedAttributeValueException(error.getMessage()));
@@ -360,7 +360,7 @@ public class TwoFactorAuthEndpoint implements CustomEndpoint {
                 .filter(TwoFactorAuthEndpoint::isAuthenticatedUser)
                 .switchIfEmpty(Mono.error(AccessDeniedException::new))
                 .map(Authentication::getName)
-                .flatMap(userService::getUser);
+                .flatMap(accounts::getUser);
     }
 
     @Override

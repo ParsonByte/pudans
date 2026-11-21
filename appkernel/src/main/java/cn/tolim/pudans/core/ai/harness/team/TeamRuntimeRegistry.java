@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.harness.team;
 
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.team.Teams;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,7 @@ public class TeamRuntimeRegistry {
 
     private final ConcurrentMap<String, TeamRuntime> runtimes = new ConcurrentHashMap<>();
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
     private final TeamTaskStore taskStore;
 

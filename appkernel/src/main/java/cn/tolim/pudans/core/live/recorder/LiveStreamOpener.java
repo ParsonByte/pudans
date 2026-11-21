@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STREAM_FAILED;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STREAM_FAILED;
 
-import cn.tolim.pudans.contract.live.LiveRoomInfo;
-import cn.tolim.pudans.contract.live.LiveStreamProtocol;
-import cn.tolim.pudans.contract.live.LiveStreamUrl;
+import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
+import cn.tolim.pudans.contract.live.dto.LiveStreamProtocol;
+import cn.tolim.pudans.contract.live.dto.LiveStreamUrl;
 import cn.tolim.pudans.core.live.resolve.LiveStreamUrlValidator;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.net.URI;

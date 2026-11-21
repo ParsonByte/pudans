@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.oauth2;
 
-import cn.tolim.pudans.core.user.service.UserConnectionService;
+import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 
 final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
 
-    private final UserConnectionService connectionService;
+    private final Connections connectionService;
 
     private final OAuth2AuthenticationSession authenticationSession;
 
@@ -26,7 +26,7 @@ final class OAuth2LoginSuccessHandler implements ServerAuthenticationSuccessHand
     private final ServerResponse.Context context;
 
     OAuth2LoginSuccessHandler(
-            UserConnectionService connectionService,
+            Connections connectionService,
             OAuth2AuthenticationSession authenticationSession,
             SecurityProperties securityProperties,
             ServerResponse.Context context) {

@@ -3,7 +3,7 @@ package cn.tolim.pudans.core.user.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;

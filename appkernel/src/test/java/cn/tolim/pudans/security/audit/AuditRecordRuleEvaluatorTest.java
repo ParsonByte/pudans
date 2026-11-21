@@ -4,7 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.infra.ParameterSetting;
-import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -17,18 +17,18 @@ import reactor.core.publisher.Mono;
 class AuditRecordRuleEvaluatorTest {
 
     @Mock
-    ParameterSettingGroupService parameterSettingGroupService;
+    ParameterGroups parameterGroups;
 
     private AuditRecordRuleEvaluator evaluator;
 
     @BeforeEach
     void setUp() {
-        evaluator = new AuditRecordRuleEvaluator(parameterSettingGroupService);
+        evaluator = new AuditRecordRuleEvaluator(parameterGroups);
     }
 
     @Test
     void emptyRulesRecordEverything() {
-        when(parameterSettingGroupService.getAudit()).thenReturn(Mono.just(new ParameterSetting.Audit()));
+        when(parameterGroups.getAudit()).thenReturn(Mono.just(new ParameterSetting.Audit()));
 
         assertThat(evaluator.shouldRecord("LOGIN", "User").block()).isTrue();
     }
@@ -41,7 +41,7 @@ class AuditRecordRuleEvaluatorTest {
         rules.setResourceTypes(List.of("User"));
         var audit = new ParameterSetting.Audit();
         audit.setAuditRecordRules(rules);
-        when(parameterSettingGroupService.getAudit()).thenReturn(Mono.just(audit));
+        when(parameterGroups.getAudit()).thenReturn(Mono.just(audit));
 
         assertThat(evaluator.shouldRecord("LOGIN", "Session").block()).isTrue();
         assertThat(evaluator.shouldRecord("READ", "User").block()).isTrue();
@@ -55,7 +55,7 @@ class AuditRecordRuleEvaluatorTest {
         rules.setOperations(List.of("READ"));
         var audit = new ParameterSetting.Audit();
         audit.setAuditRecordRules(rules);
-        when(parameterSettingGroupService.getAudit()).thenReturn(Mono.just(audit));
+        when(parameterGroups.getAudit()).thenReturn(Mono.just(audit));
 
         assertThat(evaluator.shouldRecord("READ", "User").block()).isFalse();
         assertThat(evaluator.shouldRecord("LOGIN", "User").block()).isTrue();
@@ -68,7 +68,7 @@ class AuditRecordRuleEvaluatorTest {
         rules.setOperations(List.of("*"));
         var audit = new ParameterSetting.Audit();
         audit.setAuditRecordRules(rules);
-        when(parameterSettingGroupService.getAudit()).thenReturn(Mono.just(audit));
+        when(parameterGroups.getAudit()).thenReturn(Mono.just(audit));
 
         assertThat(evaluator.shouldRecord("ANY", "Anything").block()).isTrue();
     }

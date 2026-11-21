@@ -3,7 +3,7 @@ package cn.tolim.pudans.security.authentication.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 class PreferredPasswordEncoderTest {
 
     @Mock
-    SecurityParameterSettingService securitySettings;
+    SecurityParameters securitySettings;
 
     private PreferredPasswordEncoder encoder;
 

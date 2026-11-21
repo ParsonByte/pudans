@@ -6,15 +6,15 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.infra.properties.OidcProperties;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 
 class OidcClientRegistrationConfigurationTest {
 
-    private final SecurityParameterSettingService securitySettings =
-            mock(SecurityParameterSettingService.class);
+    private final SecurityParameters securitySettings =
+            mock(SecurityParameters.class);
 
     @Test
     void mapsConfiguredOidcProvidersToClientRegistrations() {

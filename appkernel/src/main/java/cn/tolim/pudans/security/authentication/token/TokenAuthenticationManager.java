@@ -2,10 +2,10 @@ package cn.tolim.pudans.security.authentication.token;
 
 import static cn.tolim.pudans.contract.security.PersonalAccessToken.PAT_TOKEN_PREFIX;
 
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
-import cn.tolim.pudans.infra.setting.MasterKeyService;
+import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.infra.setting.MasterKeys;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -31,12 +31,12 @@ class TokenAuthenticationManager implements ReactiveAuthenticationManager {
     TokenAuthenticationManager(
             ReactiveExtensionClient client,
             ReactiveJwtDecoder jwtDecoder,
-            RoleService roleService,
-            UserGroupService userGroupService,
-            MasterKeyService masterKeyService) {
+            Roles roleService,
+            Groups groups,
+            MasterKeys masterKeys) {
         this.client = client;
         this.jwtDecoder = jwtDecoder;
-        this.patAuthManager = createPatAuthManager(roleService, userGroupService, masterKeyService);
+        this.patAuthManager = createPatAuthManager(roleService, groups, masterKeys);
         this.jwtAuthManager = createJwtAuthManager();
     }
 
@@ -53,9 +53,9 @@ class TokenAuthenticationManager implements ReactiveAuthenticationManager {
     }
 
     private ReactiveAuthenticationManager createPatAuthManager(
-            RoleService roleService, UserGroupService userGroupService, MasterKeyService masterKeyService) {
+            Roles roleService, Groups groups, MasterKeys masterKeys) {
         var delegate = new JwtReactiveAuthenticationManager(this.jwtDecoder);
-        return new PatAuthenticationManager(client, delegate, roleService, userGroupService, masterKeyService);
+        return new PatAuthenticationManager(client, delegate, roleService, groups, masterKeys);
     }
 
     private ReactiveAuthenticationManager createJwtAuthManager() {

@@ -6,16 +6,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.live.LivePlatform;
-import cn.tolim.pudans.contract.core.extension.live.LiveSource;
-import cn.tolim.pudans.contract.core.extension.live.LiveSourceState;
+import cn.tolim.pudans.contract.live.resource.LivePlatform;
+import cn.tolim.pudans.contract.live.resource.LiveSource;
+import cn.tolim.pudans.contract.live.resource.LiveSourceState;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
-import cn.tolim.pudans.contract.live.LiveRoomInfo;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
+import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.core.live.recorder.LiveStoragePolicyResolver;
-import cn.tolim.pudans.core.live.recording.LiveRecordingService;
-import cn.tolim.pudans.core.live.resolve.LiveResolveService;
+import cn.tolim.pudans.core.live.recording.Recordings;
+import cn.tolim.pudans.core.live.resolve.RoomResolver;
 import cn.tolim.pudans.core.live.resolve.LiveRoomLinkParser;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
@@ -35,24 +35,24 @@ class LiveSourceCreateTest {
     ReactiveExtensionClient client;
 
     @Mock
-    LiveResolveService resolveService;
+    RoomResolver resolveService;
 
     @Mock
-    LiveSourceStatusService statusService;
+    SourceStatus statusService;
 
     @Mock
     LiveSourceRegistry registry;
 
     @Mock
-    LiveSourceHealthService healthService;
+    SourceHealth healthService;
 
     @Mock
-    LiveRecordingService recordingService;
+    Recordings recordingService;
 
-    private LiveSourceService service() {
+    private Sources service() {
         var validator = new LiveSourceValidator(
                 new LiveRoomLinkParser(), client, mock(LiveStoragePolicyResolver.class));
-        return new LiveSourceService(
+        return new Sources(
                 client,
                 validator,
                 resolveService,

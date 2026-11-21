@@ -1,8 +1,8 @@
 package cn.tolim.pudans.security.authentication.rememberme;
 
-import cn.tolim.pudans.contract.core.extension.RememberMeToken;
+import cn.tolim.pudans.contract.security.resource.RememberMeToken;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.contract.security.device.DeviceService;
+import cn.tolim.pudans.contract.security.device.DeviceSessions;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.security.authentication.LoginParameterRequestCache;
 import cn.tolim.pudans.security.authentication.SecurityConstant;
@@ -47,7 +47,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
 
     private final PersistentRememberMeTokenRepository tokenRepository;
 
-    private final DeviceService deviceService;
+    private final DeviceSessions deviceSessions;
 
     private final Duration rotationCooldown;
 
@@ -59,12 +59,12 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
             RememberMeCookieResolver rememberMeCookieResolver,
             PersistentRememberMeTokenRepository tokenRepository,
             LoginParameterRequestCache parameterRequestCache,
-            DeviceService deviceService,
+            DeviceSessions deviceSessions,
             PudansProperties pudansProperties) {
         super(cookieSignatureKeyResolver, rememberMeCookieResolver, userDetailsService, parameterRequestCache);
         this.random = new SecureRandom();
         this.tokenRepository = tokenRepository;
-        this.deviceService = deviceService;
+        this.deviceSessions = deviceSessions;
         this.rotationCooldown = pudansProperties.getSecurity().getRememberMe().getRotationCooldown();
         setParameterName(SecurityConstant.REMEMBER_ME_PARAMETER_NAME);
     }
@@ -168,7 +168,7 @@ public class PersistentTokenBasedRememberMeServices extends TokenBasedRememberMe
     }
 
     private Mono<Void> validateDevice(ServerWebExchange exchange, RememberMeToken token) {
-        return deviceService
+        return deviceSessions
                 .resolveCurrentDevice(exchange)
                 .switchIfEmpty(Mono.error(() -> {
                     log.debug(

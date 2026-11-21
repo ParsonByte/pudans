@@ -3,19 +3,19 @@ package cn.tolim.pudans.core.ai.memory.task;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.conversation.AiConversationService;
-import cn.tolim.pudans.core.ai.memory.L1DedupService;
-import cn.tolim.pudans.core.ai.memory.L1PipelineService;
-import cn.tolim.pudans.core.ai.memory.L2PipelineService;
-import cn.tolim.pudans.core.ai.memory.L3PipelineService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.conversation.Conversations;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication;
+import cn.tolim.pudans.core.ai.memory.L1Pipeline;
+import cn.tolim.pudans.core.ai.memory.L2Pipeline;
+import cn.tolim.pudans.core.ai.memory.L3Pipeline;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptResolver;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryConflictAiService;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryExtractionAiService;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryJevAiService;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryPersonaAiService;
-import cn.tolim.pudans.core.ai.memory.ai.MemorySceneAiService;
+import cn.tolim.pudans.core.ai.memory.ai.MemoryConflict;
+import cn.tolim.pudans.core.ai.memory.ai.MemoryExtraction;
+import cn.tolim.pudans.core.ai.memory.ai.JevClassification;
+import cn.tolim.pudans.core.ai.memory.ai.PersonaProfiling;
+import cn.tolim.pudans.core.ai.memory.ai.SceneSegmentation;
 import cn.tolim.pudans.core.ai.task.AiTaskHandlerRegistry;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiMessageRepository;
@@ -35,7 +35,7 @@ class MemoryTaskHandlerRegistryTest {
     AiConversationRepository conversationRepository;
 
     @Mock
-    AiConversationService conversationService;
+    Conversations conversationService;
 
     @Mock
     AiMessageRepository messageRepository;
@@ -50,31 +50,31 @@ class MemoryTaskHandlerRegistryTest {
     AiMemoryL3Repository memoryL3Repository;
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     @Mock
-    MemoryExtractionAiService extractionAi;
+    MemoryExtraction extractionAi;
 
     @Mock
-    MemoryConflictAiService conflictAi;
+    MemoryConflict conflictAi;
 
     @Mock
-    MemorySceneAiService sceneAi;
+    SceneSegmentation sceneAi;
 
     @Mock
-    MemoryJevAiService jevAi;
+    JevClassification jevAi;
 
     @Mock
-    MemoryPersonaAiService personaAi;
+    PersonaProfiling personaAi;
 
     @Mock
-    L1PipelineService l1PipelineService;
+    L1Pipeline l1Pipeline;
 
     @Mock
-    L2PipelineService l2PipelineService;
+    L2Pipeline l2Pipeline;
 
     @Mock
-    L3PipelineService l3PipelineService;
+    L3Pipeline l3Pipeline;
 
     @Test
     void registersEachMemoryPipelineTaskTypeExactlyOnce() {
@@ -88,15 +88,15 @@ class MemoryTaskHandlerRegistryTest {
                 settingService,
                 extractionAi,
                 conflictAi,
-                new L1DedupService(),
-                l1PipelineService);
+                new L1Deduplication(),
+                l1Pipeline);
         var l2 = new L2SceneTaskHandler(
                 conversationRepository,
                 memoryL1Repository,
                 memoryL2Repository,
                 new MemoryPromptResolver(),
                 sceneAi,
-                l2PipelineService);
+                l2Pipeline);
         var l3 = new L3PersonaTaskHandler(
                 conversationRepository,
                 memoryL1Repository,
@@ -105,7 +105,7 @@ class MemoryTaskHandlerRegistryTest {
                 new MemoryPromptResolver(),
                 jevAi,
                 personaAi,
-                l3PipelineService);
+                l3Pipeline);
         var registry = new AiTaskHandlerRegistry(List.of(l1, l2, l3));
 
         assertThat(registry.find(PipelineTaskType.L1_EXTRACT.name())).isSameAs(l1);

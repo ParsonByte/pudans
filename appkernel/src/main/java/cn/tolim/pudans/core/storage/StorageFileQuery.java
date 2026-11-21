@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.storage;
 
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 
 public record StorageFileQuery(
         String policy,

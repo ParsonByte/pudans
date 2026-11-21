@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.ai.provider.supplier.deepseek;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.List;
 import org.junit.jupiter.api.Test;

@@ -9,9 +9,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.memory.L1DedupService;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryHashes;
@@ -49,15 +49,15 @@ class OrgCandidateTaskHandlerTest {
     AiOrgMemoryRepository orgMemoryRepository;
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     private OrgCandidateTaskHandler handler;
 
-    private L1DedupService dedupService;
+    private L1Deduplication dedupService;
 
     @BeforeEach
     void setUp() {
-        dedupService = new L1DedupService();
+        dedupService = new L1Deduplication();
         handler = new OrgCandidateTaskHandler(
                 l1Repository, orgMemoryRepository, dedupService, settingService);
     }

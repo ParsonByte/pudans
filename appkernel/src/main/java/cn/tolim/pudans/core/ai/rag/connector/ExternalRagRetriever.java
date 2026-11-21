@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.rag.connector;
 
-import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseCodes;
 import cn.tolim.pudans.core.ai.rag.RetrievalCandidate;
 import cn.tolim.pudans.core.ai.rag.RetrievalOptions;
@@ -23,7 +23,7 @@ public class ExternalRagRetriever {
 
     private final ExternalRagConnectorResolver connectorResolver;
 
-    private final AiProviderAccountService accountService;
+    private final ProviderAccounts accountService;
 
     public static boolean isExternal(KnowledgeBase knowledgeBase) {
         return knowledgeBase != null

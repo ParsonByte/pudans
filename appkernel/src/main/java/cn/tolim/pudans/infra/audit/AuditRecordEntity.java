@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 

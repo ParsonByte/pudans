@@ -2,7 +2,7 @@ package cn.tolim.pudans.extension.index;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.index.IndexSpecs;
 import cn.tolim.pudans.contract.extension.index.SingleValueIndexSpec;

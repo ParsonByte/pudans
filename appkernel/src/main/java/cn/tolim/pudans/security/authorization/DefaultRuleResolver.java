@@ -14,10 +14,10 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.TempRoleService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.rbac.TempGrants;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 
@@ -32,19 +32,19 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
 
     private static final String PAT_NAME_CLAIM = "pat_name";
 
-    private RoleService roleService;
+    private Roles roles;
 
-    private TempRoleService tempRoleService;
+    private TempGrants tempGrants;
 
-    private AuditService auditService;
+    private AuditLog auditLog;
 
     public DefaultRuleResolver(
-            RoleService roleService,
-            TempRoleService tempRoleService,
-            AuditService auditService) {
-        this.roleService = roleService;
-        this.tempRoleService = tempRoleService;
-        this.auditService = auditService;
+            Roles roles,
+            TempGrants tempGrants,
+            AuditLog auditLog) {
+        this.roles = roles;
+        this.tempGrants = tempGrants;
+        this.auditLog = auditLog;
     }
 
     @Override
@@ -94,7 +94,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
             Set<String> roleNames,
             AuthorizingVisitor visitor,
             AtomicBoolean stopVisiting) {
-        return roleService
+        return roles
                 .listDependenciesFlux(roleNames)
                 .filter(role -> !CollectionUtils.isEmpty(role.getRules()))
                 .doOnNext(role -> {
@@ -122,7 +122,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
                 || authentication instanceof JwtAuthenticationToken) {
             return Mono.just(baseRoles);
         }
-        return tempRoleService
+        return tempGrants
                 .activeRoleNameSet(authentication.getName())
                 .map(tempRoles -> {
                     Set<String> merged = new HashSet<>(baseRoles);
@@ -214,26 +214,26 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
 
     private void auditPatDenied(
             Authentication authentication, RequestInfo requestInfo, ServerWebExchange exchange, Set<String> scopes) {
-        if (exchange == null || auditService == null) {
+        if (exchange == null || auditLog == null) {
             return;
         }
-        var traceId = AuditService.traceId(exchange);
-        var traceFlowId = (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE);
+        var traceId = AuditLog.traceId(exchange);
+        var traceFlowId = (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE);
         var syntheticFlow = traceFlowId == null || traceFlowId.isBlank();
         if (syntheticFlow) {
             traceFlowId = AuditIdGenerator.next();
-            exchange.getAttributes().put(AuditService.TRACE_FLOW_ID_ATTRIBUTE, traceFlowId);
+            exchange.getAttributes().put(AuditLog.TRACE_FLOW_ID_ATTRIBUTE, traceFlowId);
         }
-        var uid = (String) exchange.getAttributes().get(AuditService.UID_ATTRIBUTE);
+        var uid = (String) exchange.getAttributes().get(AuditLog.UID_ATTRIBUTE);
         if (uid == null || uid.isBlank()) {
             uid = authentication.getName();
         }
-        var auditRecord = auditService.newRecord(traceId, uid, "PAT_DENIED");
+        var auditRecord = auditLog.newRecord(traceId, uid, "PAT_DENIED");
         auditRecord.setTraceFlowId(traceFlowId);
         if (syntheticFlow) {
             auditRecord.markSyntheticFlow();
         }
-        auditRecord.setParentAuditId((String) exchange.getAttributes().get(AuditService.AUDIT_ID_ATTRIBUTE));
+        auditRecord.setParentAuditId((String) exchange.getAttributes().get(AuditLog.AUDIT_ID_ATTRIBUTE));
         auditRecord.setStepIndex(1);
         auditRecord.setResourceType("PersonalAccessToken");
         auditRecord.setResourceName(resourceOf(requestInfo));
@@ -253,7 +253,7 @@ public class DefaultRuleResolver implements AuthorizationRuleResolver {
         context.put("sudoUser", jwtClaim(authentication, "sudo_user"));
         auditRecord.setContext(context);
         auditRecord.setActionSnapshot(JsonUtils.objectToJson(context));
-        auditService.record(auditRecord);
+        auditLog.record(auditRecord);
     }
 
     private static String patName(Authentication authentication) {

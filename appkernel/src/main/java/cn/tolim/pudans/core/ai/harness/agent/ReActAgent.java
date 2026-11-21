@@ -13,7 +13,7 @@ import cn.tolim.pudans.core.ai.harness.permission.PermissionBehavior;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionEngine;
 import cn.tolim.pudans.core.ai.harness.output.StructuredOutputRequest;
-import cn.tolim.pudans.core.ai.harness.output.StructuredOutputService;
+import cn.tolim.pudans.core.ai.harness.output.StructuredOutputs;
 import cn.tolim.pudans.core.ai.harness.plan.HarnessBuiltInTools;
 import cn.tolim.pudans.core.ai.harness.skill.HarnessSkillTools;
 import cn.tolim.pudans.core.ai.harness.skill.SkillRuntime;
@@ -191,7 +191,7 @@ public final class ReActAgent implements Agent {
     }
 
     public <T> Mono<T> call(String input, Class<T> type, RuntimeContext context) {
-        return new StructuredOutputService(JsonMapper.shared())
+        return new StructuredOutputs(JsonMapper.shared())
                 .generate(chatModel, StructuredOutputRequest.of(systemPrompt, input), type);
     }
 

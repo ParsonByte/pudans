@@ -4,11 +4,11 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariableService;
-import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariableService.MaskedEnvironmentVariable;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariables;
+import cn.tolim.pudans.core.ai.library.environment.EnvironmentVariables.MaskedEnvironmentVariable;
+import cn.tolim.pudans.core.ai.team.Teams;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -28,11 +28,11 @@ public class AiEnvironmentVariableEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiEnvironmentVariableV1alpha1";
 
-    private final EnvironmentVariableService environmentVariableService;
+    private final EnvironmentVariables environmentVariables;
 
     private final AiEndpointRequests requests;
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -63,7 +63,7 @@ public class AiEnvironmentVariableEndpoint implements CustomEndpoint {
                 .userId(request)
                 .flatMapMany(userId -> teamService
                         .requireAgent(agentName, userId)
-                        .thenMany(environmentVariableService.maskedByAgent(agentName)))
+                        .thenMany(environmentVariables.maskedByAgent(agentName)))
                 .collectList()
                 .flatMap(variables -> ServerResponse.ok().bodyValue(variables));
     }
@@ -72,9 +72,9 @@ public class AiEnvironmentVariableEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return request.bodyToMono(ValueUpdateRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
-                .flatMap(body -> environmentVariableService.updateValue(
+                .flatMap(body -> environmentVariables.updateValue(
                         name, body.value(), Boolean.TRUE.equals(body.clear())))
-                .map(EnvironmentVariableService::mask)
+                .map(EnvironmentVariables::mask)
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 

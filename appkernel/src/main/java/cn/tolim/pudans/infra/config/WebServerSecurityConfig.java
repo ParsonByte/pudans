@@ -2,17 +2,17 @@ package cn.tolim.pudans.infra.config;
 
 import static org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers;
 
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.infra.AnonymousUserConst;
-import cn.tolim.pudans.contract.security.authentication.CryptoService;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
+import cn.tolim.pudans.contract.security.authentication.LoginCipher;
+import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.properties.PudansProperties;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.audit.AuthenticatedUserWebFilter;
-import cn.tolim.pudans.security.authentication.DefaultUserDetailService;
+import cn.tolim.pudans.security.authentication.UserDetailsLoader;
 import cn.tolim.pudans.security.authentication.PudansServerRequestCache;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
-import cn.tolim.pudans.security.authentication.impl.RsaKeyService;
+import cn.tolim.pudans.security.authentication.impl.RsaLoginCipher;
 import cn.tolim.pudans.security.authentication.login.PublicKeyRouteBuilder;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
 import lombok.RequiredArgsConstructor;
@@ -95,12 +95,12 @@ public class WebServerSecurityConfig {
     }
 
     @Bean
-    DefaultUserDetailService userDetailsService(
-            UserService userService,
-            UserGroupService userGroupService,
+    UserDetailsLoader userDetailsService(
+            Accounts accounts,
+            Groups groups,
             PudansProperties pudansProperties,
-            SecurityParameterSettingService securitySettings) {
-        var userDetailService = new DefaultUserDetailService(userService, userGroupService);
+            SecurityParameters securitySettings) {
+        var userDetailService = new UserDetailsLoader(accounts, groups);
         userDetailService.setTwoFactorAuthEnabled(() ->
                 !pudansProperties.getSecurity().getTwoFactorAuth().isDisabled()
                         && securitySettings.isTotpEnabled());
@@ -110,12 +110,12 @@ public class WebServerSecurityConfig {
     @Bean
     org.springframework.web.reactive.function.server.RouterFunction<
             org.springframework.web.reactive.function.server.ServerResponse>
-    publicKeyRouter(CryptoService cryptoService) {
-        return new PublicKeyRouteBuilder(cryptoService).build();
+    publicKeyRouter(LoginCipher loginCipher) {
+        return new PublicKeyRouteBuilder(loginCipher).build();
     }
 
     @Bean
-    CryptoService cryptoService(PudansProperties pudansProperties) {
-        return new RsaKeyService(pudansProperties.getWorkDir().resolve("keys"));
+    LoginCipher loginCipher(PudansProperties pudansProperties) {
+        return new RsaLoginCipher(pudansProperties.getWorkDir().resolve("keys"));
     }
 }

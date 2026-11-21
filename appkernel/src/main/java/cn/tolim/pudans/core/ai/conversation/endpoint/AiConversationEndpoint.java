@@ -6,13 +6,13 @@ import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 import static org.springdoc.core.fn.builders.schema.Builder.schemaBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.conversation.AiConversationService;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.conversation.Conversations;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.gateway.session.AiGatewaySessionService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.gateway.session.GatewaySessions;
+import cn.tolim.pudans.core.ai.team.Teams;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.NewConversation;
@@ -63,11 +63,11 @@ public class AiConversationEndpoint implements CustomEndpoint {
     private static final CreateConversationRequest EMPTY_REQUEST =
             new CreateConversationRequest(null, null, null, null);
 
-    private final AiConversationService conversationService;
+    private final Conversations conversationService;
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
-    private final AiSettingService settingService;
+    private final AiSettings settingService;
 
     private final AiEndpointRequests requests;
 
@@ -160,7 +160,7 @@ public class AiConversationEndpoint implements CustomEndpoint {
 
     private static NewConversation newConversation(String userId, CreateConversationRequest body, AiAgent agent) {
         return new NewConversation(
-                AiGatewaySessionService.DEFAULT_SPACE,
+                GatewaySessions.DEFAULT_SPACE,
                 userId,
                 agent.getSpec().getTeam(),
                 agent.getMetadata().getName(),
@@ -180,7 +180,7 @@ public class AiConversationEndpoint implements CustomEndpoint {
                 .defaults()
                 .map(defaults -> StringUtils.hasText(defaults.getAgent())
                         ? defaults.getAgent()
-                        : AiTeamService.DEFAULT_AGENT);
+                        : Teams.DEFAULT_AGENT);
     }
 
     private Mono<ServerResponse> get(ServerRequest request) {

@@ -6,7 +6,7 @@ import static cn.tolim.pudans.contract.extension.Comparators.nullsComparator;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.router.selector.SelectorUtil.labelAndFieldSelectorToListOptions;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.SortResolver;
+import cn.tolim.pudans.contract.extension.endpoint.SortResolver;
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.PageRequest;

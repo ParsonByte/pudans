@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.memory;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;

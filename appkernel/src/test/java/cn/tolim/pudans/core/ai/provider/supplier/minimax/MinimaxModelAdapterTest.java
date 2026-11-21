@@ -6,9 +6,9 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelRequest;

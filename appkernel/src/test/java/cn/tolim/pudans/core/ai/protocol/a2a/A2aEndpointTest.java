@@ -12,7 +12,7 @@ import cn.tolim.pudans.core.ai.harness.agent.AgentResult;
 import cn.tolim.pudans.core.ai.harness.agent.AgentRun;
 import cn.tolim.pudans.core.ai.harness.event.AgentEvent;
 import cn.tolim.pudans.core.ai.protocol.ProtocolAgentRuntime;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.team.Teams;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,7 +59,7 @@ class A2aEndpointTest {
     void returnsTheDefaultAgentCard() {
         var card = get("/aia2a/.well-known/agent.json");
 
-        assertThat(card.path("name").asText()).isEqualTo(AiTeamService.DEFAULT_AGENT);
+        assertThat(card.path("name").asText()).isEqualTo(Teams.DEFAULT_AGENT);
         assertThat(card.path("url").asText()).endsWith("/aia2a");
         assertThat(card.path("capabilities").path("streaming").asBoolean()).isTrue();
         assertThat(card.path("skills").isArray()).isTrue();

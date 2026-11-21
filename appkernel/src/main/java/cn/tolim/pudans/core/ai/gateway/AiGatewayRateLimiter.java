@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.gateway;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.time.Clock;
 import java.time.Duration;

@@ -1,14 +1,14 @@
 package cn.tolim.pudans.core.ai.harness.team;
 
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.team.Teams;
 import java.util.Objects;
 import reactor.core.publisher.Mono;
 
 public final class AiTeamAccessPolicy implements TeamAccessPolicy {
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
-    public AiTeamAccessPolicy(AiTeamService teamService) {
+    public AiTeamAccessPolicy(Teams teamService) {
         this.teamService = Objects.requireNonNull(teamService, "团队服务不能为空");
     }
 

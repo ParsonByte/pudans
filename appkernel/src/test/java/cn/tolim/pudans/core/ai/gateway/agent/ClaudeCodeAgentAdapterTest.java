@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.gateway.agent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.AiChatRequest;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;

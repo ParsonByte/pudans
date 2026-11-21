@@ -4,10 +4,10 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.content.Builder.contentBuilder;
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.core.user.service.AvatarStorageService;
+import cn.tolim.pudans.core.user.AvatarStorage;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.context.annotation.Bean;
@@ -25,7 +25,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AvatarResourceEndpoint implements CustomEndpoint {
 
-    private final AvatarStorageService avatarStorageService;
+    private final AvatarStorage avatarStorage;
 
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE + 100)
@@ -48,7 +48,7 @@ public class AvatarResourceEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> serve(ServerRequest request) {
-        return avatarStorageService
+        return avatarStorage
                 .load(request.pathVariable("filename"))
                 .flatMap(resource -> ServerResponse.ok()
                         .contentType(MediaType.IMAGE_PNG)

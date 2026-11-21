@@ -2,7 +2,7 @@ package cn.tolim.pudans.security.authentication.twofactor;
 
 import static org.apache.commons.lang3.ObjectUtils.defaultIfNull;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.user.resource.User;
 import org.apache.commons.lang3.StringUtils;
 
 public enum TwoFactorUtils {

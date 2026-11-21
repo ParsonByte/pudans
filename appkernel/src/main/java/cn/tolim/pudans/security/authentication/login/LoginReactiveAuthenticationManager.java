@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.login;
 
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.security.authentication.UserAccountStatusChecker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -22,7 +22,7 @@ class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManage
 
     private final ReactiveUserDetailsService userDetailsService;
 
-    private final UserService userService;
+    private final Accounts accounts;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -63,7 +63,7 @@ class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManage
         if (!loginId.contains("@")) {
             return Mono.empty();
         }
-        return userService
+        return accounts
                 .findUserByVerifiedEmail(loginId)
                 .flatMap(user ->
                         userDetailsService.findByUsername(user.getMetadata().getName()));

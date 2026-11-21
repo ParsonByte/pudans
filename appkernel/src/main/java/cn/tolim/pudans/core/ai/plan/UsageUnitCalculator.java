@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.plan;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
 import java.math.BigDecimal;
 import java.math.RoundingMode;

@@ -3,13 +3,13 @@ package cn.tolim.pudans.core.user.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.user.UserConnection;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.infra.properties.PasskeyProperties;
-import cn.tolim.pudans.infra.webauthn.PasskeyService;
+import cn.tolim.pudans.infra.webauthn.Passkeys;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -35,11 +35,11 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
 
     private static final String CHALLENGE_ATTRIBUTE = PasskeyRegistrationEndpoint.class.getName() + ".CHALLENGE";
 
-    private final PasskeyService passkeyService;
+    private final Passkeys passkeyService;
 
     private final PasskeyProperties properties;
 
-    private final UserService userService;
+    private final Accounts accounts;
 
     private final AuthenticationTrustResolver trustResolver = new AuthenticationTrustResolverImpl();
 
@@ -67,7 +67,7 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> registrationOptions(ServerRequest request) {
         return currentUsername()
-                .flatMap(userService::getUser)
+                .flatMap(accounts::getUser)
                 .flatMap(user -> passkeyService
                         .listPasskeys(user.getMetadata().getName())
                         .map(connection -> Map.of(
@@ -87,8 +87,8 @@ class PasskeyRegistrationEndpoint implements CustomEndpoint {
                                                             "id", properties.getRpId(),
                                                             "name", properties.getRpName()),
                                                     "user", Map.of(
-                                                            "id", PasskeyService.base64Url(
-                                                                    PasskeyService.usernameHandle(
+                                                            "id", Passkeys.base64Url(
+                                                                    Passkeys.usernameHandle(
                                                                             user.getMetadata().getName())),
                                                             "name", user.getMetadata().getName(),
                                                             "displayName",

@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.plan;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
 import org.jspecify.annotations.Nullable;
 
 public record PlanUsageSnapshot(

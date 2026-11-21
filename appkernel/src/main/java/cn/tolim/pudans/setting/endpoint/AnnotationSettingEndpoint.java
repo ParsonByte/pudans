@@ -3,8 +3,8 @@ package cn.tolim.pudans.setting.endpoint;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.AnnotationSetting;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.setting.resource.AnnotationSetting;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ListOptions;

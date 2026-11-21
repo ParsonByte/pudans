@@ -31,7 +31,7 @@ public class ParameterGarbageCollector {
 
     private static final int TEMP_SCAN_DEPTH = 2;
 
-    private final ParameterSettingGroupService parameterSettingGroupService;
+    private final ParameterGroups parameterGroups;
 
     private final ParameterSettingTempPathResolver tempPathResolver;
 
@@ -69,7 +69,7 @@ public class ParameterGarbageCollector {
     }
 
     void reschedule() {
-        parameterSettingGroupService.getServer().subscribe(
+        parameterGroups.getServer().subscribe(
                 server -> schedule(server.getGcCron()),
                 error -> {
                     log.warn("无法读取垃圾回收 cron 表达式，使用默认值", error);

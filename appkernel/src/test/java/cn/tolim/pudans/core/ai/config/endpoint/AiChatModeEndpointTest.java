@@ -2,10 +2,10 @@ package cn.tolim.pudans.core.ai.config.endpoint;
 
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiChatMode;
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiChatMode;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.ai.config.AiChatModeService;
+import cn.tolim.pudans.core.ai.config.ChatModes;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ import reactor.core.publisher.Flux;
 class AiChatModeEndpointTest {
 
     @Mock
-    AiChatModeService chatModeService;
+    ChatModes chatModeService;
 
     private WebTestClient client;
 

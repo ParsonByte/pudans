@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.ai.memory.bridge;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.gateway.AiGatewayHeaders;
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
@@ -31,7 +31,7 @@ public class MemoryBridgeEndpoint implements CustomEndpoint {
 
     private static final String CODE_SESSION_MISSING = "ai-gateway-session-missing";
 
-    private final MemoryBridgeService bridgeService;
+    private final MemoryBridge bridgeService;
 
     private final AiEndpointRequests requests;
 
@@ -62,7 +62,7 @@ public class MemoryBridgeEndpoint implements CustomEndpoint {
                         .description("Read-only memory bridge: read one L2 scene and its visible L1 memories.")
                         .tag(TAG)
                         .requestBody(requestBodyBuilder().required(true).implementation(ScenarioRequest.class))
-                        .response(responseBuilder().implementation(MemoryBridgeService.SceneDetail.class)))
+                        .response(responseBuilder().implementation(MemoryBridge.SceneDetail.class)))
                 .build();
     }
 

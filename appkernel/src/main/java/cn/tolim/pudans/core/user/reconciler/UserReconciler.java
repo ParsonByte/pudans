@@ -14,11 +14,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.Device;
-import cn.tolim.pudans.contract.core.extension.RememberMeToken;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.extension.user.UserConnection;
+import cn.tolim.pudans.contract.security.resource.Device;
+import cn.tolim.pudans.contract.security.resource.RememberMeToken;
+import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.resource.UserConnection;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.InternalReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.controller.Controller;
@@ -26,11 +26,11 @@ import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
 import cn.tolim.pudans.contract.extension.controller.ReactiveReconciler;
 import cn.tolim.pudans.contract.extension.controller.Reconciler.Request;
 import cn.tolim.pudans.contract.security.PersonalAccessToken;
-import cn.tolim.pudans.contract.security.device.DeviceService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.user.service.AnnouncementStateService;
-import cn.tolim.pudans.core.user.service.AvatarStorageService;
-import cn.tolim.pudans.core.user.service.HashIdService;
+import cn.tolim.pudans.contract.security.device.DeviceSessions;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.user.AnnouncementReads;
+import cn.tolim.pudans.core.user.AvatarStorage;
+import cn.tolim.pudans.core.user.HashIds;
 
 @Slf4j
 @Component
@@ -41,15 +41,15 @@ public class UserReconciler implements ReactiveReconciler<Request> {
 
     private final InternalReactiveExtensionClient client;
 
-    private final DeviceService deviceService;
+    private final DeviceSessions deviceSessions;
 
     private final DomainEventPublisher domainEventPublisher;
 
-    private final AvatarStorageService avatarStorageService;
+    private final AvatarStorage avatarStorage;
 
-    private final HashIdService hashIdService;
+    private final HashIds hashIds;
 
-    private final AnnouncementStateService announcementStateService;
+    private final AnnouncementReads announcementReads;
 
     @Override
     public Controller setupWith(ControllerBuilder builder) {
@@ -76,7 +76,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                     if (user.getStatus() == null) {
                         user.setStatus(new User.UserStatus());
                     }
-                    user.getStatus().setHashId(hashIdService.encode(user.getMetadata().getName()));
+                    user.getStatus().setHashId(hashIds.encode(user.getMetadata().getName()));
                     return client.updateInternal(user).thenReturn(Result.doNotRetry());
                 })
                 .switchIfEmpty(Mono.just(Result.doNotRetry()));
@@ -95,7 +95,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
     }
 
     private Mono<Void> deleteUserAnnouncementState(String username) {
-        return announcementStateService
+        return announcementReads
                 .deleteForUser(username)
                 .onErrorResume(error -> {
                     log.warn("无法删除用户 [{}] 的公告状态", username, error);
@@ -104,7 +104,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
     }
 
     private Mono<Void> deleteUserAvatar(User user) {
-        return avatarStorageService
+        return avatarStorage
                 .deleteForUser(user)
                 .onErrorResume(error -> {
                     log.warn("无法删除用户 [{}] 的头像", user.getMetadata().getName(), error);
@@ -137,7 +137,7 @@ public class UserReconciler implements ReactiveReconciler<Request> {
                 .build();
         return client.listAll(Device.class, listOptions, defaultSort())
                 .filter(device -> !isDeleted(device))
-                .concatMap(device -> deviceService.revoke(username, device.getMetadata().getName()))
+                .concatMap(device -> deviceSessions.revoke(username, device.getMetadata().getName()))
                 .then();
     }
 

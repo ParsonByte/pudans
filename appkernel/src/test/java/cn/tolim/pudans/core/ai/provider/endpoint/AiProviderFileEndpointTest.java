@@ -5,16 +5,16 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.provider.AiProviderFile;
 import cn.tolim.pudans.core.ai.provider.AiProviderFilePage;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekFilesClient;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProviderAccess;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -39,13 +39,13 @@ class AiProviderFileEndpointTest {
     DeepSeekFilesClient filesClient;
 
     @Mock
-    StorageService storageService;
+    StorageTransfer storageTransfer;
 
     private WebTestClient webClient;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new AiProviderFileEndpoint(access, filesClient, storageService);
+        var endpoint = new AiProviderFileEndpoint(access, filesClient, storageTransfer);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -56,8 +56,8 @@ class AiProviderFileEndpointTest {
         var file = storedFile();
         when(access.requireProvider("provider-a")).thenReturn(Mono.just(provider));
         when(access.requireAccount(provider)).thenReturn(Mono.just(account));
-        when(storageService.getFile("storage-1")).thenReturn(Mono.just(file));
-        when(storageService.readBytes(eq("storage-1"), anyInt()))
+        when(storageTransfer.getFile("storage-1")).thenReturn(Mono.just(file));
+        when(storageTransfer.readBytes(eq("storage-1"), anyInt()))
                 .thenReturn(Mono.just("hello".getBytes(StandardCharsets.UTF_8)));
         when(filesClient.upload(
                         eq(provider),
@@ -188,7 +188,7 @@ class AiProviderFileEndpointTest {
         var file = storedFile();
         file.getSpec().setState(StorageFileState.TRASHED);
         when(access.requireProvider("provider-a")).thenReturn(Mono.just(provider));
-        when(storageService.getFile("storage-1")).thenReturn(Mono.just(file));
+        when(storageTransfer.getFile("storage-1")).thenReturn(Mono.just(file));
 
         webClient.post()
                 .uri("/aiproviders/provider-a/files")

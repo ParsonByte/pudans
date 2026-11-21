@@ -7,8 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.infra.exception.ApiException;
-import cn.tolim.pudans.infra.setting.MailSettingsService;
-import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import cn.tolim.pudans.infra.setting.MailSettings;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
 import cn.tolim.pudans.security.authentication.AuthenticationConnectionTester;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,10 +27,10 @@ import tools.jackson.databind.node.ObjectNode;
 class ParameterSettingEndpointTest {
 
     @Mock
-    ParameterSettingGroupService groupService;
+    ParameterGroups groupService;
 
     @Mock
-    MailSettingsService mailSettingsService;
+    MailSettings mailSettings;
 
     @Mock
     AuthenticationConnectionTester connectionTester;
@@ -39,7 +39,7 @@ class ParameterSettingEndpointTest {
 
     @BeforeEach
     void setUp() {
-        var endpoint = new ParameterSettingEndpoint(groupService, mailSettingsService, connectionTester);
+        var endpoint = new ParameterSettingEndpoint(groupService, mailSettings, connectionTester);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -82,7 +82,7 @@ class ParameterSettingEndpointTest {
     @Test
     void newPathPutStoresTheGroupValueAndReportsRestart() {
         when(groupService.updateGroup(eq("server"), any(ObjectNode.class)))
-                .thenReturn(Mono.just(new ParameterSettingGroupService.UpdateResult(true)));
+                .thenReturn(Mono.just(new ParameterGroups.UpdateResult(true)));
 
         webTestClient
                 .put()
@@ -116,7 +116,7 @@ class ParameterSettingEndpointTest {
     @Test
     void legacyPathPutRemainsAvailable() {
         when(groupService.updateLegacyGroup(eq("basic"), any(ObjectNode.class)))
-                .thenReturn(Mono.just(new ParameterSettingGroupService.UpdateResult(false)));
+                .thenReturn(Mono.just(new ParameterGroups.UpdateResult(false)));
 
         webTestClient
                 .put()
@@ -134,7 +134,7 @@ class ParameterSettingEndpointTest {
 
     @Test
     void testMailEndpointReturnsNoContentOnSuccess() {
-        when(mailSettingsService.sendTest("alice@example.com")).thenReturn(Mono.empty());
+        when(mailSettings.sendTest("alice@example.com")).thenReturn(Mono.empty());
 
         webTestClient
                 .post()
@@ -145,12 +145,12 @@ class ParameterSettingEndpointTest {
                 .expectStatus()
                 .isNoContent();
 
-        verify(mailSettingsService).sendTest("alice@example.com");
+        verify(mailSettings).sendTest("alice@example.com");
     }
 
     @Test
     void testMailEndpointReturnsServiceUnavailableWhenSmtpFails() {
-        when(mailSettingsService.sendTest("alice@example.com"))
+        when(mailSettings.sendTest("alice@example.com"))
                 .thenReturn(Mono.error(new ApiException(
                         org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE,
                         "mail-send-failed",

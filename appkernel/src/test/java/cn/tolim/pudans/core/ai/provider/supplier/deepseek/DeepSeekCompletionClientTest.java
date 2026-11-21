@@ -11,11 +11,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.provider.AiCompletionRequest;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -59,7 +59,7 @@ class DeepSeekCompletionClientTest {
 
     private final ObjectMapper mapper = JsonUtils.mapper();
 
-    private final AiProviderAccountService accountService = mock(AiProviderAccountService.class);
+    private final ProviderAccounts accountService = mock(ProviderAccounts.class);
 
     private final AtomicReference<ClientRequest> captured = new AtomicReference<>();
 

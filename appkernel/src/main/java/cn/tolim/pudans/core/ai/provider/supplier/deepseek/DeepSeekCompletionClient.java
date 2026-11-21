@@ -1,14 +1,14 @@
 package cn.tolim.pudans.core.ai.provider.supplier.deepseek;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.core.ai.gateway.AiTokenUsage;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolException;
 import cn.tolim.pudans.core.ai.provider.AiCompletionChunk;
 import cn.tolim.pudans.core.ai.provider.AiCompletionRequest;
 import cn.tolim.pudans.core.ai.provider.AiCompletionResult;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.AiProviderHttpSupport;
 import cn.tolim.pudans.core.ai.provider.AiProviderJsonSupport;
 import cn.tolim.pudans.core.ai.provider.AiWebClientConfiguration;
@@ -39,7 +39,7 @@ public class DeepSeekCompletionClient extends AbstractDeepSeekClient {
     public DeepSeekCompletionClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            AiProviderAccountService accountService) {
+            ProviderAccounts accountService) {
         super(webClient, mapper, accountService, UPSTREAM_ERROR_CODE, DEFAULT_ERROR);
     }
 

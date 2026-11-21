@@ -11,17 +11,17 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.core.rbac.service.PermissionCatalogService;
-import cn.tolim.pudans.core.rbac.service.UiPermissionService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.rbac.permission.PermissionDirectory;
+import cn.tolim.pudans.core.rbac.permission.UiPermissions;
 
 @Component
 @RequiredArgsConstructor
 public class NavigationEndpoint implements CustomEndpoint {
 
-    private final UiPermissionService uiPermissionService;
+    private final UiPermissions uiPermissions;
 
-    private final PermissionCatalogService permissionCatalogService;
+    private final PermissionDirectory permissionDirectory;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -31,7 +31,7 @@ public class NavigationEndpoint implements CustomEndpoint {
                         .description("Get the workspaces and menus available to the current user.")
                         .tag(tag)
                         .response(responseBuilder()
-                                .implementation(PermissionCatalogService.Navigation.class)))
+                                .implementation(PermissionDirectory.Navigation.class)))
                 .build();
     }
 
@@ -40,8 +40,8 @@ public class NavigationEndpoint implements CustomEndpoint {
                 .principal()
                 .map(Principal::getName)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("未认证")))
-                .flatMap(uiPermissionService::uiPermissionsOf)
-                .flatMap(permissionCatalogService::navigation)
+                .flatMap(uiPermissions::uiPermissionsOf)
+                .flatMap(permissionDirectory::navigation)
                 .flatMap(navigation -> ServerResponse.ok().bodyValue(navigation));
     }
 }

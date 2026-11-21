@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.provider;
 
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -26,7 +26,7 @@ public class AiProviderModelSyncScheduler implements SmartLifecycle {
 
     private final ReactiveExtensionClient client;
 
-    private final AiProviderModelSyncService modelSyncService;
+    private final ProviderModelSync modelSyncService;
 
     private volatile boolean running;
 
@@ -51,8 +51,8 @@ public class AiProviderModelSyncScheduler implements SmartLifecycle {
                 .thenReturn(1L)
                 .onErrorResume(error -> {
                     if (error instanceof ApiException api
-                            && (AiProviderModelSyncService.CODE_NO_ACCOUNT.equals(api.getCode())
-                                    || AiProviderModelSyncService.CODE_UNSUPPORTED.equals(api.getCode()))) {
+                            && (ProviderModelSync.CODE_NO_ACCOUNT.equals(api.getCode())
+                                    || ProviderModelSync.CODE_UNSUPPORTED.equals(api.getCode()))) {
                         log.debug("跳过供应商 {} 的模型同步：{}", providerName, api.getReason());
                         return Mono.just(0L);
                     }

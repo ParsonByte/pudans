@@ -2,7 +2,7 @@ package cn.tolim.pudans.security.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
+import cn.tolim.pudans.contract.rbac.resource.Role;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;

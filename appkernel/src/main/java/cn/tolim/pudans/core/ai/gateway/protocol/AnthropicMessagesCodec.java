@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.gateway.protocol;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatIr;
 import cn.tolim.pudans.core.ai.gateway.ir.AiChatMessage;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;

@@ -2,8 +2,8 @@ package cn.tolim.pudans.security.authentication;
 
 import static cn.tolim.pudans.security.authentication.SecurityConstant.REMEMBER_ME_PARAMETER_NAME;
 
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.user.service.RefreshTokenService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.user.RefreshTokens;
 import cn.tolim.pudans.infra.utils.PudansUtils;
 import cn.tolim.pudans.security.authentication.twofactor.TwoFactorAuthentication;
 import cn.tolim.pudans.security.authentication.login.PudansUser;
@@ -31,7 +31,7 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
 
     private final ServerAuthenticationSuccessHandler defaultSuccessHandler;
 
-    private final RefreshTokenService refreshTokenService;
+    private final RefreshTokens refreshTokens;
 
     public LoginSuccessHandler(
             ServerResponse.Context context,
@@ -39,14 +39,14 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
             LoginParameterRequestCache parameterRequestCache,
             ServerRequestCache serverRequestCache,
             String postLoginUrl,
-            RefreshTokenService refreshTokenService) {
+            RefreshTokens refreshTokens) {
         this.context = context;
         this.loginFlowHandler = loginFlowHandler;
         this.parameterRequestCache = parameterRequestCache;
         var successHandler = new RedirectServerAuthenticationSuccessHandler(postLoginUrl);
         successHandler.setRequestCache(serverRequestCache);
         this.defaultSuccessHandler = successHandler;
-        this.refreshTokenService = refreshTokenService;
+        this.refreshTokens = refreshTokens;
     }
 
     @Override
@@ -68,10 +68,10 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
                 : ServerWebExchangeMatcher.MatchResult.notMatch();
 
         var exchange = webFilterExchange.getExchange();
-        exchange.getAttributes().put(AuditService.USERNAME_ATTRIBUTE, authentication.getName());
-        exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
-        exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "SUCCESS");
-        exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, "local");
+        exchange.getAttributes().put(AuditLog.USERNAME_ATTRIBUTE, authentication.getName());
+        exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "LOGIN");
+        exchange.getAttributes().put(AuditLog.RESULT_ATTRIBUTE, "SUCCESS");
+        exchange.getAttributes().put(AuditLog.CONTEXT_ATTRIBUTE, "local");
         return loginFlowHandler
                 .onLoginSuccess(exchange, authentication)
                 .then(xhrMatcher
@@ -80,7 +80,7 @@ public class LoginSuccessHandler implements ServerAuthenticationSuccessHandler {
                         .switchIfEmpty(Mono.defer(() -> defaultSuccessHandler
                                 .onAuthenticationSuccess(webFilterExchange, authentication)
                                 .then(Mono.empty())))
-                        .flatMap(isXhr -> refreshTokenService
+                        .flatMap(isXhr -> refreshTokens
                                 // 仅本地密码登录签发刷新令牌；Passkey/OAuth2 保持原有响应。
                                 .issue(authentication.getName())
                                 .onErrorResume(error -> {

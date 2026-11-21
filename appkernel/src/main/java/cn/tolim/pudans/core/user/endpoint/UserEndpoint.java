@@ -37,12 +37,12 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.extension.user.UserConnection;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
-import cn.tolim.pudans.contract.core.user.service.RoleService;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.rbac.resource.UserGroup;
+import cn.tolim.pudans.core.rbac.Roles;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ListOptions;
@@ -50,16 +50,16 @@ import cn.tolim.pudans.contract.extension.PageRequestImpl;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.router.SortableRequest;
 import cn.tolim.pudans.contract.infra.ValidationUtils;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntityPolicy;
-import cn.tolim.pudans.core.rbac.service.UiPermissionService;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
-import cn.tolim.pudans.core.user.service.FeishuUserService;
-import cn.tolim.pudans.core.user.service.LocalUserService;
-import cn.tolim.pudans.core.user.service.UserConnectionService;
+import cn.tolim.pudans.core.rbac.permission.UiPermissions;
+import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.core.user.FeishuAccounts;
+import cn.tolim.pudans.core.user.LocalAccounts;
+import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.exception.UnsatisfiedAttributeValueException;
-import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
 import cn.tolim.pudans.infra.utils.PudansTime;
 
 @Component
@@ -74,27 +74,27 @@ public class UserEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
-    private final UserService userService;
+    private final Accounts accounts;
 
-    private final RoleService roleService;
+    private final Roles roleService;
 
-    private final UserGroupService userGroupService;
+    private final Groups groups;
 
-    private final FeishuUserService feishuUserService;
+    private final FeishuAccounts feishuAccounts;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     private final BuiltinEntityPolicy builtinEntityPolicy;
 
     private final DomainEventPublisher domainEventPublisher;
 
-    private final UiPermissionService uiPermissionService;
+    private final UiPermissions uiPermissionService;
 
-    private final ParameterSettingGroupService parameterSettingGroupService;
+    private final ParameterGroups parameterGroups;
 
-    private final LocalUserService localUserService;
+    private final LocalAccounts localAccounts;
 
-    private final UserConnectionService userConnectionService;
+    private final Connections userConnectionService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -246,7 +246,7 @@ public class UserEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> me(ServerRequest request) {
         return currentUsername()
-                .flatMap(userService::getUser)
+                .flatMap(accounts::getUser)
                 .flatMap(user -> ServerResponse.ok()
                         .bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user, true)));
     }
@@ -254,14 +254,14 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> getUserByName(ServerRequest request) {
         return resolveName(request)
                 .flatMap(name -> emailVisibilityFor(name)
-                        .flatMap(expose -> userService
+                        .flatMap(expose -> accounts
                                 .getUser(name)
                                 .map(user -> cn.tolim.pudans.core.user.endpoint.UserView.from(user, expose))))
                 .flatMap(view -> ServerResponse.ok().bodyValue(view));
     }
 
     private Mono<Boolean> emailVisibility() {
-        return parameterSettingGroupService
+        return parameterGroups
                 .getSession()
                 .map(session -> Boolean.TRUE.equals(session.getExposeEmailToSignedInUsers()))
                 .defaultIfEmpty(false);
@@ -337,7 +337,7 @@ public class UserEndpoint implements CustomEndpoint {
             return Mono.just(options);
         }
         var filtered = options;
-        return userGroupService.listUsernamesOfGroups(userGroups)
+        return groups.listUsernamesOfGroups(userGroups)
                 .collectList()
                 .flatMap(usernames -> usernames.isEmpty()
                         ? Mono.empty()
@@ -373,14 +373,14 @@ public class UserEndpoint implements CustomEndpoint {
     }
 
     private Mono<Map<String, UserGroup>> groupsOf(List<User> users) {
-        return userGroupService.getGroupsByUsernames(
+        return groups.getGroupsByUsernames(
                 users.stream().map(user -> user.getMetadata().getName()).toList());
     }
 
     private Mono<ServerResponse> createUser(ServerRequest request) {
         return request.bodyToMono(CreateUserRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
-                .flatMap(body -> feishuUserService.createFromFeishu(body.toFeishuData(), body.userGroup()))
+                .flatMap(body -> feishuAccounts.createFromFeishu(body.toFeishuData(), body.userGroup()))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
@@ -392,9 +392,9 @@ public class UserEndpoint implements CustomEndpoint {
                         return Mono.error(new ServerWebInputException("users 不能为空。"));
                     }
                     return Flux.fromIterable(body.users())
-                            .concatMap(item -> feishuUserService
+                            .concatMap(item -> feishuAccounts
                                     .createFromFeishu(item.toFeishuData(), item.userGroup())
-                                    .flatMap(user -> auditService
+                                    .flatMap(user -> auditLog
                                             .recordChild(
                                                     request.exchange(),
                                                     null,
@@ -434,7 +434,7 @@ public class UserEndpoint implements CustomEndpoint {
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                 .flatMap(body -> {
                     validateLocalCreate(body);
-                    return localUserService
+                    return localAccounts
                             .create(
                                     body.username().trim(),
                                     body.displayName(),
@@ -444,7 +444,7 @@ public class UserEndpoint implements CustomEndpoint {
                                     body.userGroup())
                             .map(user -> new CreatedLocalUser(body, user));
                 })
-                .flatMap(created -> auditService
+                .flatMap(created -> auditLog
                         .recordChild(
                                 request.exchange(),
                                 null,
@@ -486,7 +486,7 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<User> createLocalUserForBatch(ServerRequest request, LocalCreateUserRequest body) {
         return Mono.defer(() -> {
             validateLocalCreate(body);
-            return localUserService
+            return localAccounts
                     .create(
                             body.username().trim(),
                             body.displayName(),
@@ -494,7 +494,7 @@ public class UserEndpoint implements CustomEndpoint {
                             body.password(),
                             body.avatar(),
                             body.userGroup())
-                    .flatMap(user -> auditService
+                    .flatMap(user -> auditLog
                             .recordChild(
                                     request.exchange(),
                                     null,
@@ -587,7 +587,7 @@ public class UserEndpoint implements CustomEndpoint {
 
     private Mono<User> applyProfileUpdate(
             org.springframework.web.server.ServerWebExchange exchange, String username, UpdateProfileRequest update) {
-        return userService.getUser(username).flatMap(user -> {
+        return accounts.getUser(username).flatMap(user -> {
             var spec = user.getSpec();
             if (update.displayName() != null && !Objects.equals(update.displayName(), spec.getDisplayName())) {
                 return Mono.error(new ServerWebInputException(
@@ -630,7 +630,7 @@ public class UserEndpoint implements CustomEndpoint {
         domainEventPublisher.publish(
                 "user.updated",
                 payload,
-                (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
+                (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
     private Mono<ServerResponse> deleteUser(ServerRequest request) {
@@ -656,7 +656,7 @@ public class UserEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> buildPermission(String username) {
-        return userGroupService
+        return groups
                 .getRoleNamesByUsername(username)
                 .collectList()
                 .flatMap(roleNames -> {
@@ -684,25 +684,25 @@ public class UserEndpoint implements CustomEndpoint {
                 .bodyToMono(PasswordRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为空")))
                 .flatMap(password -> verifyOldPassword
-                        ? userService
+                        ? accounts
                                 .confirmPassword(username, password.oldPassword())
                                 .flatMap(confirmed -> Boolean.TRUE.equals(confirmed)
-                                        ? userService.updateWithRawPassword(username, password.password())
+                                        ? accounts.updateWithRawPassword(username, password.password())
                                         : Mono.error(new UnsatisfiedAttributeValueException("旧密码不匹配。")))
-                        : userService.updateWithRawPassword(username, password.password()))
+                        : accounts.updateWithRawPassword(username, password.password()))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
     private Mono<ServerResponse> getUserGroup(ServerRequest request) {
         return resolveName(request)
-                .flatMap(userGroupService::getUserGroupByUsername)
+                .flatMap(groups::getUserGroupByUsername)
                 .flatMap(group -> ServerResponse.ok().bodyValue(group))
                 .switchIfEmpty(Mono.error(new ServerWebInputException("用户未加入任何用户组。")));
     }
 
     private Mono<ServerResponse> listUserConnections(ServerRequest request) {
         return resolveName(request)
-                .flatMap(userService::getUser)
+                .flatMap(accounts::getUser)
                 .flatMapMany(user -> userConnectionService.listConnections(user.getMetadata().getName()))
                 .map(UserConnectionView::from)
                 .collectList()
@@ -723,13 +723,13 @@ public class UserEndpoint implements CustomEndpoint {
         days = Math.max(1, Math.min(90, days));
         var activityDays = days;
         return resolveName(request)
-                .flatMap(userService::getUser)
+                .flatMap(accounts::getUser)
                 .flatMap(user -> {
                     var end = LocalDate.now(PudansTime.BEIJING);
                     var start = end.minusDays(activityDays - 1L);
                     var uid = user.getSpec().getUid();
                     var counts = StringUtils.hasText(uid)
-                            ? auditService.countPerDay(
+                            ? auditLog.countPerDay(
                                     PudansTime.startOfDay(start), uid, null, null)
                             : Mono.just(Map.<LocalDate, Long>of());
                     return counts.map(values -> IntStream.range(0, activityDays)
@@ -745,15 +745,15 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> assignUserGroup(ServerRequest request) {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(AssignGroupRequest.class)
-                        .flatMap(body -> userGroupService
+                        .flatMap(body -> groups
                                 .assignUserGroup(username, body.userGroup())
-                                .then(userService.getUser(username))))
+                                .then(accounts.getUser(username))))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
     private Mono<ServerResponse> removeUserGroup(ServerRequest request) {
         return resolveName(request)
-                .flatMap(username -> userGroupService.removeUserGroup(username).then(userService.getUser(username)))
+                .flatMap(username -> groups.removeUserGroup(username).then(accounts.getUser(username)))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
@@ -771,8 +771,8 @@ public class UserEndpoint implements CustomEndpoint {
             String unionId,
             String avatar,
             String userGroup) {
-        FeishuUserService.FeishuUserData toFeishuData() {
-            return new FeishuUserService.FeishuUserData(username, displayName, email, openId, unionId, avatar);
+        FeishuAccounts.FeishuUserData toFeishuData() {
+            return new FeishuAccounts.FeishuUserData(username, displayName, email, openId, unionId, avatar);
         }
     }
 
@@ -806,8 +806,8 @@ public class UserEndpoint implements CustomEndpoint {
             String unionId,
             String avatar,
             String userGroup) {
-        FeishuUserService.FeishuUserData toFeishuData() {
-            return new FeishuUserService.FeishuUserData(username, displayName, email, openId, unionId, avatar);
+        FeishuAccounts.FeishuUserData toFeishuData() {
+            return new FeishuAccounts.FeishuUserData(username, displayName, email, openId, unionId, avatar);
         }
     }
 

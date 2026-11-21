@@ -1,15 +1,15 @@
 package cn.tolim.pudans.core.ai.memory.task;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
-import cn.tolim.pudans.core.ai.memory.L2PipelineService;
+import cn.tolim.pudans.core.ai.memory.L2Pipeline;
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
 import cn.tolim.pudans.core.ai.memory.MemoryGenerationInput;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptContext;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptInput;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptResolver;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
-import cn.tolim.pudans.core.ai.memory.ai.MemorySceneAiService;
+import cn.tolim.pudans.core.ai.memory.ai.SceneSegmentation;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.core.ai.task.AiTaskHandler;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
@@ -35,9 +35,9 @@ public class L2SceneTaskHandler implements AiTaskHandler {
 
     private final MemoryPromptResolver promptResolver;
 
-    private final MemorySceneAiService sceneAi;
+    private final SceneSegmentation sceneAi;
 
-    private final L2PipelineService pipelineService;
+    private final L2Pipeline pipelineService;
 
     @Override
     public String taskType() {
@@ -97,7 +97,7 @@ public class L2SceneTaskHandler implements AiTaskHandler {
                 .extract(systemPrompt, newL1, existingScenes)
                 .defaultIfEmpty(List.of())
                 .flatMap(scenes -> pipelineService.process(
-                        new L2PipelineService.Request(
+                        new L2Pipeline.Request(
                                 teamId,
                                 agentId,
                                 conversation.id(),

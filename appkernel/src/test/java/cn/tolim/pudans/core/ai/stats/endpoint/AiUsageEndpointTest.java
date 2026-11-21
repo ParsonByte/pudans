@@ -9,59 +9,59 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.stats.AiUsageErrorCodes;
-import cn.tolim.pudans.core.ai.stats.AiUsageService;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.Billing;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ClearQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ClearResult;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextBreakdown;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextGrid;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextGridItem;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextParts;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextTotals;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextUsage;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.DailyUsage;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.Heatmap;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.HeatmapBucket;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.HeatmapQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.Overview;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.OverviewQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.RankingEntry;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.Rankings;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.RecentMessage;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.RequestDetail;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.RequestPage;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.RequestQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionDetail;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionModel;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionPage;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionShape;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionStats;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionStatsDay;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionStatsHour;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionStatsQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionTotals;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.Speed;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SpeedItem;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SpeedQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.TopSession;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.UsageRequest;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.UsageSession;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.UsageTotals;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService.PlanSummary;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService.UsageView;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService.WindowUsage;
-import cn.tolim.pudans.core.ai.plan.PlanVoucherService;
+import cn.tolim.pudans.core.ai.stats.AiUsage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.Billing;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ClearQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ClearResult;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextBreakdown;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextGrid;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextGridItem;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextParts;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextTotals;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextUsage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.DailyUsage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.Heatmap;
+import cn.tolim.pudans.core.ai.stats.AiUsage.HeatmapBucket;
+import cn.tolim.pudans.core.ai.stats.AiUsage.HeatmapQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.Overview;
+import cn.tolim.pudans.core.ai.stats.AiUsage.OverviewQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.RankingEntry;
+import cn.tolim.pudans.core.ai.stats.AiUsage.Rankings;
+import cn.tolim.pudans.core.ai.stats.AiUsage.RecentMessage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.RequestDetail;
+import cn.tolim.pudans.core.ai.stats.AiUsage.RequestPage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.RequestQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionDetail;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionModel;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionPage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionShape;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionStats;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionStatsDay;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionStatsHour;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionStatsQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionTotals;
+import cn.tolim.pudans.core.ai.stats.AiUsage.Speed;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SpeedItem;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SpeedQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.TopSession;
+import cn.tolim.pudans.core.ai.stats.AiUsage.UsageRequest;
+import cn.tolim.pudans.core.ai.stats.AiUsage.UsageSession;
+import cn.tolim.pudans.core.ai.stats.AiUsage.UsageTotals;
+import cn.tolim.pudans.core.ai.plan.PlanUsage;
+import cn.tolim.pudans.core.ai.plan.PlanUsage.PlanSummary;
+import cn.tolim.pudans.core.ai.plan.PlanUsage.UsageView;
+import cn.tolim.pudans.core.ai.plan.PlanUsage.WindowUsage;
+import cn.tolim.pudans.core.ai.plan.PlanVouchers;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver.Viewer;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.config.JacksonAdapterModule;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.math.BigDecimal;
@@ -102,20 +102,20 @@ class AiUsageEndpointTest {
     private static final Instant NOW = Instant.parse("2026-11-19T08:00:00Z");
 
     @Mock
-    AiUsageService usageService;
+    AiUsage usageService;
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     @Mock
-    AuditService auditService;
+    AuditLog auditLog;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         var endpoint = new AiUsageEndpoint(
-                usageService, new UsageAccessResolver(new AiEndpointRequests(userService)), auditService);
+                usageService, new UsageAccessResolver(new AiEndpointRequests(accounts)), auditLog);
         var mapper = JsonMapper.builder()
                 .addModule(new JacksonAdapterModule(JsonUtils::mapper))
                 .build();
@@ -131,7 +131,7 @@ class AiUsageEndpointTest {
 
     @Test
     void returnsTheUsageOverviewWithTheBucketAndScope() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.overview(any(OverviewQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.just(overview()));
 
@@ -162,7 +162,7 @@ class AiUsageEndpointTest {
 
     @Test
     void defaultsTheScopeToSelfForAdministrators() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.overview(any(OverviewQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.just(overview()));
 
@@ -186,7 +186,7 @@ class AiUsageEndpointTest {
 
     @Test
     void returnsTheHeatmapAndSpeedAggregates() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.heatmap(any(HeatmapQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.just(new Heatmap(
                         "tokens",
@@ -224,8 +224,8 @@ class AiUsageEndpointTest {
 
     @Test
     void requestsUseTheDefaultPagingAndNewFilters() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
-        when(usageService.requests(any(RequestQuery.class), eq(AiUsageService.NO_CURSOR), eq(50), any()))
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(usageService.requests(any(RequestQuery.class), eq(AiUsage.NO_CURSOR), eq(50), any()))
                 .thenReturn(Mono.just(requestPage()));
 
         client.get()
@@ -245,7 +245,7 @@ class AiUsageEndpointTest {
                 .jsonPath("$.totals.retriedRequests").isEqualTo(2);
 
         var query = ArgumentCaptor.forClass(RequestQuery.class);
-        verify(usageService).requests(query.capture(), eq(AiUsageService.NO_CURSOR), eq(50), any());
+        verify(usageService).requests(query.capture(), eq(AiUsage.NO_CURSOR), eq(50), any());
         assertThat(query.getValue().status()).isEqualTo("SUCCEEDED");
         assertThat(query.getValue().q()).isEqualTo("timeout");
         assertThat(query.getValue().purpose()).isEqualTo("agent-run");
@@ -257,7 +257,7 @@ class AiUsageEndpointTest {
 
     @Test
     void requestsApplyTheCursorAndLimit() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.requests(any(RequestQuery.class), eq(42L), eq(5), any()))
                 .thenReturn(Mono.just(requestPage()));
 
@@ -287,7 +287,7 @@ class AiUsageEndpointTest {
 
     @Test
     void requiresAuthentication() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.empty());
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.empty());
 
         client.get()
                 .uri("/aistats/-/usage/overview")
@@ -297,7 +297,7 @@ class AiUsageEndpointTest {
 
     @Test
     void exportsTheFilteredRequestsAsCsv() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.export(any(RequestQuery.class), any(Viewer.class)))
                 .thenReturn(Flux.just("time,requestId\n", "2026-11-19T08:00:00Z,req-5\n"));
 
@@ -320,7 +320,7 @@ class AiUsageEndpointTest {
 
     @Test
     void returnsTheRequestDetail() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.request(eq("req-5"), any(Viewer.class))).thenReturn(Mono.just(requestDetail()));
 
         client.get()
@@ -341,7 +341,7 @@ class AiUsageEndpointTest {
 
     @Test
     void returnsSessionPagesDetailsAndStats() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.sessions(any(), eq(7L), eq(20), any())).thenReturn(Mono.just(sessionPage()));
         when(usageService.session(eq(9L), any())).thenReturn(Mono.just(sessionDetail()));
         when(usageService.sessionStats(any(SessionStatsQuery.class), any()))
@@ -383,7 +383,7 @@ class AiUsageEndpointTest {
 
     @Test
     void returnsTheContextCompositionAndGrid() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.context(any(ContextQuery.class), any())).thenReturn(Mono.just(context()));
         when(usageService.contextGrid(any(), any())).thenReturn(Mono.just(contextGrid()));
 
@@ -409,7 +409,7 @@ class AiUsageEndpointTest {
 
     @Test
     void clearsUsageAndWritesTheAuditRecord() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.clear(any(ClearQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.just(new ClearResult(3, 1)));
 
@@ -430,7 +430,7 @@ class AiUsageEndpointTest {
         assertThat(query.getValue().model()).isEqualTo("deepseek-chat");
 
         var context = ArgumentCaptor.forClass(Map.class);
-        verify(auditService).record(
+        verify(auditLog).record(
                 any(),
                 eq("AI_USAGE_CLEAR"),
                 eq("AiUsage"),
@@ -446,7 +446,7 @@ class AiUsageEndpointTest {
 
     @Test
     void rejectsAClearWithoutABeforeDate() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.clear(any(ClearQuery.class), any(Viewer.class)))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.BAD_REQUEST, AiUsageErrorCodes.BEFORE_REQUIRED, "before 不能为空。")));
@@ -512,10 +512,10 @@ class AiUsageEndpointTest {
                                 Instant.parse("2026-11-16T16:00:00Z"),
                                 Instant.parse("2026-11-23T16:00:00Z"),
                                 "ACTIVE"),
-                        new PlanUsageService.RateLimit(4, 120),
-                        new PlanVoucherService.VoucherBalance(
-                                new PlanVoucherService.Balance(2, 1, 1),
-                                new PlanVoucherService.Balance(1, 0, 1))));
+                        new PlanUsage.RateLimit(4, 120),
+                        new PlanVouchers.VoucherBalance(
+                                new PlanVouchers.Balance(2, 1, 1),
+                                new PlanVouchers.Balance(1, 0, 1))));
     }
 
     private static UsageTotals totals() {

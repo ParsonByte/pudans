@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.live.resolve;
 
-import cn.tolim.pudans.contract.core.extension.live.LivePlatform;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
-import cn.tolim.pudans.contract.live.LiveRoomInfo;
-import cn.tolim.pudans.contract.live.LiveStreamProtocol;
-import cn.tolim.pudans.contract.live.LiveStreamUrl;
+import cn.tolim.pudans.contract.live.resource.LivePlatform;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
+import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
+import cn.tolim.pudans.contract.live.dto.LiveStreamProtocol;
+import cn.tolim.pudans.contract.live.dto.LiveStreamUrl;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
 import java.util.ArrayList;

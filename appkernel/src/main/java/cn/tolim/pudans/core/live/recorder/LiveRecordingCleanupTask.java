@@ -20,14 +20,14 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecordingState;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.live.alert.LiveAlertService;
+import cn.tolim.pudans.core.live.alert.LiveAlerts;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
-import cn.tolim.pudans.core.live.recording.LiveRecordingStatusService;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.live.recording.RecordingStatus;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import reactor.core.Disposable;
@@ -47,9 +47,9 @@ public class LiveRecordingCleanupTask {
 
     private final ReactiveExtensionClient client;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
-    private final LiveRecordingStatusService statusService;
+    private final RecordingStatus statusService;
 
     private final LiveRecordingWorkspace workspace;
 
@@ -59,7 +59,7 @@ public class LiveRecordingCleanupTask {
 
     private final LiveMetrics metrics;
 
-    private final LiveAlertService alertService;
+    private final LiveAlerts alertService;
 
     private volatile Disposable subscription;
 
@@ -156,7 +156,7 @@ public class LiveRecordingCleanupTask {
         var parts = status == null || status.getParts() == null ? List.<LiveRecording.Part>of() : status.getParts();
         return Flux.fromIterable(parts)
                 .filter(part -> StringUtils.hasText(part.getStorageFile()))
-                .concatMap(part -> storageService.purgeObjectFirst(part.getStorageFile()))
+                .concatMap(part -> storageTransfer.purgeObjectFirst(part.getStorageFile()))
                 .then();
     }
 

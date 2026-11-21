@@ -1,11 +1,11 @@
 package cn.tolim.pudans.security.authentication.feishu;
 
-import cn.tolim.pudans.security.authentication.ExternalLoginCompletionService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.user.service.FeishuUserService;
+import cn.tolim.pudans.security.authentication.ExternalLogins;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.user.FeishuAccounts;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.authentication.SecurityConfigurer;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -18,13 +18,13 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @Order(10)
 public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     private final FeishuClient feishuClient;
 
-    private final FeishuUserService feishuUserService;
+    private final FeishuAccounts feishuAccounts;
 
-    private final ExternalLoginCompletionService externalLoginCompletionService;
+    private final ExternalLogins externalLogins;
 
     private final DomainEventPublisher domainEventPublisher;
 
@@ -33,17 +33,17 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
     private final ServerResponse.Context context;
 
     public FeishuOAuth2SecurityConfigurer(
-            SecurityParameterSettingService securitySettings,
+            SecurityParameters securitySettings,
             FeishuClient feishuClient,
-            FeishuUserService feishuUserService,
-            ExternalLoginCompletionService externalLoginCompletionService,
+            FeishuAccounts feishuAccounts,
+            ExternalLogins externalLogins,
             DomainEventPublisher domainEventPublisher,
             SecurityProperties securityProperties,
             ServerResponse.Context context) {
         this.securitySettings = securitySettings;
         this.feishuClient = feishuClient;
-        this.feishuUserService = feishuUserService;
-        this.externalLoginCompletionService = externalLoginCompletionService;
+        this.feishuAccounts = feishuAccounts;
+        this.externalLogins = externalLogins;
         this.domainEventPublisher = domainEventPublisher;
         this.securityProperties = securityProperties;
         this.context = context;
@@ -54,8 +54,8 @@ public class FeishuOAuth2SecurityConfigurer implements SecurityConfigurer {
         var filter = new FeishuOAuth2LoginWebFilter(
                 securitySettings,
                 feishuClient,
-                feishuUserService,
-                externalLoginCompletionService,
+                feishuAccounts,
+                externalLogins,
                 domainEventPublisher,
                 securityProperties,
                 context);

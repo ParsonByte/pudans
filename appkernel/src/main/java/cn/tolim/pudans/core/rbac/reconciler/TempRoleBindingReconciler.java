@@ -10,17 +10,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.rbac.TempRoleBinding;
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.rbac.resource.TempRoleBinding;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.controller.Controller;
 import cn.tolim.pudans.contract.extension.controller.ControllerBuilder;
 import cn.tolim.pudans.contract.extension.controller.ReactiveReconciler;
 import cn.tolim.pudans.contract.extension.controller.Reconciler;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
-import cn.tolim.pudans.core.rbac.service.TempRoleService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
+import cn.tolim.pudans.core.rbac.TempGrants;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 
 @Slf4j
@@ -30,9 +30,9 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
 
     private final ReactiveExtensionClient client;
 
-    private final TempRoleService tempRoleService;
+    private final TempGrants tempGrants;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     private final DomainEventPublisher domainEventPublisher;
 
@@ -53,14 +53,14 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
     private Mono<Result> reconcileBinding(TempRoleBinding binding) {
         var spec = binding.getSpec();
         if (isDeleted(binding) || TempRoleBinding.STATUS_REVOKED.equals(spec.getStatus())) {
-            return tempRoleService.revoke(binding).thenReturn(Result.doNotRetry());
+            return tempGrants.revoke(binding).thenReturn(Result.doNotRetry());
         }
         var now = Instant.now();
         if (TempRoleBinding.STATUS_ACTIVE.equals(spec.getStatus())) {
             if (!binding.isActiveAt(now)) {
                 return terminate(binding, TempRoleBinding.STATUS_EXPIRED, "TEMP_ROLE_EXPIRE");
             }
-            return tempRoleService
+            return tempGrants
                     .grant(binding)
                     .thenReturn(Result.requeue(
                             Duration.between(now, spec.getExpiresAt()).plusSeconds(1)));
@@ -75,7 +75,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
     }
 
     private Mono<Result> terminate(TempRoleBinding binding, String status, String operation) {
-        return tempRoleService
+        return tempGrants
                 .revoke(binding)
                 .then(resolveUid(binding.getSpec().getUsername()))
                 .flatMap(uid -> {
@@ -100,7 +100,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
     }
 
     private String recordTerminalAudit(TempRoleBinding binding, String operation, String uid) {
-        var record = auditService.newRecord(AuditIdGenerator.next(), uid, operation);
+        var record = auditLog.newRecord(AuditIdGenerator.next(), uid, operation);
         record.setTraceFlowId(AuditIdGenerator.next());
         record.markSyntheticFlow();
         record.setStepIndex(1);
@@ -111,7 +111,7 @@ public class TempRoleBindingReconciler implements ReactiveReconciler<Reconciler.
         record.setDurationMs(0L);
         record.setContext(snapshot(binding));
         record.setActionSnapshot(JsonUtils.objectToJson(snapshot(binding)));
-        auditService.record(record);
+        auditLog.record(record);
         return record.getMetadata().getName();
     }
 

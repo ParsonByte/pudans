@@ -20,7 +20,7 @@ class ParameterSettingTempPathResolverTest {
     void setUp() {
         var properties = new PudansProperties();
         properties.setWorkDir(workDir);
-        resolver = new ParameterSettingTempPathResolver(mock(ParameterSettingGroupService.class), properties);
+        resolver = new ParameterSettingTempPathResolver(mock(ParameterGroups.class), properties);
     }
 
     @Test

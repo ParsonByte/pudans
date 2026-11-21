@@ -2,8 +2,8 @@ package cn.tolim.pudans.core.ai.provider;
 
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.provider.balance.ProviderBalanceRegistry;

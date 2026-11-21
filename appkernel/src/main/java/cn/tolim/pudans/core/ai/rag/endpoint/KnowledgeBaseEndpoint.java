@@ -4,15 +4,15 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ListResult;
 import cn.tolim.pudans.core.ai.rag.DocumentStatus;
 import cn.tolim.pudans.core.ai.rag.IngestionResult;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseCodes;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseDocument;
-import cn.tolim.pudans.core.ai.rag.KnowledgeBaseManagementService;
+import cn.tolim.pudans.core.ai.rag.KnowledgeBases;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseQueryLog;
 import cn.tolim.pudans.core.ai.rag.KnowledgeBaseRetrievalResult;
 import cn.tolim.pudans.core.ai.rag.RetrievalOptions;
@@ -73,9 +73,9 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
 
     private static final int MAX_QUERY_LOG_LIMIT = 200;
 
-    private final KnowledgeBaseManagementService managementService;
+    private final KnowledgeBases managementService;
 
-    private final UserService userService;
+    private final Accounts accounts;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -300,7 +300,7 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
         return ReactiveSecurityContextHolder.getContext()
                 .map(SecurityContext::getAuthentication)
                 .switchIfEmpty(Mono.error(unauthorized()))
-                .flatMap(authentication -> userService.getUser(authentication.getName())
+                .flatMap(authentication -> accounts.getUser(authentication.getName())
                         .map(user -> new UserContext(
                                 user.getSpec().getUid(),
                                 AuthorityUtils.authoritiesToRoles(authentication.getAuthorities())))
@@ -375,7 +375,7 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
         } catch (NumberFormatException error) {
             throw new ApiException(
                     HttpStatus.BAD_REQUEST,
-                    KnowledgeBaseManagementService.CODE_DOCUMENT_INVALID,
+                    KnowledgeBases.CODE_DOCUMENT_INVALID,
                     "文档标识无效。");
         }
     }
@@ -398,7 +398,7 @@ public class KnowledgeBaseEndpoint implements CustomEndpoint {
 
     private static ApiException invalidDocument(String message) {
         return new ApiException(
-                HttpStatus.BAD_REQUEST, KnowledgeBaseManagementService.CODE_DOCUMENT_INVALID, message);
+                HttpStatus.BAD_REQUEST, KnowledgeBases.CODE_DOCUMENT_INVALID, message);
     }
 
     public record DocumentUploadRequest(String storageFileId, String fileName) {}

@@ -12,13 +12,13 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class ParameterSettingServerSnapshot {
 
-    private final ParameterSettingGroupService parameterSettingGroupService;
+    private final ParameterGroups parameterGroups;
 
     private final AtomicReference<Snapshot> snapshot = new AtomicReference<>(new Snapshot(false, false));
 
     @EventListener
     void onExtensionInitialized(ExtensionInitializedEvent ignored) {
-        parameterSettingGroupService.getServer().subscribe(
+        parameterGroups.getServer().subscribe(
                 server -> {
                     snapshot.set(new Snapshot(
                             StringUtils.hasText(server.getMasterKey()),

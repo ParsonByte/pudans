@@ -13,8 +13,8 @@ import org.springframework.web.ErrorResponse;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.event.DomainEventPublisher;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import cn.tolim.pudans.security.authentication.exception.TooManyRequestsException;
 import cn.tolim.pudans.security.authentication.login.LoginAuthenticationConverter;
@@ -43,9 +43,9 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
     @Override
     public Mono<Void> onAuthenticationFailure(WebFilterExchange webFilterExchange, AuthenticationException exception) {
         var exchange = webFilterExchange.getExchange();
-        exchange.getAttributes().put(AuditService.OPERATION_ATTRIBUTE, "LOGIN");
-        exchange.getAttributes().put(AuditService.RESULT_ATTRIBUTE, "DENIED");
-        exchange.getAttributes().put(AuditService.CONTEXT_ATTRIBUTE, exception.getClass().getSimpleName());
+        exchange.getAttributes().put(AuditLog.OPERATION_ATTRIBUTE, "LOGIN");
+        exchange.getAttributes().put(AuditLog.RESULT_ATTRIBUTE, "DENIED");
+        exchange.getAttributes().put(AuditLog.CONTEXT_ATTRIBUTE, exception.getClass().getSimpleName());
         publishLoginFailure(exchange, exception);
         return loginFlowHandler
                 .onLoginFailure(exchange, exception)
@@ -56,7 +56,7 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
         var attempted =
                 (String) exchange.getAttributes().get(LoginAuthenticationConverter.ATTEMPTED_USERNAME_ATTRIBUTE);
         if (attempted != null && !attempted.isBlank()) {
-            exchange.getAttributes().put(AuditService.USERNAME_ATTRIBUTE, attempted);
+            exchange.getAttributes().put(AuditLog.USERNAME_ATTRIBUTE, attempted);
         }
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", attempted == null ? "anonymous" : attempted);
@@ -66,7 +66,7 @@ public class LoginFailureHandler implements ServerAuthenticationFailureHandler {
         domainEventPublisher.publish(
                 "user.login.failed",
                 payload,
-                (String) exchange.getAttributes().get(AuditService.TRACE_FLOW_ID_ATTRIBUTE));
+                (String) exchange.getAttributes().get(AuditLog.TRACE_FLOW_ID_ATTRIBUTE));
     }
 
     private Mono<Void> handleAuthenticationException(Throwable exception, ServerWebExchange exchange) {

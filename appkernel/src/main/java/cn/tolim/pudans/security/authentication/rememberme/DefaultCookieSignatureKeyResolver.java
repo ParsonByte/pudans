@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.rememberme;
 
-import cn.tolim.pudans.contract.security.authentication.CryptoService;
+import cn.tolim.pudans.contract.security.authentication.LoginCipher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -9,10 +9,10 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class DefaultCookieSignatureKeyResolver implements CookieSignatureKeyResolver {
 
-    private final CryptoService cryptoService;
+    private final LoginCipher loginCipher;
 
     @Override
     public Mono<String> resolveSigningKey() {
-        return Mono.fromSupplier(cryptoService::getKeyId);
+        return Mono.fromSupplier(loginCipher::getKeyId);
     }
 }

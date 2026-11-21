@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STREAM_FAILED;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STREAM_FAILED;
 import static org.bytedeco.ffmpeg.global.avcodec.AV_PKT_FLAG_KEY;
 
 import cn.tolim.pudans.infra.properties.LiveProperties;

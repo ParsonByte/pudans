@@ -5,16 +5,16 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPromptBinding;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPromptBinding;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptResolver;
 import cn.tolim.pudans.core.ai.memory.ResolvedMemoryPrompt;
 import cn.tolim.pudans.core.ai.memory.prompt.MemoryPromptLog;
-import cn.tolim.pudans.core.ai.memory.prompt.MemoryPromptSettingService;
+import cn.tolim.pudans.core.ai.memory.prompt.MemoryPromptSettings;
 import cn.tolim.pudans.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.time.Instant;
@@ -42,7 +42,7 @@ public class AiMemoryPromptEndpoint implements CustomEndpoint {
 
     private final MemoryPromptResolver resolver;
 
-    private final MemoryPromptSettingService settingService;
+    private final MemoryPromptSettings settingService;
 
     private final AiEndpointRequests requests;
 
@@ -117,7 +117,7 @@ public class AiMemoryPromptEndpoint implements CustomEndpoint {
                 .switchIfEmpty(Mono.error(invalid("请求体不能为空。")))
                 .flatMap(body -> requests
                         .userId(request)
-                        .flatMap(actor -> settingService.set(actor, new MemoryPromptSettingService.SetCommand(
+                        .flatMap(actor -> settingService.set(actor, new MemoryPromptSettings.SetCommand(
                                 body.name(),
                                 body.layer(),
                                 body.targetType(),
@@ -172,7 +172,7 @@ public class AiMemoryPromptEndpoint implements CustomEndpoint {
     }
 
     private static ApiException invalid(String message) {
-        return new ApiException(HttpStatus.BAD_REQUEST, MemoryPromptSettingService.CODE_INVALID, message);
+        return new ApiException(HttpStatus.BAD_REQUEST, MemoryPromptSettings.CODE_INVALID, message);
     }
 
     public record SetRequest(

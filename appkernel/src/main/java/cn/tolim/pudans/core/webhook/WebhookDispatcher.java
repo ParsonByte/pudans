@@ -4,11 +4,11 @@ import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import cn.tolim.pudans.contract.core.extension.Webhook;
+import cn.tolim.pudans.contract.webhook.resource.Webhook;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import io.github.resilience4j.reactor.retry.RetryOperator;
 import io.github.resilience4j.retry.RetryConfig;
@@ -56,7 +56,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
 
     private final WebhookSecretCipher secretCipher;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     private final OutboundRequestValidator outboundRequestValidator;
 
@@ -66,12 +66,12 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
             WebhookEventBus eventBus,
             ReactiveExtensionClient client,
             WebhookSecretCipher secretCipher,
-            AuditService auditService,
+            AuditLog auditLog,
             OutboundRequestValidator outboundRequestValidator) {
         this.eventBus = eventBus;
         this.client = client;
         this.secretCipher = secretCipher;
-        this.auditService = auditService;
+        this.auditLog = auditLog;
         this.outboundRequestValidator = outboundRequestValidator;
         this.webClient = WebClient.builder()
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
@@ -273,7 +273,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
             context.put("error", error.getClass().getName());
             context.put("message", error.getMessage());
         }
-        var auditRecord = auditService.newRecord(
+        var auditRecord = auditLog.newRecord(
                 AuditIdGenerator.next(), "system", "WEBHOOK_DELIVER");
         if (event.traceFlowId() == null || event.traceFlowId().isBlank()) {
             auditRecord.setTraceFlowId(AuditIdGenerator.next());
@@ -291,7 +291,7 @@ public class WebhookDispatcher implements InitializingBean, DisposableBean {
         auditRecord.setDurationMs(durationMillis);
         auditRecord.setContext(context);
         auditRecord.setActionSnapshot(JsonUtils.objectToJson(context));
-        auditService.record(auditRecord);
+        auditLog.record(auditRecord);
         updateDeliveryStatus(webhook.getMetadata().getName(), error == null);
     }
 

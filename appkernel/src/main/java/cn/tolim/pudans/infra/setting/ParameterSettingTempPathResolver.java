@@ -15,12 +15,12 @@ public class ParameterSettingTempPathResolver {
 
     private static final String DEFAULT_TEMP_PATH = "tmp";
 
-    private final ParameterSettingGroupService parameterSettingGroupService;
+    private final ParameterGroups parameterGroups;
 
     private final PudansProperties pudansProperties;
 
     public Mono<Path> resolve() {
-        return parameterSettingGroupService
+        return parameterGroups
                 .getServer()
                 .map(server -> resolve(server.getTempPath()))
                 .defaultIfEmpty(resolve(DEFAULT_TEMP_PATH));

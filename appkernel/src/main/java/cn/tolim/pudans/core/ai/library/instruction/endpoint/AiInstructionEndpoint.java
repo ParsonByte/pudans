@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.ai.library.instruction.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiInstruction;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiInstruction;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.instruction.InstructionService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.instruction.Instructions;
+import cn.tolim.pudans.core.ai.team.Teams;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.fn.builders.parameter.Builder;
@@ -26,9 +26,9 @@ public class AiInstructionEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiInstructionV1alpha1";
 
-    private final InstructionService instructionService;
+    private final Instructions instructionService;
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
     private final AiEndpointRequests requests;
 

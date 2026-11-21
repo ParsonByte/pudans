@@ -11,15 +11,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.conversation.AiConversationService;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.conversation.Conversations;
 import cn.tolim.pudans.core.ai.memory.DedupDecision;
 import cn.tolim.pudans.core.ai.memory.ExtractedMemory;
-import cn.tolim.pudans.core.ai.memory.L1DedupService;
-import cn.tolim.pudans.core.ai.memory.L1DedupService.DedupCandidate;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication.DedupCandidate;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
-import cn.tolim.pudans.core.ai.memory.L1PipelineService;
+import cn.tolim.pudans.core.ai.memory.L1Pipeline;
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
 import cn.tolim.pudans.core.ai.memory.L3Persona;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
@@ -28,8 +28,8 @@ import cn.tolim.pudans.core.ai.memory.MemoryScope;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
 import cn.tolim.pudans.core.ai.memory.SceneSegment;
 import cn.tolim.pudans.core.ai.memory.ai.ExtractionOutcome;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryConflictAiService;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryExtractionAiService;
+import cn.tolim.pudans.core.ai.memory.ai.MemoryConflict;
+import cn.tolim.pudans.core.ai.memory.ai.MemoryExtraction;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
@@ -66,7 +66,7 @@ class L1ExtractTaskHandlerTest {
     AiConversationRepository conversationRepository;
 
     @Mock
-    AiConversationService conversationService;
+    Conversations conversationService;
 
     @Mock
     AiMessageRepository messageRepository;
@@ -81,24 +81,24 @@ class L1ExtractTaskHandlerTest {
     AiMemoryL3Repository memoryL3Repository;
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     @Mock
-    MemoryExtractionAiService extractionAi;
+    MemoryExtraction extractionAi;
 
     @Mock
-    MemoryConflictAiService conflictAi;
+    MemoryConflict conflictAi;
 
     @Mock
-    L1PipelineService pipelineService;
+    L1Pipeline pipelineService;
 
-    private L1DedupService dedupService;
+    private L1Deduplication dedupService;
 
     private L1ExtractTaskHandler handler;
 
     @BeforeEach
     void setUp() {
-        dedupService = new L1DedupService();
+        dedupService = new L1Deduplication();
         handler = new L1ExtractTaskHandler(
                 conversationRepository,
                 conversationService,
@@ -145,8 +145,8 @@ class L1ExtractTaskHandlerTest {
         assertThat(context.sessionId()).isEqualTo("session-1");
         assertThat(context.taskId()).isEqualTo(String.valueOf(TASK_ID));
 
-        var requestCaptor = ArgumentCaptor.forClass(L1PipelineService.Request.class);
-        var judgeCaptor = ArgumentCaptor.forClass(L1PipelineService.ConflictJudge.class);
+        var requestCaptor = ArgumentCaptor.forClass(L1Pipeline.Request.class);
+        var judgeCaptor = ArgumentCaptor.forClass(L1Pipeline.ConflictJudge.class);
         verify(pipelineService).process(requestCaptor.capture(), judgeCaptor.capture());
         var request = requestCaptor.getValue();
         assertThat(request.context()).isEqualTo(contextCaptor.getValue());
@@ -269,10 +269,10 @@ class L1ExtractTaskHandlerTest {
         assertThat(candidates).hasSize(1);
         assertThat(candidates.getFirst().memory().recordId()).isEqualTo("m-1");
         assertThat(candidates.getFirst().candidates())
-                .extracting(L1DedupService.ExistingMemory::recordId)
+                .extracting(L1Deduplication.ExistingMemory::recordId)
                 .containsExactly("m-old", "m-other");
 
-        var requestCaptor = ArgumentCaptor.forClass(L1PipelineService.Request.class);
+        var requestCaptor = ArgumentCaptor.forClass(L1Pipeline.Request.class);
         verify(pipelineService).process(requestCaptor.capture(), any());
         var state = requestCaptor.getValue().personaState();
         assertThat(state.explicitRequested()).isFalse();
@@ -407,7 +407,7 @@ class L1ExtractTaskHandlerTest {
                 .withId(70L);
     }
 
-    private static L1PipelineService.Result result(long cursor) {
-        return new L1PipelineService.Result(List.of(), List.of(), cursor, 0, List.of());
+    private static L1Pipeline.Result result(long cursor) {
+        return new L1Pipeline.Result(List.of(), List.of(), cursor, 0, List.of());
     }
 }

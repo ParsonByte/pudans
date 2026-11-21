@@ -4,32 +4,32 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.stats.AiUsageErrorCodes;
-import cn.tolim.pudans.core.ai.stats.AiUsageService;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ClearQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ClearResult;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextGrid;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.ContextUsage;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.GridQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.Heatmap;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.HeatmapQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.Overview;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.OverviewQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.RequestDetail;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.RequestPage;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.RequestQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionDetail;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionPage;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionStats;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SessionStatsQuery;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.Speed;
-import cn.tolim.pudans.core.ai.stats.AiUsageService.SpeedQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ClearQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ClearResult;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextGrid;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.ContextUsage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.GridQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.Heatmap;
+import cn.tolim.pudans.core.ai.stats.AiUsage.HeatmapQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.Overview;
+import cn.tolim.pudans.core.ai.stats.AiUsage.OverviewQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.RequestDetail;
+import cn.tolim.pudans.core.ai.stats.AiUsage.RequestPage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.RequestQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionDetail;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionPage;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionStats;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SessionStatsQuery;
+import cn.tolim.pudans.core.ai.stats.AiUsage.Speed;
+import cn.tolim.pudans.core.ai.stats.AiUsage.SpeedQuery;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
 import cn.tolim.pudans.core.ai.stats.UsageQueryParameters;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.nio.charset.StandardCharsets;
@@ -63,11 +63,11 @@ public class AiUsageEndpoint implements CustomEndpoint {
 
     private static final String CLEAR_RESOURCE_TYPE = "AiUsage";
 
-    private final AiUsageService usageService;
+    private final AiUsage usageService;
 
     private final UsageAccessResolver accessResolver;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -324,10 +324,10 @@ public class AiUsageEndpoint implements CustomEndpoint {
                 UsageQueryParameters.intValue(
                         request,
                         "limit",
-                        AiUsageService.DEFAULT_GRID_LIMIT,
+                        AiUsage.DEFAULT_GRID_LIMIT,
                         1,
-                        AiUsageService.MAX_GRID_LIMIT,
-                        "limit 必须在 1 到 " + AiUsageService.MAX_GRID_LIMIT + " 之间。",
+                        AiUsage.MAX_GRID_LIMIT,
+                        "limit 必须在 1 到 " + AiUsage.MAX_GRID_LIMIT + " 之间。",
                         "limit 必须是整数。"));
         return accessResolver
                 .viewer(request)
@@ -359,7 +359,7 @@ public class AiUsageEndpoint implements CustomEndpoint {
         context.put("model", query.model());
         context.put("requestsDeleted", result.requestsDeleted());
         context.put("modelRequestsDeleted", result.modelRequestsDeleted());
-        auditService.record(
+        auditLog.record(
                 request.exchange(),
                 CLEAR_OPERATION,
                 CLEAR_RESOURCE_TYPE,

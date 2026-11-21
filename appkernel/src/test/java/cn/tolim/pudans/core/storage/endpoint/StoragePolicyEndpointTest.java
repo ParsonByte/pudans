@@ -10,11 +10,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
-import cn.tolim.pudans.core.storage.OneDriveOAuthService;
-import cn.tolim.pudans.core.storage.StoragePolicyService;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
+import cn.tolim.pudans.core.storage.OneDriveOAuth;
+import cn.tolim.pudans.core.storage.Policies;
 import cn.tolim.pudans.core.storage.StoragePolicyValidator;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.driver.StorageDriverFactoryRegistry;
 import cn.tolim.pudans.core.storage.driver.StoragePolicyTypeDescriptor;
 import reactor.core.publisher.Mono;
@@ -26,23 +26,23 @@ class StoragePolicyEndpointTest {
     StoragePolicyValidator validator;
 
     @Mock
-    StoragePolicyService policyService;
+    Policies policyService;
 
     @Mock
-    StorageService storageService;
+    StorageTransfer storageTransfer;
 
     @Mock
     StorageDriverFactoryRegistry registry;
 
     @Mock
-    OneDriveOAuthService oneDriveOAuthService;
+    OneDriveOAuth oneDriveOAuth;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
         var endpoint = new StoragePolicyEndpoint(
-                validator, policyService, storageService, registry, oneDriveOAuthService);
+                validator, policyService, storageTransfer, registry, oneDriveOAuth);
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -63,8 +63,8 @@ class StoragePolicyEndpointTest {
 
     @Test
     void returnsTheOneDriveAuthorizeUrl() {
-        when(oneDriveOAuthService.authorizeUrl("od")).thenReturn(Mono.just(
-                new OneDriveOAuthService.OAuthUrl(
+        when(oneDriveOAuth.authorizeUrl("od")).thenReturn(Mono.just(
+                new OneDriveOAuth.OAuthUrl(
                         "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
                         "state-token",
                         "https://pudans.example.com/apis/api.pudans.tolim.cn/v1alpha1/storagepolicies/-/oauth/callback")));

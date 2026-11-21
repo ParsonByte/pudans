@@ -3,9 +3,9 @@ package cn.tolim.pudans.security.authentication.preauth;
 import static cn.tolim.pudans.security.authentication.SecurityConstant.REMEMBER_ME_PARAMETER_NAME;
 import static org.springframework.web.reactive.function.server.RequestPredicates.path;
 
-import cn.tolim.pudans.contract.core.extension.AuthProvider;
+import cn.tolim.pudans.contract.security.resource.AuthProvider;
 import cn.tolim.pudans.infra.utils.PudansUtils;
-import cn.tolim.pudans.security.authentication.AuthProviderService;
+import cn.tolim.pudans.security.authentication.AuthProviders;
 import cn.tolim.pudans.security.authentication.LoginParameterRequestCache;
 import java.net.URI;
 import java.util.Objects;
@@ -27,7 +27,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class PreAuthLoginEndpoint {
 
-    private final AuthProviderService authProviderService;
+    private final AuthProviders authProviders;
 
     private final LoginParameterRequestCache parameterRequestCache;
 
@@ -44,7 +44,7 @@ class PreAuthLoginEndpoint {
 
     private Mono<ServerResponse> socialLogin(ServerRequest request) {
         var authProviderName = request.pathVariable("authProviderName");
-        return authProviderService
+        return authProviders
                 .getEnabledProviders()
                 .filter(ap -> Objects.equals(authProviderName, ap.getMetadata().getName()))
                 .filter(ap -> !AuthProvider.AuthType.FORM.equals(ap.getSpec().getAuthType()))

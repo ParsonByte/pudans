@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_DISK_FULL;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STORAGE_BACKLOG;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_DISK_FULL;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STORAGE_BACKLOG;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -10,9 +10,9 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.PartState;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 

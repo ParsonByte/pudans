@@ -9,7 +9,7 @@ import ch.qos.logback.core.read.ListAppender;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.PudansProperties;
 import cn.tolim.pudans.infra.properties.SecurityProperties;
-import cn.tolim.pudans.infra.setting.MailSettingsService;
+import cn.tolim.pudans.infra.setting.MailSettings;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,7 @@ class PasswordResetLogCodesTest {
     ObjectProvider<JavaMailSender> mailSenderProvider;
 
     @Mock
-    MailSettingsService mailSettingsService;
+    MailSettings mailSettings;
 
     private Logger logger;
 
@@ -62,9 +62,9 @@ class PasswordResetLogCodesTest {
     @Test
     void mailerFailsClosedWhenLogCodesAreDisabled() {
         var mailer = new PasswordResetMailer(
-                mailSenderProvider, properties(false), new MockEnvironment(), mailSettingsService);
+                mailSenderProvider, properties(false), new MockEnvironment(), mailSettings);
         when(mailSenderProvider.getIfAvailable()).thenReturn(null);
-        when(mailSettingsService.isConfigured()).thenReturn(reactor.core.publisher.Mono.just(false));
+        when(mailSettings.isConfigured()).thenReturn(reactor.core.publisher.Mono.just(false));
 
         StepVerifier.create(mailer.sendCode("alice@example.com", "123456"))
                 .expectErrorSatisfies(error -> {
@@ -82,9 +82,9 @@ class PasswordResetLogCodesTest {
     @Test
     void mailerLogsTheCodeOnlyWhenExplicitlyEnabled() {
         var mailer = new PasswordResetMailer(
-                mailSenderProvider, properties(true), new MockEnvironment(), mailSettingsService);
+                mailSenderProvider, properties(true), new MockEnvironment(), mailSettings);
         when(mailSenderProvider.getIfAvailable()).thenReturn(null);
-        when(mailSettingsService.isConfigured()).thenReturn(reactor.core.publisher.Mono.just(false));
+        when(mailSettings.isConfigured()).thenReturn(reactor.core.publisher.Mono.just(false));
 
         StepVerifier.create(mailer.sendCode("alice@example.com", "654321"))
                 .verifyComplete();
@@ -96,7 +96,7 @@ class PasswordResetLogCodesTest {
     @Test
     void startupWarnsWhenLogCodesAreEnabledOutsideDev() {
         var mailer = new PasswordResetMailer(
-                mailSenderProvider, properties(true), new MockEnvironment(), mailSettingsService);
+                mailSenderProvider, properties(true), new MockEnvironment(), mailSettings);
 
         mailer.warnIfLogCodesEnabledOutsideDev();
 
@@ -108,7 +108,7 @@ class PasswordResetLogCodesTest {
     void startupDoesNotWarnInDevProfile() {
         var environment = new MockEnvironment();
         environment.setActiveProfiles("dev");
-        var mailer = new PasswordResetMailer(mailSenderProvider, properties(true), environment, mailSettingsService);
+        var mailer = new PasswordResetMailer(mailSenderProvider, properties(true), environment, mailSettings);
 
         mailer.warnIfLogCodesEnabledOutsideDev();
 

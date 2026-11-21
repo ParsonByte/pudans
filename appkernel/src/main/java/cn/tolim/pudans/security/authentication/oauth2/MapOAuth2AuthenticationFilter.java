@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.oauth2;
 
-import cn.tolim.pudans.core.user.service.UserConnectionService;
+import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.exception.ProblemDetailResponses;
 import lombok.Setter;
 import org.springframework.http.HttpStatus;
@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 
 class MapOAuth2AuthenticationFilter implements WebFilter {
 
-    private final UserConnectionService connectionService;
+    private final Connections connectionService;
 
     private final ServerSecurityContextRepository securityContextRepository;
 
@@ -41,7 +41,7 @@ class MapOAuth2AuthenticationFilter implements WebFilter {
 
     public MapOAuth2AuthenticationFilter(
             ServerSecurityContextRepository securityContextRepository,
-            UserConnectionService connectionService,
+            Connections connectionService,
             OAuth2AuthenticationSession authenticationSession,
             OAuth2AuthenticationTokenCache authenticationCache,
             ServerResponse.Context context) {

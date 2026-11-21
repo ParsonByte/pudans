@@ -2,7 +2,7 @@ package cn.tolim.pudans.security.authentication;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
-import cn.tolim.pudans.contract.core.extension.AuthProvider;
+import cn.tolim.pudans.contract.security.resource.AuthProvider;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;

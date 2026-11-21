@@ -6,7 +6,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMcpServer;
+import cn.tolim.pudans.contract.ai.resource.AiMcpServer;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.controller.Reconciler;
@@ -25,13 +25,13 @@ class AiMcpServerReconcilerTest {
     ExtensionClient client;
 
     @Mock
-    McpClientService mcpClientService;
+    McpClients mcpClients;
 
     private AiMcpServerReconciler reconciler;
 
     @BeforeEach
     void setUp() {
-        reconciler = new AiMcpServerReconciler(client, mcpClientService);
+        reconciler = new AiMcpServerReconciler(client, mcpClients);
     }
 
     @Test
@@ -43,7 +43,7 @@ class AiMcpServerReconcilerTest {
 
         reconciler.reconcile(new Reconciler.Request("mcp-a"));
 
-        verify(mcpClientService).close("mcp-a");
+        verify(mcpClients).close("mcp-a");
         assertThat(server.getMetadata().getFinalizers())
                 .doesNotContain("ai-mcp-server-lifecycle");
         verify(client).update(server);
@@ -59,7 +59,7 @@ class AiMcpServerReconcilerTest {
         assertThat(server.getMetadata().getFinalizers())
                 .contains("ai-mcp-server-lifecycle");
         verify(client).update(server);
-        verify(mcpClientService, never()).close(any());
+        verify(mcpClients, never()).close(any());
     }
 
     private static AiMcpServer server() {

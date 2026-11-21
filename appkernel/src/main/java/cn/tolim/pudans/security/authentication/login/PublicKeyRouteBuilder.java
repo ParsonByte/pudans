@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.authentication.login;
 
 import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.contract.security.authentication.CryptoService;
+import cn.tolim.pudans.contract.security.authentication.LoginCipher;
 import java.util.Base64;
 import lombok.Data;
 import org.springdoc.core.fn.builders.apiresponse.Builder;
@@ -11,10 +11,10 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 public class PublicKeyRouteBuilder {
 
-    private final CryptoService cryptoService;
+    private final LoginCipher loginCipher;
 
-    public PublicKeyRouteBuilder(CryptoService cryptoService) {
-        this.cryptoService = cryptoService;
+    public PublicKeyRouteBuilder(LoginCipher loginCipher) {
+        this.loginCipher = loginCipher;
     }
 
 
@@ -22,7 +22,7 @@ public class PublicKeyRouteBuilder {
         return SpringdocRouteBuilder.route()
                 .GET(
                         ApiGroups.API_PREFIX + "/login/public-key",
-                        request -> cryptoService.readPublicKey().flatMap(publicKey -> {
+                        request -> loginCipher.readPublicKey().flatMap(publicKey -> {
                             var base64Format = Base64.getEncoder().encodeToString(publicKey);
                             var response = new PublicKeyResponse();
                             response.setBase64Format(base64Format);

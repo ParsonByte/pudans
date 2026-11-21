@@ -4,15 +4,15 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
 import cn.tolim.pudans.core.ai.memory.MemoryStatus;
 import cn.tolim.pudans.core.ai.memory.MemoryType;
-import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernanceService.MemoryRequestStatus;
-import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernanceService.MemoryRequestType;
-import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernanceService.PipelineStats;
-import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernanceService.RebuildResult;
+import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.MemoryRequestStatus;
+import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.MemoryRequestType;
+import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.PipelineStats;
+import cn.tolim.pudans.core.ai.memory.governance.MemoryGovernance.RebuildResult;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.MemoryRequestRecord;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -38,13 +38,13 @@ public class MemoryGovernanceEndpoint implements CustomEndpoint {
 
     private static final String TAG = "MemoryGovernanceV1alpha1";
 
-    private static final String CODE_REQUEST_INVALID = MemoryGovernanceService.CODE_REQUEST_INVALID;
+    private static final String CODE_REQUEST_INVALID = MemoryGovernance.CODE_REQUEST_INVALID;
 
     private static final MediaType CSV_MEDIA_TYPE = new MediaType("text", "csv");
 
     private static final String CSV_CONTENT_DISPOSITION = "attachment; filename=\"memory-records.csv\"";
 
-    private final MemoryGovernanceService service;
+    private final MemoryGovernance service;
 
     private final AiEndpointRequests requests;
 
@@ -199,7 +199,7 @@ public class MemoryGovernanceEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> detail(ServerRequest request) {
         return service
-                .get(MemoryGovernanceService.parseId(request.pathVariable("name")))
+                .get(MemoryGovernance.parseId(request.pathVariable("name")))
                 .flatMap(record -> ServerResponse.ok().bodyValue(record));
     }
 
@@ -207,7 +207,7 @@ public class MemoryGovernanceEndpoint implements CustomEndpoint {
         return requests
                 .userId(request)
                 .flatMap(actor -> service.freeze(
-                        MemoryGovernanceService.parseId(request.pathVariable("name")), actor))
+                        MemoryGovernance.parseId(request.pathVariable("name")), actor))
                 .flatMap(record -> ServerResponse.ok().bodyValue(record));
     }
 
@@ -215,7 +215,7 @@ public class MemoryGovernanceEndpoint implements CustomEndpoint {
         return requests
                 .userId(request)
                 .flatMap(actor -> service.unfreeze(
-                        MemoryGovernanceService.parseId(request.pathVariable("name")), actor))
+                        MemoryGovernance.parseId(request.pathVariable("name")), actor))
                 .flatMap(record -> ServerResponse.ok().bodyValue(record));
     }
 
@@ -224,7 +224,7 @@ public class MemoryGovernanceEndpoint implements CustomEndpoint {
         return requests
                 .userId(request)
                 .flatMap(actor -> service.delete(
-                        MemoryGovernanceService.parseId(request.pathVariable("name")), reason, actor))
+                        MemoryGovernance.parseId(request.pathVariable("name")), reason, actor))
                 .flatMap(record -> ServerResponse.ok().bodyValue(record));
     }
 
@@ -232,7 +232,7 @@ public class MemoryGovernanceEndpoint implements CustomEndpoint {
         return requests
                 .userId(request)
                 .flatMap(actor -> service.restore(
-                        MemoryGovernanceService.parseId(request.pathVariable("name")), actor))
+                        MemoryGovernance.parseId(request.pathVariable("name")), actor))
                 .flatMap(record -> ServerResponse.ok().bodyValue(record));
     }
 

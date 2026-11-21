@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.live.resolve;
 
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.ArrayList;
 import java.util.List;

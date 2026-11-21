@@ -1,15 +1,15 @@
 package cn.tolim.pudans.core.ai.memory.task;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.conversation.AiConversationService;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.conversation.Conversations;
 import cn.tolim.pudans.core.ai.memory.DedupDecision;
 import cn.tolim.pudans.core.ai.memory.ExtractedMemory;
-import cn.tolim.pudans.core.ai.memory.L1DedupService;
-import cn.tolim.pudans.core.ai.memory.L1DedupService.DedupCandidate;
-import cn.tolim.pudans.core.ai.memory.L1DedupService.ExistingMemory;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication.DedupCandidate;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication.ExistingMemory;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
-import cn.tolim.pudans.core.ai.memory.L1PipelineService;
+import cn.tolim.pudans.core.ai.memory.L1Pipeline;
 import cn.tolim.pudans.core.ai.memory.L3Persona;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;
 import cn.tolim.pudans.core.ai.memory.MemoryGenerationInput;
@@ -19,8 +19,8 @@ import cn.tolim.pudans.core.ai.memory.PersonaTrigger;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
 import cn.tolim.pudans.core.ai.memory.SceneSegment;
 import cn.tolim.pudans.core.ai.memory.ai.ExtractionOutcome;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryConflictAiService;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryExtractionAiService;
+import cn.tolim.pudans.core.ai.memory.ai.MemoryConflict;
+import cn.tolim.pudans.core.ai.memory.ai.MemoryExtraction;
 import cn.tolim.pudans.core.ai.memory.org.OrgCandidatePolicy;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.core.ai.task.AiTaskHandler;
@@ -55,7 +55,7 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
 
     private final AiConversationRepository conversationRepository;
 
-    private final AiConversationService conversationService;
+    private final Conversations conversationService;
 
     private final AiMessageRepository messageRepository;
 
@@ -65,15 +65,15 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
 
     private final AiMemoryL3Repository memoryL3Repository;
 
-    private final AiSettingService settingService;
+    private final AiSettings settingService;
 
-    private final MemoryExtractionAiService extractionAi;
+    private final MemoryExtraction extractionAi;
 
-    private final MemoryConflictAiService conflictAi;
+    private final MemoryConflict conflictAi;
 
-    private final L1DedupService dedupService;
+    private final L1Deduplication dedupService;
 
-    private final L1PipelineService pipelineService;
+    private final L1Pipeline pipelineService;
 
     @Override
     public String taskType() {
@@ -190,7 +190,7 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
                 .toList();
     }
 
-    private Mono<L1PipelineService.Result> runPipeline(
+    private Mono<L1Pipeline.Result> runPipeline(
             Conversation conversation,
             AiSetting.Memory memory,
             List<Message> messages,
@@ -218,7 +218,7 @@ public class L1ExtractTaskHandler implements AiTaskHandler {
                     pool.size(),
                     MemoryTaskPayloads.PERSONA_THRESHOLD);
             var orgCandidate = OrgCandidatePolicy.hasCandidate(outcome.scenes());
-            var request = new L1PipelineService.Request(
+            var request = new L1Pipeline.Request(
                     context,
                     conversation.id(),
                     outcome.scenes(),

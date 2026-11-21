@@ -3,13 +3,13 @@ package cn.tolim.pudans.core.ai.library.mcp.endpoint;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.ai.AiMcpServer;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiMcpServer;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.mcp.McpClientService;
-import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.mcp.McpClients;
+import cn.tolim.pudans.core.ai.library.mcp.McpServers;
+import cn.tolim.pudans.core.ai.team.Teams;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,10 +25,10 @@ import reactor.core.publisher.Mono;
 class AiMcpServerEndpointTest {
 
     @Mock
-    McpServerService mcpServerService;
+    McpServers mcpServers;
 
     @Mock
-    AiTeamService teamService;
+    Teams teamService;
 
     @Mock
     AiEndpointRequests requests;
@@ -38,7 +38,7 @@ class AiMcpServerEndpointTest {
     @BeforeEach
     void setUp() {
         client = WebTestClient.bindToRouterFunction(
-                        new AiMcpServerEndpoint(mcpServerService, teamService, requests).endpoint())
+                        new AiMcpServerEndpoint(mcpServers, teamService, requests).endpoint())
                 .build();
     }
 
@@ -46,7 +46,7 @@ class AiMcpServerEndpointTest {
     void listsServersForAnOwnedAgent() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
         when(teamService.requireAgent("agent-a", "alice")).thenReturn(Mono.just(agent("agent-a")));
-        when(mcpServerService.byAgent("agent-a")).thenReturn(Flux.just(view()));
+        when(mcpServers.byAgent("agent-a")).thenReturn(Flux.just(view()));
 
         client.get()
                 .uri("/aimcpservers/-/by-agent?agent=agent-a")
@@ -82,10 +82,10 @@ class AiMcpServerEndpointTest {
     @Test
     void probesAServer() {
         when(requests.userId(any())).thenReturn(Mono.just("alice"));
-        when(mcpServerService.test("mcp-a")).thenReturn(Mono.just(new McpServerService.TestResult(
+        when(mcpServers.test("mcp-a")).thenReturn(Mono.just(new McpServers.TestResult(
                 true,
                 1,
-                List.of(new McpClientService.McpTool("search", "Search", null)),
+                List.of(new McpClients.McpTool("search", "Search", null)),
                 "连通性正常。")));
 
         client.post()
@@ -109,8 +109,8 @@ class AiMcpServerEndpointTest {
                 .expectStatus().isForbidden();
     }
 
-    private static McpServerService.McpServerView view() {
-        return new McpServerService.McpServerView(
+    private static McpServers.McpServerView view() {
+        return new McpServers.McpServerView(
                 "mcp-a",
                 "MCP A",
                 null,
@@ -118,7 +118,7 @@ class AiMcpServerEndpointTest {
                 true,
                 AiMcpServer.Health.HEALTHY,
                 1,
-                List.of(new McpClientService.McpTool("search", "Search", null)),
+                List.of(new McpClients.McpTool("search", "Search", null)),
                 null);
     }
 

@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.memory.ai;
 
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.generation.AiTextGenerationService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.generation.TextGenerations;
 import cn.tolim.pudans.core.ai.generation.GenerationRequest;
 import cn.tolim.pudans.core.ai.generation.GenerationResult;
 import cn.tolim.pudans.core.ai.memory.DedupAction;
@@ -30,9 +30,9 @@ final class MemoryAiSupport {
 
     private static final String CODE_INVALID = "ai-memory-generation-invalid";
 
-    private final AiTextGenerationService generationService;
+    private final TextGenerations generationService;
 
-    private final AiSettingService settingService;
+    private final AiSettings settingService;
 
     private final ObjectMapper mapper;
 

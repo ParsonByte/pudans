@@ -7,7 +7,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSandboxProvider;
+import cn.tolim.pudans.contract.ai.resource.AiSandboxProvider;
 import cn.tolim.pudans.core.ai.runtime.sandbox.SandboxState;
 import cn.tolim.pudans.infra.r2dbc.ai.runtime.AiAgentRuntimeRepository.RuntimeRecord;
 import io.r2dbc.spi.Row;

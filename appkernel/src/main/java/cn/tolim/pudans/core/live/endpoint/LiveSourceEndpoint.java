@@ -2,17 +2,17 @@ package cn.tolim.pudans.core.live.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.LiveSource;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
-import cn.tolim.pudans.contract.live.LiveSourceCreateRequest;
-import cn.tolim.pudans.contract.live.LiveSourceHealth;
-import cn.tolim.pudans.contract.live.LiveSourceSummary;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.live.source.LiveSourceHealthService;
-import cn.tolim.pudans.core.live.source.LiveSourceService;
-import cn.tolim.pudans.core.live.source.LiveSourceSummaryService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.LiveSource;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
+import cn.tolim.pudans.contract.live.dto.LiveSourceCreateRequest;
+import cn.tolim.pudans.contract.live.dto.LiveSourceHealth;
+import cn.tolim.pudans.contract.live.dto.LiveSourceSummary;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.live.source.SourceHealth;
+import cn.tolim.pudans.core.live.source.Sources;
+import cn.tolim.pudans.core.live.source.SourceSummaries;
 import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,13 +32,13 @@ public class LiveSourceEndpoint implements CustomEndpoint {
 
     private static final String TAG = "LiveSourceV1alpha1";
 
-    private final LiveSourceService sourceService;
+    private final Sources sourceService;
 
-    private final LiveSourceSummaryService summaryService;
+    private final SourceSummaries summaryService;
 
-    private final LiveSourceHealthService healthService;
+    private final SourceHealth healthService;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -143,7 +143,7 @@ public class LiveSourceEndpoint implements CustomEndpoint {
         snapshot.put("roomId", source.getSpec().getRoomId());
         snapshot.put("alias", source.getSpec().getAlias());
         snapshot.put("autoRecord", source.getSpec().isAutoRecord());
-        return auditService
+        return auditLog
                 .recordChild(
                         request.exchange(),
                         null,

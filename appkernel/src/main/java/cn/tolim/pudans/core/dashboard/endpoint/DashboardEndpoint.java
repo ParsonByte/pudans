@@ -4,25 +4,24 @@ import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.notDeleting;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.in;
 
-import cn.tolim.pudans.contract.core.extension.RiskRule;
-import cn.tolim.pudans.contract.core.extension.Webhook;
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.risk.resource.RiskRule;
+import cn.tolim.pudans.contract.webhook.resource.Webhook;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.contract.rbac.resource.UserGroup;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.ParameterInfoGetter;
 import cn.tolim.pudans.contract.infra.SystemInfo;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
-import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.core.risk.RiskRuleRegistry;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import cn.tolim.pudans.infra.utils.PudansTime;
-import io.swagger.v3.oas.annotations.media.Schema;
 import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.time.Instant;
@@ -46,6 +45,12 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
+import cn.tolim.pudans.contract.dashboard.dto.DashboardOverview;
+import cn.tolim.pudans.contract.dashboard.dto.ActiveUser;
+import cn.tolim.pudans.contract.dashboard.dto.GlobalInfoSummary;
+import cn.tolim.pudans.contract.dashboard.dto.RecentOperation;
+import cn.tolim.pudans.contract.dashboard.dto.LoginTrendPoint;
+import cn.tolim.pudans.contract.dashboard.dto.RoleUserCount;
 
 @Slf4j
 @Component
@@ -62,11 +67,11 @@ public class DashboardEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     private final ParameterInfoGetter systemInfoGetter;
 
-    private final UserGroupService userGroupService;
+    private final Groups groups;
 
     private final RiskRuleRegistry riskRuleRegistry;
 
@@ -108,19 +113,19 @@ public class DashboardEndpoint implements CustomEndpoint {
                 countNotDeleting(UserGroup.class),
                 Mono.just((long) riskRuleRegistry.ruleCount()),
                 countNotDeleting(Webhook.class));
-        var todayOperations = auditService.countSince(dayStart).onErrorReturn(0L);
-        var recentRecords = auditService
+        var todayOperations = auditLog.countSince(dayStart).onErrorReturn(0L);
+        var recentRecords = auditLog
                 .findRecent(RECENT_AUDIT_LOG_LIMIT)
                 .collectList()
                 .defaultIfEmpty(List.of())
                 .onErrorReturn(List.of())
                 .cache();
-        var loginTrend = auditService
+        var loginTrend = auditLog
                 .countPerDay(dayStart.minus(Duration.ofDays(TREND_DAYS - 1L)), "LOGIN", "SUCCESS")
                 .map(days -> toDailyTrend(days, now))
                 .defaultIfEmpty(List.of())
                 .onErrorReturn(List.of());
-        var operationTrend = auditService
+        var operationTrend = auditLog
                 .countPerDay(dayStart.minus(Duration.ofDays(TREND_DAYS - 1L)), null, null)
                 .map(days -> toDailyTrend(days, now))
                 .defaultIfEmpty(List.of())
@@ -159,7 +164,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .map(tuple -> new TrendData(
                         tuple.getT1(), tuple.getT2(), tuple.getT3(), tuple.getT4()))
                 .defaultIfEmpty(new TrendData(List.of(), List.of(), List.of(), List.of()));
-        var activeUserRecords = auditService
+        var activeUserRecords = auditLog
                 .query(new AuditStore.AuditQuery(
                         null,
                         dayStart.minus(Duration.ofDays(TREND_DAYS - 1L)),
@@ -274,11 +279,11 @@ public class DashboardEndpoint implements CustomEndpoint {
         }
         var realRolesByName = realRoles.stream()
                 .collect(Collectors.toMap(role -> role.getMetadata().getName(), Function.identity()));
-        return userGroupService
+        return groups
                 .listMemberships()
                 .collect(Collectors.toMap(
-                        UserGroupService.Membership::username,
-                        UserGroupService.Membership::groupName,
+                        Groups.Membership::username,
+                        Groups.Membership::groupName,
                         (left, right) -> left))
                 .flatMap(groupsByUser -> rolesByGroup(
                                 groupsByUser.values().stream().distinct().toList())
@@ -290,9 +295,9 @@ public class DashboardEndpoint implements CustomEndpoint {
         if (groupNames.isEmpty()) {
             return Mono.just(Map.of());
         }
-        return userGroupService
+        return groups
                 .listUserGroups(groupNames)
-                .flatMap(group -> userGroupService
+                .flatMap(group -> groups
                         .listRoleNamesOfGroup(group)
                         .collectList()
                         .map(roles -> Map.entry(group.getMetadata().getName(), roles)))
@@ -412,54 +417,4 @@ public class DashboardEndpoint implements CustomEndpoint {
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion(ApiGroups.API_VERSION);
     }
-
-    @Schema(description = "Aggregated dashboard overview with site info and security posture counters.")
-    public record DashboardOverview(
-            GlobalInfoSummary globalInfo,
-            long totalUsers,
-            long totalRoles,
-            long totalUserGroups,
-            long totalRiskRules,
-            long totalWebhooks,
-            long todayOperations,
-            List<RecentOperation> recentAuditLogs,
-            List<LoginTrendPoint> loginTrend,
-            List<LoginTrendPoint> operationTrend,
-            List<LoginTrendPoint> riskRuleTrend,
-            List<LoginTrendPoint> webhookTrend,
-            List<ActiveUser> activeUsers,
-            List<RoleUserCount> roleDistribution) {}
-
-    @Schema(description = "One user ranked by recent audit activity.")
-    public record ActiveUser(String name, long operations) {}
-
-    @Schema(description = "Basic site information aggregated from the system info service.")
-    public record GlobalInfoSummary(
-            String siteTitle,
-            String siteSubtitle,
-            String externalUrl,
-            String timezone,
-            String version,
-            long uptimeSeconds) {
-
-        public static GlobalInfoSummary empty() {
-            return new GlobalInfoSummary(null, null, null, null, null, 0L);
-        }
-    }
-
-    @Schema(description = "One recent audit operation rendered on the dashboard.")
-    public record RecentOperation(
-            String auditId,
-            String operator,
-            String operation,
-            String resourceType,
-            String resourceName,
-            String result,
-            Instant timestamp) {}
-
-    @Schema(description = "Daily audit count for one UTC day.")
-    public record LoginTrendPoint(String date, long count) {}
-
-    @Schema(description = "Number of accounts holding one role.")
-    public record RoleUserCount(String role, String displayName, long users) {}
 }

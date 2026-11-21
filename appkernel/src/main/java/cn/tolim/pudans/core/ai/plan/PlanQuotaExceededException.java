@@ -15,7 +15,7 @@ public class PlanQuotaExceededException extends ApiException {
     public PlanQuotaExceededException(PlanWindowKind windowKind, long remaining, Instant resetsAt) {
         super(
                 HttpStatus.TOO_MANY_REQUESTS,
-                PlanQuotaService.CODE_QUOTA_EXCEEDED,
+                PlanQuotas.CODE_QUOTA_EXCEEDED,
                 label(windowKind) + "窗口额度不足：剩余 " + remaining + "，重置时间 " + resetsAt + "。");
         this.windowKind = windowKind;
         this.remaining = remaining;

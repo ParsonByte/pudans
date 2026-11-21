@@ -1,9 +1,9 @@
 package cn.tolim.pudans.core.ai.provider.supplier.qianwen;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.supplier.SupplierWebSocketAccess;
 import cn.tolim.pudans.infra.exception.ApiException;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class QianwenProviderAccess implements SupplierWebSocketAccess {
 
     private final ReactiveExtensionClient client;
 
-    private final AiProviderAccountService accountService;
+    private final ProviderAccounts accountService;
 
     @Override
     public Mono<AiProvider> requireProvider(String name) {

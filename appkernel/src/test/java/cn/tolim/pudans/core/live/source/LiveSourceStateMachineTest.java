@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.live.source;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.core.extension.live.LiveSourceState;
+import cn.tolim.pudans.contract.live.resource.LiveSourceState;
 import org.junit.jupiter.api.Test;
 
 class LiveSourceStateMachineTest {

@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.ai.memory.org;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import cn.tolim.pudans.core.ai.config.AiSettingService;
-import cn.tolim.pudans.core.ai.memory.L1DedupService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
+import cn.tolim.pudans.core.ai.memory.L1Deduplication;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
 import cn.tolim.pudans.core.ai.task.AiTaskHandlerRegistry;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryL1Repository;
@@ -19,8 +19,8 @@ class OrgCandidateTaskHandlerRegistrationTest {
         var handler = new OrgCandidateTaskHandler(
                 mock(AiMemoryL1Repository.class),
                 mock(AiOrgMemoryRepository.class),
-                new L1DedupService(),
-                mock(AiSettingService.class));
+                new L1Deduplication(),
+                mock(AiSettings.class));
 
         var registry = new AiTaskHandlerRegistry(List.of(handler));
 

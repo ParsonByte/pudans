@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authentication.device;
 
-import cn.tolim.pudans.contract.security.device.DeviceService;
+import cn.tolim.pudans.contract.security.device.DeviceSessions;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 class DeviceSessionFilter implements WebFilter {
 
-    private final DeviceService deviceService;
+    private final DeviceSessions deviceSessions;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
@@ -26,7 +26,7 @@ class DeviceSessionFilter implements WebFilter {
                 }
 
                 log.debug("会话 ID 从 {} 变为 {}，正在更新设备信息。", previousId, currentId);
-                return deviceService.changeSessionId(exchange);
+                return deviceSessions.changeSessionId(exchange);
             }));
         });
     }

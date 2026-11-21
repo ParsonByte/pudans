@@ -9,14 +9,14 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.core.rbac.service.PermissionCatalogService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.core.rbac.permission.PermissionDirectory;
 
 @Component
 @RequiredArgsConstructor
 public class PermissionCatalogEndpoint implements CustomEndpoint {
 
-    private final PermissionCatalogService permissionCatalogService;
+    private final PermissionDirectory permissionDirectory;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -26,12 +26,12 @@ public class PermissionCatalogEndpoint implements CustomEndpoint {
                         .description("Get the console permission catalog defined by role templates.")
                         .tag(tag)
                         .response(responseBuilder()
-                                .implementation(PermissionCatalogService.PermissionCatalog.class)))
+                                .implementation(PermissionDirectory.PermissionCatalog.class)))
                 .build();
     }
 
     private Mono<ServerResponse> catalog(ServerRequest request) {
-        return permissionCatalogService
+        return permissionDirectory
                 .catalog()
                 .flatMap(catalog -> ServerResponse.ok().bodyValue(catalog));
     }

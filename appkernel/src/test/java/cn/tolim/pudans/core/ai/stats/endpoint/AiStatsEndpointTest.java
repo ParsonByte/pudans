@@ -6,21 +6,21 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.stats.AiStatsService;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.AccountActivity;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.DailyRouting;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RecentRequest;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryDetail;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryItem;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryPage;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingHistoryQuery;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingLive;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.RoutingUser;
-import cn.tolim.pudans.core.ai.stats.AiStatsService.Summary;
+import cn.tolim.pudans.core.ai.stats.AiStats;
+import cn.tolim.pudans.core.ai.stats.AiStats.AccountActivity;
+import cn.tolim.pudans.core.ai.stats.AiStats.DailyRouting;
+import cn.tolim.pudans.core.ai.stats.AiStats.RecentRequest;
+import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryDetail;
+import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryItem;
+import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryPage;
+import cn.tolim.pudans.core.ai.stats.AiStats.RoutingHistoryQuery;
+import cn.tolim.pudans.core.ai.stats.AiStats.RoutingLive;
+import cn.tolim.pudans.core.ai.stats.AiStats.RoutingUser;
+import cn.tolim.pudans.core.ai.stats.AiStats.Summary;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver;
 import cn.tolim.pudans.core.ai.stats.UsageAccessResolver.Viewer;
 import cn.tolim.pudans.infra.config.JacksonAdapterModule;
@@ -55,10 +55,10 @@ class AiStatsEndpointTest {
     private static final Instant NOW = Instant.parse("2026-11-19T08:00:00Z");
 
     @Mock
-    AiStatsService statsService;
+    AiStats statsService;
 
     @Mock
-    UserService userService;
+    Accounts userService;
 
     private WebTestClient client;
 
@@ -252,8 +252,8 @@ class AiStatsEndpointTest {
                 JsonNodeFactory.instance.objectNode().put("kbTokens", 120));
     }
 
-    private static AiStatsService.PointStats unitStats() {
-        return new AiStatsService.PointStats(List.of(
+    private static AiStats.PointStats unitStats() {
+        return new AiStats.PointStats(List.of(
                 new PointStatsRow("2026-11-19", "deepseek-chat", 5, new BigDecimal("0.18"), 1020)));
     }
 

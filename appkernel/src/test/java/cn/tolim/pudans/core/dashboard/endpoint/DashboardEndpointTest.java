@@ -7,20 +7,20 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.RiskRule;
-import cn.tolim.pudans.contract.core.extension.Webhook;
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroup;
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.risk.resource.RiskRule;
+import cn.tolim.pudans.contract.webhook.resource.Webhook;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
+import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.contract.rbac.resource.UserGroup;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.infra.SystemInfo;
 import cn.tolim.pudans.contract.infra.ParameterInfoGetter;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
-import cn.tolim.pudans.core.risk.service.RiskRuleRegistry;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.core.risk.RiskRuleRegistry;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import cn.tolim.pudans.infra.utils.PudansTime;
 import com.github.zafarkhaja.semver.Version;
@@ -44,13 +44,13 @@ class DashboardEndpointTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AuditService auditService;
+    AuditLog auditLog;
 
     @Mock
     ParameterInfoGetter systemInfoGetter;
 
     @Mock
-    UserGroupService userGroupService;
+    Groups groups;
 
     @Mock
     RiskRuleRegistry riskRuleRegistry;
@@ -60,7 +60,7 @@ class DashboardEndpointTest {
     @BeforeEach
     void setUp() {
         endpoint = new DashboardEndpoint(
-                client, auditService, systemInfoGetter, userGroupService, riskRuleRegistry);
+                client, auditLog, systemInfoGetter, groups, riskRuleRegistry);
     }
 
     private static AuditRecord record(String id, String uid, String operation, String result) {
@@ -165,24 +165,24 @@ class DashboardEndpointTest {
                 .thenReturn(Flux.just(riskRule("risk-rule-1", Instant.now())));
         when(client.listAll(eq(Webhook.class), any(ListOptions.class), any()))
                 .thenReturn(Flux.just(webhook("webhook-1", Instant.now())));
-        when(auditService.countSince(any(Instant.class))).thenReturn(Mono.just(41L));
-        when(auditService.findRecent(5)).thenReturn(Flux.empty());
-        when(auditService.countPerDay(any(Instant.class), eq("LOGIN"), eq("SUCCESS")))
+        when(auditLog.countSince(any(Instant.class))).thenReturn(Mono.just(41L));
+        when(auditLog.findRecent(5)).thenReturn(Flux.empty());
+        when(auditLog.countPerDay(any(Instant.class), eq("LOGIN"), eq("SUCCESS")))
                 .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 7L)));
-        when(auditService.countPerDay(any(Instant.class), isNull(), isNull()))
+        when(auditLog.countPerDay(any(Instant.class), isNull(), isNull()))
                 .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 12L)));
-        when(auditService.query(any(AuditStore.AuditQuery.class)))
+        when(auditLog.query(any(AuditStore.AuditQuery.class)))
                 .thenReturn(Flux.just(
                         record("audit-1", "uid-1", "LOGIN", "SUCCESS"),
                         record("audit-2", "uid-1", "LOGIN", "SUCCESS"),
                         record("audit-3", "uid-2", "LOGIN", "SUCCESS")));
-        when(userGroupService.listMemberships())
+        when(groups.listMemberships())
                 .thenReturn(Flux.just(
-                        new UserGroupService.Membership("alice", "admins"),
-                        new UserGroupService.Membership("bob", "operators")));
-        when(userGroupService.listUserGroups(anyCollection()))
+                        new Groups.Membership("alice", "admins"),
+                        new Groups.Membership("bob", "operators")));
+        when(groups.listUserGroups(anyCollection()))
                 .thenReturn(Flux.just(userGroup("admins"), userGroup("operators")));
-        when(userGroupService.listRoleNamesOfGroup(any()))
+        when(groups.listRoleNamesOfGroup(any()))
                 .thenAnswer(invocation -> "admins"
                                 .equals(invocation.getArgument(0, UserGroup.class)
                                         .getMetadata()
@@ -231,13 +231,13 @@ class DashboardEndpointTest {
                 .thenReturn(Flux.error(new IllegalStateException("down")));
         when(client.countBy(any(Class.class), any(ListOptions.class)))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
-        when(auditService.countSince(any(Instant.class))).thenReturn(Mono.error(new IllegalStateException("down")));
-        when(auditService.findRecent(5)).thenReturn(Flux.error(new IllegalStateException("down")));
-        when(auditService.countPerDay(any(Instant.class), eq("LOGIN"), eq("SUCCESS")))
+        when(auditLog.countSince(any(Instant.class))).thenReturn(Mono.error(new IllegalStateException("down")));
+        when(auditLog.findRecent(5)).thenReturn(Flux.error(new IllegalStateException("down")));
+        when(auditLog.countPerDay(any(Instant.class), eq("LOGIN"), eq("SUCCESS")))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
-        when(auditService.countPerDay(any(Instant.class), isNull(), isNull()))
+        when(auditLog.countPerDay(any(Instant.class), isNull(), isNull()))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
-        when(auditService.query(any(AuditStore.AuditQuery.class)))
+        when(auditLog.query(any(AuditStore.AuditQuery.class)))
                 .thenReturn(Flux.error(new IllegalStateException("down")));
 
         var overview = endpoint.aggregate().block();

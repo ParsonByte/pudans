@@ -31,9 +31,9 @@ final class UsageCsvExporter {
                 number(row.units()),
                 integer(row.latencyMs()),
                 integer(row.ttftMs()),
-                AiUsageService.cacheHitRate(row.inputTokens(), row.cacheTokens()).toPlainString(),
+                AiUsage.cacheHitRate(row.inputTokens(), row.cacheTokens()).toPlainString(),
                 Boolean.toString(row.retried()),
-                nullToEmpty(AiUsageService.servedEffort(row.servedEffort(), row.tier())));
+                nullToEmpty(AiUsage.servedEffort(row.servedEffort(), row.tier())));
     }
 
     private static String integer(@Nullable Integer value) {

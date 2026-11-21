@@ -1,8 +1,8 @@
 package cn.tolim.pudans.core.live.resolve;
 
-import cn.tolim.pudans.contract.core.extension.live.LivePlatform;
+import cn.tolim.pudans.contract.live.resource.LivePlatform;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.contract.live.LiveRoomInfo;
+import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.time.Duration;

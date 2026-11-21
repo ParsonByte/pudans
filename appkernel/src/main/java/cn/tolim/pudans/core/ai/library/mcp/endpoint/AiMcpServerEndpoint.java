@@ -3,10 +3,10 @@ package cn.tolim.pudans.core.ai.library.mcp.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.mcp.McpServers;
+import cn.tolim.pudans.core.ai.team.Teams;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.fn.builders.parameter.Builder;
@@ -25,9 +25,9 @@ public class AiMcpServerEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiMcpServerV1alpha1";
 
-    private final McpServerService mcpServerService;
+    private final McpServers mcpServers;
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
     private final AiEndpointRequests requests;
 
@@ -40,14 +40,14 @@ public class AiMcpServerEndpoint implements CustomEndpoint {
                         .tag(TAG)
                         .parameter(agentParameter())
                         .response(responseBuilder()
-                                .implementationArray(McpServerService.McpServerView.class)))
+                                .implementationArray(McpServers.McpServerView.class)))
                 .POST("/aimcpservers/{name}/test", this::test, builder -> builder
                         .operationId("testAiMcpServer")
                         .description("Probe an MCP server, update its health status and return its tools.")
                         .tag(TAG)
                         .parameter(nameParameter())
                         .response(responseBuilder()
-                                .implementation(McpServerService.TestResult.class)))
+                                .implementation(McpServers.TestResult.class)))
                 .build();
     }
 
@@ -56,7 +56,7 @@ public class AiMcpServerEndpoint implements CustomEndpoint {
         return requests
                 .userId(request)
                 .flatMap(userId -> teamService.requireAgent(agentName, userId))
-                .flatMapMany(agent -> mcpServerService.byAgent(agent.getMetadata().getName()))
+                .flatMapMany(agent -> mcpServers.byAgent(agent.getMetadata().getName()))
                 .collectList()
                 .flatMap(views -> ServerResponse.ok().bodyValue(views));
     }
@@ -64,7 +64,7 @@ public class AiMcpServerEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> test(ServerRequest request) {
         return requests
                 .userId(request)
-                .then(Mono.defer(() -> mcpServerService.test(request.pathVariable("name"))))
+                .then(Mono.defer(() -> mcpServers.test(request.pathVariable("name"))))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 

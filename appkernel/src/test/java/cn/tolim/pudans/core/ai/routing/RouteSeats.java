@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.routing;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
 
 public final class RouteSeats {
 

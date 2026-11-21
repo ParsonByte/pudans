@@ -3,7 +3,7 @@ package cn.tolim.pudans.security.authorization;
 import java.util.Objects;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
+import cn.tolim.pudans.contract.rbac.resource.Role;
 
 public class RbacRequestEvaluation {
     interface WildCard {

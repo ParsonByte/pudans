@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.authentication.twofactor;
 
-import cn.tolim.pudans.core.risk.service.RiskControlService;
-import cn.tolim.pudans.core.risk.service.RiskScene;
+import cn.tolim.pudans.core.risk.RiskGuard;
+import cn.tolim.pudans.core.risk.RiskScene;
 import cn.tolim.pudans.infra.utils.IpAddressUtils;
 import cn.tolim.pudans.security.authentication.exception.TooManyRequestsException;
 import cn.tolim.pudans.security.authentication.exception.TwoFactorAuthException;
@@ -20,10 +20,10 @@ public class TwoFactorCodeAuthenticationConverter implements ServerAuthenticatio
 
     private static final String DEFAULT_TYPE = "totp";
 
-    private final RiskControlService riskControlService;
+    private final RiskGuard riskGuard;
 
-    public TwoFactorCodeAuthenticationConverter(RiskControlService riskControlService) {
-        this.riskControlService = riskControlService;
+    public TwoFactorCodeAuthenticationConverter(RiskGuard riskGuard) {
+        this.riskGuard = riskGuard;
     }
 
     private static String resolveType(ServerWebExchange exchange) {
@@ -58,7 +58,7 @@ public class TwoFactorCodeAuthenticationConverter implements ServerAuthenticatio
         return authentication -> exchange.getSession()
                 .map(session -> session.getId())
                 .defaultIfEmpty(IpAddressUtils.getClientIp(exchange.getRequest()))
-                .flatMap(subject -> riskControlService.isBanned(RiskScene.TOTP_ATTEMPT, subject))
+                .flatMap(subject -> riskGuard.isBanned(RiskScene.TOTP_ATTEMPT, subject))
                 .flatMap(banned -> Boolean.TRUE.equals(banned)
                         ? Mono.error(new TooManyRequestsException(null))
                         : Mono.just(authentication));

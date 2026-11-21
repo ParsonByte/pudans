@@ -1,8 +1,8 @@
 package cn.tolim.pudans.security.authentication.feishu;
 
-import cn.tolim.pudans.core.user.service.FeishuUserService;
+import cn.tolim.pudans.core.user.FeishuAccounts;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
@@ -22,11 +22,11 @@ public class FeishuProfileSyncTask {
 
     private static final Duration CHECK_INTERVAL = Duration.ofSeconds(60);
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     private final FeishuClient feishuClient;
 
-    private final FeishuUserService feishuUserService;
+    private final FeishuAccounts feishuAccounts;
 
     private Disposable subscription;
 
@@ -55,11 +55,11 @@ public class FeishuProfileSyncTask {
     }
 
     Mono<Void> syncAll() {
-        return feishuUserService
+        return feishuAccounts
                 .listAllConnections()
                 .concatMap(connection -> feishuClient
                         .fetchContactUser(connection.getSpec().getProviderUserId())
-                        .flatMap(userInfo -> feishuUserService.syncProfile(
+                        .flatMap(userInfo -> feishuAccounts.syncProfile(
                                 connection.getSpec().getUsername(),
                                 userInfo.name(),
                                 userInfo.email(),

@@ -4,9 +4,9 @@ import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.infra.properties.PasskeyProperties;
-import cn.tolim.pudans.infra.setting.ParameterSettingGroupService;
-import cn.tolim.pudans.infra.webauthn.PasskeyService;
-import cn.tolim.pudans.security.authentication.ExternalLoginCompletionService;
+import cn.tolim.pudans.infra.setting.ParameterGroups;
+import cn.tolim.pudans.infra.webauthn.Passkeys;
+import cn.tolim.pudans.security.authentication.ExternalLogins;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -18,24 +18,24 @@ import reactor.core.publisher.Mono;
 class PasskeyAssertionEndpointTest {
 
     @Mock
-    PasskeyService passkeyService;
+    Passkeys passkeyService;
 
     @Mock
     PasskeyProperties passkeyProperties;
 
     @Mock
-    ExternalLoginCompletionService externalLoginCompletionService;
+    ExternalLogins externalLogins;
 
     @Mock
-    ParameterSettingGroupService parameterSettingGroupService;
+    ParameterGroups parameterGroups;
 
     @Test
     void assertionIsForbiddenWhenPasskeyLoginIsDisabled() {
         var session = new ParameterSetting.Session();
         session.setPasskeyLoginEnabled(false);
-        when(parameterSettingGroupService.getSession()).thenReturn(Mono.just(session));
+        when(parameterGroups.getSession()).thenReturn(Mono.just(session));
         var endpoint = new PasskeyAssertionEndpoint(
-                passkeyService, parameterSettingGroupService, passkeyProperties, externalLoginCompletionService);
+                passkeyService, parameterGroups, passkeyProperties, externalLogins);
 
         WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .build()

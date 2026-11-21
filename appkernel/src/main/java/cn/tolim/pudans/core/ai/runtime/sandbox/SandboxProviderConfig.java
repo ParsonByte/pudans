@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.runtime.sandbox;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSandboxProvider;
+import cn.tolim.pudans.contract.ai.resource.AiSandboxProvider;
 import org.jspecify.annotations.Nullable;
 
 public record SandboxProviderConfig(

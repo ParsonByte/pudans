@@ -27,12 +27,12 @@ public class ImageCaptchaProvider implements CaptchaProvider {
     }
 
     @Override
-    public Mono<CaptchaService.CaptchaChallenge> challenge(ParameterSetting.Captcha config) {
+    public Mono<Captchas.CaptchaChallenge> challenge(ParameterSetting.Captcha config) {
         var rendered = renderer.render(config);
         var challengeId = UUID.randomUUID().toString();
         return challengeStore
                 .save(challengeId, rendered.answer(), CHALLENGE_TTL)
-                .thenReturn(new CaptchaService.CaptchaChallenge(
+                .thenReturn(new Captchas.CaptchaChallenge(
                         challengeId, rendered.imageDataUrl(), CHALLENGE_TTL.toSeconds()));
     }
 

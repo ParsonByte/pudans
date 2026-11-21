@@ -8,14 +8,14 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.provider.supplier.qianwen.QianwenApiClient.ProxyResponse;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,7 +35,7 @@ class QianwenApiEndpointTest {
 
     private final QianwenApiClient client = mock(QianwenApiClient.class);
 
-    private final StorageService storageService = mock(StorageService.class);
+    private final StorageTransfer storageTransfer = mock(StorageTransfer.class);
 
     private WebTestClient webClient;
 
@@ -45,7 +45,7 @@ class QianwenApiEndpointTest {
         var account = new AiProviderAccount();
         when(access.requireProvider("qianwen")).thenReturn(Mono.just(provider));
         when(access.requireAccount(provider)).thenReturn(Mono.just(account));
-        var endpoint = new QianwenApiEndpoint(access, client, storageService, mapper);
+        var endpoint = new QianwenApiEndpoint(access, client, storageTransfer, mapper);
         webClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
@@ -104,8 +104,8 @@ class QianwenApiEndpointTest {
     @Test
     void uploadsStoredFilesWithARequiredPurpose() {
         var file = storageFile();
-        when(storageService.getFile("storage-1")).thenReturn(Mono.just(file));
-        when(storageService.readBytes("storage-1", 100 * 1024 * 1024))
+        when(storageTransfer.getFile("storage-1")).thenReturn(Mono.just(file));
+        when(storageTransfer.readBytes("storage-1", 100 * 1024 * 1024))
                 .thenReturn(Mono.just(new byte[] {1, 2}));
         when(client.postMultipart(
                         any(),

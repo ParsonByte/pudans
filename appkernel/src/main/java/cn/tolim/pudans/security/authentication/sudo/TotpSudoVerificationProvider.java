@@ -1,7 +1,7 @@
 package cn.tolim.pudans.security.authentication.sudo;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.security.authentication.twofactor.totp.TotpConsumptionService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.security.authentication.twofactor.totp.TotpConsumptions;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
@@ -15,10 +15,10 @@ class TotpSudoVerificationProvider implements SudoVerificationProvider {
 
     static final String METHOD = "totp";
 
-    private final TotpConsumptionService totpConsumptionService;
+    private final TotpConsumptions totpConsumptions;
 
-    TotpSudoVerificationProvider(TotpConsumptionService totpConsumptionService) {
-        this.totpConsumptionService = totpConsumptionService;
+    TotpSudoVerificationProvider(TotpConsumptions totpConsumptions) {
+        this.totpConsumptions = totpConsumptions;
     }
 
     @Override
@@ -53,7 +53,7 @@ class TotpSudoVerificationProvider implements SudoVerificationProvider {
         } catch (NumberFormatException e) {
             return Mono.error(SudoVerificationFailedException::new);
         }
-        return totpConsumptionService
+        return totpConsumptions
                 .consume(user, totpCode)
                 .then()
                 .onErrorMap(

@@ -3,8 +3,8 @@ package cn.tolim.pudans.core.ai.memory.governance;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.memory.AiMemoryGovernanceRepository.OrgMemoryRecord;
@@ -32,16 +32,16 @@ class OrgMemoryEndpointTest {
     private static final Instant CREATED_AT = Instant.parse("2026-01-01T00:00:00Z");
 
     @Mock
-    OrgMemoryService service;
+    OrgMemory service;
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new OrgMemoryEndpoint(service, new AiEndpointRequests(userService));
+        var endpoint = new OrgMemoryEndpoint(service, new AiEndpointRequests(accounts));
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(PRINCIPAL)).build()))
@@ -78,7 +78,7 @@ class OrgMemoryEndpointTest {
 
     @Test
     void approvesAMemoryWithTheCurrentActor() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.approve(5L, USER_ID)).thenReturn(Mono.just(orgMemory(5L, "VERIFIED", true)));
 
         client.post()
@@ -91,7 +91,7 @@ class OrgMemoryEndpointTest {
 
     @Test
     void revokesAMemory() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.revoke(5L, USER_ID)).thenReturn(Mono.just(orgMemory(5L, "REVOKED", false)));
 
         client.post()
@@ -105,7 +105,7 @@ class OrgMemoryEndpointTest {
 
     @Test
     void rejectsAMalformedIdentifier() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
 
         client.post()
                 .uri("/orgmemories/abc/approve")
@@ -117,9 +117,9 @@ class OrgMemoryEndpointTest {
 
     @Test
     void returnsNotFoundForAMissingOrgMemory() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.revoke(9L, USER_ID)).thenReturn(Mono.error(new ApiException(
-                HttpStatus.NOT_FOUND, OrgMemoryService.CODE_ORG_MEMORY_NOT_FOUND, "组织记忆不存在。")));
+                HttpStatus.NOT_FOUND, OrgMemory.CODE_ORG_MEMORY_NOT_FOUND, "组织记忆不存在。")));
 
         client.post()
                 .uri("/orgmemories/9/revoke")
@@ -129,10 +129,10 @@ class OrgMemoryEndpointTest {
 
     @Test
     void returnsBadRequestForAnInvalidTransition() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(service.approve(5L, USER_ID)).thenReturn(Mono.error(new ApiException(
                 HttpStatus.BAD_REQUEST,
-                MemoryGovernanceService.CODE_REQUEST_INVALID,
+                MemoryGovernance.CODE_REQUEST_INVALID,
                 "组织记忆当前状态不允许该操作。")));
 
         client.post()

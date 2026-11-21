@@ -3,7 +3,7 @@ package cn.tolim.pudans.infra.setting;
 import static cn.tolim.pudans.contract.extension.index.query.Queries.isNull;
 import static org.apache.commons.lang3.BooleanUtils.isTrue;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
+import cn.tolim.pudans.contract.user.resource.User;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.PageRequestImpl;

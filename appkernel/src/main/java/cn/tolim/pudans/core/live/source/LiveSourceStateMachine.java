@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.live.source;
 
-import cn.tolim.pudans.contract.core.extension.live.LiveSourceState;
+import cn.tolim.pudans.contract.live.resource.LiveSourceState;
 import org.springframework.stereotype.Component;
 
 // 直播源状态迁移是纯函数，事件到目标状态的映射集中在这里

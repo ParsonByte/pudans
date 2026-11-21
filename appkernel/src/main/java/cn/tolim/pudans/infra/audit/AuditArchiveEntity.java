@@ -1,6 +1,6 @@
 package cn.tolim.pudans.infra.audit;
 
-import cn.tolim.pudans.contract.core.extension.audit.AuditRecord;
+import cn.tolim.pudans.contract.audit.resource.AuditRecord;
 import java.time.OffsetDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;

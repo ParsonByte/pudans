@@ -3,15 +3,15 @@ package cn.tolim.pudans.security.authorization;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.contract.rbac.resource.Role;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.MetadataUtil;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.audit.service.AuditService;
+import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.rbac.BuiltinRoleDefinitions;
-import cn.tolim.pudans.core.rbac.service.TempRoleService;
+import cn.tolim.pudans.core.rbac.TempGrants;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,13 +34,13 @@ class DefaultRuleResolverTest {
     private static final BuiltinRoleDefinitions BUILTIN_ROLES = new BuiltinRoleDefinitions();
 
     @Mock
-    RoleService roleService;
+    Roles roleService;
 
     @Mock
-    TempRoleService tempRoleService;
+    TempGrants tempGrants;
 
     @Mock
-    AuditService auditService;
+    AuditLog auditLog;
 
     @Test
     void normalRoleAllowsSelfEndpointsButDeniesManagement() {
@@ -100,11 +100,11 @@ class DefaultRuleResolverTest {
         var authentication = new org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(
                 jwt, List.of(new SimpleGrantedAuthority("ROLE_" + role.getMetadata().getName())));
 
-        StepVerifier.create(new DefaultRuleResolver(roleService, tempRoleService, auditService)
+        StepVerifier.create(new DefaultRuleResolver(roleService, tempGrants, auditLog)
                         .visitRules(authentication, request("users", "-", "self", null, "get")))
                 .assertNext(visitor -> assertThat(visitor.isAllowed()).isTrue())
                 .verifyComplete();
-        org.mockito.Mockito.verify(tempRoleService, org.mockito.Mockito.never())
+        org.mockito.Mockito.verify(tempGrants, org.mockito.Mockito.never())
                 .activeRoleNameSet(org.mockito.ArgumentMatchers.anyString());
     }
 
@@ -157,12 +157,12 @@ class DefaultRuleResolverTest {
     private Mono<AuthorizingVisitor> resolve(Role role, String username, RequestInfo requestInfo) {
         when(roleService.listDependenciesFlux(Set.of(role.getMetadata().getName())))
                 .thenReturn(Flux.fromIterable(withDependencies(role)));
-        when(tempRoleService.activeRoleNameSet(username)).thenReturn(Mono.just(Set.of()));
+        when(tempGrants.activeRoleNameSet(username)).thenReturn(Mono.just(Set.of()));
         Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(
                 username,
                 null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + role.getMetadata().getName())));
-        return new DefaultRuleResolver(roleService, tempRoleService, auditService)
+        return new DefaultRuleResolver(roleService, tempGrants, auditLog)
                 .visitRules(authentication, requestInfo);
     }
 

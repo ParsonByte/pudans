@@ -4,14 +4,14 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSkill;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiSkill;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.harness.skill.curator.SkillAuditLog;
-import cn.tolim.pudans.core.ai.harness.skill.curator.SkillCuratorService;
+import cn.tolim.pudans.core.ai.harness.skill.curator.SkillPromotion;
 import cn.tolim.pudans.core.ai.harness.skill.curator.SkillUsageRecord;
-import cn.tolim.pudans.core.ai.library.skill.SkillService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.skill.Skills;
+import cn.tolim.pudans.core.ai.team.Teams;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -32,13 +32,13 @@ public class AiSkillEndpoint implements CustomEndpoint {
 
     private static final String TAG = "AiSkillV1alpha1";
 
-    private final SkillService skillService;
+    private final Skills skillService;
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
     private final AiEndpointRequests requests;
 
-    private final SkillCuratorService curatorService;
+    private final SkillPromotion curatorService;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -71,13 +71,13 @@ public class AiSkillEndpoint implements CustomEndpoint {
                         .description("Publish a draft skill after the curator review.")
                         .tag(TAG)
                         .parameter(nameParameter())
-                        .response(responseBuilder().implementation(SkillCuratorService.Result.class)))
+                        .response(responseBuilder().implementation(SkillPromotion.Result.class)))
                 .POST("/aiskills/{name}/actions/archive", this::archive, builder -> builder
                         .operationId("archiveAiSkill")
                         .description("Archive a published skill and record the curator audit.")
                         .tag(TAG)
                         .parameter(nameParameter())
-                        .response(responseBuilder().implementation(SkillCuratorService.Result.class)))
+                        .response(responseBuilder().implementation(SkillPromotion.Result.class)))
                 .build();
     }
 

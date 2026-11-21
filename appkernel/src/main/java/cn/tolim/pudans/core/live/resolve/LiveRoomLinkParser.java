@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.live.resolve;
 
-import cn.tolim.pudans.contract.core.extension.live.LivePlatform;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
+import cn.tolim.pudans.contract.live.resource.LivePlatform;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import java.net.URI;
 import java.util.Optional;
 import java.util.regex.Pattern;

@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.harness.skill;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSkill;
+import cn.tolim.pudans.contract.ai.resource.AiSkill;
 import cn.tolim.pudans.contract.extension.Metadata;
 import java.util.List;
 import org.junit.jupiter.api.Test;

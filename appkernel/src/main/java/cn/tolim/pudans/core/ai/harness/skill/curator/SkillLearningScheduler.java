@@ -18,7 +18,7 @@ public class SkillLearningScheduler implements SmartLifecycle {
 
     private static final Duration INTERVAL = Duration.ofHours(1);
 
-    private final SkillCuratorService curatorService;
+    private final SkillPromotion curatorService;
 
     private volatile boolean running;
 

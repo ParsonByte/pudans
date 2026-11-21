@@ -1,17 +1,17 @@
 package cn.tolim.pudans.core.ai.generation;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
-import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanQuotas;
 import cn.tolim.pudans.core.ai.plan.PlanUsageSnapshot;
 import cn.tolim.pudans.core.ai.plan.UsageUnitCalculator;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.upload.StorageWriteRequest;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
@@ -53,13 +53,13 @@ public class AiGenerationRecorder {
 
     private final AiModelRequestRepository requestRepository;
 
-    private final PlanQuotaService planQuotaService;
+    private final PlanQuotas planQuotas;
 
-    private final AiSettingService settingService;
+    private final AiSettings settingService;
 
     private final AiMetrics metrics;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     public Mono<AiGenerationResult> succeed(
             ModelRequestRow row,
@@ -85,7 +85,7 @@ public class AiGenerationRecorder {
                     // 仅实际预留额度时写入套餐名，据此判断是否存在待结算预留
                     var hasHold = row.planId() != null;
                     var settle = hasHold
-                            ? planQuotaService
+                            ? planQuotas
                                     .settle(row.requestId(), units.longValue(), snapshot(row, usage))
                                     .then()
                             : Mono.<Void>empty();
@@ -150,7 +150,7 @@ public class AiGenerationRecorder {
                 Map.of("purpose", "ai-generation"),
                 Flux.just(DefaultDataBufferFactory.sharedInstance.wrap(bytes)),
                 false);
-        return storageService
+        return storageTransfer
                 .upload(request)
                 .map(file -> withFileId(content, file.getMetadata().getName()))
                 .onErrorResume(error -> Mono.just(content));
@@ -213,7 +213,7 @@ public class AiGenerationRecorder {
                 row.selectedProvider(), row.selectedModel(), row.capability(), STATUS_FAILED);
         // 仅实际预留额度时写入套餐名，据此判断是否存在待释放预留
         var hasHold = row.planId() != null;
-        var release = hasHold ? planQuotaService.release(row.requestId()).then() : Mono.<Void>empty();
+        var release = hasHold ? planQuotas.release(row.requestId()).then() : Mono.<Void>empty();
         var code = error instanceof ApiException apiException ? apiException.getCode() : ERROR_FAILED;
         var message = error instanceof ApiException apiException && apiException.getReason() != null
                 ? apiException.getReason()

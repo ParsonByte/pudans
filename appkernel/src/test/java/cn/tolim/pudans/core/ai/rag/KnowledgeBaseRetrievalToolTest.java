@@ -8,9 +8,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.KnowledgeBase;
+import cn.tolim.pudans.contract.ai.resource.KnowledgeBase;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.ai.embedding.AiEmbeddingService;
+import cn.tolim.pudans.core.ai.embedding.Embeddings;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import cn.tolim.pudans.core.ai.provider.langchain4j.LangChain4jToolMapper;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
@@ -28,10 +28,10 @@ import reactor.core.publisher.Mono;
 class KnowledgeBaseRetrievalToolTest {
 
     @Mock
-    KnowledgeBaseRetrievalService retrievalService;
+    KnowledgeRetrieval retrievalService;
 
     @Mock
-    AiEmbeddingService embeddingService;
+    Embeddings embeddingService;
 
     @BeforeEach
     void setUp() {

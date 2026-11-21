@@ -1,6 +1,6 @@
 package cn.tolim.pudans.core.ai.harness.skill;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiSkill;
+import cn.tolim.pudans.contract.ai.resource.AiSkill;
 import cn.tolim.pudans.contract.extension.Metadata;
 import java.nio.file.Path;
 import org.jspecify.annotations.Nullable;

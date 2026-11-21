@@ -22,7 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
 import cn.tolim.pudans.contract.extension.Scheme;
 import cn.tolim.pudans.contract.extension.SchemeManager;
@@ -174,7 +174,7 @@ class ReactiveExtensionClientImplTest {
     @Test
     void createRejectsReservedUserLabels() {
         var scheme = new Scheme(
-                cn.tolim.pudans.contract.core.extension.user.User.class,
+                cn.tolim.pudans.contract.user.resource.User.class,
                 new GroupVersionKind("pudans.tolim.cn", "v1alpha1", "User"),
                 "users",
                 "user",

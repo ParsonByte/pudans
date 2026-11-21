@@ -4,11 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.live.LivePlatform;
-import cn.tolim.pudans.contract.core.extension.live.LiveSource;
+import cn.tolim.pudans.contract.live.resource.LivePlatform;
+import cn.tolim.pudans.contract.live.resource.LiveSource;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.core.live.recorder.LiveStoragePolicyResolver;
 import cn.tolim.pudans.core.live.resolve.LiveRoomLinkParser;
 import cn.tolim.pudans.infra.exception.ApiException;

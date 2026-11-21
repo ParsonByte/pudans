@@ -1,10 +1,10 @@
 package cn.tolim.pudans.core.ai.provider.supplier.deepseek;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.infra.exception.ApiException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -28,7 +28,7 @@ public class DeepSeekProviderAccess {
 
     private final ReactiveExtensionClient client;
 
-    private final AiProviderAccountService accountService;
+    private final ProviderAccounts accountService;
 
     public Mono<AiProvider> requireProvider(String name) {
         return client.get(AiProvider.class, name).flatMap(this::checkProvider);

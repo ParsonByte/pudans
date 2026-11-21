@@ -4,17 +4,17 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
 import cn.tolim.pudans.core.ai.provider.AiProviderFile;
 import cn.tolim.pudans.core.ai.provider.AiProviderFilePage;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekFilesClient;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProtocol;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekProviderAccess;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.extension.exception.ExtensionNotFoundException;
 import cn.tolim.pudans.infra.exception.ApiException;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -56,7 +56,7 @@ public class AiProviderFileEndpoint implements CustomEndpoint {
 
     private final DeepSeekFilesClient filesClient;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -116,7 +116,7 @@ public class AiProviderFileEndpoint implements CustomEndpoint {
                         || body.expiresAfterSeconds() > MAX_EXPIRY_SECONDS)) {
             return Mono.error(invalid("文件有效期必须在 3600 到 2592000 秒之间。"));
         }
-        return storageService
+        return storageTransfer
                 .getFile(body.storageFileId())
                 .onErrorMap(ExtensionNotFoundException.class, error -> fileNotFound())
                 .switchIfEmpty(Mono.error(fileNotFound()))
@@ -124,7 +124,7 @@ public class AiProviderFileEndpoint implements CustomEndpoint {
                     if (file.getSpec() == null || file.getSpec().getState() != StorageFileState.ACTIVE) {
                         return Mono.error(fileNotFound());
                     }
-                    return storageService
+                    return storageTransfer
                             .readBytes(file.getMetadata().getName(), MAX_FILE_BYTES)
                             .onErrorMap(DataBufferLimitException.class, error -> tooLarge())
                             .filter(content -> content.length > 0)

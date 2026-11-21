@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.ai.plan.endpoint;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.plan.PlanUsageService;
-import cn.tolim.pudans.core.ai.plan.PlanVoucherService;
+import cn.tolim.pudans.core.ai.plan.PlanUsage;
+import cn.tolim.pudans.core.ai.plan.PlanVouchers;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.security.Principal;
 import java.time.Instant;
@@ -34,16 +34,16 @@ class AiPlanUsageEndpointTest {
     private static final Instant ENDS_AT = Instant.parse("2026-11-18T14:00:00Z");
 
     @Mock
-    PlanUsageService usageService;
+    PlanUsage usageService;
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     private WebTestClient client;
 
     @BeforeEach
     void setUp() {
-        var endpoint = new AiPlanUsageEndpoint(usageService, new AiEndpointRequests(userService));
+        var endpoint = new AiPlanUsageEndpoint(usageService, new AiEndpointRequests(accounts));
         client = WebTestClient.bindToRouterFunction(endpoint.endpoint())
                 .webFilter((exchange, chain) -> chain.filter(
                         exchange.mutate().principal(Mono.just(PRINCIPAL)).build()))
@@ -52,7 +52,7 @@ class AiPlanUsageEndpointTest {
 
     @Test
     void returnsTheCurrentUsersUsage() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.usage(USER_ID)).thenReturn(Mono.just(view()));
 
         client.get()
@@ -88,7 +88,7 @@ class AiPlanUsageEndpointTest {
 
     @Test
     void reportsAMissingPlan() {
-        when(userService.getUser(USERNAME)).thenReturn(Mono.just(user()));
+        when(accounts.getUser(USERNAME)).thenReturn(Mono.just(user()));
         when(usageService.usage(USER_ID)).thenReturn(Mono.error(new ApiException(
                 HttpStatus.FORBIDDEN, "ai-plan-missing", "当前用户未分配 AI 套餐。")));
 
@@ -100,7 +100,7 @@ class AiPlanUsageEndpointTest {
 
     @Test
     void requiresAnAuthenticatedUser() {
-        var endpoint = new AiPlanUsageEndpoint(usageService, new AiEndpointRequests(userService));
+        var endpoint = new AiPlanUsageEndpoint(usageService, new AiEndpointRequests(accounts));
         var anonymous = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
 
         anonymous.get()
@@ -115,16 +115,16 @@ class AiPlanUsageEndpointTest {
         return user;
     }
 
-    private static PlanUsageService.UsageView view() {
-        return new PlanUsageService.UsageView(
-                new PlanUsageService.PlanSummary("standard", "套餐 standard", "User/" + USER_ID),
-                new PlanUsageService.WindowUsage(
+    private static PlanUsage.UsageView view() {
+        return new PlanUsage.UsageView(
+                new PlanUsage.PlanSummary("standard", "套餐 standard", "User/" + USER_ID),
+                new PlanUsage.WindowUsage(
                         3_000_000L, 1_200_000L, 50_000L, 1_750_000L, STARTS_AT, ENDS_AT, "ACTIVE"),
-                new PlanUsageService.WindowUsage(
+                new PlanUsage.WindowUsage(
                         20_000_000L, 0, 0, 20_000_000L, null, null, "IDLE"),
-                new PlanUsageService.RateLimit(4, 120),
-                new PlanVoucherService.VoucherBalance(
-                        new PlanVoucherService.Balance(2, 0, 2),
-                        new PlanVoucherService.Balance(1, 0, 1)));
+                new PlanUsage.RateLimit(4, 120),
+                new PlanVouchers.VoucherBalance(
+                        new PlanVouchers.Balance(2, 0, 2),
+                        new PlanVouchers.Balance(1, 0, 1)));
     }
 }

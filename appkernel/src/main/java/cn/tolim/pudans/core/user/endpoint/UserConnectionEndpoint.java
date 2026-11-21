@@ -6,17 +6,17 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.user.UserConnection;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.extension.index.query.Queries;
-import cn.tolim.pudans.core.user.service.UserConnectionService;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.core.user.Connections;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.authentication.oidc.OidcClient;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.nio.charset.StandardCharsets;
@@ -49,13 +49,13 @@ class UserConnectionEndpoint implements CustomEndpoint {
 
     private final ReactiveExtensionClient client;
 
-    private final UserService userService;
+    private final Accounts accounts;
 
-    private final UserConnectionService connectionService;
+    private final Connections connectionService;
 
     private final OidcClient oidcClient;
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     private final AuthenticationTrustResolver authenticationTrustResolver = new AuthenticationTrustResolverImpl();
 
@@ -212,7 +212,7 @@ class UserConnectionEndpoint implements CustomEndpoint {
                 .listConnections(username)
                 .filter(connection -> !connection.getMetadata().getName().equals(target.getMetadata().getName()))
                 .collectList()
-                .flatMap(remaining -> userService
+                .flatMap(remaining -> accounts
                         .getUser(username)
                         .map(user -> !remaining.isEmpty()
                                 || StringUtils.hasText(user.getSpec().getPassword())))

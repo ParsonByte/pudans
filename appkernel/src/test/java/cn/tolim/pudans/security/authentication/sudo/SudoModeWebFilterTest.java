@@ -29,7 +29,7 @@ import reactor.util.context.ContextView;
 class SudoModeWebFilterTest {
 
     @Mock
-    SudoService sudoService;
+    SudoChallenges sudoChallenges;
 
     @Mock
     ServerResponse.Context context;
@@ -38,14 +38,14 @@ class SudoModeWebFilterTest {
 
     @BeforeEach
     void setUp() {
-        filter = new SudoModeWebFilter(sudoService, context);
+        filter = new SudoModeWebFilter(sudoChallenges, context);
     }
 
     @Test
     void tokenAuthenticationMustConfirmSudoBeforeChangingThePassword() {
         var exchange = exchange(MockServerHttpRequest.put(ApiGroups.API_PREFIX + "/users/-/password"));
         var chain = new RecordingChain();
-        when(sudoService.requireSudo(exchange, "alice"))
+        when(sudoChallenges.requireSudo(exchange, "alice"))
                 .thenReturn(Mono.error(new SudoRequiredException(List.of("TOTP"))));
 
         StepVerifier.create(filter.filter(exchange, chain).contextWrite(authentication("alice")))
@@ -59,7 +59,7 @@ class SudoModeWebFilterTest {
     void sensitiveRequestPassesAfterSudoIsActive() {
         var exchange = exchange(MockServerHttpRequest.delete(ApiGroups.API_PREFIX + "/personalaccesstokens/pat-1"));
         var chain = new RecordingChain();
-        when(sudoService.requireSudo(exchange, "alice")).thenReturn(Mono.empty());
+        when(sudoChallenges.requireSudo(exchange, "alice")).thenReturn(Mono.empty());
 
         StepVerifier.create(filter.filter(exchange, chain).contextWrite(authentication("alice")))
                 .verifyComplete();
@@ -79,7 +79,7 @@ class SudoModeWebFilterTest {
                 .verifyComplete();
 
         assertThat(chain.called()).isTrue();
-        verifyNoInteractions(sudoService);
+        verifyNoInteractions(sudoChallenges);
     }
 
     @Test
@@ -91,7 +91,7 @@ class SudoModeWebFilterTest {
                 .verifyComplete();
 
         assertThat(chain.called()).isTrue();
-        verifyNoInteractions(sudoService);
+        verifyNoInteractions(sudoChallenges);
     }
 
     private static MockServerWebExchange exchange(MockServerHttpRequest.BaseBuilder<?> request) {

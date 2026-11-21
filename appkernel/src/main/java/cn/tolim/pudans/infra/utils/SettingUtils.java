@@ -2,7 +2,7 @@ package cn.tolim.pudans.infra.utils;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
-import cn.tolim.pudans.contract.core.extension.Setting;
+import cn.tolim.pudans.contract.setting.resource.Setting;
 import cn.tolim.pudans.contract.extension.ConfigMap;
 import cn.tolim.pudans.contract.extension.ExtensionClient;
 import cn.tolim.pudans.contract.extension.Metadata;

@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryAssetBindingResolver;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,10 +27,10 @@ class AiMemoryContextBuilderTest {
             new MemoryContext("team-1", "user-1", "agent-1", "session-1", null);
 
     @Mock
-    AiMemoryRecallService recallService;
+    MemoryRecall recallService;
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     @Mock
     MemoryAssetBindingResolver bindingResolver;

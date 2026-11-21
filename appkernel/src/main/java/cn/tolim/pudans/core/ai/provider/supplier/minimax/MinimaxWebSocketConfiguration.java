@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.provider.supplier.minimax;
 
 import cn.tolim.pudans.contract.extension.ApiGroups;
-import cn.tolim.pudans.core.ai.provider.AiProviderAccountService;
+import cn.tolim.pudans.core.ai.provider.ProviderAccounts;
 import cn.tolim.pudans.core.ai.provider.supplier.SupplierWebSocketHandler;
 import java.util.Map;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -15,7 +15,7 @@ public class MinimaxWebSocketConfiguration {
 
     @Bean
     SupplierWebSocketHandler minimaxWebSocketHandler(
-            MinimaxProviderAccess access, AiProviderAccountService accountService) {
+            MinimaxProviderAccess access, ProviderAccounts accountService) {
         return new SupplierWebSocketHandler(
                 "minimax", access, accountService, MinimaxProtocol::normalizeWebSocketPath);
     }

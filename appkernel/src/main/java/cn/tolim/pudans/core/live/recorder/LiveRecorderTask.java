@@ -1,21 +1,21 @@
 package cn.tolim.pudans.core.live.recorder;
 
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_DISK_FULL;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_NO_DATA;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_RESOLVE_FAILED;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_ROOM_OFFLINE;
-import static cn.tolim.pudans.contract.live.LiveErrorCode.LIVE_STREAM_FAILED;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_DISK_FULL;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_NO_DATA;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_RESOLVE_FAILED;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_ROOM_OFFLINE;
+import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STREAM_FAILED;
 import static org.bytedeco.ffmpeg.global.avcodec.av_packet_unref;
 
-import cn.tolim.pudans.contract.core.extension.live.LivePlatform;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecordingState;
-import cn.tolim.pudans.contract.core.extension.live.PartState;
-import cn.tolim.pudans.contract.live.LiveErrorCode;
-import cn.tolim.pudans.contract.live.LiveRoomInfo;
+import cn.tolim.pudans.contract.live.resource.LivePlatform;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
+import cn.tolim.pudans.contract.live.resource.PartState;
+import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
+import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
-import cn.tolim.pudans.core.live.recording.LiveRecordingStatusService;
-import cn.tolim.pudans.core.live.resolve.LiveResolveService;
+import cn.tolim.pudans.core.live.recording.RecordingStatus;
+import cn.tolim.pudans.core.live.resolve.RoomResolver;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.time.Duration;
@@ -49,7 +49,7 @@ public class LiveRecorderTask implements Runnable {
 
     private final LiveProperties properties;
 
-    private final LiveRecordingStatusService statusService;
+    private final RecordingStatus statusService;
 
     private final LiveRecorderRegistry registry;
 
@@ -61,7 +61,7 @@ public class LiveRecorderTask implements Runnable {
 
     private final LiveStreamOpener opener;
 
-    private final LiveResolveService resolveService;
+    private final RoomResolver resolveService;
 
     private final LiveDiskGuard diskGuard;
 
@@ -105,13 +105,13 @@ public class LiveRecorderTask implements Runnable {
 
     public LiveRecorderTask(
             LiveProperties properties,
-            LiveRecordingStatusService statusService,
+            RecordingStatus statusService,
             LiveRecorderRegistry registry,
             LivePartMerger merger,
             LiveRecordingWorkspace workspace,
             LiveSegmentManifest segmentManifest,
             LiveStreamOpener opener,
-            LiveResolveService resolveService,
+            RoomResolver resolveService,
             LiveDiskGuard diskGuard,
             LiveRecorderBackoff backoff,
             LiveStoragePolicyResolver policyResolver,

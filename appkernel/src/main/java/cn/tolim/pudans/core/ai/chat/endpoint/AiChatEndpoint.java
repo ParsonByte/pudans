@@ -3,16 +3,16 @@ package cn.tolim.pudans.core.ai.chat.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFileState;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.contract.storage.resource.StorageFileState;
 import cn.tolim.pudans.core.ai.chat.AiChatCommand;
 import cn.tolim.pudans.core.ai.chat.AiChatCompletionRequest;
 import cn.tolim.pudans.core.ai.chat.AiChatCompletionResult;
-import cn.tolim.pudans.core.ai.chat.AiChatService;
+import cn.tolim.pudans.core.ai.chat.ChatCompletions;
 import cn.tolim.pudans.core.ai.chat.AiChatStreamEvent;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.upload.StorageWriteRequest;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.security.authorization.AuthorityUtils;
@@ -62,11 +62,11 @@ public class AiChatEndpoint implements CustomEndpoint {
 
     private static final String ATTACHMENT_MODULE = "ai-chat";
 
-    private final AiChatService chatService;
+    private final ChatCompletions chatService;
 
     private final AiEndpointRequests requests;
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     private final ObjectMapper mapper;
 
@@ -230,7 +230,7 @@ public class AiChatEndpoint implements CustomEndpoint {
                                 var bytes = new byte[size];
                                 buffer.read(bytes);
                                 DataBufferUtils.release(buffer);
-                                return storageService
+                                return storageTransfer
                                         .upload(new StorageWriteRequest(
                                                 null,
                                                 userId,
@@ -257,13 +257,13 @@ public class AiChatEndpoint implements CustomEndpoint {
         var name = request.pathVariable("name");
         return requests
                 .userId(request, "ai-chat-unauthenticated", "未认证。")
-                .flatMap(userId -> storageService
+                .flatMap(userId -> storageTransfer
                         .getFile(name)
                         .filter(file -> userId.equals(file.getSpec().getOwner()))
                         .switchIfEmpty(Mono.error(attachmentNotFound()))
                         .filter(file -> file.getSpec().getState() == StorageFileState.ACTIVE)
                         .switchIfEmpty(Mono.error(attachmentNotFound()))
-                        .flatMap(file -> storageService
+                        .flatMap(file -> storageTransfer
                                 .readBytes(name, MAX_ATTACHMENT_BYTES)
                                 .flatMap(bytes -> {
                                     var mediaType = contentType(file);

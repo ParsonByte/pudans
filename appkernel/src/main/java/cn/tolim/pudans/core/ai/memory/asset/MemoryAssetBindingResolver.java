@@ -2,7 +2,7 @@ package cn.tolim.pudans.core.ai.memory.asset;
 
 import static cn.tolim.pudans.contract.extension.ExtensionUtil.defaultSort;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryAsset;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryAsset;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
 import cn.tolim.pudans.core.ai.memory.MemoryContext;

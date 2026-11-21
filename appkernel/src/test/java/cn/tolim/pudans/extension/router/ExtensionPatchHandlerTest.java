@@ -23,7 +23,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import cn.tolim.pudans.contract.core.extension.rbac.UserGroupBinding;
+import cn.tolim.pudans.contract.rbac.resource.UserGroupBinding;
 import cn.tolim.pudans.contract.extension.Extension;
 import cn.tolim.pudans.contract.extension.GroupVersionKind;
 import cn.tolim.pudans.contract.extension.JsonExtension;

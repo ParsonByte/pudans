@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.memory.MemoryPipelineTask;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository.Conversation;
@@ -27,7 +27,7 @@ class MemoryTaskSchedulerTest {
     AiMemoryTaskRepository taskRepository;
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     @InjectMocks
     MemoryTaskScheduler scheduler;

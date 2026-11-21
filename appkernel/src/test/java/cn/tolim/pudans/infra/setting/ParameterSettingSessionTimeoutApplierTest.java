@@ -13,7 +13,7 @@ import org.springframework.session.data.redis.ReactiveRedisIndexedSessionReposit
 class ParameterSettingSessionTimeoutApplierTest {
 
     @Mock
-    ParameterSettingGroupService parameterSettingGroupService;
+    ParameterGroups parameterGroups;
 
     @Mock
     ReactiveRedisIndexedSessionRepository sessionRepository;
@@ -21,7 +21,7 @@ class ParameterSettingSessionTimeoutApplierTest {
     @Test
     void appliesTheConfiguredAccessTokenTtlToNewSessions() {
         var applier = new ParameterSettingSessionTimeoutApplier(
-                parameterSettingGroupService, sessionRepository);
+                parameterGroups, sessionRepository);
 
         applier.apply(900);
 
@@ -31,7 +31,7 @@ class ParameterSettingSessionTimeoutApplierTest {
     @Test
     void keepsSpringSessionTimeoutWhenTheValueIsMissing() {
         var applier = new ParameterSettingSessionTimeoutApplier(
-                parameterSettingGroupService, sessionRepository);
+                parameterGroups, sessionRepository);
 
         applier.apply(null);
 

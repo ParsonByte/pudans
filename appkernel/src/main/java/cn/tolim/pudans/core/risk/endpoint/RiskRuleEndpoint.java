@@ -3,11 +3,11 @@ package cn.tolim.pudans.core.risk.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.ApiGroups;
 import cn.tolim.pudans.contract.extension.GroupVersion;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.risk.service.RiskControlService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.risk.RiskGuard;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +24,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class RiskRuleEndpoint implements CustomEndpoint {
 
-    private final RiskControlService riskControlService;
+    private final RiskGuard riskGuard;
 
-    private final AuditService auditService;
+    private final AuditLog auditLog;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -36,7 +36,7 @@ public class RiskRuleEndpoint implements CustomEndpoint {
                         .description("List active risk control bans with their remaining duration.")
                         .tag(tag)
                         .response(responseBuilder()
-                                .implementationArray(RiskControlService.RiskBan.class)))
+                                .implementationArray(RiskGuard.RiskBan.class)))
                 .DELETE("/riskrules/unban", this::unban, builder -> builder.operationId("UnbanRiskSubject")
                         .description("Lift the active ban of a scene subject, e.g. an IP address.")
                         .tag(tag)
@@ -57,7 +57,7 @@ public class RiskRuleEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> bans(ServerRequest request) {
-        return riskControlService
+        return riskGuard
                 .listBans()
                 .collectList()
                 .flatMap(bans -> ServerResponse.ok().bodyValue(bans));
@@ -72,7 +72,7 @@ public class RiskRuleEndpoint implements CustomEndpoint {
         if (subject == null) {
             return Mono.error(new ServerWebInputException("查询参数 'subject' 为必填项。"));
         }
-        return riskControlService
+        return riskGuard
                 .unban(scene, subject)
                 .doOnNext(deletedCount -> recordUnban(
                         request, scene, subject, deletedCount != null && deletedCount > 0))
@@ -84,7 +84,7 @@ public class RiskRuleEndpoint implements CustomEndpoint {
         context.put("scene", scene);
         context.put("subject", subject);
         context.put("banKeyDeleted", deleted);
-        auditService.record(
+        auditLog.record(
                 request.exchange(),
                 "RISK_UNBAN",
                 "RiskRule",

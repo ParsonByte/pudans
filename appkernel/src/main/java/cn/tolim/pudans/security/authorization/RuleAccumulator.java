@@ -1,6 +1,6 @@
 package cn.tolim.pudans.security.authorization;
 
-import cn.tolim.pudans.contract.core.extension.rbac.Role;
+import cn.tolim.pudans.contract.rbac.resource.Role;
 
 
 public interface RuleAccumulator {

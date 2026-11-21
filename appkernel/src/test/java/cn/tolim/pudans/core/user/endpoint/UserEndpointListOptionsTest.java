@@ -10,7 +10,7 @@ import cn.tolim.pudans.contract.extension.index.query.EqualCondition;
 import cn.tolim.pudans.contract.extension.index.query.InCondition;
 import cn.tolim.pudans.contract.extension.index.query.OrCondition;
 import cn.tolim.pudans.contract.extension.index.query.StringContainsCondition;
-import cn.tolim.pudans.core.rbac.service.UserGroupService;
+import cn.tolim.pudans.core.rbac.group.Groups;
 import java.lang.reflect.Method;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -20,10 +20,10 @@ import reactor.test.StepVerifier;
 
 class UserEndpointListOptionsTest {
 
-    private final UserGroupService userGroupService = mock(UserGroupService.class);
+    private final Groups groups = mock(Groups.class);
 
     private final UserEndpoint endpoint = new UserEndpoint(
-            null, null, null, userGroupService, null, null, null, null, null, null, null, null);
+            null, null, null, groups, null, null, null, null, null, null, null, null);
 
     @Test
     void pushesActiveStatusDownAsDisabledFalse() throws Exception {
@@ -63,7 +63,7 @@ class UserEndpointListOptionsTest {
 
     @Test
     void pushesUserGroupMembersDownAsANameFilter() throws Exception {
-        when(userGroupService.listUsernamesOfGroups(Set.of("operators")))
+        when(groups.listUsernamesOfGroups(Set.of("operators")))
                 .thenReturn(Flux.just("alice", "bob"));
 
         var condition = condition(options(null, Set.of(), Set.of("operators")));
@@ -76,14 +76,14 @@ class UserEndpointListOptionsTest {
 
     @Test
     void rejectsAUserGroupWithoutMembersWithoutQueryingTheStore() throws Exception {
-        when(userGroupService.listUsernamesOfGroups(Set.of("empty"))).thenReturn(Flux.empty());
+        when(groups.listUsernamesOfGroups(Set.of("empty"))).thenReturn(Flux.empty());
 
         StepVerifier.create(options(null, Set.of(), Set.of("empty"))).verifyComplete();
     }
 
     @Test
     void combinesEveryFilterIntoOneCondition() throws Exception {
-        when(userGroupService.listUsernamesOfGroups(Set.of("operators")))
+        when(groups.listUsernamesOfGroups(Set.of("operators")))
                 .thenReturn(Flux.just("alice"));
 
         var condition = condition(options("Ai", Set.of("active"), Set.of("operators")));

@@ -5,12 +5,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.user.User;
-import cn.tolim.pudans.contract.core.extension.user.UserConnection;
-import cn.tolim.pudans.contract.core.user.service.UserService;
+import cn.tolim.pudans.contract.user.resource.User;
+import cn.tolim.pudans.contract.user.resource.UserConnection;
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.contract.extension.Metadata;
-import cn.tolim.pudans.core.audit.service.AuditService;
-import cn.tolim.pudans.core.user.service.UserConnectionService;
+import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.user.Connections;
 import cn.tolim.pudans.infra.utils.PudansTime;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,26 +28,26 @@ import reactor.core.publisher.Mono;
 class UserEndpointUserDetailTest {
 
     @Mock
-    UserService userService;
+    Accounts accounts;
 
     @Mock
-    AuditService auditService;
+    AuditLog auditLog;
 
     @Mock
-    UserConnectionService userConnectionService;
+    Connections userConnectionService;
 
     private WebTestClient webTestClient;
 
     @BeforeEach
     void setUp() {
         var endpoint = new UserEndpoint(
-                null, userService, null, null, null, auditService, null, null, null, null, null, userConnectionService);
+                null, accounts, null, null, null, auditLog, null, null, null, null, null, userConnectionService);
         webTestClient = WebTestClient.bindToRouterFunction(endpoint.endpoint()).build();
     }
 
     @Test
     void listsTheUsersIdentityConnections() {
-        when(userService.getUser("alice")).thenReturn(Mono.just(user()));
+        when(accounts.getUser("alice")).thenReturn(Mono.just(user()));
         when(userConnectionService.listConnections("alice")).thenReturn(Flux.just(connection()));
 
         webTestClient
@@ -70,8 +70,8 @@ class UserEndpointUserDetailTest {
     @Test
     void returnsDailyActivityForTheRequestedRange() {
         var today = LocalDate.now(PudansTime.BEIJING);
-        when(userService.getUser("alice")).thenReturn(Mono.just(user()));
-        when(auditService.countPerDay(any(), eq("uid-1"), isNull(), isNull()))
+        when(accounts.getUser("alice")).thenReturn(Mono.just(user()));
+        when(auditLog.countPerDay(any(), eq("uid-1"), isNull(), isNull()))
                 .thenReturn(Mono.just(Map.of(today, 3L)));
 
         webTestClient

@@ -1,14 +1,14 @@
 package cn.tolim.pudans.core.ai.protocol;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
 import cn.tolim.pudans.core.ai.agent.GatewayChatContext;
 import cn.tolim.pudans.core.ai.agent.GatewayChatModel;
 import cn.tolim.pudans.core.ai.agent.GatewayRunState;
 import cn.tolim.pudans.core.ai.agent.GatewayStreamingChatModel;
-import cn.tolim.pudans.core.ai.chat.AiAgentContextService;
-import cn.tolim.pudans.core.ai.chat.AiChatToolService;
+import cn.tolim.pudans.core.ai.chat.AgentContext;
+import cn.tolim.pudans.core.ai.chat.ChatTools;
 import cn.tolim.pudans.core.ai.chat.SubagentToolFactory;
-import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
+import cn.tolim.pudans.core.ai.gateway.AiGateway;
 import cn.tolim.pudans.core.ai.gateway.ir.AiContentPart;
 import cn.tolim.pudans.core.ai.harness.agent.AgentRun;
 import cn.tolim.pudans.core.ai.harness.agent.AgentStateStore;
@@ -20,9 +20,9 @@ import cn.tolim.pudans.core.ai.harness.permission.PermissionContext;
 import cn.tolim.pudans.core.ai.harness.permission.PermissionEngine;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkitFactory;
-import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
+import cn.tolim.pudans.core.ai.library.mcp.McpServers;
 import cn.tolim.pudans.core.ai.prompt.ChatPrompts;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.team.Teams;
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.UserMessage;
@@ -42,21 +42,21 @@ public class ProtocolAgentRuntime {
 
     private static final String AGENT_SOURCE = "pudans-protocol";
 
-    private final AiTeamService teamService;
+    private final Teams teamService;
 
-    private final AiAgentContextService agentContextService;
+    private final AgentContext agentContextService;
 
-    private final AiChatToolService toolService;
+    private final ChatTools toolService;
 
     private final SubagentToolFactory subagentToolFactory;
 
     private final HarnessToolkitFactory harnessToolkitFactory;
 
-    private final McpServerService mcpServerService;
+    private final McpServers mcpServers;
 
     private final HarnessObservability harnessObservability;
 
-    private final AiGatewayService gatewayService;
+    private final AiGateway gatewayService;
 
     private final AgentStateStore stateStore;
 
@@ -65,7 +65,7 @@ public class ProtocolAgentRuntime {
     public Mono<AgentRun> start(ProtocolRunRequest request) {
         var agentName = StringUtils.hasText(request.agentName())
                 ? request.agentName()
-                : AiTeamService.DEFAULT_AGENT;
+                : Teams.DEFAULT_AGENT;
         return teamService
                 .requireAgent(agentName, request.userId())
                 .flatMap(agent -> agentContextService.build(agent).flatMap(context -> {
@@ -74,7 +74,7 @@ public class ProtocolAgentRuntime {
                     var toolkit = toolkit(request.userId(), agent, context);
                     return subagentToolFactory
                             .create(gatewayContext, context.subagents())
-                            .flatMap(subagentTools -> mcpServerService
+                            .flatMap(subagentTools -> mcpServers
                                     .decorateToolkit(toolkit, agent.getMetadata().getName())
                                     .map(decorated -> HarnessAgent.builder()
                                             .name(agent.getMetadata().getName())
@@ -132,7 +132,7 @@ public class ProtocolAgentRuntime {
     }
 
     private HarnessToolkit toolkit(
-            String userId, AiAgent agent, AiAgentContextService.AgentContext context) {
+            String userId, AiAgent agent, AgentContext.Context context) {
         return harnessToolkitFactory.create(
                 context.tools(),
                 (request, arguments) -> executeTool(userId, agent, request, arguments),
@@ -156,7 +156,7 @@ public class ProtocolAgentRuntime {
     }
 
     private static String systemPrompt(
-            ProtocolRunRequest request, AiAgent agent, AiAgentContextService.AgentContext context) {
+            ProtocolRunRequest request, AiAgent agent, AgentContext.Context context) {
         var prompt = StringUtils.hasText(request.systemPrompt())
                 ? request.systemPrompt()
                 : StringUtils.hasText(agent.getSpec().getPrompt())

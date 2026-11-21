@@ -6,10 +6,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.ai.provider.AiProviderModelSyncService.SyncResult;
+import cn.tolim.pudans.core.ai.provider.ProviderModelSync.SyncResult;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,7 +26,7 @@ class AiProviderModelSyncSchedulerTest {
     ReactiveExtensionClient client;
 
     @Mock
-    AiProviderModelSyncService modelSyncService;
+    ProviderModelSync modelSyncService;
 
     @Test
     void syncsEveryEnabledProvider() {

@@ -23,16 +23,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecording;
-import cn.tolim.pudans.contract.core.extension.live.LiveRecordingState;
-import cn.tolim.pudans.contract.core.extension.live.PartState;
+import cn.tolim.pudans.contract.live.resource.LiveRecording;
+import cn.tolim.pudans.contract.live.resource.LiveRecordingState;
+import cn.tolim.pudans.contract.live.resource.PartState;
 import cn.tolim.pudans.contract.extension.ListOptions;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.core.live.alert.LiveAlertService;
+import cn.tolim.pudans.core.live.alert.LiveAlerts;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
-import cn.tolim.pudans.core.live.recording.LiveRecordingStatusService;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.core.live.recording.RecordingStatus;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import org.springframework.http.HttpStatus;
@@ -46,10 +46,10 @@ class LiveRecordingCleanupTaskTest {
     private ReactiveExtensionClient client;
 
     @Mock
-    private StorageService storageService;
+    private StorageTransfer storageTransfer;
 
     @Mock
-    private LiveRecordingStatusService statusService;
+    private RecordingStatus statusService;
 
     @Mock
     private LiveRecordingWorkspace workspace;
@@ -61,7 +61,7 @@ class LiveRecordingCleanupTaskTest {
     private LiveMetrics metrics;
 
     @Mock
-    private LiveAlertService alertService;
+    private LiveAlerts alertService;
 
     @TempDir
     private Path tempDir;
@@ -75,7 +75,7 @@ class LiveRecordingCleanupTaskTest {
         properties = new LiveProperties();
         properties.getRecorder().setWorkDir(tempDir.toString());
         task = new LiveRecordingCleanupTask(
-                client, storageService, statusService, workspace, redisTemplate, properties, metrics, alertService);
+                client, storageTransfer, statusService, workspace, redisTemplate, properties, metrics, alertService);
     }
 
     @Test
@@ -86,13 +86,13 @@ class LiveRecordingCleanupTaskTest {
         recording.getStatus().setParts(List.of(part));
         when(client.listAll(eq(LiveRecording.class), any(ListOptions.class), any(Sort.class)))
                 .thenReturn(Flux.just(recording));
-        when(storageService.purgeObjectFirst("storage-1")).thenReturn(Mono.empty());
+        when(storageTransfer.purgeObjectFirst("storage-1")).thenReturn(Mono.empty());
         when(workspace.recordingDir("live-a")).thenReturn(tempDir.resolve("live-a"));
 
         var deleted = task.cleanupRetention().block();
 
         assertThat(deleted).isEqualTo(1);
-        verify(storageService).purgeObjectFirst("storage-1");
+        verify(storageTransfer).purgeObjectFirst("storage-1");
         verify(client).delete(recording);
     }
 
@@ -128,7 +128,7 @@ class LiveRecordingCleanupTaskTest {
         succeeding.getStatus().setEndedAt(Instant.now().minus(Duration.ofDays(8)));
         when(client.listAll(eq(LiveRecording.class), any(ListOptions.class), any(Sort.class)))
                 .thenReturn(Flux.just(failing, succeeding));
-        when(storageService.purgeObjectFirst("storage-c"))
+        when(storageTransfer.purgeObjectFirst("storage-c"))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.BAD_GATEWAY, "storage-object-delete-failed", "删除存储对象失败")));
         when(statusService.mutate(eq("live-c"), any())).thenReturn(Mono.just(failing));

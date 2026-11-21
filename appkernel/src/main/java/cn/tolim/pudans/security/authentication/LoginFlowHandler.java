@@ -2,8 +2,8 @@ package cn.tolim.pudans.security.authentication;
 
 import static cn.tolim.pudans.security.authentication.SecurityConstant.USERNAME_PARAMETER_NAME;
 
-import cn.tolim.pudans.contract.security.device.DeviceService;
-import cn.tolim.pudans.core.user.service.UserLoginOrLogoutProcessing;
+import cn.tolim.pudans.contract.security.device.DeviceSessions;
+import cn.tolim.pudans.core.user.UserLoginOrLogoutProcessing;
 import cn.tolim.pudans.security.authentication.oauth2.OAuth2LoginFlowEnhancer;
 import cn.tolim.pudans.security.authentication.rememberme.RememberMeServices;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +20,7 @@ public class LoginFlowHandler {
 
     private final RememberMeServices rememberMeServices;
 
-    private final DeviceService deviceService;
+    private final DeviceSessions deviceSessions;
 
     private final LoginParameterRequestCache parameterRequestCache;
 
@@ -31,7 +31,7 @@ public class LoginFlowHandler {
     public Mono<Void> onLoginSuccess(ServerWebExchange exchange, Authentication successfulAuthentication) {
         return rememberMeServices
                 .loginSuccess(exchange, successfulAuthentication)
-                .then(deviceService.loginSuccess(exchange, successfulAuthentication))
+                .then(deviceSessions.loginSuccess(exchange, successfulAuthentication))
                 .then(oauth2LoginFlowEnhancer.loginSuccess(exchange, successfulAuthentication))
                 .then(userLoginOrLogoutProcessing.loginProcessing(successfulAuthentication.getName()))
                 .then(parameterRequestCache.removeParameter(exchange, USERNAME_PARAMETER_NAME))

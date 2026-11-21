@@ -5,8 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicy;
-import cn.tolim.pudans.contract.core.extension.storage.StoragePolicyType;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicy;
+import cn.tolim.pudans.contract.storage.resource.StoragePolicyType;
 import cn.tolim.pudans.core.storage.driver.StorageCapability;
 
 class OneDriveStorageDriverTest {

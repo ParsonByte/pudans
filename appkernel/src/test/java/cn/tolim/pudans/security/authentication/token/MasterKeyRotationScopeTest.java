@@ -3,9 +3,9 @@ package cn.tolim.pudans.security.authentication.token;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.user.service.RoleService;
+import cn.tolim.pudans.core.rbac.Roles;
 import cn.tolim.pudans.contract.extension.ReactiveExtensionClient;
-import cn.tolim.pudans.infra.setting.MasterKeyService;
+import cn.tolim.pudans.infra.setting.MasterKeys;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -29,13 +29,13 @@ class MasterKeyRotationScopeTest {
     ReactiveJwtDecoder jwtDecoder;
 
     @Mock
-    RoleService roleService;
+    Roles roleService;
 
     @Mock
-    cn.tolim.pudans.core.rbac.service.UserGroupService userGroupService;
+    cn.tolim.pudans.core.rbac.group.Groups groups;
 
     @Mock
-    MasterKeyService masterKeyService;
+    MasterKeys masterKeys;
 
     @Test
     void rsaJwtsRemainValidAcrossMasterKeyRotation() {
@@ -47,7 +47,7 @@ class MasterKeyRotationScopeTest {
                 .expiresAt(Instant.now().plusSeconds(60))
                 .build();
         when(jwtDecoder.decode("rsa-jwt")).thenReturn(Mono.just(jwt));
-        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, userGroupService, masterKeyService);
+        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, groups, masterKeys);
 
         StepVerifier.create(manager.authenticate(new BearerTokenAuthenticationToken("rsa-jwt")))
                 .assertNext(authentication -> assertThat(authentication.getName()).isEqualTo("alice"))
@@ -56,8 +56,8 @@ class MasterKeyRotationScopeTest {
 
     @Test
     void legacyPatJwtsAreRejectedAfterMasterKeyRotation() {
-        when(masterKeyService.currentVersion()).thenReturn(1);
-        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, userGroupService, masterKeyService);
+        when(masterKeys.currentVersion()).thenReturn(1);
+        var manager = new TokenAuthenticationManager(client, jwtDecoder, roleService, groups, masterKeys);
 
         StepVerifier.create(manager.authenticate(new BearerTokenAuthenticationToken("pat_legacy.jwt")))
                 .expectError(InvalidBearerTokenException.class)

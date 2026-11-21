@@ -4,15 +4,15 @@ import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder
 import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryAsset;
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryAsset;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.memory.asset.MemoryAssetLayerService;
-import cn.tolim.pudans.core.ai.memory.asset.MemoryAssetService;
-import cn.tolim.pudans.core.ai.memory.asset.MemoryAssetService.ImportCommand;
-import cn.tolim.pudans.core.ai.memory.asset.MemoryAssetService.ImportMessage;
+import cn.tolim.pudans.core.ai.memory.asset.MemoryLayers;
+import cn.tolim.pudans.core.ai.memory.asset.MemoryAssets;
+import cn.tolim.pudans.core.ai.memory.asset.MemoryAssets.ImportCommand;
+import cn.tolim.pudans.core.ai.memory.asset.MemoryAssets.ImportMessage;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryAssetView;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryL1Item;
 import cn.tolim.pudans.core.ai.memory.asset.MemoryL2Detail;
@@ -47,9 +47,9 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
 
     private static final int MAX_LIMIT = 200;
 
-    private final MemoryAssetService assetService;
+    private final MemoryAssets assetService;
 
-    private final MemoryAssetLayerService layerService;
+    private final MemoryLayers layerService;
 
     private final AiEndpointRequests requests;
 
@@ -188,7 +188,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
                         .parameter(parameterBuilder().in(ParameterIn.PATH).name("name").required(true))
                         .parameter(parameterBuilder().in(ParameterIn.QUERY).name("team").required(false))
                         .requestBody(requestBodyBuilder().required(true).implementation(ImportRequest.class))
-                        .response(responseBuilder().implementation(MemoryAssetService.ImportResult.class)))
+                        .response(responseBuilder().implementation(MemoryAssets.ImportResult.class)))
                 .GET("/aimemoryassets/{name}/generation-logs", this::generationLogs, builder -> builder
                         .operationId("listAiMemoryAssetGenerationLogs")
                         .description("List memory generation logs for the asset scope.")
@@ -238,7 +238,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
                     var metadata = body.metadata();
                     return requests.userId(request).flatMap(userId -> assetService.create(
                             userId,
-                            new MemoryAssetService.CreateCommand(
+                            new MemoryAssets.CreateCommand(
                                     metadata == null ? body.name() : metadata.getName(),
                                     metadata == null ? body.generateName() : metadata.getGenerateName(),
                                     spec.getDisplayName(),
@@ -271,7 +271,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
                         userId,
                         name,
                         query(request, "team"),
-                        new MemoryAssetService.PatchCommand(
+                        new MemoryAssets.PatchCommand(
                                 body.displayName(),
                                 body.description(),
                                 body.visibility(),
@@ -506,7 +506,7 @@ public class MemoryAssetEndpoint implements CustomEndpoint {
     }
 
     private static ApiException invalid(String message) {
-        return new ApiException(HttpStatus.BAD_REQUEST, MemoryAssetService.CODE_INVALID, message);
+        return new ApiException(HttpStatus.BAD_REQUEST, MemoryAssets.CODE_INVALID, message);
     }
 
     public record CreateRequest(

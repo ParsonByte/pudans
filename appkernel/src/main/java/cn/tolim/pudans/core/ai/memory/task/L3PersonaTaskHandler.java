@@ -1,20 +1,20 @@
 package cn.tolim.pudans.core.ai.memory.task;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
 import cn.tolim.pudans.core.ai.memory.JevChangeType;
 import cn.tolim.pudans.core.ai.memory.JevGate;
 import cn.tolim.pudans.core.ai.memory.L1MemoryRecord;
 import cn.tolim.pudans.core.ai.memory.L2SceneBlock;
 import cn.tolim.pudans.core.ai.memory.L3Persona;
-import cn.tolim.pudans.core.ai.memory.L3PipelineService;
+import cn.tolim.pudans.core.ai.memory.L3Pipeline;
 import cn.tolim.pudans.core.ai.memory.MemoryGenerationInput;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptContext;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptInput;
 import cn.tolim.pudans.core.ai.memory.MemoryPromptResolver;
 import cn.tolim.pudans.core.ai.memory.PersonaTrigger;
 import cn.tolim.pudans.core.ai.memory.PipelineTaskType;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryJevAiService;
-import cn.tolim.pudans.core.ai.memory.ai.MemoryPersonaAiService;
+import cn.tolim.pudans.core.ai.memory.ai.JevClassification;
+import cn.tolim.pudans.core.ai.memory.ai.PersonaProfiling;
 import cn.tolim.pudans.core.ai.task.AiTask;
 import cn.tolim.pudans.core.ai.task.AiTaskHandler;
 import cn.tolim.pudans.infra.r2dbc.ai.chat.AiConversationRepository;
@@ -52,11 +52,11 @@ public class L3PersonaTaskHandler implements AiTaskHandler {
 
     private final MemoryPromptResolver promptResolver;
 
-    private final MemoryJevAiService jevAi;
+    private final JevClassification jevAi;
 
-    private final MemoryPersonaAiService personaAi;
+    private final PersonaProfiling personaAi;
 
-    private final L3PipelineService pipelineService;
+    private final L3Pipeline pipelineService;
 
     @Override
     public String taskType() {
@@ -182,7 +182,7 @@ public class L3PersonaTaskHandler implements AiTaskHandler {
                 MemoryTaskPayloads.PERSONA_THRESHOLD);
         return Mono.zip(labels, generated)
                 .flatMap(precomputed -> pipelineService.process(
-                        new L3PipelineService.Request(
+                        new L3Pipeline.Request(
                                 teamId,
                                 agentId,
                                 state,

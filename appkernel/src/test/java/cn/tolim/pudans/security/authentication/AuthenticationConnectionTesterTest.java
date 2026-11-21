@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 import cn.tolim.pudans.contract.infra.ParameterSetting;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.setting.ParameterSettingSensitiveFields;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import cn.tolim.pudans.security.authentication.AuthenticationConnectionTester.ConnectionTestRequest;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,7 +26,7 @@ import reactor.test.StepVerifier;
 class AuthenticationConnectionTesterTest {
 
     @Mock
-    SecurityParameterSettingService securitySettings;
+    SecurityParameters securitySettings;
 
     @Mock
     FeishuClient feishuClient;
@@ -42,7 +42,7 @@ class AuthenticationConnectionTesterTest {
     @Test
     void testsFeishuWithSuppliedCredentials() {
         when(securitySettings.feishu())
-                .thenReturn(new SecurityParameterSettingService.FeishuSettings(
+                .thenReturn(new SecurityParameters.FeishuSettings(
                         false, null, null, null, null, null, 0, null));
         when(feishuClient.testConnection("app", "secret")).thenReturn(Mono.just("token"));
 
@@ -58,7 +58,7 @@ class AuthenticationConnectionTesterTest {
     @Test
     void testsFeishuWithTheStoredSecretWhenItIsMasked() {
         when(securitySettings.feishu())
-                .thenReturn(new SecurityParameterSettingService.FeishuSettings(
+                .thenReturn(new SecurityParameters.FeishuSettings(
                         true, "stored-app", "stored-secret", null, null, null, 0, null));
         when(feishuClient.testConnection("stored-app", "stored-secret"))
                 .thenReturn(Mono.just("token"));

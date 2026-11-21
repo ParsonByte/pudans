@@ -21,9 +21,9 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ServerWebInputException;
-import cn.tolim.pudans.contract.core.extension.endpoint.CustomEndpoint;
-import cn.tolim.pudans.contract.core.extension.storage.StorageFile;
-import cn.tolim.pudans.core.storage.StorageService;
+import cn.tolim.pudans.contract.extension.endpoint.CustomEndpoint;
+import cn.tolim.pudans.contract.storage.resource.StorageFile;
+import cn.tolim.pudans.core.storage.StorageTransfer;
 import cn.tolim.pudans.core.storage.driver.ByteRange;
 import cn.tolim.pudans.core.storage.driver.MultipartStorageDriver.UploadedPart;
 import cn.tolim.pudans.core.storage.driver.StorageReadOptions;
@@ -40,7 +40,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
 
     private static final Duration DOWNLOAD_SOURCE_TTL = Duration.ofMinutes(5);
 
-    private final StorageService storageService;
+    private final StorageTransfer storageTransfer;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -83,12 +83,12 @@ public class StorageTransferEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> content(ServerRequest request) {
         var name = request.pathVariable("name");
-        storageService.verifyDownload(requireToken(request), name);
+        storageTransfer.verifyDownload(requireToken(request), name);
         var rangeHeader = request.headers().firstHeader(HttpHeaders.RANGE);
-        return storageService.getFile(name).flatMap(file -> {
+        return storageTransfer.getFile(name).flatMap(file -> {
             var sourceOptions = new StorageSourceOptions(
                     true, file.getSpec().getOriginalName(), DOWNLOAD_SOURCE_TTL);
-            return storageService
+            return storageTransfer
                     .sourceUrl(name, sourceOptions)
                     .flatMap(source ->
                             ServerResponse.status(HttpStatus.FOUND).location(source.url()).build())
@@ -102,7 +102,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
         var fileName = StringUtils.hasText(file.getSpec().getOriginalName())
                 ? file.getSpec().getOriginalName()
                 : file.getMetadata().getName();
-        return storageService.open(fileId, new StorageReadOptions(range)).flatMap(result -> {
+        return storageTransfer.open(fileId, new StorageReadOptions(range)).flatMap(result -> {
             var status = range == null ? HttpStatus.OK : HttpStatus.PARTIAL_CONTENT;
             return ServerResponse.status(status).headers(headers -> {
                 headers.setContentType(contentType(file.getSpec().getContentType()));
@@ -128,13 +128,13 @@ public class StorageTransferEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> initiateUpload(ServerRequest request) {
         return request.bodyToMono(StorageUploadRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体不能为空。")))
-                .flatMap(storageService::initiateUpload)
+                .flatMap(storageTransfer::initiateUpload)
                 .flatMap(ticket -> ServerResponse.ok().bodyValue(ticket));
     }
 
     private Mono<ServerResponse> uploadToken(ServerRequest request) {
         var name = request.pathVariable("name");
-        return storageService
+        return storageTransfer
                 .issueUploadToken(name)
                 .flatMap(token -> ServerResponse.ok().bodyValue(Map.of("token", token)));
     }
@@ -142,7 +142,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> uploadStatus(ServerRequest request) {
         var name = request.pathVariable("name");
         verifyUpload(request, name);
-        return storageService.uploadStatus(name).flatMap(status -> ServerResponse.ok().bodyValue(status));
+        return storageTransfer.uploadStatus(name).flatMap(status -> ServerResponse.ok().bodyValue(status));
     }
 
     private Mono<ServerResponse> putPart(ServerRequest request) {
@@ -150,7 +150,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
         verifyUpload(request, name);
         var part = partNumber(request);
         var contentLength = request.headers().asHttpHeaders().getContentLength();
-        return storageService
+        return storageTransfer
                 .putPart(name, part, contentLength, request.body(BodyExtractors.toDataBuffers()))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
@@ -158,7 +158,7 @@ public class StorageTransferEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> partUrl(ServerRequest request) {
         var name = request.pathVariable("name");
         verifyUpload(request, name);
-        return storageService
+        return storageTransfer
                 .uploadPartUrl(name, partNumber(request))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
@@ -168,18 +168,18 @@ public class StorageTransferEndpoint implements CustomEndpoint {
         verifyUpload(request, name);
         return request.bodyToMono(new ParameterizedTypeReference<List<UploadedPart>>() {})
                 .defaultIfEmpty(List.of())
-                .flatMap(parts -> storageService.completeUpload(name, parts))
+                .flatMap(parts -> storageTransfer.completeUpload(name, parts))
                 .flatMap(file -> ServerResponse.ok().bodyValue(file));
     }
 
     private Mono<ServerResponse> abort(ServerRequest request) {
         var name = request.pathVariable("name");
         verifyUpload(request, name);
-        return storageService.abortUpload(name).then(ServerResponse.status(HttpStatus.NO_CONTENT).build());
+        return storageTransfer.abortUpload(name).then(ServerResponse.status(HttpStatus.NO_CONTENT).build());
     }
 
     private void verifyUpload(ServerRequest request, String name) {
-        storageService.verifyUpload(requireToken(request), name);
+        storageTransfer.verifyUpload(requireToken(request), name);
     }
 
     private static String requireToken(ServerRequest request) {

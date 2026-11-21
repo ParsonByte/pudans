@@ -10,14 +10,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiModel;
-import cn.tolim.pudans.contract.core.extension.ai.AiSetting;
-import cn.tolim.pudans.core.ai.config.AiSettingService;
+import cn.tolim.pudans.contract.ai.resource.AiModel;
+import cn.tolim.pudans.contract.ai.resource.AiSetting;
+import cn.tolim.pudans.core.ai.config.AiSettings;
 import cn.tolim.pudans.core.ai.metrics.AiMetrics;
 import cn.tolim.pudans.core.ai.model.AiModelContent;
 import cn.tolim.pudans.core.ai.model.AiModelResponse;
 import cn.tolim.pudans.core.ai.model.AiModelUsage;
-import cn.tolim.pudans.core.ai.plan.PlanQuotaService;
+import cn.tolim.pudans.core.ai.plan.PlanQuotas;
 import cn.tolim.pudans.core.ai.plan.PlanUsageSnapshot;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository;
 import cn.tolim.pudans.infra.r2dbc.ai.model.AiModelRequestRepository.ModelCompletion;
@@ -48,16 +48,16 @@ class AiGenerationRecorderTest {
     AiModelRequestRepository requestRepository;
 
     @Mock
-    PlanQuotaService planQuotaService;
+    PlanQuotas planQuotas;
 
     @Mock
-    AiSettingService settingService;
+    AiSettings settingService;
 
     @Mock
     AiMetrics metrics;
 
     @Mock
-    cn.tolim.pudans.core.storage.StorageService storageService;
+    cn.tolim.pudans.core.storage.StorageTransfer storageTransfer;
 
     @InjectMocks
     AiGenerationRecorder recorder;
@@ -66,8 +66,8 @@ class AiGenerationRecorderTest {
     void settlesHeldUnitsAndCompletesWithMediaUsage() {
         var row = row("standard");
         stubBilling();
-        when(planQuotaService.settle(eq(REQUEST_ID), eq(4500L), any()))
-                .thenReturn(Mono.just(new PlanQuotaService.SettleResult(REQUEST_ID, 4500, false)));
+        when(planQuotas.settle(eq(REQUEST_ID), eq(4500L), any()))
+                .thenReturn(Mono.just(new PlanQuotas.SettleResult(REQUEST_ID, 4500, false)));
         when(requestRepository.complete(any())).thenReturn(Mono.just(row));
         var snapshotCaptor = ArgumentCaptor.forClass(PlanUsageSnapshot.class);
         var completionCaptor = ArgumentCaptor.forClass(ModelCompletion.class);
@@ -77,7 +77,7 @@ class AiGenerationRecorderTest {
                 .assertNext(result -> assertThat(result.requestId()).isEqualTo(REQUEST_ID))
                 .verifyComplete();
 
-        verify(planQuotaService).settle(eq(REQUEST_ID), eq(4500L), snapshotCaptor.capture());
+        verify(planQuotas).settle(eq(REQUEST_ID), eq(4500L), snapshotCaptor.capture());
         assertThat(snapshotCaptor.getValue().tier()).isEqualTo(AiModel.Tier.HIGH);
         assertThat(snapshotCaptor.getValue().provider()).isEqualTo(PROVIDER);
         verify(requestRepository).complete(completionCaptor.capture());
@@ -102,7 +102,7 @@ class AiGenerationRecorderTest {
                 .expectNextCount(1)
                 .verifyComplete();
 
-        verify(planQuotaService, never()).settle(anyString(), anyLong(), any());
+        verify(planQuotas, never()).settle(anyString(), anyLong(), any());
         verify(requestRepository).complete(completionCaptor.capture());
         assertThat(completionCaptor.getValue().billingStatus()).isEqualTo("NONE");
     }
@@ -110,15 +110,15 @@ class AiGenerationRecorderTest {
     @Test
     void releasesHeldUnitsOnFailure() {
         var row = row("standard");
-        when(planQuotaService.release(REQUEST_ID))
-                .thenReturn(Mono.just(new PlanQuotaService.ReleaseResult(REQUEST_ID, true)));
+        when(planQuotas.release(REQUEST_ID))
+                .thenReturn(Mono.just(new PlanQuotas.ReleaseResult(REQUEST_ID, true)));
         when(requestRepository.complete(any())).thenReturn(Mono.just(row));
         var completionCaptor = ArgumentCaptor.forClass(ModelCompletion.class);
 
         StepVerifier.create(recorder.fail(row, new IllegalStateException("boom"), Instant.now()))
                 .verifyComplete();
 
-        verify(planQuotaService).release(REQUEST_ID);
+        verify(planQuotas).release(REQUEST_ID);
         verify(requestRepository).complete(completionCaptor.capture());
         var completion = completionCaptor.getValue();
         assertThat(completion.status()).isEqualTo("FAILED");

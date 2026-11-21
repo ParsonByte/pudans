@@ -1,7 +1,7 @@
 package cn.tolim.pudans.core.ai.memory.prompt;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPrompt;
-import cn.tolim.pudans.contract.core.extension.ai.AiMemoryPromptBinding;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPrompt;
+import cn.tolim.pudans.contract.ai.resource.AiMemoryPromptBinding;
 import java.time.Instant;
 
 public record MemoryPromptLog(

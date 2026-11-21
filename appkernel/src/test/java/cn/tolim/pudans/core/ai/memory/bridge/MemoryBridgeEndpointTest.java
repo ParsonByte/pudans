@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 class MemoryBridgeEndpointTest {
 
     @Mock
-    MemoryBridgeService bridgeService;
+    MemoryBridge bridgeService;
 
     @Mock
     AiEndpointRequests requests;

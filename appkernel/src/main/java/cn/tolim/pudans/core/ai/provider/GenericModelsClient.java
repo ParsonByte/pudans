@@ -2,8 +2,8 @@ package cn.tolim.pudans.core.ai.provider;
 
 import java.util.ArrayList;
 import java.util.List;
-import cn.tolim.pudans.contract.core.extension.ai.AiProvider;
-import cn.tolim.pudans.contract.core.extension.ai.AiProviderAccount;
+import cn.tolim.pudans.contract.ai.resource.AiProvider;
+import cn.tolim.pudans.contract.ai.resource.AiProviderAccount;
 import cn.tolim.pudans.core.ai.gateway.protocol.AiProtocolException;
 import cn.tolim.pudans.core.ai.provider.supplier.deepseek.DeepSeekModelsClient;
 import cn.tolim.pudans.infra.exception.ApiException;
@@ -29,12 +29,12 @@ public class GenericModelsClient {
 
     private final ObjectMapper mapper;
 
-    private final AiProviderAccountService accountService;
+    private final ProviderAccounts accountService;
 
     public GenericModelsClient(
             @Qualifier(AiWebClientConfiguration.BEAN_NAME) WebClient webClient,
             ObjectMapper mapper,
-            AiProviderAccountService accountService) {
+            ProviderAccounts accountService) {
         this.webClient = webClient;
         this.mapper = mapper;
         this.accountService = accountService;

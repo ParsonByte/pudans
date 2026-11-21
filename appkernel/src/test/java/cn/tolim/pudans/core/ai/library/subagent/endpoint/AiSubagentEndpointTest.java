@@ -4,12 +4,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.ai.AiSubagent;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiSubagent;
 import cn.tolim.pudans.contract.extension.Metadata;
 import cn.tolim.pudans.core.ai.endpoint.AiEndpointRequests;
-import cn.tolim.pudans.core.ai.library.subagent.SubagentService;
-import cn.tolim.pudans.core.ai.team.AiTeamService;
+import cn.tolim.pudans.core.ai.library.subagent.Subagents;
+import cn.tolim.pudans.core.ai.team.Teams;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,13 +23,13 @@ import reactor.core.publisher.Mono;
 class AiSubagentEndpointTest {
 
     @Mock
-    SubagentService subagentService;
+    Subagents subagents;
 
     @Mock
     AiEndpointRequests requests;
 
     @Mock
-    AiTeamService teamService;
+    Teams teamService;
 
     private WebTestClient client;
 
@@ -38,13 +38,13 @@ class AiSubagentEndpointTest {
         lenient().when(requests.userId(any())).thenReturn(Mono.just("user-1"));
         lenient().when(teamService.requireAgent(any(), any())).thenReturn(Mono.just(new AiAgent()));
         client = WebTestClient.bindToRouterFunction(
-                        new AiSubagentEndpoint(subagentService, requests, teamService).endpoint())
+                        new AiSubagentEndpoint(subagents, requests, teamService).endpoint())
                 .build();
     }
 
     @Test
     void listsSubagentsBoundToTheAgent() {
-        when(subagentService.byAgent("agent-a")).thenReturn(Flux.just(subagent()));
+        when(subagents.byAgent("agent-a")).thenReturn(Flux.just(subagent()));
 
         client.get()
                 .uri("/aisubagents/-/by-agent?agent=agent-a")

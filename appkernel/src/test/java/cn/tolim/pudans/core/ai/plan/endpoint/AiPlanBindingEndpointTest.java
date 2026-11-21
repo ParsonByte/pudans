@@ -4,9 +4,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiPlanBinding;
-import cn.tolim.pudans.core.ai.plan.PlanBindingService;
-import cn.tolim.pudans.core.ai.plan.PlanResolutionService;
+import cn.tolim.pudans.contract.ai.resource.AiPlanBinding;
+import cn.tolim.pudans.core.ai.plan.PlanBindings;
+import cn.tolim.pudans.core.ai.plan.PlanResolution;
 import cn.tolim.pudans.infra.exception.ApiException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,10 +23,10 @@ import reactor.core.publisher.Mono;
 class AiPlanBindingEndpointTest {
 
     @Mock
-    PlanBindingService bindingService;
+    PlanBindings bindingService;
 
     @Mock
-    PlanResolutionService resolutionService;
+    PlanResolution resolutionService;
 
     private WebTestClient client;
 
@@ -38,16 +38,16 @@ class AiPlanBindingEndpointTest {
 
     @Test
     void appliesABulkBinding() {
-        var request = new PlanBindingService.BulkBindRequest(
+        var request = new PlanBindings.BulkBindRequest(
                 "standard",
-                List.of(new PlanBindingService.BindingSubject(
+                List.of(new PlanBindings.BindingSubject(
                         AiPlanBinding.SubjectKind.UserGroup, "rd")),
                 1,
                 true);
         when(bindingService.bulk(request))
-                .thenReturn(Mono.just(new PlanBindingService.BulkBindResult(
+                .thenReturn(Mono.just(new PlanBindings.BulkBindResult(
                         "standard",
-                        List.of(new PlanBindingService.BindingSummary(
+                        List.of(new PlanBindings.BindingSummary(
                                 "aiplanbinding-usergroup-rd",
                                 "standard",
                                 AiPlanBinding.SubjectKind.UserGroup,
@@ -73,16 +73,16 @@ class AiPlanBindingEndpointTest {
 
     @Test
     void reportsAnInvalidBulkRequest() {
-        when(bindingService.bulk(any(PlanBindingService.BulkBindRequest.class)))
+        when(bindingService.bulk(any(PlanBindings.BulkBindRequest.class)))
                 .thenReturn(Mono.error(new ApiException(
                         HttpStatus.BAD_REQUEST,
-                        PlanBindingService.CODE_BINDING_INVALID,
+                        PlanBindings.CODE_BINDING_INVALID,
                         "批量绑定请求不能为空。")));
 
         client.post()
                 .uri("/aiplanbindings/-/bulk")
                 .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(new PlanBindingService.BulkBindRequest("standard", List.of(), 0, true))
+                .bodyValue(new PlanBindings.BulkBindRequest("standard", List.of(), 0, true))
                 .exchange()
                 .expectStatus().isBadRequest();
     }
@@ -90,7 +90,7 @@ class AiPlanBindingEndpointTest {
     @Test
     void previewsAUsersResolvedPlan() {
         when(resolutionService.resolve("uid-alice"))
-                .thenReturn(Mono.just(new PlanResolutionService.ResolvedPlan(
+                .thenReturn(Mono.just(new PlanResolution.ResolvedPlan(
                         "standard", "套餐 standard", "User/uid-alice", null)));
 
         client.get()

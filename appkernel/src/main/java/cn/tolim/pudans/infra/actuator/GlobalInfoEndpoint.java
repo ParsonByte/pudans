@@ -10,14 +10,14 @@ import reactor.core.publisher.Mono;
 @Component
 class GlobalInfoEndpoint {
 
-    private final GlobalInfoService globalInfoService;
+    private final SiteInfo siteInfo;
 
-    public GlobalInfoEndpoint(GlobalInfoService globalInfoService) {
-        this.globalInfoService = globalInfoService;
+    public GlobalInfoEndpoint(SiteInfo siteInfo) {
+        this.siteInfo = siteInfo;
     }
 
     @ReadOperation
     public Mono<GlobalInfo> globalInfo() {
-        return globalInfoService.getGlobalInfo();
+        return siteInfo.getGlobalInfo();
     }
 }

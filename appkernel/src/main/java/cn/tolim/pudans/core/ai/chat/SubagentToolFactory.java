@@ -1,13 +1,13 @@
 package cn.tolim.pudans.core.ai.chat;
 
-import cn.tolim.pudans.contract.core.extension.ai.AiAgent;
-import cn.tolim.pudans.contract.core.extension.ai.AiSubagent;
+import cn.tolim.pudans.contract.ai.resource.AiAgent;
+import cn.tolim.pudans.contract.ai.resource.AiSubagent;
 import cn.tolim.pudans.contract.infra.utils.JsonUtils;
 import cn.tolim.pudans.core.ai.agent.GatewayChatContext;
 import cn.tolim.pudans.core.ai.agent.GatewayChatModel;
 import cn.tolim.pudans.core.ai.agent.GatewayRunState;
 import cn.tolim.pudans.core.ai.agent.GatewayStreamingChatModel;
-import cn.tolim.pudans.core.ai.gateway.AiGatewayService;
+import cn.tolim.pudans.core.ai.gateway.AiGateway;
 import cn.tolim.pudans.core.ai.gateway.ir.AiTool;
 import cn.tolim.pudans.core.ai.harness.agent.AgentStateStore;
 import cn.tolim.pudans.core.ai.harness.agent.HarnessAgent;
@@ -23,8 +23,8 @@ import cn.tolim.pudans.core.ai.harness.subagent.SubagentRuntime;
 import cn.tolim.pudans.core.ai.harness.subagent.SubagentTools;
 import cn.tolim.pudans.core.ai.harness.tool.HarnessToolkit;
 import cn.tolim.pudans.core.ai.harness.tool.ToolResultEvictionConfig;
-import cn.tolim.pudans.core.ai.library.mcp.McpServerService;
-import cn.tolim.pudans.core.ai.library.skill.SkillService;
+import cn.tolim.pudans.core.ai.library.mcp.McpServers;
+import cn.tolim.pudans.core.ai.library.skill.Skills;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Duration;
 import java.util.List;
@@ -44,17 +44,17 @@ public class SubagentToolFactory {
 
     private static final String AGENT_SOURCE = "pudans-subagent";
 
-    private final AiGatewayService gatewayService;
+    private final AiGateway gatewayService;
 
     private final AgentStateStore stateStore;
 
     private final ThreadJournalStore journalStore;
 
-    private final SkillService skillService;
+    private final Skills skillService;
 
     private final SkillUsageStore skillUsageStore;
 
-    private final McpServerService mcpServerService;
+    private final McpServers mcpServers;
 
     public Mono<SubagentTools> create(
             GatewayChatContext gateway, List<AiSubagent> subagents) {
@@ -74,9 +74,9 @@ public class SubagentToolFactory {
                 .toList();
         return Mono.zip(
                         skillService.byNames(skillNames).defaultIfEmpty(List.of()),
-                        mcpServerService
+                        mcpServers
                                 .toolCatalogFor(serverNames)
-                                .defaultIfEmpty(new McpServerService.McpToolCatalog(List.of())))
+                                .defaultIfEmpty(new McpServers.McpToolCatalog(List.of())))
                 .map(tuple -> {
                     var skills = tuple.getT1().stream()
                             .filter(skill -> skill.getMetadata() != null)
@@ -86,7 +86,7 @@ public class SubagentToolFactory {
                                     (first, second) -> first));
                     var definitions = tuple.getT2().tools().stream()
                             .collect(Collectors.groupingBy(
-                                    McpServerService.McpToolDefinition::server));
+                                    McpServers.McpToolDefinition::server));
                     var runtime = new SubagentRuntime();
                     for (var subagent : valid) {
                         var name = subagent.getMetadata().getName();
@@ -108,7 +108,7 @@ public class SubagentToolFactory {
     }
 
     private HarnessToolkit toolkit(
-            Map<String, List<McpServerService.McpToolDefinition>> definitions,
+            Map<String, List<McpServers.McpToolDefinition>> definitions,
             List<String> serverNames) {
         var toolkit = new HarnessToolkit();
         for (var server : serverNames) {
@@ -130,7 +130,7 @@ public class SubagentToolFactory {
     private HarnessToolkit.ToolResult executeMcp(
             List<String> serverNames, String toolName, JsonNode arguments) {
         try {
-            var result = mcpServerService.callToolFor(serverNames, toolName, arguments).block();
+            var result = mcpServers.callToolFor(serverNames, toolName, arguments).block();
             if (result == null) {
                 return new HarnessToolkit.ToolResult("MCP 工具未返回结果。", true);
             }

@@ -6,7 +6,7 @@ import cn.tolim.pudans.core.webhook.ValidatingAddressResolverGroup;
 import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.properties.OidcProperties;
 import cn.tolim.pudans.infra.setting.ParameterSettingSensitiveFields;
-import cn.tolim.pudans.infra.setting.SecurityParameterSettingService;
+import cn.tolim.pudans.infra.setting.SecurityParameters;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Locale;
@@ -36,7 +36,7 @@ public class AuthenticationConnectionTester {
 
     private static final String TYPE_OIDC = "oidc";
 
-    private final SecurityParameterSettingService securitySettings;
+    private final SecurityParameters securitySettings;
 
     private final FeishuClient feishuClient;
 
@@ -44,7 +44,7 @@ public class AuthenticationConnectionTester {
 
     @Autowired
     public AuthenticationConnectionTester(
-            SecurityParameterSettingService securitySettings, FeishuClient feishuClient) {
+            SecurityParameters securitySettings, FeishuClient feishuClient) {
         this(
                 securitySettings,
                 feishuClient,
@@ -57,7 +57,7 @@ public class AuthenticationConnectionTester {
     }
 
     AuthenticationConnectionTester(
-            SecurityParameterSettingService securitySettings,
+            SecurityParameters securitySettings,
             FeishuClient feishuClient,
             WebClient webClient) {
         this.securitySettings = securitySettings;
