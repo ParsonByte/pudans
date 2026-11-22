@@ -18,11 +18,11 @@
 import type { NavigationMenu } from './navigation-menu';
 
 export interface NavigationWorkspace {
-    'homePath'?: string;
     'icon'?: string;
     'id'?: string;
     'menus'?: Array<NavigationMenu>;
     'name'?: string;
     'order'?: number;
     'plan'?: string;
+    'slug'?: string;
 }

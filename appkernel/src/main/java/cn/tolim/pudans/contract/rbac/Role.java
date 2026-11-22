@@ -35,7 +35,7 @@ public class Role extends AbstractExtension {
     public static final String UI_COMPONENT_ANNO = "rbac.authorization.pudans.tolim.cn/ui-component";
     public static final String UI_CAPABILITY_ANNO = "rbac.authorization.pudans.tolim.cn/ui-capability";
     public static final String UI_WORKSPACE_ANNO = "rbac.authorization.pudans.tolim.cn/ui-workspace";
-    public static final String UI_PATH_ANNO = "rbac.authorization.pudans.tolim.cn/ui-path";
+    public static final String UI_SLUG_ANNO = "rbac.authorization.pudans.tolim.cn/ui-slug";
     public static final String UI_LABEL_ANNO = "rbac.authorization.pudans.tolim.cn/ui-label";
     public static final String UI_DESCRIPTION_ANNO = "rbac.authorization.pudans.tolim.cn/ui-description";
     public static final String UI_ICON_ANNO = "rbac.authorization.pudans.tolim.cn/ui-icon";
@@ -43,6 +43,7 @@ public class Role extends AbstractExtension {
     public static final String UI_PARENT_ICON_ANNO =
             "rbac.authorization.pudans.tolim.cn/ui-parent-icon";
     public static final String UI_GROUP_ANNO = "rbac.authorization.pudans.tolim.cn/ui-group";
+    public static final String UI_GROUP_KEY_ANNO = "rbac.authorization.pudans.tolim.cn/ui-group-key";
     public static final String UI_ORDER_ANNO = "rbac.authorization.pudans.tolim.cn/ui-order";
     public static final String UI_PUBLIC_ANNO = "rbac.authorization.pudans.tolim.cn/ui-public";
     public static final String UI_TYPE_WORKSPACE = "workspace";

@@ -24,6 +24,7 @@ export interface WorkspaceMenu {
     'component'?: string;
     'description'?: string;
     'group'?: string;
+    'groupKey'?: string;
     'icon'?: string;
     'key'?: string;
     'label'?: string;
@@ -32,7 +33,6 @@ export interface WorkspaceMenu {
     'order'?: number;
     'parent'?: string;
     'parentIcon'?: string;
-    'path'?: string;
     'publicMenu'?: boolean;
     'view'?: WorkspaceMenuLevel;
 }

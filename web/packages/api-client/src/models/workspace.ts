@@ -24,4 +24,5 @@ export interface Workspace {
     'name'?: string;
     'order'?: number;
     'plan'?: string;
+    'slug'?: string;
 }

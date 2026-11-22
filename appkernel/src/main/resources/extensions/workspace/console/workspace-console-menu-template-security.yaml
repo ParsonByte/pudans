@@ -1,0 +1,184 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-riskrules
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Risk Control"
+    rbac.authorization.pudans.tolim.cn/display-name: "Risk Rule View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.risk"
+    rbac.authorization.pudans.tolim.cn/ui-component: "risk"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "风险"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理风险规则和风险策略。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-alert"
+    rbac.authorization.pudans.tolim.cn/ui-group: "安全与审计"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "security"
+    rbac.authorization.pudans.tolim.cn/ui-order: "200"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["risk:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "riskrules"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "auditlogs"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-riskrules
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-riskrules", "role-template-update-riskrules", "role-template-unban-risk" ]
+    rbac.authorization.pudans.tolim.cn/module: "Risk Control"
+    rbac.authorization.pudans.tolim.cn/display-name: "Risk Rule Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.risk"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["risk:manage"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "riskrules"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-audit-logs
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Audit Logs"
+    rbac.authorization.pudans.tolim.cn/display-name: "Audit Log View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.audit"
+    rbac.authorization.pudans.tolim.cn/ui-component: "audit"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "审计"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看审计日志和操作记录。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:scroll-text"
+    rbac.authorization.pudans.tolim.cn/ui-group: "安全与审计"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "security"
+    rbac.authorization.pudans.tolim.cn/ui-order: "210"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["audit:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "auditlogs"
+      - "auditlogs/traces"
+      - "auditlogs/journeys"
+      - "auditlogs/graph"
+      - "auditlogs/trace"
+      - "auditlogs/replay"
+      - "auditlogs/archives"
+      - "auditlogs/archive-stats"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-traces
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-audit-logs" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.traces"
+    rbac.authorization.pudans.tolim.cn/ui-component: "traces"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "链路"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看用户活动链路和操作明细。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:waypoints"
+    rbac.authorization.pudans.tolim.cn/ui-group: "安全与审计"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "security"
+    rbac.authorization.pudans.tolim.cn/ui-order: "220"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["traces:view"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-replay
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-audit-logs" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.replay"
+    rbac.authorization.pudans.tolim.cn/ui-component: "replay"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "回溯"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查询历史链路、回放操作并管理审计归档。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:history"
+    rbac.authorization.pudans.tolim.cn/ui-group: "安全与审计"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "security"
+    rbac.authorization.pudans.tolim.cn/ui-order: "230"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["replay:view"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-console-secrets
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-secrets" ]'
+    rbac.authorization.pudans.tolim.cn/module: "Secrets"
+    rbac.authorization.pudans.tolim.cn/display-name: "Secret View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.secrets"
+    rbac.authorization.pudans.tolim.cn/ui-component: "secrets"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "密钥管理"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理加密密钥与敏感凭据。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:lock-keyhole"
+    rbac.authorization.pudans.tolim.cn/ui-group: "安全与审计"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "security"
+    rbac.authorization.pudans.tolim.cn/ui-order: "240"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["secrets:view"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-console-secrets-manage
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-console-secrets", "role-template-manage-secrets" ]
+    rbac.authorization.pudans.tolim.cn/module: "Secrets"
+    rbac.authorization.pudans.tolim.cn/display-name: "Secret Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.secrets"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["secrets:manage"]'
+rules: []

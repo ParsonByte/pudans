@@ -1,0 +1,246 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-settings
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Settings Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "Setting View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.settings"
+    rbac.authorization.pudans.tolim.cn/ui-component: "settings"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "参数配置"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理会话、认证、邮件、站点和审计参数。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:settings-2"
+    rbac.authorization.pudans.tolim.cn/ui-group: "系统设置"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "system"
+    rbac.authorization.pudans.tolim.cn/ui-order: "400"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["settings:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "settings"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "configmaps"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "parameter-settings"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "systemconfigs"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "authproviders"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "auth-providers"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-settings
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-settings" ]'
+    rbac.authorization.pudans.tolim.cn/module: "Settings Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "Setting Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.settings"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["settings:manage"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "settings"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "configmaps"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "parameter-settings"
+      - "parameter-settings/-"
+    verbs:
+      - "get"
+      - "list"
+      - "create"
+      - "update"
+      - "patch"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "systemconfigs"
+    verbs:
+      - "get"
+      - "list"
+      - "update"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "authproviders"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "auth-providers"
+      - "auth-providers/enable"
+      - "auth-providers/disable"
+    verbs:
+      - "get"
+      - "list"
+      - "update"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-console-webhooks
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-webhooks" ]'
+    rbac.authorization.pudans.tolim.cn/module: "Webhook"
+    rbac.authorization.pudans.tolim.cn/display-name: "Webhook View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.webhooks"
+    rbac.authorization.pudans.tolim.cn/ui-component: "webhooks"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "Webhook"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理出站 Webhook 及其投递配置。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:webhook"
+    rbac.authorization.pudans.tolim.cn/ui-group: "系统设置"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "system"
+    rbac.authorization.pudans.tolim.cn/ui-order: "410"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["webhooks:view"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-console-webhooks-manage
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-console-webhooks", "role-template-manage-webhooks" ]
+    rbac.authorization.pudans.tolim.cn/module: "Webhook"
+    rbac.authorization.pudans.tolim.cn/display-name: "Webhook Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.webhooks"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["webhooks:manage"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-console-config-maps
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Config Maps"
+    rbac.authorization.pudans.tolim.cn/display-name: "Config Map View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.config-maps"
+    rbac.authorization.pudans.tolim.cn/ui-component: "config-maps"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "配置字典"
+    rbac.authorization.pudans.tolim.cn/ui-description: "维护控制台使用的配置字典。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:file-cog"
+    rbac.authorization.pudans.tolim.cn/ui-group: "系统设置"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "system"
+    rbac.authorization.pudans.tolim.cn/ui-order: "420"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["config-maps:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "configmaps"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-console-config-maps-manage
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-console-config-maps", "role-template-manage-configmaps" ]
+    rbac.authorization.pudans.tolim.cn/module: "Config Maps"
+    rbac.authorization.pudans.tolim.cn/display-name: "Config Map Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.config-maps"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["config-maps:manage"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-console-annotations
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-annotation-setting" ]'
+    rbac.authorization.pudans.tolim.cn/module: "Annotations"
+    rbac.authorization.pudans.tolim.cn/display-name: "Annotation Setting View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.annotations"
+    rbac.authorization.pudans.tolim.cn/ui-component: "annotations"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "注解设置"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看资源注解表单配置。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:tags"
+    rbac.authorization.pudans.tolim.cn/ui-group: "系统设置"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "system"
+    rbac.authorization.pudans.tolim.cn/ui-order: "430"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["annotations:view"]'
+rules: []

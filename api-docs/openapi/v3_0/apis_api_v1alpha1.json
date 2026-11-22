@@ -8384,6 +8384,9 @@
           "group": {
             "type": "string"
           },
+          "groupKey": {
+            "type": "string"
+          },
           "icon": {
             "type": "string"
           },
@@ -8407,9 +8410,6 @@
             "type": "string"
           },
           "parentIcon": {
-            "type": "string"
-          },
-          "path": {
             "type": "string"
           }
         }
@@ -8439,9 +8439,6 @@
       "NavigationWorkspace": {
         "type": "object",
         "properties": {
-          "homePath": {
-            "type": "string"
-          },
           "icon": {
             "type": "string"
           },
@@ -8462,6 +8459,9 @@
             "format": "int32"
           },
           "plan": {
+            "type": "string"
+          },
+          "slug": {
             "type": "string"
           }
         }
@@ -10609,6 +10609,9 @@
           },
           "plan": {
             "type": "string"
+          },
+          "slug": {
+            "type": "string"
           }
         }
       },
@@ -10622,6 +10625,9 @@
             "type": "string"
           },
           "group": {
+            "type": "string"
+          },
+          "groupKey": {
             "type": "string"
           },
           "icon": {
@@ -10650,9 +10656,6 @@
             "type": "string"
           },
           "parentIcon": {
-            "type": "string"
-          },
-          "path": {
             "type": "string"
           },
           "publicMenu": {

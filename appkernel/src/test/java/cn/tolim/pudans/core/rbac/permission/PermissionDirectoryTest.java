@@ -70,6 +70,7 @@ class PermissionDirectoryTest {
                         annotations(
                                 Role.UI_TYPE_ANNO, Role.UI_TYPE_WORKSPACE,
                                 Role.UI_WORKSPACE_ANNO, "default",
+                                Role.UI_SLUG_ANNO, "index",
                                 Role.UI_LABEL_ANNO, "PUDANS",
                                 Role.UI_DESCRIPTION_ANNO, "工作区",
                                 Role.UI_ORDER_ANNO, "10")),
@@ -78,6 +79,7 @@ class PermissionDirectoryTest {
                         annotations(
                                 Role.UI_TYPE_ANNO, Role.UI_TYPE_WORKSPACE,
                                 Role.UI_WORKSPACE_ANNO, "console",
+                                Role.UI_SLUG_ANNO, "console",
                                 Role.UI_LABEL_ANNO, "PUDANS Console",
                                 Role.UI_DESCRIPTION_ANNO, "统一终端访问管控",
                                 Role.UI_ORDER_ANNO, "20")),
@@ -88,9 +90,9 @@ class PermissionDirectoryTest {
                                 Role.UI_ACTION_ANNO, Role.UI_ACTION_VIEW,
                                 Role.UI_MENU_ANNO, "default.overview",
                                 Role.UI_WORKSPACE_ANNO, "default",
-                                Role.UI_PATH_ANNO, "/",
                                 Role.UI_LABEL_ANNO, "总览",
                                 Role.UI_GROUP_ANNO, "PUDANS",
+                                Role.UI_GROUP_KEY_ANNO, "other",
                                 Role.UI_ORDER_ANNO, "10",
                                 Role.UI_PUBLIC_ANNO, "true")),
                 template(
@@ -100,10 +102,10 @@ class PermissionDirectoryTest {
                                 Role.UI_ACTION_ANNO, Role.UI_ACTION_VIEW,
                                 Role.UI_MENU_ANNO, "console.users",
                                 Role.UI_WORKSPACE_ANNO, "console",
-                                Role.UI_PATH_ANNO, "/console/users",
                                 Role.UI_LABEL_ANNO, "用户",
                                 Role.UI_COMPONENT_ANNO, "users",
                                 Role.UI_GROUP_ANNO, "控制",
+                                Role.UI_GROUP_KEY_ANNO, "identity",
                                 Role.UI_PARENT_ANNO, "身份控制",
                                 Role.UI_PARENT_ICON_ANNO, "lucide:user-cog",
                                 Role.UI_ORDER_ANNO, "20",
@@ -135,15 +137,17 @@ class PermissionDirectoryTest {
                     assertThat(catalog.workspaces()).hasSize(2);
                     var defaultWorkspace = catalog.workspaces().get(0);
                     assertThat(defaultWorkspace.id()).isEqualTo("default");
+                    assertThat(defaultWorkspace.slug()).isEqualTo("index");
                     assertThat(defaultWorkspace.menus()).hasSize(1);
                     assertThat(defaultWorkspace.menus().get(0).publicMenu()).isTrue();
 
                     var consoleWorkspace = catalog.workspaces().get(1);
                     assertThat(consoleWorkspace.id()).isEqualTo("console");
+                    assertThat(consoleWorkspace.slug()).isEqualTo("console");
                     var users = consoleWorkspace.menus().get(0);
                     assertThat(users.key()).isEqualTo("console.users");
-                    assertThat(users.path()).isEqualTo("/console/users");
                     assertThat(users.component()).isEqualTo("users");
+                    assertThat(users.groupKey()).isEqualTo("identity");
                     assertThat(users.parent()).isEqualTo("身份控制");
                     assertThat(users.parentIcon()).isEqualTo("lucide:user-cog");
                     assertThat(users.view().permission()).isEqualTo("users:view");
@@ -181,13 +185,16 @@ class PermissionDirectoryTest {
                 .assertNext(navigation -> {
                     assertThat(navigation.workspaces()).hasSize(2);
                     var defaultWorkspace = navigation.workspaces().get(0);
+                    assertThat(defaultWorkspace.slug()).isEqualTo("index");
                     assertThat(defaultWorkspace.menus()).extracting(PermissionDirectory.NavigationMenu::key)
                             .containsExactly("default.overview");
+                    assertThat(defaultWorkspace.menus().getFirst().groupKey()).isEqualTo("other");
                     var consoleWorkspace = navigation.workspaces().get(1);
-                    assertThat(consoleWorkspace.homePath()).isEqualTo("/console/users");
+                    assertThat(consoleWorkspace.slug()).isEqualTo("console");
                     assertThat(consoleWorkspace.menus()).extracting(PermissionDirectory.NavigationMenu::key)
                             .containsExactly("console.users");
                     assertThat(consoleWorkspace.menus().getFirst().component()).isEqualTo("users");
+                    assertThat(consoleWorkspace.menus().getFirst().groupKey()).isEqualTo("identity");
                     assertThat(consoleWorkspace.menus().getFirst().parent()).isEqualTo("身份控制");
                     assertThat(consoleWorkspace.menus().getFirst().parentIcon())
                             .isEqualTo("lucide:user-cog");

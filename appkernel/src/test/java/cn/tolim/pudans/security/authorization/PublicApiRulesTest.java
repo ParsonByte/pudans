@@ -14,7 +14,7 @@ class PublicApiRulesTest {
     @Test
     void publicRulesCoverRefreshAndAvatars() throws Exception {
         try (InputStream input =
-                new ClassPathResource("extensions/role/api/role-api-template-public-apis.yaml").getInputStream()) {
+                new ClassPathResource("extensions/role/api/role-api-template-public.yaml").getInputStream()) {
             var document = (Map<String, Object>) new Yaml().load(input);
             var rules = (List<Map<String, Object>>) document.get("rules");
             var resources = rules.stream()

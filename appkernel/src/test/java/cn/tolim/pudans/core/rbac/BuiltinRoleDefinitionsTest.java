@@ -76,6 +76,34 @@ class BuiltinRoleDefinitionsTest {
         assertThat(closure).doesNotContainAnyElementsOf(workspaceMenuTemplates("console"));
     }
 
+    @Test
+    void workspaceTemplatesDeclareDynamicNavigationMetadata() {
+        var workspaces = definitions.allRoles().stream()
+                .filter(role -> Role.UI_TYPE_WORKSPACE.equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_TYPE_ANNO)))
+                .toList();
+
+        assertThat(workspaces).isNotEmpty().allSatisfy(role -> {
+            var annotations = MetadataUtil.nullSafeAnnotations(role);
+            assertThat(annotations.get(Role.UI_SLUG_ANNO)).isNotBlank();
+        });
+    }
+
+    @Test
+    void menuViewTemplatesDeclareDynamicGroupMetadata() {
+        var menus = definitions.allRoles().stream()
+                .filter(role -> Role.UI_TYPE_MENU.equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_TYPE_ANNO)))
+                .filter(role -> Role.UI_ACTION_VIEW.equals(
+                        MetadataUtil.nullSafeAnnotations(role).get(Role.UI_ACTION_ANNO)))
+                .toList();
+
+        assertThat(menus).isNotEmpty().allSatisfy(role -> {
+            var annotations = MetadataUtil.nullSafeAnnotations(role);
+            assertThat(annotations.get(Role.UI_GROUP_KEY_ANNO)).isNotBlank();
+        });
+    }
+
     private Set<String> workspaceMenuTemplates(String workspace) {
         return definitions.allRoles().stream()
                 .filter(role -> role.getMetadata() != null)
