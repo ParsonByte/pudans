@@ -2,14 +2,21 @@
   "name": "pudans-web",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "next dev",
+    "build:api-client": "npm run build --workspace @pudans-dev/api-client",
+    "predev": "npm run build:api-client",
+    "prebuild": "npm run build:api-client",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "pretypecheck": "npm run build:api-client",
     "typecheck": "next typegen && tsc --noEmit",
     "knip": "knip",
     "check": "npm run lint && npm run typecheck && npm run knip && npm run format:check"
@@ -28,6 +35,7 @@
     "@hookform/resolvers": "^7.0.8",
     "@icon-park/react": "^1.4.2",
     "@iconify/react": "^6.0.4",
+    "@pudans-dev/api-client": "*",
     "@tanstack/react-query": "^5.108.2",
     "@tanstack/react-query-devtools": "^5.108.2",
     "@tanstack/react-table": "^9.3.1",

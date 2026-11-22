@@ -1,0 +1,36 @@
+{
+  "name": "@pudans-dev/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/entry/index.js",
+  "module": "./dist/entry/index.js",
+  "types": "./dist/entry/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/entry/index.d.ts",
+      "import": "./dist/entry/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "gen": "rimraf --glob './src/**' && node ./scripts/normalize-openapi.mjs ../../../api-docs/openapi/v3_0/apis_api_v1alpha1.json ./.openapi.normalized.json && openapi-generator-cli generate -i ./.openapi.normalized.json -g typescript-axios -c ./.openapi_config.yaml -o ./src --type-mappings='set=Array' --global-property apiDocs=false,modelDocs=false && node ./scripts/clean-generated.mjs ./src && rm -f ./.openapi.normalized.json",
+    "build": "rimraf ./dist && tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rimraf ./dist"
+  },
+  "dependencies": {
+    "axios": "^1.21.1",
+    "qs": "^6.17.1"
+  },
+  "devDependencies": {
+    "@openapitools/openapi-generator-cli": "^2.42.2",
+    "@types/qs": "^6.15.1",
+    "rimraf": "^6.1.4",
+    "typescript": "~6.0.3"
+  }
+}

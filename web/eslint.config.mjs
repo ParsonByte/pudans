@@ -7,7 +7,14 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-    globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts"]),
+    globalIgnores([
+        ".next/**",
+        "out/**",
+        "build/**",
+        "next-env.d.ts",
+        "packages/api-client/src/**",
+        "packages/api-client/dist/**",
+    ]),
     js.configs.recommended,
     ...tseslint.configs.recommended,
     reactHooks.configs.flat.recommended,
