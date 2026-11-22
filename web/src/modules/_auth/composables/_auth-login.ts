@@ -1,43 +1,27 @@
-import axios, { isAxiosError } from "axios";
+import {
+    type LoginProviderView,
+    type LoginStatusView,
+    type PasskeyAssertionOptionsVo,
+    type SessionView,
+    apiClient,
+    axiosInstance,
+} from "@pudans-dev/api-client";
+import { isAxiosError } from "axios";
 
 import { encryptLoginPassword } from "./_auth-login-crypto";
+import { resolvePostLoginRedirect } from "./_auth-post-login-redirect";
 import { getPasskeyAssertion, serializeAssertion } from "./_auth-webauthn";
 
-const API_PREFIX = "/apis/api.pudans.tolim.cn/v1alpha1";
+type ProviderWithUrl = LoginProviderView & { authenticationUrl: string };
 
-type LoginStatus = {
-    setupRequired?: boolean;
-    rsaEncryptionEnabled?: boolean;
+export type LoginStatus = LoginStatusView & { loginCaptchaEnabled?: boolean };
+
+export type LoginCaptcha = {
+    captchaChallengeId?: string;
+    captchaAnswer?: string;
 };
 
-type LoginSession = {
-    authenticated: boolean;
-    consoleAccessDisallowed?: boolean;
-    redirectUrl?: string;
-};
-
-type PublicKeyResponse = {
-    base64Format?: string;
-};
-
-type PasskeyOptionsResponse = {
-    publicKey?: Record<string, unknown>;
-};
-
-type PasskeyResult = {
-    authenticated?: boolean;
-    twoFactorRequired?: boolean;
-};
-
-type LoginProvider = {
-    name?: string;
-    displayName?: string;
-    logo?: string;
-    authenticationUrl?: string;
-    helpPage?: string;
-};
-
-type ProviderWithUrl = LoginProvider & { authenticationUrl: string };
+export type SignInResult = { kind: "authenticated"; session: SessionView } | { kind: "two-factor"; username?: string };
 
 class LoginError extends Error {}
 
@@ -52,39 +36,38 @@ function readCookie(name: string): string | undefined {
     return entry ? decodeURIComponent(entry.slice(prefix.length)) : undefined;
 }
 
-async function getLoginStatus(): Promise<LoginStatus> {
-    const { data } = await axios.get<LoginStatus>(`${API_PREFIX}/login/status`, { withCredentials: true });
+function formHeaders(): Record<string, string> {
+    const csrfToken = readCookie("XSRF-TOKEN");
 
-    return data;
+    return {
+        "Content-Type": "application/x-www-form-urlencoded",
+        ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
+    };
 }
 
-async function getLoginSession(): Promise<LoginSession> {
-    const { data } = await axios.get<LoginSession>(`${API_PREFIX}/login/session`, { withCredentials: true });
+export async function getLoginStatus(): Promise<LoginStatus> {
+    return (await apiClient.login.getLoginStatus()).data as LoginStatus;
+}
 
-    return data;
+async function getLoginSession(): Promise<SessionView> {
+    return (await apiClient.login.getLoginSession()).data;
 }
 
 async function getLoginPublicKey(): Promise<string> {
-    const { data } = await axios.get<PublicKeyResponse>(`${API_PREFIX}/login/public-key`, {
-        withCredentials: true,
-    });
+    const { base64Format } = (await apiClient.login.getPublicKey()).data;
 
-    if (!data.base64Format) {
+    if (!base64Format) {
         throw new LoginError("登录公钥缺失，请稍后重试。");
     }
 
-    return data.base64Format;
+    return base64Format;
 }
 
-export async function getLoginProviders(): Promise<LoginProvider[]> {
-    const { data } = await axios.get<LoginProvider[]>(`${API_PREFIX}/login/providers`, {
-        withCredentials: true,
-    });
-
-    return data;
+export async function getLoginProviders(): Promise<LoginProviderView[]> {
+    return (await apiClient.login.listLoginProviders()).data;
 }
 
-export async function signIn(username: string, password: string): Promise<LoginSession> {
+export async function signIn(username: string, password: string, captcha?: LoginCaptcha): Promise<SignInResult> {
     const status = await getLoginStatus();
 
     if (status.setupRequired) {
@@ -95,21 +78,22 @@ export async function signIn(username: string, password: string): Promise<LoginS
         status.rsaEncryptionEnabled === false
             ? password
             : await encryptLoginPassword(password, await getLoginPublicKey());
-    const csrfToken = readCookie("XSRF-TOKEN");
-    const response = await axios.post<{ twoFactorRequired?: boolean }>(
-        "/login",
-        new URLSearchParams({ username, password: submittedPassword }),
-        {
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-                ...(csrfToken ? { "X-XSRF-TOKEN": csrfToken } : {}),
-            },
-            withCredentials: true,
-        },
-    );
+    const body = new URLSearchParams({ username, password: submittedPassword });
+
+    if (captcha?.captchaChallengeId) {
+        body.set("captchaChallengeId", captcha.captchaChallengeId);
+    }
+
+    if (captcha?.captchaAnswer) {
+        body.set("captchaAnswer", captcha.captchaAnswer);
+    }
+
+    const response = await axiosInstance.post<{ twoFactorRequired?: boolean; username?: string }>("/login", body, {
+        headers: formHeaders(),
+    });
 
     if (response.data?.twoFactorRequired) {
-        throw new LoginError("该账号需要完成两步验证。");
+        return { kind: "two-factor", username: response.data.username ?? username };
     }
 
     const session = await getLoginSession();
@@ -118,18 +102,16 @@ export async function signIn(username: string, password: string): Promise<LoginS
         throw new LoginError("用户名或密码错误。");
     }
 
-    return session;
+    return { kind: "authenticated", session };
 }
 
-async function getPasskeyOptions(username?: string): Promise<PasskeyOptionsResponse> {
+async function getPasskeyOptions(username?: string): Promise<PasskeyAssertionOptionsVo> {
     try {
-        const { data } = await axios.post<PasskeyOptionsResponse>(
-            `${API_PREFIX}/passkeys/assertion/options`,
-            username ? { username } : {},
-            { withCredentials: true },
-        );
-
-        return data;
+        return (
+            await apiClient.passkey.passkeyAssertionOptions(
+                username ? { passkeyAssertionOptionsRequest: { username } } : {},
+            )
+        ).data;
     } catch (error) {
         if (isAxiosError(error) && error.response?.status === 403) {
             throw new LoginError("通行密钥登录未启用。");
@@ -139,7 +121,7 @@ async function getPasskeyOptions(username?: string): Promise<PasskeyOptionsRespo
     }
 }
 
-export async function signInWithPasskey(username?: string): Promise<LoginSession> {
+export async function signInWithPasskey(username?: string): Promise<SignInResult> {
     const options = await getPasskeyOptions(username);
     const publicKey = options.publicKey;
 
@@ -159,17 +141,10 @@ export async function signInWithPasskey(username?: string): Promise<LoginSession
         throw new LoginError("通行密钥登录失败，请重试。");
     }
 
-    const result = await axios.post<PasskeyResult>(
-        `${API_PREFIX}/passkeys/assertion/verify`,
-        serializeAssertion(credential),
-        {
-            headers: { "Content-Type": "application/json" },
-            withCredentials: true,
-        },
-    );
+    const result = await apiClient.passkey.passkeyAssertionVerify({ body: serializeAssertion(credential) });
 
     if (result.data.twoFactorRequired) {
-        throw new LoginError("该账号需要完成两步验证。");
+        return { kind: "two-factor", username: result.data.username ?? username };
     }
 
     if (!result.data.authenticated) {
@@ -182,14 +157,51 @@ export async function signInWithPasskey(username?: string): Promise<LoginSession
         throw new LoginError("登录状态未生效，请重试。");
     }
 
+    return { kind: "authenticated", session };
+}
+
+export async function verifyTwoFactorCode(code: string): Promise<SessionView> {
+    try {
+        await axiosInstance.post("/challenges/two-factor/totp", new URLSearchParams({ code }), {
+            headers: formHeaders(),
+        });
+    } catch (error) {
+        const session = await getLoginSession().catch(() => null);
+
+        if (session?.authenticated) {
+            return session;
+        }
+
+        throw error;
+    }
+
+    const session = await getLoginSession();
+
+    if (!session.authenticated) {
+        throw new LoginError("两步验证未通过，请重试。");
+    }
+
     return session;
 }
 
-export function providerWithUrl(provider: LoginProvider): provider is ProviderWithUrl {
-    return Boolean(provider.authenticationUrl);
+export function completeLogin(session: SessionView, redirectTo?: string, onDenied?: () => void): void {
+    if (session.consoleAccessDisallowed) {
+        onDenied?.();
+        return;
+    }
+
+    window.location.assign(resolvePostLoginRedirect(redirectTo, session.redirectUrl));
 }
 
-export function signInErrorMessage(error: unknown): string {
+export function isTwoFactorSessionExpired(error: unknown): boolean {
+    return (
+        isAxiosError<{ type?: string }>(error) &&
+        error.response?.status === 401 &&
+        Boolean(error.response.data?.type?.endsWith("/2fa-required"))
+    );
+}
+
+export function twoFactorErrorMessage(error: unknown): string {
     if (error instanceof LoginError) {
         return error.message;
     }
@@ -200,7 +212,33 @@ export function signInErrorMessage(error: unknown): string {
         }
 
         if (error.response.status === 401) {
-            return "用户名或密码错误。";
+            return "验证码无效，请重新输入。";
+        }
+
+        if (error.response.status === 429) {
+            return "尝试次数过多，请稍后再试。";
+        }
+    }
+
+    return "验证失败，请稍后重试。";
+}
+
+export function providerWithUrl(provider: LoginProviderView): provider is ProviderWithUrl {
+    return Boolean(provider.authenticationUrl);
+}
+
+export function signInErrorMessage(error: unknown, captchaEnabled = false): string {
+    if (error instanceof LoginError) {
+        return error.message;
+    }
+
+    if (isAxiosError(error)) {
+        if (!error.response) {
+            return "无法连接登录服务，请稍后重试。";
+        }
+
+        if (error.response.status === 401) {
+            return captchaEnabled ? "登录失败，请检查用户名、密码和图片验证码。" : "用户名或密码错误。";
         }
 
         if (error.response.status === 403) {

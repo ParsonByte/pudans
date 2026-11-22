@@ -4,20 +4,20 @@ import { useEffect, useState } from "react";
 
 import Link from "next/link";
 
+import type { CaptchaChallenge } from "@pudans-dev/api-client";
 import { App, Button, Flex, Form, Input, Steps, Typography } from "antd";
 import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 
 import { AuthFormCard } from "../../../components/auth-form-card";
+import { CaptchaField } from "../../../components/captcha-field";
+import { getCaptchaChallenge } from "../../../composables/_auth-captcha";
 import {
-    type CaptchaChallenge,
-    getCaptchaChallenge,
     isRecoveryCaptchaError,
     prepareRecovery,
     recoveryErrorMessage,
     resetPassword,
     sendRecoveryCode,
 } from "../../../composables/_auth-recovery";
-import { CaptchaField } from "./captcha-field";
 
 type RecoveryValues = {
     email: string;

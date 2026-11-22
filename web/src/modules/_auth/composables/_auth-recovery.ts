@@ -1,12 +1,5 @@
-import axios, { isAxiosError } from "axios";
-
-const API_PREFIX = "/apis/api.pudans.tolim.cn/v1alpha1";
-
-export type CaptchaChallenge = {
-    challengeId?: string;
-    image?: string;
-    expiresInSeconds?: number;
-};
+import { type ResetPasswordRequest, apiClient } from "@pudans-dev/api-client";
+import { isAxiosError } from "axios";
 
 type CaptchaPayload = {
     captchaChallengeId?: string;
@@ -14,29 +7,15 @@ type CaptchaPayload = {
 };
 
 export async function prepareRecovery(): Promise<void> {
-    await axios.get(`${API_PREFIX}/login/status`, { withCredentials: true });
-}
-
-export async function getCaptchaChallenge(): Promise<CaptchaChallenge> {
-    const { data } = await axios.get<CaptchaChallenge>(`${API_PREFIX}/captcha/challenge`, {
-        withCredentials: true,
-    });
-
-    return data;
+    await apiClient.login.getLoginStatus();
 }
 
 export async function sendRecoveryCode(email: string, captcha?: CaptchaPayload): Promise<void> {
-    await axios.post(`${API_PREFIX}/recovery/send-code`, { email, ...captcha }, { withCredentials: true });
+    await apiClient.passwordRecovery.sendPasswordRecoveryCode({ sendCodeRequest: { email, ...captcha } });
 }
 
-export async function resetPassword(input: {
-    email: string;
-    code: string;
-    newPassword: string;
-    captchaChallengeId?: string;
-    captchaAnswer?: string;
-}): Promise<void> {
-    await axios.post(`${API_PREFIX}/recovery/reset-password`, input, { withCredentials: true });
+export async function resetPassword(input: ResetPasswordRequest): Promise<void> {
+    await apiClient.passwordRecovery.resetPasswordWithRecoveryCode({ resetPasswordRequest: input });
 }
 
 export function isRecoveryCaptchaError(error: unknown): boolean {
