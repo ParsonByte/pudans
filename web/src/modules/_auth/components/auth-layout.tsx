@@ -9,6 +9,8 @@ import { Button, Card, Dropdown } from "antd";
 import { Moon, Pause, Play, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 
+import { useEventCallback } from "@/hooks/utils/use-event-callback";
+
 const BRAND_NAME = "PUDANS";
 
 type AuthLayoutProps = {
@@ -36,7 +38,8 @@ function ThemeMenu() {
         >
             <Button
                 aria-label="切换主题"
-                className="relative text-(--auth-foreground-muted) hover:bg-(--auth-surface) hover:text-(--auth-foreground)"
+                className="relative drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] transition-colors hover:bg-(--auth-surface)"
+                style={{ color: "#fff" }}
                 type="text"
             >
                 <Sun className="size-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
@@ -61,7 +64,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         }
     }, []);
 
-    const toggleVideo = () => {
+    const toggleVideo = useEventCallback(() => {
         const video = videoRef.current;
 
         if (!video) {
@@ -73,7 +76,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         } else {
             video.pause();
         }
-    };
+    });
 
     return (
         <main className="relative isolate min-h-dvh overflow-x-hidden bg-neutral-950 text-(--auth-foreground)">
@@ -103,7 +106,12 @@ export function AuthLayout({ children }: AuthLayoutProps) {
             />
 
             <header className="fixed inset-x-0 top-0 z-20 flex items-center justify-between gap-5 bg-[image:var(--auth-header-gradient)] px-5 py-4 text-(--auth-foreground) sm:px-10 sm:py-5">
-                <Link href="/sign-in" aria-label={BRAND_NAME} className="inline-flex min-w-0 items-center gap-2.5">
+                <Link
+                    href="/sign-in"
+                    aria-label={BRAND_NAME}
+                    className="inline-flex min-w-0 items-center gap-2.5"
+                    style={{ color: "#fff" }}
+                >
                     <Image alt="" className="shrink-0" height={32} src="/brand/icon-small.svg" unoptimized width={32} />
                     <span className="truncate text-sm leading-none font-bold tracking-[0.16em]">{BRAND_NAME}</span>
                 </Link>
@@ -120,9 +128,12 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                 </h1>
             </section>
 
-            <section className="relative z-10 flex min-h-dvh items-center justify-center px-4 pt-24 pb-28 md:justify-end md:px-[clamp(24px,7vw,112px)] md:pt-28 md:pb-24">
+            <section className="relative z-10 flex min-h-dvh items-center justify-center px-4 pt-20 pb-20 md:justify-end md:px-[clamp(24px,7vw,112px)] md:pt-28 md:pb-24">
                 <div className="w-full max-w-[460px]">
-                    <Card className="w-full shadow-2xl" styles={{ body: { padding: 28 } }}>
+                    <Card
+                        className="max-h-[calc(100dvh-10rem)] w-full overflow-y-auto shadow-2xl md:max-h-none md:overflow-visible"
+                        styles={{ body: { padding: 28 } }}
+                    >
                         {children}
                     </Card>
                 </div>
@@ -132,8 +143,9 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                 <Button
                     aria-label={videoPlaying ? "暂停背景视频" : "继续播放背景视频"}
                     aria-pressed={!videoPlaying}
-                    className="border-(--auth-border) bg-(--auth-surface) text-xs font-medium whitespace-nowrap text-(--auth-foreground-subtle) backdrop-blur-md hover:bg-(--auth-surface-hover) hover:text-(--auth-foreground)"
+                    className="border-(--auth-border) bg-(--auth-surface) text-xs font-medium whitespace-nowrap text-(--auth-foreground) drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] backdrop-blur-md transition-colors hover:bg-(--auth-surface-hover)"
                     onClick={toggleVideo}
+                    style={{ color: "#fff" }}
                     type="text"
                 >
                     {videoPlaying ? (
@@ -145,25 +157,28 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                 </Button>
             </div>
 
-            <footer className="fixed inset-x-0 bottom-0 z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-[image:var(--auth-footer-gradient)] px-4 py-4 text-[11px] text-(--auth-foreground-subtle)">
+            <footer className="fixed inset-x-0 bottom-0 z-20 flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2 bg-[image:var(--auth-footer-gradient)] px-4 py-4 text-[11px] text-(--auth-foreground-subtle)">
                 <span className="w-full text-center whitespace-nowrap sm:w-auto">
                     © {new Date().getFullYear()} {BRAND_NAME}。保留所有权利。
                 </span>
                 <Link
-                    className="whitespace-nowrap transition-colors hover:text-(--auth-foreground)"
+                    className="whitespace-nowrap"
                     href="/sign-in?routes=legal&tab=terms"
+                    style={{ color: "var(--auth-foreground-subtle)" }}
                 >
                     用户协议
                 </Link>
                 <Link
-                    className="whitespace-nowrap transition-colors hover:text-(--auth-foreground)"
+                    className="whitespace-nowrap"
                     href="/sign-in?routes=legal&tab=privacy"
+                    style={{ color: "var(--auth-foreground-subtle)" }}
                 >
                     隐私政策
                 </Link>
                 <Link
-                    className="whitespace-nowrap transition-colors hover:text-(--auth-foreground)"
+                    className="whitespace-nowrap"
                     href="/sign-in?routes=legal&tab=confidentiality"
+                    style={{ color: "var(--auth-foreground-subtle)" }}
                 >
                     数据保密协议
                 </Link>
