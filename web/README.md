@@ -48,6 +48,10 @@ src/routes/(_auth)/route.tsx 唯一认证路由入口
 src/routes/(_setup)/route.tsx 初始化路由入口
 src/routes/_authenticated/route.tsx 会话认证检查
 src/stores/                  客户端状态仓库
+src/stores/_auth/            认证会话与两步验证状态
+src/stores/_setup/           初始化完成状态
+src/stores/create-store.ts  通用状态仓库实现
+src/stores/use-store.ts     订阅仓库状态的 Hook
 src/styles/                  全局样式与主题变量（_global.css）
 src/styles/layouts/          布局样式（_bento-layout.css）
 ```

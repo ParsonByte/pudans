@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-
 import Link from "next/link";
 
 import { Typography } from "antd";
+
+import { cancelTwoFactorChallenge, startTwoFactorChallenge, useAuthStore } from "@/stores/_auth";
 
 import { AuthFormCard } from "../../components/auth-form-card";
 import { TwoFactorView } from "../two-factor";
@@ -15,21 +15,21 @@ type SignInViewProps = {
 };
 
 export function SignInView({ redirectTo }: SignInViewProps) {
-    const [twoFactorUsername, setTwoFactorUsername] = useState<string>();
+    const { twoFactorUsername } = useAuthStore();
 
-    if (twoFactorUsername !== undefined) {
+    if (twoFactorUsername !== null) {
         return (
             <TwoFactorView
-                onBack={() => setTwoFactorUsername(undefined)}
+                onBack={cancelTwoFactorChallenge}
                 redirectTo={redirectTo}
-                username={twoFactorUsername}
+                username={twoFactorUsername || undefined}
             />
         );
     }
 
     return (
         <AuthFormCard description="连接你的数字空间。" eyebrow="欢迎回来" title="继续你的创作">
-            <LoginForm onTwoFactorRequired={setTwoFactorUsername} redirectTo={redirectTo} />
+            <LoginForm onTwoFactorRequired={startTwoFactorChallenge} redirectTo={redirectTo} />
             <Typography.Paragraph className="!mb-0 text-center !text-xs" type="secondary">
                 登录即代表同意{" "}
                 <Link

@@ -8,6 +8,8 @@ import {
 } from "@pudans-dev/api-client";
 import { isAxiosError } from "axios";
 
+import { setAuthSession } from "@/stores/_auth/store";
+
 import { encryptLoginPassword } from "./_auth-login-crypto";
 import { resolvePostLoginRedirect } from "./_auth-post-login-redirect";
 import { getPasskeyAssertion, serializeAssertion } from "./_auth-webauthn";
@@ -190,6 +192,7 @@ export function completeLogin(session: SessionView, redirectTo?: string, onDenie
         return;
     }
 
+    setAuthSession(session);
     window.location.assign(resolvePostLoginRedirect(redirectTo, session.redirectUrl));
 }
 
