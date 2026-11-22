@@ -19,6 +19,5 @@ public interface SuperAdminInitializer {
     class InitializationParam {
         private String username;
         private String password;
-        private String email;
     }
 }

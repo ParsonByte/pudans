@@ -28,7 +28,6 @@ import cn.tolim.pudans.infra.utils.PudansUtils;
 import cn.tolim.pudans.infra.utils.YamlUnstructuredLoader;
 import cn.tolim.pudans.security.authentication.SuperAdminInitializer;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -281,7 +280,6 @@ public class SystemSetupEndpoint {
                         () -> superAdminInitializer.initialize(SuperAdminInitializer.InitializationParam.builder()
                                 .username(username)
                                 .password(body.getPassword())
-                                .email(body.getEmail())
                                 .build()))
                 .subscribeOn(Schedulers.boundedElastic());
 
@@ -382,9 +380,6 @@ public class SystemSetupEndpoint {
                 message = "密码只能使用大小写字母 (A-Z, a-z)、数字 (0-9)，以及以下特殊字符: !@#$%^&*.?")
         @Size(min = 8, max = 257)
         private String password;
-
-        @Email
-        private String email;
 
         @NotBlank
         @Size(max = 80)

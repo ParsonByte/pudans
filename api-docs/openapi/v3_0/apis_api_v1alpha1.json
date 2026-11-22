@@ -9635,10 +9635,6 @@
       "SetupRequest": {
         "type": "object",
         "properties": {
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
           "externalUrl": {
             "type": "string",
             "pattern": "^(http|https).*"

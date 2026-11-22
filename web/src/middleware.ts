@@ -1,18 +1,38 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { readSetupRequired } from "@/modules/_setup/composables/_setup-guard";
 import { requireAuthentication } from "@/routes/_authenticated/route";
 
+const SETUP_PATH = "/setup";
+const SIGN_IN_PATH = "/sign-in";
+
 export async function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl;
+
+    if (pathname === "/" || pathname === SIGN_IN_PATH || pathname === SETUP_PATH) {
+        const setupRequired = await readSetupRequired();
+
+        if (setupRequired === true && pathname !== SETUP_PATH) {
+            return NextResponse.redirect(new URL(SETUP_PATH, request.url));
+        }
+
+        if (setupRequired === false && pathname === SETUP_PATH) {
+            return NextResponse.redirect(new URL(SIGN_IN_PATH, request.url));
+        }
+
+        return NextResponse.next();
+    }
+
     if (await requireAuthentication(request)) {
         return NextResponse.next();
     }
 
-    const signInUrl = new URL("/sign-in", request.url);
+    const signInUrl = new URL(SIGN_IN_PATH, request.url);
     signInUrl.searchParams.set("redirect", `${request.nextUrl.pathname}${request.nextUrl.search}`);
 
     return NextResponse.redirect(signInUrl);
 }
 
 export const config = {
-    matcher: ["/((?!$|sign-in|_next|favicon.ico|brand/|login-bg.mp4|apis|login).*)"],
+    matcher: ["/((?!_next|favicon.ico|brand/|login-bg.mp4|apis|login).*)"],
 };
