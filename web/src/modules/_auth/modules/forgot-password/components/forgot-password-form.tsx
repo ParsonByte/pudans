@@ -199,9 +199,9 @@ export function ForgotPasswordForm() {
                                 <label className="mb-2 block text-sm" htmlFor="recovery-code">
                                     邮箱验证码
                                 </label>
-                                <Flex align="flex-start" gap={8}>
+                                <Flex align="flex-start" className="flex-col sm:flex-row" gap={8}>
                                     <Form.Item
-                                        className="!mb-0 flex-1"
+                                        className="!mb-0 w-full flex-1"
                                         name="code"
                                         rules={[
                                             { message: "请输入 6 位邮箱验证码。", required: true },
@@ -217,6 +217,7 @@ export function ForgotPasswordForm() {
                                         />
                                     </Form.Item>
                                     <Button
+                                        className="w-full sm:w-auto"
                                         htmlType="button"
                                         loading={codeSending}
                                         onClick={() => {

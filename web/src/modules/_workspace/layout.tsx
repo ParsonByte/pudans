@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, Suspense, useEffect, useMemo } from "react";
+import { type ReactNode, Suspense, useEffect, useMemo, useState } from "react";
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -125,10 +125,13 @@ function WorkspaceLayoutContent({ children, workspace }: WorkspaceLayoutProps) {
     const dynamicMenu = useDynamicMenu(workspace);
     const prompt = useMessagePrompt();
     const { collapsed } = useWorkspaceStore();
+    const [menuOpenState, setMenuOpenState] = useState<{ keys: string[]; routeKey: string }>();
     const routeState = useMemo(
         () => buildRoute(dynamicMenu.groups, dynamicMenu.selection),
         [dynamicMenu.groups, dynamicMenu.selection],
     );
+    const menuRouteKey = routeState.selectedKeys.join("|");
+    const openKeys = menuOpenState?.routeKey === menuRouteKey ? menuOpenState.keys : routeState.openKeys;
 
     useEffect(() => {
         if (dynamicMenu.loading || dynamicMenu.error || dynamicMenu.selectionFromQuery || !dynamicMenu.selectionPath) {
@@ -155,7 +158,9 @@ function WorkspaceLayoutContent({ children, workspace }: WorkspaceLayoutProps) {
             collapsed={collapsed}
             loading={dynamicMenu.loading}
             onCollapse={setWorkspaceCollapsed}
-            openKeys={routeState.openKeys}
+            onOpenChange={(keys) => setMenuOpenState({ keys, routeKey: menuRouteKey })}
+            openKeys={openKeys}
+            pageTitle={dynamicMenu.selection?.item.label ?? dynamicMenu.navigationWorkspace?.name}
             route={routeState.route}
             selectedKeys={routeState.selectedKeys}
         >

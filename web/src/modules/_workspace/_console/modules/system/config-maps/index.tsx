@@ -174,19 +174,28 @@ export function ConfigMapsView() {
                         {(fields, { add, remove }) => (
                             <Flex vertical gap={8}>
                                 {fields.map(({ key, name, ...restField }) => (
-                                    <Flex align="start" gap={8} key={key}>
+                                    <Flex align="start" className="flex-col gap-2 sm:flex-row" gap={8} key={key}>
                                         <Form.Item
                                             {...restField}
-                                            className="!mb-0 flex-1"
+                                            className="!mb-0 w-full flex-1"
                                             name={[name, "key"]}
                                             rules={[{ message: "请输入键。", required: true, whitespace: true }]}
                                         >
                                             <Input placeholder="键" />
                                         </Form.Item>
-                                        <Form.Item {...restField} className="!mb-0 flex-[2]" name={[name, "value"]}>
+                                        <Form.Item
+                                            {...restField}
+                                            className="!mb-0 w-full flex-[2]"
+                                            name={[name, "value"]}
+                                        >
                                             <Input placeholder="值" />
                                         </Form.Item>
-                                        <Button danger onClick={() => remove(name)} type="text">
+                                        <Button
+                                            className="w-full sm:w-auto"
+                                            danger
+                                            onClick={() => remove(name)}
+                                            type="text"
+                                        >
                                             删除
                                         </Button>
                                     </Flex>

@@ -1,25 +1,44 @@
 import type { NextRequest } from "next/server";
 
+import type { Navigation } from "@pudans-dev/api-client";
+
 export const API_ORIGIN = process.env.PUDANS_API_ORIGIN ?? "http://localhost:8090";
 const SESSION_PATH = "/apis/api.pudans.tolim.cn/v1alpha1/login/session";
+const NAVIGATION_PATH = "/apis/api.pudans.tolim.cn/v1alpha1/navigation";
+const DEFAULT_WORKSPACE_KEY = "console";
 
 type SessionView = {
     authenticated?: boolean;
 };
 
-export async function requireAuthentication(request: NextRequest): Promise<boolean> {
+async function fetchApi<T>(request: NextRequest, path: string): Promise<T | undefined> {
     try {
-        const response = await fetch(`${API_ORIGIN}${SESSION_PATH}`, {
+        const response = await fetch(`${API_ORIGIN}${path}`, {
             cache: "no-store",
             headers: {
                 accept: "application/json",
                 cookie: request.headers.get("cookie") ?? "",
             },
         });
-        const session = (await response.json()) as SessionView;
 
-        return response.ok && session.authenticated === true;
+        return response.ok ? ((await response.json()) as T) : undefined;
     } catch {
-        return false;
+        return undefined;
     }
+}
+
+export async function requireAuthentication(request: NextRequest): Promise<boolean> {
+    const session = await fetchApi<SessionView>(request, SESSION_PATH);
+
+    return session?.authenticated === true;
+}
+
+export async function resolveDefaultWorkspacePath(request: NextRequest): Promise<string | undefined> {
+    const navigation = await fetchApi<Navigation>(request, NAVIGATION_PATH);
+    const workspaces = navigation?.workspaces ?? [];
+    const workspace =
+        workspaces.find((candidate) => (candidate.slug ?? candidate.id) === DEFAULT_WORKSPACE_KEY) ?? workspaces[0];
+    const workspaceKey = workspace?.slug ?? workspace?.id;
+
+    return workspaceKey ? `/workspace/${encodeURIComponent(workspaceKey)}` : undefined;
 }

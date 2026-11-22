@@ -1,9 +1,8 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "ignore": ["src/hooks/**", "src/components/layouts/bento-grid.tsx"],
+  "ignore": ["src/hooks/**"],
   "ignoreDependencies": [
     "@ai-sdk/react",
-    "@ant-design/charts",
     "@ant-design/x",
     "@ant-design/x-card",
     "@ant-design/x-markdown",

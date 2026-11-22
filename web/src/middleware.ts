@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { readSetupRequired } from "@/modules/_setup/composables/_setup-guard";
-import { requireAuthentication } from "@/routes/_authenticated/route";
+import { requireAuthentication, resolveDefaultWorkspacePath } from "@/routes/_authenticated/route";
 
 const SETUP_PATH = "/setup";
 const SIGN_IN_PATH = "/sign-in";
@@ -12,11 +12,25 @@ export async function middleware(request: NextRequest) {
     if (pathname === "/" || pathname === SIGN_IN_PATH || pathname === SETUP_PATH) {
         const setupRequired = await readSetupRequired();
 
-        if (setupRequired === true && pathname === SIGN_IN_PATH) {
-            return NextResponse.redirect(new URL(SETUP_PATH, request.url));
+        if (setupRequired === true) {
+            return pathname === SETUP_PATH
+                ? NextResponse.next()
+                : NextResponse.redirect(new URL(SETUP_PATH, request.url));
         }
 
-        if (setupRequired === false && (pathname === "/" || pathname === SETUP_PATH)) {
+        if (setupRequired === false && pathname === SETUP_PATH) {
+            return NextResponse.redirect(new URL(SIGN_IN_PATH, request.url));
+        }
+
+        if (await requireAuthentication(request)) {
+            const workspacePath = await resolveDefaultWorkspacePath(request);
+
+            if (workspacePath) {
+                return NextResponse.redirect(new URL(workspacePath, request.url));
+            }
+        }
+
+        if (pathname === "/") {
             return NextResponse.redirect(new URL(SIGN_IN_PATH, request.url));
         }
 

@@ -77,10 +77,10 @@ export function AnnotationsView() {
                 toolbar={
                     <Input.Search
                         allowClear
+                        className="w-full sm:max-w-[460px]"
                         enterButton="查询"
                         onSearch={(value) => setTargetRef(value.trim())}
                         placeholder="输入 targetRef，例如 content.pudans.tolim.cn/Post"
-                        style={{ maxWidth: 460 }}
                     />
                 }
             />

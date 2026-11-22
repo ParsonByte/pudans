@@ -8,7 +8,7 @@
         @apply relative min-w-0 overflow-hidden rounded-3xl border border-neutral-200/80 bg-neutral-50/70 p-5 shadow-sm sm:p-6 dark:border-neutral-800/80 dark:bg-neutral-900/60;
     }
 
-    @media (min-width: 40rem) and (max-width: 63.999rem) {
+    @media (min-width: 48rem) and (max-width: 79.999rem) {
         .bento-grid {
             @apply grid-cols-2;
             grid-auto-rows: minmax(10rem, auto);
@@ -20,7 +20,7 @@
         }
     }
 
-    @media (min-width: 64rem) {
+    @media (min-width: 80rem) {
         .bento-grid {
             @apply grid-cols-4;
             grid-auto-rows: minmax(10rem, auto);
@@ -105,6 +105,29 @@
         .bento-grid > :nth-last-child(2):nth-child(6n + 4) {
             grid-column: 4 / span 1;
             grid-row: span 2;
+        }
+    }
+
+    .bento-grid.bento-grid--dashboard {
+        @apply grid-flow-row-dense grid-cols-1 gap-4;
+        grid-auto-rows: auto;
+    }
+
+    .bento-grid.bento-grid--dashboard > * {
+        @apply relative min-w-0 overflow-visible rounded-none border-0 bg-transparent p-0 shadow-none;
+        grid-column: auto;
+        grid-row: auto;
+    }
+
+    @media (min-width: 48rem) {
+        .bento-grid.bento-grid--dashboard {
+            @apply grid-cols-2;
+        }
+    }
+
+    @media (min-width: 80rem) {
+        .bento-grid.bento-grid--dashboard {
+            grid-template-columns: repeat(12, minmax(0, 1fr));
         }
     }
 }

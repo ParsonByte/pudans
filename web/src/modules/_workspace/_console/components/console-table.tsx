@@ -5,6 +5,7 @@ import { type ReactNode, useEffect } from "react";
 import { Card, Empty, Table, type TablePaginationConfig, type TableProps } from "antd";
 
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { useMobile } from "@/hooks/ui/use-mobile";
 import { useEventCallback } from "@/hooks/utils/use-event-callback";
 
 import { consoleErrorMessage } from "../composables/_errors";
@@ -35,6 +36,7 @@ export function ConsoleTable<T extends object>({
     toolbar,
 }: ConsoleTableProps<T>) {
     const prompt = useMessagePrompt();
+    const isMobile = useMobile();
     const retry = useEventCallback(() => onRetry?.());
     const canRetry = Boolean(onRetry);
 
@@ -52,7 +54,7 @@ export function ConsoleTable<T extends object>({
     }, [canRetry, error, prompt, retry]);
 
     return (
-        <Card extra={extra} title={title}>
+        <Card className="console-table-card" extra={extra} title={title}>
             {toolbar ? <div className="mb-4">{toolbar}</div> : null}
             <Table<T>
                 columns={columns}
@@ -62,7 +64,7 @@ export function ConsoleTable<T extends object>({
                 pagination={pagination ?? false}
                 rowKey={rowKey}
                 scroll={{ x: "max-content" }}
-                size="middle"
+                size={isMobile ? "small" : "middle"}
             />
         </Card>
     );

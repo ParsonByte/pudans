@@ -9,6 +9,7 @@ import { Button, Card } from "antd";
 import { Pause, Play } from "lucide-react";
 
 import { ThemeMenu } from "@/components/ui";
+import { useMobile } from "@/hooks/ui/use-mobile";
 import { useEventCallback } from "@/hooks/utils/use-event-callback";
 
 import { AUTH_GLASS_CLASS } from "../styles/glass";
@@ -24,6 +25,7 @@ type AuthLayoutProps = {
 
 export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
+    const isMobile = useMobile();
     const [videoPlaying, setVideoPlaying] = useState(false);
     const isSetup = variant === "setup";
 
@@ -119,7 +121,7 @@ export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
                 >
                     <Card
                         className={`${AUTH_GLASS_CLASS} max-h-full w-full overflow-y-auto`}
-                        styles={{ body: { padding: isSetup ? 32 : 28 } }}
+                        styles={{ body: { padding: isMobile ? 20 : isSetup ? 32 : 28 } }}
                     >
                         {children}
                     </Card>

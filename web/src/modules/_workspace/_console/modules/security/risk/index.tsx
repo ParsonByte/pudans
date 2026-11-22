@@ -350,17 +350,17 @@ export function RiskView() {
                     <Form.Item label="动作" name="action">
                         <Select options={ACTION_OPTIONS} />
                     </Form.Item>
-                    <Space size={16} wrap>
-                        <Form.Item label="阈值" name="threshold">
-                            <InputNumber min={1} precision={0} />
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <Form.Item className="!mb-0" label="阈值" name="threshold">
+                            <InputNumber className="w-full" min={1} precision={0} />
                         </Form.Item>
-                        <Form.Item label="窗口（秒）" name="windowSeconds">
-                            <InputNumber min={1} precision={0} />
+                        <Form.Item className="!mb-0" label="窗口（秒）" name="windowSeconds">
+                            <InputNumber className="w-full" min={1} precision={0} />
                         </Form.Item>
-                        <Form.Item label="阻断时长（秒）" name="blockSeconds">
-                            <InputNumber min={0} precision={0} />
+                        <Form.Item className="!mb-0" label="阻断时长（秒）" name="blockSeconds">
+                            <InputNumber className="w-full" min={0} precision={0} />
                         </Form.Item>
-                    </Space>
+                    </div>
                 </Form>
             </Modal>
             <Modal

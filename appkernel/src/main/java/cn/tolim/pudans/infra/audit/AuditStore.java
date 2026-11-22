@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -38,6 +39,14 @@ public class AuditStore {
     private static final int MAX_TRACE_GROUP_RECORDS = 20_000;
 
     public static final int MAX_PAGE_RECORDS = 10_000;
+
+    private static final String NON_STATIC_REQUEST_SQL = """
+            AND (request_path IS NULL
+                 OR (request_path NOT LIKE '/assets/%'
+                     AND request_path NOT LIKE '/brand/%'
+                     AND request_path NOT LIKE '/webjars/%'
+                     AND request_path <> '/favicon.ico'))
+            """;
 
     private final AuditRecordRepository activeRepository;
 
@@ -313,7 +322,7 @@ public class AuditStore {
         }
         sql.append(" GROUP BY 1");
         archiveSql.append(" GROUP BY 1");
-        sql.append(archiveSql).append(") grouped GROUP BY day ORDER BY day");
+        sql.append("\n").append(archiveSql).append(") grouped GROUP BY day ORDER BY day");
         var spec = databaseClient.sql(sql.toString()).bind("since", toOffsetDateTime(since));
         if (StringUtils.hasText(uid)) {
             spec = spec.bind("uid", uid);
@@ -331,6 +340,122 @@ public class AuditStore {
                 })
                 .all()
                 .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+    }
+
+    // 按结果统计指定时间区间内的审计数量。
+    public Mono<Map<String, Long>> countByResult(Instant from, Instant to, String operation) {
+        var activeSql = new StringBuilder("""
+                        SELECT result, SUM(total) AS total FROM (
+                        SELECT result, COUNT(*) AS total
+                        FROM audit_record
+                        WHERE occurred_at >= :from
+                          AND occurred_at < :to
+                        """);
+        activeSql.append(NON_STATIC_REQUEST_SQL);
+        var archiveSql = new StringBuilder("""
+                        UNION ALL
+                        SELECT result, COUNT(*) AS total
+                        FROM audit_record_archive
+                        WHERE occurred_at >= :from
+                          AND occurred_at < :to
+                        """);
+        archiveSql.append(NON_STATIC_REQUEST_SQL);
+        if (StringUtils.hasText(operation)) {
+            activeSql.append(" AND operation = :operation");
+            archiveSql.append(" AND operation = :operation");
+        }
+        activeSql.append(" GROUP BY result");
+        archiveSql.append(" GROUP BY result");
+        activeSql
+                .append("\n")
+                .append(archiveSql)
+                .append(") grouped GROUP BY result ORDER BY total DESC, result ASC");
+        var spec = databaseClient
+                .sql(activeSql.toString())
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to));
+        if (StringUtils.hasText(operation)) {
+            spec = spec.bind("operation", operation);
+        }
+        return spec.map((row, metadata) -> Map.entry(
+                        Objects.requireNonNull(row.get("result", String.class)),
+                        Objects.requireNonNull(row.get("total", Number.class)).longValue()))
+                .all()
+                .collectMap(Map.Entry::getKey, Map.Entry::getValue);
+    }
+
+    // 统计区间内产生审计记录的去重用户数。
+    public Mono<Long> countDistinctUids(Instant from, Instant to) {
+        var sql = new StringBuilder("""
+                        SELECT COUNT(DISTINCT uid) AS total FROM (
+                            SELECT uid
+                            FROM audit_record
+                            WHERE occurred_at >= :from
+                              AND occurred_at < :to
+                              AND uid IS NOT NULL
+                              AND uid <> ''
+                              AND uid <> 'anonymous'
+                        """);
+        sql.append(NON_STATIC_REQUEST_SQL);
+        var archiveSql = new StringBuilder("""
+                            UNION ALL
+                            SELECT uid
+                            FROM audit_record_archive
+                            WHERE occurred_at >= :from
+                              AND occurred_at < :to
+                              AND uid IS NOT NULL
+                              AND uid <> ''
+                              AND uid <> 'anonymous'
+                        """);
+        archiveSql.append(NON_STATIC_REQUEST_SQL);
+        sql.append("\n").append(archiveSql).append(") active_users");
+        return databaseClient
+                .sql(sql.toString())
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .map((row, metadata) -> Objects.requireNonNull(row.get("total", Number.class)).longValue())
+                .one()
+                .defaultIfEmpty(0L);
+    }
+
+    // 按操作类型统计区间内的高频操作。
+    public Mono<Map<String, Long>> topOperations(Instant from, Instant to, int limit) {
+        var activeSql = new StringBuilder("""
+                        SELECT operation, SUM(total) AS total FROM (
+                        SELECT operation, COUNT(*) AS total
+                        FROM audit_record
+                        WHERE occurred_at >= :from
+                          AND occurred_at < :to
+                        """);
+        activeSql.append(NON_STATIC_REQUEST_SQL);
+        var archiveSql = new StringBuilder("""
+                        UNION ALL
+                        SELECT operation, COUNT(*) AS total
+                        FROM audit_record_archive
+                        WHERE occurred_at >= :from
+                          AND occurred_at < :to
+                        """);
+        archiveSql.append(NON_STATIC_REQUEST_SQL);
+        activeSql.append(" GROUP BY operation");
+        archiveSql.append(" GROUP BY operation");
+        activeSql
+                .append("\n")
+                .append(archiveSql)
+                .append(") grouped GROUP BY operation ORDER BY total DESC, operation ASC LIMIT :limit");
+        return databaseClient
+                .sql(activeSql.toString())
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .bind("limit", Math.max(1, limit))
+                .map((row, metadata) -> Map.entry(
+                        Objects.requireNonNull(row.get("operation", String.class)),
+                        Objects.requireNonNull(row.get("total", Number.class)).longValue()))
+                .all()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (left, right) -> left,
+                        LinkedHashMap::new));
     }
 
     // 按时间倒序返回最近的审计记录。

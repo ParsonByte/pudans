@@ -367,6 +367,21 @@ public class AuditLog {
         return auditStore.countPerDay(since, uid, operation, result);
     }
 
+    // 按结果统计指定区间内的审计数量。
+    public Mono<Map<String, Long>> countByResult(Instant from, Instant to, String operation) {
+        return auditStore.countByResult(from, to, operation);
+    }
+
+    // 统计区间内的去重活跃用户数。
+    public Mono<Long> countDistinctUids(Instant from, Instant to) {
+        return auditStore.countDistinctUids(from, to);
+    }
+
+    // 返回区间内的高频操作统计。
+    public Mono<Map<String, Long>> topOperations(Instant from, Instant to, int limit) {
+        return auditStore.topOperations(from, to, limit);
+    }
+
     // 返回最近的若干条审计记录。
     public Flux<AuditRecord> findRecent(int limit) {
         return auditStore.findRecent(limit);

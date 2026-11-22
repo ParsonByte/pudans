@@ -308,7 +308,7 @@ export function RolesView() {
                 <Flex vertical gap={16}>
                     <Descriptions
                         bordered
-                        column={2}
+                        column={{ sm: 2, xs: 1 }}
                         items={[
                             {
                                 children: selected?.metadata.annotations?.[DISPLAY_NAME_KEY] ?? "—",
