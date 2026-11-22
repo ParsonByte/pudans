@@ -46,15 +46,22 @@ public class PermissionDirectory {
     public record PermissionCatalog(
             List<Workspace> workspaces, Map<String, String> resourceLabels) {}
 
-    public record Workspace(String id, String name, String plan, String icon, int order, List<Menu> menus) {}
+    public record Workspace(
+            String id,
+            String slug,
+            String name,
+            String plan,
+            String icon,
+            int order,
+            List<Menu> menus) {}
 
     public record Menu(
             String key,
             String label,
             String description,
-            String path,
             String icon,
             String group,
+            String groupKey,
             String parent,
             String parentIcon,
             String component,
@@ -81,14 +88,20 @@ public class PermissionDirectory {
     public record Navigation(List<NavigationWorkspace> workspaces) {}
 
     public record NavigationWorkspace(
-            String id, String name, String plan, String icon, int order, String homePath, List<NavigationMenu> menus) {}
+            String id,
+            String slug,
+            String name,
+            String plan,
+            String icon,
+            int order,
+            List<NavigationMenu> menus) {}
 
     public record NavigationMenu(
             String key,
             String label,
-            String path,
             String icon,
             String group,
+            String groupKey,
             String parent,
             String parentIcon,
             String component,
@@ -194,7 +207,8 @@ public class PermissionDirectory {
     }
 
     // 按权限裁剪工作区与菜单，生成导航结构。
-    public Mono<Navigation> navigation(List<String> permissions) {        return snapshot().map(catalog -> {
+    public Mono<Navigation> navigation(List<String> permissions) {
+        return snapshot().map(catalog -> {
             var granted = new HashSet<>(permissions);
             var allGranted = granted.contains(UiPermissions.ALL_UI_PERMISSIONS);
             var workspaces = new ArrayList<NavigationWorkspace>();
@@ -205,9 +219,9 @@ public class PermissionDirectory {
                         .map(menu -> new NavigationMenu(
                                 menu.key(),
                                 menu.label(),
-                                menu.path(),
                                 menu.icon(),
                                 menu.group(),
+                                menu.groupKey(),
                                 menu.parent(),
                                 menu.parentIcon(),
                                 menu.component(),
@@ -225,11 +239,11 @@ public class PermissionDirectory {
                 }
                 workspaces.add(new NavigationWorkspace(
                         workspace.id(),
+                        workspace.slug(),
                         workspace.name(),
                         workspace.plan(),
                         workspace.icon(),
                         workspace.order(),
-                        menus.getFirst().path(),
                         menus));
             }
             return new Navigation(workspaces);
@@ -313,6 +327,7 @@ public class PermissionDirectory {
                         continue;
                     }
                     var workspace = workspaces.computeIfAbsent(workspaceId, WorkspaceBuilder::new);
+                    workspace.slug = defaultValue(annotations.get(Role.UI_SLUG_ANNO), workspace.id);
                     workspace.name = defaultValue(annotations.get(Role.UI_LABEL_ANNO), workspaceId);
                     workspace.plan = defaultValue(annotations.get(Role.UI_DESCRIPTION_ANNO), "");
                     workspace.icon = annotations.get(Role.UI_ICON_ANNO);
@@ -379,6 +394,7 @@ public class PermissionDirectory {
                 .sorted(Comparator.comparingInt(workspace -> workspace.order))
                 .map(workspace -> new Workspace(
                         workspace.id,
+                        workspace.slug,
                         workspace.name,
                         workspace.plan,
                         workspace.icon,
@@ -402,10 +418,6 @@ public class PermissionDirectory {
         if (StringUtils.isNotBlank(description)) {
             menu.description = description;
         }
-        var path = annotations.get(Role.UI_PATH_ANNO);
-        if (StringUtils.isNotBlank(path)) {
-            menu.path = path;
-        }
         var icon = annotations.get(Role.UI_ICON_ANNO);
         if (StringUtils.isNotBlank(icon)) {
             menu.icon = icon;
@@ -413,6 +425,10 @@ public class PermissionDirectory {
         var group = annotations.get(Role.UI_GROUP_ANNO);
         if (StringUtils.isNotBlank(group)) {
             menu.group = group;
+        }
+        var groupKey = annotations.get(Role.UI_GROUP_KEY_ANNO);
+        if (StringUtils.isNotBlank(groupKey)) {
+            menu.groupKey = groupKey;
         }
         var parent = annotations.get(Role.UI_PARENT_ANNO);
         if (StringUtils.isNotBlank(parent)) {
@@ -480,6 +496,8 @@ public class PermissionDirectory {
     private static final class WorkspaceBuilder {
         private final String id;
 
+        private String slug;
+
         private String name;
 
         private String plan = "";
@@ -491,6 +509,7 @@ public class PermissionDirectory {
         // 以工作区标识初始化构建器，缺省名称同标识。
         private WorkspaceBuilder(String id) {
             this.id = id;
+            this.slug = id;
             this.name = id;
         }
     }
@@ -504,11 +523,11 @@ public class PermissionDirectory {
 
         private String description = "";
 
-        private String path;
-
         private String icon;
 
         private String group;
+
+        private String groupKey;
 
         private String parent;
 
@@ -541,9 +560,9 @@ public class PermissionDirectory {
                     key,
                     label,
                     description,
-                    path,
                     icon,
                     group,
+                    StringUtils.isNotBlank(groupKey) ? groupKey : defaultValue(group, key),
                     parent,
                     parentIcon,
                     component,

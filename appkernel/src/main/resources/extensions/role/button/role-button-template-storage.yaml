@@ -1,6 +1,121 @@
 apiVersion: pudans.tolim.cn/v1alpha1
 kind: Role
 metadata:
+  name: role-template-create-storage-files
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-files" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage-files"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "上传文件"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建上传会话并上传存储文件。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage-files:create"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagefiles/upload"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-delete-storage-files
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-files" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage-files"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "delete"
+    rbac.authorization.pudans.tolim.cn/ui-label: "移入回收站"
+    rbac.authorization.pudans.tolim.cn/ui-description: "把存储文件移入回收站。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage-files:delete"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagefiles/trash"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-restore-storage-files
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-files" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage-files"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "restore"
+    rbac.authorization.pudans.tolim.cn/ui-label: "恢复文件"
+    rbac.authorization.pudans.tolim.cn/ui-description: "从回收站恢复存储文件。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage-files:restore"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagefiles/restore"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-purge-storage-files
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-files" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage-files"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "purge"
+    rbac.authorization.pudans.tolim.cn/ui-label: "彻底删除"
+    rbac.authorization.pudans.tolim.cn/ui-description: "永久删除存储文件及其对象。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "40"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage-files:purge"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagefiles/purge"
+    verbs:
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-download-storage-files
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-storage-files" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.storage-files"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "download"
+    rbac.authorization.pudans.tolim.cn/ui-label: "下载文件"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建存储文件的临时下载地址。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "50"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["storage-files:download"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "storagefiles/download-url"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
   name: role-template-create-storage-policies
   labels:
     pudans.tolim.cn/role-template: "true"

@@ -1,0 +1,330 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: anonymous
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-public-apis" ]
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: authenticated
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [
+        "role-template-own-user-info",
+        "role-template-own-permissions",
+        "role-template-change-own-password",
+        "role-template-annotation-setting",
+        "role-template-manage-own-pat",
+        "role-template-manage-own-authentications",
+        "role-template-own-passkeys",
+        "role-template-own-connections"
+      ]
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "authproviders"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "navigation"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "usernavigations"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "permission-catalog"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-change-own-password
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/password"
+    resourceNames:
+      - "-"
+    verbs:
+      - "update"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/self"
+    resourceNames:
+      - "-"
+    verbs:
+      - "update"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-own-authentications
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "authentications"
+      - "authentications/totp"
+      - "authentications/settings"
+    verbs:
+      - "*"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "devices"
+    verbs:
+      - "get"
+      - "list"
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-own-pat
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "personalaccesstokens"
+      - "personalaccesstokens/actions"
+    verbs:
+      - "*"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-own-connections
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "userconnections"
+    verbs:
+      - "list"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "userconnections/providers"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "userconnections/bind"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "*"
+    resourceNames:
+      - "oidc/authorize-url"
+    verbs:
+      - "get"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-own-passkeys
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "passkeys"
+      - "passkeys/options"
+      - "passkeys/verify"
+    verbs:
+      - "create"
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-own-permissions
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/permissions"
+      - "users/ui-permissions"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/self"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-own-user-info
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
+      - "list"
+      - "update"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/self"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/avatar"
+      - "users/announcement-state"
+    resourceNames:
+      - "-"
+    verbs:
+      - "get"
+      - "create"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "avatars"
+    verbs:
+      - "get"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-temproles
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Just-In-Time Access"
+    rbac.authorization.pudans.tolim.cn/display-name: "Temporary Role View"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "temprolebindings"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-apply-temproles
+  labels:
+    pudans.tolim.cn/role-template: "true"
+    pudans.tolim.cn/hidden: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-temproles" ]
+    rbac.authorization.pudans.tolim.cn/module: "Just-In-Time Access"
+    rbac.authorization.pudans.tolim.cn/display-name: "Temporary Role Apply"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "temprolebindings"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "temprolebindings/revoke"
+    verbs:
+      - "create"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-approve-temproles
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-temproles" ]
+    rbac.authorization.pudans.tolim.cn/module: "Just-In-Time Access"
+    rbac.authorization.pudans.tolim.cn/display-name: "Temporary Role Approve"
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "temprolebindings/approve"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "temprolebindings/revoke"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "temprolebindings"
+    verbs:
+      - "update"
+      - "patch"
+      - "delete"

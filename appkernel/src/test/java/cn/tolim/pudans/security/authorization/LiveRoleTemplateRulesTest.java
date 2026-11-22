@@ -17,9 +17,9 @@ class LiveRoleTemplateRulesTest {
 
     private static final String API_PREFIX = "/apis/api.pudans.tolim.cn/v1alpha1";
 
-    private static final String SOURCE_TEMPLATE = "role-api-template-live-source.yaml";
+    private static final String SOURCE_TEMPLATE = "role-api-template-console.yaml";
 
-    private static final String RECORDING_TEMPLATE = "role-api-template-live-recording.yaml";
+    private static final String RECORDING_TEMPLATE = "role-api-template-console.yaml";
 
     @Test
     void sourceCreationAndPreviewResolveRequireNonResourceRules() throws Exception {

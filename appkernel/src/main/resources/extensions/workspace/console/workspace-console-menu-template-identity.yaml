@@ -1,0 +1,277 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Users Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "User View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-component: "users"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "用户"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看、创建、导入和管理用户。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:users"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
+    rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
+    rbac.authorization.pudans.tolim.cn/ui-order: "100"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-users
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-users", "role-template-manage-usergroups" ]
+    rbac.authorization.pudans.tolim.cn/module: "Users Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "User Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.users"
+    rbac.authorization.pudans.tolim.cn/ui-capability: "manage-users"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["users:manage"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users"
+      - "users/batch"
+      - "users/local"
+      - "users/usergroup"
+    verbs:
+      - "create"
+      - "update"
+      - "delete"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/password"
+    verbs:
+      - "update"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/disable"
+      - "users/enable"
+    verbs:
+      - "create"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "users/usergroup"
+      - "users/permissions"
+      - "users/connections"
+      - "users/activity"
+    verbs:
+      - "get"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-roles
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Roles Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "Role View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.roles"
+    rbac.authorization.pudans.tolim.cn/ui-component: "roles"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "角色"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看、创建和维护角色及其权限。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:shield-check"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
+    rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
+    rbac.authorization.pudans.tolim.cn/ui-order: "110"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["roles:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "roles"
+      - "rolebindings"
+    verbs:
+      - "get"
+      - "list"
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "permission-catalog"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-roles
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-roles", "role-template-audit-logs" ]
+    rbac.authorization.pudans.tolim.cn/module: "Roles Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "Role Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.roles"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["roles:manage"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "roles"
+      - "rolebindings"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-usergroups
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Users Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "User Group View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.user-groups"
+    rbac.authorization.pudans.tolim.cn/ui-component: "user-groups"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "用户组"
+    rbac.authorization.pudans.tolim.cn/ui-description: "维护用户组及其绑定的角色。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:users-round"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
+    rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
+    rbac.authorization.pudans.tolim.cn/ui-order: "120"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["user-groups:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "usergroups"
+      - "usergroupbindings"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-usergroups
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-view-usergroups" ]
+    rbac.authorization.pudans.tolim.cn/module: "Users Management"
+    rbac.authorization.pudans.tolim.cn/display-name: "User Group Manage"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.user-groups"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["user-groups:manage"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "usergroups"
+      - "usergroupbindings"
+    verbs:
+      - "create"
+      - "update"
+      - "patch"
+      - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-console-permissions
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/module: "Permissions"
+    rbac.authorization.pudans.tolim.cn/display-name: "Permission Catalog View"
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.permissions"
+    rbac.authorization.pudans.tolim.cn/ui-component: "permissions"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "权限目录"
+    rbac.authorization.pudans.tolim.cn/ui-description: "查看工作区、菜单与权限资源目录。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:key-round"
+    rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
+    rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
+    rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
+    rbac.authorization.pudans.tolim.cn/ui-order: "130"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["permissions:view"]'
+rules:
+  - apiGroups:
+      - "api.pudans.tolim.cn"
+    resources:
+      - "permission-catalog"
+    verbs:
+      - "get"
+      - "list"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-view-auth-providers
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-view-settings" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "view"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.auth-providers"
+    rbac.authorization.pudans.tolim.cn/ui-component: "auth-providers"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-label: "身份提供商"
+    rbac.authorization.pudans.tolim.cn/ui-description: "配置飞书、OAuth2、OIDC、TOTP 和个人访问令牌。"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:fingerprint"
+    rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
+    rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
+    rbac.authorization.pudans.tolim.cn/ui-order: "140"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["auth-providers:view"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-manage-auth-providers
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: '[ "role-template-manage-settings" ]'
+    rbac.authorization.pudans.tolim.cn/ui-type: "menu"
+    rbac.authorization.pudans.tolim.cn/ui-action: "manage"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.auth-providers"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["auth-providers:manage"]'
+rules: []

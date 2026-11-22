@@ -20,6 +20,7 @@ import type { NavigationOperation } from './navigation-operation';
 export interface NavigationMenu {
     'component'?: string;
     'group'?: string;
+    'groupKey'?: string;
     'icon'?: string;
     'key'?: string;
     'label'?: string;
@@ -27,5 +28,4 @@ export interface NavigationMenu {
     'order'?: number;
     'parent'?: string;
     'parentIcon'?: string;
-    'path'?: string;
 }

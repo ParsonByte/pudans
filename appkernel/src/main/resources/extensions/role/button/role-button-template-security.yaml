@@ -90,3 +90,57 @@ rules:
       - "riskrules"
     verbs:
       - "delete"
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-create-secrets
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-console-secrets", "role-template-manage-secrets" ]
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.secrets"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "create"
+    rbac.authorization.pudans.tolim.cn/ui-label: "创建密钥"
+    rbac.authorization.pudans.tolim.cn/ui-description: "创建新的密钥。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "10"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["secrets:create"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-update-secrets
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-console-secrets", "role-template-manage-secrets" ]
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.secrets"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "update"
+    rbac.authorization.pudans.tolim.cn/ui-label: "编辑密钥"
+    rbac.authorization.pudans.tolim.cn/ui-description: "修改密钥内容和类型。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "20"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["secrets:update"]'
+rules: []
+---
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-delete-secrets
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/dependencies: |
+      [ "role-template-console-secrets", "role-template-manage-secrets" ]
+    rbac.authorization.pudans.tolim.cn/ui-type: "button"
+    rbac.authorization.pudans.tolim.cn/ui-menu: "console.secrets"
+    rbac.authorization.pudans.tolim.cn/ui-operation: "delete"
+    rbac.authorization.pudans.tolim.cn/ui-label: "删除密钥"
+    rbac.authorization.pudans.tolim.cn/ui-description: "删除密钥。"
+    rbac.authorization.pudans.tolim.cn/ui-order: "30"
+    rbac.authorization.pudans.tolim.cn/ui-permissions: '["secrets:delete"]'
+rules: []

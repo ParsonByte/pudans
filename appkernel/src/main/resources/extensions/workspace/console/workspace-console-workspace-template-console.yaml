@@ -7,6 +7,7 @@ metadata:
   annotations:
     rbac.authorization.pudans.tolim.cn/ui-type: "workspace"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
+    rbac.authorization.pudans.tolim.cn/ui-slug: "console"
     rbac.authorization.pudans.tolim.cn/ui-label: "PUDANS Console"
     rbac.authorization.pudans.tolim.cn/ui-description: "统一终端访问管控"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:terminal"
