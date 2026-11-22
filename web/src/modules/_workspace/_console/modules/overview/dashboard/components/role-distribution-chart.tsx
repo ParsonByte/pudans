@@ -2,6 +2,8 @@ import type { RoleUserCount } from "@pudans-dev/api-client";
 import { Empty } from "antd";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 
+import { ChartTooltipCard } from "@/components/ui";
+
 import { formatCount, roleSlices } from "../composables/_dashboard";
 import { useDashboardTheme } from "../composables/_theme";
 
@@ -21,7 +23,6 @@ type DonutTooltipProps = {
 };
 
 function DonutTooltip({ active, payload }: DonutTooltipProps) {
-    const { token } = useDashboardTheme();
     const item = payload?.[0]?.payload;
 
     if (!active || !item) {
@@ -29,22 +30,15 @@ function DonutTooltip({ active, payload }: DonutTooltipProps) {
     }
 
     return (
-        <div
-            className="rounded-xl border px-3 py-2 text-xs"
-            style={{
-                background: token.colorBgElevated,
-                borderColor: token.colorBorderSecondary,
-                boxShadow: token.boxShadowSecondary,
-            }}
-        >
-            <div className="flex items-center gap-2 font-medium" style={{ color: token.colorText }}>
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                {item.displayName}
-            </div>
-            <div className="mt-1" style={{ color: token.colorTextSecondary }}>
-                {formatCount(item.users)} 名成员
-            </div>
-        </div>
+        <ChartTooltipCard
+            items={[
+                {
+                    color: item.color,
+                    label: item.displayName,
+                    value: `${formatCount(item.users)} 名成员`,
+                },
+            ]}
+        />
     );
 }
 

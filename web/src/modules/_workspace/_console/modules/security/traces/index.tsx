@@ -6,9 +6,10 @@ import { type AuditTraceSummary, apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { Button, Input, Modal, Select, Space, type TableProps } from "antd";
 
+import { ResultTag } from "@/components/ui";
+
 import { ConsoleTable } from "../../../components/console-table";
 import { ObjectDetails } from "../../../components/object-details";
-import { ResultTag } from "../../../components/result-tag";
 import { formatDateTime, formatDuration } from "../../../composables/_format";
 import { useConsoleTableState } from "../../../composables/_table";
 

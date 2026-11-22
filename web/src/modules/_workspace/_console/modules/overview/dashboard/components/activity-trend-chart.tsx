@@ -1,6 +1,7 @@
 import { Empty } from "antd";
 import { Area, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import { ChartTooltipCard } from "@/components/ui";
 import { useMobile } from "@/hooks/ui/use-mobile";
 
 import { type ActivityTrendPoint, formatCount, formatTrendDate } from "../composables/_dashboard";
@@ -25,8 +26,6 @@ type TrendTooltipProps = {
 };
 
 function TrendTooltip({ active, label, payload }: TrendTooltipProps) {
-    const { token } = useDashboardTheme();
-
     if (!active || !payload?.length) {
         return null;
     }
@@ -35,31 +34,14 @@ function TrendTooltip({ active, label, payload }: TrendTooltipProps) {
     const title = date ? formatTrendDate(date) : label;
 
     return (
-        <div
-            className="rounded-2xl border px-4 py-3 backdrop-blur"
-            style={{
-                background: token.colorBgElevated,
-                borderColor: token.colorBorderSecondary,
-                boxShadow: token.boxShadowSecondary,
-            }}
-        >
-            <div className="mb-2 text-xs font-medium" style={{ color: token.colorTextSecondary }}>
-                {title}
-            </div>
-            <div className="space-y-1.5">
-                {[...payload].reverse().map((item) => (
-                    <div className="flex min-w-36 items-center justify-between gap-6" key={String(item.dataKey)}>
-                        <span className="flex items-center gap-2 text-xs" style={{ color: token.colorTextSecondary }}>
-                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
-                            {item.name}
-                        </span>
-                        <span className="text-xs font-semibold" style={{ color: token.colorText }}>
-                            {formatCount(item.value)}
-                        </span>
-                    </div>
-                ))}
-            </div>
-        </div>
+        <ChartTooltipCard
+            items={[...payload].reverse().map((item) => ({
+                color: item.color,
+                label: item.name,
+                value: formatCount(item.value),
+            }))}
+            title={title}
+        />
     );
 }
 

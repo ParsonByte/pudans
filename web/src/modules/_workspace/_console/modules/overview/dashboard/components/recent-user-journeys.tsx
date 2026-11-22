@@ -9,7 +9,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, Empty, Select, Skeleton, Tag } from "antd";
 import { Clock3, RefreshCw, UserRound } from "lucide-react";
 
-import { ResultTag } from "../../../../components/result-tag";
+import { ResultTag, StatTile } from "@/components/ui";
+
 import { formatDateTime } from "../../../../composables/_format";
 import { formatCount, formatJourneyDuration, operationLabel, userLabel } from "../composables/_dashboard";
 import { buildJourneySessions } from "../composables/_journey";
@@ -33,27 +34,6 @@ type RecentUserJourneysProps = {
 
 function journeyKey(journey: AuditJourney, index: number): string {
     return journey.uid ?? journey.username ?? `journey-${index}`;
-}
-
-function TraceStat({ label, value }: { label: string; value: string }) {
-    const { token } = useDashboardTheme();
-
-    return (
-        <div
-            className="rounded-2xl border px-3 py-2.5"
-            style={{
-                background: token.colorFillQuaternary,
-                borderColor: token.colorBorderSecondary,
-            }}
-        >
-            <div className="text-[11px]" style={{ color: token.colorTextTertiary }}>
-                {label}
-            </div>
-            <div className="mt-1 text-sm font-semibold" style={{ color: token.colorText }}>
-                {value}
-            </div>
-        </div>
-    );
 }
 
 export function RecentUserJourneys({ error, from, isPending, journeys, onRetry }: RecentUserJourneysProps) {
@@ -253,10 +233,14 @@ export function RecentUserJourneys({ error, from, isPending, journeys, onRetry }
                     </div>
                 </div>
                 <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 md:grid-cols-4">
-                    <TraceStat label="会话总数" value={formatCount(detail.sessionCount)} />
-                    <TraceStat label="页面访问" value={formatCount(detail.pageCount)} />
-                    <TraceStat label="操作明细" value={formatCount(detail.actionCount)} />
-                    <TraceStat label="入口 → 出口" value={`${detail.entryPath ?? "—"} → ${detail.exitPath ?? "—"}`} />
+                    <StatTile compact label="会话总数" value={formatCount(detail.sessionCount)} />
+                    <StatTile compact label="页面访问" value={formatCount(detail.pageCount)} />
+                    <StatTile compact label="操作明细" value={formatCount(detail.actionCount)} />
+                    <StatTile
+                        compact
+                        label="入口 → 出口"
+                        value={`${detail.entryPath ?? "—"} → ${detail.exitPath ?? "—"}`}
+                    />
                 </div>
                 <div className="mt-3 flex flex-wrap items-center gap-1.5">
                     <span className="mr-1 text-[11px]" style={{ color: token.colorTextTertiary }}>
