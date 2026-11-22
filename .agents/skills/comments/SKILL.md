@@ -11,7 +11,7 @@ Keep comments in the codebase minimal and compliant: short single-line Chinese c
 
 ## Triggers
 
-- Writing or editing a `.java` file that needs an explanatory comment.
+- Writing or editing a source file, such as `.java`, `.ts` or `.tsx`, that needs an explanatory comment.
 - Reviewing a diff that adds block comments, Javadoc, banners or commented-out code.
 - A review note asks for "a comment" and the correct form must be chosen.
 
@@ -31,8 +31,8 @@ Keep comments in the codebase minimal and compliant: short single-line Chinese c
    - Commented-out code.
 5. Check the touched files:
    ```bash
-   grep -rn '/\*' --include='*.java' .
-   awk 'prev ~ /^[[:space:]]*\/\// && $0 ~ /^[[:space:]]*\/\// { print FILENAME": "NR } { prev = $0 }' $(git diff --name-only -- '*.java')
+   rg -n '/\*' --glob '*.{java,ts,tsx,js,jsx}' .
+   awk 'prev ~ /^[[:space:]]*\/\// && $0 ~ /^[[:space:]]*\/\// { print FILENAME": "NR } { prev = $0 }' $(git ls-files --modified --others --exclude-standard -- '*.java' '*.ts' '*.tsx' '*.js' '*.jsx')
    ```
 6. Report which files gained or lost comments and why each remaining comment earns its place.
 
@@ -44,6 +44,7 @@ Keep comments in the codebase minimal and compliant: short single-line Chinese c
 ## Constraints
 
 - Chinese only, one line only, format exactly `// 注释`.
+- The rule is immutable: never edit `.agents/rules/comments.md` or add an exception elsewhere to allow another comment form.
 - English comments are forbidden.
 - No `/* */`, no Javadoc, no consecutive `//` blocks, no multi-line wording.
 - Double slash is never used for separators, banners, decoration or disabled code.
