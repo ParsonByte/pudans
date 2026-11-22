@@ -29,7 +29,9 @@ Every template file follows `<directory>-<scope>-<type>-template-<name>.yaml`:
 
 ## Required
 
-- A navigable menu is defined only in `extensions/workspace/<workspace>/` with `ui-type: "menu"`, `ui-menu`, `ui-workspace`, `ui-path`, `ui-label`, `ui-component` and `ui-permissions`.
+- A navigable menu is defined only in `extensions/workspace/<workspace>/` with `ui-type: "menu"`, `ui-menu`, `ui-workspace`, `ui-label`, `ui-component` and `ui-permissions`.
+- A workspace exposed at `/workspace/<slug>` declares `ui-slug` in its workspace template.
+- A menu view template declares `ui-group-key`; `/navigation` returns it so the frontend never hardcodes workspace groups. Menu links are built as `/workspace/<ui-slug>?<ui-group-key>=<ui-component>`; do not declare per-menu paths. `ui-order` controls menu and group order, and the first accessible menu is the workspace home.
 - A second-level menu adds `ui-parent` (the parent menu label) and optionally `ui-parent-icon` to its template. The parent is a navigation container only; access is still controlled by the child menus and their permissions.
 - Button and table permissions are role permission templates under `extensions/role/button/` and `extensions/role/table/`, carrying `ui-type`, `ui-menu`, `ui-operation`, `ui-permissions` and `rules`/`dependencies`. Do not put button or table permission templates in `workspace/`.
 - API permission templates live under `extensions/role/api/`.
