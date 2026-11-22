@@ -7,7 +7,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     App,
     Button,
-    Card,
     Flex,
     Form,
     Input,
@@ -21,6 +20,7 @@ import {
     Tag,
 } from "antd";
 
+import { SectionCard } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
 import { ConsoleTable } from "../../../components/console-table";
@@ -285,7 +285,7 @@ export function RiskView() {
                 rowKey={(rule) => rule.metadata.name}
                 title="风险规则"
             />
-            <Card
+            <SectionCard
                 extra={
                     <Button onClick={() => void bansQuery.refetch()} size="small">
                         刷新
@@ -302,7 +302,7 @@ export function RiskView() {
                     scroll={{ x: "max-content" }}
                     size="small"
                 />
-            </Card>
+            </SectionCard>
             <Modal
                 destroyOnHidden
                 footer={

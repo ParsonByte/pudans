@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { type AuditJourney, type AuditJourneyPage, type RecentOperation, apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
@@ -20,9 +20,9 @@ import {
 } from "lucide-react";
 
 import { BentoGrid } from "@/components/layouts/bento-grid";
+import { ResultTag, SectionCard, StatTile } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
-import { ResultTag } from "../../../components/result-tag";
 import { consoleErrorMessage } from "../../../composables/_errors";
 import { formatDateTime } from "../../../composables/_format";
 import { ActivityTrendChart } from "./components/activity-trend-chart";
@@ -44,14 +44,6 @@ import {
     userLabel,
 } from "./composables/_dashboard";
 import { type DashboardTone, useDashboardTheme } from "./composables/_theme";
-
-type PanelProps = {
-    children: ReactNode;
-    className?: string;
-    extra?: ReactNode;
-    subtitle?: string;
-    title: string;
-};
 
 type InsightTone = {
     icon: LucideIcon;
@@ -111,37 +103,6 @@ async function loadJourneySummaries(from: string): Promise<AuditJourneyPage> {
     return { ...result, items };
 }
 
-function Panel({ children, className, extra, subtitle, title }: PanelProps) {
-    const { token } = useDashboardTheme();
-
-    return (
-        <Card
-            className={`h-full !rounded-[20px] sm:!rounded-[28px] ${className ?? ""}`}
-            style={{
-                background: token.colorBgContainer,
-                borderColor: token.colorBorderSecondary,
-                boxShadow: token.boxShadowTertiary,
-            }}
-            styles={{ body: { padding: 0 } }}
-        >
-            <div className="flex flex-col gap-3 px-4 pt-4 sm:flex-row sm:items-start sm:justify-between sm:px-5 sm:pt-5">
-                <div>
-                    <div className="text-base font-semibold tracking-tight" style={{ color: token.colorText }}>
-                        {title}
-                    </div>
-                    {subtitle ? (
-                        <div className="mt-1 text-xs leading-5" style={{ color: token.colorTextSecondary }}>
-                            {subtitle}
-                        </div>
-                    ) : null}
-                </div>
-                {extra}
-            </div>
-            <div className="p-4 sm:p-5">{children}</div>
-        </Card>
-    );
-}
-
 function InsightCard({ insight }: { insight: DashboardInsight }) {
     const { token, tone } = useDashboardTheme();
     const config = INSIGHT_TONES[insight.severity] ?? INSIGHT_TONES.INFO;
@@ -177,30 +138,6 @@ function InsightCard({ insight }: { insight: DashboardInsight }) {
                 <p className="mt-1 text-xs leading-5" style={{ color: token.colorTextSecondary }}>
                     {insight.description}
                 </p>
-            </div>
-        </div>
-    );
-}
-
-function StatPill({ label, value }: { label: string; value: ReactNode }) {
-    const { token } = useDashboardTheme();
-
-    return (
-        <div
-            className="rounded-2xl border px-4 py-3"
-            style={{
-                background: token.colorFillQuaternary,
-                borderColor: token.colorBorderSecondary,
-            }}
-        >
-            <div className="text-[11px]" style={{ color: token.colorTextSecondary }}>
-                {label}
-            </div>
-            <div
-                className="mt-1 text-sm font-semibold [overflow-wrap:anywhere] break-words"
-                style={{ color: token.colorText }}
-            >
-                {value}
             </div>
         </div>
     );
@@ -454,7 +391,7 @@ export function DashboardView() {
             })}
 
             <div className="md:col-span-2 xl:col-span-7">
-                <Panel
+                <SectionCard
                     extra={
                         <span
                             className="rounded-full px-3 py-1 text-[11px] font-medium"
@@ -470,16 +407,16 @@ export function DashboardView() {
                     title="身份活动趋势"
                 >
                     <ActivityTrendChart data={trend} />
-                </Panel>
+                </SectionCard>
             </div>
             <div className="md:col-span-2 xl:col-span-5">
-                <Panel subtitle="按用户组继承关系汇总的成员分布。" title="角色成员分布">
+                <SectionCard subtitle="按用户组继承关系汇总的成员分布。" title="角色成员分布">
                     <RoleDistributionChart roles={overview.roleDistribution} />
-                </Panel>
+                </SectionCard>
             </div>
 
             <div className="md:col-span-1 xl:col-span-4">
-                <Panel
+                <SectionCard
                     extra={
                         <span className="text-[11px]" style={{ color: token.colorTextTertiary }}>
                             按操作次数
@@ -532,10 +469,10 @@ export function DashboardView() {
                             })}
                         </div>
                     )}
-                </Panel>
+                </SectionCard>
             </div>
             <div className="md:col-span-1 xl:col-span-4">
-                <Panel
+                <SectionCard
                     extra={
                         <span className="text-[11px]" style={{ color: token.colorTextTertiary }}>
                             共 {topOperations.length} 项
@@ -584,10 +521,10 @@ export function DashboardView() {
                             ))}
                         </div>
                     )}
-                </Panel>
+                </SectionCard>
             </div>
             <div className="md:col-span-2 xl:col-span-4">
-                <Panel
+                <SectionCard
                     extra={
                         <Tag color="blue" variant="filled">
                             共 {formatCount(resultTotal)} 次
@@ -649,7 +586,7 @@ export function DashboardView() {
                             })}
                         </div>
                     )}
-                </Panel>
+                </SectionCard>
             </div>
 
             <section
@@ -699,7 +636,7 @@ export function DashboardView() {
             </section>
 
             <div className="md:col-span-2 xl:col-span-8">
-                <Panel
+                <SectionCard
                     extra={
                         <span
                             className="flex items-center gap-1 text-[11px] font-medium"
@@ -720,10 +657,10 @@ export function DashboardView() {
                         scroll={{ x: "max-content" }}
                         size="small"
                     />
-                </Panel>
+                </SectionCard>
             </div>
             <div className="md:col-span-2 xl:col-span-4">
-                <Panel subtitle="基于当前审计、封禁与用户组数据生成。" title="安全诊断与风险提醒">
+                <SectionCard subtitle="基于当前审计、封禁与用户组数据生成。" title="安全诊断与风险提醒">
                     {insights.length === 0 ? (
                         <Empty description="暂无诊断项" image={Empty.PRESENTED_IMAGE_SIMPLE} />
                     ) : (
@@ -733,17 +670,17 @@ export function DashboardView() {
                             ))}
                         </div>
                     )}
-                </Panel>
+                </SectionCard>
             </div>
 
             <div className="md:col-span-2 xl:col-span-12">
-                <Panel subtitle="当前实例的运行环境与资源概况。" title="站点信息">
+                <SectionCard subtitle="当前实例的运行环境与资源概况。" title="站点信息">
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-4">
                         {siteInfo.map((item) => (
-                            <StatPill key={item.label} label={item.label} value={item.value} />
+                            <StatTile key={item.label} label={item.label} value={item.value} />
                         ))}
                     </div>
-                </Panel>
+                </SectionCard>
             </div>
         </BentoGrid>
     );

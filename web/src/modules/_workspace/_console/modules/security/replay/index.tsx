@@ -4,26 +4,13 @@ import { useEffect, useState } from "react";
 
 import { type AuditArchiveStats, type AuditRecord, type AuditReplay, apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
-import {
-    Button,
-    Card,
-    Col,
-    Empty,
-    Flex,
-    Input,
-    Modal,
-    Row,
-    Skeleton,
-    Statistic,
-    type TableProps,
-    Timeline,
-} from "antd";
+import { Button, Col, Empty, Flex, Input, Modal, Row, Skeleton, type TableProps, Timeline } from "antd";
 
+import { MetricCard, ResultTag, SectionCard } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
 import { ConsoleTable } from "../../../components/console-table";
 import { ObjectDetails } from "../../../components/object-details";
-import { ResultTag } from "../../../components/result-tag";
 import { consoleErrorMessage } from "../../../composables/_errors";
 import { formatDateTime, formatDuration } from "../../../composables/_format";
 import { useConsoleTableState } from "../../../composables/_table";
@@ -113,31 +100,17 @@ export function ReplayView() {
         <Flex vertical gap={16}>
             <Row gutter={[16, 16]}>
                 <Col lg={8} xs={24}>
-                    <Card>
-                        <Statistic
-                            loading={statsQuery.isPending}
-                            title="活跃审计记录"
-                            value={stats?.activeCount ?? 0}
-                        />
-                    </Card>
+                    <MetricCard label="活跃审计记录" loading={statsQuery.isPending} value={stats?.activeCount ?? 0} />
                 </Col>
                 <Col lg={8} xs={24}>
-                    <Card>
-                        <Statistic
-                            loading={statsQuery.isPending}
-                            title="已归档记录"
-                            value={stats?.archivedCount ?? 0}
-                        />
-                    </Card>
+                    <MetricCard label="已归档记录" loading={statsQuery.isPending} value={stats?.archivedCount ?? 0} />
                 </Col>
                 <Col lg={8} xs={24}>
-                    <Card>
-                        <Statistic loading={statsQuery.isPending} title="记录总数" value={stats?.totalCount ?? 0} />
-                    </Card>
+                    <MetricCard label="记录总数" loading={statsQuery.isPending} value={stats?.totalCount ?? 0} />
                 </Col>
             </Row>
 
-            <Card title="回放链路">
+            <SectionCard title="回放链路">
                 <Flex vertical gap={16}>
                     <Input.Search
                         allowClear
@@ -174,7 +147,7 @@ export function ReplayView() {
                         />
                     )}
                 </Flex>
-            </Card>
+            </SectionCard>
 
             <ConsoleTable
                 columns={columns}
