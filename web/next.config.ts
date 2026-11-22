@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
         return [
             { source: "/apis/:path*", destination: `${apiOrigin}/apis/:path*` },
             { source: "/login", destination: `${apiOrigin}/login` },
+            { source: "/workspace/:workspace", destination: "/:workspace" },
             { source: "/setup", destination: "/" },
         ];
     },
