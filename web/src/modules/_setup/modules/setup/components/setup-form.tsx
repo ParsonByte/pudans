@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import { useRouter } from "next/navigation";
-
 import { App, Button, Form, Input } from "antd";
+
+import { markSetupCompleted } from "@/stores/_setup";
 
 import { setupErrorMessage, submitSetup } from "../../../composables/_setup";
 import { FormSection } from "./form-section";
@@ -42,7 +42,6 @@ function validateExternalUrl(_: unknown, value?: string) {
 
 export function SetupForm() {
     const { message } = App.useApp();
-    const router = useRouter();
     const [form] = Form.useForm<SetupFormValues>();
     const [submitting, setSubmitting] = useState(false);
 
@@ -64,14 +63,14 @@ export function SetupForm() {
                 siteTitle: values.siteTitle.trim(),
                 username: values.username.trim(),
             });
+            markSetupCompleted();
             message.success("系统初始化完成，请登录。");
-            router.replace("/sign-in");
         } catch (error) {
             const result = setupErrorMessage(error);
             message.error(result.message);
 
             if (result.setupCompleted) {
-                router.replace("/sign-in");
+                markSetupCompleted();
             }
         } finally {
             setSubmitting(false);
