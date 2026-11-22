@@ -4,10 +4,9 @@ import { Suspense } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { Flex, Modal, Spin } from "antd";
+import { Flex, Spin } from "antd";
 
-import { useIsClient } from "@/hooks/utils/use-is-client";
-import { ForgotPasswordView, LEGAL_KEYS, type LegalDocumentKey, LegalView, SignInView } from "@/modules/_auth";
+import { ForgotPasswordView, LEGAL_KEYS, LegalDialog, type LegalDocumentKey, SignInView } from "@/modules/_auth";
 
 function normalizeTab(value: string | null): LegalDocumentKey {
     return LEGAL_KEYS.includes(value as LegalDocumentKey) ? (value as LegalDocumentKey) : "terms";
@@ -20,7 +19,6 @@ function AuthRouteContent() {
     const route = searchParams.get("routes");
     const legalOpen = route === "legal";
     const activeTab = normalizeTab(searchParams.get("tab"));
-    const isClient = useIsClient();
 
     const updateLegalTab = (tab: LegalDocumentKey) => {
         const params = new URLSearchParams(searchParams.toString());
@@ -44,11 +42,7 @@ function AuthRouteContent() {
     return (
         <>
             <SignInView redirectTo={redirectTo} />
-            {isClient ? (
-                <Modal centered destroyOnHidden footer={null} onCancel={closeLegal} open={legalOpen} width={800}>
-                    <LegalView activeTab={activeTab} onTabChange={updateLegalTab} />
-                </Modal>
-            ) : null}
+            <LegalDialog activeTab={activeTab} onClose={closeLegal} onTabChange={updateLegalTab} open={legalOpen} />
         </>
     );
 }
