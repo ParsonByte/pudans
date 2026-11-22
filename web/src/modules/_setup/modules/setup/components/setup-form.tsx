@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 
-import { App, Button, Form, Input } from "antd";
+import { Button, Form, Input } from "antd";
 
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { markSetupCompleted } from "@/stores/_setup";
 
 import { setupErrorMessage, submitSetup } from "../../../composables/_setup";
@@ -41,7 +42,7 @@ function validateExternalUrl(_: unknown, value?: string) {
 }
 
 export function SetupForm() {
-    const { message } = App.useApp();
+    const prompt = useMessagePrompt();
     const [form] = Form.useForm<SetupFormValues>();
     const [submitting, setSubmitting] = useState(false);
 
@@ -64,10 +65,10 @@ export function SetupForm() {
                 username: values.username.trim(),
             });
             markSetupCompleted();
-            message.success("系统初始化完成，请登录。");
+            prompt.success("系统初始化完成，请登录。");
         } catch (error) {
             const result = setupErrorMessage(error);
-            message.error(result.message);
+            prompt.error(result.message);
 
             if (result.setupCompleted) {
                 markSetupCompleted();

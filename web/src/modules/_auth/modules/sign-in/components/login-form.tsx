@@ -7,8 +7,10 @@ import Link from "next/link";
 import { LinkOutlined, LockOutlined, LoginOutlined, SafetyCertificateOutlined, UserOutlined } from "@ant-design/icons";
 import { NewLark } from "@icon-park/react";
 import { useQuery } from "@tanstack/react-query";
-import { App, Button, Divider, Flex, Form, Input } from "antd";
+import { Button, Divider, Flex, Form, Input } from "antd";
 import { FingerprintIcon } from "tdesign-icons-react";
+
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
 import {
     type LoginCaptcha,
@@ -33,7 +35,7 @@ type LoginFormProps = {
 };
 
 export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
-    const { message } = App.useApp();
+    const prompt = useMessagePrompt();
     const [form] = Form.useForm<LoginFormValues>();
     const [submitting, setSubmitting] = useState(false);
     const [passkeyLoading, setPasskeyLoading] = useState(false);
@@ -66,7 +68,7 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
             return;
         }
 
-        completeLogin(result.session, redirectTo, () => message.error("当前账号无权访问控制台。"));
+        completeLogin(result.session, redirectTo, () => prompt.error("当前账号无权访问控制台。"));
     };
 
     const handleFinish = async (values: LoginFormValues) => {
@@ -93,7 +95,7 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
                 return;
             }
 
-            message.error(signInErrorMessage(error));
+            prompt.error(signInErrorMessage(error));
         } finally {
             setSubmitting(false);
         }
@@ -116,7 +118,7 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
 
     const handlePasskey = async () => {
         if (typeof window === "undefined" || !window.PublicKeyCredential) {
-            message.error("当前浏览器不支持通行密钥登录。");
+            prompt.error("当前浏览器不支持通行密钥登录。");
             return;
         }
 
@@ -131,9 +133,9 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
                 return;
             }
 
-            completeLogin(result.session, redirectTo, () => message.error("当前账号无权访问控制台。"));
+            completeLogin(result.session, redirectTo, () => prompt.error("当前账号无权访问控制台。"));
         } catch (error) {
-            message.error(signInErrorMessage(error));
+            prompt.error(signInErrorMessage(error));
         } finally {
             setPasskeyLoading(false);
         }
@@ -219,7 +221,7 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
                                 return;
                             }
 
-                            message.error("飞书未配置");
+                            prompt.error("飞书未配置");
                         }}
                         title="飞书"
                         type="default"

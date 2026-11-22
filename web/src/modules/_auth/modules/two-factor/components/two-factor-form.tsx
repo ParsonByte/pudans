@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 
-import { App, Button, Form, Input } from "antd";
+import { Button, Form, Input } from "antd";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
+
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
 import {
     completeLogin,
@@ -22,7 +24,7 @@ type TwoFactorFormProps = {
 };
 
 export function TwoFactorForm({ onBack, redirectTo }: TwoFactorFormProps) {
-    const { message } = App.useApp();
+    const prompt = useMessagePrompt();
     const [submitting, setSubmitting] = useState(false);
 
     const handleFinish = async (values: TwoFactorFormValues) => {
@@ -30,15 +32,15 @@ export function TwoFactorForm({ onBack, redirectTo }: TwoFactorFormProps) {
 
         try {
             const session = await verifyTwoFactorCode(values.code.trim());
-            completeLogin(session, redirectTo, () => message.error("当前账号无权访问控制台。"));
+            completeLogin(session, redirectTo, () => prompt.error("当前账号无权访问控制台。"));
         } catch (error) {
             if (isTwoFactorSessionExpired(error)) {
-                message.error("验证已过期，请重新登录。");
+                prompt.error("验证已过期，请重新登录。");
                 onBack();
                 return;
             }
 
-            message.error(twoFactorErrorMessage(error));
+            prompt.error(twoFactorErrorMessage(error));
         } finally {
             setSubmitting(false);
         }

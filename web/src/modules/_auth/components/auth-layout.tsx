@@ -5,10 +5,10 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { Button, Card, Dropdown } from "antd";
-import { Moon, Pause, Play, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { Button, Card } from "antd";
+import { Pause, Play } from "lucide-react";
 
+import { ThemeMenu } from "@/components/ui";
 import { useEventCallback } from "@/hooks/utils/use-event-callback";
 
 import { AUTH_GLASS_CLASS } from "../styles/glass";
@@ -21,38 +21,6 @@ type AuthLayoutProps = {
     children: ReactNode;
     variant?: AuthLayoutVariant;
 };
-
-const THEME_ITEMS = [
-    { key: "light", label: "浅色" },
-    { key: "dark", label: "深色" },
-    { key: "system", label: "跟随系统" },
-];
-
-function ThemeMenu() {
-    const { theme, setTheme } = useTheme();
-
-    return (
-        <Dropdown
-            menu={{
-                items: THEME_ITEMS,
-                onClick: ({ key }) => setTheme(key),
-                selectable: true,
-                selectedKeys: [theme ?? "system"],
-            }}
-            trigger={["click"]}
-        >
-            <Button
-                aria-label="切换主题"
-                className="relative drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] transition-colors hover:bg-(--auth-surface)"
-                style={{ color: "#fff" }}
-                type="text"
-            >
-                <Sun className="size-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-                <Moon className="absolute size-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-            </Button>
-        </Dropdown>
-    );
-}
 
 export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -121,7 +89,10 @@ export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
                     <Image alt="" className="shrink-0" height={32} src="/brand/icon-small.svg" unoptimized width={32} />
                     <span className="truncate text-sm leading-none font-bold tracking-[0.16em]">{BRAND_NAME}</span>
                 </Link>
-                <ThemeMenu />
+                <ThemeMenu
+                    buttonClassName="drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] transition-colors hover:bg-(--auth-surface)"
+                    buttonStyle={{ color: "#fff" }}
+                />
             </header>
 
             {isSetup ? null : (

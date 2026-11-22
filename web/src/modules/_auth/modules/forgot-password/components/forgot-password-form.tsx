@@ -5,8 +5,10 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import type { CaptchaChallenge } from "@pudans-dev/api-client";
-import { App, Button, Flex, Form, Input, Steps, Typography } from "antd";
+import { Button, Flex, Form, Input, Steps, Typography } from "antd";
 import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
+
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
 import { AuthFormCard } from "../../../components/auth-form-card";
 import { CaptchaField } from "../../../components/captcha-field";
@@ -29,7 +31,7 @@ type RecoveryValues = {
 const PASSWORD_PATTERN = /^[A-Za-z0-9!@#$%^&*.?]+$/;
 
 export function ForgotPasswordForm() {
-    const { message } = App.useApp();
+    const prompt = useMessagePrompt();
     const [form] = Form.useForm<RecoveryValues>();
     const [step, setStep] = useState(0);
     const [codeSent, setCodeSent] = useState(false);
@@ -56,7 +58,7 @@ export function ForgotPasswordForm() {
                 setCaptcha(null);
             }
         } catch {
-            message.error("验证码加载失败，请稍后重试。");
+            prompt.error("验证码加载失败，请稍后重试。");
         } finally {
             setCaptchaLoading(false);
         }
@@ -73,7 +75,7 @@ export function ForgotPasswordForm() {
         }
 
         if (captcha && !captchaAnswer.trim()) {
-            message.error("请输入图片验证码。");
+            prompt.error("请输入图片验证码。");
             return;
         }
 
@@ -82,7 +84,7 @@ export function ForgotPasswordForm() {
         try {
             await sendRecoveryCode(String(form.getFieldValue("email")).trim(), captchaPayload());
             setCodeSent(true);
-            message.success("验证码已发送。");
+            prompt.success("验证码已发送。");
 
             if (captcha) {
                 void loadCaptcha();
@@ -90,11 +92,11 @@ export function ForgotPasswordForm() {
         } catch (error) {
             if (isRecoveryCaptchaError(error)) {
                 await loadCaptcha();
-                message.error("请输入图片验证码后重试。");
+                prompt.error("请输入图片验证码后重试。");
                 return;
             }
 
-            message.error(recoveryErrorMessage(error));
+            prompt.error(recoveryErrorMessage(error));
         } finally {
             setCodeSending(false);
         }
@@ -107,7 +109,7 @@ export function ForgotPasswordForm() {
         }
 
         if (captcha && !captchaAnswer.trim()) {
-            message.error("请输入图片验证码。");
+            prompt.error("请输入图片验证码。");
             return;
         }
 
@@ -121,15 +123,15 @@ export function ForgotPasswordForm() {
                 ...captchaPayload(),
             });
             setStep(2);
-            message.success("密码已重置。");
+            prompt.success("密码已重置。");
         } catch (error) {
             if (isRecoveryCaptchaError(error)) {
                 await loadCaptcha();
-                message.error("请输入图片验证码后重试。");
+                prompt.error("请输入图片验证码后重试。");
                 return;
             }
 
-            message.error(recoveryErrorMessage(error));
+            prompt.error(recoveryErrorMessage(error));
         } finally {
             setSubmitting(false);
         }
