@@ -12,11 +12,11 @@ export async function middleware(request: NextRequest) {
     if (pathname === "/" || pathname === SIGN_IN_PATH || pathname === SETUP_PATH) {
         const setupRequired = await readSetupRequired();
 
-        if (setupRequired === true && pathname !== SETUP_PATH) {
+        if (setupRequired === true && pathname === SIGN_IN_PATH) {
             return NextResponse.redirect(new URL(SETUP_PATH, request.url));
         }
 
-        if (setupRequired === false && pathname === SETUP_PATH) {
+        if (setupRequired === false && (pathname === "/" || pathname === SETUP_PATH)) {
             return NextResponse.redirect(new URL(SIGN_IN_PATH, request.url));
         }
 

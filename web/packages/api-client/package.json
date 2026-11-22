@@ -6,10 +6,10 @@
   "sideEffects": false,
   "main": "./dist/entry/index.js",
   "module": "./dist/entry/index.js",
-  "types": "./dist/entry/index.d.ts",
+  "types": "./entry/index.ts",
   "exports": {
     ".": {
-      "types": "./dist/entry/index.d.ts",
+      "types": "./entry/index.ts",
       "import": "./dist/entry/index.js"
     },
     "./package.json": "./package.json"
