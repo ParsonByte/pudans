@@ -15,7 +15,6 @@ import cn.tolim.pudans.infra.audit.AuditIdGenerator;
 import cn.tolim.pudans.infra.exception.DuplicateNameException;
 import java.time.Instant;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -143,9 +142,6 @@ public class SystemInitializer implements SuperAdminInitializer {
         spec.setDisabled(false);
         spec.setRegisteredAt(Instant.now());
         spec.setTwoFactorAuthEnabled(false);
-        spec.setEmail(param.getEmail() == null
-                ? null
-                : param.getEmail().trim().toLowerCase(Locale.ROOT));
         spec.setPassword(passwordEncoder.encode(param.getPassword()));
 
         var user = new User();

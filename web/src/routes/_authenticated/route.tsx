@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 
-const API_ORIGIN = process.env.PUDANS_API_ORIGIN ?? "http://localhost:8090";
+export const API_ORIGIN = process.env.PUDANS_API_ORIGIN ?? "http://localhost:8090";
 const SESSION_PATH = "/apis/api.pudans.tolim.cn/v1alpha1/login/session";
 
 type SessionView = {

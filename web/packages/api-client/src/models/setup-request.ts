@@ -15,7 +15,6 @@
 
 
 export interface SetupRequest {
-    'email'?: string;
     'externalUrl': string;
     'password': string;
     'siteTitle': string;

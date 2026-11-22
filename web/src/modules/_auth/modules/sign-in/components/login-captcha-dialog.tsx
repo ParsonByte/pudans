@@ -4,6 +4,7 @@ import type { CaptchaChallenge } from "@pudans-dev/api-client";
 import { Alert, Button, Flex, Form, Modal, Spin, Typography } from "antd";
 
 import { useEventCallback } from "@/hooks/utils/use-event-callback";
+import { AUTH_GLASS_CLASS } from "@/modules/_auth/styles/glass";
 
 import { CaptchaField } from "../../../components/captcha-field";
 import { getCaptchaChallenge } from "../../../composables/_auth-captcha";
@@ -94,13 +95,13 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
     return (
         <Modal
             centered
+            classNames={{ container: AUTH_GLASS_CLASS }}
             closable={!submitting}
             footer={null}
             keyboard={!submitting}
             mask={{ blur: true, closable: !submitting }}
             onCancel={handleCancel}
             open
-            styles={{ container: { borderRadius: 24 } }}
             title={null}
             width={440}
         >
