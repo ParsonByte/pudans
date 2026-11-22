@@ -1,0 +1,26 @@
+:root {
+    --auth-foreground: oklch(0.985 0 0);
+    --auth-foreground-muted: oklch(0.985 0 0 / 55%);
+    --auth-foreground-subtle: oklch(0.985 0 0 / 45%);
+    --auth-surface: oklch(0.985 0 0 / 10%);
+    --auth-surface-hover: oklch(0.985 0 0 / 15%);
+    --auth-border: oklch(0.985 0 0 / 20%);
+    --auth-ring: oklch(0.985 0 0 / 50%);
+    --auth-header-gradient: linear-gradient(to bottom, oklch(0 0 0 / 35%), transparent);
+    --auth-footer-gradient: linear-gradient(to top, oklch(0 0 0 / 40%), transparent);
+    --auth-horizontal-overlay: linear-gradient(
+        90deg,
+        oklch(0 0 0 / 78%) 0%,
+        oklch(0 0 0 / 46%) 42%,
+        oklch(0 0 0 / 20%) 68%,
+        oklch(0 0 0 / 38%) 100%
+    );
+    --auth-vertical-overlay: linear-gradient(
+        180deg,
+        oklch(0 0 0 / 34%) 0%,
+        transparent 28%,
+        transparent 72%,
+        oklch(0 0 0 / 38%) 100%
+    );
+    --auth-drop-shadow: 0 4px 30px oklch(0 0 0 / 55%);
+}
