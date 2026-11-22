@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
 import type { CaptchaChallenge } from "@pudans-dev/api-client";
-import { Alert, Button, Flex, Form, Modal, Spin, Typography } from "antd";
+import { Button, Flex, Form, Modal, Spin, Typography } from "antd";
 
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { useEventCallback } from "@/hooks/utils/use-event-callback";
 import { AUTH_GLASS_CLASS } from "@/modules/_auth/styles/glass";
 
@@ -16,15 +17,14 @@ type LoginCaptchaDialogProps = {
 };
 
 export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogProps) {
+    const prompt = useMessagePrompt();
     const [challenge, setChallenge] = useState<CaptchaChallenge | null>(null);
     const [answer, setAnswer] = useState("");
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
 
     const loadCaptcha = useEventCallback(async () => {
         setLoading(true);
-        setError(null);
 
         try {
             const nextChallenge = await getCaptchaChallenge();
@@ -37,6 +37,7 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
             }
         } catch {
             setChallenge(null);
+            prompt.error("验证码加载失败，请稍后重试。");
         } finally {
             setLoading(false);
         }
@@ -52,24 +53,23 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
         }
 
         if (!challenge) {
-            setError("验证码尚未加载完成，请稍后重试。");
+            prompt.error("验证码尚未加载完成，请稍后重试。");
             return;
         }
 
         if (!answer.trim()) {
-            setError("请输入图片验证码。");
+            prompt.error("请输入图片验证码。");
             return;
         }
 
         setSubmitting(true);
-        setError(null);
 
         try {
             await onSubmit({ captchaChallengeId: challenge.challengeId, captchaAnswer: answer.trim() });
         } catch (submitError) {
             const submitErrorMessage = signInErrorMessage(submitError, true);
             await loadCaptcha();
-            setError(submitErrorMessage);
+            prompt.error(submitErrorMessage);
         } finally {
             setSubmitting(false);
         }
@@ -85,7 +85,6 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
 
     const handleAnswerChange = (value: string) => {
         setAnswer(value);
-        setError(null);
     };
     const minutes =
         challenge?.expiresInSeconds && challenge.expiresInSeconds > 0
@@ -161,7 +160,6 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
                         )}
                     </Flex>
                 )}
-                {error ? <Alert showIcon title={error} type="error" /> : null}
                 <div className="flex flex-col gap-2">
                     <Button
                         block
