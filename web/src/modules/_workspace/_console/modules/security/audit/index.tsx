@@ -100,32 +100,34 @@ export function AuditView() {
                 rowKey={(record) => record.metadata.name}
                 title="审计日志"
                 toolbar={
-                    <Space wrap>
+                    <Space className="w-full sm:w-auto" wrap>
                         <Input.Search
                             allowClear
+                            className="w-full sm:w-[200px]"
                             defaultValue={uid}
                             key={`uid:${uid}`}
                             onSearch={(value) => table.setFilter("uid", value.trim() || null)}
                             placeholder="用户 UID"
-                            style={{ width: 200 }}
                         />
                         <Input.Search
                             allowClear
+                            className="w-full sm:w-[200px]"
                             defaultValue={operation}
                             key={`operation:${operation}`}
                             onSearch={(value) => table.setFilter("operation", value.trim() || null)}
                             placeholder="操作名称"
-                            style={{ width: 200 }}
                         />
                         <Select
                             allowClear
+                            className="w-full sm:w-36"
                             onChange={(value) => table.setFilter("result", value ?? null)}
                             options={RESULT_OPTIONS}
                             placeholder="结果"
-                            style={{ width: 140 }}
                             value={result || undefined}
                         />
-                        <Button onClick={() => table.reset()}>重置</Button>
+                        <Button className="w-full sm:w-auto" onClick={() => table.reset()}>
+                            重置
+                        </Button>
                     </Space>
                 }
             />

@@ -76,6 +76,8 @@ export function LegalView({ activeTab, onTabChange }: LegalViewProps) {
                     label: LEGAL_DOCUMENTS[key].title,
                 }))}
                 onChange={(key) => onTabChange(key as LegalDocumentKey)}
+                size="small"
+                tabBarGutter={16}
             />
         </Flex>
     );

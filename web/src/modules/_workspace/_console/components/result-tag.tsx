@@ -4,8 +4,22 @@ type ResultTagProps = {
     result?: string;
 };
 
-export function ResultTag({ result }: ResultTagProps) {
-    const color = result === "SUCCESS" ? "green" : result === "FAILURE" ? "red" : "default";
+const RESULT_LABELS: Record<string, string> = {
+    DENIED: "拒绝",
+    FAILED: "失败",
+    FAILURE: "失败",
+    SUCCESS: "成功",
+};
 
-    return <Tag color={color}>{result ?? "—"}</Tag>;
+export function ResultTag({ result }: ResultTagProps) {
+    const color =
+        result === "SUCCESS"
+            ? "green"
+            : result === "FAILURE" || result === "FAILED"
+              ? "red"
+              : result === "DENIED"
+                ? "gold"
+                : "default";
+
+    return <Tag color={color}>{result ? (RESULT_LABELS[result] ?? result) : "—"}</Tag>;
 }

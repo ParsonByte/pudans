@@ -15,16 +15,22 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
+import java.util.function.BiFunction;
+import io.r2dbc.spi.Row;
+import io.r2dbc.spi.RowMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.relational.core.query.Query;
 import org.springframework.r2dbc.core.DatabaseClient;
+import org.springframework.r2dbc.core.RowsFetchSpec;
 import org.springframework.data.r2dbc.core.R2dbcEntityOperations;
 import org.springframework.transaction.ReactiveTransactionManager;
 import reactor.core.publisher.Flux;
@@ -53,6 +59,9 @@ class AuditStoreTest {
 
     @Mock
     ReactiveTransactionManager reactiveTransactionManager;
+
+    @Mock
+    RowsFetchSpec<Map.Entry<String, Long>> resultRows;
 
     private AuditStore store;
 
@@ -187,6 +196,41 @@ class AuditStoreTest {
         assertThat(count).isEqualTo(3L);
     }
 
+    @Test
+    void countByResultAggregatesBothAuditStores() {
+        var spec = givenResultQuery();
+
+        store.countByResult(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"),
+                        "LOGIN")
+                .block();
+
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains("FROM (", "UNION ALL", ") grouped GROUP BY result")
+                .contains("AND operation = :operation")
+                .doesNotContain("resultUNION");
+        verify(spec, times(3)).bind(anyString(), any());
+    }
+
+    @Test
+    void topOperationsAggregatesBothAuditStores() {
+        givenResultQuery();
+
+        store.topOperations(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"),
+                        6)
+                .block();
+
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains("FROM (", "UNION ALL", ") grouped GROUP BY operation")
+                .doesNotContain("operation = :operation", "operationUNION");
+    }
 
     @Test
     void archiveStatsReturnsActiveAndArchivedCounts() {
@@ -282,5 +326,15 @@ class AuditStoreTest {
         record.setRequestPath("/apis/users/alice");
         record.setResult("SUCCESS");
         return record;
+    }
+
+    private DatabaseClient.GenericExecuteSpec givenResultQuery() {
+        var spec = org.mockito.Mockito.mock(DatabaseClient.GenericExecuteSpec.class);
+        when(databaseClient.sql(anyString())).thenReturn(spec);
+        when(spec.bind(anyString(), any())).thenReturn(spec);
+        when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, Map.Entry<String, Long>>>any()))
+                .thenReturn(resultRows);
+        when(resultRows.all()).thenReturn(Flux.empty());
+        return spec;
     }
 }

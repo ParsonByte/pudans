@@ -266,14 +266,14 @@ export function WebhooksView() {
                     <Form.Item label="启用" name="enabled" valuePropName="checked">
                         <Switch />
                     </Form.Item>
-                    <Space size={16} wrap>
-                        <Form.Item label="最大尝试次数" name="maxAttempts">
-                            <InputNumber min={1} precision={0} />
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <Form.Item className="!mb-0" label="最大尝试次数" name="maxAttempts">
+                            <InputNumber className="w-full" min={1} precision={0} />
                         </Form.Item>
-                        <Form.Item label="超时（毫秒）" name="timeoutMillis">
-                            <InputNumber min={1000} precision={0} step={1000} />
+                        <Form.Item className="!mb-0" label="超时（毫秒）" name="timeoutMillis">
+                            <InputNumber className="w-full" min={1000} precision={0} step={1000} />
                         </Form.Item>
-                    </Space>
+                    </div>
                     <Form.Item extra="编辑时留空表示保持原密钥。" label="签名密钥" name="secret">
                         <Input.Password placeholder="可选" />
                     </Form.Item>

@@ -246,7 +246,7 @@ export function UsersView() {
                 data={usersQuery.data?.items}
                 error={usersQuery.error}
                 extra={
-                    <Space>
+                    <Space wrap>
                         <Button onClick={openCreate} size="small" type="primary">
                             新建用户
                         </Button>
@@ -261,24 +261,26 @@ export function UsersView() {
                 rowKey={(user) => user.name ?? ""}
                 title="用户"
                 toolbar={
-                    <Space wrap>
+                    <Space className="w-full sm:w-auto" wrap>
                         <Input.Search
                             allowClear
+                            className="w-full sm:w-[280px]"
                             defaultValue={table.keyword}
                             key={table.keyword}
                             onSearch={table.setKeyword}
                             placeholder="搜索显示名称或邮箱"
-                            style={{ width: 280 }}
                         />
                         <Select
                             allowClear
+                            className="w-full sm:w-40"
                             onChange={(value) => table.setFilter("status", value ?? null)}
                             options={STATUS_OPTIONS}
                             placeholder="账号状态"
-                            style={{ width: 160 }}
                             value={status || undefined}
                         />
-                        <Button onClick={() => table.reset()}>重置</Button>
+                        <Button className="w-full sm:w-auto" onClick={() => table.reset()}>
+                            重置
+                        </Button>
                     </Space>
                 }
             />

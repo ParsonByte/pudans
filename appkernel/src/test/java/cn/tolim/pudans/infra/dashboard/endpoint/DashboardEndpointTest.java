@@ -3,6 +3,7 @@ package cn.tolim.pudans.infra.dashboard.endpoint;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
@@ -20,6 +21,7 @@ import cn.tolim.pudans.infra.contract.SystemInfo;
 import cn.tolim.pudans.infra.contract.ParameterInfoGetter;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.core.rbac.group.Groups;
+import cn.tolim.pudans.core.risk.RiskGuard;
 import cn.tolim.pudans.core.risk.RiskRuleRegistry;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import cn.tolim.pudans.infra.utils.PudansTime;
@@ -54,12 +56,15 @@ class DashboardEndpointTest {
     @Mock
     RiskRuleRegistry riskRuleRegistry;
 
+    @Mock
+    RiskGuard riskGuard;
+
     private DashboardEndpoint endpoint;
 
     @BeforeEach
     void setUp() {
         endpoint = new DashboardEndpoint(
-                client, auditLog, systemInfoGetter, groups, riskRuleRegistry);
+                client, auditLog, systemInfoGetter, groups, riskRuleRegistry, riskGuard);
     }
 
     private static AuditRecord record(String id, String uid, String operation, String result) {
@@ -170,11 +175,25 @@ class DashboardEndpointTest {
                 .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 7L)));
         when(auditLog.countPerDay(any(Instant.class), isNull(), isNull()))
                 .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 12L)));
+        when(auditLog.countPerDay(any(Instant.class), isNull(), eq("FAILURE")))
+                .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 2L)));
+        when(auditLog.countPerDay(any(Instant.class), isNull(), eq("DENIED")))
+                .thenReturn(Mono.just(Map.of(LocalDate.now(PudansTime.BEIJING), 1L)));
         when(auditLog.query(any(AuditStore.AuditQuery.class)))
                 .thenReturn(Flux.just(
                         record("audit-1", "uid-1", "LOGIN", "SUCCESS"),
                         record("audit-2", "uid-1", "LOGIN", "SUCCESS"),
                         record("audit-3", "uid-2", "LOGIN", "SUCCESS")));
+        when(auditLog.countByResult(any(Instant.class), any(Instant.class), isNull()))
+                .thenReturn(Mono.just(Map.of("SUCCESS", 30L, "FAILURE", 8L, "DENIED", 3L)));
+        when(auditLog.countByResult(any(Instant.class), any(Instant.class), eq("LOGIN")))
+                .thenReturn(Mono.just(Map.of("SUCCESS", 20L, "FAILURE", 4L, "DENIED", 1L)));
+        when(auditLog.countDistinctUids(any(Instant.class), any(Instant.class)))
+                .thenReturn(Mono.just(2L));
+        when(auditLog.topOperations(any(Instant.class), any(Instant.class), eq(6)))
+                .thenReturn(Mono.just(Map.of("NAVIGATION", 12L, "LOGIN", 9L)));
+        when(riskGuard.listBans())
+                .thenReturn(Flux.just(new RiskGuard.RiskBan("login-failure", "127.0.0.1", 60L)));
         when(groups.listMemberships())
                 .thenReturn(Flux.just(
                         new Groups.Membership("alice", "admins"),
@@ -218,6 +237,27 @@ class DashboardEndpointTest {
         assertThat(overview.roleDistribution())
                 .extracting(item -> item.displayName())
                 .containsExactlyInAnyOrder("超级管理员", "系统管理员");
+        assertThat(overview.rangeDays()).isEqualTo(7);
+        assertThat(overview.failureTrend()).hasSize(7);
+        assertThat(overview.resultDistribution()).hasSize(3);
+        assertThat(overview.topOperations())
+                .extracting(item -> item.operation())
+                .containsExactlyInAnyOrder("NAVIGATION", "LOGIN");
+        assertThat(overview.metrics()).hasSize(8);
+        assertThat(overview.metrics())
+                .filteredOn(metric -> "loginSuccessRate".equals(metric.key()))
+                .singleElement()
+                .satisfies(metric -> {
+                    assertThat(metric.value()).isEqualTo(80.0);
+                    assertThat(metric.previousValue()).isEqualTo(80.0);
+                });
+        assertThat(overview.insights()).isNotEmpty();
+
+        var monthly = endpoint.aggregate(30).block();
+
+        assertThat(monthly).isNotNull();
+        assertThat(monthly.rangeDays()).isEqualTo(30);
+        assertThat(monthly.loginTrend()).hasSize(30);
     }
 
     @Test
@@ -236,8 +276,20 @@ class DashboardEndpointTest {
                 .thenReturn(Mono.error(new IllegalStateException("down")));
         when(auditLog.countPerDay(any(Instant.class), isNull(), isNull()))
                 .thenReturn(Mono.error(new IllegalStateException("down")));
+        when(auditLog.countPerDay(any(Instant.class), isNull(), eq("FAILURE")))
+                .thenReturn(Mono.error(new IllegalStateException("down")));
+        when(auditLog.countPerDay(any(Instant.class), isNull(), eq("DENIED")))
+                .thenReturn(Mono.error(new IllegalStateException("down")));
         when(auditLog.query(any(AuditStore.AuditQuery.class)))
                 .thenReturn(Flux.error(new IllegalStateException("down")));
+        when(auditLog.countByResult(any(Instant.class), any(Instant.class), any()))
+                .thenReturn(Mono.error(new IllegalStateException("down")));
+        when(auditLog.countDistinctUids(any(Instant.class), any(Instant.class)))
+                .thenReturn(Mono.error(new IllegalStateException("down")));
+        when(auditLog.topOperations(any(Instant.class), any(Instant.class), anyInt()))
+                .thenReturn(Mono.error(new IllegalStateException("down")));
+        when(riskGuard.listBans()).thenReturn(Flux.error(new IllegalStateException("down")));
+        when(groups.listMemberships()).thenReturn(Flux.error(new IllegalStateException("down")));
 
         var overview = endpoint.aggregate().block();
 
@@ -249,9 +301,13 @@ class DashboardEndpointTest {
         assertThat(overview.recentAuditLogs()).isEmpty();
         assertThat(overview.loginTrend()).isEmpty();
         assertThat(overview.operationTrend()).isEmpty();
+        assertThat(overview.failureTrend()).isEmpty();
         assertThat(overview.riskRuleTrend()).isEmpty();
         assertThat(overview.webhookTrend()).isEmpty();
         assertThat(overview.activeUsers()).isEmpty();
         assertThat(overview.roleDistribution()).isEmpty();
+        assertThat(overview.resultDistribution()).isEmpty();
+        assertThat(overview.topOperations()).isEmpty();
+        assertThat(overview.insights()).hasSize(1);
     }
 }
