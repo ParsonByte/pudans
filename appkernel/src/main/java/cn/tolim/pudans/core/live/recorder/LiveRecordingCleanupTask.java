@@ -150,7 +150,9 @@ public class LiveRecordingCleanupTask {
         var name = recording.getMetadata().getName();
         return purgeObjects(recording)
                 .then(Mono.fromRunnable(() -> deleteLocalDir(name)).subscribeOn(Schedulers.boundedElastic()))
-                .then(Mono.fromRunnable(() -> client.delete(recording)).subscribeOn(Schedulers.boundedElastic()))
+                // delete 返回冷流，直接丢进 fromRunnable 会丢弃结果，库记录不会真正删除
+                .then(Mono.defer(() -> client.delete(recording)))
+                .doOnSuccess(ignored -> metrics.recordingRemoved(name))
                 .thenReturn(1)
                 .onErrorResume(error -> retainFailed(recording, error).thenReturn(0));
     }
