@@ -7,6 +7,7 @@ import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_STOP_TIMEOUT;
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.LiveRecordingState;
 import cn.tolim.pudans.contract.live.PartState;
+import cn.tolim.pudans.core.live.alert.LiveAlerts;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.core.live.resolve.RoomResolver;
@@ -54,6 +55,9 @@ public class LiveRecorder {
 
     private final LiveMetrics metrics;
 
+    // 录制任务用它上报断流与恢复事件，这类装配处只负责透传
+    private final LiveAlerts liveAlerts;
+
     private final ReactiveStringRedisTemplate redisTemplate;
 
     private final SourceStatus sourceStatus;
@@ -74,6 +78,7 @@ public class LiveRecorder {
                 backoff,
                 policyResolver,
                 metrics,
+                liveAlerts,
                 redisTemplate,
                 sourceStatus,
                 recording);
