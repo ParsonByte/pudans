@@ -10,9 +10,13 @@ import com.lark.oapi.service.auth.v3.model.InternalTenantAccessTokenReqBody;
 import com.lark.oapi.service.auth.v3.model.InternalTenantAccessTokenResp;
 import com.lark.oapi.service.authen.v1.model.CreateAccessTokenReq;
 import com.lark.oapi.service.authen.v1.model.CreateAccessTokenReqBody;
+import com.lark.oapi.service.contact.v3.model.FindByDepartmentUserReq;
+import com.lark.oapi.service.contact.v3.model.FindByDepartmentUserResp;
 import com.lark.oapi.service.contact.v3.model.GetUserReq;
 import com.lark.oapi.service.im.v1.model.CreateMessageReq;
 import com.lark.oapi.service.im.v1.model.CreateMessageReqBody;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -145,14 +149,23 @@ public class FeishuSdkClient {
                 throw new FeishuSdkException(failure("飞书通讯录用户请求失败", response.getCode(), response.getMsg()));
             }
             var user = response.getData().getUser();
-            var avatar = user.getAvatar() == null ? null : user.getAvatar().getAvatar640();
-            return new UserInfo(
-                    user.getOpenId(),
-                    user.getUnionId(),
-                    user.getName(),
-                    StringUtils.hasText(user.getEmail()) ? user.getEmail() : user.getEnterpriseEmail(),
-                    user.getMobile(),
-                    avatar);
+            return toUserInfo(user);
+        });
+    }
+
+    // 分页读取根部门的飞书通讯录成员。
+    public Mono<ContactPage> listContactUsers(String pageToken, int pageSize) {
+        var client = client(securitySettings.feishu());
+        return call(() -> {
+            var request = FindByDepartmentUserReq.newBuilder()
+                    .departmentId("0")
+                    .departmentIdType("open_department_id")
+                    .userIdType("union_id")
+                    .pageSize(pageSize)
+                    .pageToken(StringUtils.hasText(pageToken) ? pageToken : null)
+                    .build();
+            var response = client.contact().v3().user().findByDepartment(request);
+            return toContactPage(response);
         });
     }
 
@@ -186,12 +199,40 @@ public class FeishuSdkClient {
         return prefix + ": " + code + " " + message;
     }
 
+    // 将通讯录用户转换为统一资料结构。
+    private static UserInfo toUserInfo(com.lark.oapi.service.contact.v3.model.User user) {
+        var avatar = user.getAvatar() == null ? null : user.getAvatar().getAvatar640();
+        return new UserInfo(
+                user.getOpenId(),
+                user.getUnionId(),
+                user.getName(),
+                StringUtils.hasText(user.getEmail()) ? user.getEmail() : user.getEnterpriseEmail(),
+                user.getMobile(),
+                avatar);
+    }
+
+    // 校验通讯录响应并转换分页结果。
+    static ContactPage toContactPage(FindByDepartmentUserResp response) {
+        if (!response.success() || response.getData() == null) {
+            throw new FeishuSdkException(failure("飞书通讯录列表请求失败", response.getCode(), response.getMsg()));
+        }
+        var data = response.getData();
+        var users = data.getItems() == null
+                ? List.<UserInfo>of()
+                : Arrays.stream(data.getItems())
+                        .map(FeishuSdkClient::toUserInfo)
+                        .toList();
+        return new ContactPage(users, data.getPageToken(), Boolean.TRUE.equals(data.getHasMore()));
+    }
+
     private record CachedClient(String appId, String appSecret, Client client) {}
 
     public record Token(String accessToken, long expiresIn) {}
 
     public record UserInfo(
             String openId, String unionId, String name, String email, String phone, String avatar) {}
+
+    public record ContactPage(List<UserInfo> items, String pageToken, boolean hasMore) {}
 
     public static class FeishuSdkException extends RuntimeException {
         // 使用飞书返回的错误描述构造异常。

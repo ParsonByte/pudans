@@ -3,6 +3,7 @@ package cn.tolim.pudans.core.user.endpoint;
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
+import cn.tolim.pudans.core.user.Accounts;
 import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.extension.contract.GroupVersion;
@@ -32,6 +33,8 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
     private static final String CHALLENGE_ATTRIBUTE = PasskeyAssertionEndpoint.class.getName() + ".CHALLENGE";
 
     private final Passkeys passkeyService;
+
+    private final Accounts accounts;
 
     private final ParameterGroups parameterGroups;
 
@@ -85,12 +88,14 @@ class PasskeyAssertionEndpoint implements CustomEndpoint {
                 .flatMap(body -> {
                     var challenge = passkeyService.newChallenge();
                     var allowCredentials = StringUtils.hasText(body.username())
-                            ? passkeyService
-                            .listPasskeys(body.username())
-                            .map(connection -> Map.of(
-                                    "type", "public-key",
-                                    "id", connection.getSpec().getProviderUserId()))
-                            .collectList()
+                            ? accounts
+                                    .findUserByLoginName(body.username())
+                                    .flatMapMany(user -> passkeyService.listPasskeys(
+                                            user.getMetadata().getName()))
+                                    .map(connection -> Map.of(
+                                            "type", "public-key",
+                                            "id", connection.getSpec().getProviderUserId()))
+                                    .collectList()
                             : Mono.just(List.of());
                     return allowCredentials.flatMap(credentials -> request.exchange()
                             .getSession()

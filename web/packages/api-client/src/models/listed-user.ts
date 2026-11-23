@@ -18,6 +18,10 @@ export interface ListedUser {
     'disabled'?: boolean;
     'displayName'?: string;
     'email'?: string;
+    /**
+     * Effective local login name.
+     */
+    'loginName'?: string;
     'name'?: string;
     'phone'?: string;
     'registeredAt'?: string;

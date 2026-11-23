@@ -99,6 +99,8 @@ class SchemeInitializer implements SmartLifecycle {
                     .indexFunc(user -> user.getSpec().getUid()));
             is.add(IndexSpecs.<User, String>single("spec.displayName", String.class)
                     .indexFunc(user -> user.getSpec().getDisplayName()));
+            is.add(IndexSpecs.<User, String>single("spec.loginName", String.class)
+                    .indexFunc(user -> user.getSpec().getLoginName()));
             is.add(IndexSpecs.<User, Boolean>single("spec.emailVerified", Boolean.class)
                     .indexFunc(user -> user.getSpec().isEmailVerified()));
             is.add(IndexSpecs.<User, String>single("spec.email", String.class)

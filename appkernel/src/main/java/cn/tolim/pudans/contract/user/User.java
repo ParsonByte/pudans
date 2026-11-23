@@ -53,6 +53,9 @@ public class User extends AbstractExtension {
         @Schema(requiredMode = REQUIRED, readOnly = true)
         private String displayName;
 
+        @Schema(description = "Mutable login name. Falls back to metadata.name when empty.")
+        private String loginName;
+
 
         private String avatar;
 
@@ -90,6 +93,15 @@ public class User extends AbstractExtension {
 
 
         private Integer loginHistoryLimit;
+    }
+
+    // 返回用户当前使用的登录名，未设置时回退资源名称
+    public String effectiveLoginName() {
+        var loginName = spec == null ? null : spec.getLoginName();
+        if (loginName == null || loginName.isBlank()) {
+            return getMetadata() == null ? null : getMetadata().getName();
+        }
+        return loginName;
     }
 
 

@@ -5562,7 +5562,7 @@
         ]
       },
       "put": {
-        "description": "Update the current user's local profile. displayName and email are read-only.",
+        "description": "Update the current user's local profile. Feishu-managed fields are read-only.",
         "operationId": "UpdateCurrentUser",
         "requestBody": {
           "content": {
@@ -5699,6 +5699,48 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/BatchCreateResponse"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "UserV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/users/-/feishu-contacts": {
+      "get": {
+        "description": "List Feishu contacts from the organization directory.",
+        "operationId": "ListFeishuContacts",
+        "parameters": [
+          {
+            "description": "Opaque token for the next contact page.",
+            "in": "query",
+            "name": "pageToken",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Contacts per page (1-50, default 50).",
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/FeishuContactPage"
                 }
               }
             },
@@ -6048,7 +6090,7 @@
         ]
       },
       "put": {
-        "description": "Update a user's local profile. displayName and email are read-only.",
+        "description": "Update a user's local profile. Feishu-managed fields are read-only.",
         "operationId": "UpdateUser",
         "parameters": [
           {
@@ -7547,12 +7589,37 @@
           }
         }
       },
+      "BatchCreateFailure": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          },
+          "providerUserId": {
+            "type": "string"
+          }
+        }
+      },
       "BatchCreateResponse": {
         "type": "object",
         "properties": {
           "created": {
             "type": "integer",
             "format": "int32"
+          },
+          "failed": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BatchCreateFailure"
+            }
           },
           "users": {
             "type": "array",
@@ -7759,11 +7826,11 @@
           },
           "displayName": {
             "type": "string",
-            "description": "Feishu nickname. Read-only after creation."
+            "description": "Ignored on create. The nickname is synced from Feishu."
           },
           "email": {
             "type": "string",
-            "description": "Feishu email. Read-only after creation."
+            "description": "Ignored on create. The email is synced from Feishu."
           },
           "openId": {
             "type": "string"
@@ -7988,6 +8055,57 @@
           }
         }
       },
+      "FeishuContactPage": {
+        "type": "object",
+        "properties": {
+          "hasMore": {
+            "type": "boolean"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FeishuContactView"
+            }
+          },
+          "pageToken": {
+            "type": "string"
+          }
+        }
+      },
+      "FeishuContactView": {
+        "type": "object",
+        "properties": {
+          "avatar": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "imported": {
+            "type": "boolean",
+            "description": "Whether the contact is already bound to a local account."
+          },
+          "importedUsername": {
+            "type": "string",
+            "description": "Local login name bound to the contact."
+          },
+          "openId": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "providerUserId": {
+            "type": "string"
+          },
+          "unionId": {
+            "type": "string"
+          }
+        }
+      },
       "FeishuUserItem": {
         "type": "object",
         "properties": {
@@ -7996,11 +8114,11 @@
           },
           "displayName": {
             "type": "string",
-            "description": "Feishu nickname. Read-only after creation."
+            "description": "Ignored on create. The nickname is synced from Feishu."
           },
           "email": {
             "type": "string",
-            "description": "Feishu email. Read-only after creation."
+            "description": "Ignored on create. The email is synced from Feishu."
           },
           "openId": {
             "type": "string"
@@ -8149,6 +8267,10 @@
             "type": "string"
           },
           "email": {
+            "type": "string"
+          },
+          "loginName": {
+            "description": "Effective local login name.",
             "type": "string"
           },
           "name": {
@@ -9685,6 +9807,10 @@
           "emailVerified": {
             "type": "boolean"
           },
+          "loginName": {
+            "description": "Effective local login name.",
+            "type": "string"
+          },
           "phone": {
             "type": "string"
           },
@@ -9956,6 +10082,10 @@
             "type": "string"
           },
           "email": {
+            "type": "string"
+          },
+          "loginName": {
+            "description": "Local login name. Blank resets it to metadata.name. Changes require the administrator endpoint.",
             "type": "string"
           },
           "phone": {
@@ -10440,6 +10570,10 @@
           "loginHistoryLimit": {
             "type": "integer",
             "format": "int32"
+          },
+          "loginName": {
+            "description": "Mutable login name. Falls back to metadata.name when empty.",
+            "type": "string"
           },
           "password": {
             "type": "string"

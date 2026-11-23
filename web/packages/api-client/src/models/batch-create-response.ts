@@ -15,9 +15,14 @@
 
 // May contain unused imports in some cases
 // @ts-ignore
+import type { BatchCreateFailure } from './batch-create-failure';
+// May contain unused imports in some cases
+// @ts-ignore
 import type { UserView } from './user-view';
 
 export interface BatchCreateResponse {
     'created'?: number;
+    'failed'?: number;
+    'failures'?: Array<BatchCreateFailure>;
     'users'?: Array<UserView>;
 }

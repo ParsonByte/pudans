@@ -17,11 +17,11 @@
 export interface FeishuUserItem {
     'avatar'?: string;
     /**
-     * Feishu nickname. Read-only after creation.
+     * Ignored on create. The nickname is synced from Feishu.
      */
     'displayName'?: string;
     /**
-     * Feishu email. Read-only after creation.
+     * Ignored on create. The email is synced from Feishu.
      */
     'email'?: string;
     'openId'?: string;

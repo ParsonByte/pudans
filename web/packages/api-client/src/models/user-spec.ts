@@ -22,6 +22,10 @@ export interface UserSpec {
     'email'?: string;
     'emailVerified'?: boolean;
     'loginHistoryLimit'?: number;
+    /**
+     * Mutable login name. Falls back to metadata.name when empty.
+     */
+    'loginName'?: string;
     'password'?: string;
     'phone'?: string;
     'registeredAt'?: string;

@@ -21,6 +21,10 @@ export interface Spec {
     'displayName'?: string;
     'email'?: string;
     'emailVerified'?: boolean;
+    /**
+     * Effective local login name.
+     */
+    'loginName'?: string;
     'phone'?: string;
     'registeredAt'?: string;
     'twoFactorAuthEnabled'?: boolean;

@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.ReactiveUserDetailsPassword
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -58,7 +59,12 @@ class LoginReactiveAuthenticationManager implements ReactiveAuthenticationManage
 
     // 按登录名查找用户详情。
     Mono<UserDetails> lookupByUsername(String loginId) {
-        return reactiveUserDetailsService.findByUsername(loginId);
+        if (!StringUtils.hasText(loginId)) {
+            return Mono.empty();
+        }
+        return accounts
+                .findUserByLoginName(loginId)
+                .flatMap(user -> reactiveUserDetailsService.findByUsername(user.getMetadata().getName()));
     }
 
 
