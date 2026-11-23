@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "gen": "rimraf --glob './src/**' && node ./scripts/normalize-openapi.mjs ../../../api-docs/openapi/v3_0/apis_api_v1alpha1.json ./.openapi.normalized.json && openapi-generator-cli generate -i ./.openapi.normalized.json -g typescript-axios -c ./.openapi_config.yaml -o ./src --type-mappings='set=Array' --global-property apiDocs=false,modelDocs=false && node ./scripts/clean-generated.mjs ./src && rm -f ./.openapi.normalized.json",
-    "build": "rimraf ./dist && tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "rimraf ./dist"
   },
