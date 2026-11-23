@@ -105,11 +105,11 @@ function NavigationProgressBar() {
         };
         const handlePopState = () => start();
 
-        document.addEventListener("click", handleClick);
+        document.addEventListener("click", handleClick, true);
         window.addEventListener("popstate", handlePopState);
 
         return () => {
-            document.removeEventListener("click", handleClick);
+            document.removeEventListener("click", handleClick, true);
             window.removeEventListener("popstate", handlePopState);
             clearTimers();
         };

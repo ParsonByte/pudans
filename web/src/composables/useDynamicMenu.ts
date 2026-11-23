@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 
-import { useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 import { type NavigationMenu, type NavigationWorkspace, apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
@@ -41,7 +41,7 @@ type DynamicMenuState = {
     notFound: boolean;
     retry: () => void;
     selection?: DynamicMenuSelection;
-    selectionFromQuery: boolean;
+    selectionFromUrl: boolean;
     selectionPath?: string;
     workspaceKey?: string;
 };
@@ -111,6 +111,37 @@ function selectionFromQuery(
     return undefined;
 }
 
+function decodePathSegment(value: string): string {
+    try {
+        return decodeURIComponent(value);
+    } catch {
+        return value;
+    }
+}
+
+function selectionFromPath(
+    groups: DynamicMenuGroup[],
+    workspace: string,
+    pathname: string,
+): DynamicMenuSelection | undefined {
+    const prefix = `/workspace/${encodeURIComponent(workspace)}/`;
+
+    if (!pathname.startsWith(prefix)) {
+        return undefined;
+    }
+
+    const [groupKey, menuKey] = pathname.slice(prefix.length).split("/").filter(Boolean).map(decodePathSegment);
+
+    if (!groupKey || !menuKey) {
+        return undefined;
+    }
+
+    const group = groups.find((candidate) => candidate.key === groupKey);
+    const item = group?.items.find((candidate) => candidate.menuKey === menuKey);
+
+    return group && item ? { group, item } : undefined;
+}
+
 function defaultSelection(groups: DynamicMenuGroup[]): DynamicMenuSelection | undefined {
     const group = groups.find((candidate) => candidate.items.length > 0);
     const item = group?.items[0];
@@ -119,6 +150,7 @@ function defaultSelection(groups: DynamicMenuGroup[]): DynamicMenuSelection | un
 }
 
 export function useDynamicMenu(workspace: string): DynamicMenuState {
+    const pathname = usePathname();
     const searchParams = useSearchParams();
     const search = searchParams.toString();
     const navigationQuery = useQuery({
@@ -131,7 +163,8 @@ export function useDynamicMenu(workspace: string): DynamicMenuState {
             (item) => (item.slug ?? item.id) === workspace,
         );
         const groups = buildGroups(workspace, navigationWorkspace?.menus ?? []);
-        const requested = selectionFromQuery(groups, new URLSearchParams(search));
+        const requested =
+            selectionFromQuery(groups, new URLSearchParams(search)) ?? selectionFromPath(groups, workspace, pathname);
         const selection = requested ?? defaultSelection(groups);
         const selectionPath = selection
             ? workspaceMenuPath(workspace, selection.group.key, selection.item.menuKey)
@@ -144,7 +177,7 @@ export function useDynamicMenu(workspace: string): DynamicMenuState {
             navigationWorkspace,
             notFound: navigationQuery.isSuccess && !navigationWorkspace,
             selection,
-            selectionFromQuery: Boolean(requested),
+            selectionFromUrl: Boolean(requested),
             selectionPath,
             workspaceKey: navigationWorkspace?.slug ?? navigationWorkspace?.id,
         };
@@ -153,6 +186,7 @@ export function useDynamicMenu(workspace: string): DynamicMenuState {
         navigationQuery.error,
         navigationQuery.isPending,
         navigationQuery.isSuccess,
+        pathname,
         search,
         workspace,
     ]);

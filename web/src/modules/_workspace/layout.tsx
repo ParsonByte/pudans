@@ -134,12 +134,12 @@ function WorkspaceLayoutContent({ children, workspace }: WorkspaceLayoutProps) {
     const openKeys = menuOpenState?.routeKey === menuRouteKey ? menuOpenState.keys : routeState.openKeys;
 
     useEffect(() => {
-        if (dynamicMenu.loading || dynamicMenu.error || dynamicMenu.selectionFromQuery || !dynamicMenu.selectionPath) {
+        if (dynamicMenu.loading || dynamicMenu.error || dynamicMenu.selectionFromUrl || !dynamicMenu.selectionPath) {
             return;
         }
 
         router.replace(dynamicMenu.selectionPath);
-    }, [dynamicMenu.error, dynamicMenu.loading, dynamicMenu.selectionFromQuery, dynamicMenu.selectionPath, router]);
+    }, [dynamicMenu.error, dynamicMenu.loading, dynamicMenu.selectionFromUrl, dynamicMenu.selectionPath, router]);
 
     useEffect(() => {
         if (!dynamicMenu.error) {

@@ -134,7 +134,7 @@ src/styles/layouts/          布局样式（_bento-layout.css）
 - 认证页与初始化页固定在视口高度，页面不滚动；内容超出时在卡片内部滚动。
 - `components/layouts` 提供公共布局：`AppShell` 是对外出口，内部组合 `AppHeader`（头部操作区）与 `AppContainer`（PageContainer 页面容器）；`AppShell` 不读取业务导航，只接收 `route`、`loading` 等属性。
 - 通用工作区布局在 `src/modules/_workspace/layout.tsx`：`useDynamicMenu` 根据 URL 中的工作区 `slug` 查找 `/navigation` 工作区，按 `ui-group-key` 生成顶部导航分组，按 `ui-parent` 组装侧栏菜单，并生成 `/workspace/<workspace>?<group>=<menu>` 链接；`src/app/(workspace)/[workspace]/layout.tsx` 负责接线。
-- `NavigationProgress` 在应用外壳顶部显示路由切换进度：内部链接点击和浏览器前进/后退触发，路由变化后完成。
+- `NavigationProgress` 只在根布局挂载一次，在页面最顶层显示全局路由切换进度：内部链接点击和浏览器前进/后退触发，路由变化后完成。
 - `AppContainer` 在内容区提供 Suspense 边界；工作区侧栏折叠由 `stores/_workspace` 驱动 `AppShell` 的受控 `collapsed`。
 - `BentoGrid` 布局组件保留给控制台内的卡片布局：卡片贴同一组行列线，尺寸跨行跨列错位。
 
