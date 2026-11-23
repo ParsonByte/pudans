@@ -382,6 +382,51 @@ public class AuditLog {
         return auditStore.topOperations(from, to, limit);
     }
 
+    // 汇总区间内审计请求的平均与 P95 耗时。
+    public Mono<AuditStore.LatencyStats> latencyStats(Instant from, Instant to) {
+        return auditStore.latencyStats(from, to);
+    }
+
+    // 按北京时间星期与小时汇总审计活动。
+    public Flux<AuditStore.HeatmapBucket> activityHeatmap(Instant from, Instant to) {
+        return auditStore.activityHeatmap(from, to);
+    }
+
+    // 按固定区间统计审计请求的耗时分布。
+    public Mono<Map<String, Long>> durationBuckets(Instant from, Instant to) {
+        return auditStore.durationBuckets(from, to);
+    }
+
+    // 返回区间内审计活跃度最高的用户。
+    public Flux<AuditStore.ActorStat> topActors(Instant from, Instant to, int limit) {
+        return auditStore.topActors(from, to, limit);
+    }
+
+    // 汇总区间内追踪流的数量、状态、归档与耗时。
+    public Mono<AuditStore.FlowStats> flowStats(Instant from, Instant to) {
+        return auditStore.flowStats(from, to);
+    }
+
+    // 按北京时间追踪流开始日期汇总每日流量。
+    public Flux<AuditStore.FlowDayBucket> dailyFlowBuckets(Instant from, Instant to) {
+        return auditStore.dailyFlowBuckets(from, to);
+    }
+
+    // 按追踪流开始时间汇总北京时间星期与小时活动。
+    public Flux<AuditStore.HeatmapBucket> flowHeatmap(Instant from, Instant to) {
+        return auditStore.flowHeatmap(from, to);
+    }
+
+    // 按固定步骤区间统计追踪流数量。
+    public Mono<Map<String, Long>> flowStepBuckets(Instant from, Instant to) {
+        return auditStore.flowStepBuckets(from, to);
+    }
+
+    // 按固定耗时区间统计追踪流数量。
+    public Mono<Map<String, Long>> flowDurationBuckets(Instant from, Instant to) {
+        return auditStore.flowDurationBuckets(from, to);
+    }
+
     // 返回最近的若干条审计记录。
     public Flux<AuditRecord> findRecent(int limit) {
         return auditStore.findRecent(limit);

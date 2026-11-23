@@ -26,6 +26,7 @@ import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.core.risk.RiskGuard;
 import cn.tolim.pudans.core.risk.RiskRuleRegistry;
 import cn.tolim.pudans.infra.audit.AuditStore;
+import cn.tolim.pudans.infra.utils.RangeDays;
 import cn.tolim.pudans.infra.utils.PudansTime;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.lang.management.ManagementFactory;
@@ -51,8 +52,6 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.web.server.ServerWebInputException;
-import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import cn.tolim.pudans.infra.contract.dashboard.DashboardOverview;
 import cn.tolim.pudans.infra.contract.dashboard.DashboardInsight;
@@ -71,12 +70,6 @@ import cn.tolim.pudans.infra.contract.dashboard.RoleUserCount;
 public class DashboardEndpoint implements CustomEndpoint {
 
     private static final int RECENT_AUDIT_LOG_LIMIT = 5;
-
-    private static final int DEFAULT_RANGE_DAYS = 7;
-
-    private static final int MIN_RANGE_DAYS = 1;
-
-    private static final int MAX_RANGE_DAYS = 90;
 
     private static final int ACTIVE_USER_LIMIT = 5;
 
@@ -119,7 +112,7 @@ public class DashboardEndpoint implements CustomEndpoint {
 
     // 聚合失败时记录日志并返回统一的服务端错误。
     private Mono<ServerResponse> overview(ServerRequest request) {
-        return aggregate(resolveRangeDays(request))
+        return aggregate(RangeDays.resolve(request))
                 .flatMap(overview -> ServerResponse.ok().bodyValue(overview))
                 .onErrorResume(error -> {
                     log.warn("无法聚合仪表盘概览", error);
@@ -128,26 +121,9 @@ public class DashboardEndpoint implements CustomEndpoint {
                 });
     }
 
-    // 读取并校验时间范围参数。
-    private static int resolveRangeDays(ServerRequest request) {
-        var value = request.queryParam("days").orElse(null);
-        if (!StringUtils.hasText(value)) {
-            return DEFAULT_RANGE_DAYS;
-        }
-        try {
-            var days = Integer.parseInt(value);
-            if (days < MIN_RANGE_DAYS || days > MAX_RANGE_DAYS) {
-                throw new ServerWebInputException("查询参数 'days' 必须在 1 到 90 之间。");
-            }
-            return days;
-        } catch (NumberFormatException e) {
-            throw new ServerWebInputException("查询参数 'days' 必须是整数。");
-        }
-    }
-
     // 使用默认时间范围聚合并保持旧调用方式。
     Mono<DashboardOverview> aggregate() {
-        return aggregate(DEFAULT_RANGE_DAYS);
+        return aggregate(RangeDays.DEFAULT);
     }
 
     // 并行汇总用户、角色、审计与趋势数据。
