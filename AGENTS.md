@@ -15,6 +15,7 @@ This order is a hard requirement. If the required file has not been read, do not
 2. Before staging or committing: read `.agents/rules/commit.md` and `.agents/skills/commit-repo/SKILL.md`.
 3. Before writing or changing a comment: read `.agents/rules/comments.md` and `.agents/skills/comments/SKILL.md`.
 4. Before adding or changing a role, permission, workspace, menu or extension resource: read `.agents/rules/extensions.md`.
+5. Before changing a console page, table, form, modal, detail view or shared console component: read `.agents/rules/console-ui.md`.
 
 The existing `.agents/rules/development.md` and `.agents/skills/development/SKILL.md` remain authoritative for branches, pull requests and merges.
 
@@ -51,6 +52,7 @@ Read the matching rule under `.agents/rules` before starting a task, and follow 
 | Package layout | `.agents/rules/package-layout.md` | Seven top-level packages, mirror of contract and core by business domain, no service directories or Service classes |
 | Reuse and cleanup | `.agents/rules/reuse-and-cleanup.md` | Search dimensions, decision tree, cleanup checklist |
 | Extensions | `.agents/rules/extensions.md` | Extension directory layout, template naming, menu and permission placement |
+| Console UI | `.agents/rules/console-ui.md` | Ant Design and ProComponents usage, responsive layout, bulk actions, Feishu-backed user provisioning and shared component placement |
 | Testing | `.agents/rules/testing.md` | Test-first behaviour changes, JUnit commands, no disabled tests |
 | Skill authoring | `.agents/rules/skills.md` | `.agents/skills/<name>/` layout and SKILL.md requirements |
 
@@ -79,6 +81,7 @@ Skills live in `.agents/skills/<name>/` and are entered through `SKILL.md`. Layo
 | `.agents/rules/package-layout.md` | Seven top-level packages, business domain mirror, role directories and naming | Adding or moving any package, class or interface | Yes |
 | `.agents/rules/reuse-and-cleanup.md` | Search dimensions, decision tree and cleanup checklist | Before any new implementation and after implementation | Yes |
 | `.agents/rules/extensions.md` | Extension directory layout, template naming, menu and permission placement | Adding or changing a role, permission, workspace, menu or extension resource | Yes |
+| `.agents/rules/console-ui.md` | Console layout, responsiveness, component placement, user provisioning and detail-page rules | Changing a console page, table, form, modal, detail view or shared console component | Yes |
 | `.agents/rules/testing.md` | Test-first behaviour changes and test commands | Before changing behaviour and before commit | Yes |
 | `.agents/rules/commit.md` | Single-line commit format and pre-commit checklist | Before staging or committing | Yes |
 | `.agents/rules/comments.md` | Comment format, scope and content | Before writing or changing a comment | Yes |
