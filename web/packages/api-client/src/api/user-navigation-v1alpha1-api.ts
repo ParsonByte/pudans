@@ -22,6 +22,8 @@ import { DUMMY_BASE_URL, assertParamExists, setApiKeyToObject, setBasicAuthToObj
 // @ts-ignore
 import { BASE_PATH, COLLECTION_FORMATS, type RequestArgs, BaseAPI, RequiredError, operationServerMap } from '../base';
 // @ts-ignore
+import type { NavigationEvent } from '../models';
+// @ts-ignore
 import type { NavigationResult } from '../models';
 /**
  * UserNavigationV1alpha1Api - axios parameter creator
@@ -30,10 +32,13 @@ export const UserNavigationV1alpha1ApiAxiosParamCreator = function (configuratio
     return {
         /**
          * Record a client-side page navigation. The request itself is audited as a Page navigation record and returns the audit id used to chain following requests.
+         * @param {NavigationEvent} navigationEvent
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        recordUserNavigation: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        recordUserNavigation: async (navigationEvent: NavigationEvent, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'navigationEvent' is not null or undefined
+            assertParamExists('recordUserNavigation', 'navigationEvent', navigationEvent)
             const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/usernavigations`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -54,11 +59,13 @@ export const UserNavigationV1alpha1ApiAxiosParamCreator = function (configuratio
             // http bearer authentication required
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
+            localVarHeaderParameter['Content-Type'] = 'application/json';
             localVarHeaderParameter['Accept'] = '*/*';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(navigationEvent, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -76,11 +83,12 @@ export const UserNavigationV1alpha1ApiFp = function(configuration?: Configuratio
     return {
         /**
          * Record a client-side page navigation. The request itself is audited as a Page navigation record and returns the audit id used to chain following requests.
+         * @param {NavigationEvent} navigationEvent
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async recordUserNavigation(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<NavigationResult>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.recordUserNavigation(options);
+        async recordUserNavigation(navigationEvent: NavigationEvent, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<NavigationResult>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.recordUserNavigation(navigationEvent, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UserNavigationV1alpha1Api.recordUserNavigation']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -96,14 +104,22 @@ export const UserNavigationV1alpha1ApiFactory = function (configuration?: Config
     return {
         /**
          * Record a client-side page navigation. The request itself is audited as a Page navigation record and returns the audit id used to chain following requests.
+         * @param {UserNavigationV1alpha1ApiRecordUserNavigationRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        recordUserNavigation(options?: RawAxiosRequestConfig): AxiosPromise<NavigationResult> {
-            return localVarFp.recordUserNavigation(options).then((request) => request(axios, basePath));
+        recordUserNavigation(requestParameters: UserNavigationV1alpha1ApiRecordUserNavigationRequest, options?: RawAxiosRequestConfig): AxiosPromise<NavigationResult> {
+            return localVarFp.recordUserNavigation(requestParameters.navigationEvent, options).then((request) => request(axios, basePath));
         },
     };
 };
+
+/**
+ * Request parameters for recordUserNavigation operation in UserNavigationV1alpha1Api.
+ */
+export interface UserNavigationV1alpha1ApiRecordUserNavigationRequest {
+    readonly navigationEvent: NavigationEvent
+}
 
 /**
  * UserNavigationV1alpha1Api - object-oriented interface
@@ -111,10 +127,11 @@ export const UserNavigationV1alpha1ApiFactory = function (configuration?: Config
 export class UserNavigationV1alpha1Api extends BaseAPI {
     /**
      * Record a client-side page navigation. The request itself is audited as a Page navigation record and returns the audit id used to chain following requests.
+     * @param {UserNavigationV1alpha1ApiRecordUserNavigationRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      */
-    public recordUserNavigation(options?: RawAxiosRequestConfig) {
-        return UserNavigationV1alpha1ApiFp(this.configuration).recordUserNavigation(options).then((request) => request(this.axios, this.basePath));
+    public recordUserNavigation(requestParameters: UserNavigationV1alpha1ApiRecordUserNavigationRequest, options?: RawAxiosRequestConfig) {
+        return UserNavigationV1alpha1ApiFp(this.configuration).recordUserNavigation(requestParameters.navigationEvent, options).then((request) => request(this.axios, this.basePath));
     }
 }

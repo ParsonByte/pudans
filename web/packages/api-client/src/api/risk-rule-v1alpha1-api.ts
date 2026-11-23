@@ -26,6 +26,8 @@ import type { JsonPatchInner } from '../models';
 // @ts-ignore
 import type { RiskBan } from '../models';
 // @ts-ignore
+import type { RiskOverview } from '../models';
+// @ts-ignore
 import type { RiskRule } from '../models';
 // @ts-ignore
 import type { RiskRuleList } from '../models';
@@ -104,6 +106,48 @@ export const RiskRuleV1alpha1ApiAxiosParamCreator = function (configuration?: Co
             // http bearer authentication required
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Aggregate real risk control events, rules, bans, heatmap and relations.
+         * @param {number} [days] Analytics range in days, between 1 and 90. Defaults to 7.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getRiskOverview: async (days?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/riskrules/overview`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (days !== undefined) {
+                localVarQueryParameter['days'] = days;
+            }
+
+            localVarHeaderParameter['Accept'] = '*/*';
 
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
@@ -426,6 +470,18 @@ export const RiskRuleV1alpha1ApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Aggregate real risk control events, rules, bans, heatmap and relations.
+         * @param {number} [days] Analytics range in days, between 1 and 90. Defaults to 7.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getRiskOverview(days?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<RiskOverview>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getRiskOverview(days, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['RiskRuleV1alpha1Api.getRiskOverview']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * Get RiskRule
          * @param {string} name Name of riskrule
          * @param {*} [options] Override http request option.
@@ -531,6 +587,15 @@ export const RiskRuleV1alpha1ApiFactory = function (configuration?: Configuratio
             return localVarFp.deleteRiskRule(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
+         * Aggregate real risk control events, rules, bans, heatmap and relations.
+         * @param {RiskRuleV1alpha1ApiGetRiskOverviewRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getRiskOverview(requestParameters: RiskRuleV1alpha1ApiGetRiskOverviewRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<RiskOverview> {
+            return localVarFp.getRiskOverview(requestParameters.days, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Get RiskRule
          * @param {RiskRuleV1alpha1ApiGetRiskRuleRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -604,6 +669,16 @@ export interface RiskRuleV1alpha1ApiDeleteRiskRuleRequest {
      * Name of riskrule
      */
     readonly name: string
+}
+
+/**
+ * Request parameters for getRiskOverview operation in RiskRuleV1alpha1Api.
+ */
+export interface RiskRuleV1alpha1ApiGetRiskOverviewRequest {
+    /**
+     * Analytics range in days, between 1 and 90. Defaults to 7.
+     */
+    readonly days?: number
 }
 
 /**
@@ -710,6 +785,16 @@ export class RiskRuleV1alpha1Api extends BaseAPI {
      */
     public deleteRiskRule(requestParameters: RiskRuleV1alpha1ApiDeleteRiskRuleRequest, options?: RawAxiosRequestConfig) {
         return RiskRuleV1alpha1ApiFp(this.configuration).deleteRiskRule(requestParameters.name, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Aggregate real risk control events, rules, bans, heatmap and relations.
+     * @param {RiskRuleV1alpha1ApiGetRiskOverviewRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getRiskOverview(requestParameters: RiskRuleV1alpha1ApiGetRiskOverviewRequest = {}, options?: RawAxiosRequestConfig) {
+        return RiskRuleV1alpha1ApiFp(this.configuration).getRiskOverview(requestParameters.days, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

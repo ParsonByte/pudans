@@ -26,6 +26,8 @@ import type { JsonPatchInner } from '../models';
 // @ts-ignore
 import type { Secret } from '../models';
 // @ts-ignore
+import type { SecretCatalog } from '../models';
+// @ts-ignore
 import type { SecretList } from '../models';
 /**
  * SecretV1alpha1Api - axios parameter creator
@@ -141,6 +143,63 @@ export const SecretV1alpha1ApiAxiosParamCreator = function (configuration?: Conf
             // authentication bearerAuth required
             // http bearer authentication required
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Browse secret metadata without exposing stored values.
+         * @param {number} [page] One-based page number; defaults to 1.
+         * @param {number} [size] Page size between 1 and 100; defaults to 20.
+         * @param {string} [keyword] Case-insensitive match on the secret name or any key.
+         * @param {string} [type] Exact secret type filter.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getSecretCatalog: async (page?: number, size?: number, keyword?: string, type?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/secrets/catalog`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (page !== undefined) {
+                localVarQueryParameter['page'] = page;
+            }
+
+            if (size !== undefined) {
+                localVarQueryParameter['size'] = size;
+            }
+
+            if (keyword !== undefined) {
+                localVarQueryParameter['keyword'] = keyword;
+            }
+
+            if (type !== undefined) {
+                localVarQueryParameter['type'] = type;
+            }
 
             localVarHeaderParameter['Accept'] = '*/*';
 
@@ -349,6 +408,21 @@ export const SecretV1alpha1ApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Browse secret metadata without exposing stored values.
+         * @param {number} [page] One-based page number; defaults to 1.
+         * @param {number} [size] Page size between 1 and 100; defaults to 20.
+         * @param {string} [keyword] Case-insensitive match on the secret name or any key.
+         * @param {string} [type] Exact secret type filter.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getSecretCatalog(page?: number, size?: number, keyword?: string, type?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<SecretCatalog>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getSecretCatalog(page, size, keyword, type, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['SecretV1alpha1Api.getSecretCatalog']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * List Secret
          * @param {number} [page] Page number, starts from 1. Values below 1 are treated as 1.
          * @param {number} [size] Size number. Default is 0.
@@ -427,6 +501,15 @@ export const SecretV1alpha1ApiFactory = function (configuration?: Configuration,
             return localVarFp.getSecret(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
+         * Browse secret metadata without exposing stored values.
+         * @param {SecretV1alpha1ApiGetSecretCatalogRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getSecretCatalog(requestParameters: SecretV1alpha1ApiGetSecretCatalogRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<SecretCatalog> {
+            return localVarFp.getSecretCatalog(requestParameters.page, requestParameters.size, requestParameters.keyword, requestParameters.type, options).then((request) => request(axios, basePath));
+        },
+        /**
          * List Secret
          * @param {SecretV1alpha1ApiListSecretRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -484,6 +567,31 @@ export interface SecretV1alpha1ApiGetSecretRequest {
      * Name of secret
      */
     readonly name: string
+}
+
+/**
+ * Request parameters for getSecretCatalog operation in SecretV1alpha1Api.
+ */
+export interface SecretV1alpha1ApiGetSecretCatalogRequest {
+    /**
+     * One-based page number; defaults to 1.
+     */
+    readonly page?: number
+
+    /**
+     * Page size between 1 and 100; defaults to 20.
+     */
+    readonly size?: number
+
+    /**
+     * Case-insensitive match on the secret name or any key.
+     */
+    readonly keyword?: string
+
+    /**
+     * Exact secret type filter.
+     */
+    readonly type?: string
 }
 
 /**
@@ -575,6 +683,16 @@ export class SecretV1alpha1Api extends BaseAPI {
      */
     public getSecret(requestParameters: SecretV1alpha1ApiGetSecretRequest, options?: RawAxiosRequestConfig) {
         return SecretV1alpha1ApiFp(this.configuration).getSecret(requestParameters.name, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Browse secret metadata without exposing stored values.
+     * @param {SecretV1alpha1ApiGetSecretCatalogRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getSecretCatalog(requestParameters: SecretV1alpha1ApiGetSecretCatalogRequest = {}, options?: RawAxiosRequestConfig) {
+        return SecretV1alpha1ApiFp(this.configuration).getSecretCatalog(requestParameters.page, requestParameters.size, requestParameters.keyword, requestParameters.type, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
