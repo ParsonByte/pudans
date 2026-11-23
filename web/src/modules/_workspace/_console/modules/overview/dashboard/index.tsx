@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { type AuditJourney, type AuditJourneyPage, type RecentOperation, apiClient } from "@pudans-dev/api-client";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { Alert, Button, Card, Empty, Progress, Segmented, Skeleton, Table, type TableProps, Tag, Tooltip } from "antd";
+import { Alert, Button, Card, Empty, Progress, Select, Skeleton, Table, type TableProps, Tag, Tooltip } from "antd";
 import {
     AlertTriangle,
     ArrowUpRight,
@@ -328,9 +328,11 @@ export function DashboardView() {
                         </div>
                     </div>
                     <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center xl:flex-col xl:items-end">
-                        <Segmented
-                            onChange={(value) => {
-                                setRange(value as DashboardRange);
+                        <Select
+                            aria-label="统计范围"
+                            className="w-full sm:w-40"
+                            onChange={(value: DashboardRange) => {
+                                setRange(value);
                                 setJourneyAnchor(Date.now());
                             }}
                             options={DASHBOARD_RANGES}
