@@ -29,7 +29,7 @@ class ExtensionCreateHandler implements CreateHandler {
         this.builtinEntityPolicy = builtinEntityPolicy;
     }
 
-    // 校验资源标识与创建权限后写入并返回 201。
+    // 校验资源标识与创建权限后写入、回读并返回 201。
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
         return request.bodyToMono(Unstructured.class)
@@ -41,6 +41,7 @@ class ExtensionCreateHandler implements CreateHandler {
                             .checkCreate(scheme.groupVersionKind(), unstructured)
                             .then(Mono.defer(() -> client.create(unstructured)));
                 })
+                .flatMap(createdExt -> client.get(scheme.type(), createdExt.getMetadata().getName()))
                 .flatMap(createdExt -> ServerResponse.created(URI.create(
                                 pathPattern() + "/" + createdExt.getMetadata().getName()))
                         .contentType(MediaType.APPLICATION_JSON)

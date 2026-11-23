@@ -2,10 +2,12 @@ package cn.tolim.pudans.infra.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import cn.tolim.pudans.extension.contract.Secret;
 import cn.tolim.pudans.security.contract.RememberMeToken;
 import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
+import java.util.Map;
 import tools.jackson.databind.json.JsonMapper;
 
 final class SensitiveExtensionMixins {
@@ -18,6 +20,7 @@ final class SensitiveExtensionMixins {
         builder.addMixIn(RememberMeToken.Spec.class, RememberMeTokenSpecMixin.class);
         builder.addMixIn(Webhook.Spec.class, WebhookSpecMixin.class);
         builder.addMixIn(StoragePolicy.Credentials.class, StoragePolicyCredentialsMixin.class);
+        builder.addMixIn(Secret.class, SecretMixin.class);
     }
 
     abstract static class UserSpecMixin {
@@ -70,5 +73,16 @@ final class SensitiveExtensionMixins {
         // 客户端密钥只允许写入。
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
         abstract String getClientSecret();
+    }
+
+    abstract static class SecretMixin {
+
+        // 密钥数据只允许写入，响应不输出。
+        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+        abstract Map<String, byte[]> getData();
+
+        // 字符串密钥只允许写入，响应不输出。
+        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+        abstract Map<String, String> getStringData();
     }
 }

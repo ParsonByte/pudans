@@ -6,6 +6,10 @@ import cn.tolim.pudans.security.contract.RememberMeToken;
 import cn.tolim.pudans.contract.webhook.Webhook;
 import cn.tolim.pudans.contract.storage.StoragePolicy;
 import cn.tolim.pudans.contract.user.User;
+import cn.tolim.pudans.extension.contract.Secret;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -81,5 +85,49 @@ class SensitiveExtensionMixinsTest {
         var written = mapper.readValue(
                 "{\"spec\":{\"credentials\":{\"accessKey\":\"access\"}}}", StoragePolicy.class);
         assertThat(written.getSpec().getCredentials().getAccessKey()).isEqualTo("access");
+    }
+
+    @Test
+    void secretValuesAreHiddenFromResponsesButAcceptedOnInput() throws Exception {
+        var secret = new Secret();
+        secret.setType("Opaque");
+        secret.setData(Map.of("certificate", "hidden-data".getBytes(StandardCharsets.UTF_8)));
+        secret.setStringData(Map.of("password", "hidden-string"));
+
+        var json = mapper.writeValueAsString(secret);
+
+        assertThat(json)
+                .doesNotContain("\"data\"")
+                .doesNotContain("\"stringData\"")
+                .doesNotContain(Base64.getEncoder().encodeToString("hidden-data".getBytes(StandardCharsets.UTF_8)))
+                .doesNotContain("hidden-string");
+        var written = mapper.readValue(
+                """
+                {
+                  "data": {"certificate": "aGlkZGVuLWRhdGE="},
+                  "stringData": {"password": "hidden-string"}
+                }
+                """,
+                Secret.class);
+        assertThat(new String(written.getData().get("certificate"), StandardCharsets.UTF_8))
+                .isEqualTo("hidden-data");
+        assertThat(written.getStringData()).containsEntry("password", "hidden-string");
+    }
+
+    @Test
+    void secretValuesRemainVisibleToTheStorageMapper() throws Exception {
+        var secret = new Secret();
+        secret.setType("Opaque");
+        secret.setData(Map.of("certificate", "hidden-data".getBytes(StandardCharsets.UTF_8)));
+        secret.setStringData(Map.of("password", "hidden-string"));
+        var storageMapper = new com.fasterxml.jackson.databind.ObjectMapper();
+
+        var json = storageMapper.writeValueAsString(secret);
+
+        assertThat(json)
+                .contains("\"data\"")
+                .contains("\"stringData\"")
+                .contains(Base64.getEncoder().encodeToString("hidden-data".getBytes(StandardCharsets.UTF_8)))
+                .contains("hidden-string");
     }
 }
