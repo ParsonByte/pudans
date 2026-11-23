@@ -34,6 +34,7 @@ import cn.tolim.pudans.extension.contract.JsonExtension;
 import cn.tolim.pudans.extension.contract.MetadataUtil;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.extension.contract.ReservedLabels;
+import cn.tolim.pudans.extension.contract.Secret;
 import cn.tolim.pudans.infra.contract.utils.JsonUtils;
 import cn.tolim.pudans.security.contract.PersonalAccessToken;
 import cn.tolim.pudans.security.contract.RememberMeToken;
@@ -131,6 +132,9 @@ public class BuiltinEntityPolicy {
         if (Webhook.KIND.equals(kind)) {
             return checkWebhookUpdate(name, extension);
         }
+        if (Secret.KIND.equals(kind)) {
+            return checkSecretUpdate(name, extension);
+        }
         if (UserConnection.KIND.equals(kind)) {
             return Mono.error(denied("身份连接只能通过身份绑定接口维护。"));
         }
@@ -204,6 +208,45 @@ public class BuiltinEntityPolicy {
             }
             return Mono.empty();
         });
+    }
+
+    // 密钥更新时补回请求中未提交的值，显式空对象仍表示清空。
+    private Mono<Void> checkSecretUpdate(String name, Extension extension) {
+        return client.get(Secret.class, name).flatMap(existing -> {
+            if (extension instanceof Unstructured unstructured) {
+                preserveMissingField(unstructured.getData(), "data", existing.getData());
+                preserveMissingField(unstructured.getData(), "stringData", existing.getStringData());
+            } else if (extension instanceof JsonExtension jsonExtension) {
+                preserveMissingJsonField(jsonExtension, "data", existing.getData());
+                preserveMissingJsonField(jsonExtension, "stringData", existing.getStringData());
+            } else if (extension instanceof Secret secret) {
+                if (secret.getData() == null) {
+                    secret.setData(existing.getData());
+                }
+                if (secret.getStringData() == null) {
+                    secret.setStringData(existing.getStringData());
+                }
+            }
+            return Mono.empty();
+        });
+    }
+
+    // 仅当请求缺少字段时回填已存映射，显式空对象保持不变。
+    @SuppressWarnings("unchecked")
+    private static void preserveMissingField(Map<?, ?> target, String field, Map<String, ?> stored) {
+        if (stored == null || stored.isEmpty() || target.containsKey(field)) {
+            return;
+        }
+        ((Map<String, Object>) target).put(field, stored);
+    }
+
+    // 仅当 JSON 请求缺少字段时回填已存映射，显式空对象保持不变。
+    private static void preserveMissingJsonField(
+            JsonExtension extension, String field, Map<String, ?> stored) {
+        if (stored == null || stored.isEmpty() || extension.getInternal().has(field)) {
+            return;
+        }
+        extension.getInternal().set(field, extension.getObjectMapper().valueToTree(stored));
     }
 
     // 在嵌套配置中定位子映射，不存在时按需创建。

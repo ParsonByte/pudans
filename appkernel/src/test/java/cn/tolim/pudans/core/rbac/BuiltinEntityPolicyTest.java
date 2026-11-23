@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ import cn.tolim.pudans.extension.contract.GroupVersionKind;
 import cn.tolim.pudans.extension.contract.JsonExtension;
 import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
+import cn.tolim.pudans.extension.contract.Secret;
 import cn.tolim.pudans.extension.contract.Unstructured;
 import cn.tolim.pudans.infra.exception.AccessDeniedException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -603,6 +606,96 @@ class BuiltinEntityPolicyTest {
 
     private static GroupVersionKind webhookGvk() {
         return new GroupVersionKind(Webhook.GROUP, Webhook.VERSION, Webhook.KIND);
+    }
+
+    @Test
+    void secretUnstructuredUpdateKeepsValuesThatTheRequestOmits() {
+        when(client.get(Secret.class, "secret-1")).thenReturn(Mono.just(secret()));
+        var update = new Unstructured(secretUpdate());
+
+        StepVerifier.create(policy.checkUpdate(secretGvk(), "secret-1", update))
+                .verifyComplete();
+
+        assertThat(Unstructured.getNestedValue(update.getData(), "stringData", "password"))
+                .contains("stored-string");
+        assertThat(Unstructured.getNestedValue(update.getData(), "data", "certificate"))
+                .isPresent();
+    }
+
+    @Test
+    void secretUpdateHonorsExplicitEmptyObjects() {
+        when(client.get(Secret.class, "secret-1")).thenReturn(Mono.just(secret()));
+        var root = secretUpdate();
+        root.put("data", new LinkedHashMap<>());
+        root.put("stringData", new LinkedHashMap<>());
+
+        StepVerifier.create(policy.checkUpdate(secretGvk(), "secret-1", new Unstructured(root)))
+                .verifyComplete();
+
+        assertThat((Map<?, ?>) Unstructured.getNestedValue(root, "stringData").orElseThrow())
+                .isEmpty();
+        assertThat((Map<?, ?>) Unstructured.getNestedValue(root, "data").orElseThrow())
+                .isEmpty();
+    }
+
+    @Test
+    void secretPatchKeepsValuesThatTheRequestOmits() {
+        when(client.get(Secret.class, "secret-1")).thenReturn(Mono.just(secret()));
+        var mapper = new ObjectMapper();
+        var node = mapper.createObjectNode();
+        node.put("apiVersion", "v1alpha1");
+        node.put("kind", Secret.KIND);
+        node.putObject("metadata").put("name", "secret-1");
+        node.put("type", "Opaque");
+        var patched = new JsonExtension(mapper, node);
+
+        StepVerifier.create(policy.checkUpdate(secretGvk(), "secret-1", patched))
+                .verifyComplete();
+
+        assertThat(node.at("/stringData/password").asText()).isEqualTo("stored-string");
+        assertThat(Base64.getDecoder().decode(node.at("/data/certificate").asText()))
+                .isEqualTo("stored-data".getBytes(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void typedSecretUpdateKeepsValuesThatTheRequestOmits() {
+        when(client.get(Secret.class, "secret-1")).thenReturn(Mono.just(secret()));
+        var requested = new Secret();
+        var metadata = new Metadata();
+        metadata.setName("secret-1");
+        requested.setMetadata(metadata);
+        requested.setType("Opaque");
+
+        StepVerifier.create(policy.checkUpdate(secretGvk(), "secret-1", requested))
+                .verifyComplete();
+
+        assertThat(requested.getStringData()).containsEntry("password", "stored-string");
+        assertThat(new String(requested.getData().get("certificate"), StandardCharsets.UTF_8))
+                .isEqualTo("stored-data");
+    }
+
+    private static GroupVersionKind secretGvk() {
+        return new GroupVersionKind("", "v1alpha1", Secret.KIND);
+    }
+
+    private static Map<String, Object> secretUpdate() {
+        var root = new LinkedHashMap<String, Object>();
+        root.put("apiVersion", "v1alpha1");
+        root.put("kind", Secret.KIND);
+        root.put("metadata", Map.of("name", "secret-1"));
+        root.put("type", "Opaque");
+        return root;
+    }
+
+    private static Secret secret() {
+        var secret = new Secret();
+        var metadata = new Metadata();
+        metadata.setName("secret-1");
+        secret.setMetadata(metadata);
+        secret.setType("Opaque");
+        secret.setData(Map.of("certificate", "stored-data".getBytes(StandardCharsets.UTF_8)));
+        secret.setStringData(Map.of("password", "stored-string"));
+        return secret;
     }
 
     private static Webhook webhook(String secret) {
