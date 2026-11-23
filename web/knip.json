@@ -28,7 +28,6 @@
     "react-markdown",
     "remark-gfm",
     "shiki",
-    "xlsx",
     "zod"
   ]
 }

@@ -13,9 +13,7 @@ import { ObjectDetails } from "../../../components/object-details";
 import { consoleErrorMessage } from "../../../composables/_errors";
 import { formatDateTime } from "../../../composables/_format";
 import { useConsoleTableState } from "../../../composables/_table";
-
-const DISPLAY_NAME_KEY = "rbac.authorization.pudans.tolim.cn/display-name";
-const TEMPLATE_LABEL = "pudans.tolim.cn/role-template";
+import { ROLE_TEMPLATE_LABEL as TEMPLATE_LABEL, roleDisplayName } from "../composables/_role";
 
 type UserGroupFormValues = {
     description?: string;
@@ -51,7 +49,7 @@ export function UserGroupsView() {
     const roleOptions = (rolesQuery.data?.items ?? [])
         .filter((role) => role.metadata.labels?.[TEMPLATE_LABEL] !== "true")
         .map((role) => ({
-            label: role.metadata.annotations?.[DISPLAY_NAME_KEY] ?? role.metadata.name,
+            label: roleDisplayName(role),
             value: role.metadata.name,
         }));
     const saveGroup = useMutation({
