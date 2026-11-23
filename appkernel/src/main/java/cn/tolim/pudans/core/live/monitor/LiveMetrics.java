@@ -1,11 +1,14 @@
 package cn.tolim.pudans.core.live.monitor;
 
+import cn.tolim.pudans.core.live.recorder.LiveRecorderRegistry;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,18 +24,44 @@ public class LiveMetrics {
 
     private final MeterRegistry registry;
 
+    // 活动与排队数直接读注册表，采集时不必再查录制列表
+    private final LiveRecorderRegistry recorderRegistry;
+
     private final AtomicLong activeSources = new AtomicLong();
 
-    // 注册活动直播源数量仪表，供看板采集
+    // 失败录制只保留名字，靠状态迁移增删，避免每次采集扫库
+    private final Set<String> failedRecordings = ConcurrentHashMap.newKeySet();
+
+    // 注册活动直播源与录制数量仪表，供看板采集
     @PostConstruct
     public void registerGauges() {
         Gauge.builder("live.sources.active", activeSources, AtomicLong::doubleValue)
+                .register(registry);
+        Gauge.builder("live.recordings.active", recorderRegistry, LiveRecorderRegistry::activeCount)
+                .register(registry);
+        Gauge.builder("live.recordings.queued", recorderRegistry, LiveRecorderRegistry::queuedCount)
+                .register(registry);
+        Gauge.builder("live.recordings.failed", failedRecordings, Set::size)
                 .register(registry);
     }
 
     // 更新活动直播源数量，负数按零处理
     public void sourcesActive(long count) {
         activeSources.set(Math.max(0, count));
+    }
+
+    // 录制进入失败状态时计入失败仪表，重复进入不重复计数
+    public void recordingFailed(String recordingName) {
+        if (recordingName != null && !recordingName.isBlank()) {
+            failedRecordings.add(recordingName);
+        }
+    }
+
+    // 录制记录彻底删除后不再计入失败仪表
+    public void recordingRemoved(String recordingName) {
+        if (recordingName != null) {
+            failedRecordings.remove(recordingName);
+        }
     }
 
     // 统计一次成功的直播源解析

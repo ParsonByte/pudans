@@ -22,6 +22,7 @@ import cn.tolim.pudans.contract.live.LiveRecordingState;
 import cn.tolim.pudans.extension.contract.ListOptions;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
+import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.core.live.source.SourceStatus;
 import cn.tolim.pudans.infra.properties.LiveProperties;
@@ -59,6 +60,9 @@ public class LiveRecordingRecovery {
 
     private final LiveProperties properties;
 
+    // 失败计数存在内存里，重启后需要从录制列表回填
+    private final LiveMetrics metrics;
+
     private final String instanceId = UUID.randomUUID().toString();
 
     // 启动时异步恢复失联实例遗留的录制
@@ -71,6 +75,26 @@ public class LiveRecordingRecovery {
                     }
                 },
                 error -> log.warn("直播录制启动恢复失败：{}", error.getMessage())));
+        // 与活动录制恢复并行回填失败计数，避免启动拖慢恢复
+        Schedulers.boundedElastic().schedule(() -> seedFailedMetrics().subscribe(
+                count -> {
+                    if (count > 0) {
+                        log.info("直播录制启动加载 {} 条失败录制指标", count);
+                    }
+                },
+                error -> log.warn("直播录制失败指标加载失败：{}", error.getMessage())));
+    }
+
+    // 启动时把历史失败录制装入失败仪表，避免重启后计数归零
+    public Mono<Integer> seedFailedMetrics() {
+        var options = ListOptions.builder()
+                .andQuery(in("status.state", List.of(LiveRecordingState.FAILED)))
+                .andQuery(notDeleting())
+                .build();
+        return client.listAll(LiveRecording.class, options, Sort.by(Sort.Order.asc("spec.startedAt")))
+                .doOnNext(recording -> metrics.recordingFailed(recording.getMetadata().getName()))
+                .count()
+                .map(Long::intValue);
     }
 
     // 分页扫描活动录制，逐条尝试恢复并计数

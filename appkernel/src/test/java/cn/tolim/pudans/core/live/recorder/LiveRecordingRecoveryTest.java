@@ -29,6 +29,7 @@ import cn.tolim.pudans.extension.contract.ListOptions;
 import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
+import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.core.live.source.SourceStatus;
 import cn.tolim.pudans.infra.properties.LiveProperties;
@@ -57,6 +58,9 @@ class LiveRecordingRecoveryTest {
     private ReactiveStringRedisTemplate redisTemplate;
 
     @Mock
+    private LiveMetrics metrics;
+
+    @Mock
     private ReactiveValueOperations<String, String> valueOperations;
 
     @TempDir
@@ -69,7 +73,7 @@ class LiveRecordingRecoveryTest {
         var properties = new LiveProperties();
         properties.getRecorder().setWorkDir(tempDir.toString());
         recovery = new LiveRecordingRecovery(
-                client, recordingStatus, registry, workspace, sourceStatus, redisTemplate, properties);
+                client, recordingStatus, registry, workspace, sourceStatus, redisTemplate, properties, metrics);
     }
 
     @Test
@@ -159,6 +163,17 @@ class LiveRecordingRecoveryTest {
 
         assertThat(recovered).isZero();
         verifyNoInteractions(redisTemplate);
+    }
+
+    @Test
+    void seedsFailedRecordingMetricsAtStartup() {
+        var recording = recording("live-failed", LiveRecordingState.FAILED, Instant.now());
+        when(client.listAll(eq(LiveRecording.class), any(ListOptions.class), any(Sort.class)))
+                .thenReturn(Flux.just(recording));
+
+        assertThat(recovery.seedFailedMetrics().block()).isEqualTo(1);
+
+        verify(metrics).recordingFailed("live-failed");
     }
 
     private static LiveRecording recording(String name, LiveRecordingState state, Instant createdAt) {
