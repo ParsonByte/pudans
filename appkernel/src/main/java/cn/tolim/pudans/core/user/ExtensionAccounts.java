@@ -1,11 +1,14 @@
 package cn.tolim.pudans.core.user;
 
 import static cn.tolim.pudans.extension.contract.ExtensionUtil.defaultSort;
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
 import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
+import static cn.tolim.pudans.extension.contract.index.query.Queries.or;
 
 import java.time.Clock;
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -85,6 +88,41 @@ public class ExtensionAccounts implements Accounts {
         return client.listAll(User.class, listOptions, defaultSort()).next();
     }
 
+    // 先匹配显式登录名，再回退未设置别名的资源名称
+    @Override
+    public Mono<User> findUserByLoginName(String loginName) {
+        if (!StringUtils.hasText(loginName)) {
+            return Mono.empty();
+        }
+        var normalized = loginName.trim().toLowerCase(Locale.ROOT);
+        var listOptions = ListOptions.builder()
+                .andQuery(notDeleting())
+                .andQuery(equal("spec.loginName", normalized))
+                .build();
+        return client.listAll(User.class, listOptions, defaultSort())
+                .next()
+                .switchIfEmpty(Mono.defer(() -> client.fetch(User.class, normalized)
+                        .filter(user -> !StringUtils.hasText(user.getSpec().getLoginName()))
+                        .filter(user -> user.getMetadata().getDeletionTimestamp() == null)));
+    }
+
+    // 同时检查资源名称与显式登录名的占用情况
+    @Override
+    public Mono<Boolean> isLoginNameAvailable(String loginName, String currentUsername) {
+        if (!StringUtils.hasText(loginName)) {
+            return Mono.just(false);
+        }
+        var normalized = loginName.trim().toLowerCase(Locale.ROOT);
+        var listOptions = ListOptions.builder()
+                .andQuery(notDeleting())
+                .andQuery(or(equal("metadata.name", normalized), equal("spec.loginName", normalized)))
+                .build();
+        return client.listAll(User.class, listOptions, defaultSort())
+                .filter(user -> !Objects.equals(user.getMetadata().getName(), currentUsername))
+                .hasElements()
+                .map(occupied -> !occupied);
+    }
+
     // 只返回邮箱已验证且匹配的用户
     @Override
     public Mono<User> findUserByVerifiedEmail(String email) {
@@ -161,7 +199,13 @@ public class ExtensionAccounts implements Accounts {
                         return Mono.error(new DuplicateNameException(
                                 "用户名 " + user.getMetadata().getName() + " 已存在，请更换用户名后重试。", null));
                     }
-                    return client.create(user);
+                    var loginName = user.effectiveLoginName();
+                    return isLoginNameAvailable(loginName, null)
+                            .flatMap(available -> Boolean.TRUE.equals(available)
+                                    ? client.create(user)
+                                    : Mono.error(new DuplicateNameException(
+                                            "登录名 " + loginName + " 已被占用，请更换后重试。",
+                                            null)));
                 });
     }
 

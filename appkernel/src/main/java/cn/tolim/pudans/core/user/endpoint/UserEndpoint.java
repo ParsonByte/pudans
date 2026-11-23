@@ -1,5 +1,6 @@
 package cn.tolim.pudans.core.user.endpoint;
 
+import static cn.tolim.pudans.extension.contract.ExtensionUtil.notDeleting;
 import static cn.tolim.pudans.extension.contract.index.query.Queries.contains;
 import static cn.tolim.pudans.extension.contract.index.query.Queries.equal;
 import static cn.tolim.pudans.extension.contract.index.query.Queries.in;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -69,7 +71,7 @@ public class UserEndpoint implements CustomEndpoint {
 
     private static final String MANAGE_USERS_CAPABILITY = "manage-users";
 
-    private static final int MAX_LOCAL_BATCH_SIZE = 200;
+    private static final int MAX_BATCH_SIZE = 200;
 
     private final ReactiveExtensionClient client;
 
@@ -146,6 +148,23 @@ public class UserEndpoint implements CustomEndpoint {
                         .tag(tag)
                         .requestBody(requestBodyBuilder().required(true).implementation(BatchCreateRequest.class))
                         .response(responseBuilder().implementation(BatchCreateResponse.class)))
+                .GET("/users/-/feishu-contacts", this::listFeishuContacts, builder -> builder
+                        .operationId("ListFeishuContacts")
+                        .description("List Feishu contacts from the organization directory.")
+                        .tag(tag)
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("pageToken")
+                                .required(false)
+                                .description("Opaque token for the next contact page.")
+                                .implementation(String.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("pageSize")
+                                .required(false)
+                                .description("Contacts per page (1-50, default 50).")
+                                .implementation(Integer.class))
+                        .response(responseBuilder().implementation(FeishuContactPage.class)))
                 .POST("/users/-/local", this::createLocalUser, builder -> builder.operationId("CreateLocalUser")
                         .description("Create a local user with a username and password.")
                         .tag(tag)
@@ -158,12 +177,12 @@ public class UserEndpoint implements CustomEndpoint {
                         .requestBody(requestBodyBuilder().required(true).implementation(LocalBatchCreateRequest.class))
                         .response(responseBuilder().implementation(LocalBatchCreateResponse.class)))
                 .PUT("/users/-", this::updateSelf, builder -> builder.operationId("UpdateCurrentUser")
-                        .description("Update the current user's local profile. displayName and email are read-only.")
+                        .description("Update the current user's local profile. Feishu-managed fields are read-only.")
                         .tag(tag)
                         .requestBody(requestBodyBuilder().required(true).implementation(UpdateProfileRequest.class))
                         .response(responseBuilder().implementation(User.class)))
                 .PUT("/users/{name}", this::updateUser, builder -> builder.operationId("UpdateUser")
-                        .description("Update a user's local profile. displayName and email are read-only.")
+                        .description("Update a user's local profile. Feishu-managed fields are read-only.")
                         .tag(tag)
                         .parameter(parameterBuilder().in(ParameterIn.PATH).name("name").required(true))
                         .requestBody(requestBodyBuilder().required(true).implementation(UpdateProfileRequest.class))
@@ -244,8 +263,8 @@ public class UserEndpoint implements CustomEndpoint {
 
     // 将短横线占位符解析为当前用户名
     private Mono<String> resolveName(ServerRequest request) {
-        var name = request.pathVariable("name");
-        return SELF.equals(name) ? currentUsername() : Mono.just(name);
+        var name = request.pathVariables().get("name");
+        return name == null || SELF.equals(name) ? currentUsername() : Mono.just(name);
     }
 
     // 返回当前登录用户的资料视图
@@ -327,7 +346,7 @@ public class UserEndpoint implements CustomEndpoint {
             String keyword,
             Set<String> statuses,
             Set<String> userGroups) {
-        var options = base;
+        var options = ListOptions.builder(base).andQuery(notDeleting()).build();
         if (!statuses.isEmpty()) {
             var wantsActive = statuses.contains("active");
             var wantsDisabled = statuses.contains("disabled");
@@ -397,7 +416,10 @@ public class UserEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> createUser(ServerRequest request) {
         return request.bodyToMono(CreateUserRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
-                .flatMap(body -> feishuAccounts.createFromFeishu(body.toFeishuData(), body.userGroup()))
+                .flatMap(body -> {
+                    validateFeishuCreate(body.providerUserId(), body.username(), body.userGroup());
+                    return feishuAccounts.createFromFeishu(body.toFeishuData(), body.userGroup());
+                })
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
@@ -406,29 +428,81 @@ public class UserEndpoint implements CustomEndpoint {
         return request.bodyToMono(BatchCreateRequest.class)
                 .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
                 .flatMap(body -> {
-                    if (CollectionUtils.isEmpty(body.users())) {
-                        return Mono.error(new ServerWebInputException("users 不能为空。"));
-                    }
+                    validateBatchCreate(body);
                     return Flux.fromIterable(body.users())
-                            .concatMap(item -> feishuAccounts
-                                    .createFromFeishu(item.toFeishuData(), item.userGroup())
-                                    .flatMap(user -> auditLog
-                                            .recordChild(
-                                                    request.exchange(),
-                                                    null,
-                                                    "BATCH_CREATE_USER",
-                                                    "User",
-                                                    user.getMetadata().getName(),
-                                                    "SUCCESS",
-                                                    snapshot(item, user),
-                                                    null)
-                                            .thenReturn(user)))
+                            .index()
+                            .concatMap(item -> {
+                                var index = item.getT1().intValue() + 1;
+                                var bodyItem = item.getT2();
+                                return feishuAccounts
+                                        .createFromFeishu(bodyItem.toFeishuData(), bodyItem.userGroup())
+                                        .flatMap(user -> auditLog
+                                                .recordChild(
+                                                        request.exchange(),
+                                                        null,
+                                                        "BATCH_CREATE_USER",
+                                                        "User",
+                                                        user.getMetadata().getName(),
+                                                        "SUCCESS",
+                                                        snapshot(bodyItem, user),
+                                                        null)
+                                                .thenReturn(new BatchCreateItem(
+                                                        cn.tolim.pudans.core.user.endpoint.UserView.from(user),
+                                                        null)))
+                                        .onErrorResume(error -> Mono.just(new BatchCreateItem(
+                                                null,
+                                                new BatchCreateFailure(
+                                                        index,
+                                                        bodyItem.providerUserId(),
+                                                        createFailureMessage(error)))));
+                            })
                             .collectList()
-                            .map(created -> new BatchCreateResponse(
-                                    created.size(),
-                                    created.stream().map(UserView::from).toList()));
+                            .map(items -> {
+                                var users = items.stream()
+                                        .map(BatchCreateItem::user)
+                                        .filter(Objects::nonNull)
+                                        .toList();
+                                var failures = items.stream()
+                                        .map(BatchCreateItem::failure)
+                                        .filter(Objects::nonNull)
+                                        .toList();
+                                return new BatchCreateResponse(users.size(), failures.size(), failures, users);
+                            });
                 })
                 .flatMap(response -> ServerResponse.ok().bodyValue(response));
+    }
+
+    // 分页返回飞书通讯录成员
+    private Mono<ServerResponse> listFeishuContacts(ServerRequest request) {
+        var pageSize = request.queryParam("pageSize")
+                .filter(StringUtils::hasText)
+                .map(value -> {
+                    try {
+                        return Integer.parseInt(value);
+                    } catch (NumberFormatException e) {
+                        return 50;
+                    }
+                })
+                .orElse(50);
+        var pageToken = request.queryParam("pageToken").filter(StringUtils::hasText).orElse(null);
+        return feishuAccounts
+                .listContacts(pageToken, Math.max(1, Math.min(50, pageSize)))
+                .map(page -> new FeishuContactPage(
+                        page.items().stream()
+                                .map(contact -> new FeishuContactView(
+                                        contact.providerUserId(),
+                                        contact.openId(),
+                                        contact.unionId(),
+                                        contact.displayName(),
+                                        contact.email(),
+                                        contact.phone(),
+                                        contact.avatar(),
+                                        contact.imported(),
+                                        contact.importedUsername()))
+                                .toList(),
+                        page.pageToken(),
+                        page.hasMore()))
+                .flatMap(page -> ServerResponse.ok().bodyValue(page));
     }
 
     // 组装飞书用户创建的审计快照
@@ -495,7 +569,7 @@ public class UserEndpoint implements CustomEndpoint {
                                         .onErrorResume(error -> Mono.just(new LocalBatchCreateFailure(
                                                 index,
                                                 bodyItem == null ? null : bodyItem.username(),
-                                                localCreateFailureMessage(error))));
+                                                createFailureMessage(error))));
                             })
                             .collectList()
                             .map(failures -> new LocalBatchCreateResponse(
@@ -533,10 +607,11 @@ public class UserEndpoint implements CustomEndpoint {
     // 校验本地用户的名称、邮箱与密码
     static void validateLocalCreate(LocalCreateUserRequest body) {
         var username = StringUtils.hasText(body.username()) ? body.username().trim() : null;
-        if (username == null || username.length() > 63 || !username.matches(ValidationUtils.NAME_REGEX)) {
+        if (username == null) {
             throw new ServerWebInputException(
                     "用户名只能包含小写字母、数字、- 和 .，且以字母或数字开头和结尾，最长 63 个字符。");
         }
+        validateUsername(username);
         if (StringUtils.hasText(body.displayName()) && body.displayName().trim().length() > 80) {
             throw new ServerWebInputException("显示名称不能超过 80 个字符。");
         }
@@ -563,16 +638,55 @@ public class UserEndpoint implements CustomEndpoint {
         if (body == null || CollectionUtils.isEmpty(body.users())) {
             throw new ServerWebInputException("users 不能为空。");
         }
-        if (body.users().size() > MAX_LOCAL_BATCH_SIZE) {
-            throw new ServerWebInputException("单次最多创建 " + MAX_LOCAL_BATCH_SIZE + " 个用户。");
+        if (body.users().size() > MAX_BATCH_SIZE) {
+            throw new ServerWebInputException("单次最多创建 " + MAX_BATCH_SIZE + " 个用户。");
         }
         if (body.users().stream().anyMatch(Objects::isNull)) {
             throw new ServerWebInputException("users 不能包含空项。");
         }
     }
 
-    // 提取可展示的失败原因
-    private static String localCreateFailureMessage(Throwable error) {
+    // 校验飞书用户标识和可选本地资料
+    static void validateFeishuCreate(String providerUserId, String username, String userGroup) {
+        var providerId = StringUtils.hasText(providerUserId) ? providerUserId.trim() : null;
+        if (providerId == null
+                || providerId.length() > 128
+                || (!providerId.startsWith("on_") && !providerId.startsWith("ou_"))) {
+            throw new ServerWebInputException("请填写有效的飞书 union_id 或 open_id。");
+        }
+        if (StringUtils.hasText(username)) {
+            validateUsername(username.trim());
+        }
+        if (StringUtils.hasText(userGroup) && userGroup.trim().length() > 63) {
+            throw new ServerWebInputException("用户组名称过长。");
+        }
+    }
+
+    // 校验登录名的长度与允许字符
+    private static void validateUsername(String username) {
+        if (username.length() > 63 || !username.matches(ValidationUtils.NAME_REGEX)) {
+            throw new ServerWebInputException(
+                    "用户名只能包含小写字母、数字、- 和 .，且以字母或数字开头和结尾，最长 63 个字符。");
+        }
+    }
+
+    // 限制飞书批量创建的数量并逐项校验
+    static void validateBatchCreate(BatchCreateRequest body) {
+        if (body == null || CollectionUtils.isEmpty(body.users())) {
+            throw new ServerWebInputException("users 不能为空。");
+        }
+        if (body.users().size() > MAX_BATCH_SIZE) {
+            throw new ServerWebInputException("单次最多创建 " + MAX_BATCH_SIZE + " 个用户。");
+        }
+        if (body.users().stream().anyMatch(Objects::isNull)) {
+            throw new ServerWebInputException("users 不能包含空项。");
+        }
+        body.users().forEach(item ->
+                validateFeishuCreate(item.providerUserId(), item.username(), item.userGroup()));
+    }
+
+    // 提取用户创建失败的可展示原因
+    private static String createFailureMessage(Throwable error) {
         if (error instanceof ResponseStatusException status && StringUtils.hasText(status.getReason())) {
             return status.getReason();
         }
@@ -600,7 +714,7 @@ public class UserEndpoint implements CustomEndpoint {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(UpdateProfileRequest.class)
                         .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
-                        .flatMap(update -> applyProfileUpdate(request.exchange(), username, update)))
+                        .flatMap(update -> applyProfileUpdate(request.exchange(), username, update, false)))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
@@ -609,13 +723,16 @@ public class UserEndpoint implements CustomEndpoint {
         return resolveName(request)
                 .flatMap(username -> request.bodyToMono(UpdateProfileRequest.class)
                         .switchIfEmpty(Mono.error(new ServerWebInputException("请求体为必填项。")))
-                        .flatMap(update -> applyProfileUpdate(request.exchange(), username, update)))
+                        .flatMap(update -> applyProfileUpdate(request.exchange(), username, update, true)))
                 .flatMap(user -> ServerResponse.ok().bodyValue(cn.tolim.pudans.core.user.endpoint.UserView.from(user)));
     }
 
-    // 拒绝修改只读字段，仅允许更新简介
+    // 拒绝修改只读字段，仅允许更新简介和登录名
     private Mono<User> applyProfileUpdate(
-            org.springframework.web.server.ServerWebExchange exchange, String username, UpdateProfileRequest update) {
+            org.springframework.web.server.ServerWebExchange exchange,
+            String username,
+            UpdateProfileRequest update,
+            boolean allowLoginNameChange) {
         return accounts.getUser(username).flatMap(user -> {
             var spec = user.getSpec();
             if (update.displayName() != null && !Objects.equals(update.displayName(), spec.getDisplayName())) {
@@ -639,7 +756,37 @@ public class UserEndpoint implements CustomEndpoint {
                 spec.setBio(update.bio());
                 changedFields.add("bio");
             }
-            return client.update(user).doOnNext(updated -> {
+            var requestedLoginName = normalizeLoginName(update.loginName());
+            if (update.loginName() != null
+                    && !allowLoginNameChange
+                    && !Objects.equals(requestedLoginName, user.effectiveLoginName())) {
+                return Mono.error(new ServerWebInputException("登录名只能由管理员修改。"));
+            }
+            var applyLoginName = Mono.defer(() -> {
+                if (!allowLoginNameChange || update.loginName() == null) {
+                    return Mono.just(user);
+                }
+                if (requestedLoginName != null) {
+                    validateUsername(requestedLoginName);
+                }
+                var nextLoginName = Objects.equals(requestedLoginName, username) ? null : requestedLoginName;
+                if (Objects.equals(nextLoginName, spec.getLoginName())) {
+                    return Mono.just(user);
+                }
+                var claimedLoginName = nextLoginName == null ? username : nextLoginName;
+                return accounts
+                        .isLoginNameAvailable(claimedLoginName, username)
+                        .flatMap(available -> {
+                            if (!Boolean.TRUE.equals(available)) {
+                                return Mono.error(new ServerWebInputException(
+                                        "登录名 " + claimedLoginName + " 已被占用。"));
+                            }
+                            spec.setLoginName(nextLoginName);
+                            changedFields.add("loginName");
+                            return Mono.just(user);
+                        });
+            });
+            return applyLoginName.flatMap(ignored -> client.update(user)).doOnNext(updated -> {
                 if (!changedFields.isEmpty()) {
                     publishUpdated(exchange, updated, changedFields);
                 }
@@ -647,11 +794,17 @@ public class UserEndpoint implements CustomEndpoint {
         });
     }
 
+    // 把输入规范为小写登录名，空白表示恢复资源名称
+    private static String normalizeLoginName(String loginName) {
+        return StringUtils.hasText(loginName) ? loginName.trim().toLowerCase(Locale.ROOT) : null;
+    }
+
     // 发布来源为本地资料的用户更新事件
     private void publishUpdated(
             org.springframework.web.server.ServerWebExchange exchange, User user, List<String> changedFields) {
         var payload = new LinkedHashMap<String, Object>();
         payload.put("username", user.getMetadata().getName());
+        payload.put("loginName", user.effectiveLoginName());
         payload.put("uid", user.getSpec().getUid());
         payload.put("displayName", user.getSpec().getDisplayName());
         payload.put("email", user.getSpec().getEmail());
@@ -811,12 +964,17 @@ public class UserEndpoint implements CustomEndpoint {
     
     public record CreateUserRequest(
             String username,
-            @Schema(description = "Feishu nickname. Read-only after creation.") String displayName,
-            @Schema(description = "Feishu email. Read-only after creation.") String email,
+            @Schema(description = "Ignored on create. The nickname is synced from Feishu.") String displayName,
+            @Schema(description = "Ignored on create. The email is synced from Feishu.") String email,
             String openId,
             String unionId,
             String avatar,
             String userGroup) {
+        // 优先使用联合标识，缺失时回退开放标识
+        String providerUserId() {
+            return StringUtils.hasText(unionId) ? unionId : openId;
+        }
+
         // 转换为飞书账号创建所需的资料
         FeishuAccounts.FeishuUserData toFeishuData() {
             return new FeishuAccounts.FeishuUserData(username, displayName, email, openId, unionId, avatar);
@@ -847,23 +1005,52 @@ public class UserEndpoint implements CustomEndpoint {
     
     public record FeishuUserItem(
             String username,
-            @Schema(description = "Feishu nickname. Read-only after creation.") String displayName,
-            @Schema(description = "Feishu email. Read-only after creation.") String email,
+            @Schema(description = "Ignored on create. The nickname is synced from Feishu.") String displayName,
+            @Schema(description = "Ignored on create. The email is synced from Feishu.") String email,
             String openId,
             String unionId,
             String avatar,
             String userGroup) {
+        // 优先使用联合标识，缺失时回退开放标识
+        String providerUserId() {
+            return StringUtils.hasText(unionId) ? unionId : openId;
+        }
+
         // 转换为飞书账号创建所需的资料
         FeishuAccounts.FeishuUserData toFeishuData() {
             return new FeishuAccounts.FeishuUserData(username, displayName, email, openId, unionId, avatar);
         }
     }
 
-    
-    public record BatchCreateResponse(int created, List<UserView> users) {}
+    public record BatchCreateFailure(int index, String providerUserId, String message) {}
+
+    public record BatchCreateResponse(
+            int created, int failed, List<BatchCreateFailure> failures, List<UserView> users) {}
+
+    private record BatchCreateItem(UserView user, BatchCreateFailure failure) {}
+
+    public record FeishuContactView(
+            String providerUserId,
+            String openId,
+            String unionId,
+            String displayName,
+            String email,
+            String phone,
+            String avatar,
+            boolean imported,
+            String importedUsername) {}
+
+    public record FeishuContactPage(List<FeishuContactView> items, String pageToken, boolean hasMore) {}
 
     
-    public record UpdateProfileRequest(String displayName, String email, String avatar, String phone, String bio) {}
+    public record UpdateProfileRequest(
+            String displayName,
+            String email,
+            String avatar,
+            String phone,
+            String bio,
+            @Schema(description = "Local login name. Blank resets it to metadata.name. Changes require the administrator endpoint.")
+            String loginName) {}
 
     
     public record PasswordRequest(
@@ -901,6 +1088,8 @@ public class UserEndpoint implements CustomEndpoint {
     
     public record ListedUser(
             String name,
+            @Schema(description = "Effective local login name.")
+            String loginName,
             String displayName,
             String email,
             String phone,
@@ -922,6 +1111,7 @@ public class UserEndpoint implements CustomEndpoint {
         static ListedUser from(User user, boolean exposeEmail, UserGroup group) {
             return new ListedUser(
                     user.getMetadata().getName(),
+                    user.effectiveLoginName(),
                     user.getSpec().getDisplayName(),
                     exposeEmail ? user.getSpec().getEmail() : null,
                     user.getSpec().getPhone(),

@@ -1,5 +1,6 @@
 package cn.tolim.pudans.infra.feishu;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -39,6 +40,17 @@ public class FeishuClient {
                 .onErrorMap(this::mapError);
     }
 
+    // 分页读取当前租户的飞书通讯录成员。
+    public Mono<FeishuContactPage> listContactUsers(String pageToken, int pageSize) {
+        return sdkClient
+                .listContactUsers(pageToken, pageSize)
+                .map(page -> new FeishuContactPage(
+                        page.items().stream().map(this::toUserInfo).toList(),
+                        page.pageToken(),
+                        page.hasMore()))
+                .onErrorMap(this::mapError);
+    }
+
     // 向指定群聊发送交互式告警卡片。
     public Mono<Void> sendAlertCard(String chatId, String contentJson) {
         return sdkClient
@@ -70,6 +82,8 @@ public class FeishuClient {
 
     public record FeishuUserInfo(
             String openId, String unionId, String name, String email, String phone, String avatar) {}
+
+    public record FeishuContactPage(List<FeishuUserInfo> items, String pageToken, boolean hasMore) {}
 
     public static class FeishuException extends RuntimeException {
         // 保留原始客户端异常，便于定位调用失败原因。

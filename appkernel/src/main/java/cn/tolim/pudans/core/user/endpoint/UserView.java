@@ -2,6 +2,7 @@ package cn.tolim.pudans.core.user.endpoint;
 
 import cn.tolim.pudans.contract.user.User;
 import cn.tolim.pudans.extension.contract.MetadataOperator;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 
 
@@ -20,6 +21,7 @@ public record UserView(String apiVersion, String kind, MetadataOperator metadata
         var userSpec = user.getSpec();
         var spec = new Spec(
                 userSpec.getUid(),
+                user.effectiveLoginName(),
                 userSpec.getDisplayName(),
                 exposeEmail ? userSpec.getEmail() : null,
                 userSpec.getAvatar(),
@@ -38,6 +40,8 @@ public record UserView(String apiVersion, String kind, MetadataOperator metadata
 
     public record Spec(
             String uid,
+            @Schema(description = "Effective local login name.")
+            String loginName,
             String displayName,
             String email,
             String avatar,

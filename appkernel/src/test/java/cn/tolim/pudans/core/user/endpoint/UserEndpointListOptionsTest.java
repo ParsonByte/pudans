@@ -5,9 +5,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.extension.contract.ListOptions;
+import cn.tolim.pudans.extension.contract.index.query.AndCondition;
+import cn.tolim.pudans.extension.contract.index.query.Condition;
 import cn.tolim.pudans.extension.contract.index.query.EmptyCondition;
 import cn.tolim.pudans.extension.contract.index.query.EqualCondition;
 import cn.tolim.pudans.extension.contract.index.query.InCondition;
+import cn.tolim.pudans.extension.contract.index.query.IsNullCondition;
 import cn.tolim.pudans.extension.contract.index.query.OrCondition;
 import cn.tolim.pudans.extension.contract.index.query.StringContainsCondition;
 import cn.tolim.pudans.core.rbac.group.Groups;
@@ -30,6 +33,16 @@ class UserEndpointListOptionsTest {
         var condition = condition(options(null, Set.of("active"), Set.of()));
 
         assertThat(condition).isEqualTo(new EqualCondition("spec.disabled", false));
+    }
+
+    @Test
+    void alwaysExcludesUsersPendingDeletion() throws Exception {
+        var condition = options(null, Set.of(), Set.of())
+                .blockOptional()
+                .orElseThrow()
+                .toCondition();
+
+        assertThat(condition.toString()).contains("metadata.deletionTimestamp IS NULL");
     }
 
     @Test
@@ -102,6 +115,22 @@ class UserEndpointListOptionsTest {
     }
 
     private cn.tolim.pudans.extension.contract.index.query.Condition condition(Mono<ListOptions> options) {
-        return options.blockOptional().orElseThrow().toCondition();
+        return stripDeletionFilter(options.blockOptional().orElseThrow().toCondition());
+    }
+
+    private static Condition stripDeletionFilter(Condition condition) {
+        if (condition instanceof IsNullCondition) {
+            return Condition.empty();
+        }
+        if (!(condition instanceof AndCondition and)) {
+            return condition;
+        }
+        if (and.left() instanceof IsNullCondition) {
+            return stripDeletionFilter(and.right());
+        }
+        if (and.right() instanceof IsNullCondition) {
+            return stripDeletionFilter(and.left());
+        }
+        return new AndCondition(stripDeletionFilter(and.left()), stripDeletionFilter(and.right()));
     }
 }

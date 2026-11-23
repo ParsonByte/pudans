@@ -14,6 +14,12 @@ public interface Accounts {
     // 按用户标识查询，空值直接返回空结果
     Mono<User> getUserByUid(String uid);
 
+    // 按对外登录名查找用户，未设置别名时回退资源名称
+    Mono<User> findUserByLoginName(String loginName);
+
+    // 判断登录名是否已被其他用户占用
+    Mono<Boolean> isLoginNameAvailable(String loginName, String currentUsername);
+
     // 仅匹配已完成验证的邮箱地址
     Mono<User> findUserByVerifiedEmail(String email);
 

@@ -6,9 +6,13 @@ import static cn.tolim.pudans.extension.contract.index.query.Queries.in;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.ReactiveTransactionManager;
@@ -28,6 +32,7 @@ import cn.tolim.pudans.infra.event.DomainEventPublisher;
 import cn.tolim.pudans.core.rbac.BuiltinEntities;
 import cn.tolim.pudans.core.rbac.group.Groups;
 import cn.tolim.pudans.infra.audit.AuditIdGenerator;
+import cn.tolim.pudans.infra.feishu.FeishuClient;
 import cn.tolim.pudans.infra.setting.ParameterGroups;
 
 @Service
@@ -49,6 +54,8 @@ public class FeishuAccounts {
     private final ReactiveTransactionManager transactionManager;
 
     private final ParameterGroups parameterGroups;
+
+    private final FeishuClient feishuClient;
 
     private Clock clock = Clock.systemUTC();
 
@@ -89,18 +96,133 @@ public class FeishuAccounts {
                 .filter(connection -> PROVIDER.equals(connection.getSpec().getRegistrationId()));
     }
 
-    
+    // 列出租户通讯录成员，缺失资料由前端标记。
+    public Mono<FeishuContactsPage> listContacts(String pageToken, int pageSize) {
+        return Mono.zip(
+                        feishuClient.listContactUsers(pageToken, pageSize),
+                        listActiveImportConnections())
+                .map(tuple -> {
+                    var page = tuple.getT1();
+                    var importedUsers = tuple.getT2();
+                    return new FeishuContactsPage(
+                            page.items().stream()
+                                    .filter(Objects::nonNull)
+                                    .filter(info -> StringUtils.hasText(providerUserId(info)))
+                                    .map(info -> toContact(info, importedUsers))
+                                    .toList(),
+                            page.pageToken(),
+                            page.hasMore());
+                })
+                .onErrorMap(
+                        FeishuClient.FeishuException.class,
+                        error -> new ServerWebInputException("无法读取飞书通讯录，请确认飞书应用已开通通讯录权限。"));
+    }
+
+    // 将飞书通讯录成员转换为可导入资料。
+    private static FeishuContact toContact(FeishuClient.FeishuUserInfo info, Map<String, String> importedUsers) {
+        var importedUsername = resolveImportedUsername(info, importedUsers);
+        return new FeishuContact(
+                providerUserId(info),
+                info.openId(),
+                info.unionId(),
+                info.name(),
+                info.email(),
+                info.phone(),
+                info.avatar(),
+                StringUtils.hasText(importedUsername),
+                StringUtils.hasText(importedUsername) ? importedUsername : null);
+    }
+
+    // 兼容联合标识与开放标识的既有绑定
+    private static String resolveImportedUsername(
+            FeishuClient.FeishuUserInfo info, Map<String, String> importedUsers) {
+        var username = importedUsers.get(providerUserId(info));
+        if (!StringUtils.hasText(username) && StringUtils.hasText(info.unionId())) {
+            username = importedUsers.get(info.unionId());
+        }
+        if (!StringUtils.hasText(username) && StringUtils.hasText(info.openId())) {
+            username = importedUsers.get(info.openId());
+        }
+        return username;
+    }
+
+    // 优先使用联合标识，缺失时回退开放标识。
+    private static String providerUserId(FeishuClient.FeishuUserInfo info) {
+        return StringUtils.hasText(info.unionId()) ? info.unionId() : info.openId();
+    }
 
     // 校验资料后创建用户、连接与用户组
     public Mono<User> createFromFeishu(FeishuUserData data, String userGroupName) {
-        if (data == null || (!StringUtils.hasText(data.unionId()) && !StringUtils.hasText(data.openId()))) {
+        if (data == null || !StringUtils.hasText(data.providerUserId())) {
             return Mono.error(new ServerWebInputException(
                     "创建本地用户需要飞书的 union_id 或 open_id。"));
         }
-        if (!StringUtils.hasText(data.displayName()) || !StringUtils.hasText(data.email())) {
-            return Mono.error(new ServerWebInputException(
-                    "displayName 和 email 为必填项，且必须来自飞书。"));
-        }
+        return resolveFeishuData(data).flatMap(resolved -> createResolvedUser(resolved, userGroupName));
+    }
+
+    // 以飞书通讯录资料覆盖调用方提交的姓名和邮箱
+    private Mono<FeishuUserData> resolveFeishuData(FeishuUserData data) {
+        return feishuClient
+                .fetchContactUser(data.providerUserId())
+                .switchIfEmpty(Mono.error(new ServerWebInputException("未找到对应的飞书用户。")))
+                .map(info -> new FeishuUserData(
+                        data.username(),
+                        info.name(),
+                        info.email(),
+                        info.openId(),
+                        info.unionId(),
+                        info.avatar()))
+                .onErrorMap(
+                        FeishuClient.FeishuException.class,
+                        error -> new ServerWebInputException(
+                                "无法从飞书同步用户资料，请确认飞书用户 ID 和通讯录权限。"))
+                .flatMap(resolved -> {
+                    if (!StringUtils.hasText(resolved.displayName())) {
+                        return Mono.error(new ServerWebInputException("飞书用户缺少姓名，无法创建账号。"));
+                    }
+                    if (!StringUtils.hasText(resolved.providerUserId())) {
+                        return Mono.error(new ServerWebInputException("飞书用户缺少 union_id 或 open_id。"));
+                    }
+                    return Mono.just(resolved);
+                });
+    }
+
+    // 只把仍指向有效账号的连接视为已导入
+    private Mono<Map<String, String>> listActiveImportConnections() {
+        return listAllConnections()
+                .filter(connection -> StringUtils.hasText(connection.getSpec().getProviderUserId())
+                        && StringUtils.hasText(connection.getSpec().getUsername()))
+                .collectMap(
+                        connection -> connection.getSpec().getProviderUserId(),
+                        connection -> connection.getSpec().getUsername())
+                .flatMap(importedUsers -> {
+                    Set<String> usernames = importedUsers.values().stream().collect(Collectors.toSet());
+                    if (usernames.isEmpty()) {
+                        return Mono.just(importedUsers);
+                    }
+                    var options = ListOptions.builder()
+                            .andQuery(notDeleting())
+                            .andQuery(in("metadata.name", new HashSet<>(usernames)))
+                            .build();
+                    return client.listAll(User.class, options, defaultSort())
+                            .collect(Collectors.toMap(
+                                    user -> user.getMetadata().getName(),
+                                    User::effectiveLoginName))
+                            .map(activeUsers -> {
+                                Map<String, String> activeImports = new LinkedHashMap<>();
+                                importedUsers.forEach((providerUserId, username) -> {
+                                    var loginName = activeUsers.get(username);
+                                    if (StringUtils.hasText(loginName)) {
+                                        activeImports.put(providerUserId, loginName);
+                                    }
+                                });
+                                return activeImports;
+                            });
+                });
+    }
+
+    // 用已同步的飞书资料创建用户、连接与用户组
+    private Mono<User> createResolvedUser(FeishuUserData data, String userGroupName) {
         var providerUserId =
                 StringUtils.hasText(data.unionId()) ? data.unionId() : data.openId();
         return findConnection(providerUserId)
@@ -118,8 +240,8 @@ public class FeishuAccounts {
                     var spec = new User.UserSpec();
                     spec.setUid(AuditIdGenerator.next());
                     spec.setDisplayName(data.displayName());
-                    spec.setEmail(data.email().toLowerCase());
-                    spec.setEmailVerified(true);
+                    spec.setEmail(StringUtils.hasText(data.email()) ? data.email().toLowerCase() : null);
+                    spec.setEmailVerified(StringUtils.hasText(data.email()));
                     spec.setAvatar(data.avatar());
                     spec.setRegisteredAt(clock.instant());
                     spec.setPassword(null);
@@ -273,4 +395,17 @@ public class FeishuAccounts {
             return StringUtils.hasText(unionId) ? unionId : openId;
         }
     }
+
+    public record FeishuContact(
+            String providerUserId,
+            String openId,
+            String unionId,
+            String displayName,
+            String email,
+            String phone,
+            String avatar,
+            boolean imported,
+            String importedUsername) {}
+
+    public record FeishuContactsPage(List<FeishuContact> items, String pageToken, boolean hasMore) {}
 }

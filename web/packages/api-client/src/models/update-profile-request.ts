@@ -19,5 +19,9 @@ export interface UpdateProfileRequest {
     'bio'?: string;
     'displayName'?: string;
     'email'?: string;
+    /**
+     * Local login name. Blank resets it to metadata.name. Changes require the administrator endpoint.
+     */
+    'loginName'?: string;
     'phone'?: string;
 }

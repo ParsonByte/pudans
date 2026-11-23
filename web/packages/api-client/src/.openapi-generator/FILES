@@ -66,6 +66,7 @@ models/audit-trace.ts
 models/auth-provider-list.ts
 models/auth-provider-spec.ts
 models/auth-provider.ts
+models/batch-create-failure.ts
 models/batch-create-request.ts
 models/batch-create-response.ts
 models/captcha-challenge.ts
@@ -81,6 +82,8 @@ models/device-list.ts
 models/device-spec.ts
 models/device-status.ts
 models/device.ts
+models/feishu-contact-page.ts
+models/feishu-contact-view.ts
 models/feishu-user-item.ts
 models/global-info-summary.ts
 models/group-kind.ts

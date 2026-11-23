@@ -45,6 +45,24 @@ class UserViewEmailVisibilityTest {
         assertThat(listed.userGroupDisplayName()).isEqualTo("管理员");
     }
 
+    @Test
+    void exposesTheMutableLoginNameWhenConfigured() {
+        var user = user();
+        user.getSpec().setLoginName("alice.login");
+
+        assertThat(UserView.from(user).spec().loginName()).isEqualTo("alice.login");
+        assertThat(UserEndpoint.ListedUser.from(user).loginName()).isEqualTo("alice.login");
+    }
+
+    @Test
+    void fallsBackToTheResourceNameWhenTheLoginNameIsBlank() {
+        var user = user();
+        user.getSpec().setLoginName(" ");
+
+        assertThat(UserView.from(user).spec().loginName()).isEqualTo("alice");
+        assertThat(UserEndpoint.ListedUser.from(user).loginName()).isEqualTo("alice");
+    }
+
     private static User user() {
         var user = new User();
         var metadata = new Metadata();

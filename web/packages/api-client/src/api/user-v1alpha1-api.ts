@@ -34,6 +34,8 @@ import type { ChangeMyPasswordRequest } from '../models';
 // @ts-ignore
 import type { CreateUserRequest } from '../models';
 // @ts-ignore
+import type { FeishuContactPage } from '../models';
+// @ts-ignore
 import type { JsonPatchInner } from '../models';
 // @ts-ignore
 import type { LocalBatchCreateRequest } from '../models';
@@ -999,6 +1001,53 @@ export const UserV1alpha1ApiAxiosParamCreator = function (configuration?: Config
             };
         },
         /**
+         * List Feishu contacts from the organization directory.
+         * @param {string} [pageToken] Opaque token for the next contact page.
+         * @param {number} [pageSize] Contacts per page (1-50, default 50).
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listFeishuContacts: async (pageToken?: string, pageSize?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/users/-/feishu-contacts`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (pageToken !== undefined) {
+                localVarQueryParameter['pageToken'] = pageToken;
+            }
+
+            if (pageSize !== undefined) {
+                localVarQueryParameter['pageSize'] = pageSize;
+            }
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * List a user\'s external identity connections.
          * @param {string} name
          * @param {*} [options] Override http request option.
@@ -1202,7 +1251,7 @@ export const UserV1alpha1ApiAxiosParamCreator = function (configuration?: Config
             };
         },
         /**
-         * Update the current user\'s local profile. displayName and email are read-only.
+         * Update the current user\'s local profile. Feishu-managed fields are read-only.
          * @param {UpdateProfileRequest} updateProfileRequest
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1244,7 +1293,7 @@ export const UserV1alpha1ApiAxiosParamCreator = function (configuration?: Config
             };
         },
         /**
-         * Update a user\'s local profile. displayName and email are read-only.
+         * Update a user\'s local profile. Feishu-managed fields are read-only.
          * @param {string} name Name of user
          * @param {UpdateProfileRequest} updateProfileRequest
          * @param {*} [options] Override http request option.
@@ -1607,6 +1656,19 @@ export const UserV1alpha1ApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * List Feishu contacts from the organization directory.
+         * @param {string} [pageToken] Opaque token for the next contact page.
+         * @param {number} [pageSize] Contacts per page (1-50, default 50).
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async listFeishuContacts(pageToken?: string, pageSize?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<FeishuContactPage>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.listFeishuContacts(pageToken, pageSize, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UserV1alpha1Api.listFeishuContacts']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * List a user\'s external identity connections.
          * @param {string} name
          * @param {*} [options] Override http request option.
@@ -1663,7 +1725,7 @@ export const UserV1alpha1ApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Update the current user\'s local profile. displayName and email are read-only.
+         * Update the current user\'s local profile. Feishu-managed fields are read-only.
          * @param {UpdateProfileRequest} updateProfileRequest
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1675,7 +1737,7 @@ export const UserV1alpha1ApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Update a user\'s local profile. displayName and email are read-only.
+         * Update a user\'s local profile. Feishu-managed fields are read-only.
          * @param {string} name Name of user
          * @param {UpdateProfileRequest} updateProfileRequest
          * @param {*} [options] Override http request option.
@@ -1907,6 +1969,15 @@ export const UserV1alpha1ApiFactory = function (configuration?: Configuration, b
             return localVarFp.getUserPermissions(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
+         * List Feishu contacts from the organization directory.
+         * @param {UserV1alpha1ApiListFeishuContactsRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listFeishuContacts(requestParameters: UserV1alpha1ApiListFeishuContactsRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<FeishuContactPage> {
+            return localVarFp.listFeishuContacts(requestParameters.pageToken, requestParameters.pageSize, options).then((request) => request(axios, basePath));
+        },
+        /**
          * List a user\'s external identity connections.
          * @param {UserV1alpha1ApiListUserConnectionsRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -1943,7 +2014,7 @@ export const UserV1alpha1ApiFactory = function (configuration?: Configuration, b
             return localVarFp.removeUserGroup(requestParameters.name, options).then((request) => request(axios, basePath));
         },
         /**
-         * Update the current user\'s local profile. displayName and email are read-only.
+         * Update the current user\'s local profile. Feishu-managed fields are read-only.
          * @param {UserV1alpha1ApiUpdateCurrentUserRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -1952,7 +2023,7 @@ export const UserV1alpha1ApiFactory = function (configuration?: Configuration, b
             return localVarFp.updateCurrentUser(requestParameters.updateProfileRequest, options).then((request) => request(axios, basePath));
         },
         /**
-         * Update a user\'s local profile. displayName and email are read-only.
+         * Update a user\'s local profile. Feishu-managed fields are read-only.
          * @param {UserV1alpha1ApiUpdateUserRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
@@ -2095,6 +2166,21 @@ export interface UserV1alpha1ApiGetUserGroupRequest {
  */
 export interface UserV1alpha1ApiGetUserPermissionsRequest {
     readonly name: string
+}
+
+/**
+ * Request parameters for listFeishuContacts operation in UserV1alpha1Api.
+ */
+export interface UserV1alpha1ApiListFeishuContactsRequest {
+    /**
+     * Opaque token for the next contact page.
+     */
+    readonly pageToken?: string
+
+    /**
+     * Contacts per page (1-50, default 50).
+     */
+    readonly pageSize?: number
 }
 
 /**
@@ -2414,6 +2500,16 @@ export class UserV1alpha1Api extends BaseAPI {
     }
 
     /**
+     * List Feishu contacts from the organization directory.
+     * @param {UserV1alpha1ApiListFeishuContactsRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public listFeishuContacts(requestParameters: UserV1alpha1ApiListFeishuContactsRequest = {}, options?: RawAxiosRequestConfig) {
+        return UserV1alpha1ApiFp(this.configuration).listFeishuContacts(requestParameters.pageToken, requestParameters.pageSize, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * List a user\'s external identity connections.
      * @param {UserV1alpha1ApiListUserConnectionsRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -2454,7 +2550,7 @@ export class UserV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Update the current user\'s local profile. displayName and email are read-only.
+     * Update the current user\'s local profile. Feishu-managed fields are read-only.
      * @param {UserV1alpha1ApiUpdateCurrentUserRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
@@ -2464,7 +2560,7 @@ export class UserV1alpha1Api extends BaseAPI {
     }
 
     /**
-     * Update a user\'s local profile. displayName and email are read-only.
+     * Update a user\'s local profile. Feishu-managed fields are read-only.
      * @param {UserV1alpha1ApiUpdateUserRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
