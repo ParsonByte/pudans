@@ -22,6 +22,8 @@ public class RiskRuleRegistry {
 
     private volatile Map<String, RiskRule.Spec> rules = defaults();
 
+    private volatile Map<String, String> labels = Map.of();
+
     // 提供内置风险规则，作为扩展配置缺失时的兜底。
     public static Map<String, RiskRule.Spec> defaults() {
         return Map.ofEntries(
@@ -62,6 +64,16 @@ public class RiskRuleRegistry {
         return rules.size();
     }
 
+    // 返回当前规则快照，供只读分析聚合使用。
+    public Map<String, RiskRule.Spec> rules() {
+        return rules;
+    }
+
+    // 返回规则的展示名称。
+    public String label(String scene) {
+        return labels.get(scene);
+    }
+
     // 返回已启用规则对应的场景集合。
     public java.util.Set<String> enabledScenes() {
         return rules.entrySet().stream()
@@ -78,13 +90,24 @@ public class RiskRuleRegistry {
                     ListOptions.builder().andQuery(notDeleting()).build(),
                     defaultSort());
             var merged = new HashMap<>(defaults());
+            var mergedLabels = new HashMap<String, String>();
             for (var rule : loaded) {
                 var spec = rule.getSpec();
                 if (spec != null && StringUtils.hasText(spec.getScene())) {
                     merged.put(spec.getScene(), spec);
+                    var annotations = rule.getMetadata() == null
+                            ? null
+                            : rule.getMetadata().getAnnotations();
+                    var label = annotations == null
+                            ? null
+                            : annotations.get("rbac.authorization.pudans.tolim.cn/display-name");
+                    if (StringUtils.hasText(label)) {
+                        mergedLabels.put(spec.getScene(), label);
+                    }
                 }
             }
             rules = Map.copyOf(merged);
+            labels = Map.copyOf(mergedLabels);
         } catch (RuntimeException e) {
             log.warn("无法刷新风险规则，保留之前的规则", e);
         }
