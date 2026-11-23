@@ -163,7 +163,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-component: "user-groups"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
     rbac.authorization.pudans.tolim.cn/ui-label: "用户组"
-    rbac.authorization.pudans.tolim.cn/ui-description: "维护用户组及其绑定的角色。"
+    rbac.authorization.pudans.tolim.cn/ui-description: "维护用户组、成员与角色绑定。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:users-round"
     rbac.authorization.pudans.tolim.cn/ui-parent: "身份控制"
     rbac.authorization.pudans.tolim.cn/ui-parent-icon: "lucide:user-cog"
@@ -177,6 +177,8 @@ rules:
     resources:
       - "usergroups"
       - "usergroupbindings"
+      - "users"
+      - "roles"
     verbs:
       - "get"
       - "list"
@@ -254,7 +256,7 @@ metadata:
     rbac.authorization.pudans.tolim.cn/ui-component: "auth-providers"
     rbac.authorization.pudans.tolim.cn/ui-workspace: "console"
     rbac.authorization.pudans.tolim.cn/ui-label: "身份提供商"
-    rbac.authorization.pudans.tolim.cn/ui-description: "配置飞书、OAuth2、OIDC、TOTP 和个人访问令牌。"
+    rbac.authorization.pudans.tolim.cn/ui-description: "管理飞书、OAuth2 与 OIDC 第三方登录方式。"
     rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:fingerprint"
     rbac.authorization.pudans.tolim.cn/ui-group: "身份与权限"
     rbac.authorization.pudans.tolim.cn/ui-group-key: "identity"
