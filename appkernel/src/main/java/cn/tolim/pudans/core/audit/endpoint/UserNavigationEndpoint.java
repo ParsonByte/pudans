@@ -1,6 +1,7 @@
 package cn.tolim.pudans.core.audit.endpoint;
 
 import static org.springdoc.core.fn.builders.apiresponse.Builder.responseBuilder;
+import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
 import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.extension.contract.ApiGroups;
@@ -31,6 +32,9 @@ public class UserNavigationEndpoint implements CustomEndpoint {
                                         + "navigation record and returns the audit id used to chain following "
                                         + "requests.")
                         .tag(tag)
+                        .requestBody(requestBodyBuilder()
+                                .required(true)
+                                .implementation(NavigationEvent.class))
                         .response(responseBuilder().implementation(NavigationResult.class)))
                 .build();
     }

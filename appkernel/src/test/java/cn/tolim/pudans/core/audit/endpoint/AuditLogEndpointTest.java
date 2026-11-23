@@ -5,10 +5,16 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.audit.AuditRecord;
+import cn.tolim.pudans.contract.audit.dto.AuditFlowOverview;
+import cn.tolim.pudans.contract.audit.dto.AuditFlowOverviewSummary;
+import cn.tolim.pudans.contract.audit.dto.AuditOverview;
+import cn.tolim.pudans.contract.audit.dto.AuditOverviewSummary;
 import cn.tolim.pudans.extension.contract.Metadata;
+import cn.tolim.pudans.core.audit.AuditAnalytics;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import java.time.Instant;
@@ -29,11 +35,15 @@ class AuditLogEndpointTest {
     @Mock
     AuditLog auditLog;
 
+    @Mock
+    AuditAnalytics auditAnalytics;
+
     private WebTestClient webTestClient;
 
     @BeforeEach
     void setUp() {
-        webTestClient = WebTestClient.bindToRouterFunction(new AuditLogEndpoint(auditLog).endpoint())
+        webTestClient = WebTestClient.bindToRouterFunction(
+                        new AuditLogEndpoint(auditLog, auditAnalytics).endpoint())
                 .build();
     }
 
@@ -82,6 +92,149 @@ class AuditLogEndpointTest {
                     : record("action-" + index, uid, "READ", "User", "u-" + index, "/p/" + index, timestamp, 5));
         }
         return records;
+    }
+
+    private static AuditOverview overview(int days) {
+        return new AuditOverview(
+                days,
+                Instant.parse("2026-11-23T04:00:00Z"),
+                new AuditOverviewSummary(0, 0, 0, 0, 0, 0, 0, 0, 0),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
+    }
+
+    private static AuditFlowOverview flowOverview(int days) {
+        return new AuditFlowOverview(
+                days,
+                Instant.parse("2026-11-23T04:00:00Z"),
+                new AuditFlowOverviewSummary(0, 0, 0, 0, 0, 0, 0, 0, 0),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of());
+    }
+
+    @Test
+    void overviewDefaultsToSevenDays() {
+        when(auditAnalytics.overview(7)).thenReturn(Mono.just(overview(7)));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/overview")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.rangeDays")
+                .isEqualTo(7);
+
+        verify(auditAnalytics).overview(7);
+    }
+
+    @Test
+    void overviewPassesAValidatedRangeToTheAggregator() {
+        when(auditAnalytics.overview(30)).thenReturn(Mono.just(overview(30)));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/overview?days=30")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.rangeDays")
+                .isEqualTo(30);
+
+        verify(auditAnalytics).overview(30);
+    }
+
+    @Test
+    void overviewRejectsInvalidRangesBeforeAggregation() {
+        webTestClient
+                .get()
+                .uri("/auditlogs/overview?days=0")
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+        webTestClient
+                .get()
+                .uri("/auditlogs/overview?days=91")
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+        webTestClient
+                .get()
+                .uri("/auditlogs/overview?days=week")
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+
+        verifyNoInteractions(auditAnalytics);
+    }
+
+    @Test
+    void flowOverviewDefaultsToSevenDays() {
+        when(auditAnalytics.flowOverview(7)).thenReturn(Mono.just(flowOverview(7)));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/flows/overview")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.rangeDays")
+                .isEqualTo(7);
+
+        verify(auditAnalytics).flowOverview(7);
+    }
+
+    @Test
+    void flowOverviewPassesAValidatedRangeToTheAggregator() {
+        when(auditAnalytics.flowOverview(30)).thenReturn(Mono.just(flowOverview(30)));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/flows/overview?days=30")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.rangeDays")
+                .isEqualTo(30);
+
+        verify(auditAnalytics).flowOverview(30);
+    }
+
+    @Test
+    void flowOverviewRejectsInvalidRangesBeforeAggregation() {
+        webTestClient
+                .get()
+                .uri("/auditlogs/flows/overview?days=0")
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+        webTestClient
+                .get()
+                .uri("/auditlogs/flows/overview?days=91")
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+        webTestClient
+                .get()
+                .uri("/auditlogs/flows/overview?days=week")
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+
+        verifyNoInteractions(auditAnalytics);
     }
 
     @Test
@@ -310,6 +463,199 @@ class AuditLogEndpointTest {
         action.setResult("DENIED");
         assertThat(AuditLogEndpoint.toJourney("u1", List.of(page, action)).status())
                 .isEqualTo("DENIED");
+    }
+
+    @Test
+    void sessionSummariesKeepTheWholeUserJourneyAndSplitAfterThirtyMinutes() {
+        var base = Instant.parse("2026-11-18T01:00:00Z");
+        var records = List.of(
+                page("page-roles", "u1", base.plusSeconds(1), "/console/roles"),
+                record(
+                        "read-user",
+                        "u1",
+                        "READ",
+                        "User",
+                        "alice",
+                        "/apis/api.pudans.tolim.cn/v1alpha1/users/alice",
+                        base.plusSeconds(2),
+                        8),
+                page("page-users", "u1", base.plusSeconds(3), "/console/users"),
+                page("page-settings", "u2", base.plusSeconds(4), "/console/settings"),
+                page("page-risk", "u1", base.plusSeconds(31 * 60), "/console/risk"));
+
+        var sessions = AuditLogEndpoint.sessionSummaries(records);
+
+        assertThat(sessions).hasSize(3);
+        assertThat(sessions.get(0).uid()).isEqualTo("u1");
+        assertThat(sessions.get(0).entryPath()).isEqualTo("/console/risk");
+        assertThat(sessions.get(0).exitPath()).isEqualTo("/console/risk");
+        assertThat(sessions.get(1).uid()).isEqualTo("u2");
+        assertThat(sessions.get(1).entryPath()).isEqualTo("/console/settings");
+        assertThat(sessions.get(2).uid()).isEqualTo("u1");
+        assertThat(sessions.get(2).entryPath()).isEqualTo("/console/roles");
+        assertThat(sessions.get(2).exitPath()).isEqualTo("/console/users");
+        assertThat(sessions.get(2).pageCount()).isEqualTo(2);
+        assertThat(sessions.get(2).actionCount()).isEqualTo(1);
+        assertThat(sessions.get(2).recordCount()).isEqualTo(3);
+        assertThat(sessions.get(2).sessionId())
+                .isEqualTo("u1:" + sessions.get(2).start().toEpochMilli());
+    }
+
+    @Test
+    void sessionListFiltersByTheAggregatedSessionOutcome() {
+        var base = Instant.parse("2026-11-18T01:00:00Z");
+        var deniedPage = page("page-denied", "u1", base.plusSeconds(1), "/console/roles");
+        deniedPage.setResult("DENIED");
+        when(auditLog.query(any()))
+                .thenReturn(Flux.just(
+                        page("page-success", "u2", base.plusSeconds(2), "/console/users"),
+                        deniedPage,
+                        record(
+                                "read-user",
+                                "u1",
+                                "READ",
+                                "User",
+                                "alice",
+                                "/apis/api.pudans.tolim.cn/v1alpha1/users/alice",
+                                base.plusSeconds(3),
+                                5)));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/sessions?result=DENIED&page=1&size=10")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.total")
+                .isEqualTo(1)
+                .jsonPath("$.items.length()")
+                .isEqualTo(1)
+                .jsonPath("$.items[0].uid")
+                .isEqualTo("u1")
+                .jsonPath("$.items[0].status")
+                .isEqualTo("DENIED")
+                .jsonPath("$.items[0].entryPath")
+                .isEqualTo("/console/roles")
+                .jsonPath("$.failedSessions")
+                .isEqualTo(1);
+    }
+
+    @Test
+    void sessionReplayReturnsEveryStepWithEntryAndExit() {
+        var base = Instant.parse("2026-11-18T01:00:00Z");
+        var records = List.of(
+                page("page-roles", "u1", base.plusSeconds(1), "/console/roles"),
+                record(
+                        "read-user",
+                        "u1",
+                        "READ",
+                        "User",
+                        "alice",
+                        "/apis/api.pudans.tolim.cn/v1alpha1/users/alice",
+                        base.plusSeconds(2),
+                        8),
+                page("page-users", "u1", base.plusSeconds(3), "/console/users"));
+        var session = AuditLogEndpoint.sessionSummaries(records).get(0);
+        when(auditLog.query(any())).thenReturn(Flux.fromIterable(records));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/sessions/{sessionId}", session.sessionId())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.session.sessionId")
+                .isEqualTo(session.sessionId())
+                .jsonPath("$.session.entryPath")
+                .isEqualTo("/console/roles")
+                .jsonPath("$.session.exitPath")
+                .isEqualTo("/console/users")
+                .jsonPath("$.session.pageCount")
+                .isEqualTo(2)
+                .jsonPath("$.session.actionCount")
+                .isEqualTo(1)
+                .jsonPath("$.steps.length()")
+                .isEqualTo(3)
+                .jsonPath("$.steps[0].resourceName")
+                .isEqualTo("/console/roles")
+                .jsonPath("$.steps[1].operation")
+                .isEqualTo("READ")
+                .jsonPath("$.steps[2].resourceName")
+                .isEqualTo("/console/users");
+    }
+
+    @Test
+    void sessionReplayRejectsAnInvalidSessionId() {
+        webTestClient
+                .get()
+                .uri("/auditlogs/sessions/not-a-session")
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
+
+        verifyNoInteractions(auditLog);
+    }
+
+    @Test
+    void sessionReplayAcceptsAStableSessionIdAndALegacyEndBoundId() {
+        var base = Instant.parse("2026-11-18T01:00:00Z");
+        var records = List.of(
+                page("page-roles", "u1", base.plusSeconds(1), "/console/roles"),
+                page("page-users", "u1", base.plusSeconds(3), "/console/users"));
+        var session = AuditLogEndpoint.sessionSummaries(records).get(0);
+        when(auditLog.query(any())).thenReturn(Flux.fromIterable(records));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/sessions/{sessionId}", session.sessionId())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.session.sessionId")
+                .isEqualTo(session.sessionId());
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/sessions/{sessionId}", session.sessionId() + ":" + session.end().toEpochMilli())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.session.sessionId")
+                .isEqualTo(session.sessionId())
+                .jsonPath("$.steps.length()")
+                .isEqualTo(2);
+    }
+
+    @Test
+    void sessionReplaySupportsZeroDurationRecords() {
+        var timestamp = Instant.parse("2026-11-18T01:00:00Z");
+        var zeroDurationPage = record(
+                "page-zero",
+                "u1",
+                "NAVIGATION",
+                "Page",
+                "/console/roles",
+                "/console/roles",
+                timestamp,
+                0);
+        var session = AuditLogEndpoint.sessionSummaries(List.of(zeroDurationPage)).get(0);
+        when(auditLog.query(any())).thenReturn(Flux.just(zeroDurationPage));
+
+        webTestClient
+                .get()
+                .uri("/auditlogs/sessions/{sessionId}", session.sessionId())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.session.sessionId")
+                .isEqualTo(session.sessionId())
+                .jsonPath("$.steps.length()")
+                .isEqualTo(1);
     }
 
     @Test

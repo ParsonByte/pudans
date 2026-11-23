@@ -45,7 +45,8 @@ public class AuditStore {
                  OR (request_path NOT LIKE '/assets/%'
                      AND request_path NOT LIKE '/brand/%'
                      AND request_path NOT LIKE '/webjars/%'
-                     AND request_path <> '/favicon.ico'))
+                     AND request_path <> '/favicon.ico'
+                     AND request_path <> '/login-bg.mp4'))
             """;
 
     private final AuditRecordRepository activeRepository;
@@ -287,24 +288,16 @@ public class AuditStore {
                                    COUNT(*) AS total
                             FROM audit_record
                             WHERE occurred_at >= :since
-                              AND (request_path IS NULL
-                                   OR (request_path NOT LIKE '/assets/%'
-                                       AND request_path NOT LIKE '/brand/%'
-                                       AND request_path NOT LIKE '/webjars/%'
-                                       AND request_path <> '/favicon.ico'))
-                        """);
+                        """)
+                .append(NON_STATIC_REQUEST_SQL);
         var archiveSql = new StringBuilder("""
                             UNION ALL
                             SELECT (occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
                                    COUNT(*) AS total
                             FROM audit_record_archive
                             WHERE occurred_at >= :since
-                              AND (request_path IS NULL
-                                   OR (request_path NOT LIKE '/assets/%'
-                                       AND request_path NOT LIKE '/brand/%'
-                                       AND request_path NOT LIKE '/webjars/%'
-                                       AND request_path <> '/favicon.ico'))
-                        """);
+                        """)
+                .append(NON_STATIC_REQUEST_SQL);
         if (StringUtils.hasText(uid)) {
             var condition = " AND uid = :uid";
             sql.append(condition);
@@ -458,6 +451,236 @@ public class AuditStore {
                         LinkedHashMap::new));
     }
 
+    // 汇总区间内审计请求的平均与 P95 耗时。
+    public Mono<LatencyStats> latencyStats(Instant from, Instant to) {
+        var sql = new StringBuilder("WITH records AS (")
+                .append(recordsCte())
+                .append("""
+                        )
+                        SELECT COALESCE(ROUND(AVG(duration_ms)), 0) AS average_ms,
+                               COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms), 0) AS p95_ms
+                        FROM records
+                        """);
+        return databaseClient
+                .sql(sql.toString())
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .map((row, metadata) -> new LatencyStats(
+                        longValue(row.get("average_ms")),
+                        longValue(row.get("p95_ms"))))
+                .one()
+                .defaultIfEmpty(new LatencyStats(0L, 0L));
+    }
+
+    // 按北京时间星期与小时汇总审计活动。
+    public Flux<HeatmapBucket> activityHeatmap(Instant from, Instant to) {
+        var sql = new StringBuilder("WITH records AS (")
+                .append(recordsCte())
+                .append("""
+                        )
+                        SELECT EXTRACT(ISODOW FROM occurred_at AT TIME ZONE 'Asia/Shanghai')::int AS weekday,
+                               EXTRACT(HOUR FROM occurred_at AT TIME ZONE 'Asia/Shanghai')::int AS hour,
+                               COUNT(*) AS total
+                        FROM records
+                        GROUP BY 1, 2
+                        ORDER BY 1, 2
+                        """);
+        return databaseClient
+                .sql(sql.toString())
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .map((row, metadata) -> new HeatmapBucket(
+                        numberValue(row.get("weekday")),
+                        numberValue(row.get("hour")),
+                        longValue(row.get("total"))))
+                .all();
+    }
+
+    // 按固定区间统计区间内审计请求的耗时分布。
+    public Mono<Map<String, Long>> durationBuckets(Instant from, Instant to) {
+        var sql = new StringBuilder("WITH records AS (")
+                .append(recordsCte())
+                .append("""
+                        )
+                        SELECT CASE
+                                   WHEN duration_ms < 50 THEN 'under50'
+                                   WHEN duration_ms < 200 THEN '50to199'
+                                   WHEN duration_ms < 500 THEN '200to499'
+                                   WHEN duration_ms < 1000 THEN '500to999'
+                                   WHEN duration_ms < 3000 THEN '1to3s'
+                                   ELSE 'over3s'
+                               END AS bucket,
+                               COUNT(*) AS total
+                        FROM records
+                        GROUP BY bucket
+                        """);
+        return bucketMap(databaseClient
+                .sql(sql.toString())
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .map((row, metadata) -> Map.entry(
+                        Objects.requireNonNull(row.get("bucket", String.class)),
+                        longValue(row.get("total"))))
+                .all());
+    }
+
+    // 按用户汇总区间内审计活跃度并排除匿名身份。
+    public Flux<ActorStat> topActors(Instant from, Instant to, int limit) {
+        var sql = new StringBuilder("WITH records AS (")
+                .append(recordsCte())
+                .append("""
+                        )
+                        SELECT uid,
+                               COUNT(*) AS total,
+                               COUNT(*) FILTER (WHERE result <> 'SUCCESS') AS failures,
+                               COUNT(DISTINCT operation) AS operations,
+                               COALESCE(ROUND(AVG(duration_ms)), 0) AS average_ms
+                        FROM records
+                        WHERE uid IS NOT NULL
+                          AND uid <> ''
+                          AND LOWER(uid) NOT IN ('anonymous', 'unknown')
+                        GROUP BY uid
+                        ORDER BY total DESC, uid ASC
+                        LIMIT :limit
+                        """);
+        return databaseClient
+                .sql(sql.toString())
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .bind("limit", Math.max(1, limit))
+                .map((row, metadata) -> new ActorStat(
+                        Objects.requireNonNull(row.get("uid", String.class)),
+                        longValue(row.get("total")),
+                        longValue(row.get("failures")),
+                        longValue(row.get("operations")),
+                        longValue(row.get("average_ms"))))
+                .all();
+    }
+
+    // 汇总区间内追踪流的数量、状态、归档与耗时。
+    public Mono<FlowStats> flowStats(Instant from, Instant to) {
+        var sql = "WITH " + flowCte() + """
+                SELECT (SELECT COUNT(*) FROM records) AS records,
+                       COUNT(*) AS flows,
+                       COUNT(*) FILTER (WHERE failed) AS failed_flows,
+                       COUNT(*) FILTER (WHERE archived) AS archived_flows,
+                       COALESCE(AVG(step_count), 0) AS average_steps,
+                       COALESCE(ROUND(AVG(duration_ms)), 0) AS average_duration_ms,
+                       COALESCE(PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms), 0) AS p95_duration_ms
+                FROM flow_durations
+                """;
+        return databaseClient
+                .sql(sql)
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .map((row, metadata) -> new FlowStats(
+                        longValue(row.get("records")),
+                        longValue(row.get("flows")),
+                        longValue(row.get("failed_flows")),
+                        longValue(row.get("archived_flows")),
+                        doubleValue(row.get("average_steps")),
+                        longValue(row.get("average_duration_ms")),
+                        longValue(row.get("p95_duration_ms"))))
+                .one()
+                .defaultIfEmpty(new FlowStats(0L, 0L, 0L, 0L, 0, 0L, 0L));
+    }
+
+    // 按北京时间追踪流开始日期汇总每日流量。
+    public Flux<FlowDayBucket> dailyFlowBuckets(Instant from, Instant to) {
+        var sql = "WITH " + flowCte() + """
+                SELECT (started_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
+                       COUNT(*) AS flows,
+                       SUM(step_count) AS records,
+                       COUNT(*) FILTER (WHERE failed) AS failed_flows,
+                       SUM(archived_step_count) AS archived_records
+                FROM flows
+                GROUP BY 1
+                ORDER BY 1
+                """;
+        return databaseClient
+                .sql(sql)
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .map((row, metadata) -> new FlowDayBucket(
+                        Objects.requireNonNull(row.get("day", LocalDate.class)),
+                        longValue(row.get("flows")),
+                        longValue(row.get("records")),
+                        longValue(row.get("failed_flows")),
+                        longValue(row.get("archived_records"))))
+                .all();
+    }
+
+    // 按追踪流开始时间汇总北京时间星期与小时活动。
+    public Flux<HeatmapBucket> flowHeatmap(Instant from, Instant to) {
+        var sql = "WITH " + flowCte() + """
+                SELECT EXTRACT(ISODOW FROM started_at AT TIME ZONE 'Asia/Shanghai')::int AS weekday,
+                       EXTRACT(HOUR FROM started_at AT TIME ZONE 'Asia/Shanghai')::int AS hour,
+                       COUNT(*) AS total
+                FROM flows
+                GROUP BY 1, 2
+                ORDER BY 1, 2
+                """;
+        return databaseClient
+                .sql(sql)
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .map((row, metadata) -> new HeatmapBucket(
+                        numberValue(row.get("weekday")),
+                        numberValue(row.get("hour")),
+                        longValue(row.get("total"))))
+                .all();
+    }
+
+    // 按固定步骤区间统计追踪流数量。
+    public Mono<Map<String, Long>> flowStepBuckets(Instant from, Instant to) {
+        var sql = "WITH " + flowCte() + """
+                SELECT CASE
+                           WHEN step_count = 1 THEN '1'
+                           WHEN step_count = 2 THEN '2'
+                           WHEN step_count = 3 THEN '3'
+                           WHEN step_count <= 5 THEN '4to5'
+                           WHEN step_count <= 10 THEN '6to10'
+                           ELSE 'over10'
+                       END AS bucket,
+                       COUNT(*) AS total
+                FROM flows
+                GROUP BY bucket
+                """;
+        return bucketMap(databaseClient
+                .sql(sql)
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .map((row, metadata) -> Map.entry(
+                        Objects.requireNonNull(row.get("bucket", String.class)),
+                        longValue(row.get("total"))))
+                .all());
+    }
+
+    // 按固定耗时区间统计追踪流数量。
+    public Mono<Map<String, Long>> flowDurationBuckets(Instant from, Instant to) {
+        var sql = "WITH " + flowCte() + """
+                SELECT CASE
+                           WHEN duration_ms < 50 THEN 'under50'
+                           WHEN duration_ms < 200 THEN '50to199'
+                           WHEN duration_ms < 500 THEN '200to499'
+                           WHEN duration_ms < 1000 THEN '500to999'
+                           WHEN duration_ms < 3000 THEN '1to3s'
+                           ELSE 'over3s'
+                       END AS bucket,
+                       COUNT(*) AS total
+                FROM flow_durations
+                GROUP BY bucket
+                """;
+        return bucketMap(databaseClient
+                .sql(sql)
+                .bind("from", toOffsetDateTime(from))
+                .bind("to", toOffsetDateTime(to))
+                .map((row, metadata) -> Map.entry(
+                        Objects.requireNonNull(row.get("bucket", String.class)),
+                        longValue(row.get("total"))))
+                .all());
+    }
+
     // 按时间倒序返回最近的审计记录。
     public Flux<AuditRecord> findRecent(int limit) {
         var pageable = PageRequest.of(0, Math.max(1, limit), Sort.by(Sort.Direction.DESC, "id"));
@@ -563,6 +786,85 @@ public class AuditStore {
         return OffsetDateTime.ofInstant(instant, ZoneOffset.UTC);
     }
 
+    // 构建跨活跃与归档表的统一审计记录 CTE。
+    private static String recordsCte() {
+        return """
+                SELECT operation, result, duration_ms, uid, occurred_at, trace_flow_id, FALSE AS archived
+                FROM audit_record
+                WHERE occurred_at >= :from
+                  AND occurred_at < :to
+                """
+                + NON_STATIC_REQUEST_SQL
+                + """
+                UNION ALL
+                SELECT operation, result, duration_ms, uid, occurred_at, trace_flow_id, TRUE AS archived
+                FROM audit_record_archive
+                WHERE occurred_at >= :from
+                  AND occurred_at < :to
+                """
+                + NON_STATIC_REQUEST_SQL;
+    }
+
+    // 构建追踪流及其起止时间、状态与耗时的统一 CTE。
+    private static String flowCte() {
+        return "records AS ("
+                + recordsCte()
+                + """
+                ),
+                flows AS (
+                    SELECT trace_flow_id,
+                           MIN(occurred_at - GREATEST(duration_ms, 0) * INTERVAL '1 millisecond') AS started_at,
+                           MAX(occurred_at) AS ended_at,
+                           COUNT(*) AS step_count,
+                           COUNT(*) FILTER (WHERE archived) AS archived_step_count,
+                           BOOL_OR(result IN ('DENIED', 'FAILURE', 'FAILED')) AS failed,
+                           BOOL_OR(archived) AS archived
+                    FROM records
+                    WHERE trace_flow_id IS NOT NULL
+                      AND BTRIM(trace_flow_id) <> ''
+                    GROUP BY trace_flow_id
+                ),
+                flow_durations AS (
+                    SELECT trace_flow_id,
+                           started_at,
+                           ended_at,
+                           step_count,
+                           archived_step_count,
+                           failed,
+                           archived,
+                           GREATEST(
+                               0,
+                               ROUND(EXTRACT(EPOCH FROM (ended_at - started_at)) * 1000)::bigint
+                           ) AS duration_ms
+                    FROM flows
+                )
+                """;
+    }
+
+    // 将数据库数值转换为非负长整型。
+    private static long longValue(Object value) {
+        return value instanceof Number number ? Math.max(0L, Math.round(number.doubleValue())) : 0L;
+    }
+
+    // 将数据库数值转换为非负浮点数。
+    private static double doubleValue(Object value) {
+        return value instanceof Number number ? Math.max(0, number.doubleValue()) : 0;
+    }
+
+    // 将分桶行合并为有序映射。
+    private static Mono<Map<String, Long>> bucketMap(Flux<Map.Entry<String, Long>> rows) {
+        return rows.collect(Collectors.toMap(
+                Map.Entry::getKey,
+                Map.Entry::getValue,
+                (left, right) -> left,
+                LinkedHashMap::new));
+    }
+
+    // 将数据库数值转换为整型。
+    private static int numberValue(Object value) {
+        return value instanceof Number number ? number.intValue() : 0;
+    }
+
     public record AuditQuery(
             String cursor,
             Instant from,
@@ -594,6 +896,24 @@ public class AuditStore {
     public record AuditPageResult(List<AuditRecord> items, long total) {}
 
     public record ArchiveStats(long activeCount, long archivedCount) {}
+
+    public record LatencyStats(long averageMs, long p95Ms) {}
+
+    public record HeatmapBucket(int weekday, int hour, long records) {}
+
+    public record ActorStat(String uid, long records, long failures, long operations, long averageMs) {}
+
+    public record FlowStats(
+            long records,
+            long flows,
+            long failedFlows,
+            long archivedFlows,
+            double averageSteps,
+            long averageDurationMs,
+            long p95DurationMs) {}
+
+    public record FlowDayBucket(
+            LocalDate day, long flows, long records, long failedFlows, long archivedRecords) {}
 
     public record TraceFlowPage(List<String> traceFlowIds, long total, boolean truncated) {}
 }

@@ -5,13 +5,18 @@ import static org.springdoc.core.fn.builders.parameter.Builder.parameterBuilder;
 import static org.springdoc.core.fn.builders.requestbody.Builder.requestBodyBuilder;
 
 import cn.tolim.pudans.contract.audit.AuditRecord;
+import cn.tolim.pudans.contract.audit.dto.AuditFlowOverview;
+import cn.tolim.pudans.contract.audit.dto.AuditOverview;
 import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.extension.contract.GroupVersion;
+import cn.tolim.pudans.core.audit.AuditAnalytics;
 import cn.tolim.pudans.core.audit.AuditLog;
 import cn.tolim.pudans.infra.audit.AuditStore;
 import cn.tolim.pudans.infra.utils.PudansTime;
+import cn.tolim.pudans.infra.utils.RangeDays;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -45,11 +50,14 @@ public class AuditLogEndpoint implements CustomEndpoint {
     private static final int DEFAULT_PAGE_SIZE = 10;
     private static final int MAX_PAGE_SIZE = 100;
     private static final int MAX_JOURNEY_RECORDS = 20_000;
+    private static final int MAX_SESSION_RECORDS = 20_000;
     private static final long JOURNEY_SESSION_GAP_MS = Duration.ofMinutes(30).toMillis();
     private static final long PAGE_DUPLICATE_WINDOW_MS = 10_000;
     private static final String DEFAULT_ORDER = "desc";
 
     private final AuditLog auditLog;
+
+    private final AuditAnalytics auditAnalytics;
 
     // 注册审计日志的查询、追踪与归档路由。
     @Override
@@ -221,10 +229,84 @@ public class AuditLogEndpoint implements CustomEndpoint {
                                     .implementation(Boolean.class))
                             .response(responseBuilder().implementation(AuditJourneyPage.class));
                 })
+                .GET("/auditlogs/sessions", this::sessions, builder -> {
+                    builder.operationId("ListAuditSessions")
+                            .description(
+                                    "Return user sessions split by a thirty-minute inactivity gap. Each session "
+                                            + "links its entry page, intermediate pages and actions, and exit page.")
+                            .tag(tag)
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("page")
+                                    .description("Page number (default 1).")
+                                    .implementation(Integer.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("size")
+                                    .description("Page size (1-100, default 10).")
+                                    .implementation(Integer.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("uid")
+                                    .description("Filter by user uid.")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("operation")
+                                    .description("Only return sessions containing this operation.")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("result")
+                                    .description("Filter by aggregated session result (SUCCESS, FAILURE, DENIED).")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("from")
+                                    .description("Inclusive lower bound of the UTC timestamp (ISO-8601).")
+                                    .implementation(String.class))
+                            .parameter(parameterBuilder()
+                                    .in(ParameterIn.QUERY)
+                                    .name("to")
+                                    .description("Exclusive upper bound of the UTC timestamp (ISO-8601).")
+                                    .implementation(String.class))
+                            .response(responseBuilder().implementation(AuditSessionPage.class));
+                })
+                .GET("/auditlogs/sessions/{sessionId}", this::session, builder -> builder.operationId("ReplayAuditSession")
+                        .description("Return the complete user session identified by ListAuditSessions.")
+                        .tag(tag)
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.PATH)
+                                .name("sessionId")
+                                .required(true)
+                                .description("Opaque session id returned by ListAuditSessions.")
+                                .implementation(String.class))
+                        .response(responseBuilder().implementation(AuditSessionReplay.class)))
                 .GET("/auditlogs/archive-stats", this::archiveStats, builder -> builder.operationId("GetAuditArchiveStats")
                         .description("Return active and archived audit record counts.")
                         .tag(tag)
                         .response(responseBuilder().implementation(AuditArchiveStats.class)))
+                .GET("/auditlogs/overview", this::overview, builder -> builder.operationId("GetAuditOverview")
+                        .description("Return aggregated audit activity for the selected number of days.")
+                        .tag(tag)
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("days")
+                                .required(false)
+                                .description("Aggregation range in days, between 1 and 90. Defaults to 7.")
+                                .implementation(Integer.class))
+                        .response(responseBuilder().implementation(AuditOverview.class)))
+                .GET("/auditlogs/flows/overview", this::flowOverview, builder -> builder
+                        .operationId("GetAuditFlowOverview")
+                        .description("Return aggregated audit trace flow activity for the selected number of days.")
+                        .tag(tag)
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("days")
+                                .required(false)
+                                .description("Aggregation range in days, between 1 and 90. Defaults to 7.")
+                                .implementation(Integer.class))
+                        .response(responseBuilder().implementation(AuditFlowOverview.class)))
                 .GET("/auditlogs/archives", this::archives, builder -> builder.operationId("ListArchivedAuditLogs")
                         .description("Query archived audit records with page-based pagination.")
                         .tag(tag)
@@ -400,6 +482,252 @@ public class AuditLogEndpoint implements CustomEndpoint {
                         ? refillJourneyDetails(request, current, page, size)
                         : Mono.just(current.toPage(page, size, !summary)))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    // 按用户与三十分钟静默间隔返回会话级链路。
+    private Mono<ServerResponse> sessions(ServerRequest request) {
+        var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
+        var size = intParam(request, "size", DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
+        var query = sessionQuery(request, MAX_SESSION_RECORDS + 1, false);
+        return auditLog
+                .query(query)
+                .filter(AuditLogEndpoint::isJourneyUid)
+                .collectList()
+                .map(records -> toSessionPage(
+                        page,
+                        size,
+                        records,
+                        request.queryParam("result").filter(StringUtils::hasText).orElse(null),
+                        request.queryParam("operation").filter(StringUtils::hasText).orElse(null)))
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    // 回放指定会话的全部页面与操作步骤。
+    private Mono<ServerResponse> session(ServerRequest request) {
+        var key = parseSessionId(request.pathVariable("sessionId"));
+        var query = new AuditStore.AuditQuery(
+                null,
+                key.start().minusMillis(1),
+                null,
+                key.uid(),
+                null,
+                null,
+                null,
+                null,
+                MAX_SESSION_RECORDS + 1,
+                true);
+        return auditLog
+                .query(query)
+                .filter(AuditLogEndpoint::isJourneyUid)
+                .collectList()
+                .flatMap(records -> {
+                    var truncated = records.size() > MAX_SESSION_RECORDS;
+                    var group = sessionGroups(records).stream()
+                            .filter(candidate -> sessionId(candidate).equals(key.id()))
+                            .findFirst()
+                            .orElse(null);
+                    if (group == null) {
+                        return Mono.error(new ResponseStatusException(
+                                HttpStatus.NOT_FOUND, "会话 [" + key.id() + "] 不存在。"));
+                    }
+                    var steps = group.records().stream()
+                            .sorted(sessionRecordOrder())
+                            .map(this::toReplayStep)
+                            .toList();
+                    return ServerResponse.ok()
+                            .bodyValue(new AuditSessionReplay(toSessionSummary(group), steps, truncated));
+                });
+    }
+
+    // 把会话扫描结果过滤、分页并附带会话级统计。
+    private static AuditSessionPage toSessionPage(
+            int page, int size, List<AuditRecord> records, String result, String operation) {
+        var truncated = records.size() > MAX_SESSION_RECORDS;
+        var limited = records.stream().limit(MAX_SESSION_RECORDS).toList();
+        var sessions = sessionGroups(limited).stream()
+                .map(AuditLogEndpoint::toSessionSummary)
+                .filter(session -> matchesSessionResult(session.status(), result))
+                .filter(session -> matchesSessionOperation(session.operations(), operation))
+                .toList();
+        var total = sessions.size();
+        var from = (int) Math.min(total, (long) (page - 1) * size);
+        var to = Math.min(total, from + size);
+        var items = sessions.subList(from, to);
+        var recordCount = sessions.stream().mapToLong(AuditSessionSummary::recordCount).sum();
+        var pageViews = sessions.stream().mapToLong(AuditSessionSummary::pageCount).sum();
+        var actionCount = sessions.stream().mapToLong(AuditSessionSummary::actionCount).sum();
+        var failedSessions =
+                sessions.stream().filter(session -> !"SUCCESS".equals(session.status())).count();
+        var durations = sessions.stream().map(AuditSessionSummary::durationMs).toList();
+        var averageDuration = durations.isEmpty()
+                ? 0L
+                : Math.round(durations.stream().mapToLong(Long::longValue).average().orElse(0));
+        var averageSteps = sessions.isEmpty()
+                ? 0D
+                : Math.round((pageViews + actionCount) * 10D / sessions.size()) / 10D;
+        return new AuditSessionPage(
+                items,
+                total,
+                page,
+                size,
+                truncated,
+                recordCount,
+                pageViews,
+                actionCount,
+                failedSessions,
+                averageDuration,
+                percentile95(durations),
+                averageSteps);
+    }
+
+    // 按用户及静默间隔切分会话，并保持最近会话在前。
+    static List<SessionGroup> sessionGroups(List<AuditRecord> records) {
+        var groups = new ArrayList<SessionGroup>();
+        var byUid = records.stream()
+                .filter(AuditLogEndpoint::isJourneyUid)
+                .collect(Collectors.groupingBy(AuditRecord::getUid));
+        for (var entry : byUid.entrySet()) {
+            var sorted = entry.getValue().stream().sorted(sessionRecordOrder()).toList();
+            var sessionStart = 0;
+            for (var index = 1; index < sorted.size(); index++) {
+                var previousTimestamp = sorted.get(index - 1).getTimestamp();
+                var gapStart = timestamp(sorted.get(index));
+                if (previousTimestamp != null
+                        && gapStart.toEpochMilli() - previousTimestamp.toEpochMilli()
+                                > JOURNEY_SESSION_GAP_MS) {
+                    groups.add(new SessionGroup(entry.getKey(), sorted.subList(sessionStart, index)));
+                    sessionStart = index;
+                }
+            }
+            if (sessionStart < sorted.size()) {
+                groups.add(new SessionGroup(entry.getKey(), sorted.subList(sessionStart, sorted.size())));
+            }
+        }
+        groups.sort(Comparator.comparing(AuditLogEndpoint::sessionEnd)
+                .thenComparing(AuditLogEndpoint::sessionId)
+                .reversed());
+        return groups;
+    }
+
+    // 把同一会话的记录交给足迹聚合逻辑，复用页面去重与结果汇总。
+    private static AuditSessionSummary toSessionSummary(SessionGroup group) {
+        var journey = toJourney(group.uid(), group.records());
+        return new AuditSessionSummary(
+                sessionId(group),
+                group.uid(),
+                journey.username(),
+                journey.start(),
+                journey.end(),
+                journey.durationMs(),
+                journey.entryPath(),
+                journey.exitPath(),
+                journey.pageCount(),
+                journey.actionCount(),
+                group.records().size(),
+                journey.status(),
+                journey.operations(),
+                group.records().stream().anyMatch(AuditRecord::isArchived));
+    }
+
+    // 返回测试与列表共用的会话摘要，按最近活动时间倒序。
+    static List<AuditSessionSummary> sessionSummaries(List<AuditRecord> records) {
+        return sessionGroups(records).stream().map(AuditLogEndpoint::toSessionSummary).toList();
+    }
+
+    // 会话编号只使用用户与稳定起点，后续记录不会改变回放链接。
+    private static String sessionId(SessionGroup group) {
+        return group.uid() + ":" + sessionStart(group).toEpochMilli();
+    }
+
+    // 使用会话首条记录的开始时间作为稳定锚点。
+    private static Instant sessionStart(SessionGroup group) {
+        return group.records().stream()
+                .map(AuditLogEndpoint::traceStart)
+                .min(Comparator.naturalOrder())
+                .orElse(Instant.EPOCH);
+    }
+
+    private static Instant sessionEnd(SessionGroup group) {
+        return group.records().stream()
+                .map(AuditLogEndpoint::timestamp)
+                .max(Comparator.naturalOrder())
+                .orElse(Instant.EPOCH);
+    }
+
+    // 解析并校验会话编号，非法值直接返回 400。
+    private static SessionKey parseSessionId(String value) {
+        try {
+            var parts = value.split(":", -1);
+            if (parts.length < 2 || parts.length > 3 || parts[0].isBlank() || parts[1].isBlank()) {
+                throw new IllegalArgumentException();
+            }
+            var start = Instant.ofEpochMilli(Long.parseLong(parts[1]));
+            if (parts.length == 3) {
+                var end = Instant.ofEpochMilli(Long.parseLong(parts[2]));
+                if (end.isBefore(start)) {
+                    throw new IllegalArgumentException();
+                }
+            }
+            if (!StringUtils.hasText(parts[0])) {
+                throw new IllegalArgumentException();
+            }
+            return new SessionKey(parts[0] + ":" + start.toEpochMilli(), parts[0], start);
+        } catch (IllegalArgumentException | DateTimeException e) {
+            throw new ServerWebInputException("会话编号格式无效。");
+        }
+    }
+
+    // 仅保留匹配聚合结果或包含指定操作的会话。
+    private static boolean matchesSessionResult(String actual, String expected) {
+        if (!StringUtils.hasText(expected)) {
+            return true;
+        }
+        if ("FAILURE".equalsIgnoreCase(expected) || "FAILED".equalsIgnoreCase(expected)) {
+            return isFailure(actual);
+        }
+        return expected.equalsIgnoreCase(actual);
+    }
+
+    private static boolean matchesSessionOperation(List<String> operations, String expected) {
+        return !StringUtils.hasText(expected)
+                || operations.stream().anyMatch(operation -> operation.equalsIgnoreCase(expected));
+    }
+
+    // 计算 P95 耗时，空列表返回零。
+    private static long percentile95(List<Long> values) {
+        if (values.isEmpty()) {
+            return 0L;
+        }
+        var sorted = values.stream().sorted().toList();
+        var index = Math.max(0, (int) Math.ceil(sorted.size() * 0.95D) - 1);
+        return sorted.get(index);
+    }
+
+    // 构造会话列表查询，结果与操作筛选在聚合后执行。
+    private static AuditStore.AuditQuery sessionQuery(ServerRequest request, int limit, boolean ascending) {
+        return new AuditStore.AuditQuery(
+                null,
+                request.queryParam("from").filter(StringUtils::hasText).map(Instant::parse).orElse(null),
+                request.queryParam("to").filter(StringUtils::hasText).map(Instant::parse).orElse(null),
+                request.queryParam("uid").filter(StringUtils::hasText).orElse(null),
+                null,
+                null,
+                null,
+                null,
+                limit,
+                ascending);
+    }
+
+    // 会话步骤按请求开始、结束时间与编号稳定排序。
+    private static Comparator<AuditRecord> sessionRecordOrder() {
+        return Comparator.comparing(AuditLogEndpoint::traceStart)
+                .thenComparing(AuditLogEndpoint::timestamp)
+                .thenComparing(record -> record.getMetadata().getName());
+    }
+
+    // 安全读取记录时间，缺失时使用时间起点。
+    private static Instant timestamp(AuditRecord record) {
+        return record.getTimestamp() == null ? Instant.EPOCH : record.getTimestamp();
     }
 
     // 补查首页缺失的用户明细并重新组装足迹页。
@@ -917,6 +1245,20 @@ public class AuditLogEndpoint implements CustomEndpoint {
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
     }
 
+    // 返回指定天数内的审计聚合概览。
+    private Mono<ServerResponse> overview(ServerRequest request) {
+        return auditAnalytics
+                .overview(RangeDays.resolve(request))
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    // 返回指定天数内的链路聚合概览。
+    private Mono<ServerResponse> flowOverview(ServerRequest request) {
+        return auditAnalytics
+                .flowOverview(RangeDays.resolve(request))
+                .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
     // 分页返回已归档的审计记录。
     private Mono<ServerResponse> archives(ServerRequest request) {
         var page = intParam(request, "page", 1, 1, Integer.MAX_VALUE);
@@ -1212,6 +1554,45 @@ public class AuditLogEndpoint implements CustomEndpoint {
             boolean truncated,
             long pageViews,
             long actionCount) {}
+
+    public record AuditSessionSummary(
+            String sessionId,
+            String uid,
+            String username,
+            Instant start,
+            Instant end,
+            long durationMs,
+            String entryPath,
+            String exitPath,
+            int pageCount,
+            int actionCount,
+            int recordCount,
+            String status,
+            List<String> operations,
+            boolean archived) {}
+
+
+    public record AuditSessionPage(
+            List<AuditSessionSummary> items,
+            long total,
+            int page,
+            int size,
+            boolean truncated,
+            long records,
+            long pageViews,
+            long actionCount,
+            long failedSessions,
+            long averageDurationMs,
+            long p95DurationMs,
+            double averageSteps) {}
+
+
+    public record AuditSessionReplay(
+            AuditSessionSummary session, List<ReplayStep> steps, boolean truncated) {}
+
+    private record SessionGroup(String uid, List<AuditRecord> records) {}
+
+    private record SessionKey(String id, String uid, Instant start) {}
 
 
     public record AuditNode(

@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -62,6 +63,24 @@ class AuditStoreTest {
 
     @Mock
     RowsFetchSpec<Map.Entry<String, Long>> resultRows;
+
+    @Mock
+    RowsFetchSpec<Map.Entry<LocalDate, Long>> dayRows;
+
+    @Mock
+    RowsFetchSpec<AuditStore.LatencyStats> latencyRows;
+
+    @Mock
+    RowsFetchSpec<AuditStore.HeatmapBucket> heatmapRows;
+
+    @Mock
+    RowsFetchSpec<AuditStore.ActorStat> actorRows;
+
+    @Mock
+    RowsFetchSpec<AuditStore.FlowStats> flowStatsRows;
+
+    @Mock
+    RowsFetchSpec<AuditStore.FlowDayBucket> flowDayRows;
 
     private AuditStore store;
 
@@ -216,6 +235,31 @@ class AuditStoreTest {
     }
 
     @Test
+    void countPerDayUsesTheSameStaticRequestFilterAsTheAuditTable() {
+        var spec = org.mockito.Mockito.mock(DatabaseClient.GenericExecuteSpec.class);
+        when(databaseClient.sql(anyString())).thenReturn(spec);
+        when(spec.bind(anyString(), any())).thenReturn(spec);
+        when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, Map.Entry<LocalDate, Long>>>any()))
+                .thenReturn(dayRows);
+        when(dayRows.all())
+                .thenReturn(Flux.just(Map.entry(LocalDate.parse("2026-11-23"), 3L)));
+
+        var counts = store
+                .countPerDay(Instant.parse("2026-11-15T00:00:00Z"), null, null, null)
+                .block();
+
+        assertThat(counts).containsExactly(Map.entry(LocalDate.parse("2026-11-23"), 3L));
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "FROM audit_record",
+                        "FROM audit_record_archive",
+                        "request_path <> '/login-bg.mp4'");
+        verify(spec).bind(anyString(), any());
+    }
+
+    @Test
     void topOperationsAggregatesBothAuditStores() {
         givenResultQuery();
 
@@ -230,6 +274,263 @@ class AuditStoreTest {
         assertThat(sql.getValue())
                 .contains("FROM (", "UNION ALL", ") grouped GROUP BY operation")
                 .doesNotContain("operation = :operation", "operationUNION");
+    }
+
+    @Test
+    void latencyStatsAggregatesBothAuditStores() {
+        var spec = org.mockito.Mockito.mock(DatabaseClient.GenericExecuteSpec.class);
+        when(databaseClient.sql(anyString())).thenReturn(spec);
+        when(spec.bind(anyString(), any())).thenReturn(spec);
+        when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, AuditStore.LatencyStats>>any()))
+                .thenReturn(latencyRows);
+        when(latencyRows.one()).thenReturn(Mono.just(new AuditStore.LatencyStats(42L, 95L)));
+
+        var stats = store.latencyStats(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"))
+                .block();
+
+        assertThat(stats).isEqualTo(new AuditStore.LatencyStats(42L, 95L));
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "WITH records AS (",
+                        "FROM audit_record",
+                        "UNION ALL",
+                        "FROM audit_record_archive",
+                        "trace_flow_id",
+                        "FALSE AS archived",
+                        "TRUE AS archived",
+                        "PERCENTILE_CONT(0.95)",
+                        "request_path NOT LIKE '/assets/%'");
+        verify(spec, times(2)).bind(anyString(), any());
+    }
+
+    @Test
+    void activityHeatmapAggregatesBeijingWeekdayAndHourBuckets() {
+        var spec = org.mockito.Mockito.mock(DatabaseClient.GenericExecuteSpec.class);
+        when(databaseClient.sql(anyString())).thenReturn(spec);
+        when(spec.bind(anyString(), any())).thenReturn(spec);
+        when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, AuditStore.HeatmapBucket>>any()))
+                .thenReturn(heatmapRows);
+        when(heatmapRows.all())
+                .thenReturn(Flux.just(new AuditStore.HeatmapBucket(3, 11, 4)));
+
+        var buckets = store.activityHeatmap(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"))
+                .collectList()
+                .block();
+
+        assertThat(buckets).containsExactly(new AuditStore.HeatmapBucket(3, 11, 4));
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "EXTRACT(ISODOW FROM occurred_at AT TIME ZONE 'Asia/Shanghai')",
+                        "EXTRACT(HOUR FROM occurred_at AT TIME ZONE 'Asia/Shanghai')",
+                        "FROM audit_record_archive");
+        verify(spec, times(2)).bind(anyString(), any());
+    }
+
+    @Test
+    void durationBucketsUseTheFixedAggregationWindows() {
+        givenResultQuery(Flux.just(
+                Map.entry("over3s", 2L),
+                Map.entry("under50", 3L)));
+
+        var buckets = store.durationBuckets(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"))
+                .block();
+
+        assertThat(buckets)
+                .containsEntry("under50", 3L)
+                .containsEntry("over3s", 2L)
+                .hasSize(2);
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "duration_ms < 50 THEN 'under50'",
+                        "duration_ms < 200 THEN '50to199'",
+                        "duration_ms < 500 THEN '200to499'",
+                        "duration_ms < 1000 THEN '500to999'",
+                        "duration_ms < 3000 THEN '1to3s'",
+                        "ELSE 'over3s'",
+                        "FROM audit_record_archive");
+    }
+
+    @Test
+    void topActorsAggregatesBothAuditStoresAndExcludesAnonymousUsers() {
+        var spec = org.mockito.Mockito.mock(DatabaseClient.GenericExecuteSpec.class);
+        when(databaseClient.sql(anyString())).thenReturn(spec);
+        when(spec.bind(anyString(), any())).thenReturn(spec);
+        when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, AuditStore.ActorStat>>any()))
+                .thenReturn(actorRows);
+        when(actorRows.all())
+                .thenReturn(Flux.just(new AuditStore.ActorStat("uid-1", 4, 2, 2, 35)));
+
+        var actors = store.topActors(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"),
+                        6)
+                .collectList()
+                .block();
+
+        assertThat(actors).containsExactly(new AuditStore.ActorStat("uid-1", 4, 2, 2, 35));
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "COUNT(*) FILTER (WHERE result <> 'SUCCESS') AS failures",
+                        "COUNT(DISTINCT operation) AS operations",
+                        "LOWER(uid) NOT IN ('anonymous', 'unknown')",
+                        "LIMIT :limit",
+                        "FROM audit_record_archive");
+        verify(spec, times(3)).bind(anyString(), any());
+    }
+
+    @Test
+    void flowStatsAggregateStartEndStatusArchivedAndDuration() {
+        var spec = givenDatabaseQuery();
+        when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, AuditStore.FlowStats>>any()))
+                .thenReturn(flowStatsRows);
+        when(flowStatsRows.one())
+                .thenReturn(Mono.just(new AuditStore.FlowStats(12L, 4L, 2L, 1L, 3.0, 1200L, 3000L)));
+
+        var stats = store.flowStats(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"))
+                .block();
+
+        assertThat(stats)
+                .isEqualTo(new AuditStore.FlowStats(12L, 4L, 2L, 1L, 3.0, 1200L, 3000L));
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "MIN(occurred_at - GREATEST(duration_ms, 0) * INTERVAL '1 millisecond')",
+                        "MAX(occurred_at) AS ended_at",
+                        "COUNT(*) FILTER (WHERE archived) AS archived_step_count",
+                        "BOOL_OR(result IN ('DENIED', 'FAILURE', 'FAILED')) AS failed",
+                        "BOOL_OR(archived) AS archived",
+                        "AVG(step_count)",
+                        "PERCENTILE_CONT(0.95) WITHIN GROUP (ORDER BY duration_ms)",
+                        "BTRIM(trace_flow_id) <> ''");
+        verify(spec, times(2)).bind(anyString(), any());
+    }
+
+    @Test
+    void dailyFlowBucketsAggregateByFlowStartInBeijing() {
+        var spec = givenDatabaseQuery();
+        when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, AuditStore.FlowDayBucket>>any()))
+                .thenReturn(flowDayRows);
+        when(flowDayRows.all())
+                .thenReturn(Flux.just(new AuditStore.FlowDayBucket(
+                        LocalDate.parse("2026-11-18"), 2L, 5L, 1L, 2L)));
+
+        var buckets = store.dailyFlowBuckets(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"))
+                .collectList()
+                .block();
+
+        assertThat(buckets).containsExactly(new AuditStore.FlowDayBucket(
+                LocalDate.parse("2026-11-18"), 2L, 5L, 1L, 2L));
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "started_at AT TIME ZONE 'Asia/Shanghai'",
+                        "COUNT(*) AS flows",
+                        "SUM(step_count) AS records",
+                        "COUNT(*) FILTER (WHERE failed) AS failed_flows",
+                        "SUM(archived_step_count) AS archived_records",
+                        "GROUP BY 1");
+        verify(spec, times(2)).bind(anyString(), any());
+    }
+
+    @Test
+    void flowHeatmapBucketsUseTheAggregatedFlowStart() {
+        var spec = givenDatabaseQuery();
+        when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, AuditStore.HeatmapBucket>>any()))
+                .thenReturn(heatmapRows);
+        when(heatmapRows.all()).thenReturn(Flux.just(new AuditStore.HeatmapBucket(3, 11, 2)));
+
+        var buckets = store.flowHeatmap(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"))
+                .collectList()
+                .block();
+
+        assertThat(buckets).containsExactly(new AuditStore.HeatmapBucket(3, 11, 2));
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "EXTRACT(ISODOW FROM started_at AT TIME ZONE 'Asia/Shanghai')",
+                        "EXTRACT(HOUR FROM started_at AT TIME ZONE 'Asia/Shanghai')",
+                        "COUNT(*) AS total",
+                        "FROM flows");
+        verify(spec, times(2)).bind(anyString(), any());
+    }
+
+    @Test
+    void flowStepBucketsUseTheFixedStepWindows() {
+        givenResultQuery(Flux.just(
+                Map.entry("4to5", 2L),
+                Map.entry("over10", 1L)));
+
+        var buckets = store.flowStepBuckets(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"))
+                .block();
+
+        assertThat(buckets)
+                .containsEntry("4to5", 2L)
+                .containsEntry("over10", 1L)
+                .hasSize(2);
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "step_count = 1 THEN '1'",
+                        "step_count = 2 THEN '2'",
+                        "step_count = 3 THEN '3'",
+                        "step_count <= 5 THEN '4to5'",
+                        "step_count <= 10 THEN '6to10'",
+                        "ELSE 'over10'",
+                        "FROM flows");
+    }
+
+    @Test
+    void flowDurationBucketsUseTheExistingDurationWindows() {
+        givenResultQuery(Flux.just(
+                Map.entry("over3s", 3L),
+                Map.entry("under50", 1L)));
+
+        var buckets = store.flowDurationBuckets(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"))
+                .block();
+
+        assertThat(buckets)
+                .containsEntry("under50", 1L)
+                .containsEntry("over3s", 3L)
+                .hasSize(2);
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains(
+                        "duration_ms < 50 THEN 'under50'",
+                        "duration_ms < 200 THEN '50to199'",
+                        "duration_ms < 500 THEN '200to499'",
+                        "duration_ms < 1000 THEN '500to999'",
+                        "duration_ms < 3000 THEN '1to3s'",
+                        "ELSE 'over3s'",
+                        "FROM flow_durations");
     }
 
     @Test
@@ -329,12 +630,24 @@ class AuditStoreTest {
     }
 
     private DatabaseClient.GenericExecuteSpec givenResultQuery() {
+        return givenResultQuery(Flux.empty());
+    }
+
+    private DatabaseClient.GenericExecuteSpec givenDatabaseQuery() {
+        var spec = org.mockito.Mockito.mock(DatabaseClient.GenericExecuteSpec.class);
+        when(databaseClient.sql(anyString())).thenReturn(spec);
+        when(spec.bind(anyString(), any())).thenReturn(spec);
+        return spec;
+    }
+
+    private DatabaseClient.GenericExecuteSpec givenResultQuery(
+            Flux<Map.Entry<String, Long>> rows) {
         var spec = org.mockito.Mockito.mock(DatabaseClient.GenericExecuteSpec.class);
         when(databaseClient.sql(anyString())).thenReturn(spec);
         when(spec.bind(anyString(), any())).thenReturn(spec);
         when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, Map.Entry<String, Long>>>any()))
                 .thenReturn(resultRows);
-        when(resultRows.all()).thenReturn(Flux.empty());
+        when(resultRows.all()).thenReturn(rows);
         return spec;
     }
 }

@@ -88,12 +88,15 @@ rules:
     resources:
       - "auditlogs"
       - "auditlogs/traces"
+      - "auditlogs/sessions"
       - "auditlogs/journeys"
       - "auditlogs/graph"
       - "auditlogs/trace"
       - "auditlogs/replay"
       - "auditlogs/archives"
       - "auditlogs/archive-stats"
+      - "auditlogs/overview"
+      - "auditlogs/flows/overview"
     verbs:
       - "get"
       - "list"
