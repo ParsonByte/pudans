@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,6 +78,8 @@ class LiveRecordingCleanupTaskTest {
         properties.getRecorder().setWorkDir(tempDir.toString());
         task = new LiveRecordingCleanupTask(
                 client, storageTransfer, recordingStatus, workspace, redisTemplate, properties, metrics, liveAlerts);
+        // 默认让删除返回可订阅结果，成功用例再覆盖为可观测的 Mono
+        lenient().when(client.delete(any(LiveRecording.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
     }
 
     @Test
@@ -88,12 +92,19 @@ class LiveRecordingCleanupTaskTest {
                 .thenReturn(Flux.just(recording));
         when(storageTransfer.purgeObjectFirst("storage-1")).thenReturn(Mono.empty());
         when(workspace.recordingDir("live-a")).thenReturn(tempDir.resolve("live-a"));
+        // 只有 Mono 被订阅才会置位，用于证明删除请求真的执行
+        var subscribed = new AtomicBoolean();
+        when(client.delete(recording)).thenReturn(Mono.fromRunnable(() -> subscribed.set(true)).thenReturn(recording));
 
         var deleted = task.cleanupRetention().block();
 
         assertThat(deleted).isEqualTo(1);
+        // 未订阅时标记不会置位，删除就会像旧代码一样被丢弃
+        assertThat(subscribed).isTrue();
         verify(storageTransfer).purgeObjectFirst("storage-1");
         verify(client).delete(recording);
+        // 删除成功后才从失败仪表移除
+        verify(metrics).recordingRemoved("live-a");
     }
 
     @Test
@@ -139,6 +150,9 @@ class LiveRecordingCleanupTaskTest {
 
         assertThat(deleted).isEqualTo(1);
         verify(metrics).cleanupFailed();
+        // 失败记录保留计数，成功记录才移除计数
+        verify(metrics, never()).recordingRemoved("live-c");
+        verify(metrics).recordingRemoved("live-d");
         verify(client, never()).delete(failing);
         verify(client).delete(succeeding);
         var mutation = ArgumentCaptor.forClass(Consumer.class);
