@@ -1,10 +1,12 @@
-import { Tag } from "antd";
+"use client";
+
+import { Tag } from "tdesign-react";
 
 type ResultTagProps = {
     result?: string;
 };
 
-const RESULT_LABELS: Record<string, string> = {
+export const RESULT_LABELS: Record<string, string> = {
     DENIED: "拒绝",
     FAILED: "失败",
     FAILURE: "失败",
@@ -12,14 +14,18 @@ const RESULT_LABELS: Record<string, string> = {
 };
 
 export function ResultTag({ result }: ResultTagProps) {
-    const color =
+    const theme =
         result === "SUCCESS"
-            ? "green"
+            ? "success"
             : result === "FAILURE" || result === "FAILED"
-              ? "red"
+              ? "danger"
               : result === "DENIED"
-                ? "gold"
+                ? "warning"
                 : "default";
 
-    return <Tag color={color}>{result ? (RESULT_LABELS[result] ?? result) : "—"}</Tag>;
+    return (
+        <Tag theme={theme} variant="light-outline">
+            {result ? (RESULT_LABELS[result] ?? result) : "—"}
+        </Tag>
+    );
 }

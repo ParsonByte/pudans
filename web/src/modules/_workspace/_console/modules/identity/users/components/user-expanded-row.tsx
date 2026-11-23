@@ -3,8 +3,10 @@
 import Link from "next/link";
 
 import type { ListedUser } from "@pudans-dev/api-client";
-import { Button, Flex, Space, theme } from "antd";
-import { ArrowUpRight, Pencil } from "lucide-react";
+import { ArrowRightIcon, EditIcon } from "tdesign-icons-react";
+import { Button, Space } from "tdesign-react";
+
+import { useDesignTokens } from "@/components/ui";
 
 import { DescriptionGrid } from "../../../../components/description-grid";
 import { EmptyValue } from "../../../../components/empty-value";
@@ -20,12 +22,12 @@ type UserExpandedRowProps = {
 };
 
 export function UserExpandedRow({ canEdit, onEdit, user, workspace }: UserExpandedRowProps) {
-    const { token } = theme.useToken();
+    const tokens = useDesignTokens();
     const displayName = user.displayName || user.name;
     const loginName = user.loginName || user.name;
 
     return (
-        <div className="w-full rounded-2xl px-4 py-4" style={{ backgroundColor: token.colorFillQuaternary }}>
+        <div className="w-full rounded-2xl px-4 py-4" style={{ backgroundColor: tokens.colorFillQuaternary }}>
             <DescriptionGrid
                 columns={4}
                 items={[
@@ -51,26 +53,25 @@ export function UserExpandedRow({ canEdit, onEdit, user, workspace }: UserExpand
                 ]}
             />
             {user.name || canEdit ? (
-                <Flex
-                    className="mt-4 border-t pt-2"
-                    justify="flex-end"
-                    style={{ borderColor: token.colorBorderSecondary }}
+                <div
+                    className="mt-4 flex justify-end border-t pt-2"
+                    style={{ borderColor: tokens.colorBorderSecondary }}
                 >
                     <Space size={4}>
                         {user.name ? (
                             <Link href={userDetailPath(workspace, user.name)}>
-                                <Button icon={<ArrowUpRight size={14} />} size="small" type="link">
+                                <Button icon={<ArrowRightIcon />} size="small" variant="text">
                                     查看详情
                                 </Button>
                             </Link>
                         ) : null}
                         {canEdit ? (
-                            <Button icon={<Pencil size={14} />} onClick={onEdit} size="small" type="link">
+                            <Button icon={<EditIcon />} onClick={onEdit} size="small" variant="text">
                                 编辑资料
                             </Button>
                         ) : null}
                     </Space>
-                </Flex>
+                </div>
             ) : null}
         </div>
     );

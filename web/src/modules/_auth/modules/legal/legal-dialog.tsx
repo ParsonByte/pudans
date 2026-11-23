@@ -1,7 +1,6 @@
 "use client";
 
-import { Modal } from "antd";
-
+import { GlobalDialog } from "@/components/ui";
 import { useIsClient } from "@/hooks/utils/use-is-client";
 import { AUTH_GLASS_CLASS } from "@/modules/_auth/styles/glass";
 
@@ -23,17 +22,15 @@ export function LegalDialog({ activeTab, onClose, onTabChange, open }: LegalDial
     }
 
     return (
-        <Modal
-            centered
-            classNames={{ container: AUTH_GLASS_CLASS }}
-            destroyOnHidden
-            footer={null}
-            mask={{ blur: true }}
-            onCancel={onClose}
+        <GlobalDialog
+            className={AUTH_GLASS_CLASS}
+            footer={false}
+            onClose={onClose}
             open={open}
+            title={false}
             width={800}
         >
             <LegalView activeTab={activeTab} onTabChange={onTabChange} />
-        </Modal>
+        </GlobalDialog>
     );
 }

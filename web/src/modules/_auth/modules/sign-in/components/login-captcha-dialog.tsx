@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
 import type { CaptchaChallenge } from "@pudans-dev/api-client";
-import { Button, Flex, Form, Modal, Spin, Typography } from "antd";
+import { Button, Form, Loading, Typography } from "tdesign-react";
 
+import { GlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { useEventCallback } from "@/hooks/utils/use-event-callback";
 import { AUTH_GLASS_CLASS } from "@/modules/_auth/styles/glass";
@@ -37,7 +38,7 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
             }
         } catch {
             setChallenge(null);
-            prompt.error("验证码加载失败，请稍后重试。");
+            prompt.error({ content: "验证码加载失败，请稍后重试。" });
         } finally {
             setLoading(false);
         }
@@ -53,12 +54,12 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
         }
 
         if (!challenge) {
-            prompt.error("验证码尚未加载完成，请稍后重试。");
+            prompt.error({ content: "验证码尚未加载完成，请稍后重试。" });
             return;
         }
 
         if (!answer.trim()) {
-            prompt.error("请输入图片验证码。");
+            prompt.error({ content: "请输入图片验证码。" });
             return;
         }
 
@@ -69,7 +70,7 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
         } catch (submitError) {
             const submitErrorMessage = signInErrorMessage(submitError, true);
             await loadCaptcha();
-            prompt.error(submitErrorMessage);
+            prompt.error({ content: submitErrorMessage });
         } finally {
             setSubmitting(false);
         }
@@ -92,30 +93,40 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
             : null;
 
     return (
-        <Modal
-            centered
-            classNames={{ container: AUTH_GLASS_CLASS }}
-            closable={!submitting}
-            footer={null}
-            keyboard={!submitting}
-            mask={{ blur: true, closable: !submitting }}
-            onCancel={handleCancel}
+        <GlobalDialog
+            className={AUTH_GLASS_CLASS}
+            confirmLoading={submitting}
+            footer={
+                <div className="flex flex-col gap-2">
+                    <Button
+                        block
+                        disabled={!challenge || loading}
+                        loading={submitting}
+                        onClick={() => {
+                            void handleConfirm();
+                        }}
+                        size="large"
+                        theme="primary"
+                    >
+                        验证并登录
+                    </Button>
+                    <Button block disabled={submitting} onClick={handleCancel} size="large" variant="text">
+                        取消
+                    </Button>
+                </div>
+            }
+            onClose={handleCancel}
             open
-            title={null}
+            title={false}
             width={440}
         >
             <div className="flex flex-col gap-5">
-                <h2 className="pr-8 text-lg leading-7 font-semibold text-neutral-900 dark:text-neutral-100">
+                <h2 className="pr-8 text-lg leading-7 font-semibold text-[var(--td-text-color-primary)]">
                     确认是本人操作
                 </h2>
                 {challenge ? (
-                    <Form
-                        layout="vertical"
-                        onFinish={() => {
-                            void handleConfirm();
-                        }}
-                    >
-                        <div className="rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-4 dark:border-neutral-800 dark:bg-neutral-900/50 [&_.ant-form-item]:mb-0">
+                    <Form layout="vertical">
+                        <div className="rounded-2xl border border-[var(--td-border-level-1-color)] bg-[var(--td-bg-color-secondarycontainer)] p-4 [&_.t-form__item]:!mb-0">
                             <CaptchaField
                                 answer={answer}
                                 autoFocus
@@ -130,25 +141,19 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
                                 stacked
                             />
                             {minutes ? (
-                                <p className="mt-2 text-center text-xs text-neutral-500 dark:text-neutral-400">
+                                <p className="mt-2 text-center text-xs text-[var(--td-text-color-secondary)]">
                                     验证码约 {minutes} 分钟内有效
                                 </p>
                             ) : null}
                         </div>
                     </Form>
                 ) : (
-                    <Flex
-                        align="center"
-                        className="min-h-[152px] rounded-2xl border border-dashed border-neutral-300 bg-neutral-50/60 dark:border-neutral-700 dark:bg-neutral-900/40"
-                        gap={10}
-                        justify="center"
-                        vertical
-                    >
+                    <div className="flex min-h-[152px] flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-[var(--td-border-level-2-color)] bg-[var(--td-bg-color-secondarycontainer)]">
                         {loading ? (
-                            <Spin />
+                            <Loading loading size="medium" />
                         ) : (
                             <>
-                                <Typography.Text type="secondary">验证码加载失败。</Typography.Text>
+                                <Typography.Text theme="secondary">验证码加载失败。</Typography.Text>
                                 <Button
                                     onClick={() => {
                                         void loadCaptcha();
@@ -158,34 +163,9 @@ export function LoginCaptchaDialog({ onCancel, onSubmit }: LoginCaptchaDialogPro
                                 </Button>
                             </>
                         )}
-                    </Flex>
+                    </div>
                 )}
-                <div className="flex flex-col gap-2">
-                    <Button
-                        block
-                        disabled={!challenge || loading}
-                        htmlType="button"
-                        loading={submitting}
-                        onClick={() => {
-                            void handleConfirm();
-                        }}
-                        size="large"
-                        type="primary"
-                    >
-                        验证并登录
-                    </Button>
-                    <Button
-                        block
-                        disabled={submitting}
-                        htmlType="button"
-                        onClick={handleCancel}
-                        size="large"
-                        type="text"
-                    >
-                        取消
-                    </Button>
-                </div>
             </div>
-        </Modal>
+        </GlobalDialog>
     );
 }

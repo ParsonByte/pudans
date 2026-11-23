@@ -81,15 +81,15 @@ const VERB_LABELS: Record<string, string> = {
     watch: "监听",
 };
 
-const VERB_COLORS: Record<string, string> = {
-    "*": "purple",
-    create: "green",
-    delete: "red",
-    get: "blue",
-    list: "cyan",
-    patch: "gold",
-    update: "orange",
-    watch: "geekblue",
+const VERB_THEMES: Record<string, "default" | "primary" | "warning" | "danger" | "success"> = {
+    "*": "primary",
+    create: "success",
+    delete: "danger",
+    get: "primary",
+    list: "primary",
+    patch: "warning",
+    update: "warning",
+    watch: "primary",
 };
 
 export function buildRoleCatalogIndex(catalog?: PermissionCatalog): RoleCatalogIndex {
@@ -331,8 +331,8 @@ export function verbLabel(verb: string): string {
     return VERB_LABELS[verb] ?? verb;
 }
 
-export function verbColor(verb: string): string {
-    return VERB_COLORS[verb] ?? "default";
+export function verbTheme(verb: string): "default" | "primary" | "warning" | "danger" | "success" {
+    return VERB_THEMES[verb] ?? "default";
 }
 
 export function actorCanGrant(permissions: string[] | undefined, permission: string): boolean {

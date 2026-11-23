@@ -1,198 +1,420 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App, Button, Modal, Space, type TableProps, Tag } from "antd";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { BrowseGalleryIcon, FolderOpenIcon, RefreshIcon, ViewListIcon } from "tdesign-icons-react";
+import { Button, Card, Empty, Pagination, RadioGroup, Skeleton, Tabs } from "tdesign-react";
+import type { PaginationProps } from "tdesign-react";
 
+import { confirmGlobalDialog } from "@/components/ui";
+import { usePagination } from "@/hooks/table/use-pagination";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { useMobile } from "@/hooks/ui/use-mobile";
+import { useLocalStorage } from "@/hooks/utils/use-local-storage";
+import { usePermission } from "@/hooks/utils/use-permission";
 
-import { ConsoleTable } from "../../../components/console-table";
-import { ObjectDetails } from "../../../components/object-details";
+import { type ConsoleOverviewMetric, ConsolePageOverview } from "../../../components/page-overview";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatBytes, formatDateTime } from "../../../composables/_format";
+import { formatBytes, formatCountOrDash } from "../../../composables/_format";
+import { useConsoleSession } from "../../../composables/_session";
 import {
     type StorageFile,
-    createStorageFileDownloadUrl,
     listStorageFiles,
     purgeStorageFile,
     restoreStorageFile,
     trashStorageFile,
 } from "../../../composables/_storage";
-import { useConsoleTableState } from "../../../composables/_table";
+import { StorageFileActions } from "./components/storage-file-actions";
+import { StorageFileDetailsModal } from "./components/storage-file-details-modal";
+import { StorageFilesGallery } from "./components/storage-files-gallery";
+import { StorageFilesTable } from "./components/storage-files-table";
+import {
+    STORAGE_FILES_DOWNLOAD_URL_QUERY_ROOT,
+    STORAGE_FILES_LIST_QUERY_ROOT,
+    STORAGE_FILES_TOTAL_QUERY_ROOT,
+    STORAGE_FILES_VIEW_MODE_KEY,
+    STORAGE_FILE_PERMISSIONS,
+    type StorageFilesTab,
+    type StorageFilesViewMode,
+    isImageStorageFile,
+    storageFileDownloadUrlQueryOptions,
+    storageFileName,
+} from "./composables/_storage-files";
 
-function stateTag(state?: string) {
-    if (state === "ACTIVE") {
-        return <Tag color="green">可用</Tag>;
-    }
+type FileStateAction = "purge" | "restore" | "trash";
+type FileStateChange = {
+    action: FileStateAction;
+    file: StorageFile;
+};
 
-    if (state === "TRASHED") {
-        return <Tag>回收站</Tag>;
-    }
-
-    return <Tag color="blue">{state ?? "—"}</Tag>;
-}
+const STORAGE_FILES_LIST_STALE_TIME_MS = 30_000;
+const FILE_STATE_ACTION_SUCCESS: Record<FileStateAction, string> = {
+    purge: "文件已彻底删除。",
+    restore: "文件已恢复。",
+    trash: "文件已移入回收站。",
+};
 
 export function StorageFilesView() {
-    const { modal } = App.useApp();
     const prompt = useMessagePrompt();
     const queryClient = useQueryClient();
-    const table = useConsoleTableState();
+    const isMobile = useMobile();
+    const sessionQuery = useConsoleSession();
+    const { allowed: canView, can } = usePermission(
+        { permissions: sessionQuery.data?.uiPermissions },
+        STORAGE_FILE_PERMISSIONS.view,
+    );
+    const canDelete = can(STORAGE_FILE_PERMISSIONS.delete);
+    const canDownload = can(STORAGE_FILE_PERMISSIONS.download);
+    const canPurge = can(STORAGE_FILE_PERMISSIONS.purge);
+    const canRestore = can(STORAGE_FILE_PERMISSIONS.restore);
+    const [activeTab, setActiveTab] = useState<StorageFilesTab>("active");
+    const [storedViewMode, setViewMode] = useLocalStorage<StorageFilesViewMode>(STORAGE_FILES_VIEW_MODE_KEY, "gallery");
+    const viewMode = storedViewMode === "list" ? "list" : "gallery";
     const [selected, setSelected] = useState<StorageFile>();
-    const filesQuery = useQuery({
-        queryKey: ["console", "storage-files", table.page, table.pageSize],
-        queryFn: async () => listStorageFiles({ page: table.page, size: table.pageSize }),
+    const [downloadingName, setDownloadingName] = useState<string>();
+    const queriesEnabled = sessionQuery.isSuccess && canView;
+    const activeTotalQuery = useQuery({
+        enabled: queriesEnabled,
+        queryFn: async () => listStorageFiles({ page: 1, size: 1, state: "ACTIVE" }),
+        queryKey: [...STORAGE_FILES_TOTAL_QUERY_ROOT, "active"],
+        staleTime: STORAGE_FILES_LIST_STALE_TIME_MS,
     });
+    const trashedTotalQuery = useQuery({
+        enabled: queriesEnabled,
+        queryFn: async () => listStorageFiles({ page: 1, size: 1, state: "TRASHED" }),
+        queryKey: [...STORAGE_FILES_TOTAL_QUERY_ROOT, "trashed"],
+        staleTime: STORAGE_FILES_LIST_STALE_TIME_MS,
+    });
+    const activePagination = usePagination({ total: activeTotalQuery.data?.total ?? 0 });
+    const trashedPagination = usePagination({ total: trashedTotalQuery.data?.total ?? 0 });
+    const activeQuery = useQuery({
+        enabled: queriesEnabled,
+        placeholderData: keepPreviousData,
+        queryFn: async () =>
+            listStorageFiles({
+                page: activePagination.page,
+                size: activePagination.pageSize,
+                state: "ACTIVE",
+            }),
+        queryKey: [...STORAGE_FILES_LIST_QUERY_ROOT, "active", activePagination.page, activePagination.pageSize],
+        staleTime: STORAGE_FILES_LIST_STALE_TIME_MS,
+    });
+    const trashedQuery = useQuery({
+        enabled: queriesEnabled,
+        placeholderData: keepPreviousData,
+        queryFn: async () =>
+            listStorageFiles({
+                page: trashedPagination.page,
+                size: trashedPagination.pageSize,
+                state: "TRASHED",
+            }),
+        queryKey: [...STORAGE_FILES_LIST_QUERY_ROOT, "trashed", trashedPagination.page, trashedPagination.pageSize],
+        staleTime: STORAGE_FILES_LIST_STALE_TIME_MS,
+    });
+    const currentQuery = activeTab === "active" ? activeQuery : trashedQuery;
+
+    useEffect(() => {
+        if (viewMode !== "gallery" || !currentQuery.error) {
+            return;
+        }
+
+        prompt.error({ content: consoleErrorMessage(currentQuery.error) });
+    }, [currentQuery.error, prompt, viewMode]);
+
     const changeState = useMutation({
-        mutationFn: async ({ action, name }: { action: "purge" | "restore" | "trash"; name: string }) => {
+        mutationFn: async ({ action, file }: FileStateChange) => {
             if (action === "trash") {
-                await trashStorageFile(name);
+                await trashStorageFile(file.metadata.name);
                 return;
             }
-
             if (action === "restore") {
-                await restoreStorageFile(name);
+                await restoreStorageFile(file.metadata.name);
                 return;
             }
 
-            await purgeStorageFile(name);
+            await purgeStorageFile(file.metadata.name);
         },
-        onError: (error) => prompt.error(consoleErrorMessage(error)),
-        onSuccess: () => {
-            prompt.success("存储文件状态已更新。");
-            void queryClient.invalidateQueries({ queryKey: ["console", "storage-files"] });
+        onError: (error) => prompt.error({ content: consoleErrorMessage(error) }),
+        onSuccess: (_, variables) => {
+            prompt.success({ content: FILE_STATE_ACTION_SUCCESS[variables.action] });
+            void queryClient.invalidateQueries({ queryKey: STORAGE_FILES_LIST_QUERY_ROOT });
+            void queryClient.invalidateQueries({ queryKey: STORAGE_FILES_TOTAL_QUERY_ROOT });
         },
     });
 
+    const activeFiles = activeQuery.data?.items ?? [];
+    const trashedFiles = trashedQuery.data?.items ?? [];
+    const currentFiles = activeTab === "active" ? activeFiles : trashedFiles;
+    const currentPageLoaded = Boolean(currentQuery.data);
+    const pageImageCount = currentFiles.filter(isImageStorageFile).length;
+    const currentPageCapacity = currentFiles.reduce((total, file) => total + (file.spec.size ?? 0), 0);
+    const isSyncing =
+        activeQuery.isFetching ||
+        trashedQuery.isFetching ||
+        activeTotalQuery.isFetching ||
+        trashedTotalQuery.isFetching;
+    const overviewMetrics: ConsoleOverviewMetric[] = [
+        {
+            label: "可用文件",
+            value: formatCountOrDash(activeTotalQuery.data?.total ?? activeQuery.data?.total),
+        },
+        {
+            label: "回收站",
+            value: formatCountOrDash(trashedTotalQuery.data?.total ?? trashedQuery.data?.total),
+        },
+        { label: "本页图片", value: currentPageLoaded ? formatCountOrDash(pageImageCount) : "—" },
+        { label: "本页容量", value: currentPageLoaded ? formatBytes(currentPageCapacity) : "—" },
+    ];
+
+    const refreshFiles = () => {
+        void queryClient.invalidateQueries({ queryKey: STORAGE_FILES_LIST_QUERY_ROOT });
+        void queryClient.invalidateQueries({ queryKey: STORAGE_FILES_TOTAL_QUERY_ROOT });
+        void queryClient.invalidateQueries({ queryKey: STORAGE_FILES_DOWNLOAD_URL_QUERY_ROOT });
+    };
     const handleDownload = async (file: StorageFile) => {
+        if (!canDownload) {
+            return;
+        }
+
+        const downloadWindow = window.open("", "_blank");
+        if (!downloadWindow) {
+            prompt.error({ content: "浏览器拦截了下载窗口，请允许弹出窗口后重试。" });
+            return;
+        }
+        downloadWindow.opener = null;
+        setDownloadingName(file.metadata.name);
         try {
-            const url = await createStorageFileDownloadUrl(file.metadata.name);
+            const url = await queryClient.fetchQuery(storageFileDownloadUrlQueryOptions(file.metadata.name));
 
             if (!url) {
-                prompt.error("未获取到下载地址。");
+                downloadWindow.close();
+                prompt.error({ content: "未获取到下载地址。" });
                 return;
             }
 
-            window.open(url, "_blank", "noopener,noreferrer");
+            downloadWindow.location.replace(url);
         } catch (error) {
-            prompt.error(consoleErrorMessage(error));
+            downloadWindow.close();
+            prompt.error({ content: consoleErrorMessage(error) });
+        } finally {
+            setDownloadingName(undefined);
         }
     };
+    const confirmTrash = (file: StorageFile) => {
+        if (!canDelete) {
+            return;
+        }
 
-    const confirmPurge = (file: StorageFile) => {
-        modal.confirm({
+        confirmGlobalDialog({
             cancelText: "取消",
-            content: `确定彻底删除 ${file.spec.originalName ?? file.metadata.name} 吗？该操作不可恢复。`,
-            okButtonProps: { danger: true },
-            okText: "彻底删除",
-            onOk: () => changeState.mutateAsync({ action: "purge", name: file.metadata.name }),
+            confirmText: "移入回收站",
+            content: (
+                <>
+                    确定将 <strong>{storageFileName(file)}</strong> 移入回收站吗？
+                </>
+            ),
+            danger: true,
+            onConfirm: () => void changeState.mutateAsync({ action: "trash", file }),
+            title: "移入回收站",
+        });
+    };
+    const confirmPurge = (file: StorageFile) => {
+        if (!canPurge) {
+            return;
+        }
+
+        confirmGlobalDialog({
+            cancelText: "取消",
+            confirmText: "彻底删除",
+            content: (
+                <>
+                    确定彻底删除 <strong>{storageFileName(file)}</strong> 吗？该操作不可恢复。
+                </>
+            ),
+            danger: true,
+            onConfirm: () => void changeState.mutateAsync({ action: "purge", file }),
             title: "彻底删除文件",
         });
     };
+    const handleRestore = (file: StorageFile) => {
+        if (!canRestore) {
+            return;
+        }
 
-    const columns: TableProps<StorageFile>["columns"] = [
-        {
-            key: "originalName",
-            render: (_, file) => file.spec.originalName ?? file.metadata.name,
-            title: "文件名",
-        },
-        {
-            dataIndex: ["spec", "policy"],
-            key: "policy",
-            render: (value: string) => value ?? "—",
-            title: "存储策略",
-        },
-        {
-            dataIndex: ["spec", "size"],
-            key: "size",
-            render: (value: number) => formatBytes(value),
-            title: "大小",
-        },
-        {
-            dataIndex: ["spec", "state"],
-            key: "state",
-            render: (value: string) => stateTag(value),
-            title: "状态",
-        },
-        {
-            dataIndex: ["spec", "owner"],
-            key: "owner",
-            render: (value: string) => value ?? "—",
-            title: "所有者",
-        },
-        {
-            dataIndex: ["spec", "uploadedAt"],
-            key: "uploadedAt",
-            render: (value: string) => formatDateTime(value),
-            title: "上传时间",
-        },
-        {
-            key: "actions",
-            render: (_, file) => (
-                <Space>
-                    <Button onClick={() => setSelected(file)} size="small">
-                        详情
-                    </Button>
-                    {file.spec.state === "TRASHED" ? (
-                        <>
-                            <Button
-                                loading={changeState.isPending}
-                                onClick={() => changeState.mutate({ action: "restore", name: file.metadata.name })}
-                                size="small"
-                            >
-                                恢复
-                            </Button>
-                            <Button danger onClick={() => confirmPurge(file)} size="small">
-                                彻底删除
-                            </Button>
-                        </>
-                    ) : (
-                        <>
-                            <Button onClick={() => void handleDownload(file)} size="small">
-                                下载
-                            </Button>
-                            <Button
-                                loading={changeState.isPending}
-                                onClick={() => changeState.mutate({ action: "trash", name: file.metadata.name })}
-                                size="small"
-                            >
-                                回收站
-                            </Button>
-                        </>
-                    )}
-                </Space>
-            ),
-            title: "操作",
-        },
-    ];
+        changeState.mutate({ action: "restore", file });
+    };
+    const renderActions = (file: StorageFile) => {
+        const mutatingFile = changeState.isPending && changeState.variables?.file.metadata.name === file.metadata.name;
+
+        return (
+            <StorageFileActions
+                canDelete={canDelete}
+                canDownload={canDownload}
+                canPurge={canPurge}
+                canRestore={canRestore}
+                disabled={changeState.isPending}
+                file={file}
+                loading={mutatingFile || downloadingName === file.metadata.name}
+                onDelete={confirmTrash}
+                onDetails={setSelected}
+                onDownload={(selectedFile) => void handleDownload(selectedFile)}
+                onPurge={confirmPurge}
+                onRestore={handleRestore}
+            />
+        );
+    };
+    const renderFilesPanel = (tab: StorageFilesTab) => {
+        const query = tab === "active" ? activeQuery : trashedQuery;
+        const totalQuery = tab === "active" ? activeTotalQuery : trashedTotalQuery;
+        const files = query.data?.items ?? [];
+        const pagination = tab === "active" ? activePagination : trashedPagination;
+        const total = totalQuery.data?.total ?? query.data?.total;
+        const paginationConfig =
+            total === undefined ? false : storageFilesPaginationConfig(pagination, total, isMobile);
+
+        if (viewMode === "gallery") {
+            return (
+                <div className="flex min-w-0 flex-col gap-3">
+                    {query.error ? (
+                        <Card shadow>
+                            <Empty
+                                action={<Button onClick={() => void query.refetch()}>重试</Button>}
+                                description={consoleErrorMessage(query.error)}
+                                type="network-error"
+                            />
+                        </Card>
+                    ) : null}
+                    {!query.error || files.length > 0 ? (
+                        <StorageFilesGallery
+                            canPreview={canDownload}
+                            files={files}
+                            loading={query.isPending}
+                            renderActions={renderActions}
+                            tab={tab}
+                        />
+                    ) : null}
+                    {files.length > 0 && paginationConfig !== false ? (
+                        <div className="flex min-w-0 justify-end overflow-x-auto">
+                            <Pagination {...paginationConfig} />
+                        </div>
+                    ) : null}
+                </div>
+            );
+        }
+
+        return (
+            <StorageFilesTable
+                error={query.error}
+                files={files}
+                loading={query.isFetching}
+                onRetry={() => void query.refetch()}
+                pagination={paginationConfig}
+                renderActions={renderActions}
+                tab={tab}
+            />
+        );
+    };
+
+    if (sessionQuery.isPending) {
+        return <Skeleton animation="gradient" theme="paragraph" />;
+    }
+
+    if (sessionQuery.error) {
+        return (
+            <Empty
+                action={<Button onClick={() => void sessionQuery.refetch()}>重试</Button>}
+                description={consoleErrorMessage(sessionQuery.error)}
+                type="network-error"
+            />
+        );
+    }
+
+    if (!canView) {
+        return <Empty description="当前账号没有查看存储文件的权限。" type="fail" />;
+    }
 
     return (
         <>
-            <ConsoleTable
-                columns={columns}
-                data={filesQuery.data?.items}
-                error={filesQuery.error}
-                extra={
-                    <Button onClick={() => void filesQuery.refetch()} size="small">
-                        刷新
-                    </Button>
-                }
-                loading={filesQuery.isPending}
-                onRetry={() => void filesQuery.refetch()}
-                pagination={{ ...table.pagination, total: filesQuery.data?.total ?? 0 }}
-                rowKey={(file) => file.metadata.name}
-                title="存储文件"
-            />
-            <Modal
-                destroyOnHidden
-                footer={null}
-                onCancel={() => setSelected(undefined)}
+            <div className="flex min-w-0 flex-col gap-4">
+                <ConsolePageOverview
+                    actions={
+                        <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refreshFiles} variant="outline">
+                            刷新
+                        </Button>
+                    }
+                    icon={<FolderOpenIcon size={22} />}
+                    metrics={overviewMetrics}
+                    title="文件与回收站"
+                />
+                <Tabs
+                    action={
+                        <RadioGroup
+                            onChange={(value) => setViewMode(value === "list" ? "list" : "gallery")}
+                            options={[
+                                {
+                                    label: (
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <BrowseGalleryIcon />
+                                            图片
+                                        </span>
+                                    ),
+                                    value: "gallery",
+                                },
+                                {
+                                    label: (
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <ViewListIcon />
+                                            列表
+                                        </span>
+                                    ),
+                                    value: "list",
+                                },
+                            ]}
+                            size="small"
+                            theme="button"
+                            value={viewMode}
+                            variant="default-filled"
+                        />
+                    }
+                    list={[
+                        { label: "文件", panel: renderFilesPanel("active"), value: "active" },
+                        { label: "回收站", panel: renderFilesPanel("trashed"), value: "trashed" },
+                    ]}
+                    onChange={(value) => setActiveTab(value === "trashed" ? "trashed" : "active")}
+                    value={activeTab}
+                />
+            </div>
+            <StorageFileDetailsModal
+                canPreview={canDownload}
+                file={selected}
+                onClose={() => setSelected(undefined)}
                 open={Boolean(selected)}
-                title={selected?.spec.originalName ?? selected?.metadata.name}
-                width={720}
-            >
-                <ObjectDetails value={selected} />
-            </Modal>
+            />
         </>
     );
+}
+
+function storageFilesPaginationConfig(
+    pagination: ReturnType<typeof usePagination>,
+    total: number,
+    isMobile: boolean,
+): PaginationProps {
+    return {
+        current: pagination.page,
+        onChange: ({ current, pageSize }) => {
+            if (pageSize !== pagination.pageSize) {
+                pagination.setPageSize(pageSize);
+                return;
+            }
+
+            pagination.setPage(current);
+        },
+        pageSize: pagination.pageSize,
+        showJumper: false,
+        showPageSize: !isMobile,
+        size: isMobile ? "small" : "medium",
+        total,
+        totalContent: `共 ${total} 条`,
+    };
 }

@@ -1,7 +1,9 @@
 "use client";
 
-import { Icon } from "@iconify/react";
-import { Switch, Table, type TableProps, Tag, Tooltip, theme } from "antd";
+import { Switch, Table, Tag, Tooltip } from "tdesign-react";
+import type { TableProps } from "tdesign-react";
+
+import { MenuIcon } from "@/components/ui";
 
 import {
     type RoleCatalogIndex,
@@ -19,6 +21,10 @@ type RoleMenuPermissionsProps = {
     editable: boolean;
     index: RoleCatalogIndex;
     onChange: (draft: RolePermissionDraft) => void;
+};
+
+type MenuRow = RoleMenuEntry & {
+    __rowKey: string;
 };
 
 export function RoleMenuPermissions({
@@ -59,119 +65,101 @@ type MenuPermissionTableProps = {
 };
 
 function MenuPermissionTable({ allowedPermissions, draft, editable, entries, onChange }: MenuPermissionTableProps) {
-    const columns: TableProps<RoleMenuEntry>["columns"] = [
+    const rows: MenuRow[] = entries.map((entry) => ({
+        ...entry,
+        __rowKey: `${entry.workspace.id ?? entry.workspace.name}:${entry.menu.key}`,
+    }));
+    const columns: NonNullable<TableProps<MenuRow>["columns"]> = [
         {
-            key: "menu",
-            render: (_, entry) => <MenuIdentity entry={entry} />,
+            cell: ({ row }) => <MenuIdentity entry={row} />,
+            colKey: "menu",
             title: "菜单",
         },
         {
-            key: "permission",
-            render: (_, entry) => <MenuPermissionIdentifiers entry={entry} />,
+            cell: ({ row }) => <MenuPermissionIdentifiers entry={row} />,
+            colKey: "permission",
             title: "权限标识",
             width: 190,
         },
         {
-            align: "center",
-            key: "view",
-            render: (_, entry) => (
+            cell: ({ row }) => (
                 <MenuViewSwitch
                     allowedPermissions={allowedPermissions}
                     draft={draft}
                     editable={editable}
-                    entry={entry}
+                    entry={row}
                     onChange={onChange}
                 />
             ),
+            colKey: "view",
             title: "访问",
             width: 76,
         },
         {
-            align: "center",
-            key: "manage",
-            render: (_, entry) => (
+            cell: ({ row }) => (
                 <MenuManageSwitch
                     allowedPermissions={allowedPermissions}
                     draft={draft}
                     editable={editable}
-                    entry={entry}
+                    entry={row}
                     onChange={onChange}
                 />
             ),
+            colKey: "manage",
             title: "管理",
             width: 76,
         },
     ];
 
-    return (
-        <Table<RoleMenuEntry>
-            columns={columns}
-            dataSource={entries}
-            pagination={false}
-            rowKey={(entry) => `${entry.workspace.id ?? entry.workspace.name}:${entry.menu.key}`}
-            scroll={{ x: 520 }}
-            tableLayout="fixed"
-        />
-    );
+    return <Table<MenuRow> columns={columns} data={rows} rowKey="__rowKey" tableLayout="fixed" />;
 }
 
 function MenuIdentity({ entry }: { entry: RoleMenuEntry }) {
-    const { token } = theme.useToken();
     const description = entry.menu.description || entry.menu.parent || entry.menu.group || entry.menu.key;
 
     return (
         <div className="flex min-w-0 items-center gap-2.5">
-            <span
-                className="flex size-7 shrink-0 items-center justify-center rounded-md"
-                style={{ background: token.colorFillTertiary, color: token.colorTextSecondary }}
-            >
-                <Icon icon={entry.menu.icon || "lucide:panel-top"} width={15} />
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-[var(--td-bg-color-component)] text-[var(--td-text-color-secondary)]">
+                <MenuIcon icon={entry.menu.icon} size={15} />
             </span>
             <div className="min-w-0">
                 <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                     <span className="truncate text-sm font-medium">{entry.menu.label ?? entry.menu.key}</span>
                     {entry.menu.publicMenu ? (
-                        <Tag className="!m-0" color="cyan">
+                        <Tag theme="primary" variant="light">
                             公开
                         </Tag>
                     ) : null}
                 </div>
-                <Tooltip title={description}>
-                    <div className="truncate text-[11px]" style={{ color: token.colorTextTertiary }}>
-                        {description}
-                    </div>
-                </Tooltip>
+                {description ? (
+                    <Tooltip content={description}>
+                        <div className="truncate text-[11px] text-[var(--td-text-color-placeholder)]">
+                            {description}
+                        </div>
+                    </Tooltip>
+                ) : null}
             </div>
         </div>
     );
 }
 
 function MenuPermissionIdentifiers({ entry }: { entry: RoleMenuEntry }) {
-    const { token } = theme.useToken();
     const permissions = [
         entry.view?.permission ? { label: "访问", value: entry.view.permission } : undefined,
         entry.manage?.permission ? { label: "管理", value: entry.manage.permission } : undefined,
     ].filter((item): item is { label: string; value: string } => Boolean(item));
 
     if (permissions.length === 0) {
-        return (
-            <span className="font-mono text-[10px]" style={{ color: token.colorTextTertiary }}>
-                —
-            </span>
-        );
+        return <span className="font-mono text-[10px] text-[var(--td-text-color-placeholder)]">未配置</span>;
     }
 
     return (
         <div className="flex min-w-0 flex-col gap-0.5">
             {permissions.map((permission) => (
-                <Tooltip key={permission.value} title={permission.value}>
+                <Tooltip content={permission.value} key={permission.value}>
                     <div className="flex min-w-0 gap-1.5 font-mono text-[10px]">
-                        <span className="shrink-0" style={{ color: token.colorTextTertiary }}>
-                            {permission.label}
-                        </span>
-                        <span className="truncate" style={{ color: token.colorTextSecondary }}>
-                            {permission.value}
-                        </span>
+                        <span className="shrink-0 text-[var(--td-text-color-placeholder)]">{permission.label}</span>
+                        <span className="truncate text-[var(--td-text-color-secondary)]">{permission.value}</span>
                     </div>
                 </Tooltip>
             ))}
@@ -202,14 +190,14 @@ function MenuViewSwitch({ allowedPermissions, draft, editable, entry, onChange }
             : undefined;
 
     return (
-        <Tooltip title={tooltip}>
+        <Tooltip content={tooltip}>
             <span>
                 <Switch
                     aria-label="访问"
-                    checked={checked}
                     disabled={disabled}
-                    onChange={(nextChecked) => setView(entry, nextChecked, checked, draft, onChange)}
+                    onChange={(value) => setView(entry, value === true, checked, draft, onChange)}
                     size="small"
+                    value={checked}
                 />
             </span>
         </Tooltip>
@@ -224,14 +212,14 @@ function MenuManageSwitch({ allowedPermissions, draft, editable, entry, onChange
     const tooltip = !managePermission ? "该菜单没有独立的管理权限" : !canGrant ? "当前账号无权授予该权限" : undefined;
 
     return (
-        <Tooltip title={tooltip}>
+        <Tooltip content={tooltip}>
             <span>
                 <Switch
                     aria-label="管理"
-                    checked={checked}
                     disabled={disabled}
-                    onChange={(nextChecked) => setManage(entry, nextChecked, draft, onChange)}
+                    onChange={(value) => setManage(entry, value === true, draft, onChange)}
                     size="small"
+                    value={checked}
                 />
             </span>
         </Tooltip>

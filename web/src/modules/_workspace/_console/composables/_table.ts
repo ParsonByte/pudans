@@ -1,6 +1,6 @@
 "use client";
 
-import type { TablePaginationConfig } from "antd";
+import type { PaginationProps } from "tdesign-react";
 
 import { useTableUrlState } from "@/hooks/table/use-table-url-state";
 import { useMobile } from "@/hooks/ui/use-mobile";
@@ -12,20 +12,19 @@ export function useConsoleTableState(defaultPageSize = 20) {
     const pageSize = state.pagination.pageSize;
     const keyword = state.filters.keyword ?? "";
 
-    const pagination: TablePaginationConfig = {
+    const pagination: PaginationProps = {
         current: page,
         pageSize,
-        showLessItems: isMobile,
-        showSizeChanger: !isMobile,
-        showTotal: (total) => `共 ${total} 条`,
-        size: isMobile ? "small" : undefined,
-        onChange: (nextPage, nextPageSize) => {
-            if (nextPageSize !== pageSize) {
-                state.setPageSize(nextPageSize);
+        showJumper: false,
+        showPageSize: !isMobile,
+        size: isMobile ? "small" : "medium",
+        onChange: (pageInfo) => {
+            if (pageInfo.pageSize !== pageSize) {
+                state.setPageSize(pageInfo.pageSize);
                 return;
             }
 
-            state.setPage(nextPage);
+            state.setPage(pageInfo.current);
         },
     };
 

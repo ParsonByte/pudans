@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 
 import type { CaptchaChallenge } from "@pudans-dev/api-client";
-import { Button, Flex, Form, Image, Input } from "antd";
-import { RefreshCw, ShieldCheck } from "lucide-react";
+import { RefreshIcon, SecuredIcon } from "tdesign-icons-react";
+import { Button, Form, Image, Input, Tooltip } from "tdesign-react";
+
+const { FormItem } = Form;
 
 type CaptchaFieldProps = {
     challenge: CaptchaChallenge;
@@ -39,53 +41,54 @@ export function CaptchaField({
                 : "请输入图片中的字符。"
             : extra;
     const image = challenge.image ? (
-        <Image alt="图片验证码" height={60} preview={false} src={challenge.image} width={180} />
+        <Image alt="图片验证码" className="h-[60px] w-[180px] rounded-lg" fit="contain" src={challenge.image} />
     ) : null;
     const answerInput = (
         <Input
-            autoComplete="off"
-            autoFocus={autoFocus}
+            autocomplete="off"
+            autofocus={autoFocus}
             className={stacked ? "w-full" : "max-w-40"}
-            onChange={(event) => onAnswerChange(event.target.value)}
+            onChange={(value) => onAnswerChange(String(value ?? ""))}
             placeholder={stacked ? "请输入图片验证码" : "输入验证码"}
-            prefix={stacked ? <ShieldCheck className="size-4 text-neutral-400" /> : undefined}
+            prefixIcon={stacked ? <SecuredIcon /> : undefined}
             spellCheck={false}
             value={answer}
         />
     );
     const refreshButton = (
-        <Button
-            aria-label="换一张验证码"
-            icon={<RefreshCw className="size-4" />}
-            loading={refreshing}
-            onClick={onRefresh}
-            shape={stacked ? "circle" : "default"}
-            size={stacked ? "large" : "middle"}
-            title="换一张验证码"
-        />
+        <Tooltip content="换一张验证码">
+            <Button
+                aria-label="换一张验证码"
+                icon={<RefreshIcon />}
+                loading={refreshing}
+                onClick={onRefresh}
+                shape={stacked ? "circle" : "rectangle"}
+                size={stacked ? "large" : "medium"}
+            />
+        </Tooltip>
     );
 
     return (
-        <Form.Item extra={resolvedExtra} label={resolvedLabel}>
+        <FormItem help={resolvedExtra} label={resolvedLabel}>
             {stacked ? (
-                <Flex gap={12} vertical>
-                    <Flex align="center" gap={12} justify="center">
+                <div className="flex flex-col gap-3">
+                    <div className="flex items-center justify-center gap-3">
                         {image ? (
-                            <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+                            <div className="overflow-hidden rounded-xl border border-[var(--td-border-level-1-color)] bg-[var(--td-bg-color-container)]">
                                 {image}
                             </div>
                         ) : null}
                         {refreshButton}
-                    </Flex>
+                    </div>
                     {answerInput}
-                </Flex>
+                </div>
             ) : (
-                <Flex align="center" gap={8} wrap>
+                <div className="flex flex-wrap items-center gap-2">
                     {image}
                     {answerInput}
                     {refreshButton}
-                </Flex>
+                </div>
             )}
-        </Form.Item>
+        </FormItem>
     );
 }

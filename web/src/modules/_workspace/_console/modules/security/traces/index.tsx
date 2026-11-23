@@ -1,145 +1,382 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { type AuditTraceSummary, apiClient } from "@pudans-dev/api-client";
-import { useQuery } from "@tanstack/react-query";
-import { Button, Input, Modal, Select, Space, type TableProps } from "antd";
+import { type AuditSessionSummary, apiClient } from "@pudans-dev/api-client";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { HistoryIcon, RefreshIcon } from "tdesign-icons-react";
+import { Button, Empty, Select, Skeleton, Tag, Tooltip } from "tdesign-react";
+import type { TableProps } from "tdesign-react";
 
-import { ResultTag } from "@/components/ui";
+import { GlobalDialog, ResultTag, SectionCard } from "@/components/ui";
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { useQueryParams } from "@/hooks/utils/use-query-params";
 
+import { ActorRanking } from "../../../components/actor-ranking";
+import { AuditTrendChart } from "../../../components/audit-trend-chart";
 import { ConsoleTable } from "../../../components/console-table";
-import { ObjectDetails } from "../../../components/object-details";
-import { formatDateTime, formatDuration } from "../../../composables/_format";
+import { CopyableIdentifier } from "../../../components/copyable-identifier";
+import { DurationBucketChart } from "../../../components/duration-bucket-chart";
+import { OperationRanking } from "../../../components/operation-ranking";
+import { ResultBreakdown } from "../../../components/result-breakdown";
+import { SessionMetricGrid } from "../../../components/session-metric-grid";
+import { SessionPath } from "../../../components/session-path";
+import { TraceWaterfall } from "../../../components/trace-waterfall";
+import { WeekHourHeatmap } from "../../../components/week-hour-heatmap";
+import { consoleErrorMessage } from "../../../composables/_errors";
+import { formatCount, formatDateTime, formatDuration, operationLabel } from "../../../composables/_format";
+import { DASHBOARD_RANGES, type DashboardRange } from "../../../composables/_range";
+import { RESULT_OPTIONS } from "../../../composables/_results";
 import { useConsoleTableState } from "../../../composables/_table";
+import { useDashboardTheme } from "../../overview/dashboard/composables/_theme";
+import { SecuritySearchInput } from "../components/security-search-input";
 
-const RESULT_OPTIONS = [
-    { label: "成功", value: "SUCCESS" },
-    { label: "失败", value: "FAILURE" },
-];
+const OPERATION_LIMIT = 2;
+
+type SessionRow = AuditSessionSummary & {
+    rowId: string;
+};
 
 export function TracesView() {
     const table = useConsoleTableState();
-    const [selected, setSelected] = useState<AuditTraceSummary>();
+    const prompt = useMessagePrompt();
+    const { setParams } = useQueryParams();
+    const { token } = useDashboardTheme();
+    const [range, setRange] = useState<DashboardRange>(7);
+    const [selectedSession, setSelectedSession] = useState<AuditSessionSummary>();
     const uid = table.filters.uid ?? "";
     const operation = table.filters.operation ?? "";
     const result = table.filters.result ?? "";
-    const tracesQuery = useQuery({
-        queryKey: ["console", "traces", table.page, table.pageSize, uid, operation, result],
-        queryFn: async () =>
-            (
-                await apiClient.auditLog.listAuditTraceFlows({
+    const overviewQuery = useQuery({
+        placeholderData: keepPreviousData,
+        queryFn: async () => (await apiClient.auditLog.getAuditOverview({ days: range })).data,
+        queryKey: ["console", "traces", "overview", range],
+        refetchInterval: 60_000,
+        staleTime: 30_000,
+    });
+    const sessionsQuery = useQuery({
+        placeholderData: keepPreviousData,
+        queryFn: async () => {
+            const from = new Date(Date.now() - range * 86_400_000).toISOString();
+
+            return (
+                await apiClient.auditLog.listAuditSessions({
+                    from,
                     operation: operation || undefined,
                     page: table.page,
                     result: result || undefined,
                     size: table.pageSize,
                     uid: uid || undefined,
                 })
-            ).data,
+            ).data;
+        },
+        queryKey: ["console", "traces", "sessions", table.page, table.pageSize, uid, operation, result, range],
     });
+    const detailQuery = useQuery({
+        enabled: Boolean(selectedSession?.sessionId),
+        queryFn: async () =>
+            (await apiClient.auditLog.replayAuditSession({ sessionId: selectedSession?.sessionId ?? "" })).data,
+        queryKey: ["console", "traces", "session", selectedSession?.sessionId],
+    });
+    const sessionPage = sessionsQuery.data;
+    const sessionRows = useMemo<SessionRow[]>(
+        () =>
+            (sessionPage?.items ?? []).map((session, index) => ({
+                ...session,
+                rowId: session.sessionId ?? `${session.uid ?? "session"}:${session.start ?? "unknown"}:${index}`,
+            })),
+        [sessionPage?.items],
+    );
+    const isSyncing = overviewQuery.isFetching || sessionsQuery.isFetching;
+    const loadError = sessionsQuery.error ?? overviewQuery.error;
+    const refresh = () => {
+        void Promise.all([overviewQuery.refetch(), sessionsQuery.refetch()]);
+    };
+    const openReplay = (sessionId?: string) => {
+        if (!sessionId) {
+            return;
+        }
 
-    const columns: TableProps<AuditTraceSummary>["columns"] = [
-        { dataIndex: "traceFlowId", key: "traceFlowId", title: "链路 ID" },
-        { dataIndex: "uid", key: "uid", title: "用户" },
+        setParams({ flow: null, security: "replay", session: sessionId });
+    };
+
+    useEffect(() => {
+        if (loadError) {
+            prompt.error({ content: consoleErrorMessage(loadError) });
+        }
+    }, [loadError, prompt]);
+
+    useEffect(() => {
+        if (sessionPage?.truncated) {
+            prompt.warning({ content: "会话列表达到扫描上限，请缩小时间范围后重新查看。" });
+        }
+    }, [prompt, sessionPage?.truncated]);
+
+    const columns: TableProps<SessionRow>["columns"] = [
         {
-            dataIndex: "status",
-            key: "status",
-            render: (value: string) => <ResultTag result={value} />,
-            title: "状态",
-        },
-        {
-            dataIndex: "spanCount",
-            key: "spanCount",
-            render: (value: number) => value ?? 0,
-            title: "步骤数",
-        },
-        {
-            dataIndex: "durationMs",
-            key: "durationMs",
-            render: (value: number) => formatDuration(value),
-            title: "耗时",
-        },
-        {
-            dataIndex: "start",
-            key: "start",
-            render: (value: string) => formatDateTime(value),
-            title: "开始时间",
-        },
-        {
-            dataIndex: "end",
-            key: "end",
-            render: (value: string) => formatDateTime(value),
-            title: "结束时间",
-        },
-        {
-            key: "actions",
-            render: (_, record) => (
-                <Button onClick={() => setSelected(record)} size="small">
-                    详情
-                </Button>
+            cell: ({ row }) => (
+                <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">{row.username ?? "未命名用户"}</div>
+                    <CopyableIdentifier className="mt-0.5 text-[11px]" value={row.uid} />
+                </div>
             ),
+            colKey: "username",
+            title: "用户",
+            width: 190,
+        },
+        {
+            cell: ({ row }) => (
+                <SessionPath entryPath={row.entryPath} exitPath={row.exitPath} pageCount={row.pageCount} />
+            ),
+            colKey: "route",
+            title: "会话路径",
+            width: 360,
+        },
+        {
+            cell: ({ row }) => (
+                <div className="flex flex-wrap gap-1">
+                    <Tag theme="primary" variant="light">
+                        {formatCount(row.pageCount)} 页
+                    </Tag>
+                    <Tag theme="success" variant="light">
+                        {formatCount(row.actionCount)} 操作
+                    </Tag>
+                    <Tooltip content={`会话共 ${formatCount(row.recordCount)} 条审计记录`}>
+                        <Tag>{formatCount(row.recordCount)} 记录</Tag>
+                    </Tooltip>
+                </div>
+            ),
+            colKey: "steps",
+            title: "会话构成",
+            width: 190,
+        },
+        {
+            cell: ({ row }) => <ResultTag result={row.status} />,
+            colKey: "status",
+            title: "结果",
+            width: 90,
+        },
+        {
+            cell: ({ row }) => (
+                <span className="text-xs whitespace-nowrap tabular-nums" style={{ color: token.colorTextSecondary }}>
+                    {formatDateTime(row.start)}
+                </span>
+            ),
+            colKey: "start",
+            title: "开始时间",
+            width: 168,
+        },
+        {
+            cell: ({ row }) => formatDuration(row.durationMs),
+            colKey: "durationMs",
+            title: "耗时",
+            width: 96,
+        },
+        {
+            cell: ({ row }) => {
+                const operations = row.operations ?? [];
+
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {operations.slice(0, OPERATION_LIMIT).map((item) => (
+                            <Tag key={item}>{operationLabel(item)}</Tag>
+                        ))}
+                        {operations.length > OPERATION_LIMIT ? (
+                            <Tooltip content={operations.slice(OPERATION_LIMIT).map(operationLabel).join("、")}>
+                                <Tag>+{operations.length - OPERATION_LIMIT}</Tag>
+                            </Tooltip>
+                        ) : null}
+                        {operations.length === 0 ? "—" : null}
+                    </div>
+                );
+            },
+            colKey: "operations",
             title: "操作",
+            width: 180,
+        },
+        {
+            cell: ({ row }) =>
+                row.archived ? (
+                    <Tag theme="warning" variant="light">
+                        含归档
+                    </Tag>
+                ) : (
+                    <Tag>活跃</Tag>
+                ),
+            colKey: "archived",
+            title: "来源",
+            width: 90,
+        },
+        {
+            cell: ({ row }) => (
+                <div className="flex items-center gap-1">
+                    <Button onClick={() => setSelectedSession(row)} size="small">
+                        展开
+                    </Button>
+                    <Button
+                        disabled={!row.sessionId}
+                        icon={<HistoryIcon />}
+                        onClick={() => openReplay(row.sessionId)}
+                        size="small"
+                        theme="primary"
+                        variant="text"
+                    >
+                        回溯
+                    </Button>
+                </div>
+            ),
+            colKey: "actions",
+            title: "操作",
+            width: 132,
         },
     ];
 
     return (
-        <>
+        <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+                <Select
+                    onChange={(value) => {
+                        setRange(value as DashboardRange);
+                        table.setPage(1);
+                    }}
+                    options={DASHBOARD_RANGES}
+                    style={{ width: 132 }}
+                    value={range}
+                />
+                <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
+                    刷新
+                </Button>
+                <Button icon={<HistoryIcon />} onClick={() => setParams({ security: "replay" })}>
+                    回溯与归档
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+                <SessionMetricGrid loading={sessionsQuery.isPending} page={sessionPage} />
+
+                <div className="md:col-span-2 xl:col-span-7">
+                    <SectionCard title="审计请求趋势">
+                        <AuditTrendChart points={overviewQuery.data?.timeline} />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-5">
+                    <SectionCard title="7×24 审计热力图">
+                        <WeekHourHeatmap
+                            cells={overviewQuery.data?.heatmap}
+                            count={(cell) => cell.records}
+                            countUnit="条"
+                            emptyText="暂无审计热力图数据"
+                            tone="blue"
+                            valueLabel="审计记录"
+                        />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-7">
+                    <SectionCard title="操作分布">
+                        <OperationRanking
+                            operations={overviewQuery.data?.operations}
+                            totalRecords={overviewQuery.data?.summary?.records}
+                        />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-5">
+                    <SectionCard title="结果分布">
+                        <ResultBreakdown results={overviewQuery.data?.results} />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-6">
+                    <SectionCard title="请求耗时分布">
+                        <DurationBucketChart
+                            buckets={overviewQuery.data?.durations}
+                            emptyText="暂无耗时分布"
+                            title="请求耗时区间"
+                            valueLabel="条记录"
+                        />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-6">
+                    <SectionCard title="活跃用户">
+                        <ActorRanking actors={overviewQuery.data?.actors} />
+                    </SectionCard>
+                </div>
+            </div>
+
             <ConsoleTable
                 columns={columns}
-                data={tracesQuery.data?.items}
-                error={tracesQuery.error}
+                data={sessionRows}
+                error={sessionsQuery.error}
                 extra={
-                    <Button onClick={() => void tracesQuery.refetch()} size="small">
+                    <Button
+                        loading={sessionsQuery.isFetching}
+                        onClick={() => void sessionsQuery.refetch()}
+                        size="small"
+                    >
                         刷新
                     </Button>
                 }
-                loading={tracesQuery.isPending}
-                onRetry={() => void tracesQuery.refetch()}
-                pagination={{ ...table.pagination, total: tracesQuery.data?.total ?? 0 }}
-                rowKey={(record) => record.traceFlowId ?? ""}
-                title="链路"
+                loading={sessionsQuery.isPending}
+                onRetry={() => void sessionsQuery.refetch()}
+                pagination={{ ...table.pagination, total: sessionPage?.total ?? 0 }}
+                rowKey="rowId"
+                title="用户会话链路"
                 toolbar={
-                    <Space className="w-full sm:w-auto" wrap>
-                        <Input.Search
-                            allowClear
-                            className="w-full sm:w-[200px]"
-                            defaultValue={uid}
-                            key={`uid:${uid}`}
-                            onSearch={(value) => table.setFilter("uid", value.trim() || null)}
-                            placeholder="用户 UID"
-                        />
-                        <Input.Search
-                            allowClear
-                            className="w-full sm:w-[200px]"
-                            defaultValue={operation}
-                            key={`operation:${operation}`}
-                            onSearch={(value) => table.setFilter("operation", value.trim() || null)}
-                            placeholder="操作名称"
-                        />
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <div className="min-w-0 flex-1 sm:max-w-[220px]">
+                            <SecuritySearchInput
+                                onChange={() => undefined}
+                                onSearch={(value) => table.setFilter("uid", value || null)}
+                                placeholder="用户 UID"
+                                value={uid}
+                            />
+                        </div>
+                        <div className="min-w-0 flex-1 sm:max-w-[220px]">
+                            <SecuritySearchInput
+                                onChange={() => undefined}
+                                onSearch={(value) => table.setFilter("operation", value || null)}
+                                placeholder="会话内的操作"
+                                value={operation}
+                            />
+                        </div>
                         <Select
-                            allowClear
-                            className="w-full sm:w-36"
-                            onChange={(value) => table.setFilter("result", value ?? null)}
+                            clearable
+                            onChange={(value) => table.setFilter("result", (value as string | undefined) ?? null)}
                             options={RESULT_OPTIONS}
-                            placeholder="状态"
+                            placeholder="会话结果"
+                            style={{ width: 144 }}
                             value={result || undefined}
                         />
-                        <Button className="w-full sm:w-auto" onClick={() => table.reset()}>
-                            重置
-                        </Button>
-                    </Space>
+                        <Button onClick={() => table.reset()}>重置</Button>
+                    </div>
                 }
             />
-            <Modal
-                destroyOnHidden
-                footer={null}
-                onCancel={() => setSelected(undefined)}
-                open={Boolean(selected)}
-                title={selected?.traceFlowId}
-                width={720}
+
+            <GlobalDialog
+                footer={false}
+                onClose={() => setSelectedSession(undefined)}
+                open={Boolean(selectedSession)}
+                title={`用户会话 · ${selectedSession?.username ?? selectedSession?.uid ?? ""}`}
+                width={1120}
             >
-                <ObjectDetails value={selected} />
-            </Modal>
-        </>
+                {detailQuery.isPending ? (
+                    <Skeleton theme="paragraph" />
+                ) : detailQuery.isError ? (
+                    <Empty
+                        action={
+                            <Button loading={detailQuery.isFetching} onClick={() => void detailQuery.refetch()}>
+                                重试
+                            </Button>
+                        }
+                        description={consoleErrorMessage(detailQuery.error)}
+                        type="network-error"
+                    />
+                ) : (
+                    <TraceWaterfall
+                        key={detailQuery.data?.session?.sessionId}
+                        session={detailQuery.data?.session ?? selectedSession}
+                        steps={detailQuery.data?.steps}
+                    />
+                )}
+            </GlobalDialog>
+        </div>
     );
 }

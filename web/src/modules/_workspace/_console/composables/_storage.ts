@@ -7,6 +7,7 @@ type ExtensionMeta = {
     creationTimestamp?: string;
     labels?: Record<string, string>;
     name: string;
+    version?: number;
 };
 
 export type ExtensionList<T> = {
@@ -16,21 +17,58 @@ export type ExtensionList<T> = {
     total?: number;
 };
 
+export type StoragePolicyType = "local" | "s3" | "ks3" | "oss" | "cos" | "obs" | "qiniu" | "upyun" | "onedrive";
+
+export type StoragePolicyTypeDescriptor = {
+    capabilities?: string[];
+    credentialsRequired: boolean;
+    description: string;
+    displayName: string;
+    type: StoragePolicyType;
+};
+
+export type StoragePolicyValidationResult = {
+    errors: string[];
+    valid: boolean;
+};
+
 export type StoragePolicy = {
     apiVersion: string;
     kind: string;
     metadata: ExtensionMeta;
     spec: {
         bucketName?: string;
+        chunkSize?: number;
+        credentials?: {
+            accessKey?: string;
+            clientSecret?: string;
+            secretKey?: string;
+            token?: string;
+        };
         defaultPolicy?: boolean;
         description?: string;
         displayName?: string;
+        dirNameRule?: string;
+        fileNameRule?: string;
+        fileTypeDenyList?: boolean;
+        fileTypes?: string[];
         maxSize?: number;
+        nameRegexp?: string;
+        nameRegexpDenyList?: boolean;
         privateBucket?: boolean;
+        proxyDownload?: boolean;
         server?: string;
-        type?: string;
+        settings?: {
+            deleteBatchSize?: number;
+            driveId?: string;
+            region?: string;
+            s3PathStyle?: boolean;
+            tenantId?: string;
+        };
+        type?: StoragePolicyType;
     };
     status?: {
+        credentialConfigured?: Record<string, boolean>;
         lastTestedAt?: string;
         message?: string;
         ready?: boolean;
@@ -51,6 +89,7 @@ export type StorageFile = {
         size?: number;
         state?: string;
         trashedAt?: string;
+        trashExpiresAt?: string;
         uploadedAt?: string;
     };
 };
@@ -63,12 +102,37 @@ export async function listStoragePolicies(params: {
     return (await axiosInstance.get<ExtensionList<StoragePolicy>>(`${API_ROOT}/storagepolicies`, { params })).data;
 }
 
+export async function listStoragePolicyTypes(): Promise<StoragePolicyTypeDescriptor[]> {
+    return (await axiosInstance.get<StoragePolicyTypeDescriptor[]>(`${API_ROOT}/storagepolicies/-/types`)).data;
+}
+
+export async function validateStoragePolicy(policy: StoragePolicy): Promise<StoragePolicyValidationResult> {
+    return (await axiosInstance.post<StoragePolicyValidationResult>(`${API_ROOT}/storagepolicies/-/validate`, policy))
+        .data;
+}
+
+export async function createStoragePolicy(policy: StoragePolicy): Promise<StoragePolicy> {
+    return (await axiosInstance.post<StoragePolicy>(`${API_ROOT}/storagepolicies`, policy)).data;
+}
+
 export async function deleteStoragePolicy(name: string): Promise<void> {
     await axiosInstance.delete(`${API_ROOT}/storagepolicies/${encodeURIComponent(name)}`);
 }
 
-export async function listStorageFiles(params: { page?: number; size?: number }): Promise<ExtensionList<StorageFile>> {
-    return (await axiosInstance.get<ExtensionList<StorageFile>>(`${API_ROOT}/storagefiles`, { params })).data;
+export async function listStorageFiles(params: {
+    page?: number;
+    size?: number;
+    state?: "ACTIVE" | "TRASHED";
+}): Promise<ExtensionList<StorageFile>> {
+    return (
+        await axiosInstance.get<ExtensionList<StorageFile>>(`${API_ROOT}/storagefiles`, {
+            params: {
+                page: params.page,
+                size: params.size,
+                fieldSelector: params.state ? [`spec.state=${params.state}`] : undefined,
+            },
+        })
+    ).data;
 }
 
 export async function createStorageFileDownloadUrl(name: string): Promise<string> {

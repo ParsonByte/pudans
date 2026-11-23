@@ -1,21 +1,26 @@
+import type { ComponentType } from "react";
+
 import type {
     DashboardOverview as GeneratedDashboardOverview,
     LoginTrendPoint,
     RoleUserCount,
 } from "@pudans-dev/api-client";
 import {
-    Activity,
-    LogIn,
-    type LucideIcon,
-    MousePointerClick,
-    ShieldCheck,
-    TrendingUp,
-    TriangleAlert,
-    UserPlus,
-    Users,
-} from "lucide-react";
+    ActivityIcon,
+    CursorIcon,
+    ErrorTriangleIcon,
+    LoginIcon,
+    SecuredIcon,
+    TrendingUpIcon,
+    UserAddIcon,
+    UsergroupIcon,
+} from "tdesign-icons-react";
+import type { IconProps } from "tdesign-icons-react";
 
+import { formatCount, operationLabel } from "../../../../composables/_format";
 import type { DashboardTone } from "./_theme";
+
+export { formatCount, operationLabel };
 
 export type DashboardRange = 7 | 30 | 90;
 
@@ -55,7 +60,7 @@ export type MetricFormat = "number" | "percent";
 
 export type MetricDefinition = {
     format: MetricFormat;
-    icon: LucideIcon;
+    icon: ComponentType<IconProps>;
     label: string;
     lowerIsBetter?: boolean;
     tone: DashboardTone;
@@ -81,60 +86,54 @@ export const DASHBOARD_METRIC_ORDER = [
 export const DASHBOARD_METRICS: Record<string, MetricDefinition> = {
     activeUsers: {
         format: "number",
-        icon: Activity,
+        icon: ActivityIcon,
         label: "活跃用户",
         tone: "blue",
     },
     abnormalOperations: {
         format: "number",
-        icon: TriangleAlert,
+        icon: ErrorTriangleIcon,
         label: "异常操作",
         lowerIsBetter: true,
         tone: "red",
     },
     loginSuccess: {
         format: "number",
-        icon: LogIn,
+        icon: LoginIcon,
         label: "登录成功",
         tone: "green",
     },
     loginSuccessRate: {
         format: "percent",
-        icon: TrendingUp,
+        icon: TrendingUpIcon,
         label: "登录成功率",
         tone: "purple",
     },
     newUsers: {
         format: "number",
-        icon: UserPlus,
+        icon: UserAddIcon,
         label: "新增用户",
         tone: "magenta",
     },
     operations: {
         format: "number",
-        icon: MousePointerClick,
+        icon: CursorIcon,
         label: "操作总数",
         tone: "orange",
     },
     riskRules: {
         format: "number",
-        icon: ShieldCheck,
+        icon: SecuredIcon,
         label: "风险规则",
         tone: "geekblue",
     },
     users: {
         format: "number",
-        icon: Users,
+        icon: UsergroupIcon,
         label: "用户总数",
         tone: "gold",
     },
 };
-
-const COUNT_FORMATTER = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
-
-export function formatCount(value?: number | null): string {
-    return COUNT_FORMATTER.format(value ?? 0);
-}
 
 export function formatMetricValue(value: number, format: MetricFormat): string {
     return format === "percent" ? `${value.toFixed(1)}%` : formatCount(value);
@@ -203,16 +202,6 @@ export function mergeActivityTrend(overview: DashboardData): ActivityTrendPoint[
     }));
 }
 
-export function formatTrendDate(date?: string): string {
-    if (!date) {
-        return "—";
-    }
-
-    const [, month, day] = date.split("-");
-
-    return month && day ? `${Number(month)}月${Number(day)}日` : date;
-}
-
 export type RoleSlice = Omit<RoleUserCount, "displayName" | "role" | "users"> & {
     color: string;
     displayName: string;
@@ -278,7 +267,7 @@ export function resultTone(result: string): { label: string; tone: DashboardTone
     }
 
     if (result === "DENIED") {
-        return { label: "拒绝", tone: "gold" };
+        return { label: "拒绝", tone: "warning" };
     }
 
     return { label: "失败", tone: "red" };
@@ -290,36 +279,4 @@ export function userLabel(name?: string | null): string {
     }
 
     return name === "unknown" ? "未知用户" : name;
-}
-
-export function operationLabel(operation: string): string {
-    const labels: Record<string, string> = {
-        AUDIT_QUERY: "审计查询",
-        BIND: "绑定",
-        CREATE: "创建",
-        DELETE: "删除",
-        LOGIN: "登录",
-        LOGOUT: "退出登录",
-        NAVIGATION: "导航访问",
-        PASSKEY: "通行密钥",
-        PAT_CREATE: "创建访问令牌",
-        PAT_DENIED: "访问令牌拒绝",
-        PAT_REVOKE: "吊销访问令牌",
-        READ: "读取",
-        RISK_BLOCKED: "风险拦截",
-        RISK_UNBAN: "解除封禁",
-        TEMP_ROLE_APPLY: "申请临时角色",
-        TEMP_ROLE_EXPIRE: "临时角色过期",
-        TEMP_ROLE_GRANT: "授予临时角色",
-        TEMP_ROLE_REVOKE: "收回临时角色",
-        TOTP_BIND: "绑定动态口令",
-        TOTP_LOGIN_FAILED: "动态口令登录失败",
-        TOTP_LOGIN_SUCCESS: "动态口令登录成功",
-        TOTP_UNBIND: "解绑动态口令",
-        UPDATE: "更新",
-        USER_CREATE: "创建用户",
-        WEBHOOK_DELIVER: "投递 Webhook",
-    };
-
-    return labels[operation] ?? operation;
 }

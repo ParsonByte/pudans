@@ -2,24 +2,21 @@
 
 import { useMemo, useState } from "react";
 
-import { ProCard } from "@ant-design/pro-components";
 import type { Role } from "@pudans-dev/api-client";
-import { Button, Empty, Input, Tag, theme } from "antd";
-import { LockKeyhole, Plus, Search, Shield, ShieldCheck } from "lucide-react";
+import { AddIcon, LockOnIcon, SearchIcon, SecuredIcon, UserBusinessIcon } from "tdesign-icons-react";
+import { Button, Card, Empty, Input, Skeleton, Tag } from "tdesign-react";
 
 import { isBuiltinRole, roleDescription, roleDisplayName } from "../../composables/_role";
 
 type RoleListPanelProps = {
-    canCreate: boolean;
     loading: boolean;
-    onCreate: () => void;
+    onCreate?: () => void;
     onSelect: (roleName: string) => void;
     roles: Role[];
     selectedName?: string;
 };
 
-export function RoleListPanel({ canCreate, loading, onCreate, onSelect, roles, selectedName }: RoleListPanelProps) {
-    const { token } = theme.useToken();
+export function RoleListPanel({ loading, onCreate, onSelect, roles, selectedName }: RoleListPanelProps) {
     const [keyword, setKeyword] = useState("");
 
     const { builtinRoles, customRoles, visibleCount } = useMemo(() => {
@@ -42,35 +39,20 @@ export function RoleListPanel({ canCreate, loading, onCreate, onSelect, roles, s
     }, [keyword, roles]);
 
     return (
-        <ProCard
-            className="h-full min-w-0 overflow-hidden !rounded-[24px]"
-            styles={{ body: { padding: 0 } }}
-            style={{
-                background: token.colorBgContainer,
-                borderColor: token.colorBorderSecondary,
-                boxShadow: token.boxShadowTertiary,
-            }}
-        >
-            <div className="border-b px-4 pt-4" style={{ borderColor: token.colorBorderSecondary }}>
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <div className="text-base font-semibold tracking-tight">角色</div>
-                        <div className="mt-1 text-xs" style={{ color: token.colorTextSecondary }}>
-                            {visibleCount} / {roles.length} 个角色
-                        </div>
+        <Card className="h-full min-w-0" bodyClassName="!p-0">
+            <div className="border-b border-[var(--td-component-border)] px-4 pt-4">
+                <div className="min-w-0">
+                    <div className="text-base font-semibold tracking-tight">角色</div>
+                    <div className="mt-1 text-xs text-[var(--td-text-color-secondary)]">
+                        {visibleCount} / {roles.length} 个角色
                     </div>
-                    {canCreate ? (
-                        <Button icon={<Plus size={14} />} onClick={onCreate} size="small" type="primary">
-                            新建
-                        </Button>
-                    ) : null}
                 </div>
                 <Input
-                    allowClear
                     className="mt-3 mb-4"
-                    onChange={(event) => setKeyword(event.target.value)}
+                    clearable
+                    onChange={(value) => setKeyword(String(value))}
                     placeholder="搜索角色名称或标识"
-                    prefix={<Search className="text-neutral-400" size={14} />}
+                    prefixIcon={<SearchIcon />}
                     size="small"
                     value={keyword}
                 />
@@ -78,26 +60,20 @@ export function RoleListPanel({ canCreate, loading, onCreate, onSelect, roles, s
 
             <div className="max-h-[420px] min-h-[260px] overflow-y-auto p-2 xl:max-h-[calc(100vh-280px)]">
                 {loading ? (
-                    <div className="space-y-2 p-2">
+                    <div className="flex flex-col gap-2 p-2">
                         {Array.from({ length: 6 }).map((_, index) => (
-                            <div
-                                className="h-16 animate-pulse rounded-2xl"
-                                key={index}
-                                style={{ background: token.colorFillQuaternary }}
-                            />
+                            <Skeleton animation="gradient" key={index} theme="avatar-text" />
                         ))}
                     </div>
                 ) : visibleCount === 0 ? (
-                    <Empty
-                        className="py-10"
-                        description={keyword ? "没有匹配的角色" : "暂无角色"}
-                        image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    />
+                    <div className="py-10">
+                        <Empty description={keyword ? "没有匹配的角色" : "暂无角色"} />
+                    </div>
                 ) : (
                     <>
                         <RoleSection
                             count={builtinRoles.length}
-                            icon={<ShieldCheck size={14} />}
+                            icon={<SecuredIcon />}
                             label="系统内置"
                             onSelect={onSelect}
                             roles={builtinRoles}
@@ -106,13 +82,13 @@ export function RoleListPanel({ canCreate, loading, onCreate, onSelect, roles, s
                         <RoleSection
                             count={customRoles.length}
                             emptyAction={
-                                canCreate ? (
-                                    <Button icon={<Plus size={14} />} onClick={onCreate} size="small" type="text">
+                                onCreate ? (
+                                    <Button icon={<AddIcon />} onClick={onCreate} size="small" variant="text">
                                         创建第一个自定义角色
                                     </Button>
                                 ) : null
                             }
-                            icon={<Shield size={14} />}
+                            icon={<UserBusinessIcon />}
                             label="自定义"
                             onSelect={onSelect}
                             roles={customRoles}
@@ -121,7 +97,7 @@ export function RoleListPanel({ canCreate, loading, onCreate, onSelect, roles, s
                     </>
                 )}
             </div>
-        </ProCard>
+        </Card>
     );
 }
 
@@ -136,33 +112,23 @@ type RoleSectionProps = {
 };
 
 function RoleSection({ count, emptyAction, icon, label, onSelect, roles, selectedName }: RoleSectionProps) {
-    const { token } = theme.useToken();
-
     return (
         <section className="mb-3 last:mb-0">
             <div className="mb-1.5 flex items-center gap-2 px-2 py-1">
-                <span
-                    className="flex size-6 items-center justify-center rounded-lg"
-                    style={{ background: token.colorFillTertiary, color: token.colorTextSecondary }}
-                >
+                <span className="flex size-6 items-center justify-center rounded-lg bg-[var(--td-bg-color-component)] text-[var(--td-text-color-secondary)]">
                     {icon}
                 </span>
-                <span className="text-xs font-medium" style={{ color: token.colorTextSecondary }}>
-                    {label}
-                </span>
-                <span
-                    className="rounded-full px-1.5 text-[11px] tabular-nums"
-                    style={{ background: token.colorFillTertiary, color: token.colorTextTertiary }}
-                >
+                <span className="text-xs font-medium text-[var(--td-text-color-secondary)]">{label}</span>
+                <span className="rounded-full bg-[var(--td-bg-color-component)] px-1.5 text-[11px] text-[var(--td-text-color-placeholder)] tabular-nums">
                     {count}
                 </span>
             </div>
             {roles.length === 0 ? (
-                <div className="px-2 py-2 text-center text-xs" style={{ color: token.colorTextTertiary }}>
+                <div className="px-2 py-2 text-center text-xs text-[var(--td-text-color-placeholder)]">
                     {emptyAction ?? "暂无角色"}
                 </div>
             ) : (
-                <div className="space-y-1">
+                <div className="flex flex-col gap-1">
                     {roles.map((role) => (
                         <RoleListItem
                             key={role.metadata.name}
@@ -184,54 +150,45 @@ type RoleListItemProps = {
 };
 
 function RoleListItem({ onSelect, role, selected }: RoleListItemProps) {
-    const { token } = theme.useToken();
     const builtin = isBuiltinRole(role);
 
     return (
-        <button
-            className="group flex w-full items-start gap-3 rounded-2xl border px-2.5 py-2.5 text-left transition-colors"
+        <Button
+            block
+            className={`!h-auto !justify-start !rounded-2xl !px-2.5 !py-2.5 ${
+                selected ? "!bg-[var(--td-brand-color-light)] !text-[var(--td-text-color-primary)]" : ""
+            }`}
             onClick={() => onSelect(role.metadata.name)}
-            style={{
-                background: selected ? token.colorPrimaryBg : "transparent",
-                borderColor: selected ? token.colorPrimaryBorder : "transparent",
-            }}
-            type="button"
+            style={{ textAlign: "left" }}
+            variant="text"
         >
-            <span
-                className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl"
-                style={{
-                    background: selected ? token.colorPrimary : token.colorFillTertiary,
-                    color: selected ? token.colorTextLightSolid : token.colorTextSecondary,
-                }}
-            >
-                {builtin ? <ShieldCheck size={16} /> : <Shield size={16} />}
-            </span>
-            <span className="min-w-0 flex-1">
-                <span className="flex min-w-0 items-center gap-1.5">
-                    <span className="truncate text-sm font-medium">{roleDisplayName(role)}</span>
-                    {builtin ? <LockKeyhole className="shrink-0 text-neutral-400" size={12} /> : null}
-                </span>
+            <span className="flex w-full min-w-0 items-start gap-3 text-left">
                 <span
-                    className="mt-0.5 block truncate font-mono text-[11px]"
-                    style={{ color: token.colorTextTertiary }}
+                    className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                        selected
+                            ? "bg-[var(--td-brand-color)] text-[var(--td-text-color-anti)]"
+                            : "bg-[var(--td-bg-color-component)] text-[var(--td-text-color-secondary)]"
+                    }`}
                 >
-                    {role.metadata.name}
+                    {builtin ? <SecuredIcon size={16} /> : <UserBusinessIcon size={16} />}
                 </span>
-                <span className="mt-1 flex items-center justify-between gap-2">
-                    <span className="truncate text-xs" style={{ color: token.colorTextSecondary }}>
-                        {roleDescription(role) || (builtin ? "平台维护的内置角色" : "尚未填写描述")}
+                <span className="min-w-0 flex-1">
+                    <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate text-sm font-medium">{roleDisplayName(role)}</span>
+                        {builtin ? (
+                            <LockOnIcon className="shrink-0 text-[var(--td-text-color-placeholder)]" size={12} />
+                        ) : null}
                     </span>
-                    {builtin ? (
-                        <Tag className="!m-0 !px-1.5 !text-[10px]" color="gold">
-                            内置
-                        </Tag>
-                    ) : (
-                        <span className="shrink-0 text-[10px] tabular-nums" style={{ color: token.colorTextTertiary }}>
-                            {role.rules?.length ?? 0} 规则
-                        </span>
-                    )}
+                    <span className="mt-0.5 block truncate font-mono text-[11px] text-[var(--td-text-color-placeholder)]">
+                        {role.metadata.name}
+                    </span>
                 </span>
+                {builtin ? (
+                    <Tag theme="warning" variant="light">
+                        内置
+                    </Tag>
+                ) : null}
             </span>
-        </button>
+        </Button>
     );
 }

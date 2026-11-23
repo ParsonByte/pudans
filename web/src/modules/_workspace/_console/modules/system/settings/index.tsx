@@ -4,20 +4,7 @@ import { useEffect, useState } from "react";
 
 import { apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-    Button,
-    Divider,
-    Empty,
-    Flex,
-    Form,
-    Input,
-    InputNumber,
-    Select,
-    Skeleton,
-    Switch,
-    Tabs,
-    Typography,
-} from "antd";
+import { Button, Divider, Empty, Form, Input, InputNumber, Skeleton, Switch, Tabs, TagInput } from "tdesign-react";
 
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
@@ -139,14 +126,14 @@ function renderControl(key: string, value: unknown): React.ReactNode {
     }
 
     if (typeof value === "number") {
-        return <InputNumber className="w-full" />;
+        return <InputNumber style={{ width: "100%" }} />;
     }
 
     if (isPrimitiveArray(value)) {
-        return <Select mode="tags" tokenSeparators={[","]} />;
+        return <TagInput />;
     }
 
-    return SECRET_FIELD_PATTERN.test(key) ? <Input.Password /> : <Input />;
+    return SECRET_FIELD_PATTERN.test(key) ? <Input type="password" /> : <Input />;
 }
 
 function renderFields(value: Record<string, unknown>, path: (string | number)[] = []): React.ReactNode {
@@ -155,33 +142,25 @@ function renderFields(value: Record<string, unknown>, path: (string | number)[] 
 
         if (isComplexArray(entry)) {
             return (
-                <Form.Item key={fieldPath.join(".")} label={labelOf(key)}>
-                    <Flex vertical gap={8}>
-                        <Typography.Text type="secondary">复杂列表暂以只读方式展示。</Typography.Text>
-                        <ObjectDetails value={entry} />
-                    </Flex>
-                </Form.Item>
+                <Form.FormItem key={fieldPath.join(".")} label={labelOf(key)}>
+                    <ObjectDetails value={entry} />
+                </Form.FormItem>
             );
         }
 
         if (entry && typeof entry === "object" && !Array.isArray(entry)) {
             return (
                 <div key={fieldPath.join(".")}>
-                    <Divider plain>{labelOf(key)}</Divider>
+                    <Divider align="left">{labelOf(key)}</Divider>
                     {renderFields(entry as Record<string, unknown>, fieldPath)}
                 </div>
             );
         }
 
         return (
-            <Form.Item
-                key={fieldPath.join(".")}
-                label={labelOf(key)}
-                name={fieldPath}
-                valuePropName={typeof entry === "boolean" ? "checked" : "value"}
-            >
+            <Form.FormItem key={fieldPath.join(".")} label={labelOf(key)} name={fieldPath}>
                 {renderControl(key, entry)}
-            </Form.Item>
+            </Form.FormItem>
         );
     });
 }
@@ -194,7 +173,7 @@ type ParameterGroupFormProps = {
 function ParameterGroupForm({ data, group }: ParameterGroupFormProps) {
     const prompt = useMessagePrompt();
     const queryClient = useQueryClient();
-    const [form] = Form.useForm<Record<string, unknown>>();
+    const [form] = Form.useForm();
     const [dirty, setDirty] = useState(false);
     const saveMutation = useMutation({
         mutationFn: async (values: Record<string, unknown>) => {
@@ -203,10 +182,10 @@ function ParameterGroupForm({ data, group }: ParameterGroupFormProps) {
                 group,
             });
         },
-        onError: (error) => prompt.error(consoleErrorMessage(error)),
+        onError: (error) => prompt.error({ content: consoleErrorMessage(error) }),
         onSuccess: () => {
             setDirty(false);
-            prompt.success("参数已保存。");
+            prompt.success({ content: "参数已保存。" });
             void queryClient.invalidateQueries({ queryKey: ["console", "parameter-settings", group] });
         },
     });
@@ -214,43 +193,45 @@ function ParameterGroupForm({ data, group }: ParameterGroupFormProps) {
     return (
         <Form
             form={form}
-            initialValues={data}
+            initialData={data}
+            labelAlign="top"
             layout="vertical"
-            onFinish={(values) => saveMutation.mutate(values)}
             onValuesChange={() => setDirty(true)}
+            onSubmit={({ validateResult }) => {
+                if (validateResult === true) {
+                    saveMutation.mutate(form.getFieldsValue(true) as Record<string, unknown>);
+                }
+            }}
+            resetType="initial"
         >
-            <Flex vertical gap={4}>
-                <Typography.Text type="secondary">敏感字段以 ******** 返回；保持不变即可保留原值。</Typography.Text>
+            <div className="flex flex-col gap-2">
                 {renderFields(data)}
-                <Flex gap={8}>
+                <div className="flex gap-2 pt-2">
                     <Button
                         disabled={!dirty}
                         loading={saveMutation.isPending}
                         onClick={() => form.submit()}
-                        type="primary"
+                        theme="primary"
                     >
                         保存
                     </Button>
                     <Button
                         disabled={!dirty}
                         onClick={() => {
-                            form.resetFields();
+                            form.reset();
                             setDirty(false);
                         }}
+                        variant="outline"
                     >
                         重置
                     </Button>
-                </Flex>
-            </Flex>
+                </div>
+            </div>
         </Form>
     );
 }
 
-type ParameterGroupEditorProps = {
-    group: string;
-};
-
-function ParameterGroupEditor({ group }: ParameterGroupEditorProps) {
+function ParameterGroupEditor({ group }: { group: string }) {
     const prompt = useMessagePrompt();
     const query = useQuery({
         queryKey: ["console", "parameter-settings", group],
@@ -260,27 +241,22 @@ function ParameterGroupEditor({ group }: ParameterGroupEditorProps) {
 
     useEffect(() => {
         if (query.isError) {
-            prompt.error({
-                content: consoleErrorMessage(query.error),
-                key: `parameter-settings-${group}-error`,
-            });
-            return;
+            prompt.error({ content: consoleErrorMessage(query.error) });
         }
-
-        if (unavailable) {
-            prompt.warning({
-                content: "暂无可编辑的参数。",
-                key: `parameter-settings-${group}-warning`,
-            });
-        }
-    }, [group, prompt, query.error, query.isError, unavailable]);
+    }, [prompt, query.error, query.isError]);
 
     if (query.isPending) {
-        return <Skeleton active />;
+        return <Skeleton animation="gradient" theme="paragraph" />;
     }
 
     if (query.isError) {
-        return <Empty description="参数加载失败" />;
+        return (
+            <Empty
+                action={<Button onClick={() => void query.refetch()}>重试</Button>}
+                description="参数加载失败"
+                type="network-error"
+            />
+        );
     }
 
     if (unavailable) {
@@ -299,11 +275,12 @@ function ParameterGroupEditor({ group }: ParameterGroupEditorProps) {
 export function SettingsView() {
     return (
         <Tabs
-            defaultActiveKey="site"
-            items={PARAMETER_GROUPS.map((group) => ({
-                children: <ParameterGroupEditor group={group.key} />,
-                key: group.key,
+            defaultValue="site"
+            list={PARAMETER_GROUPS.map((group) => ({
                 label: group.label,
+                lazy: true,
+                panel: <ParameterGroupEditor group={group.key} />,
+                value: group.key,
             }))}
         />
     );

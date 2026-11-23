@@ -4,7 +4,7 @@ import { Suspense, useEffect } from "react";
 
 import { useParams } from "next/navigation";
 
-import { Empty, Skeleton } from "antd";
+import { Empty, Loading } from "tdesign-react";
 
 import { useDynamicMenu } from "@/composables/useDynamicMenu";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
@@ -31,24 +31,21 @@ function WorkspacePageContent() {
 
         if (dynamicMenu.notFound || !dynamicMenu.workspaceKey) {
             prompt.warning({
-                content: `未找到 ${workspace} 工作区，或当前账号无权访问。`,
-                key: "workspace-page-warning",
+                content: "工作区不可用。",
             });
             return;
         }
 
         if (!selection) {
             prompt.warning({
-                content: "YAML 中没有返回可访问的菜单。",
-                key: "workspace-page-warning",
+                content: "工作区暂无页面。",
             });
             return;
         }
 
         if (!View) {
             prompt.warning({
-                content: `导航已返回 ${selection.group.key}=${selection.item.menuKey}，但前端视图注册表中还没有对应入口。`,
-                key: "workspace-page-warning",
+                content: "页面尚未接入。",
             });
         }
     }, [
@@ -63,23 +60,27 @@ function WorkspacePageContent() {
     ]);
 
     if (dynamicMenu.loading) {
-        return <Skeleton active />;
+        return (
+            <div className="flex min-h-48 items-center justify-center">
+                <Loading />
+            </div>
+        );
     }
 
     if (dynamicMenu.error) {
-        return <Empty description="工作区导航加载失败" />;
+        return <Empty description="工作区不可用" />;
     }
 
     if (dynamicMenu.notFound || !dynamicMenu.workspaceKey) {
-        return <Empty description={`未找到 ${workspace} 工作区，或当前账号无权访问。`} />;
+        return <Empty description="工作区不可用" />;
     }
 
     if (!selection) {
-        return <Empty description="工作区暂无可用页面" />;
+        return <Empty description="暂无页面" />;
     }
 
     if (!View) {
-        return <Empty description="工作区页面尚未接入" />;
+        return <Empty description="页面尚未接入" />;
     }
 
     return <View />;
@@ -87,7 +88,13 @@ function WorkspacePageContent() {
 
 export default function WorkspacePage() {
     return (
-        <Suspense fallback={<Skeleton active />}>
+        <Suspense
+            fallback={
+                <div className="flex min-h-48 items-center justify-center">
+                    <Loading />
+                </div>
+            }
+        >
             <WorkspacePageContent />
         </Suspense>
     );

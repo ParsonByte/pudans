@@ -2,9 +2,9 @@
 
 import { useMemo, useState } from "react";
 
-import { ProCard } from "@ant-design/pro-components";
-import { Button, Empty, Input, Table, type TableProps, Tag, Tooltip, theme } from "antd";
-import { Search, SlidersHorizontal } from "lucide-react";
+import { SearchIcon, SettingIcon } from "tdesign-icons-react";
+import { Button, Card, Empty, Input, Table, Tag, Tooltip } from "tdesign-react";
+import type { TableProps } from "tdesign-react";
 
 import {
     DIRECT_ROLE_RULE_SOURCE,
@@ -12,8 +12,8 @@ import {
     type RoleRuleCollection,
     type RoleRuleRow,
     resourceLabel,
-    verbColor,
     verbLabel,
+    verbTheme,
 } from "../composables/_role-permissions";
 
 type RoleDataPermissionsProps = {
@@ -23,7 +23,6 @@ type RoleDataPermissionsProps = {
 };
 
 export function RoleDataPermissions({ collection, index, onConfigureOperations }: RoleDataPermissionsProps) {
-    const { token } = theme.useToken();
     const [keyword, setKeyword] = useState("");
     const filteredRows = useMemo(() => {
         const query = keyword.trim().toLocaleLowerCase();
@@ -33,94 +32,65 @@ export function RoleDataPermissions({ collection, index, onConfigureOperations }
         return collection.rows.filter((row) => matchesRule(row, index, query));
     }, [collection.rows, index, keyword]);
 
-    const columns: TableProps<RoleRuleRow>["columns"] = [
+    const columns: NonNullable<TableProps<RoleRuleRow>["columns"]> = [
         {
-            key: "resource",
-            render: (_, row) => <RuleResourceCell index={index} row={row} />,
+            cell: ({ row }) => <RuleResourceCell index={index} row={row} />,
+            colKey: "resource",
             title: "资源",
             width: 170,
         },
         {
-            key: "verbs",
-            render: (_, row) => <RuleVerbCell row={row} />,
+            cell: ({ row }) => <RuleVerbCell row={row} />,
+            colKey: "verbs",
             title: "允许动作",
             width: 130,
         },
         {
-            key: "scope",
-            render: (_, row) => <RuleScopeCell row={row} />,
+            cell: ({ row }) => <RuleScopeCell row={row} />,
+            colKey: "scope",
             title: "范围",
             width: 120,
         },
         {
-            key: "sources",
-            render: (_, row) => <RuleSourceCell row={row} />,
+            cell: ({ row }) => <RuleSourceCell row={row} />,
+            colKey: "sources",
             title: "来源",
         },
     ];
 
     return (
-        <ProCard
-            className="!rounded-2xl"
-            headerBordered
-            styles={{
-                body: { padding: 20 },
-                header: { paddingBlock: 14, paddingInline: 20 },
-                title: {
-                    display: "block",
-                    overflow: "visible",
-                    textOverflow: "clip",
-                    whiteSpace: "normal",
-                },
-            }}
-            extra={
+        <Card
+            actions={
                 onConfigureOperations ? (
-                    <Button icon={<SlidersHorizontal size={14} />} onClick={onConfigureOperations}>
+                    <Button icon={<SettingIcon />} onClick={onConfigureOperations} size="small" variant="outline">
                         调整操作权限
                     </Button>
                 ) : null
             }
-            title={
-                <div>
-                    <div className="text-base font-semibold">数据权限规则</div>
-                    <div className="mt-1 text-xs font-normal" style={{ color: token.colorTextSecondary }}>
-                        由菜单与操作权限自动派生，不能在此新增规则。
-                    </div>
-                </div>
-            }
+            header={<div className="text-base font-semibold">数据权限规则</div>}
+            headerBordered
         >
             <div className="flex flex-col gap-4">
                 <Input
-                    allowClear
                     className="w-full sm:max-w-xs"
-                    onChange={(event) => setKeyword(event.target.value)}
+                    clearable
+                    onChange={(value) => setKeyword(String(value))}
                     placeholder="搜索资源、动作或来源"
-                    prefix={<Search className="text-neutral-400" size={14} />}
+                    prefixIcon={<SearchIcon />}
                     value={keyword}
                 />
-
                 <Table<RoleRuleRow>
                     columns={columns}
-                    dataSource={filteredRows}
-                    locale={{
-                        emptyText: (
-                            <Empty
-                                description={keyword ? "没有匹配的数据权限" : "当前角色还没有数据权限规则"}
-                                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                            />
-                        ),
-                    }}
-                    pagination={false}
-                    rowKey={(row) => row.key}
-                    scroll={{ x: 520 }}
+                    data={filteredRows}
+                    empty={<Empty description={keyword ? "没有匹配的数据权限" : "当前角色还没有数据权限规则"} />}
+                    rowKey="key"
                 />
             </div>
-        </ProCard>
+        </Card>
     );
 }
 
 function RuleResourceCell({ index, row }: { index: RoleCatalogIndex; row: RoleRuleRow }) {
-    const { token } = theme.useToken();
     const resources = row.rule.resources ?? [];
     const urls = row.rule.nonResourceURLs ?? [];
     const labels =
@@ -135,19 +105,19 @@ function RuleResourceCell({ index, row }: { index: RoleCatalogIndex; row: RoleRu
         <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-1">
                 {labels.map((label, index) => (
-                    <Tag className="!m-0" key={`${label}:${index}`}>
+                    <Tag key={`${label}:${index}`} variant="light">
                         {label}
                     </Tag>
                 ))}
                 {row.direct ? (
-                    <Tag className="!m-0" color="blue">
+                    <Tag theme="primary" variant="light">
                         直接规则
                     </Tag>
                 ) : null}
             </div>
-            <Tooltip title={raw || undefined}>
-                <div className="mt-1 truncate font-mono text-[10px]" style={{ color: token.colorTextTertiary }}>
-                    {raw || "—"}
+            <Tooltip content={raw}>
+                <div className="mt-1 truncate font-mono text-[10px] text-[var(--td-text-color-placeholder)]">
+                    {raw || "未填写"}
                 </div>
             </Tooltip>
         </div>
@@ -155,44 +125,36 @@ function RuleResourceCell({ index, row }: { index: RoleCatalogIndex; row: RoleRu
 }
 
 function RuleVerbCell({ row }: { row: RoleRuleRow }) {
-    const { token } = theme.useToken();
     const verbs = row.rule.verbs ?? [];
 
     return (
         <div className="flex flex-wrap items-center gap-1">
             {verbs.length > 0 ? (
                 verbs.map((verb) => (
-                    <Tag className="!m-0" color={verbColor(verb)} key={verb}>
+                    <Tag key={verb} theme={verbTheme(verb)} variant="light">
                         {verbLabel(verb)}
                     </Tag>
                 ))
             ) : (
-                <span className="text-xs" style={{ color: token.colorTextTertiary }}>
-                    未指定
-                </span>
+                <span className="text-xs text-[var(--td-text-color-placeholder)]">未填写</span>
             )}
         </div>
     );
 }
 
 function RuleScopeCell({ row }: { row: RoleRuleRow }) {
-    const { token } = theme.useToken();
     const resourceNames = row.rule.resourceNames ?? [];
     const urls = row.rule.nonResourceURLs ?? [];
     const values = [...resourceNames, ...urls];
 
     if (values.length === 0) {
-        return (
-            <span className="text-xs" style={{ color: token.colorTextSecondary }}>
-                全部资源名称
-            </span>
-        );
+        return <span className="text-xs text-[var(--td-text-color-secondary)]">全部资源名称</span>;
     }
 
     return (
         <div className="flex flex-wrap items-center gap-1">
             {values.map((value, index) => (
-                <Tag className="!m-0 font-mono" key={`${value}:${index}`}>
+                <Tag className="font-mono" key={`${value}:${index}`} variant="light">
                     {value}
                 </Tag>
             ))}
@@ -205,14 +167,18 @@ function RuleSourceCell({ row }: { row: RoleRuleRow }) {
     const hiddenCount = Math.max(0, row.sources.length - visibleSources.length);
 
     return (
-        <Tooltip title={row.sources.join("、")}>
+        <Tooltip content={row.sources.join("、")}>
             <div className="flex flex-wrap items-center gap-1">
                 {visibleSources.map((source) => (
-                    <Tag className="!m-0" color={source === DIRECT_ROLE_RULE_SOURCE ? "blue" : undefined} key={source}>
+                    <Tag
+                        key={source}
+                        theme={source === DIRECT_ROLE_RULE_SOURCE ? "primary" : "default"}
+                        variant="light"
+                    >
                         {source}
                     </Tag>
                 ))}
-                {hiddenCount > 0 ? <Tag className="!m-0">+{hiddenCount}</Tag> : null}
+                {hiddenCount > 0 ? <Tag variant="light">+{hiddenCount}</Tag> : null}
             </div>
         </Tooltip>
     );

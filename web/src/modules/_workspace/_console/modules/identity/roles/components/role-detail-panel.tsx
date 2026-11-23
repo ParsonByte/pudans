@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { ProCard } from "@ant-design/pro-components";
 import type { Role } from "@pudans-dev/api-client";
-import { Alert, Button, Skeleton, Tabs, type TabsProps, theme } from "antd";
+import { Button, Card, Empty, Skeleton, Tabs } from "tdesign-react";
+import type { TabValue } from "tdesign-react";
 
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { useUnsavedChangesWarning } from "@/hooks/ui/use-unsaved-changes-warning";
 
 import { consoleErrorMessage } from "../../../../composables/_errors";
@@ -54,15 +55,16 @@ export function RoleDetailPanel({
     role,
     roles,
 }: RoleDetailPanelProps) {
-    const { token } = theme.useToken();
+    const prompt = useMessagePrompt();
     const catalogQuery = usePermissionCatalogQuery();
     const updateRole = useUpdateRole();
-    const [activeTab, setActiveTab] = useState("menu");
+    const [activeTab, setActiveTab] = useState<TabValue>("menu");
     const [draft, setDraft] = useState<RolePermissionDraft>(emptyRolePermissionDraft);
     const [savedSignature, setSavedSignature] = useState<string>();
     const [conflict, setConflict] = useState(false);
     const appliedSignature = useRef<string | undefined>(undefined);
     const draftRef = useRef(draft);
+    const conflictNotified = useRef(false);
 
     const rolesByName = useMemo(() => new Map(roles.map((candidate) => [candidate.metadata.name, candidate])), [roles]);
     const index = useMemo(() => buildRoleCatalogIndex(catalogQuery.data), [catalogQuery.data]);
@@ -71,6 +73,14 @@ export function RoleDetailPanel({
         [catalogQuery.data, index, role, rolesByName],
     );
     const ruleCollection = useMemo(() => collectRoleRuleRows(role, rolesByName), [role, rolesByName]);
+    const loadLatest = useCallback(() => {
+        if (!permissionView) {
+            return;
+        }
+        setDraft(cloneRolePermissionDraft(permissionView.draft));
+        setSavedSignature(undefined);
+        setConflict(false);
+    }, [permissionView]);
 
     useEffect(() => {
         draftRef.current = draft;
@@ -104,6 +114,30 @@ export function RoleDetailPanel({
         setConflict(true);
     }, [permissionView]);
 
+    useEffect(() => {
+        if (!conflict || conflictNotified.current) {
+            return;
+        }
+
+        conflictNotified.current = true;
+        prompt.warning({
+            content: "服务器上的角色权限已更新，当前草稿已保留；继续保存会覆盖最新配置。",
+            duration: 0,
+            footer: (
+                <Button onClick={loadLatest} size="small" variant="outline">
+                    加载最新
+                </Button>
+            ),
+            title: "存在并发修改",
+        });
+    }, [conflict, loadLatest, prompt]);
+
+    useEffect(() => {
+        if (!conflict) {
+            conflictNotified.current = false;
+        }
+    }, [conflict]);
+
     const currentSignature = permissionDraftSignature(draft);
     const dirty = Boolean(
         permissionView && !sameRolePermissionDraft(draft, permissionView.draft) && currentSignature !== savedSignature,
@@ -124,23 +158,14 @@ export function RoleDetailPanel({
 
     useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
 
-    const discard = () => {
+    function discard() {
         if (!permissionView) {
             return;
         }
         setDraft(cloneRolePermissionDraft(permissionView.draft));
         setSavedSignature(undefined);
         setConflict(false);
-    };
-
-    const loadLatest = () => {
-        if (!permissionView) {
-            return;
-        }
-        setDraft(cloneRolePermissionDraft(permissionView.draft));
-        setSavedSignature(undefined);
-        setConflict(false);
-    };
+    }
 
     const savePermissions = async () => {
         if (!permissionView) {
@@ -159,10 +184,11 @@ export function RoleDetailPanel({
         }
     };
 
-    const items: TabsProps["items"] = [
+    const items = [
         {
-            children: (
-                <TabBody conflict={conflict} onLoadLatest={loadLatest}>
+            label: "菜单权限",
+            panel: (
+                <TabBody>
                     {catalogQuery.isPending ? (
                         <TabSkeleton />
                     ) : catalogQuery.error ? (
@@ -178,12 +204,12 @@ export function RoleDetailPanel({
                     )}
                 </TabBody>
             ),
-            key: "menu",
-            label: "菜单权限",
+            value: "menu",
         },
         {
-            children: (
-                <TabBody conflict={conflict} onLoadLatest={loadLatest}>
+            label: "数据权限",
+            panel: (
+                <TabBody>
                     {catalogQuery.isPending ? (
                         <TabSkeleton />
                     ) : catalogQuery.error ? (
@@ -197,12 +223,12 @@ export function RoleDetailPanel({
                     )}
                 </TabBody>
             ),
-            key: "data",
-            label: "数据权限",
+            value: "data",
         },
         {
-            children: (
-                <TabBody conflict={conflict} onLoadLatest={loadLatest}>
+            label: "操作权限",
+            panel: (
+                <TabBody>
                     {catalogQuery.isPending ? (
                         <TabSkeleton />
                     ) : catalogQuery.error ? (
@@ -218,12 +244,12 @@ export function RoleDetailPanel({
                     )}
                 </TabBody>
             ),
-            key: "operation",
-            label: "操作权限",
+            value: "operation",
         },
         {
-            children: (
-                <TabBody conflict={conflict} onLoadLatest={loadLatest}>
+            label: "访问权限",
+            panel: (
+                <TabBody>
                     {catalogQuery.isPending ? (
                         <TabSkeleton />
                     ) : catalogQuery.error ? (
@@ -236,32 +262,14 @@ export function RoleDetailPanel({
                     )}
                 </TabBody>
             ),
-            key: "access",
-            label: "访问权限",
+            value: "access",
         },
     ];
 
     return (
-        <ProCard
-            className="min-w-0 overflow-hidden !rounded-[24px]"
-            headerBordered
-            style={{
-                background: token.colorBgContainer,
-                borderColor: token.colorBorderSecondary,
-                boxShadow: token.boxShadowTertiary,
-            }}
-            styles={{
-                body: { padding: 0 },
-                header: { padding: "20px 24px" },
-                title: {
-                    display: "block",
-                    overflow: "visible",
-                    textOverflow: "clip",
-                    whiteSpace: "normal",
-                    width: "100%",
-                },
-            }}
-            title={
+        <Card
+            className="min-w-0 overflow-hidden"
+            header={
                 <RoleSummary
                     canDelete={canDelete}
                     canEdit={canUpdate}
@@ -284,53 +292,34 @@ export function RoleDetailPanel({
                     workspaceTotal={workspaceAccess.length}
                 />
             }
+            headerBordered
         >
             <div className="px-4 pt-5 pb-6 sm:px-6 sm:pt-6">
-                <Tabs activeKey={activeTab} items={items} onChange={setActiveTab} />
+                <Tabs list={items} onChange={setActiveTab} value={activeTab} />
             </div>
-        </ProCard>
+        </Card>
     );
 }
 
-type TabBodyProps = {
-    children: React.ReactNode;
-    conflict: boolean;
-    onLoadLatest: () => void;
-};
-
-function TabBody({ children, conflict, onLoadLatest }: TabBodyProps) {
-    return (
-        <div className="flex min-h-[320px] flex-col gap-5">
-            {conflict ? (
-                <Alert
-                    action={<Button onClick={onLoadLatest}>加载最新</Button>}
-                    description="服务器上的角色权限已更新。当前草稿已保留，继续保存会覆盖最新配置；如需采用服务器版本，请加载最新。"
-                    message="存在并发修改"
-                    showIcon
-                    type="warning"
-                />
-            ) : null}
-            {children}
-        </div>
-    );
+function TabBody({ children }: { children: React.ReactNode }) {
+    return <div className="flex min-h-[320px] flex-col gap-5">{children}</div>;
 }
 
 function TabSkeleton() {
-    return <Skeleton active paragraph={{ rows: 8 }} title={false} />;
+    return <Skeleton animation="gradient" theme="paragraph" />;
 }
 
 function CatalogError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
     return (
-        <Alert
+        <Empty
             action={
-                <Button onClick={onRetry} size="small">
+                <Button onClick={onRetry} size="small" variant="outline">
                     重试
                 </Button>
             }
             description={consoleErrorMessage(error)}
-            message="权限目录加载失败"
-            showIcon
-            type="error"
+            title="权限目录加载失败"
+            type="fail"
         />
     );
 }

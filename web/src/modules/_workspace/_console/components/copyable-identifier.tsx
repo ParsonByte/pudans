@@ -1,26 +1,30 @@
 "use client";
 
-import { Typography } from "antd";
+import type { ReactNode } from "react";
+
+import { Typography } from "tdesign-react";
 
 import { EmptyValue } from "./empty-value";
 
 type CopyableIdentifierProps = {
     className?: string;
+    display?: ReactNode;
+    emptyText?: string;
     value?: null | string;
 };
 
-export function CopyableIdentifier({ className, value }: CopyableIdentifierProps) {
+export function CopyableIdentifier({ className, display, emptyText, value }: CopyableIdentifierProps) {
     if (!value) {
-        return <EmptyValue />;
+        return <EmptyValue text={emptyText} />;
     }
 
     return (
         <Typography.Text
-            className={`block max-w-full font-mono text-xs ${className ?? ""}`}
+            className={`max-w-full ${display ? "inline-flex items-center" : "block font-mono text-xs"} ${className ?? ""}`}
             copyable={{ text: value }}
-            ellipsis={{ tooltip: value }}
+            ellipsis={display ? false : { row: 1, tooltipProps: { content: value } }}
         >
-            {value}
+            {display ?? value}
         </Typography.Text>
     );
 }

@@ -1,31 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { type AuditRecord, apiClient } from "@pudans-dev/api-client";
-import { useQuery } from "@tanstack/react-query";
-import { Button, Input, Modal, Select, Space, type TableProps } from "antd";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { RefreshIcon } from "tdesign-icons-react";
+import { Button, Select } from "tdesign-react";
+import type { TableProps } from "tdesign-react";
 
-import { ResultTag } from "@/components/ui";
+import { GlobalDialog, ResultTag, SectionCard } from "@/components/ui";
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
+import { ActorRanking } from "../../../components/actor-ranking";
+import { AuditTrendChart } from "../../../components/audit-trend-chart";
 import { ConsoleTable } from "../../../components/console-table";
+import { CopyableIdentifier } from "../../../components/copyable-identifier";
+import { DurationBucketChart } from "../../../components/duration-bucket-chart";
 import { ObjectDetails } from "../../../components/object-details";
-import { formatDateTime, formatDuration } from "../../../composables/_format";
+import { OperationRanking } from "../../../components/operation-ranking";
+import { ResultBreakdown } from "../../../components/result-breakdown";
+import { WeekHourHeatmap } from "../../../components/week-hour-heatmap";
+import { consoleErrorMessage } from "../../../composables/_errors";
+import { formatDateTime, formatDuration, operationLabel } from "../../../composables/_format";
+import { DASHBOARD_RANGES, type DashboardRange } from "../../../composables/_range";
+import { RESULT_OPTIONS } from "../../../composables/_results";
 import { useConsoleTableState } from "../../../composables/_table";
-
-const RESULT_OPTIONS = [
-    { label: "成功", value: "SUCCESS" },
-    { label: "失败", value: "FAILURE" },
-];
+import { useDashboardTheme } from "../../overview/dashboard/composables/_theme";
+import { SecuritySearchInput } from "../components/security-search-input";
+import { AuditMetricGrid } from "./components/audit-metric-grid";
 
 export function AuditView() {
     const table = useConsoleTableState();
+    const prompt = useMessagePrompt();
+    const { token } = useDashboardTheme();
+    const [range, setRange] = useState<DashboardRange>(7);
     const [selected, setSelected] = useState<AuditRecord>();
     const uid = table.filters.uid ?? "";
     const operation = table.filters.operation ?? "";
     const result = table.filters.result ?? "";
+    const overviewQuery = useQuery({
+        placeholderData: keepPreviousData,
+        queryFn: async () => (await apiClient.auditLog.getAuditOverview({ days: range })).data,
+        queryKey: ["console", "audit", "overview", range],
+        refetchInterval: 60_000,
+        staleTime: 30_000,
+    });
     const logsQuery = useQuery({
-        queryKey: ["console", "audit", table.page, table.pageSize, uid, operation, result],
+        placeholderData: keepPreviousData,
         queryFn: async () =>
             (
                 await apiClient.auditLog.listAuditLogs({
@@ -36,112 +57,192 @@ export function AuditView() {
                     uid: uid || undefined,
                 })
             ).data,
+        queryKey: ["console", "audit", table.page, table.pageSize, uid, operation, result],
     });
-
     const columns: TableProps<AuditRecord>["columns"] = [
         {
-            dataIndex: "timestamp",
-            key: "timestamp",
-            render: (value: string) => formatDateTime(value),
+            cell: ({ row }) => formatDateTime(row.timestamp),
+            colKey: "timestamp",
             title: "时间",
+            width: 168,
         },
-        { dataIndex: "uid", key: "uid", title: "用户" },
-        { dataIndex: "operation", key: "operation", title: "操作" },
         {
-            key: "resource",
-            render: (_, record) => record.resourceName ?? record.resourceType ?? "—",
+            cell: ({ row }) => <CopyableIdentifier value={row.uid} />,
+            colKey: "uid",
+            title: "用户",
+            width: 210,
+        },
+        {
+            cell: ({ row }) => <span title={row.operation}>{operationLabel(row.operation)}</span>,
+            colKey: "operation",
+            title: "操作",
+            width: 120,
+        },
+        {
+            cell: ({ row }) => row.resourceName ?? row.resourceType ?? "—",
+            colKey: "resource",
             title: "资源",
+            width: 150,
         },
         {
-            dataIndex: "result",
-            key: "result",
-            render: (value: string) => <ResultTag result={value} />,
+            cell: ({ row }) => <ResultTag result={row.result} />,
+            colKey: "result",
             title: "结果",
+            width: 92,
         },
         {
-            dataIndex: "durationMs",
-            key: "durationMs",
-            render: (value: number) => formatDuration(value),
+            cell: ({ row }) => formatDuration(row.durationMs),
+            colKey: "durationMs",
             title: "耗时",
+            width: 96,
         },
         {
-            key: "request",
-            render: (_, record) => (
-                <span className="text-xs text-neutral-500">
-                    {record.requestMethod} {record.requestPath}
+            cell: ({ row }) => (
+                <span className="text-xs" style={{ color: token.colorTextTertiary }}>
+                    {row.requestMethod} {row.requestPath}
                 </span>
             ),
+            colKey: "request",
             title: "请求",
         },
         {
-            key: "actions",
-            render: (_, record) => (
-                <Button onClick={() => setSelected(record)} size="small">
+            cell: ({ row }) => (
+                <Button onClick={() => setSelected(row)} size="small" variant="text">
                     详情
                 </Button>
             ),
+            colKey: "actions",
             title: "操作",
+            width: 88,
         },
     ];
+    const summary = overviewQuery.data?.summary;
+    const isSyncing = overviewQuery.isFetching || logsQuery.isFetching;
+    const refresh = () => {
+        void Promise.all([overviewQuery.refetch(), logsQuery.refetch()]);
+    };
+
+    useEffect(() => {
+        if (overviewQuery.error) {
+            prompt.error({ content: consoleErrorMessage(overviewQuery.error) });
+        }
+    }, [overviewQuery.error, prompt]);
 
     return (
-        <>
+        <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+                <Select
+                    onChange={(value) => setRange(value as DashboardRange)}
+                    options={DASHBOARD_RANGES}
+                    style={{ width: 132 }}
+                    value={range}
+                />
+                <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
+                    刷新
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+                <AuditMetricGrid loading={overviewQuery.isPending} summary={summary} />
+
+                <div className="md:col-span-2 xl:col-span-7">
+                    <SectionCard title="审计请求趋势">
+                        <AuditTrendChart points={overviewQuery.data?.timeline} />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-5">
+                    <SectionCard title="7×24 审计热力图">
+                        <WeekHourHeatmap
+                            cells={overviewQuery.data?.heatmap}
+                            count={(cell) => cell.records}
+                            countUnit="条"
+                            emptyText="暂无热力图数据"
+                            tone="blue"
+                            valueLabel="审计记录"
+                        />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-7">
+                    <SectionCard title="操作分布">
+                        <OperationRanking operations={overviewQuery.data?.operations} totalRecords={summary?.records} />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-5">
+                    <SectionCard title="结果分布">
+                        <ResultBreakdown results={overviewQuery.data?.results} />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-7">
+                    <SectionCard title="耗时分布">
+                        <DurationBucketChart
+                            buckets={overviewQuery.data?.durations}
+                            emptyText="暂无耗时分布"
+                            title="请求耗时区间"
+                            valueLabel="条记录"
+                        />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-5">
+                    <SectionCard title="活跃用户">
+                        <ActorRanking actors={overviewQuery.data?.actors} />
+                    </SectionCard>
+                </div>
+            </div>
+
             <ConsoleTable
                 columns={columns}
                 data={logsQuery.data?.items}
                 error={logsQuery.error}
                 extra={
-                    <Button onClick={() => void logsQuery.refetch()} size="small">
+                    <Button loading={logsQuery.isFetching} onClick={() => void logsQuery.refetch()} size="small">
                         刷新
                     </Button>
                 }
                 loading={logsQuery.isPending}
                 onRetry={() => void logsQuery.refetch()}
                 pagination={{ ...table.pagination, total: logsQuery.data?.total ?? 0 }}
-                rowKey={(record) => record.metadata.name}
+                rowKey="metadata.name"
                 title="审计日志"
                 toolbar={
-                    <Space className="w-full sm:w-auto" wrap>
-                        <Input.Search
-                            allowClear
-                            className="w-full sm:w-[200px]"
-                            defaultValue={uid}
-                            key={`uid:${uid}`}
-                            onSearch={(value) => table.setFilter("uid", value.trim() || null)}
-                            placeholder="用户 UID"
-                        />
-                        <Input.Search
-                            allowClear
-                            className="w-full sm:w-[200px]"
-                            defaultValue={operation}
-                            key={`operation:${operation}`}
-                            onSearch={(value) => table.setFilter("operation", value.trim() || null)}
-                            placeholder="操作名称"
-                        />
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                        <div className="min-w-0 flex-1 sm:max-w-[220px]">
+                            <SecuritySearchInput
+                                onChange={() => undefined}
+                                onSearch={(value) => table.setFilter("uid", value || null)}
+                                placeholder="用户 UID"
+                                value={uid}
+                            />
+                        </div>
+                        <div className="min-w-0 flex-1 sm:max-w-[220px]">
+                            <SecuritySearchInput
+                                onChange={() => undefined}
+                                onSearch={(value) => table.setFilter("operation", value || null)}
+                                placeholder="操作名称"
+                                value={operation}
+                            />
+                        </div>
                         <Select
-                            allowClear
-                            className="w-full sm:w-36"
-                            onChange={(value) => table.setFilter("result", value ?? null)}
+                            clearable
+                            onChange={(value) => table.setFilter("result", (value as string | undefined) ?? null)}
                             options={RESULT_OPTIONS}
                             placeholder="结果"
+                            style={{ width: 144 }}
                             value={result || undefined}
                         />
-                        <Button className="w-full sm:w-auto" onClick={() => table.reset()}>
-                            重置
-                        </Button>
-                    </Space>
+                        <Button onClick={() => table.reset()}>重置</Button>
+                    </div>
                 }
             />
-            <Modal
-                destroyOnHidden
-                footer={null}
-                onCancel={() => setSelected(undefined)}
+
+            <GlobalDialog
+                footer={false}
+                onClose={() => setSelected(undefined)}
                 open={Boolean(selected)}
                 title={selected?.metadata.name}
                 width={720}
             >
-                <ObjectDetails value={selected} />
-            </Modal>
-        </>
+                {selected ? <ObjectDetails value={selected} /> : null}
+            </GlobalDialog>
+        </div>
     );
 }

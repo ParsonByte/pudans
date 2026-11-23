@@ -3,26 +3,26 @@
 import type { ReactNode } from "react";
 
 import type { Role } from "@pudans-dev/api-client";
-import { Button, Dropdown, Tag, Tooltip, theme } from "antd";
 import {
-    Building2,
-    ListChecks,
-    LockKeyhole,
-    Menu,
-    MoreHorizontal,
-    MousePointerClick,
-    Pencil,
-    RefreshCw,
-    RotateCcw,
-    Save,
-    Shield,
-    ShieldCheck,
-    Trash2,
-} from "lucide-react";
+    BuildingIcon,
+    CheckCircleIcon,
+    ControlPlatformIcon,
+    DeleteIcon,
+    EditIcon,
+    LockOnIcon,
+    MoreIcon,
+    RefreshIcon,
+    RollbackIcon,
+    SecuredIcon,
+    ViewListIcon,
+} from "tdesign-icons-react";
+import { Button, Dropdown, Tag } from "tdesign-react";
+import type { DropdownOption } from "tdesign-react";
+
+import { useDesignTokens } from "@/components/ui";
 
 import { CopyableIdentifier } from "../../../../components/copyable-identifier";
-import { formatDateTime } from "../../../../composables/_format";
-import { isBuiltinRole, roleDescription, roleDisplayName } from "../../composables/_role";
+import { isBuiltinRole, roleDisplayName } from "../../composables/_role";
 
 type RoleSummaryProps = {
     canDelete: boolean;
@@ -67,130 +67,110 @@ export function RoleSummary({
     workspaceCount,
     workspaceTotal,
 }: RoleSummaryProps) {
-    const { token } = theme.useToken();
+    const tokens = useDesignTokens();
     const builtin = isBuiltinRole(role);
     const editable = canEdit && !builtin;
-    const moreItems = [
+    const options: DropdownOption[] = [
         {
+            content: "刷新角色",
             disabled: refreshDisabled,
-            icon: <RefreshCw size={14} />,
-            key: "refresh",
-            label: refreshDisabled ? "刷新角色（请先保存或撤销）" : "刷新角色",
+            prefixIcon: <RefreshIcon />,
+            value: "refresh",
         },
         ...(canDelete && !builtin
-            ? [{ danger: true, icon: <Trash2 size={14} />, key: "delete", label: "删除角色" }]
+            ? [{ content: "删除角色", prefixIcon: <DeleteIcon />, theme: "error" as const, value: "delete" }]
             : []),
     ];
 
     return (
         <div className="flex min-w-0 flex-col gap-4">
             <div className="flex min-w-0 flex-wrap items-start justify-between gap-4">
-                <div className="flex min-w-[240px] flex-1 items-start gap-3">
+                <div className="flex min-w-60 flex-1 items-start gap-3">
                     <span
                         className="flex size-10 shrink-0 items-center justify-center rounded-xl"
                         style={{
-                            background: builtin ? token.colorWarningBg : token.colorPrimaryBg,
-                            color: builtin ? token.colorWarning : token.colorPrimary,
+                            background: builtin ? tokens.colorWarningBg : tokens.colorPrimaryBg,
+                            color: builtin ? tokens.colorWarning : tokens.colorPrimary,
                         }}
                     >
-                        {builtin ? <ShieldCheck size={19} /> : <Shield size={19} />}
+                        <SecuredIcon size={19} />
                     </span>
                     <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                             <h2 className="truncate text-lg font-semibold tracking-tight sm:text-xl">
                                 {roleDisplayName(role)}
                             </h2>
-                            <Tag className="!mr-0" color={builtin ? "gold" : "blue"}>
+                            <Tag theme={builtin ? "warning" : "primary"} variant="light">
                                 {builtin ? "系统内置" : "自定义"}
                             </Tag>
                             {builtin ? (
-                                <Tag className="!mr-0" icon={<LockKeyhole size={11} />}>
+                                <Tag icon={<LockOnIcon />} variant="light">
                                     只读
                                 </Tag>
                             ) : null}
                             {dirty ? (
-                                <Tag className="!mr-0" color="warning">
+                                <Tag theme="warning" variant="light">
                                     未保存
                                 </Tag>
                             ) : null}
-                        </div>
-                        <div
-                            className="mt-1 max-w-2xl text-xs leading-5 sm:text-sm"
-                            style={{ color: token.colorTextSecondary }}
-                        >
-                            {roleDescription(role) ||
-                                (builtin
-                                    ? "由平台维护的系统角色，权限与授权关系不可在此修改。"
-                                    : "尚未填写角色描述，可在编辑角色中补充。")}
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                             <div className="max-w-[280px] min-w-0">
                                 <CopyableIdentifier value={role.metadata.name} />
                             </div>
-                            <span className="text-[11px]" style={{ color: token.colorTextTertiary }}>
-                                创建于 {formatDateTime(role.metadata.creationTimestamp)}
-                            </span>
                         </div>
                     </div>
                 </div>
 
                 <div className="ms-auto flex shrink-0 flex-wrap items-center gap-2">
                     {dirty ? (
-                        <Button disabled={saving} icon={<RotateCcw size={14} />} onClick={onDiscard}>
+                        <Button disabled={saving} icon={<RollbackIcon />} onClick={onDiscard} variant="outline">
                             撤销
                         </Button>
                     ) : null}
                     {canSave ? (
-                        <Tooltip title={!dirty ? "当前没有未保存的权限变更" : undefined}>
-                            <span>
-                                <Button
-                                    disabled={!dirty || saving}
-                                    icon={<Save size={14} />}
-                                    loading={saving}
-                                    onClick={onSave}
-                                    type="primary"
-                                >
-                                    保存权限
-                                </Button>
-                            </span>
-                        </Tooltip>
+                        <Button
+                            disabled={!dirty || saving}
+                            icon={<CheckCircleIcon />}
+                            loading={saving}
+                            onClick={onSave}
+                            theme="primary"
+                        >
+                            保存权限
+                        </Button>
                     ) : null}
                     {editable ? (
-                        <Button icon={<Pencil size={14} />} onClick={onEdit}>
+                        <Button icon={<EditIcon />} onClick={onEdit} variant="outline">
                             编辑角色
                         </Button>
                     ) : null}
                     <Dropdown
-                        menu={{
-                            items: moreItems,
-                            onClick: ({ key }) => {
-                                if (key === "delete") {
-                                    onDelete();
-                                }
-                                if (key === "refresh") {
-                                    onRefresh();
-                                }
-                            },
+                        onClick={(item) => {
+                            if (item.value === "delete") {
+                                onDelete();
+                            }
+                            if (item.value === "refresh") {
+                                onRefresh();
+                            }
                         }}
-                        trigger={["click"]}
+                        options={options}
+                        trigger="click"
                     >
-                        <Tooltip title="更多操作">
-                            <Button aria-label="更多操作" icon={<MoreHorizontal size={16} />} />
-                        </Tooltip>
+                        <Button aria-label="更多操作" icon={<MoreIcon />} shape="square" variant="outline" />
                     </Dropdown>
                 </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 md:pl-[52px]">
-                <PermissionMetric icon={<Menu size={12} />} label="菜单" value={formatMetric(menuCount, menuTotal)} />
+                <PermissionMetric icon={<ViewListIcon />} label="菜单" value={formatMetric(menuCount, menuTotal)} />
                 <PermissionMetric
-                    icon={<MousePointerClick size={12} />}
+                    icon={<ControlPlatformIcon />}
                     label="操作"
                     value={formatMetric(operationCount, operationTotal)}
                 />
-                <PermissionMetric icon={<ListChecks size={12} />} label="数据规则" value={String(ruleCount)} />
+                <PermissionMetric icon={<BuildingIcon />} label="数据规则" value={String(ruleCount)} />
                 <PermissionMetric
-                    icon={<Building2 size={12} />}
+                    icon={<SecuredIcon />}
                     label="工作区"
                     value={formatMetric(workspaceCount, workspaceTotal)}
                 />
@@ -206,22 +186,20 @@ type PermissionMetricProps = {
 };
 
 function PermissionMetric({ icon, label, value }: PermissionMetricProps) {
-    const { token } = theme.useToken();
+    const tokens = useDesignTokens();
 
     return (
         <span className="inline-flex items-center gap-1.5 text-[11px]">
-            <span style={{ color: token.colorTextTertiary }}>{icon}</span>
-            <span style={{ color: token.colorTextTertiary }}>{label}</span>
-            <span className="font-medium tabular-nums" style={{ color: token.colorTextSecondary }}>
-                {value}
-            </span>
+            <span style={{ color: tokens.colorTextTertiary }}>{icon}</span>
+            <span style={{ color: tokens.colorTextTertiary }}>{label}</span>
+            <span className="font-medium text-[var(--td-text-color-secondary)] tabular-nums">{value}</span>
         </span>
     );
 }
 
 function formatMetric(value?: number, total?: number): string {
     if (value === undefined) {
-        return "—";
+        return "未填写";
     }
     if (total === undefined || total === 0) {
         return String(value);

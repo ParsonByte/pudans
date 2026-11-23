@@ -1,7 +1,7 @@
 "use client";
 
 import type { BatchCreateFailure } from "@pudans-dev/api-client";
-import { Alert } from "antd";
+import { Alert } from "tdesign-react";
 
 type BatchCreateResultProps = {
     created?: number;
@@ -14,9 +14,9 @@ export function BatchCreateResult({ created = 0, failed = 0, failures = [] }: Ba
 
     return (
         <Alert
-            description={
+            message={
                 visibleFailures.length > 0 ? (
-                    <div className="mt-1 grid gap-1 text-xs">
+                    <div className="grid gap-1 text-xs">
                         {visibleFailures.map((failure) => (
                             <div key={`${failure.index}-${failure.providerUserId ?? "unknown"}`}>
                                 第 {failure.index} 条{failure.providerUserId ? `（${failure.providerUserId}）` : ""}：
@@ -29,9 +29,8 @@ export function BatchCreateResult({ created = 0, failed = 0, failures = [] }: Ba
                     </div>
                 ) : undefined
             }
-            message={`创建完成：成功 ${created} 个，失败 ${failed} 个。`}
-            showIcon
-            type={failed > 0 ? "warning" : "success"}
+            title={`创建完成：成功 ${created} 个，失败 ${failed} 个。`}
+            theme={failed > 0 ? "warning" : "success"}
         />
     );
 }
