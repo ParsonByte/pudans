@@ -6,19 +6,24 @@ import static cn.tolim.pudans.contract.live.dto.LiveErrorCode.LIVE_RECORDING_NOT
 
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.LiveRecordingState;
+import cn.tolim.pudans.core.live.alert.LiveAlerts;
+import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 // 录制状态唯一写入口：每次读取最新版本再更新，版本冲突短退避重试
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class RecordingStatus {
@@ -37,6 +42,12 @@ public class RecordingStatus {
             LiveErrorCode.LIVE_NO_DATA);
 
     private final ReactiveExtensionClient client;
+
+    // 失败状态要对外发事件，复用统一的去重告警入口
+    private final LiveAlerts liveAlerts;
+
+    // 失败数在内存维护，随状态迁移同步增减
+    private final LiveMetrics metrics;
 
     // 读最新版本后应用修改，版本冲突短暂重试
     public Mono<LiveRecording> mutate(String name, Consumer<LiveRecording.Status> mutation) {
@@ -110,6 +121,8 @@ public class RecordingStatus {
                     if (isTerminal(status.getState()) && status.getState() != LiveRecordingState.FAILED) {
                         return Mono.just(recording);
                     }
+                    // 只有首次进入失败状态才上报，重复失败只更新错误码
+                    var wasFailed = status.getState() == LiveRecordingState.FAILED;
                     status.setState(LiveRecordingState.FAILED);
                     if (status.getEndedAt() == null) {
                         status.setEndedAt(Instant.now());
@@ -119,9 +132,39 @@ public class RecordingStatus {
                         status.setErrorCode(code.name());
                         status.setMessage(message == null ? code.message() : message);
                     }
-                    return client.update(recording);
+                    // 写入成功后再上报，防止告警与真实状态不一致
+                    return client.update(recording).doOnNext(updated -> {
+                        if (!wasFailed) {
+                            notifyFailure(updated);
+                        }
+                    });
                 })
                 .retryWhen(conflictRetry());
+    }
+
+    // 首次进入失败状态时计数并异步发送失败告警
+    private void notifyFailure(LiveRecording recording) {
+        var name = recording.getMetadata().getName();
+        metrics.recordingFailed(name);
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("recordingName", name);
+        var spec = recording.getSpec();
+        payload.put("sourceName", spec == null ? null : spec.getSourceName());
+        payload.put("roomId", spec == null ? null : spec.getRoomId());
+        payload.put("errorCode", recording.getStatus().getErrorCode());
+        payload.put("message", recording.getStatus().getMessage());
+        payload.put("at", Instant.now().toString());
+        try {
+            liveAlerts
+                    .alert("live.recording.failed", name, payload)
+                    .onErrorResume(error -> {
+                        log.warn("直播录制失败告警发送失败 [{}]：{}", name, error.getMessage());
+                        return Mono.empty();
+                    })
+                    .subscribe();
+        } catch (RuntimeException error) {
+            log.warn("直播录制失败告警发送失败 [{}]：{}", name, error.getMessage());
+        }
     }
 
     // 查询录制，不存在时返回空

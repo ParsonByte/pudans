@@ -126,6 +126,8 @@ public class LiveRecordingReconciler implements Reconciler<Reconciler.Request> {
             deleteLocalFiles(recording);
             ExtensionUtil.removeFinalizers(recording.getMetadata(), Set.of(FINALIZER));
             client.update(recording);
+            // 记录已删除，失败计数同步移除，避免仪表长期偏高
+            metrics.recordingRemoved(name);
             log.info("直播录制清理完成 [{}]", name);
             return Result.doNotRetry();
         } catch (RuntimeException error) {

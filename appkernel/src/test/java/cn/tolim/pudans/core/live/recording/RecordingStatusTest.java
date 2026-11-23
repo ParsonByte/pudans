@@ -3,11 +3,18 @@ package cn.tolim.pudans.core.live.recording;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import cn.tolim.pudans.contract.live.LiveRecording;
 import cn.tolim.pudans.contract.live.LiveRecordingState;
+import cn.tolim.pudans.core.live.alert.LiveAlerts;
+import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.extension.contract.Metadata;
 import cn.tolim.pudans.extension.contract.ReactiveExtensionClient;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
@@ -22,13 +29,34 @@ class RecordingStatusTest {
 
     private LiveRecording recording;
 
+    private LiveAlerts liveAlerts;
+
+    private LiveMetrics metrics;
+
     @BeforeEach
     void setUp() {
         var client = mock(ReactiveExtensionClient.class);
-        service = new RecordingStatus(client);
+        liveAlerts = mock(LiveAlerts.class);
+        metrics = mock(LiveMetrics.class);
+        service = new RecordingStatus(client, liveAlerts, metrics);
         recording = recording("rec-a", LiveRecordingState.QUEUED);
         when(client.fetch(LiveRecording.class, "rec-a")).thenReturn(Mono.just(recording));
         when(client.update(any(LiveRecording.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        // 告警是订阅后立刻返回的异步流，默认给空流免得未打桩报错
+        lenient().when(liveAlerts.alert(any(), any(), any())).thenReturn(Mono.empty());
+    }
+
+    @Test
+    void failNotifiesOnceWhenRecordingEntersFailedState() {
+        service.fail("rec-a", LiveErrorCode.LIVE_STREAM_FAILED, "断流").block();
+
+        verify(metrics).recordingFailed("rec-a");
+        verify(liveAlerts).alert(eq("live.recording.failed"), eq("rec-a"), anyMap());
+
+        service.fail("rec-a", LiveErrorCode.LIVE_DISK_FULL, "磁盘不足").block();
+
+        verify(metrics, times(1)).recordingFailed("rec-a");
+        verify(liveAlerts, times(1)).alert(any(), any(), any());
     }
 
     @Test
