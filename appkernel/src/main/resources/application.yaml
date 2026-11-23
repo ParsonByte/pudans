@@ -107,6 +107,7 @@ pudans:
       batch-size: 100
     alert:
       dedupe: 10m
+      stream-interrupt-threshold: 60s
       rate-limit-threshold: 3
   storage:
     cleanup-interval-seconds: ${PUDANS_STORAGE_CLEANUP_INTERVAL:300}

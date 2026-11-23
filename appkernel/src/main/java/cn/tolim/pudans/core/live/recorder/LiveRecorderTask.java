@@ -13,6 +13,7 @@ import cn.tolim.pudans.contract.live.LiveRecordingState;
 import cn.tolim.pudans.contract.live.PartState;
 import cn.tolim.pudans.contract.live.dto.LiveErrorCode;
 import cn.tolim.pudans.contract.live.dto.LiveRoomInfo;
+import cn.tolim.pudans.core.live.alert.LiveAlerts;
 import cn.tolim.pudans.core.live.monitor.LiveMetrics;
 import cn.tolim.pudans.core.live.recording.RecordingStatus;
 import cn.tolim.pudans.core.live.resolve.RoomResolver;
@@ -21,6 +22,8 @@ import cn.tolim.pudans.infra.exception.ApiException;
 import cn.tolim.pudans.infra.properties.LiveProperties;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.ffmpeg.avcodec.AVPacket;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import reactor.core.publisher.Mono;
 
 // 单个录制任务：拉流写分片、断流重解析退避、收尾合并上传并落最终状态
 @Slf4j
@@ -69,6 +73,9 @@ public class LiveRecorderTask implements Runnable {
 
     private final LiveMetrics metrics;
 
+    // 断流与恢复告警复用统一去重入口，和失败告警共用同一套限制
+    private final LiveAlerts liveAlerts;
+
     private final ReactiveStringRedisTemplate redisTemplate;
 
     private final SourceStatus sourceStatus;
@@ -90,6 +97,9 @@ public class LiveRecorderTask implements Runnable {
     private final String ownerInstance = UUID.randomUUID().toString();
 
     private final AtomicBoolean stopRequested = new AtomicBoolean();
+
+    // 任务级断流计时，跨多次重连保留最初失败时刻
+    private final LiveStreamOutage outage = new LiveStreamOutage();
 
     private volatile String currentUrl;
 
@@ -119,6 +129,7 @@ public class LiveRecorderTask implements Runnable {
             LiveRecorderBackoff backoff,
             LiveStoragePolicyResolver policyResolver,
             LiveMetrics metrics,
+            LiveAlerts liveAlerts,
             ReactiveStringRedisTemplate redisTemplate,
             SourceStatus sourceStatus,
             LiveRecording recording) {
@@ -134,6 +145,7 @@ public class LiveRecorderTask implements Runnable {
         this.backoff = backoff;
         this.policyResolver = policyResolver;
         this.metrics = metrics;
+        this.liveAlerts = liveAlerts;
         this.redisTemplate = redisTemplate;
         this.sourceStatus = sourceStatus;
         this.recordingName = recording.getMetadata().getName();
@@ -354,6 +366,8 @@ public class LiveRecorderTask implements Runnable {
                     av_packet_unref(packet);
                 }
                 lastPacketAt = writer.lastPacketAt();
+                // 重新收到数据包说明已恢复，先发恢复告警再刷新心跳
+                notifyRecovered();
                 heartbeat(writer);
             }
             return null;
@@ -372,6 +386,16 @@ public class LiveRecorderTask implements Runnable {
         }
         if (merger.isFailed(recordingName)) {
             return Outcome.failure(merger.failureCode(recordingName), "录制成品处理失败");
+        }
+        // 首次失败即开始计时，达到阈值才发一次断流告警
+        var now = Instant.now();
+        outage.begin(now);
+        if (outage.alertDue(now, properties.getAlert().getStreamInterruptThreshold())) {
+            var payload = alertPayload();
+            payload.put("errorCode", lastCode.name());
+            payload.put("message", message);
+            sendAlert("live.stream.interrupted", payload);
+            outage.markAlerted();
         }
         if (recovery.streamRetries >= properties.getRecorder().getMaxRetries()) {
             return Outcome.failure(lastCode, message);
@@ -405,6 +429,42 @@ public class LiveRecorderTask implements Runnable {
             return Outcome.stop();
         }
         return null;
+    }
+
+    // 断流后重新收到数据包时发送恢复告警并归零计时
+    private void notifyRecovered() {
+        var interrupted = outage.end(Instant.now());
+        if (interrupted == null) {
+            return;
+        }
+        var payload = alertPayload();
+        payload.put("interruptedMillis", interrupted.toMillis());
+        sendAlert("live.stream.recovered", payload);
+    }
+
+    // 组装告警公共字段，错误码按需追加
+    private Map<String, Object> alertPayload() {
+        var payload = new LinkedHashMap<String, Object>();
+        payload.put("recordingName", recordingName);
+        payload.put("sourceName", sourceName);
+        payload.put("roomId", roomId);
+        payload.put("at", Instant.now().toString());
+        return payload;
+    }
+
+    // 告警异步发送，失败只记录日志
+    private void sendAlert(String type, Map<String, Object> payload) {
+        try {
+            liveAlerts
+                    .alert(type, recordingName, payload)
+                    .onErrorResume(error -> {
+                        log.warn("直播告警发送失败 [{}]：{}", type, error.getMessage());
+                        return Mono.empty();
+                    })
+                    .subscribe();
+        } catch (RuntimeException error) {
+            log.warn("直播告警发送失败 [{}]：{}", type, error.getMessage());
+        }
     }
 
     // 解析房间信息，离线映射为正常结束

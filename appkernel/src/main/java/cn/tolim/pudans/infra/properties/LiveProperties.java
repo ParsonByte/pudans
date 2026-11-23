@@ -133,6 +133,9 @@ public class LiveProperties {
 
         private Duration dedupe = Duration.ofMinutes(10);
 
+        // 断流超过该时长才告警，只影响通知，不占用重连预算
+        private Duration streamInterruptThreshold = Duration.ofSeconds(60);
+
         private int rateLimitThreshold = 3;
     }
 
