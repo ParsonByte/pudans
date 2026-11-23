@@ -7,19 +7,26 @@ import cn.tolim.pudans.extension.contract.endpoint.CustomEndpoint;
 import cn.tolim.pudans.extension.contract.ApiGroups;
 import cn.tolim.pudans.extension.contract.GroupVersion;
 import cn.tolim.pudans.core.audit.AuditLog;
+import cn.tolim.pudans.core.risk.RiskAnalytics;
 import cn.tolim.pudans.core.risk.RiskGuard;
+import cn.tolim.pudans.contract.risk.dto.RiskOverview;
+import cn.tolim.pudans.infra.utils.RangeDays;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.server.ServerWebInputException;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class RiskRuleEndpoint implements CustomEndpoint {
@@ -28,11 +35,23 @@ public class RiskRuleEndpoint implements CustomEndpoint {
 
     private final AuditLog auditLog;
 
+    private final RiskAnalytics riskAnalytics;
+
     // 注册风险封禁查询与解封路由。
     @Override
     public RouterFunction<ServerResponse> endpoint() {
         var tag = "RiskRuleV1alpha1";
         return SpringdocRouteBuilder.route()
+                .GET("/riskrules/overview", this::overview, builder -> builder.operationId("GetRiskOverview")
+                        .description("Aggregate real risk control events, rules, bans, heatmap and relations.")
+                        .tag(tag)
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("days")
+                                .required(false)
+                                .description("Analytics range in days, between 1 and 90. Defaults to 7.")
+                                .implementation(Integer.class))
+                        .response(responseBuilder().implementation(RiskOverview.class)))
                 .GET("/riskrules/bans", this::bans, builder -> builder.operationId("ListRiskBans")
                         .description("List active risk control bans with their remaining duration.")
                         .tag(tag)
@@ -55,6 +74,18 @@ public class RiskRuleEndpoint implements CustomEndpoint {
                                 .implementation(String.class))
                         .response(responseBuilder().implementation(Void.class)))
                 .build();
+    }
+
+    // 聚合指定时间范围内的风险态势数据。
+    private Mono<ServerResponse> overview(ServerRequest request) {
+        return riskAnalytics
+                .overview(RangeDays.resolve(request))
+                .flatMap(overview -> ServerResponse.ok().bodyValue(overview))
+                .onErrorResume(error -> {
+                    log.warn("无法聚合风险概览", error);
+                    return Mono.error(new ResponseStatusException(
+                            HttpStatus.INTERNAL_SERVER_ERROR, "风险概览聚合失败。"));
+                });
     }
 
     // 列出当前生效的风险封禁记录。
