@@ -1,10 +1,10 @@
 "use client";
 
-import { type WorkspaceMenu, apiClient } from "@pudans-dev/api-client";
-import { useQuery } from "@tanstack/react-query";
+import type { WorkspaceMenu } from "@pudans-dev/api-client";
 import { Button, type TableProps } from "antd";
 
 import { ConsoleTable } from "../../../components/console-table";
+import { usePermissionCatalogQuery } from "../composables/_permission-catalog";
 
 type PermissionRow = WorkspaceMenu & {
     rowKey: string;
@@ -12,10 +12,7 @@ type PermissionRow = WorkspaceMenu & {
 };
 
 export function PermissionsView() {
-    const catalogQuery = useQuery({
-        queryKey: ["console", "permissions"],
-        queryFn: async () => (await apiClient.permissionCatalog.getPermissionCatalog()).data,
-    });
+    const catalogQuery = usePermissionCatalogQuery();
     const rows: PermissionRow[] = (catalogQuery.data?.workspaces ?? []).flatMap((workspace) =>
         (workspace.menus ?? []).map((menu) => ({
             ...menu,
