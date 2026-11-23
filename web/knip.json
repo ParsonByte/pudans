@@ -3,12 +3,9 @@
   "ignore": ["src/hooks/**"],
   "ignoreDependencies": [
     "@ai-sdk/react",
-    "@ant-design/x",
-    "@ant-design/x-card",
-    "@ant-design/x-markdown",
-    "@ant-design/x-sdk",
     "@hookform/resolvers",
     "@tanstack/react-virtual",
+    "@tdesign-react/chat",
     "@types/d3",
     "@types/react-highlight-words",
     "ai",

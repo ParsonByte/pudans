@@ -1,4 +1,6 @@
-import { Descriptions, Flex, Space, Tag } from "antd";
+"use client";
+
+import { Descriptions, Space, Tag } from "tdesign-react";
 
 const LABELS: Record<string, string> = {
     action: "动作",
@@ -97,7 +99,7 @@ function renderValue(value: unknown): React.ReactNode {
 
         if (value.every((item) => typeof item !== "object" || item === null)) {
             return (
-                <Space size={[4, 4]} wrap>
+                <Space breakLine size={[4, 4]}>
                     {value.map((item, index) => (
                         <Tag key={`${String(item)}-${index}`}>{String(item)}</Tag>
                     ))}
@@ -106,11 +108,11 @@ function renderValue(value: unknown): React.ReactNode {
         }
 
         return (
-            <Flex vertical gap={8}>
+            <div className="flex flex-col gap-2">
                 {value.map((item, index) => (
                     <ObjectDetails key={index} value={item} />
                 ))}
-            </Flex>
+            </div>
         );
     }
 
@@ -142,8 +144,7 @@ export function ObjectDetails({ value }: ObjectDetailsProps) {
             className="object-details"
             column={1}
             items={entries.map(([key, entry]) => ({
-                children: renderValue(entry),
-                key,
+                content: renderValue(entry),
                 label: labelOf(key),
             }))}
             size="small"

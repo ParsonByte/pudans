@@ -1,182 +1,243 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactNode } from "react";
+import { useEffect } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
-import { ProLayout, type ProLayoutProps } from "@ant-design/pro-components";
-import { theme as antdTheme } from "antd";
+import { ViewListIcon } from "tdesign-icons-react";
+import { Button, Loading, Menu } from "tdesign-react";
 
-import { useMediaQuery } from "@/hooks/ui/use-media-query";
+import { MenuIcon, ThemeMenu } from "@/components/ui";
 import { useMobile } from "@/hooks/ui/use-mobile";
 import { useThemeSync } from "@/hooks/ui/use-theme-sync";
 
 import { AppContainer } from "./app-container";
-import { AppHeader } from "./app-header";
-import { AppSwitcher } from "./app-switcher";
+
+const { HeadMenu, MenuGroup, MenuItem } = Menu;
+const SIDE_NAVIGATION_ID = "workspace-side-navigation";
+
+export type AppShellGroup = {
+    href?: string;
+    key: string;
+    label: string;
+};
+
+type AppShellItemGroup = {
+    key: string;
+    label: string;
+};
+
+export type AppShellItem = {
+    group?: AppShellItemGroup;
+    href?: string;
+    icon?: string;
+    key: string;
+    label: string;
+};
+
+type AppShellMenuSection = {
+    items: AppShellItem[];
+    key: string;
+    label?: string;
+};
 
 type AppShellProps = {
     actions?: ReactNode;
+    activeGroup?: string;
+    activeItem?: string;
     children: ReactNode;
     collapsed?: boolean;
-    layout?: "mix" | "side" | "top";
+    groups: AppShellGroup[];
+    items: AppShellItem[];
     loading?: boolean;
-    logo?: ReactNode;
     onCollapse?: (collapsed: boolean) => void;
-    onOpenChange?: (openKeys: string[]) => void;
-    openKeys?: string[];
+    onNavigate: (href: string) => void;
     pageTitle?: string;
-    route?: ProLayoutProps["route"];
-    selectedKeys?: string[];
-    title?: string;
 };
 
-export function AppShell({
-    actions = <AppHeader />,
-    children,
-    collapsed,
-    layout = "mix",
-    loading = false,
-    logo = <Image alt="" height={32} src="/brand/icon-small.svg" unoptimized width={32} />,
-    onCollapse,
-    onOpenChange,
-    openKeys,
-    pageTitle,
-    route,
-    selectedKeys,
-    title = "Pudans",
-}: AppShellProps) {
-    const pathname = usePathname();
-    const isDrawerMobile = useMediaQuery("(max-width: 575px)");
-    const isMobile = useMobile();
-    const { isDark } = useThemeSync();
-    const { token } = antdTheme.useToken();
+function groupMenuItems(items: AppShellItem[]): AppShellMenuSection[] {
+    const sections = new Map<string, AppShellMenuSection>();
+
+    for (const item of items) {
+        const key = item.group?.key ?? "items";
+        const section = sections.get(key) ?? { items: [], key, label: item.group?.label };
+
+        section.items.push(item);
+        sections.set(key, section);
+    }
+
+    return [...sections.values()];
+}
+
+function navigateWithMenuLink(event: ReactMouseEvent<HTMLElement>, href: string, onNavigate: (href: string) => void) {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+    }
+
+    event.preventDefault();
+    onNavigate(href);
+}
+
+function menuItemNode(
+    item: AppShellItem,
+    activeItem: string | undefined,
+    onNavigate: (href: string) => void,
+): ReactNode {
+    const href = item.href;
 
     return (
-        <ProLayout
-            actionsRender={() => (
-                <div
-                    className="flex items-center gap-1 ps-0 sm:gap-2 sm:ps-4"
-                    style={isMobile ? undefined : { borderInlineStart: `1px solid ${token.colorSplit}` }}
-                >
-                    {actions}
-                </div>
-            )}
-            collapsed={collapsed}
-            fixedHeader
-            fixSiderbar
-            footerRender={false}
-            headerContentRender={(_, defaultDom) => (
-                <div
-                    className="flex h-full min-w-0 flex-1 items-center ps-2 sm:ps-4 md:ps-6"
-                    style={
-                        {
-                            "--ant-menu-horizontal-line-height": "36px",
-                            "--ant-menu-item-height": "36px",
-                            "--ant-menu-item-padding-inline": "12px",
-                            lineHeight: "36px",
-                        } as CSSProperties
-                    }
-                >
-                    {defaultDom}
-                </div>
-            )}
-            headerTitleRender={(logo, title) => (
-                <div className="flex min-w-0 items-center gap-1.5 pe-2 sm:gap-2 sm:pe-4">
-                    <span className="hidden md:inline-flex">
-                        <AppSwitcher />
-                    </span>
-                    <span
-                        aria-hidden="true"
-                        className="hidden h-6 w-px sm:block"
-                        style={{ background: token.colorSplit }}
-                    />
-                    {logo}
-                    {title}
-                </div>
-            )}
-            layout={layout}
-            location={{ pathname }}
-            logo={logo}
-            menu={{ locale: false, loading }}
-            menuProps={{
-                style: {
-                    backgroundColor: "transparent",
-                    border: "none",
-                    gap: 6,
-                    width: "100%",
-                } as CSSProperties,
-            }}
-            menuItemRender={(item, dom) => {
-                if (!item.path || item.isUrl) {
-                    return dom;
-                }
-
-                return (
-                    <Link
-                        href={item.path}
-                        onClick={() => {
-                            if (isDrawerMobile) {
-                                onCollapse?.(true);
-                            }
-                        }}
-                    >
-                        {dom}
-                    </Link>
-                );
-            }}
-            navTheme={isDark ? "realDark" : "light"}
-            onCollapse={onCollapse}
-            onOpenChange={(keys) => {
-                if (Array.isArray(keys)) {
-                    onOpenChange?.(keys);
-                }
-            }}
-            openKeys={openKeys}
-            pageTitleRender={(props, defaultPageTitle) =>
-                pageTitle ? `${pageTitle} - ${props.title ?? "Pudans"}` : (defaultPageTitle ?? "Pudans")
+        <MenuItem
+            href={href}
+            icon={item.icon ? <MenuIcon icon={item.icon} /> : undefined}
+            key={item.key}
+            onClick={
+                href
+                    ? ({ e }) => {
+                          navigateWithMenuLink(e, href, onNavigate);
+                      }
+                    : undefined
             }
-            route={route}
-            selectedKeys={selectedKeys}
-            splitMenus
-            title={title}
-            token={{
-                header: {
-                    colorBgHeader: token.colorBgContainer,
-                    colorBgMenuItemHover: token.colorFillTertiary,
-                    colorBgMenuItemSelected: token.colorPrimary,
-                    colorBgMenuElevated: token.colorBgElevated,
-                    colorBgRightActionsItemHover: token.colorFillTertiary,
-                    colorBgScrollHeader: token.colorBgContainer,
-                    colorHeaderTitle: token.colorText,
-                    colorTextMenu: token.colorTextSecondary,
-                    colorTextMenuActive: token.colorText,
-                    colorTextMenuSecondary: token.colorTextTertiary,
-                    colorTextMenuSelected: token.colorTextLightSolid,
-                    colorTextRightActionsItem: token.colorTextSecondary,
-                    heightLayoutHeader: isMobile ? 56 : 64,
-                },
-                sider: {
-                    colorBgCollapsedButton: token.colorBgElevated,
-                    colorBgMenuItemHover: token.colorFillTertiary,
-                    colorBgMenuItemSelected: token.colorPrimary,
-                    colorMenuItemDivider: token.colorSplit,
-                    colorMenuBackground: token.colorBgContainer,
-                    colorTextCollapsedButton: token.colorTextTertiary,
-                    colorTextCollapsedButtonHover: token.colorText,
-                    colorTextMenu: token.colorTextSecondary,
-                    colorTextMenuActive: token.colorText,
-                    colorTextMenuItemHover: token.colorText,
-                    colorTextMenuSelected: token.colorTextLightSolid,
-                    menuHeight: 40,
-                    paddingBlockLayoutMenu: 12,
-                    paddingInlineLayoutMenu: 8,
-                },
-            }}
+            value={item.key}
         >
-            <AppContainer title={pageTitle}>{children}</AppContainer>
-        </ProLayout>
+            <span aria-current={activeItem === item.key ? "page" : undefined}>{item.label}</span>
+        </MenuItem>
+    );
+}
+
+function BrandLogo() {
+    return (
+        <Link aria-label="Pudans 首页" className="app-shell__brand" href="/">
+            <Image alt="" height={32} src="/brand/icon-small.svg" unoptimized width={32} />
+            <span className="app-shell__brand-title">Pudans</span>
+        </Link>
+    );
+}
+
+export function AppShell({
+    actions = <ThemeMenu />,
+    activeGroup,
+    activeItem,
+    children,
+    collapsed = false,
+    groups,
+    items,
+    loading = false,
+    onCollapse,
+    onNavigate,
+    pageTitle,
+}: AppShellProps) {
+    const { isDark } = useThemeSync();
+    const isCompact = useMobile();
+    const menuCollapsed = isCompact || collapsed;
+    const menuSections = groupMenuItems(items);
+
+    useEffect(() => {
+        document.title = pageTitle ? `${pageTitle} - Pudans` : "Pudans";
+    }, [pageTitle]);
+
+    return (
+        <div className="app-shell">
+            <header className="app-shell__header">
+                <nav aria-label="工作区切换">
+                    <HeadMenu
+                        logo={<BrandLogo />}
+                        operations={actions}
+                        theme={isDark ? "dark" : "light"}
+                        value={activeGroup}
+                    >
+                        {groups.map((group) => {
+                            const href = group.href;
+
+                            return (
+                                <MenuItem
+                                    href={href}
+                                    key={group.key}
+                                    onClick={
+                                        href
+                                            ? ({ e }) => {
+                                                  navigateWithMenuLink(e, href, onNavigate);
+                                              }
+                                            : undefined
+                                    }
+                                    value={group.key}
+                                >
+                                    <span aria-current={activeGroup === group.key ? "page" : undefined}>
+                                        {group.label}
+                                    </span>
+                                </MenuItem>
+                            );
+                        })}
+                    </HeadMenu>
+                </nav>
+            </header>
+            <div className="app-shell__body">
+                <aside
+                    className="app-shell__aside"
+                    data-collapsed={menuCollapsed ? "true" : "false"}
+                    id={SIDE_NAVIGATION_ID}
+                >
+                    <nav aria-label="工作区导航" className="app-shell__nav">
+                        {loading ? (
+                            <div className="app-shell__nav-loading" role="status">
+                                <Loading size="small" />
+                            </div>
+                        ) : (
+                            <Menu
+                                collapsed={menuCollapsed}
+                                operations={
+                                    isCompact ? undefined : (
+                                        <ButtonCollapse
+                                            collapsed={collapsed}
+                                            controls={SIDE_NAVIGATION_ID}
+                                            onToggle={() => onCollapse?.(!collapsed)}
+                                        />
+                                    )
+                                }
+                                theme={isDark ? "dark" : "light"}
+                                value={activeItem}
+                                width={["240px", "64px"]}
+                            >
+                                {menuSections.map((section) =>
+                                    section.label ? (
+                                        <MenuGroup key={section.key} title={section.label}>
+                                            {section.items.map((item) => menuItemNode(item, activeItem, onNavigate))}
+                                        </MenuGroup>
+                                    ) : (
+                                        section.items.map((item) => menuItemNode(item, activeItem, onNavigate))
+                                    ),
+                                )}
+                            </Menu>
+                        )}
+                    </nav>
+                </aside>
+                <div className="app-shell__content">
+                    <AppContainer>{children}</AppContainer>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ButtonCollapse({
+    collapsed,
+    controls,
+    onToggle,
+}: {
+    collapsed: boolean;
+    controls: string;
+    onToggle: () => void;
+}) {
+    return (
+        <Button
+            aria-label={collapsed ? "展开侧边导航" : "收起侧边导航"}
+            aria-controls={controls}
+            aria-expanded={!collapsed}
+            icon={<ViewListIcon />}
+            onClick={onToggle}
+            shape="square"
+            variant="text"
+        />
     );
 }

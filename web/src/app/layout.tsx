@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 
 import "@fontsource-variable/jetbrains-mono";
 import "@fontsource-variable/noto-sans";
+import "tdesign-react/es/style/index.css";
 
 import { NavigationProgress } from "@/components/ui";
 import { Providers } from "@/context/providers";
-import "@/styles/_global.css";
+import "@/styles/theme.css";
 
 export const metadata: Metadata = {
     title: "Pudans 控制台",

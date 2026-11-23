@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 import { useRouter } from "next/navigation";
 
-import { Typography } from "antd";
+import { Loading, Typography } from "tdesign-react";
 
 import { useSetupStore } from "@/stores/_setup";
 
@@ -22,16 +22,8 @@ export function SetupView() {
 
     return (
         <div className="flex flex-col gap-5">
-            <Typography.Title className="!mt-0 !mb-0" level={2}>
-                初始化系统
-            </Typography.Title>
-            {completed ? (
-                <Typography.Paragraph className="!mb-0" type="secondary">
-                    系统已完成初始化，正在前往登录页。
-                </Typography.Paragraph>
-            ) : (
-                <SetupForm />
-            )}
+            <Typography.Title level="h2">初始化系统</Typography.Title>
+            {completed ? <Loading loading /> : <SetupForm />}
         </div>
     );
 }

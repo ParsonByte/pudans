@@ -125,7 +125,7 @@ function NavigationProgressBar() {
             role="progressbar"
         >
             <div
-                className="h-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)] transition-[width,opacity] duration-200 ease-out dark:bg-blue-400"
+                className="h-full bg-[var(--td-brand-color)] shadow-[0_0_8px_var(--td-brand-color)] transition-[width,opacity] duration-200 ease-out"
                 style={{ opacity: visible ? 1 : 0, width: `${percent}%` }}
             />
         </div>

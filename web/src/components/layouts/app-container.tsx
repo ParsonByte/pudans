@@ -2,29 +2,24 @@
 
 import { type ReactNode, Suspense } from "react";
 
-import { PageContainer } from "@ant-design/pro-components";
-import { Skeleton } from "antd";
-
-import { useMobile } from "@/hooks/ui/use-mobile";
+import { Loading } from "tdesign-react";
 
 type AppContainerProps = {
     children: ReactNode;
-    title?: string;
 };
 
-export function AppContainer({ children, title }: AppContainerProps) {
-    const isMobile = useMobile();
-
+export function AppContainer({ children }: AppContainerProps) {
     return (
-        <PageContainer
-            className="app-page-container"
-            title={title}
-            token={{
-                paddingBlockPageContainerContent: isMobile ? 20 : 32,
-                paddingInlinePageContainerContent: isMobile ? 16 : 40,
-            }}
-        >
-            <Suspense fallback={<Skeleton active />}>{children}</Suspense>
-        </PageContainer>
+        <main className="app-page">
+            <Suspense
+                fallback={
+                    <div className="flex min-h-56 items-center justify-center">
+                        <Loading size="small" />
+                    </div>
+                }
+            >
+                {children}
+            </Suspense>
+        </main>
     );
 }

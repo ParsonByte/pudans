@@ -6,7 +6,7 @@ const config = {
     importOrderSeparation: true,
     importOrderSortSpecifiers: true,
     importOrderParserPlugins: ["typescript", "jsx"],
-    tailwindStylesheet: "./src/styles/_global.css",
+    tailwindStylesheet: "./src/styles/theme.css",
 };
 
 export default config;

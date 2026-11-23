@@ -2,12 +2,13 @@
 
 import { useState } from "react";
 
-import { ModalForm, ProFormSelect, ProFormTextArea } from "@ant-design/pro-components";
 import type { BatchCreateResponse } from "@pudans-dev/api-client";
-import { Form } from "antd";
+import { Form, Select, Textarea } from "tdesign-react";
 
+import { GlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
+import { IdentityDialogFooter } from "../../components/identity-dialog-footer";
 import { useBatchCreateFeishuUsers } from "../composables/_feishu-create";
 import {
     MAX_USER_BATCH_SIZE,
@@ -17,7 +18,6 @@ import {
 } from "../composables/_feishu-users";
 import type { UserGroupOption } from "../composables/_user-groups";
 import { BatchCreateResult } from "./batch-create-result";
-import { FeishuSyncNotice } from "./feishu-sync-notice";
 
 type BatchCreateFormValues = {
     userIds: string;
@@ -31,31 +31,36 @@ type BatchCreateUsersModalProps = {
 
 export function BatchCreateUsersModal({ groupOptions, onClose }: BatchCreateUsersModalProps) {
     const prompt = useMessagePrompt();
-    const [form] = Form.useForm<BatchCreateFormValues>();
+    const [form] = Form.useForm();
     const [result, setResult] = useState<BatchCreateResponse>();
     const createUsers = useBatchCreateFeishuUsers();
 
-    const validateUserIds = async (_: unknown, value?: string) => {
-        const parsed = parseFeishuUserIds(value ?? "");
+    const validateUserIds = (value: unknown) => {
+        const parsed = parseFeishuUserIds(typeof value === "string" ? value : "");
 
         if (parsed.rows.length === 0) {
-            throw new Error("请输入至少一个飞书用户 ID。");
+            return { message: "请输入至少一个飞书用户 ID。", result: false };
         }
         if (parsed.issues.length > 0) {
-            throw new Error(parsed.issues[0].message);
+            return { message: parsed.issues[0].message, result: false };
         }
+
+        return true;
     };
 
-    const submit = async (values: BatchCreateFormValues) => {
-        const users = parseFeishuUserIds(values.userIds).rows.map((user) => ({
+    const submit = async () => {
+        const values = form.getFieldsValue(true) as BatchCreateFormValues;
+        const parsed = parseFeishuUserIds(values.userIds ?? "");
+
+        const users = parsed.rows.map((user) => ({
             ...user,
             userGroup: values.userGroup,
         }));
         const issues = validateFeishuUserDrafts(users);
 
         if (issues.length > 0) {
-            prompt.error(issues[0].message);
-            return false;
+            prompt.error({ content: issues[0].message });
+            return;
         }
 
         setResult(undefined);
@@ -68,66 +73,70 @@ export function BatchCreateUsersModal({ groupOptions, onClose }: BatchCreateUser
             setResult(response);
 
             if (failed === 0) {
-                prompt.success(`已添加 ${created} 个用户。`);
+                prompt.success({ content: `已添加 ${created} 个用户。` });
                 onClose();
-                return true;
+                return;
             }
 
             const retryUsers = selectFailedFeishuUserDrafts(users, response.failures);
-            prompt.warning(`已添加 ${created} 个用户，${failed} 个未能添加，失败项已保留。`);
+            prompt.warning({ content: `已添加 ${created} 个用户，${failed} 个未能添加，失败项已保留。` });
             form.setFieldsValue({
                 userIds: retryUsers.map((user) => user.providerUserId).join("\n"),
             });
-            return false;
         } catch {
-            return false;
+            return;
+        }
+    };
+    const close = () => {
+        if (!createUsers.isPending) {
+            onClose();
         }
     };
 
     return (
-        <ModalForm<BatchCreateFormValues>
-            form={form}
-            modalProps={{ destroyOnHidden: true, mask: { closable: !createUsers.isPending } }}
-            onFinish={submit}
-            onOpenChange={(open) => {
-                if (!open && !createUsers.isPending) {
-                    onClose();
-                }
-            }}
+        <GlobalDialog
+            footer={
+                <IdentityDialogFooter
+                    onCancel={close}
+                    onSubmit={() => form.submit()}
+                    pending={createUsers.isPending}
+                    submitLabel="批量添加"
+                />
+            }
+            onClose={close}
             open
-            submitter={{
-                searchConfig: { submitText: "批量添加" },
-                submitButtonProps: { loading: createUsers.isPending },
-            }}
             title="批量添加用户"
             width={560}
         >
-            <FeishuSyncNotice />
-            <ProFormTextArea
-                className="mt-5"
-                extra={`每行一个；单次最多 ${MAX_USER_BATCH_SIZE} 个，本地登录名会自动生成。`}
-                fieldProps={{
-                    autoSize: { maxRows: 8, minRows: 5 },
-                    placeholder: "on_xxxxxxxx\nou_xxxxxxxx",
+            <Form
+                form={form}
+                initialData={{ userIds: "" }}
+                labelAlign="top"
+                onSubmit={({ validateResult }) => {
+                    if (validateResult === true) {
+                        void submit();
+                    }
                 }}
-                label="飞书用户 ID"
-                name="userIds"
-                rules={[{ validator: validateUserIds }]}
-                tooltip="支持 union_id 或 open_id。"
-            />
-            <ProFormSelect
-                allowClear
-                className="mt-4"
-                label="用户组"
-                name="userGroup"
-                options={groupOptions}
-                placeholder="使用默认用户组"
-            />
+            >
+                <Form.FormItem
+                    label={`飞书用户 ID（单次最多 ${MAX_USER_BATCH_SIZE} 个）`}
+                    name="userIds"
+                    rules={[{ validator: validateUserIds }]}
+                >
+                    <Textarea
+                        autosize={{ maxRows: 8, minRows: 5 }}
+                        placeholder="on_xxxxxxxx&#10;ou_xxxxxxxx"
+                    />
+                </Form.FormItem>
+                <Form.FormItem label="用户组" name="userGroup">
+                    <Select clearable={false} options={groupOptions} placeholder="使用默认用户组" />
+                </Form.FormItem>
+            </Form>
             {result ? (
                 <div className="mt-4">
-                    <BatchCreateResult {...result} />
+                    <BatchCreateResult created={result.created} failed={result.failed} failures={result.failures} />
                 </div>
             ) : null}
-        </ModalForm>
+        </GlobalDialog>
     );
 }

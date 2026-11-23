@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, Empty, Select, Skeleton, Timeline, Typography } from "antd";
+import { Button, Empty, Select, Skeleton, Timeline, Typography } from "tdesign-react";
 
 import { SectionCard } from "@/components/ui";
 
@@ -37,50 +37,46 @@ export function UserDetailActivity({ name }: UserDetailActivityProps) {
                 <Select
                     aria-label="选择活动时间范围"
                     className="w-28"
-                    onChange={setDays}
+                    onChange={(value) => {
+                        if (typeof value === "number") {
+                            setDays(value);
+                        }
+                    }}
                     options={ACTIVITY_DAY_OPTIONS}
                     value={days}
                 />
             }
             title="用户活动"
         >
-            {activityQuery.isPending ? <Skeleton active paragraph={{ rows: 5 }} /> : null}
+            {activityQuery.isPending ? <Skeleton theme="paragraph" /> : null}
             {activityQuery.error ? (
-                <Alert
-                    action={<Typography.Link onClick={() => void activityQuery.refetch()}>重试</Typography.Link>}
-                    message="用户活动加载失败"
+                <Empty
+                    action={
+                        <Button onClick={() => void activityQuery.refetch()} size="small">
+                            重试
+                        </Button>
+                    }
                     description={consoleErrorMessage(activityQuery.error)}
-                    showIcon
-                    type="error"
+                    title="用户活动加载失败"
+                    type="fail"
                 />
             ) : null}
             {activityQuery.isSuccess ? (
                 <div>
-                    <Typography.Text type="secondary">
+                    <Typography.Text theme="secondary">
                         最近 {days} 天共 {total} 次审计活动
                     </Typography.Text>
                     <div className="mt-4">
                         {activePoints.length > 0 ? (
-                            <Timeline
-                                items={activePoints.map((point) => ({
-                                    color: "blue",
-                                    content: (
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div>
-                                                <Typography.Text strong>{point.count ?? 0} 次操作</Typography.Text>
-                                                <div>
-                                                    <Typography.Text type="secondary">审计活动</Typography.Text>
-                                                </div>
-                                            </div>
-                                            <Typography.Text className="whitespace-nowrap" type="secondary">
-                                                {point.date}
-                                            </Typography.Text>
-                                        </div>
-                                    ),
-                                }))}
-                            />
+                            <Timeline mode="same" theme="dot">
+                                {activePoints.map((point) => (
+                                    <Timeline.Item dotColor="var(--td-brand-color)" key={point.date} label={point.date}>
+                                        <Typography.Text strong>{point.count ?? 0} 次操作</Typography.Text>
+                                    </Timeline.Item>
+                                ))}
+                            </Timeline>
                         ) : (
-                            <Empty description={`最近 ${days} 天暂无活动`} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                            <Empty description={`最近 ${days} 天暂无活动`} />
                         )}
                     </div>
                 </div>

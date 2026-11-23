@@ -1,6 +1,8 @@
 "use client";
 
-import { Avatar, theme } from "antd";
+import { Avatar } from "tdesign-react";
+
+import { useDesignTokens } from "@/components/ui";
 
 type UserAvatarProps = {
     name?: string;
@@ -29,15 +31,16 @@ function initialsOf(name?: string): string {
 }
 
 export function UserAvatar({ name, size = 40, src }: UserAvatarProps) {
-    const { token } = theme.useToken();
+    const tokens = useDesignTokens();
 
     return (
         <Avatar
-            size={size}
-            src={src || undefined}
+            image={src || undefined}
+            shape="circle"
+            size={`${size}px`}
             style={{
-                backgroundColor: token.colorPrimaryBg,
-                color: token.colorPrimary,
+                backgroundColor: tokens.colorPrimaryBg,
+                color: tokens.colorPrimary,
                 flexShrink: 0,
             }}
         >

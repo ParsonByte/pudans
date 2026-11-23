@@ -1,198 +1,317 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-import { type Secret, apiClient } from "@pudans-dev/api-client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { App, Button, Flex, Form, Input, Modal, Space, type TableProps } from "antd";
+import type { SecretCatalogItem } from "@pudans-dev/api-client";
+import { apiClient } from "@pudans-dev/api-client";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { AddIcon, RefreshIcon } from "tdesign-icons-react";
+import { Button, Empty, Select, Skeleton, Tag, Tooltip } from "tdesign-react";
+import type { TableProps } from "tdesign-react";
 
+import { SectionCard, confirmGlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { usePermission } from "@/hooks/utils/use-permission";
 
 import { ConsoleTable } from "../../../components/console-table";
+import { CopyableIdentifier } from "../../../components/copyable-identifier";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatDateTime } from "../../../composables/_format";
-import { type KeyValueEntry, toKeyValueRecord } from "../../../composables/_key-value";
+import { formatCount, formatDateTime } from "../../../composables/_format";
+import { useConsoleSession } from "../../../composables/_session";
 import { useConsoleTableState } from "../../../composables/_table";
+import { useDashboardTheme } from "../../overview/dashboard/composables/_theme";
+import { SecuritySearchInput } from "../components/security-search-input";
+import { SecretDetailModal } from "./components/secret-detail-modal";
+import { SecretEditorModal } from "./components/secret-editor-modal";
+import { SecretKeyProfile } from "./components/secret-key-profile";
+import { SecretKeyTags } from "./components/secret-key-tags";
+import { SecretMetricGrid } from "./components/secret-metric-grid";
+import { SecretTypeChart } from "./components/secret-type-chart";
+import {
+    DEFAULT_SECRET_TYPE,
+    SECRET_PERMISSIONS,
+    SECRET_QUERY_ROOT,
+    secretEntryCount,
+    secretTypeLabel,
+} from "./composables/_secrets";
 
-type SecretFormValues = {
-    name: string;
-    stringData?: KeyValueEntry[];
-    type?: string;
+type SecretEditorState = {
+    item?: SecretCatalogItem;
+    mode: "create" | "edit";
+};
+
+type SecretRow = SecretCatalogItem & {
+    rowId: string;
 };
 
 export function SecretsView() {
-    const { modal } = App.useApp();
     const prompt = useMessagePrompt();
     const queryClient = useQueryClient();
     const table = useConsoleTableState();
-    const [form] = Form.useForm<SecretFormValues>();
-    const [open, setOpen] = useState(false);
-    const secretsQuery = useQuery({
-        queryKey: ["console", "secrets", table.page, table.pageSize],
-        queryFn: async () => (await apiClient.secret.listSecret({ page: table.page, size: table.pageSize })).data,
-    });
-    const saveSecret = useMutation({
-        mutationFn: async (values: SecretFormValues) => {
-            const stringData = toKeyValueRecord(values.stringData);
-            const payload = {
-                apiVersion: "pudans.tolim.cn/v1alpha1",
-                kind: "Secret",
-                metadata: { name: values.name },
-                type: values.type ?? "Opaque",
-                ...(Object.keys(stringData).length > 0 ? { stringData } : {}),
-            };
-
-            await apiClient.secret.createSecret({ secret: payload });
-        },
-        onError: (error) => prompt.error(consoleErrorMessage(error)),
-        onSuccess: () => {
-            prompt.success("密钥已保存。");
-            setOpen(false);
-            void queryClient.invalidateQueries({ queryKey: ["console", "secrets"] });
-        },
+    const { page, pageSize, setPage } = table;
+    const sessionQuery = useConsoleSession();
+    const { allowed: canView, can } = usePermission(
+        { permissions: sessionQuery.data?.uiPermissions },
+        SECRET_PERMISSIONS.view,
+    );
+    const canCreate = can(SECRET_PERMISSIONS.create);
+    const canDelete = can(SECRET_PERMISSIONS.delete);
+    const canUpdate = can(SECRET_PERMISSIONS.update);
+    const { token } = useDashboardTheme();
+    const keyword = table.keyword;
+    const typeFilter = table.filters.type ?? "";
+    const [selected, setSelected] = useState<SecretCatalogItem>();
+    const [editor, setEditor] = useState<SecretEditorState>();
+    const catalogQuery = useQuery({
+        placeholderData: keepPreviousData,
+        enabled: sessionQuery.isSuccess && canView,
+        queryFn: async () =>
+            (
+                await apiClient.secret.getSecretCatalog({
+                    keyword: keyword || undefined,
+                    page,
+                    size: pageSize,
+                    type: typeFilter || undefined,
+                })
+            ).data,
+        queryKey: [...SECRET_QUERY_ROOT, "catalog", page, pageSize, keyword, typeFilter],
+        refetchInterval: 60_000,
+        staleTime: 30_000,
     });
     const deleteSecret = useMutation({
         mutationFn: async (name: string) => apiClient.secret.deleteSecret({ name }),
-        onError: (error) => prompt.error(consoleErrorMessage(error)),
+        onError: (error) => prompt.error({ content: consoleErrorMessage(error) }),
         onSuccess: () => {
-            prompt.success("密钥已删除。");
-            void queryClient.invalidateQueries({ queryKey: ["console", "secrets"] });
+            prompt.success({ content: "密钥已删除。" });
+            setSelected(undefined);
+            void queryClient.invalidateQueries({ queryKey: SECRET_QUERY_ROOT });
         },
     });
+    const catalog = catalogQuery.data;
+    const summary = catalog?.summary;
+    const items = useMemo(() => catalog?.items ?? [], [catalog?.items]);
+    const rows = useMemo<SecretRow[]>(
+        () =>
+            items.map((item, index) => ({
+                ...item,
+                rowId:
+                    item.name ?? `${item.type ?? DEFAULT_SECRET_TYPE}:${item.creationTimestamp ?? "unknown"}:${index}`,
+            })),
+        [items],
+    );
+    const totalPages = catalog?.totalPages ?? 0;
+    const isSyncing = catalogQuery.isFetching || deleteSecret.isPending;
+    const typeOptions = (summary?.types ?? [])
+        .filter((type) => Boolean(type.type))
+        .map((type) => ({
+            label: `${secretTypeLabel(type.type)} · ${formatCount(type.count)}`,
+            value: type.type as string,
+        }));
 
-    const openCreate = () => {
-        form.resetFields();
-        form.setFieldsValue({ stringData: [], type: "Opaque" });
-        setOpen(true);
-    };
+    useEffect(() => {
+        if (!catalogQuery.isSuccess) {
+            return;
+        }
+        if (totalPages === 0 && page > 1) {
+            setPage(1);
+            return;
+        }
+        if (totalPages > 0 && page > totalPages) {
+            setPage(totalPages);
+        }
+    }, [catalogQuery.isSuccess, page, setPage, totalPages]);
 
-    const confirmDelete = (record: Secret) => {
-        modal.confirm({
+    useEffect(() => {
+        if (catalogQuery.error) {
+            prompt.error({ content: consoleErrorMessage(catalogQuery.error) });
+        }
+    }, [catalogQuery.error, prompt]);
+
+    if (sessionQuery.isPending) {
+        return <Skeleton theme="paragraph" />;
+    }
+
+    if (sessionQuery.error) {
+        return (
+            <Empty
+                action={<Button onClick={() => void sessionQuery.refetch()}>重试</Button>}
+                description={consoleErrorMessage(sessionQuery.error)}
+                type="network-error"
+            />
+        );
+    }
+
+    if (!canView) {
+        return <Empty description="当前账号没有查看密钥目录的权限。" title="无权查看" type="fail" />;
+    }
+
+    const refresh = () => void catalogQuery.refetch();
+    const openCreate = () => setEditor({ mode: "create" });
+    const openEdit = (item: SecretCatalogItem) => setEditor({ item, mode: "edit" });
+    const confirmDelete = (item: SecretCatalogItem) => {
+        const name = item.name;
+        if (!name) {
+            return;
+        }
+        confirmGlobalDialog({
             cancelText: "取消",
-            content: `确定删除密钥 ${record.metadata.name} 吗？`,
-            okButtonProps: { danger: true },
-            okText: "删除",
-            onOk: () => deleteSecret.mutateAsync(record.metadata.name),
+            confirmText: "删除",
+            content: (
+                <>
+                    确定删除密钥 <strong>{name}</strong> 吗？删除后无法恢复。
+                </>
+            ),
+            danger: true,
+            onConfirm: () => void deleteSecret.mutateAsync(name),
             title: "删除密钥",
         });
     };
-
-    const columns: TableProps<Secret>["columns"] = [
-        { dataIndex: ["metadata", "name"], key: "name", title: "名称" },
-        { dataIndex: "type", key: "type", render: (value: string) => value ?? "Opaque", title: "类型" },
+    const columns: TableProps<SecretRow>["columns"] = [
         {
-            key: "keys",
-            render: (_, record) => Object.keys(record.data ?? record.stringData ?? {}).length,
-            title: "键数量",
+            cell: ({ row }) => <CopyableIdentifier value={row.name} />,
+            colKey: "name",
+            title: "名称",
+            width: 220,
         },
         {
-            dataIndex: ["metadata", "creationTimestamp"],
-            key: "creationTimestamp",
-            render: (value: string) => formatDateTime(value),
-            title: "创建时间",
-        },
-        {
-            key: "actions",
-            render: (_, record) => (
-                <Button danger onClick={() => confirmDelete(record)} size="small">
-                    删除
-                </Button>
+            cell: ({ row }) => (
+                <Tooltip content={row.type ?? DEFAULT_SECRET_TYPE}>
+                    <Tag theme={!row.type || row.type === DEFAULT_SECRET_TYPE ? "default" : "primary"} variant="light">
+                        {secretTypeLabel(row.type)}
+                    </Tag>
+                </Tooltip>
             ),
+            colKey: "type",
+            title: "类型",
+            width: 150,
+        },
+        {
+            cell: ({ row }) => {
+                const count = secretEntryCount(row);
+                if (count === 0) {
+                    return (
+                        <Tag theme="warning" variant="light">
+                            空密钥
+                        </Tag>
+                    );
+                }
+
+                return (
+                    <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium tabular-nums">{formatCount(count)} 个键</span>
+                        <span className="text-[11px] whitespace-nowrap" style={{ color: token.colorTextTertiary }}>
+                            文本 {formatCount(row.stringDataKeys?.length)} · 二进制 {formatCount(row.dataKeys?.length)}
+                        </span>
+                    </div>
+                );
+            },
+            colKey: "scale",
+            title: "规模",
+            width: 132,
+        },
+        {
+            cell: ({ row }) => <SecretKeyTags dataKeys={row.dataKeys} limit={4} stringDataKeys={row.stringDataKeys} />,
+            colKey: "keys",
+            title: "键名",
+            width: 320,
+        },
+        {
+            cell: ({ row }) => (
+                <span className="whitespace-nowrap tabular-nums">{formatDateTime(row.creationTimestamp)}</span>
+            ),
+            colKey: "creationTimestamp",
+            title: "创建时间",
+            width: 172,
+        },
+        {
+            cell: ({ row }) => (
+                <div className="flex items-center gap-1">
+                    <Button onClick={() => setSelected(row)} size="small" theme="primary" variant="text">
+                        详情
+                    </Button>
+                    {canUpdate ? (
+                        <Button onClick={() => openEdit(row)} size="small" theme="primary" variant="text">
+                            编辑
+                        </Button>
+                    ) : null}
+                    {canDelete ? (
+                        <Button onClick={() => confirmDelete(row)} size="small" theme="danger" variant="text">
+                            删除
+                        </Button>
+                    ) : null}
+                </div>
+            ),
+            colKey: "actions",
             title: "操作",
+            width: canUpdate && canDelete ? 180 : 150,
         },
     ];
 
     return (
-        <>
+        <div className="flex min-w-0 flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+                {canCreate ? (
+                    <Button icon={<AddIcon />} onClick={openCreate} theme="primary">
+                        新建密钥
+                    </Button>
+                ) : null}
+                <Button icon={<RefreshIcon />} loading={isSyncing} onClick={refresh} variant="outline">
+                    刷新
+                </Button>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+                <SecretMetricGrid loading={catalogQuery.isPending} summary={summary} />
+                <div className="md:col-span-2 xl:col-span-7">
+                    <SectionCard title="密钥规模排行">
+                        <SecretKeyProfile items={items} />
+                    </SectionCard>
+                </div>
+                <div className="md:col-span-2 xl:col-span-5">
+                    <SectionCard title="密钥类型分布">
+                        <SecretTypeChart types={summary?.types} />
+                    </SectionCard>
+                </div>
+            </div>
+
             <ConsoleTable
                 columns={columns}
-                data={secretsQuery.data?.items}
-                error={secretsQuery.error}
-                extra={
-                    <Space>
-                        <Button onClick={openCreate} size="small" type="primary">
-                            新建密钥
-                        </Button>
-                        <Button onClick={() => void secretsQuery.refetch()} size="small">
-                            刷新
-                        </Button>
-                    </Space>
+                data={rows}
+                loading={catalogQuery.isPending}
+                pagination={{ ...table.pagination, total: catalog?.total ?? 0 }}
+                rowKey="rowId"
+                title="密钥目录"
+                toolbar={
+                    <div className="flex min-w-0 flex-col gap-2 lg:flex-row lg:items-center">
+                        <div className="w-full min-w-0 lg:max-w-sm">
+                            <SecuritySearchInput
+                                onChange={() => undefined}
+                                onSearch={(value) => table.setKeyword(value)}
+                                placeholder="搜索密钥名称或键名"
+                                value={keyword}
+                            />
+                        </div>
+                        <Select
+                            clearable
+                            onChange={(value) => table.setFilter("type", (value as string | undefined) ?? null)}
+                            options={typeOptions}
+                            placeholder="全部类型"
+                            style={{ width: 224 }}
+                            value={typeFilter || undefined}
+                        />
+                    </div>
                 }
-                loading={secretsQuery.isPending}
-                onRetry={() => void secretsQuery.refetch()}
-                pagination={{ ...table.pagination, total: secretsQuery.data?.total ?? 0 }}
-                rowKey={(record) => record.metadata.name}
-                title="密钥管理"
             />
-            <Modal
-                destroyOnHidden
-                footer={
-                    <Space>
-                        <Button onClick={() => setOpen(false)}>取消</Button>
-                        <Button loading={saveSecret.isPending} onClick={() => form.submit()} type="primary">
-                            保存
-                        </Button>
-                    </Space>
-                }
-                onCancel={() => setOpen(false)}
-                open={open}
-                title="新建密钥"
-                width={640}
-            >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={(values) => saveSecret.mutate(values)}
-                    requiredMark={false}
-                >
-                    <Form.Item
-                        label="名称"
-                        name="name"
-                        rules={[{ message: "请输入名称。", required: true, whitespace: true }]}
-                    >
-                        <Input placeholder="例如：smtp-credentials" />
-                    </Form.Item>
-                    <Form.Item label="类型" name="type">
-                        <Input placeholder="Opaque" />
-                    </Form.Item>
-                    <Form.List name="stringData">
-                        {(fields, { add, remove }) => (
-                            <Flex vertical gap={8}>
-                                {fields.map(({ key, name, ...restField }) => (
-                                    <Flex align="start" className="flex-col gap-2 sm:flex-row" gap={8} key={key}>
-                                        <Form.Item
-                                            {...restField}
-                                            className="!mb-0 w-full flex-1"
-                                            name={[name, "key"]}
-                                            rules={[{ message: "请输入键。", required: true, whitespace: true }]}
-                                        >
-                                            <Input placeholder="键" />
-                                        </Form.Item>
-                                        <Form.Item
-                                            {...restField}
-                                            className="!mb-0 w-full flex-[2]"
-                                            name={[name, "value"]}
-                                        >
-                                            <Input placeholder="值" />
-                                        </Form.Item>
-                                        <Button
-                                            className="w-full sm:w-auto"
-                                            danger
-                                            onClick={() => remove(name)}
-                                            type="text"
-                                        >
-                                            删除
-                                        </Button>
-                                    </Flex>
-                                ))}
-                                <Button onClick={() => add({ key: "", value: "" })} type="dashed">
-                                    添加键值
-                                </Button>
-                            </Flex>
-                        )}
-                    </Form.List>
-                </Form>
-            </Modal>
-        </>
+
+            <SecretDetailModal item={selected} onClose={() => setSelected(undefined)} />
+            {editor ? (
+                <SecretEditorModal
+                    item={editor.item}
+                    key={`${editor.mode}:${editor.item?.name ?? "new"}`}
+                    mode={editor.mode}
+                    onClose={() => setEditor(undefined)}
+                />
+            ) : null}
+        </div>
     );
 }

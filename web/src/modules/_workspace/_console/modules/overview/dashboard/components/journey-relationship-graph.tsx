@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
-import { NetworkGraph } from "@ant-design/charts";
 import type { AuditJourney } from "@pudans-dev/api-client";
-import { Skeleton } from "antd";
 
+import { EChart } from "@/components/ui";
+import type { EChartsCoreOption } from "@/components/ui/echart";
 import { useMobile } from "@/hooks/ui/use-mobile";
 
 import { formatDateTime } from "../../../../composables/_format";
+import { escapeHtml } from "../../../../composables/_html";
 import { formatCount, operationLabel, resultTone, userLabel } from "../composables/_dashboard";
 import { type JourneyTraceSession, pagePath } from "../composables/_journey";
 import { useDashboardTheme } from "../composables/_theme";
@@ -85,15 +86,6 @@ const EDGE_KIND_LABELS: Record<JourneyEdgeKind, string> = {
     "session-operation": "会话 · 操作类型",
     "user-session": "用户 · 会话",
 };
-
-function escapeHtml(value: string): string {
-    return value
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-}
 
 function endpointLabel(kind: "entry" | "exit", path: string): string {
     return `${kind === "entry" ? "入口" : "出口"} ${path}`;
@@ -363,68 +355,139 @@ export function JourneyRelationshipGraph({ journey, sessions }: JourneyRelations
     const isMobile = useMobile();
     const colors = useDashboardTheme();
     const { token, tone } = colors;
-    const [ready, setReady] = useState(false);
     const data = useMemo(() => buildGraphData(journey, sessions, colors), [colors, journey, sessions]);
     const nodeLabels = useMemo(() => new Map(data.nodes.map((node) => [node.id, node.data.label])), [data.nodes]);
-    const pagePathCount = useMemo(
-        () =>
-            new Set(
-                sessions.flatMap((session) =>
-                    session.records.filter((record) => record.kind === "page").map((record) => pagePath(record.record)),
-                ),
-            ).size,
-        [sessions],
-    );
-    const operationNodeCount = data.nodes.filter((node) => node.data.kind === "operation").length;
-    const pageRecordCount = sessions.reduce((sum, session) => sum + session.pageCount, 0);
-    const actionRecordCount = sessions.reduce((sum, session) => sum + session.actionCount, 0);
     const graphHeight = isMobile
         ? Math.min(620, Math.max(420, 330 + Math.sqrt(data.nodes.length) * 22))
         : Math.min(780, Math.max(560, 420 + Math.sqrt(data.nodes.length) * 24));
-    const legend = [
-        { color: tone("blue").base, label: "用户" },
-        { color: tone("geekblue").base, label: "会话" },
-        { color: tone("cyan").base, label: "入口" },
-        { color: tone("green").base, label: "出口" },
-        { color: tone("gold").base, label: "页面" },
-        { color: tone("purple").base, label: "操作类型" },
-    ];
+    const legend = useMemo(
+        () => [
+            { color: tone("blue").base, label: "用户" },
+            { color: tone("geekblue").base, label: "会话" },
+            { color: tone("cyan").base, label: "入口" },
+            { color: tone("green").base, label: "出口" },
+            { color: tone("gold").base, label: "页面" },
+            { color: tone("purple").base, label: "操作类型" },
+        ],
+        [tone],
+    );
+    const option = useMemo<EChartsCoreOption>(() => {
+        const categoryIndex: Record<JourneyNodeKind, number> = {
+            entry: 2,
+            exit: 3,
+            operation: 5,
+            page: 4,
+            session: 1,
+            user: 0,
+        };
+        const nodes = data.nodes.map((node) => ({
+            category: categoryIndex[node.data.kind],
+            dataLabel: node.data.label,
+            id: node.id,
+            itemStyle: {
+                borderColor: node.style.stroke,
+                borderWidth: node.style.lineWidth,
+                color: node.style.fill,
+            },
+            label: {
+                show: node.data.kind !== "page" || node.data.labelVisible !== false,
+            },
+            name: node.id,
+            symbolSize: node.style.size,
+        }));
+        const links = data.edges.map((edge) => {
+            const sourceLabel = nodeLabels.get(edge.source)?.replaceAll("\n", " ") ?? edge.source;
+            const targetLabel = nodeLabels.get(edge.target)?.replaceAll("\n", " ") ?? edge.target;
 
-    useEffect(() => {
-        const timer = window.setTimeout(() => setReady(true), 0);
+            return {
+                data: {
+                    kind: edge.data.kind,
+                    label: `${EDGE_KIND_LABELS[edge.data.kind]}\n${sourceLabel} → ${targetLabel}`,
+                },
+                lineStyle: {
+                    color: edge.style.stroke,
+                    curveness: 0.08,
+                    opacity: edge.style.strokeOpacity,
+                    width: edge.style.lineWidth,
+                },
+                source: edge.source,
+                target: edge.target,
+            };
+        });
 
-        return () => window.clearTimeout(timer);
-    }, []);
+        return {
+            animationDuration: 420,
+            series: [
+                {
+                    blur: {
+                        itemStyle: { opacity: 0.28 },
+                        label: { opacity: 0.28 },
+                        lineStyle: { opacity: 0.12 },
+                    },
+                    bottom: 12,
+                    categories: legend.map((item) => ({ itemStyle: { color: item.color }, name: item.label })),
+                    data: nodes,
+                    draggable: true,
+                    edgeSymbol: ["none", "arrow"],
+                    edgeSymbolSize: 6,
+                    emphasis: {
+                        focus: "adjacency",
+                        label: { show: true },
+                        lineStyle: { opacity: 0.9, width: 2.2 },
+                    },
+                    force: {
+                        edgeLength: [48, 180],
+                        gravity: 0.08,
+                        initLayout: "circular",
+                        repulsion: 260,
+                    },
+                    label: {
+                        color: token.colorText,
+                        distance: 4,
+                        fontSize: 11,
+                        formatter: (params: { data?: { dataLabel?: string } }) => params.data?.dataLabel ?? "",
+                        lineHeight: 15,
+                        overflow: "break",
+                        position: "bottom",
+                        width: 170,
+                    },
+                    layout: "force",
+                    left: 12,
+                    lineStyle: { opacity: 0.45 },
+                    links,
+                    right: 12,
+                    roam: true,
+                    top: 12,
+                    type: "graph",
+                },
+            ],
+            tooltip: {
+                backgroundColor: token.colorBgElevated,
+                borderColor: token.colorBorderSecondary,
+                borderWidth: 1,
+                confine: true,
+                extraCssText: `border-radius:${token.borderRadiusLG};box-shadow:${token.boxShadowSecondary};`,
+                formatter: (raw: unknown) => {
+                    const params = raw as {
+                        data?: { dataLabel?: string; label?: string };
+                        dataType?: "edge" | "node";
+                    };
+                    const label =
+                        params.dataType === "edge" ? (params.data?.label ?? "") : (params.data?.dataLabel ?? "");
 
-    if (!ready) {
-        return <Skeleton active paragraph={{ rows: 8 }} />;
-    }
+                    return `<div style="max-width:320px;white-space:normal;color:${token.colorText};font-size:12px;line-height:1.65">${escapeHtml(label).replaceAll("\n", "<br/>")}</div>`;
+                },
+                textStyle: {
+                    color: token.colorText,
+                    fontSize: 12,
+                },
+                trigger: "item",
+            },
+        };
+    }, [data, legend, nodeLabels, token]);
 
     return (
         <div>
-            <div
-                className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px]"
-                style={{ color: token.colorTextSecondary }}
-            >
-                <span>
-                    会话 <strong style={{ color: token.colorText }}>{formatCount(sessions.length)}</strong>
-                </span>
-                <span>
-                    页面记录 <strong style={{ color: token.colorText }}>{formatCount(pageRecordCount)}</strong>
-                </span>
-                <span>
-                    操作明细 <strong style={{ color: token.colorText }}>{formatCount(actionRecordCount)}</strong>
-                </span>
-                <span>
-                    页面路径 <strong style={{ color: token.colorText }}>{formatCount(pagePathCount)}</strong>
-                </span>
-                <span>
-                    操作类型 <strong style={{ color: token.colorText }}>{formatCount(operationNodeCount)}</strong>
-                </span>
-                <span>
-                    关系 <strong style={{ color: token.colorText }}>{formatCount(data.edges.length)}</strong>
-                </span>
-            </div>
             <div
                 className="overflow-hidden rounded-3xl border"
                 style={{
@@ -432,89 +495,7 @@ export function JourneyRelationshipGraph({ journey, sessions }: JourneyRelations
                     borderColor: token.colorBorderSecondary,
                 }}
             >
-                <NetworkGraph
-                    autoFit="view"
-                    behaviors={[
-                        { key: "journey-zoom", type: "zoom-canvas" },
-                        { key: "journey-drag-canvas", type: "drag-canvas" },
-                        { key: "journey-drag-node", type: "drag-element" },
-                        { key: "journey-label-adapt", padding: 4, type: "auto-adapt-label" },
-                        { degree: 1, key: "journey-hover", type: "hover-activate" },
-                    ]}
-                    data={data}
-                    edge={{ style: { lineWidth: 1.2, strokeOpacity: 0.5 } }}
-                    height={graphHeight}
-                    key={sessions.map((session) => session.index).join("-")}
-                    layout={{
-                        equidistant: true,
-                        nodeSize: 46,
-                        preventOverlap: true,
-                        sortBy: (node: { data?: { level?: number } }) => node.data?.level ?? 1,
-                        type: "concentric",
-                    }}
-                    node={{
-                        style: {
-                            labelBackground: true,
-                            labelBackgroundFill: token.colorBgContainer,
-                            labelBackgroundOpacity: 0.94,
-                            labelBackgroundRadius: 4,
-                            labelFill: token.colorText,
-                            labelFontSize: 12,
-                            labelFontWeight: 600,
-                            labelLineHeight: 16,
-                            labelMaxWidth: 170,
-                            labelPadding: [2, 5],
-                            labelPlacement: "bottom",
-                            labelText: (datum) =>
-                                datum.data?.labelVisible === false ? "" : String(datum.data?.label ?? datum.id),
-                        },
-                    }}
-                    onReady={(graph) => {
-                        if (!graph.destroyed) {
-                            void graph.fitView({ direction: "both", when: "always" }, { duration: 240 });
-                        }
-                    }}
-                    padding={isMobile ? 16 : 32}
-                    plugins={[
-                        {
-                            getContent: (_event: unknown, items: unknown) => {
-                                const item = (
-                                    items as
-                                        | {
-                                              data?: { kind?: JourneyEdgeKind; label?: string };
-                                              source?: string;
-                                              target?: string;
-                                          }[]
-                                        | undefined
-                                )?.[0];
-                                const source = item?.source ? nodeLabels.get(item.source) : undefined;
-                                const target = item?.target ? nodeLabels.get(item.target) : undefined;
-                                const label =
-                                    item?.data?.label ??
-                                    (item?.data?.kind && source && target
-                                        ? `${EDGE_KIND_LABELS[item.data.kind]}\n${source.replaceAll("\n", " ")} → ${target.replaceAll("\n", " ")}`
-                                        : "");
-                                const lines = escapeHtml(label).split("\n");
-
-                                return `<div style="max-width:300px;padding:2px 2px 1px;color:${token.colorText};font-size:12px;line-height:1.6">${lines.join("<br/>")}</div>`;
-                            },
-                            key: "journey-tooltip",
-                            style: {
-                                ".tooltip": {
-                                    "background-color": token.colorBgElevated,
-                                    border: `1px solid ${token.colorBorderSecondary}`,
-                                    "border-radius": `${token.borderRadiusLG}px`,
-                                    "box-shadow": token.boxShadowSecondary,
-                                    color: token.colorText,
-                                    padding: "10px 12px",
-                                    visibility: "hidden",
-                                },
-                            },
-                            type: "tooltip",
-                        },
-                    ]}
-                    zoomRange={[0.12, 1.8]}
-                />
+                <EChart height={graphHeight} key={sessions.map((session) => session.index).join("-")} option={option} />
             </div>
             <div
                 className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px]"
@@ -526,9 +507,6 @@ export function JourneyRelationshipGraph({ journey, sessions }: JourneyRelations
                         {item.label}
                     </span>
                 ))}
-                <span className="sm:ml-auto">
-                    全部页面路径、页面跳转和操作类型已展开；悬停查看明细，滚轮缩放，拖拽探索
-                </span>
             </div>
         </div>
     );

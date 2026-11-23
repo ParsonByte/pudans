@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { Flex, Spin } from "antd";
+import { Loading } from "tdesign-react";
 
 import { ForgotPasswordView, LEGAL_KEYS, LegalDialog, type LegalDocumentKey, SignInView } from "@/modules/_auth";
 
@@ -51,9 +51,9 @@ export function AuthRoute() {
     return (
         <Suspense
             fallback={
-                <Flex justify="center" className="py-20">
-                    <Spin />
-                </Flex>
+                <div className="flex justify-center py-20">
+                    <Loading loading />
+                </div>
             }
         >
             <AuthRouteContent />

@@ -4,10 +4,10 @@ import { useMemo } from "react";
 
 import { apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, Flex, Skeleton, Typography, theme } from "antd";
-import { ShieldCheck } from "lucide-react";
+import { SecuredIcon } from "tdesign-icons-react";
+import { Button, Empty, Skeleton, Typography } from "tdesign-react";
 
-import { SectionCard } from "@/components/ui";
+import { SectionCard, useDesignTokens } from "@/components/ui";
 
 import { consoleErrorMessage } from "../../../../composables/_errors";
 import { roleDisplayName } from "../../composables/_role";
@@ -19,7 +19,7 @@ type UserDetailAccessProps = {
 const ROLE_LOOKUP_PAGE_SIZE = 1000;
 
 export function UserDetailAccess({ name }: UserDetailAccessProps) {
-    const { token } = theme.useToken();
+    const tokens = useDesignTokens();
     const permissionsQuery = useQuery({
         queryKey: ["console", "users", "permissions", name],
         queryFn: async () => (await apiClient.user.getUserPermissions({ name })).data,
@@ -46,22 +46,25 @@ export function UserDetailAccess({ name }: UserDetailAccessProps) {
     return (
         <SectionCard
             className="!h-auto"
-            extra={<Typography.Text type="secondary">{summary}</Typography.Text>}
+            extra={<Typography.Text theme="secondary">{summary}</Typography.Text>}
             title="角色"
         >
-            {permissionsQuery.isPending ? <Skeleton active paragraph={{ rows: 4 }} /> : null}
+            {permissionsQuery.isPending ? <Skeleton theme="paragraph" /> : null}
             {permissionsQuery.error ? (
-                <Alert
-                    action={<Typography.Link onClick={() => void permissionsQuery.refetch()}>重试</Typography.Link>}
-                    message="角色与权限加载失败"
+                <Empty
+                    action={
+                        <Button onClick={() => void permissionsQuery.refetch()} size="small">
+                            重试
+                        </Button>
+                    }
                     description={consoleErrorMessage(permissionsQuery.error)}
-                    showIcon
-                    type="error"
+                    title="角色与权限加载失败"
+                    type="fail"
                 />
             ) : null}
             {permissionsQuery.isSuccess ? (
                 roles.length > 0 ? (
-                    <Flex gap={8} vertical>
+                    <div className="flex flex-col gap-2">
                         {roles.map((role) => {
                             const label = roleLabels.get(role);
                             const displayLabel = label ?? (rolesQuery.isPending ? "加载中" : "未知角色");
@@ -70,26 +73,23 @@ export function UserDetailAccess({ name }: UserDetailAccessProps) {
                                 <div
                                     className="flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5"
                                     key={role}
-                                    style={{ backgroundColor: token.colorFillQuaternary }}
+                                    style={{ backgroundColor: tokens.colorFillQuaternary }}
                                 >
                                     <span
                                         className="grid h-8 w-8 shrink-0 place-items-center rounded-lg"
-                                        style={{ backgroundColor: token.colorPrimaryBg, color: token.colorPrimary }}
+                                        style={{ backgroundColor: tokens.colorPrimaryBg, color: tokens.colorPrimary }}
                                     >
-                                        <ShieldCheck size={15} />
+                                        <SecuredIcon />
                                     </span>
-                                    <Typography.Text
-                                        className="min-w-0 flex-1"
-                                        ellipsis={{ tooltip: label ? undefined : role }}
-                                    >
+                                    <Typography.Text className="min-w-0 flex-1" ellipsis>
                                         {displayLabel}
                                     </Typography.Text>
                                 </div>
                             );
                         })}
-                    </Flex>
+                    </div>
                 ) : (
-                    <Typography.Text type="secondary">未分配角色</Typography.Text>
+                    <Typography.Text theme="secondary">未分配角色</Typography.Text>
                 )
             ) : null}
         </SectionCard>

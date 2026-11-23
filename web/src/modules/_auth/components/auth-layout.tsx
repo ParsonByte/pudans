@@ -5,8 +5,8 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { Button, Card } from "antd";
-import { Pause, Play } from "lucide-react";
+import { PauseIcon, PlayIcon } from "tdesign-icons-react";
+import { Button, Card } from "tdesign-react";
 
 import { ThemeMenu } from "@/components/ui";
 import { useMobile } from "@/hooks/ui/use-mobile";
@@ -55,7 +55,7 @@ export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
     });
 
     return (
-        <main className="relative isolate h-dvh overflow-hidden bg-neutral-950 text-(--auth-foreground)">
+        <main className="relative isolate h-dvh overflow-hidden bg-[var(--td-gray-color-14)] text-(--auth-foreground)">
             <video
                 ref={videoRef}
                 className="pointer-events-none fixed inset-0 z-0 size-full object-cover object-[68%_center]"
@@ -67,8 +67,8 @@ export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
                 disablePictureInPicture
                 aria-hidden="true"
                 tabIndex={-1}
-                onPlay={() => setVideoPlaying(true)}
                 onPause={() => setVideoPlaying(false)}
+                onPlay={() => setVideoPlaying(true)}
             >
                 <source src="/login-bg.mp4" type="video/mp4" />
             </video>
@@ -86,14 +86,14 @@ export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
                     href={isSetup ? "/setup" : "/sign-in"}
                     aria-label={BRAND_NAME}
                     className="inline-flex min-w-0 items-center gap-2.5"
-                    style={{ color: "#fff" }}
+                    style={{ color: "var(--auth-foreground)" }}
                 >
                     <Image alt="" className="shrink-0" height={32} src="/brand/icon-small.svg" unoptimized width={32} />
                     <span className="truncate text-sm leading-none font-bold tracking-[0.16em]">{BRAND_NAME}</span>
                 </Link>
                 <ThemeMenu
                     buttonClassName="drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] transition-colors hover:bg-(--auth-surface)"
-                    buttonStyle={{ color: "#fff" }}
+                    buttonStyle={{ color: "var(--auth-foreground)" }}
                 />
             </header>
 
@@ -121,7 +121,7 @@ export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
                 >
                     <Card
                         className={`${AUTH_GLASS_CLASS} max-h-full w-full overflow-y-auto`}
-                        styles={{ body: { padding: isMobile ? 20 : isSetup ? 32 : 28 } }}
+                        bodyStyle={{ padding: isMobile ? 20 : isSetup ? 32 : 28 }}
                     >
                         {children}
                     </Card>
@@ -135,13 +135,13 @@ export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
                         aria-pressed={!videoPlaying}
                         className="border-(--auth-border) bg-(--auth-surface) text-xs font-medium whitespace-nowrap text-(--auth-foreground) drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] backdrop-blur-md transition-colors hover:bg-(--auth-surface-hover)"
                         onClick={toggleVideo}
-                        style={{ color: "#fff" }}
-                        type="text"
+                        style={{ color: "var(--auth-foreground)" }}
+                        variant="text"
                     >
                         {videoPlaying ? (
-                            <Pause className="size-3.5 text-blue-400" />
+                            <PauseIcon className="size-3.5 text-(--auth-accent)" />
                         ) : (
-                            <Play className="size-3.5 text-blue-400" />
+                            <PlayIcon className="size-3.5 text-(--auth-accent)" />
                         )}
                         {videoPlaying ? "创意正在进行" : "开始发挥创意"}
                     </Button>

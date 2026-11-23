@@ -2,17 +2,20 @@
 
 import { useMemo, useState } from "react";
 
-import { ProCard } from "@ant-design/pro-components";
 import type { Role } from "@pudans-dev/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { App, Button, Empty, Result, Skeleton } from "antd";
-import { Plus, RefreshCw } from "lucide-react";
+import { AddIcon, RefreshIcon, SecuredIcon } from "tdesign-icons-react";
+import { Button, Card, Skeleton } from "tdesign-react";
 
+import { confirmGlobalDialog } from "@/components/ui";
 import { usePermission } from "@/hooks/utils/use-permission";
 import { useQueryParams } from "@/hooks/utils/use-query-params";
 
 import { consoleErrorMessage } from "../../../composables/_errors";
+import { formatCountOrDash } from "../../../composables/_format";
 import { useConsoleSession } from "../../../composables/_session";
+import { IdentityLoadState } from "../components/identity-load-state";
+import { type IdentityOverviewMetric, IdentityPageOverview } from "../components/identity-page-overview";
 import { ROLE_PERMISSIONS, ROLE_TEMPLATE_LABEL, isBuiltinRole, roleDisplayName } from "../composables/_role";
 import { RoleDetailPanel } from "./components/role-detail-panel";
 import { RoleEditorModal } from "./components/role-editor-modal";
@@ -23,7 +26,6 @@ import { useRolesQuery } from "./composables/_role-queries";
 const ROLE_QUERY_KEY = ["console", "roles"] as const;
 
 export function RolesView() {
-    const { modal } = App.useApp();
     const queryClient = useQueryClient();
     const { searchParams, setParam } = useQueryParams();
     const sessionQuery = useConsoleSession();
@@ -44,6 +46,21 @@ export function RolesView() {
         () => roles.find((role) => role.metadata.name === requestedRole) ?? roles[0],
         [requestedRole, roles],
     );
+    const overviewMetrics = useMemo<IdentityOverviewMetric[]>(() => {
+        const loaded = rolesQuery.data !== undefined;
+        const builtinCount = loaded ? roles.filter(isBuiltinRole).length : undefined;
+        const rulesCount = loaded ? roles.filter((role) => (role.rules?.length ?? 0) > 0).length : undefined;
+
+        return [
+            { label: "角色总数", value: formatCountOrDash(loaded ? roles.length : undefined) },
+            { label: "系统内置", value: formatCountOrDash(builtinCount) },
+            {
+                label: "自定义角色",
+                value: formatCountOrDash(loaded ? roles.length - (builtinCount ?? 0) : undefined),
+            },
+            { label: "含直接规则", value: formatCountOrDash(rulesCount) },
+        ];
+    }, [roles, rolesQuery.data]);
 
     const refreshRole = () => {
         void queryClient.invalidateQueries({ queryKey: ROLE_QUERY_KEY });
@@ -70,12 +87,12 @@ export function RolesView() {
             return;
         }
 
-        modal.confirm({
+        confirmGlobalDialog({
             cancelText: "继续编辑",
+            confirmText: "放弃并切换",
             content: "切换角色会丢失当前未保存的菜单和操作权限变更。",
-            okButtonProps: { danger: true },
-            okText: "放弃并切换",
-            onOk: applySelection,
+            danger: true,
+            onConfirm: applySelection,
             title: "放弃未保存的变更？",
         });
     };
@@ -90,12 +107,12 @@ export function RolesView() {
             return;
         }
 
-        modal.confirm({
+        confirmGlobalDialog({
             cancelText: "继续编辑",
+            confirmText: "放弃并新建",
             content: "新建角色会关闭当前权限草稿，未保存的变更将不会保留。",
-            okButtonProps: { danger: true },
-            okText: "放弃并新建",
-            onOk: open,
+            danger: true,
+            onConfirm: open,
             title: "放弃未保存的变更？",
         });
     };
@@ -112,78 +129,123 @@ export function RolesView() {
         }
 
         const deletingSelectedRole = selectedRole?.metadata.name === role.metadata.name;
-        modal.confirm({
+        confirmGlobalDialog({
             cancelText: "取消",
+            confirmText: "删除",
             content: `确定删除角色 ${roleDisplayName(role)} 吗？删除后无法恢复。${
                 dirty && deletingSelectedRole ? "当前未保存的权限变更也会一并丢弃。" : ""
             }`,
-            okButtonProps: { danger: true },
-            okText: "删除",
-            onOk: async () => {
-                await deleteRole.mutateAsync(role.metadata.name);
-                if (deletingSelectedRole) {
-                    setDirty(false);
-                    setParam("role", null);
-                }
+            danger: true,
+            onConfirm: () => {
+                void deleteRole.mutateAsync(role.metadata.name).then(() => {
+                    if (deletingSelectedRole) {
+                        setDirty(false);
+                        setParam("role", null);
+                    }
+                });
             },
             title: "删除角色",
         });
     };
 
     if (sessionQuery.isPending) {
-        return <Skeleton active paragraph={{ rows: 10 }} />;
+        return (
+            <Card>
+                <Skeleton animation="gradient" theme="paragraph" />
+            </Card>
+        );
     }
 
     if (sessionQuery.error) {
         return (
-            <Result
-                extra={
-                    <Button onClick={() => void sessionQuery.refetch()} type="primary">
+            <IdentityLoadState
+                action={
+                    <Button onClick={() => void sessionQuery.refetch()} theme="primary">
                         重试
                     </Button>
                 }
-                status="error"
-                subTitle={consoleErrorMessage(sessionQuery.error)}
+                description={consoleErrorMessage(sessionQuery.error)}
                 title="无法读取当前会话权限"
             />
         );
     }
 
     if (!can(ROLE_PERMISSIONS.view)) {
-        return <Result status="403" subTitle="当前账号没有查看角色的权限。" title="无权查看" />;
+        return <IdentityLoadState description="当前账号没有查看角色的权限。" title="无权查看" />;
     }
 
     return (
         <>
-            <div className="grid min-w-0 gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
-                <RoleListPanel
-                    canCreate={canCreate}
-                    loading={rolesQuery.isPending}
-                    onCreate={openCreate}
-                    onSelect={selectRole}
-                    roles={roles}
-                    selectedName={selectedRole?.metadata.name}
+            <div className="flex min-w-0 flex-col gap-4">
+                <IdentityPageOverview
+                    actions={
+                        <>
+                            {canCreate ? (
+                                <Button icon={<AddIcon />} onClick={openCreate} theme="primary">
+                                    新建角色
+                                </Button>
+                            ) : null}
+                            <Button
+                                icon={<RefreshIcon />}
+                                loading={rolesQuery.isFetching}
+                                onClick={refreshRole}
+                                variant="outline"
+                            >
+                                刷新
+                            </Button>
+                        </>
+                    }
+                    icon={<SecuredIcon />}
+                    metrics={overviewMetrics}
+                    title="角色与权限"
                 />
-                {rolesQuery.isPending ? (
-                    <RoleDetailSkeleton />
-                ) : rolesQuery.error ? (
-                    <RoleLoadError error={rolesQuery.error} onRetry={() => void rolesQuery.refetch()} />
-                ) : selectedRole ? (
-                    <RoleDetailPanel
-                        allowedPermissions={sessionQuery.data?.uiPermissions}
-                        canDelete={canDelete}
-                        canUpdate={canUpdate}
-                        key={`${selectedRole.metadata.name}:${panelRevision}`}
-                        onDelete={confirmDelete}
-                        onDirtyChange={setDirty}
-                        onEditRole={openEdit}
-                        onRefresh={refreshRole}
-                        role={selectedRole}
-                        roles={activeRoles}
+                <div className="grid min-w-0 gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
+                    <RoleListPanel
+                        loading={rolesQuery.isPending}
+                        onCreate={canCreate ? openCreate : undefined}
+                        onSelect={selectRole}
+                        roles={roles}
+                        selectedName={selectedRole?.metadata.name}
                     />
-                ) : (
-                    <EmptyRoleState canCreate={canCreate} onCreate={openCreate} />
-                )}
+                    {rolesQuery.isPending ? (
+                        <RoleDetailSkeleton />
+                    ) : rolesQuery.error ? (
+                        <IdentityLoadState
+                            action={
+                                <Button onClick={() => void rolesQuery.refetch()} theme="primary">
+                                    重试
+                                </Button>
+                            }
+                            description={consoleErrorMessage(rolesQuery.error)}
+                            title="角色列表加载失败"
+                        />
+                    ) : selectedRole ? (
+                        <RoleDetailPanel
+                            allowedPermissions={sessionQuery.data?.uiPermissions}
+                            canDelete={canDelete}
+                            canUpdate={canUpdate}
+                            key={`${selectedRole.metadata.name}:${panelRevision}`}
+                            onDelete={confirmDelete}
+                            onDirtyChange={setDirty}
+                            onEditRole={openEdit}
+                            onRefresh={refreshRole}
+                            role={selectedRole}
+                            roles={activeRoles}
+                        />
+                    ) : (
+                        <IdentityLoadState
+                            action={
+                                canCreate ? (
+                                    <Button icon={<AddIcon />} onClick={openCreate} theme="primary">
+                                        新建角色
+                                    </Button>
+                                ) : undefined
+                            }
+                            title="暂无角色"
+                            type="empty"
+                        />
+                    )}
+                </div>
             </div>
             {editorRole ? (
                 <RoleEditorModal
@@ -215,44 +277,8 @@ function visibleRoles(items?: Role[]): Role[] {
 
 function RoleDetailSkeleton() {
     return (
-        <ProCard className="min-h-[480px] overflow-hidden !rounded-[24px]" styles={{ body: { padding: 20 } }}>
-            <Skeleton active paragraph={{ rows: 12 }} />
-        </ProCard>
-    );
-}
-
-function RoleLoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
-    return (
-        <ProCard className="min-h-[480px] overflow-hidden !rounded-[24px]">
-            <Result
-                extra={
-                    <Button icon={<RefreshCw size={14} />} onClick={onRetry} type="primary">
-                        重试
-                    </Button>
-                }
-                status="error"
-                subTitle={consoleErrorMessage(error)}
-                title="角色列表加载失败"
-            />
-        </ProCard>
-    );
-}
-
-function EmptyRoleState({ canCreate, onCreate }: { canCreate: boolean; onCreate: () => void }) {
-    return (
-        <ProCard
-            className="min-h-[480px] overflow-hidden !rounded-[24px]"
-            styles={{ body: { height: "100%", padding: 0 } }}
-        >
-            <div className="flex min-h-[480px] flex-col items-center justify-center gap-3">
-                <Empty description="暂无角色" image={Empty.PRESENTED_IMAGE_SIMPLE}>
-                    {canCreate ? (
-                        <Button icon={<Plus size={14} />} onClick={onCreate} type="primary">
-                            新建角色
-                        </Button>
-                    ) : null}
-                </Empty>
-            </div>
-        </ProCard>
+        <Card className="min-h-[480px] overflow-hidden">
+            <Skeleton animation="gradient" theme="paragraph" />
+        </Card>
     );
 }

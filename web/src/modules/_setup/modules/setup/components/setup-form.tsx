@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { Button, Form, Input } from "antd";
+import { Button, Form, Input } from "tdesign-react";
 
 import { PASSWORD_PATTERN, USERNAME_PATTERN } from "@/constants/validation";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
@@ -10,6 +10,8 @@ import { markSetupCompleted } from "@/stores/_setup";
 
 import { setupErrorMessage, submitSetup } from "../../../composables/_setup";
 import { FormSection } from "./form-section";
+
+const { FormItem } = Form;
 
 const EXTERNAL_URL_PATTERN = /^https?:\/\//i;
 const DEFAULT_SITE_TITLE = "Pudans";
@@ -32,31 +34,29 @@ function isValidExternalUrl(value: string): boolean {
     }
 }
 
-function validateExternalUrl(_: unknown, value?: string) {
-    if (!value || isValidExternalUrl(value)) {
-        return Promise.resolve();
-    }
-
-    return Promise.reject(new Error("请输入以 http:// 或 https:// 开头的有效地址。"));
-}
-
 export function SetupForm() {
     const prompt = useMessagePrompt();
-    const [form] = Form.useForm<SetupFormValues>();
+    const [form] = Form.useForm();
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         const origin = window.location.origin;
 
         if (!form.getFieldValue("externalUrl") && EXTERNAL_URL_PATTERN.test(origin)) {
-            form.setFieldValue("externalUrl", origin);
+            form.setFieldsValue({ externalUrl: origin });
         }
     }, [form]);
 
-    const handleFinish = async (values: SetupFormValues) => {
+    const handleFinish = async (validateResult: boolean | object) => {
+        if (validateResult !== true) {
+            return;
+        }
+
         setSubmitting(true);
 
         try {
+            const values = form.getFieldsValue(true) as unknown as SetupFormValues;
+
             await submitSetup({
                 externalUrl: values.externalUrl.trim(),
                 password: values.password,
@@ -64,10 +64,10 @@ export function SetupForm() {
                 username: values.username.trim(),
             });
             markSetupCompleted();
-            prompt.success("系统初始化完成，请登录。");
+            prompt.success({ content: "系统初始化完成，请登录。" });
         } catch (error) {
             const result = setupErrorMessage(error);
-            prompt.error(result.message);
+            prompt.error({ content: result.message });
 
             if (result.setupCompleted) {
                 markSetupCompleted();
@@ -78,20 +78,21 @@ export function SetupForm() {
     };
 
     return (
-        <Form<SetupFormValues>
+        <Form
             className="flex flex-col gap-5"
             form={form}
-            initialValues={{ siteTitle: DEFAULT_SITE_TITLE }}
+            initialData={{ siteTitle: DEFAULT_SITE_TITLE }}
+            labelAlign="top"
             layout="vertical"
-            onFinish={handleFinish}
+            onSubmit={({ validateResult }) => {
+                void handleFinish(validateResult);
+            }}
             requiredMark={false}
-            size="large"
         >
             <FormSection title="站点信息">
                 <div className="grid gap-4 md:grid-cols-2">
-                    <Form.Item
+                    <FormItem
                         className="!mb-0"
-                        extra="显示在系统页面和通知中。"
                         label="站点名称"
                         name="siteTitle"
                         rules={[
@@ -99,27 +100,28 @@ export function SetupForm() {
                             { message: "站点名称不能超过 80 个字符。", max: 80 },
                         ]}
                     >
-                        <Input autoComplete="organization" maxLength={80} placeholder="例如：Pudans" />
-                    </Form.Item>
-                    <Form.Item
+                        <Input autocomplete="organization" maxlength={80} placeholder="例如：Pudans" size="large" />
+                    </FormItem>
+                    <FormItem
                         className="!mb-0"
-                        extra="需以 http:// 或 https:// 开头。"
                         label="站点地址"
                         name="externalUrl"
                         rules={[
                             { message: "请输入站点地址。", required: true, whitespace: true },
-                            { validator: validateExternalUrl },
+                            {
+                                message: "请输入以 http:// 或 https:// 开头的有效地址。",
+                                validator: (value) => !value || isValidExternalUrl(String(value)),
+                            },
                         ]}
                     >
-                        <Input autoComplete="url" inputMode="url" placeholder="https://example.com" />
-                    </Form.Item>
+                        <Input autocomplete="url" placeholder="https://example.com" size="large" type="url" />
+                    </FormItem>
                 </div>
             </FormSection>
 
             <FormSection title="管理员账户">
-                <Form.Item
+                <FormItem
                     className="!mb-0"
-                    extra="4–63 位，小写字母、数字、点或中划线。"
                     label="用户名"
                     name="username"
                     rules={[
@@ -133,17 +135,16 @@ export function SetupForm() {
                     ]}
                 >
                     <Input
-                        autoCapitalize="off"
-                        autoComplete="username"
-                        maxLength={63}
+                        autocomplete="username"
+                        maxlength={63}
                         placeholder="例如：admin"
+                        size="large"
                         spellCheck={false}
                     />
-                </Form.Item>
+                </FormItem>
                 <div className="grid gap-4 md:grid-cols-2">
-                    <Form.Item
+                    <FormItem
                         className="!mb-0"
-                        extra="8–257 位，支持字母、数字及 !@#$%^&*.?。"
                         label="密码"
                         name="password"
                         rules={[
@@ -153,38 +154,32 @@ export function SetupForm() {
                             { message: "密码只能包含大小写字母、数字及 !@#$%^&*.?。", pattern: PASSWORD_PATTERN },
                         ]}
                     >
-                        <Input.Password autoComplete="new-password" maxLength={257} placeholder="请输入管理员密码" />
-                    </Form.Item>
-                    <Form.Item
+                        <Input
+                            autocomplete="new-password"
+                            maxlength={257}
+                            placeholder="请输入管理员密码"
+                            size="large"
+                            type="password"
+                        />
+                    </FormItem>
+                    <FormItem
                         className="!mb-0"
-                        dependencies={["password"]}
                         label="确认密码"
                         name="confirmPassword"
                         rules={[
                             { message: "请再次输入密码。", required: true },
-                            ({ getFieldValue }) => ({
-                                validator(_, value) {
-                                    return !value || getFieldValue("password") === value
-                                        ? Promise.resolve()
-                                        : Promise.reject(new Error("两次输入的密码不一致。"));
-                                },
-                            }),
+                            {
+                                message: "两次输入的密码不一致。",
+                                validator: (value) => !value || form.getFieldValue("password") === value,
+                            },
                         ]}
                     >
-                        <Input.Password autoComplete="new-password" placeholder="请再次输入密码" />
-                    </Form.Item>
+                        <Input autocomplete="new-password" placeholder="请再次输入密码" size="large" type="password" />
+                    </FormItem>
                 </div>
             </FormSection>
 
-            <Button
-                block
-                className="!h-11 !rounded-xl shadow-lg shadow-blue-500/20"
-                disabled={submitting}
-                htmlType="submit"
-                loading={submitting}
-                size="large"
-                type="primary"
-            >
+            <Button block disabled={submitting} loading={submitting} size="large" theme="primary" type="submit">
                 完成初始化
             </Button>
         </Form>

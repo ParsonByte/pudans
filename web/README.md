@@ -30,13 +30,15 @@ src/app/(setup)/             初始化页（layout + page）
 src/app/(workspace)/         登录后的工作区路由组
 src/app/(workspace)/[workspace]/ 工作区动态入口（对外地址 `/workspace/<workspace>`）
 src/components/              通用组件
-src/components/layouts/      公共布局（AppShell、AppHeader、AppContainer、BentoGrid）
-src/components/layouts/app-shell.tsx 公共 ProLayout 外壳
-src/components/layouts/app-header.tsx 公共头部操作区
+src/components/layouts/      公共布局（AppShell、AppContainer）
+src/components/layouts/app-shell.tsx 公共 TDesign 外壳（单层 HeadMenu + 平铺侧栏）
 src/components/layouts/app-container.tsx 公共页面容器
 src/components/layouts/index.ts AppShell 出口
 src/components/ui/           基础 UI 组件
 src/components/ui/index.ts   基础 UI 出口
+src/components/ui/echart.tsx 共享 ECharts 容器
+src/components/ui/global-dialog.tsx 屏幕居中的全局弹窗
+src/components/ui/menu-icon.tsx 动态菜单图标映射
 src/components/ui/navigation-progress.tsx 导航进度条
 src/components/ui/theme-menu.tsx 主题切换菜单
 src/context/                 React Context 与 Provider
@@ -76,8 +78,7 @@ src/stores/_setup/           初始化完成状态
 src/stores/_workspace/ 工作区侧栏折叠状态
 src/stores/create-store.ts  通用状态仓库实现
 src/stores/use-store.ts     订阅仓库状态的 Hook
-src/styles/                  全局样式与主题变量（_global.css）
-src/styles/layouts/          布局样式（_bento-layout.css）
+src/styles/theme.css         全局样式、TDesign 主题与布局变量
 ```
 
 ## 路由
@@ -100,22 +101,22 @@ src/styles/layouts/          布局样式（_bento-layout.css）
 | 面板首页   | `?overview=dashboard`                   | 概览统计、登录趋势、活跃用户、最近操作、角色分布、站点信息    |
 | 用户       | `?identity=users`                       | 列表、搜索、状态筛选、新建/编辑、启用/禁用、删除              |
 | 角色       | `?identity=roles`                       | 列表、新建/编辑、详情（权限规则表）、删除（内置角色禁编禁删） |
-| 用户组     | `?identity=user-groups`                 | 列表、新建/编辑、详情、删除                                   |
-| 身份提供商 | `?identity=auth-providers`              | 列表、新建/编辑、详情、启用/禁用、删除                        |
+| 用户组     | `?identity=user-groups`                 | 左侧内置/自定义列表，右侧成员与角色绑定管理                   |
+| 身份提供商 | `?identity=auth-providers`              | OAuth2、OIDC、飞书卡片，支持添加、编辑与启停                  |
 | 参数配置   | `?system=settings`                      | 8 个参数组的结构化表单编辑，敏感字段掩码提示                  |
 | 存储       | `?storage=storage-policies`             | 列表、详情、删除                                              |
 | 存储文件   | `?storage=storage-files`                | 列表、详情、下载、回收站、恢复、彻底删除                      |
-| 风险       | `?security=risk`                        | 规则列表、新建/编辑、详情、删除；封禁列表与解封               |
-| 审计       | `?security=audit`                       | 日志列表、用户/操作/结果筛选、详情                            |
-| 链路       | `?security=traces`                      | 链路列表、用户/操作/结果筛选、详情                            |
-| 回溯       | `?security=replay`                      | 归档统计、链路回放、归档日志列表与详情                        |
+| 风险       | `?security=risk`                        | 实时态势、趋势、热力图、关系图、分布、事件、封禁与规则管理    |
+| 审计       | `?security=audit`                       | 实时态势、趋势、热力图、分布、活跃用户与日志详情              |
+| 链路       | `?security=traces`                      | 链路态势、趋势、热力图、步骤/耗时分布、链路列表与回放         |
+| 回溯       | `?security=replay`                      | 可回溯态势、趋势、热力图、分布、最近链路回放、归档日志与详情  |
 | Webhook    | `?system=webhooks`                      | 列表、新建/编辑、删除                                         |
 | 配置字典   | `?system=config-maps`                   | 列表、键值新建/编辑、删除                                     |
 | 密钥管理   | `?security=secrets`                     | 列表、键值新建、删除（内容不回显）                            |
 | 注解设置   | `?system=annotations`                   | 按 `targetRef` 查询、详情                                     |
 | 权限目录   | `?identity=permissions`                 | 工作区、菜单与权限资源的只读目录                              |
 
-创建和编辑统一使用居中 `Modal`；详情使用结构化字段和表格，不直接回显 JSON。
+创建和编辑统一使用 `GlobalDialog`，在屏幕正中弹出；详情使用结构化字段和表格，不直接回显 JSON。操作反馈统一使用 `MessagePlugin`，错误与警告使用右侧 `NotificationPlugin`。
 
 ## 认证
 
@@ -132,11 +133,12 @@ src/styles/layouts/          布局样式（_bento-layout.css）
 
 - 认证页与初始化页布局使用 `AuthLayout`：固定背景视频、渐变遮罩、品牌栏、主题切换与半透明玻璃卡片；认证页保留视频暂停控制与法律协议入口，初始化页隐藏这些入口并居中展示 720px 卡片。
 - 认证页与初始化页固定在视口高度，页面不滚动；内容超出时在卡片内部滚动。
-- `components/layouts` 提供公共布局：`AppShell` 是对外出口，内部组合 `AppHeader`（头部操作区）与 `AppContainer`（PageContainer 页面容器）；`AppShell` 不读取业务导航，只接收 `route`、`loading` 等属性。
-- 通用工作区布局在 `src/modules/_workspace/layout.tsx`：`useDynamicMenu` 根据 URL 中的工作区 `slug` 查找 `/navigation` 工作区，按 `ui-group-key` 生成顶部导航分组，按 `ui-parent` 组装侧栏菜单，并生成 `/workspace/<workspace>?<group>=<menu>` 链接；`src/app/(workspace)/[workspace]/layout.tsx` 负责接线。
+- UI 基座统一使用 TDesign；图表统一由 `EChart` 承载 ECharts 配置，构图色板由 `tvision-color` 生成。
+- `components/layouts` 提供公共布局：`AppShell` 是对外出口，内部组合 TDesign `HeadMenu`、平铺侧栏 `Menu` 与 `AppContainer`；`AppShell` 不读取业务导航，只接收分组、菜单和选中项等属性。
+- 通用工作区布局在 `src/modules/_workspace/layout.tsx`：`useDynamicMenu` 根据 URL 中的工作区 `slug` 查找 `/navigation` 工作区，按 `ui-group-key` 生成顶部单层导航分组，按 `ui-parent` 组装侧栏菜单，并生成 `/workspace/<workspace>?<group>=<menu>` 链接；`src/app/(workspace)/[workspace]/layout.tsx` 负责接线。
 - `NavigationProgress` 只在根布局挂载一次，在页面最顶层显示全局路由切换进度：内部链接点击和浏览器前进/后退触发，路由变化后完成。
 - `AppContainer` 在内容区提供 Suspense 边界；工作区侧栏折叠由 `stores/_workspace` 驱动 `AppShell` 的受控 `collapsed`。
-- `BentoGrid` 布局组件保留给控制台内的卡片布局：卡片贴同一组行列线，尺寸跨行跨列错位。
+- 弹窗不使用抽屉或侧滑面板；统一由 `GlobalDialog` 在屏幕中心呈现。
 
 ## 状态管理
 

@@ -1,21 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, App, Breadcrumb, Button, Flex, Result, Skeleton, Typography } from "antd";
 import { isAxiosError } from "axios";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeftIcon } from "tdesign-icons-react";
+import { Breadcrumb, Button, Skeleton, Typography } from "tdesign-react";
 
-import { BentoGrid } from "@/components/layouts/bento-grid";
+import { confirmGlobalDialog } from "@/components/ui";
+import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { usePermission } from "@/hooks/utils/use-permission";
 
 import { consoleErrorMessage } from "../../../composables/_errors";
 import { useConsoleSession } from "../../../composables/_session";
+import { IdentityLoadState } from "../components/identity-load-state";
 import { ResetUserPasswordModal } from "./components/reset-user-password-modal";
 import { UserDetailAccess } from "./components/user-detail-access";
 import { UserDetailActivity } from "./components/user-detail-activity";
@@ -35,7 +37,7 @@ type UserDetailViewProps = {
 
 export function UserDetailView({ name, workspace }: UserDetailViewProps) {
     const router = useRouter();
-    const { modal } = App.useApp();
+    const prompt = useMessagePrompt();
     const sessionQuery = useConsoleSession();
     const { options: groupOptions } = useUserGroupOptions();
     const { can } = usePermission({ permissions: sessionQuery.data?.uiPermissions }, USER_PERMISSIONS.view);
@@ -73,46 +75,55 @@ export function UserDetailView({ name, workspace }: UserDetailViewProps) {
           ? "无法读取"
           : (groupQuery.data?.displayName ?? "未分组");
 
+    useEffect(() => {
+        if (groupQuery.error) {
+            prompt.error({ content: consoleErrorMessage(groupQuery.error) });
+        }
+    }, [groupQuery.error, prompt]);
+
     if (sessionQuery.isPending) {
-        return <Skeleton active paragraph={{ rows: 8 }} />;
+        return <Skeleton theme="paragraph" />;
     }
 
     if (sessionQuery.error) {
         return (
-            <Result
-                extra={
-                    <Button onClick={() => void sessionQuery.refetch()} type="primary">
+            <IdentityLoadState
+                action={
+                    <Button onClick={() => void sessionQuery.refetch()} theme="primary">
                         重试
                     </Button>
                 }
-                status="error"
-                subTitle={consoleErrorMessage(sessionQuery.error)}
+                description={consoleErrorMessage(sessionQuery.error)}
                 title="无法读取当前会话权限"
             />
         );
     }
 
     if (!can(USER_PERMISSIONS.view)) {
-        return <Result status="403" subTitle="当前账号没有查看用户详情的权限。" title="无权查看" />;
+        return <IdentityLoadState description="当前账号没有查看用户详情的权限。" title="无权查看" />;
     }
 
     if (userQuery.isPending) {
-        return <Skeleton active paragraph={{ rows: 10 }} />;
+        return (
+            <div className="flex flex-col gap-4">
+                <Skeleton theme="paragraph" />
+                <Skeleton theme="avatar-text" />
+            </div>
+        );
     }
 
     if (userQuery.error || !userQuery.data) {
         return (
-            <Result
-                extra={
-                    <Flex gap={8} wrap>
+            <IdentityLoadState
+                action={
+                    <div className="flex flex-wrap justify-center gap-2">
                         <Button onClick={() => void userQuery.refetch()}>重试</Button>
-                        <Link href={userListPath(workspace)}>
-                            <Button type="primary">返回用户列表</Button>
-                        </Link>
-                    </Flex>
+                        <Button onClick={() => router.push(userListPath(workspace))} theme="primary">
+                            返回用户列表
+                        </Button>
+                    </div>
                 }
-                status="error"
-                subTitle={userQuery.error ? consoleErrorMessage(userQuery.error) : "用户不存在或已被删除。"}
+                description={userQuery.error ? consoleErrorMessage(userQuery.error) : "用户不存在或已被删除。"}
                 title="用户资料加载失败"
             />
         );
@@ -123,56 +134,58 @@ export function UserDetailView({ name, workspace }: UserDetailViewProps) {
     const canEdit = canUpdate || (canGroup && groupQuery.isSuccess);
 
     const confirmToggleStatus = () => {
-        modal.confirm({
-            cancelText: "取消",
+        confirmGlobalDialog({
+            confirmText: user.spec.disabled ? "启用账号" : "禁用账号",
             content: user.spec.disabled
                 ? "启用后该账号可以重新登录。"
                 : "禁用后该账号将无法登录，已有会话会按后端策略处理。",
-            okButtonProps: user.spec.disabled ? undefined : { danger: true },
-            okText: user.spec.disabled ? "启用账号" : "禁用账号",
-            onOk: () =>
-                setStatus.mutateAsync({
+            danger: !user.spec.disabled,
+            onConfirm: () => {
+                void setStatus.mutateAsync({
                     disabled: !user.spec.disabled,
                     name: user.metadata.name,
-                }),
+                });
+            },
             title: user.spec.disabled ? "启用用户" : "禁用用户",
         });
     };
     const confirmDelete = () => {
-        modal.confirm({
-            cancelText: "取消",
+        confirmGlobalDialog({
+            confirmText: "删除",
             content: `确定删除用户 ${displayName} 吗？删除后无法恢复。`,
-            okButtonProps: { danger: true },
-            okText: "删除",
-            onOk: () =>
-                deleteUser.mutateAsync(user.metadata.name, {
+            danger: true,
+            onConfirm: () => {
+                void deleteUser.mutateAsync(user.metadata.name, {
                     onSuccess: () => router.push(userListPath(workspace)),
-                }),
+                });
+            },
             title: "删除用户",
         });
     };
 
     return (
         <>
-            <Flex className="w-full" gap={16} vertical>
-                <Flex align="flex-start" gap={16} justify="space-between" wrap>
+            <div className="flex w-full min-w-0 flex-col gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                         <Breadcrumb
-                            items={[
-                                { title: <Link href={userListPath(workspace)}>用户</Link> },
-                                { title: displayName },
+                            options={[
+                                {
+                                    content: <Link href={userListPath(workspace)}>用户</Link>,
+                                },
+                                { content: "详情" },
                             ]}
                         />
-                        <Typography.Title className="!mt-2 !mb-0" level={3}>
-                            用户详情
+                        <Typography.Title className="mt-2" level="h3">
+                            {displayName}
                         </Typography.Title>
                     </div>
-                    <Link href={userListPath(workspace)}>
-                        <Button icon={<ArrowLeft size={15} />}>返回用户列表</Button>
-                    </Link>
-                </Flex>
-                <BentoGrid className="bento-grid--dashboard md:!grid-cols-1 lg:!grid-cols-12">
-                    <Flex className="min-w-0 lg:col-span-5 xl:col-span-4" gap={16} vertical>
+                    <Button icon={<ArrowLeftIcon />} onClick={() => router.push(userListPath(workspace))}>
+                        返回用户列表
+                    </Button>
+                </div>
+                <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-12">
+                    <div className="flex min-w-0 flex-col gap-4 lg:col-span-5 xl:col-span-4">
                         <UserDetailProfile
                             canDelete={canDelete}
                             canEdit={canEdit}
@@ -188,16 +201,13 @@ export function UserDetailView({ name, workspace }: UserDetailViewProps) {
                         />
                         <UserDetailAccess name={name} />
                         <UserDetailConnections name={name} />
-                    </Flex>
-                    <Flex className="min-w-0 lg:col-span-7 xl:col-span-8" gap={16} vertical>
+                    </div>
+                    <div className="flex min-w-0 flex-col gap-4 lg:col-span-7 xl:col-span-8">
                         <UserDetailInformation groupLabel={groupLabel} user={user} />
                         <UserDetailActivity name={name} />
-                    </Flex>
-                </BentoGrid>
-                {groupQuery.isError ? (
-                    <Alert closable message="用户组信息加载失败，编辑用户组功能已暂时禁用。" showIcon type="warning" />
-                ) : null}
-            </Flex>
+                    </div>
+                </div>
+            </div>
             {editingOpen ? (
                 <UserEditorModal
                     canGroup={canGroup && groupQuery.isSuccess}

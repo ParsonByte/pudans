@@ -4,7 +4,11 @@ import { useState } from "react";
 
 import { type AnnotationSetting, apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Input, Modal, type TableProps } from "antd";
+import { RefreshIcon } from "tdesign-icons-react";
+import { Button, Input } from "tdesign-react";
+import type { TableProps } from "tdesign-react";
+
+import { GlobalDialog } from "@/components/ui";
 
 import { ConsoleTable } from "../../../components/console-table";
 import { ObjectDetails } from "../../../components/object-details";
@@ -12,12 +16,15 @@ import { formatDateTime } from "../../../composables/_format";
 
 export function AnnotationsView() {
     const [targetRef, setTargetRef] = useState("");
+    const [queryTarget, setQueryTarget] = useState("");
     const [selected, setSelected] = useState<AnnotationSetting>();
     const settingsQuery = useQuery({
-        enabled: Boolean(targetRef),
-        queryKey: ["console", "annotations", targetRef],
+        enabled: Boolean(queryTarget),
+        queryKey: ["console", "annotations", queryTarget],
         queryFn: async () => {
-            const response = await apiClient.annotationSetting.listAvailableAnnotationSettings({ targetRef });
+            const response = await apiClient.annotationSetting.listAvailableAnnotationSettings({
+                targetRef: queryTarget,
+            });
             const data = response.data as unknown;
 
             return Array.isArray(data)
@@ -26,32 +33,35 @@ export function AnnotationsView() {
         },
     });
 
+    const search = (value: string) => setQueryTarget(value.trim());
     const columns: TableProps<AnnotationSetting>["columns"] = [
-        { dataIndex: ["metadata", "name"], key: "name", title: "名称" },
         {
-            key: "targetRef",
-            render: (_, record) =>
-                [record.spec.targetRef.group, record.spec.targetRef.kind].filter(Boolean).join("/") || "—",
+            cell: ({ row }) => row.metadata.name,
+            colKey: "name",
+            title: "名称",
+        },
+        {
+            cell: ({ row }) => [row.spec.targetRef.group, row.spec.targetRef.kind].filter(Boolean).join("/") || "—",
+            colKey: "targetRef",
             title: "目标类型",
         },
         {
-            key: "fields",
-            render: (_, record) => record.spec.formSchema?.length ?? 0,
+            cell: ({ row }) => row.spec.formSchema?.length ?? 0,
+            colKey: "fields",
             title: "表单字段",
         },
         {
-            dataIndex: ["metadata", "creationTimestamp"],
-            key: "creationTimestamp",
-            render: (value: string) => formatDateTime(value),
+            cell: ({ row }) => formatDateTime(row.metadata.creationTimestamp),
+            colKey: "creationTimestamp",
             title: "创建时间",
         },
         {
-            key: "actions",
-            render: (_, record) => (
-                <Button onClick={() => setSelected(record)} size="small">
+            cell: ({ row }) => (
+                <Button onClick={() => setSelected(row)} size="small" variant="text">
                     详情
                 </Button>
             ),
+            colKey: "actions",
             title: "操作",
         },
     ];
@@ -63,37 +73,52 @@ export function AnnotationsView() {
                 data={settingsQuery.data}
                 error={settingsQuery.error}
                 extra={
-                    targetRef ? (
-                        <Button onClick={() => void settingsQuery.refetch()} size="small">
+                    queryTarget ? (
+                        <Button
+                            icon={<RefreshIcon />}
+                            onClick={() => void settingsQuery.refetch()}
+                            size="small"
+                            variant="outline"
+                        >
                             刷新
                         </Button>
                     ) : undefined
                 }
                 loading={settingsQuery.isFetching}
-                onRetry={targetRef ? () => void settingsQuery.refetch() : undefined}
+                onRetry={queryTarget ? () => void settingsQuery.refetch() : undefined}
                 pagination={false}
-                rowKey={(record) => record.metadata.name}
+                rowKey="metadata.name"
                 title="注解设置"
                 toolbar={
-                    <Input.Search
-                        allowClear
-                        className="w-full sm:max-w-[460px]"
-                        enterButton="查询"
-                        onSearch={(value) => setTargetRef(value.trim())}
-                        placeholder="输入 targetRef，例如 content.pudans.tolim.cn/Post"
-                    />
+                    <div className="flex w-full flex-col gap-2 sm:flex-row">
+                        <Input
+                            clearable
+                            label="targetRef"
+                            onChange={(value) => {
+                                const next = String(value ?? "");
+                                setTargetRef(next);
+                                if (!next) {
+                                    setQueryTarget("");
+                                }
+                            }}
+                            onEnter={(value) => search(String(value ?? ""))}
+                            value={targetRef}
+                        />
+                        <Button onClick={() => search(targetRef)} theme="primary">
+                            查询
+                        </Button>
+                    </div>
                 }
             />
-            <Modal
-                destroyOnHidden
-                footer={null}
-                onCancel={() => setSelected(undefined)}
+            <GlobalDialog
+                footer={false}
+                onClose={() => setSelected(undefined)}
                 open={Boolean(selected)}
                 title={selected?.metadata.name}
                 width={720}
             >
                 <ObjectDetails value={selected} />
-            </Modal>
+            </GlobalDialog>
         </>
     );
 }

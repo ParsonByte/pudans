@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 
-import { ProCard } from "@ant-design/pro-components";
-import { Icon } from "@iconify/react";
-import { Empty, Input, Select, theme } from "antd";
-import { Search } from "lucide-react";
+import { SearchIcon } from "tdesign-icons-react";
+import { Card, Empty, Input, Select } from "tdesign-react";
+
+import { MenuIcon } from "@/components/ui";
 
 import type { RoleMenuEntry } from "../composables/_role-permissions";
 
@@ -26,7 +26,6 @@ export function RolePermissionBrowser({
     summary,
     toolbarPlaceholder,
 }: RolePermissionBrowserProps) {
-    const { token } = theme.useToken();
     const [keyword, setKeyword] = useState("");
     const [workspaceId, setWorkspaceId] = useState("all");
 
@@ -62,73 +61,52 @@ export function RolePermissionBrowser({
     }, [entries, keyword, matchesEntry, workspaceId]);
 
     return (
-        <div className="flex flex-col gap-5">
-            <ProCard
-                className="!rounded-2xl"
-                style={{ background: token.colorFillQuaternary, borderColor: token.colorBorderSecondary }}
-                styles={{ body: { padding: 16 } }}
-            >
+        <div className="flex flex-col gap-4">
+            <Card className="bg-[var(--td-bg-color-page)]">
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
                     <Select
-                        className="w-full xl:!w-48"
-                        onChange={setWorkspaceId}
+                        className="w-full xl:w-48"
+                        onChange={(value) => setWorkspaceId(value ? String(value) : "all")}
                         options={[{ label: "全部工作区", value: "all" }, ...workspaceOptions]}
                         value={workspaceId}
                     />
                     <Input
-                        allowClear
                         className="min-w-0 flex-1"
-                        onChange={(event) => setKeyword(event.target.value)}
+                        clearable
+                        onChange={(value) => setKeyword(String(value))}
                         placeholder={toolbarPlaceholder}
-                        prefix={<Search className="text-neutral-400" size={14} />}
+                        prefixIcon={<SearchIcon />}
                         value={keyword}
                     />
                 </div>
-            </ProCard>
+            </Card>
 
             {groups.length === 0 ? (
-                <Empty description={emptyDescription} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                <Empty description={emptyDescription} />
             ) : (
                 <div className="flex flex-col gap-4">
                     {groups.map((group) => (
-                        <ProCard
-                            className="!rounded-2xl"
-                            headerBordered
-                            key={group.key}
-                            styles={{
-                                body: { padding: 20 },
-                                header: { paddingBlock: 14, paddingInline: 20 },
-                            }}
-                            title={
+                        <Card
+                            header={
                                 <div className="flex min-w-0 items-center gap-3">
-                                    <span
-                                        className="flex size-8 items-center justify-center rounded-lg"
-                                        style={{
-                                            background: token.colorFillTertiary,
-                                            color: token.colorTextSecondary,
-                                        }}
-                                    >
-                                        <Icon
-                                            icon={group.entries[0]?.workspace.icon || "lucide:layout-dashboard"}
-                                            width={16}
-                                        />
+                                    <span className="flex size-8 items-center justify-center rounded-lg bg-[var(--td-bg-color-component)] text-[var(--td-text-color-secondary)]">
+                                        <MenuIcon icon={group.entries[0]?.workspace.icon} size={16} />
                                     </span>
                                     <span className="min-w-0">
                                         <span className="block truncate text-sm font-medium">
                                             {group.workspaceName}
                                         </span>
-                                        <span
-                                            className="mt-0.5 block truncate text-xs font-normal"
-                                            style={{ color: token.colorTextTertiary }}
-                                        >
+                                        <span className="mt-0.5 block truncate text-xs font-normal text-[var(--td-text-color-placeholder)]">
                                             {summary(group.entries)}
                                         </span>
                                     </span>
                                 </div>
                             }
+                            headerBordered
+                            key={group.key}
                         >
                             {renderGroup(group.entries)}
-                        </ProCard>
+                        </Card>
                     ))}
                 </div>
             )}

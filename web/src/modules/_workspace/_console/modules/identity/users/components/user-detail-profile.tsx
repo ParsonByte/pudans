@@ -1,10 +1,10 @@
 "use client";
 
 import type { User } from "@pudans-dev/api-client";
-import { Button, Dropdown, Flex, type MenuProps, Typography, theme } from "antd";
-import { KeyRound, Lock, MoreHorizontal, Pencil, Power, Trash2 } from "lucide-react";
+import { DeleteIcon, EditIcon, KeyIcon, LockOffIcon, LockOnIcon, MoreIcon } from "tdesign-icons-react";
+import { Button, Dropdown, type DropdownOption, Typography } from "tdesign-react";
 
-import { SectionCard } from "@/components/ui";
+import { SectionCard, useDesignTokens } from "@/components/ui";
 
 import { UserAvatar } from "./user-avatar";
 import { UserGroupTag, UserStatusTag } from "./user-tags";
@@ -36,62 +36,61 @@ export function UserDetailProfile({
     statusPending,
     user,
 }: UserDetailProfileProps) {
-    const { token } = theme.useToken();
+    const tokens = useDesignTokens();
     const displayName = user.spec.displayName || user.metadata.name;
     const loginName = user.spec.loginName || user.metadata.name;
-    const actionItems: NonNullable<MenuProps["items"]> = [];
+    const actionItems: DropdownOption[] = [];
 
     if (canPassword) {
-        actionItems.push({ icon: <KeyRound size={14} />, key: "password", label: "重置密码" });
+        actionItems.push({ content: "重置密码", prefixIcon: <KeyIcon />, value: "password" });
     }
     if (canStatus) {
         actionItems.push({
+            content: user.spec.disabled ? "启用账号" : "禁用账号",
             disabled: statusPending,
-            icon: user.spec.disabled ? <Power size={14} /> : <Lock size={14} />,
-            key: "status",
-            label: user.spec.disabled ? "启用账号" : "禁用账号",
+            prefixIcon: user.spec.disabled ? <LockOnIcon /> : <LockOffIcon />,
+            value: "status",
         });
     }
     if (canDelete) {
-        actionItems.push({ type: "divider" });
-        actionItems.push({ danger: true, icon: <Trash2 size={14} />, key: "delete", label: "删除用户" });
+        actionItems.push({ divider: true, value: "divider" });
+        actionItems.push({ content: "删除用户", prefixIcon: <DeleteIcon />, theme: "error", value: "delete" });
     }
 
-    const handleAction: MenuProps["onClick"] = ({ key }) => {
-        if (key === "password") {
+    const handleAction = (item: DropdownOption) => {
+        if (item.value === "password") {
             onResetPassword();
-        } else if (key === "status") {
+        } else if (item.value === "status") {
             onToggleStatus();
-        } else if (key === "delete") {
+        } else if (item.value === "delete") {
             onDelete();
         }
     };
     const actions =
         actionItems.length > 0 ? (
-            <Dropdown menu={{ items: actionItems, onClick: handleAction }} placement="bottomRight" trigger={["click"]}>
-                <Button aria-label="更多账号操作" icon={<MoreHorizontal size={16} />} type="text" />
+            <Dropdown onClick={handleAction} options={actionItems} placement="bottom-right" trigger="click">
+                <Button aria-label="更多账号操作" icon={<MoreIcon />} shape="square" variant="text" />
             </Dropdown>
         ) : null;
 
     return (
-        <SectionCard className="!h-auto" title="个人资料">
+        <SectionCard className="!h-auto" extra={actions} title="个人资料">
             <div className="relative">
-                {actions ? <div className="absolute top-0 right-0 z-10">{actions}</div> : null}
-                <Flex align="center" className="pr-9" gap={18}>
+                <div className="flex items-center gap-[18px]">
                     <div
                         className="shrink-0 rounded-full border p-1"
                         style={{
-                            backgroundColor: token.colorFillQuaternary,
-                            borderColor: token.colorBorderSecondary,
+                            backgroundColor: tokens.colorFillQuaternary,
+                            borderColor: tokens.colorBorderSecondary,
                         }}
                     >
                         <UserAvatar name={displayName} size={68} src={user.spec.avatar} />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <Typography.Title className="!mb-0" ellipsis level={4}>
+                        <Typography.Title ellipsis level="h4">
                             {displayName}
                         </Typography.Title>
-                        <Typography.Text className="mt-0.5 block" ellipsis type="secondary">
+                        <Typography.Text className="mt-0.5 block" ellipsis theme="secondary">
                             @{loginName}
                         </Typography.Text>
                         <div className="mt-3 flex flex-wrap gap-2">
@@ -99,11 +98,11 @@ export function UserDetailProfile({
                             <UserGroupTag displayName={groupLabel === "未分组" ? undefined : groupLabel} />
                         </div>
                     </div>
-                </Flex>
+                </div>
             </div>
             {canEdit ? (
-                <div className="mt-7 border-t pt-6" style={{ borderColor: token.colorBorderSecondary }}>
-                    <Button block icon={<Pencil size={15} />} onClick={onEdit} size="large" type="primary">
+                <div className="mt-7 border-t pt-6" style={{ borderColor: tokens.colorBorderSecondary }}>
+                    <Button block icon={<EditIcon />} onClick={onEdit} size="large" theme="primary">
                         编辑资料
                     </Button>
                 </div>

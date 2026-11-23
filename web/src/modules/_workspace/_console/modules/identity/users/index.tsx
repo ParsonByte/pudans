@@ -5,44 +5,44 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 
-import { type ProColumns, ProTable } from "@ant-design/pro-components";
 import type { ListedUser, User } from "@pudans-dev/api-client";
 import { apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Alert, App, Button, Dropdown, Flex, Input, type MenuProps, Select, Space } from "antd";
 import {
-    ChevronDown,
-    Download,
-    ListChecks,
-    Mail,
-    MoreHorizontal,
-    Power,
-    PowerOff,
-    RefreshCw,
-    Search,
-    Smartphone,
-    Upload,
-    UserPlus,
-    UsersRound,
-} from "lucide-react";
+    DownloadIcon,
+    MailIcon,
+    MobileIcon,
+    MoreIcon,
+    PlayCircleIcon,
+    PoweroffIcon,
+    RefreshIcon,
+    SearchIcon,
+    UploadIcon,
+    UserAddIcon,
+    UsergroupAddIcon,
+} from "tdesign-icons-react";
+import { Button, Card, Dropdown, Input, Select } from "tdesign-react";
+import type { DropdownOption, TableProps } from "tdesign-react";
 
-import { SectionCard } from "@/components/ui";
+import { confirmGlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { useMobile } from "@/hooks/ui/use-mobile";
 import { useDownload } from "@/hooks/utils/use-download";
 import { usePermission } from "@/hooks/utils/use-permission";
 
+import { ConsoleTable } from "../../../components/console-table";
 import { EmptyValue } from "../../../components/empty-value";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatDateTime } from "../../../composables/_format";
+import { formatCountOrDash, formatDateTime } from "../../../composables/_format";
 import { useConsoleSession } from "../../../composables/_session";
 import { useConsoleTableState } from "../../../composables/_table";
+import { IdentityPageOverview } from "../components/identity-page-overview";
 import { BatchCreateUsersModal } from "./components/batch-create-users-modal";
 import { CreateUserModal } from "./components/create-user-modal";
 import { ImportUsersModal } from "./components/import-users-modal";
 import { ResetUserPasswordModal } from "./components/reset-user-password-modal";
 import { UserAvatar } from "./components/user-avatar";
 import { UserEditorModal } from "./components/user-editor-modal";
-import { UserExpandIcon } from "./components/user-expand-icon";
 import { UserExpandedRow } from "./components/user-expanded-row";
 import { UserGroupTag, UserStatusTag } from "./components/user-tags";
 import { usersToCsv } from "./composables/_feishu-users";
@@ -50,6 +50,7 @@ import { useDeleteUser, useSetUserStatus } from "./composables/_user-actions";
 import { useUserGroupOptions } from "./composables/_user-groups";
 import { USER_PERMISSIONS } from "./composables/_user-permissions";
 import { userDetailPath } from "./composables/_user-route";
+import { useUserSummaryQuery } from "./composables/_user-summary";
 
 const STATUS_OPTIONS = [
     { label: "正常", value: "active" },
@@ -63,6 +64,10 @@ const SORT_OPTIONS = [
 ];
 
 const EXPORT_PAGE_SIZE = 1000;
+
+type UserRow = ListedUser & {
+    __rowKey: string;
+};
 
 type BulkStatusResult = {
     changed: number;
@@ -78,14 +83,18 @@ type EditingUser = {
 export function UsersView() {
     const router = useRouter();
     const { workspace } = useParams<{ workspace: string }>();
-    const { modal } = App.useApp();
     const prompt = useMessagePrompt();
     const queryClient = useQueryClient();
     const table = useConsoleTableState();
+    const isMobile = useMobile();
     const { download } = useDownload();
-    const { options: groupOptions } = useUserGroupOptions();
+    const { options: groupOptions, query: groupQuery } = useUserGroupOptions();
     const sessionQuery = useConsoleSession();
-    const { can } = usePermission({ permissions: sessionQuery.data?.uiPermissions }, USER_PERMISSIONS.view);
+    const { allowed: canView, can } = usePermission(
+        { permissions: sessionQuery.data?.uiPermissions },
+        USER_PERMISSIONS.view,
+    );
+    const summaryQuery = useUserSummaryQuery(sessionQuery.isSuccess && canView);
     const canCreate = can(USER_PERMISSIONS.create);
     const canBatchCreate = can(USER_PERMISSIONS.batchCreate);
     const canImport = can(USER_PERMISSIONS.import);
@@ -98,7 +107,7 @@ export function UsersView() {
     const canDelete = can(USER_PERMISSIONS.delete);
     const canSelect = canBulk || canExport;
     const canEditRow = canUpdate || canGroup;
-    const [selectedUsers, setSelectedUsers] = useState<Map<string, ListedUser>>(new Map());
+    const [selectedUsers, setSelectedUsers] = useState<Map<string, UserRow>>(new Map());
     const [createOpen, setCreateOpen] = useState(false);
     const [batchOpen, setBatchOpen] = useState(false);
     const [importOpen, setImportOpen] = useState(false);
@@ -127,7 +136,20 @@ export function UsersView() {
                 })
             ).data,
     });
-    const users = useMemo(() => usersQuery.data?.items ?? [], [usersQuery.data?.items]);
+    const overviewMetrics = [
+        { label: "用户总数", value: formatCountOrDash(summaryQuery.data?.total) },
+        { label: "正常账号", value: formatCountOrDash(summaryQuery.data?.active) },
+        { label: "已禁用", value: formatCountOrDash(summaryQuery.data?.disabled) },
+        { label: "用户组", value: formatCountOrDash(groupQuery.data?.total) },
+    ];
+    const users = useMemo<UserRow[]>(
+        () =>
+            (usersQuery.data?.items ?? []).map((user, index) => ({
+                ...user,
+                __rowKey: user.name ?? `missing-name-${index}`,
+            })),
+        [usersQuery.data?.items],
+    );
     const selectedRows = useMemo(() => [...selectedUsers.values()], [selectedUsers]);
     const refreshUsers = () => {
         void queryClient.invalidateQueries({ queryKey: ["console", "users"] });
@@ -193,13 +215,13 @@ export function UsersView() {
 
         const name = user.name;
 
-        modal.confirm({
+        confirmGlobalDialog({
             cancelText: "取消",
+            confirmText: "删除",
             content: `确定删除用户 ${user.displayName ?? name} 吗？`,
-            okButtonProps: { danger: true },
-            okText: "删除",
-            onOk: () =>
-                deleteUser.mutateAsync(name, {
+            danger: true,
+            onConfirm: () => {
+                void deleteUser.mutateAsync(name, {
                     onSuccess: () => {
                         setSelectedUsers((previous) => {
                             const next = new Map(previous);
@@ -207,7 +229,8 @@ export function UsersView() {
                             return next;
                         });
                     },
-                }),
+                });
+            },
             title: "删除用户",
         });
     };
@@ -216,12 +239,14 @@ export function UsersView() {
             return;
         }
 
-        modal.confirm({
+        confirmGlobalDialog({
             cancelText: "取消",
-            content: `将处理选中的 ${selectedRows.length} 个用户，已处于目标状态的账号会自动跳过。`,
-            okButtonProps: disabled ? { danger: true } : undefined,
-            okText: disabled ? "批量禁用" : "批量启用",
-            onOk: () => bulkStatus.mutateAsync({ disabled, users: selectedRows }),
+            confirmText: disabled ? "批量禁用" : "批量启用",
+            content: `将会处理选中的 ${selectedRows.length} 个用户，已处于目标状态的账号会自动跳过。`,
+            danger: disabled,
+            onConfirm: () => {
+                void bulkStatus.mutateAsync({ disabled, users: selectedRows });
+            },
             title: disabled ? "批量禁用用户" : "批量启用用户",
         });
     };
@@ -281,17 +306,16 @@ export function UsersView() {
             }
 
             if (result.failures.length > 0) {
-                setSelectedUsers((previous) => {
-                    const next = new Map<string, ListedUser>();
-                    result.failures.forEach((failure) => {
-                        const user = previous.get(failure.name);
-                        if (user) {
-                            next.set(failure.name, user);
-                        }
-                    });
-                    return next;
-                });
-                modal.warning({
+                const failedNames = new Set(result.failures.map((failure) => failure.name));
+                setSelectedUsers(
+                    (previous) =>
+                        new Map(
+                            [...previous].filter(
+                                ([, user]) => Boolean(user.name) && failedNames.has(user.name as string),
+                            ),
+                        ),
+                );
+                prompt.warning({
                     content: (
                         <div className="grid gap-1">
                             {result.failures.slice(0, 8).map((failure) => (
@@ -304,7 +328,7 @@ export function UsersView() {
                             ) : null}
                         </div>
                     ),
-                    okText: "知道了",
+                    duration: 8000,
                     title: `已更新 ${result.changed} 个用户，${result.failures.length} 个失败`,
                 });
                 return;
@@ -379,210 +403,227 @@ export function UsersView() {
             setExporting(false);
         }
     };
-    const columns: ProColumns<ListedUser>[] = [
+    const columns: NonNullable<TableProps<UserRow>["columns"]> = [
         {
-            key: "userName",
-            render: (_, user) => {
-                const name = user.displayName || user.name || "未命名用户";
+            colKey: "row-select",
+            disabled: ({ row }) => !row.name,
+            type: "multiple",
+            width: 48,
+        },
+        {
+            cell: ({ row }) => {
+                const name = row.displayName || row.name || "未命名用户";
 
                 return (
-                    <Flex align="center" className="min-w-0" gap={10}>
+                    <div className="flex min-w-0 items-center gap-2.5">
                         <UserAvatar name={name} size={36} />
                         <div className="min-w-0">
-                            {user.name ? (
-                                <Link
-                                    className="block truncate font-medium"
-                                    href={userDetailPath(workspace, user.name)}
-                                >
+                            {row.name ? (
+                                <Link className="block truncate font-medium" href={userDetailPath(workspace, row.name)}>
                                     {name}
                                 </Link>
                             ) : (
                                 <span className="block truncate font-medium">{name}</span>
                             )}
                         </div>
-                    </Flex>
+                    </div>
                 );
             },
+            colKey: "user",
             title: "用户",
-            width: 176,
+            width: 200,
         },
-        {
-            key: "login",
-            render: (_, user) => {
-                const loginName = user.loginName || user.name;
+        ...(isMobile
+            ? []
+            : [
+                  {
+                      cell: ({ row }: { row: UserRow }) => {
+                          const loginName = row.loginName || row.name;
 
-                return (
-                    <span className="block truncate font-mono text-xs whitespace-nowrap text-neutral-600 dark:text-neutral-300">
-                        {loginName ? `@${loginName}` : <EmptyValue />}
-                    </span>
-                );
-            },
-            title: "登录名",
-            responsive: ["md"],
-            width: 108,
-        },
+                          return (
+                              <span className="block truncate font-mono text-xs text-[var(--td-text-color-secondary)]">
+                                  {loginName ? `@${loginName}` : <EmptyValue />}
+                              </span>
+                          );
+                      },
+                      colKey: "login",
+                      title: "登录名",
+                      width: 140,
+                  },
+                  {
+                      cell: ({ row }: { row: UserRow }) => (
+                          <UserGroupTag displayName={row.userGroupDisplayName} name={row.userGroup} />
+                      ),
+                      colKey: "group",
+                      title: "用户组",
+                      width: 130,
+                  },
+                  {
+                      cell: ({ row }: { row: UserRow }) => (
+                          <div className="flex min-w-0 flex-col gap-1">
+                              {row.email ? (
+                                  <span className="flex min-w-0 items-center gap-1.5 text-xs">
+                                      <MailIcon
+                                          className="shrink-0 text-[var(--td-text-color-placeholder)]"
+                                          size={14}
+                                      />
+                                      <span className="truncate">{row.email}</span>
+                                  </span>
+                              ) : null}
+                              {row.phone ? (
+                                  <span className="flex min-w-0 items-center gap-1.5 text-xs">
+                                      <MobileIcon
+                                          className="shrink-0 text-[var(--td-text-color-placeholder)]"
+                                          size={14}
+                                      />
+                                      <span className="truncate">{row.phone}</span>
+                                  </span>
+                              ) : null}
+                              {!row.email && !row.phone ? <EmptyValue /> : null}
+                          </div>
+                      ),
+                      colKey: "contact",
+                      title: "联系方式",
+                      width: 180,
+                  },
+                  {
+                      cell: ({ row }: { row: UserRow }) => (
+                          <span className="whitespace-nowrap tabular-nums">
+                              {row.registeredAt ? formatDateTime(row.registeredAt) : "未填写"}
+                          </span>
+                      ),
+                      colKey: "registeredAt",
+                      title: "创建时间",
+                      width: 170,
+                  },
+                  {
+                      cell: ({ row }: { row: UserRow }) => <UserStatusTag disabled={row.disabled} />,
+                      colKey: "status",
+                      title: "状态",
+                      width: 90,
+                  },
+              ]),
         {
-            key: "group",
-            render: (_, user) => <UserGroupTag displayName={user.userGroupDisplayName} name={user.userGroup} />,
-            title: "用户组",
-            responsive: ["lg"],
-            width: 106,
-        },
-        {
-            key: "contact",
-            render: (_, user) => (
-                <Flex gap={2} vertical>
-                    {user.email ? (
-                        <span className="flex min-w-0 items-center gap-1.5 text-xs">
-                            <Mail className="shrink-0 text-neutral-400" size={13} />
-                            <span className="truncate">{user.email}</span>
-                        </span>
-                    ) : null}
-                    {user.phone ? (
-                        <span className="flex min-w-0 items-center gap-1.5 text-xs">
-                            <Smartphone className="shrink-0 text-neutral-400" size={13} />
-                            <span className="truncate">{user.phone}</span>
-                        </span>
-                    ) : null}
-                    {!user.email && !user.phone ? <EmptyValue /> : null}
-                </Flex>
-            ),
-            title: "联系方式",
-            responsive: ["xl"],
-            width: 144,
-        },
-        {
-            key: "registeredAt",
-            render: (_, user) => (
-                <span className="whitespace-nowrap tabular-nums">{formatDateTime(user.registeredAt)}</span>
-            ),
-            title: "创建时间",
-            responsive: ["xl"],
-            width: 146,
-        },
-        {
-            key: "status",
-            render: (_, user) => <UserStatusTag disabled={user.disabled} />,
-            title: "状态",
-            responsive: ["lg"],
-            width: 74,
-        },
-        {
-            key: "actions",
-            render: (_, user) => {
-                const menuItems: NonNullable<MenuProps["items"]> = [
-                    { disabled: !user.name, key: "detail", label: "查看详情" },
+            cell: ({ row }) => {
+                const statusPending = setStatus.isPending && setStatus.variables?.name === row.name;
+                const options: DropdownOption[] = [
+                    { content: "查看详情", disabled: !row.name, value: "detail" },
+                    ...(canStatus
+                        ? [
+                              {
+                                  content: row.disabled ? "启用用户" : "禁用用户",
+                                  disabled: statusPending,
+                                  prefixIcon: row.disabled ? <PlayCircleIcon /> : <PoweroffIcon />,
+                                  value: "toggle",
+                              },
+                          ]
+                        : []),
+                    ...(canPassword ? [{ content: "重置密码", value: "password" }] : []),
+                    ...(canDelete
+                        ? [
+                              { divider: true, value: "divider" },
+                              { content: "删除用户", theme: "error" as const, value: "delete" },
+                          ]
+                        : []),
                 ];
-                const statusPending = setStatus.isPending && setStatus.variables?.name === user.name;
-
-                if (canStatus) {
-                    menuItems.push({
-                        disabled: statusPending,
-                        key: "toggle",
-                        label: user.disabled ? "启用用户" : "禁用用户",
-                    });
-                }
-                if (canPassword) {
-                    menuItems.push({ key: "password", label: "重置密码" });
-                }
-                if (canDelete) {
-                    menuItems.push({ type: "divider" });
-                    menuItems.push({ danger: true, key: "delete", label: "删除用户" });
-                }
 
                 return (
-                    <Space size={8} wrap>
+                    <div className="flex items-center gap-1">
                         {canEditRow ? (
                             <Button
-                                loading={detailLoadingName === user.name}
-                                onClick={() => void openEdit(user)}
+                                loading={detailLoadingName === row.name}
+                                onClick={() => void openEdit(row)}
                                 size="small"
-                                type="link"
+                                variant="text"
                             >
                                 编辑
                             </Button>
                         ) : null}
                         <Dropdown
-                            menu={{
-                                items: menuItems,
-                                onClick: ({ key }) => {
-                                    if (key === "detail" && user.name) {
-                                        router.push(userDetailPath(workspace, user.name));
-                                    } else if (key === "toggle") {
-                                        toggleUser(user);
-                                    } else if (key === "password") {
-                                        setResetUser(user);
-                                    } else if (key === "delete") {
-                                        confirmDelete(user);
-                                    }
-                                },
+                            onClick={(item) => {
+                                if (item.value === "detail" && row.name) {
+                                    router.push(userDetailPath(workspace, row.name));
+                                } else if (item.value === "toggle") {
+                                    toggleUser(row);
+                                } else if (item.value === "password") {
+                                    setResetUser(row);
+                                } else if (item.value === "delete") {
+                                    confirmDelete(row);
+                                }
                             }}
+                            options={options}
+                            trigger="click"
                         >
                             <Button
                                 aria-label="更多用户操作"
-                                icon={<MoreHorizontal size={16} />}
+                                icon={<MoreIcon />}
+                                shape="square"
                                 size="small"
-                                type="text"
+                                variant="text"
                             />
                         </Dropdown>
-                    </Space>
+                    </div>
                 );
             },
+            colKey: "actions",
             title: "操作",
-            width: 92,
+            width: 120,
         },
     ];
-    const rowSelection = canSelect
-        ? {
-              getCheckboxProps: (user: ListedUser) => ({ disabled: !user.name }),
-              onChange: (keys: React.Key[], rows: ListedUser[]) => {
-                  const selectedKeys = new Set(keys.map(String));
-                  setSelectedUsers((previous) => {
-                      const next = new Map(previous);
+    const handleSelectChange = (keys: Array<string | number>) => {
+        const selectedKeys = new Set(keys.map(String));
 
-                      users.forEach((user) => {
-                          if (user.name && !selectedKeys.has(user.name)) {
-                              next.delete(user.name);
-                          }
-                      });
-                      rows.forEach((row) => {
-                          if (row.name && selectedKeys.has(row.name)) {
-                              next.set(row.name, row);
-                          }
-                      });
+        setSelectedUsers((previous) => {
+            const next = new Map(previous);
 
-                      return next;
-                  });
-              },
-              preserveSelectedRowKeys: true,
-              selectedRowKeys: selectedRows.map((user) => user.name).filter((name): name is string => Boolean(name)),
-          }
-        : undefined;
-    const moreItems: NonNullable<MenuProps["items"]> = [];
+            users.forEach((user) => {
+                if (!selectedKeys.has(user.__rowKey)) {
+                    next.delete(user.__rowKey);
+                }
+            });
+            users.forEach((user) => {
+                if (selectedKeys.has(user.__rowKey) && user.name) {
+                    next.set(user.__rowKey, user);
+                }
+            });
+
+            return next;
+        });
+    };
+    const moreItems: DropdownOption[] = [];
 
     if (canBatchCreate) {
-        moreItems.push({ icon: <UsersRound size={14} />, key: "batch-create", label: "批量添加用户" });
+        moreItems.push({
+            content: "批量添加用户",
+            prefixIcon: <UsergroupAddIcon />,
+            value: "batch-create",
+        });
     }
     if (canImport) {
-        moreItems.push({ icon: <Upload size={14} />, key: "import", label: "导入用户" });
+        moreItems.push({ content: "导入用户", prefixIcon: <UploadIcon />, value: "import" });
     }
     if (moreItems.length > 0) {
-        moreItems.push({ type: "divider" });
+        moreItems.push({ divider: true, value: "divider" });
     }
-    moreItems.push({ icon: <RefreshCw size={14} />, key: "refresh", label: "刷新列表" });
-    const bulkItems: NonNullable<MenuProps["items"]> = [];
+    moreItems.push({ content: "刷新列表", prefixIcon: <RefreshIcon />, value: "refresh" });
+    const bulkItems: DropdownOption[] = [];
 
     if (canExport) {
-        bulkItems.push({ icon: <Download size={14} />, key: "export-selected", label: "导出选中" });
+        bulkItems.push({ content: "导出选中", prefixIcon: <DownloadIcon />, value: "export-selected" });
     }
     if (canBulk) {
-        bulkItems.push({ icon: <Power size={14} />, key: "enable", label: "批量启用" });
-        bulkItems.push({ danger: true, icon: <PowerOff size={14} />, key: "disable", label: "批量禁用" });
+        bulkItems.push({ content: "批量启用", prefixIcon: <PlayCircleIcon />, value: "enable" });
+        bulkItems.push({
+            content: "批量禁用",
+            prefixIcon: <PoweroffIcon />,
+            theme: "error",
+            value: "disable",
+        });
     }
     if (bulkItems.length > 0) {
-        bulkItems.push({ type: "divider" });
+        bulkItems.push({ divider: true, value: "divider" });
     }
-    bulkItems.push({ key: "clear", label: "取消选择" });
+    bulkItems.push({ content: "取消选择", value: "clear" });
     const handleBulkAction = (key: string) => {
         if (key === "export-selected") {
             void exportRows(selectedRows);
@@ -597,158 +638,143 @@ export function UsersView() {
 
     return (
         <>
-            <Flex className="w-full" gap={16} vertical>
-                <SectionCard title="筛选条件">
+            <div className="flex w-full flex-col gap-4">
+                <IdentityPageOverview
+                    actions={
+                        <>
+                            {canCreate ? (
+                                <Button icon={<UserAddIcon />} onClick={() => setCreateOpen(true)} theme="primary">
+                                    新建用户
+                                </Button>
+                            ) : null}
+                            <Button
+                                icon={<RefreshIcon />}
+                                loading={usersQuery.isFetching || summaryQuery.isFetching}
+                                onClick={refreshUsers}
+                                variant="outline"
+                            >
+                                刷新
+                            </Button>
+                        </>
+                    }
+                    icon={<UsergroupAddIcon />}
+                    metrics={overviewMetrics}
+                    title="用户目录"
+                />
+                <Card>
                     <div className="flex w-full flex-wrap items-center gap-3">
                         <Select
-                            allowClear
-                            aria-label="筛选账号状态"
                             className="min-w-0 flex-1 basis-52"
-                            onChange={applyStatus}
+                            clearable
+                            onChange={(value) => applyStatus(value ? String(value) : undefined)}
                             options={STATUS_OPTIONS}
                             placeholder="账号状态"
                             value={status || undefined}
                         />
                         <Select
-                            allowClear
-                            aria-label="筛选用户组"
                             className="min-w-0 flex-1 basis-52"
-                            onChange={applyGroup}
+                            clearable
+                            filterable
+                            onChange={(value) => applyGroup(value ? String(value) : undefined)}
                             options={groupOptions}
-                            optionFilterProp="label"
                             placeholder="用户组"
-                            showSearch
                             value={userGroup || undefined}
                         />
                         <Select
-                            allowClear
-                            aria-label="选择排序方式"
                             className="min-w-0 flex-1 basis-52"
-                            onChange={applySort}
+                            clearable
+                            onChange={(value) => applySort(value ? String(value) : undefined)}
                             options={SORT_OPTIONS}
                             placeholder="排序方式"
                             value={sortValue || undefined}
                         />
                         {hasFilters ? (
-                            <Button className="shrink-0" onClick={resetFilters} type="link">
+                            <Button onClick={resetFilters} variant="text">
                                 重置筛选
                             </Button>
                         ) : null}
                     </div>
-                </SectionCard>
-                {usersQuery.error ? (
-                    <Alert
-                        action={
-                            <Button onClick={() => void usersQuery.refetch()} size="small">
-                                重试
-                            </Button>
-                        }
-                        description={consoleErrorMessage(usersQuery.error)}
-                        message="用户列表加载失败"
-                        showIcon
-                        type="error"
-                    />
-                ) : null}
-                <ProTable<ListedUser>
-                    cardProps={{ className: "!rounded-[20px] sm:!rounded-[28px]" }}
+                </Card>
+                <ConsoleTable<UserRow>
                     columns={columns}
-                    columnsState={{
-                        persistenceKey: "console.users.table-columns",
-                        persistenceType: "localStorage",
-                    }}
-                    components={{ ExpandIcon: UserExpandIcon }}
-                    dataSource={users}
-                    expandable={{
-                        expandedRowRender: (user) => (
+                    data={users}
+                    error={usersQuery.error}
+                    loading={usersQuery.isFetching}
+                    onRetry={usersQuery.error ? () => void usersQuery.refetch() : undefined}
+                    pagination={{ ...table.pagination, total: usersQuery.data?.total ?? 0 }}
+                    rowKey="__rowKey"
+                    tableProps={{
+                        expandedRow: ({ row }) => (
                             <UserExpandedRow
                                 canEdit={canEditRow}
-                                onEdit={() => void openEdit(user)}
-                                user={user}
+                                onEdit={() => void openEdit(row)}
+                                user={row}
                                 workspace={workspace}
                             />
                         ),
+                        onSelectChange: handleSelectChange,
+                        selectedRowKeys: selectedRows.map((user) => user.__rowKey),
                     }}
-                    headerTitle={
-                        canExport || (canSelect && selectedRows.length > 0) ? (
-                            <Space size={8} wrap>
+                    title="用户"
+                    toolbar={
+                        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+                            <Input
+                                className="w-full sm:max-w-xs"
+                                clearable
+                                defaultValue={table.keyword}
+                                key={table.keyword}
+                                onClear={() => applyKeyword("")}
+                                onEnter={(value) => applyKeyword(String(value))}
+                                placeholder="搜索显示名称或邮箱"
+                                prefixIcon={<SearchIcon />}
+                            />
+                            <div className="flex items-center gap-2 sm:ml-auto">
                                 {canExport ? (
                                     <Button
-                                        icon={<Download size={15} />}
+                                        icon={<DownloadIcon />}
                                         loading={exporting}
                                         onClick={() => void exportRows()}
+                                        variant="outline"
                                     >
                                         导出
                                     </Button>
                                 ) : null}
                                 {canSelect && selectedRows.length > 0 ? (
                                     <Dropdown
-                                        menu={{ items: bulkItems, onClick: ({ key }) => handleBulkAction(key) }}
-                                        trigger={["click"]}
+                                        onClick={(item) => handleBulkAction(String(item.value))}
+                                        options={bulkItems}
+                                        trigger="click"
                                     >
-                                        <Button icon={<ListChecks size={15} />}>
+                                        <Button icon={<PlayCircleIcon />} variant="outline">
                                             批量操作
-                                            <ChevronDown size={14} />
                                         </Button>
                                     </Dropdown>
                                 ) : null}
-                            </Space>
-                        ) : undefined
+                                <Dropdown
+                                    onClick={(item) => {
+                                        if (item.value === "batch-create") {
+                                            setBatchOpen(true);
+                                        } else if (item.value === "import") {
+                                            setImportOpen(true);
+                                        } else if (item.value === "refresh") {
+                                            refreshUsers();
+                                        }
+                                    }}
+                                    options={moreItems}
+                                    trigger="click"
+                                >
+                                    <Button
+                                        aria-label="更多操作"
+                                        icon={<MoreIcon />}
+                                        shape="square"
+                                        variant="outline"
+                                    />
+                                </Dropdown>
+                            </div>
+                        </div>
                     }
-                    loading={usersQuery.isFetching}
-                    options={{ density: false, fullScreen: false, reload: false, setting: true }}
-                    pagination={{
-                        ...table.pagination,
-                        showTotal: (total) => `共 ${total} 项`,
-                        total: usersQuery.data?.total ?? 0,
-                    }}
-                    rowKey={(user) => user.name ?? user.displayName ?? ""}
-                    rowSelection={rowSelection}
-                    scroll={{ x: "max-content" }}
-                    search={false}
-                    tableAlertRender={false}
-                    toolBarRender={() => [
-                        <Input
-                            allowClear
-                            aria-label="搜索用户"
-                            className="w-full sm:w-72"
-                            defaultValue={table.keyword}
-                            key={table.keyword}
-                            onClear={() => applyKeyword("")}
-                            onPressEnter={(event) => applyKeyword(event.currentTarget.value)}
-                            placeholder="搜索显示名称 / 邮箱"
-                            prefix={<Search className="text-neutral-400" size={15} />}
-                        />,
-                        canCreate ? (
-                            <Button
-                                icon={<UserPlus size={15} />}
-                                key="create"
-                                onClick={() => setCreateOpen(true)}
-                                type="primary"
-                            >
-                                新建用户
-                            </Button>
-                        ) : null,
-                        <Dropdown
-                            key="more"
-                            menu={{
-                                items: moreItems,
-                                onClick: ({ key }) => {
-                                    if (key === "batch-create") {
-                                        setBatchOpen(true);
-                                    } else if (key === "import") {
-                                        setImportOpen(true);
-                                    } else if (key === "refresh") {
-                                        refreshUsers();
-                                    }
-                                },
-                            }}
-                            trigger={["click"]}
-                        >
-                            <Button aria-label="更多操作" icon={<MoreHorizontal size={18} />} type="text" />
-                        </Dropdown>,
-                    ]}
                 />
-            </Flex>
+            </div>
             {createOpen ? <CreateUserModal groupOptions={groupOptions} onClose={() => setCreateOpen(false)} /> : null}
             {batchOpen ? (
                 <BatchCreateUsersModal groupOptions={groupOptions} onClose={() => setBatchOpen(false)} />

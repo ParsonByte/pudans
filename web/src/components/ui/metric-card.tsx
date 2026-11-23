@@ -2,7 +2,9 @@
 
 import type { ReactNode } from "react";
 
-import { Card, Skeleton, theme } from "antd";
+import { Card, Skeleton } from "tdesign-react";
+
+import { useDesignTokens } from "./design-tokens";
 
 type MetricTone = {
     base: string;
@@ -21,17 +23,13 @@ type MetricCardProps = {
 };
 
 export function MetricCard({ badge, className, footer, icon, label, loading, tone, value }: MetricCardProps) {
-    const { token } = theme.useToken();
+    const token = useDesignTokens();
 
     return (
         <Card
-            className={`relative h-full overflow-hidden !rounded-3xl transition-transform duration-300 hover:-translate-y-0.5 ${className ?? ""}`}
-            style={{
-                background: token.colorBgContainer,
-                borderColor: token.colorBorderSecondary,
-                boxShadow: token.boxShadowTertiary,
-            }}
-            styles={{ body: { padding: 20 } }}
+            className={`relative h-full overflow-hidden transition-transform duration-300 hover:-translate-y-0.5 ${className ?? ""}`}
+            bordered
+            shadow
         >
             <div className="flex flex-col gap-5">
                 <div className="flex items-start justify-between gap-3">
@@ -55,7 +53,7 @@ export function MetricCard({ badge, className, footer, icon, label, loading, ton
                 </div>
                 <div>
                     {loading ? (
-                        <Skeleton.Input active size="small" />
+                        <Skeleton animation="gradient" rowCol={[1]} />
                     ) : (
                         <div className="text-3xl font-semibold tracking-tight" style={{ color: token.colorText }}>
                             {value}

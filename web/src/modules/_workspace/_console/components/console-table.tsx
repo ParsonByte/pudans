@@ -2,28 +2,28 @@
 
 import { type ReactNode, useEffect } from "react";
 
-import { Card, Empty, Table, type TablePaginationConfig, type TableProps } from "antd";
+import { Button, Card, Empty, Table } from "tdesign-react";
+import type { PaginationProps, TableProps, TableRowData } from "tdesign-react";
 
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
-import { useMobile } from "@/hooks/ui/use-mobile";
-import { useEventCallback } from "@/hooks/utils/use-event-callback";
 
 import { consoleErrorMessage } from "../composables/_errors";
 
-type ConsoleTableProps<T extends object> = {
+type ConsoleTableProps<T extends TableRowData> = {
     columns: TableProps<T>["columns"];
     data?: T[];
     error?: unknown;
     extra?: ReactNode;
     loading?: boolean;
     onRetry?: () => void;
-    pagination?: TablePaginationConfig | false;
-    rowKey: TableProps<T>["rowKey"];
+    pagination?: PaginationProps | false;
+    rowKey: string;
+    tableProps?: Omit<TableProps<T>, "columns" | "data" | "loading" | "pagination" | "rowKey">;
     title?: ReactNode;
     toolbar?: ReactNode;
 };
 
-export function ConsoleTable<T extends object>({
+export function ConsoleTable<T extends TableRowData>({
     columns,
     data,
     error,
@@ -32,12 +32,11 @@ export function ConsoleTable<T extends object>({
     onRetry,
     pagination,
     rowKey,
+    tableProps,
     title,
     toolbar,
 }: ConsoleTableProps<T>) {
     const prompt = useMessagePrompt();
-    const isMobile = useMobile();
-    const retry = useEventCallback(() => onRetry?.());
     const canRetry = Boolean(onRetry);
 
     useEffect(() => {
@@ -47,24 +46,37 @@ export function ConsoleTable<T extends object>({
 
         const message = consoleErrorMessage(error);
         prompt.error({
-            content: canRetry ? `${message}，点击重试。` : message,
-            key: "console-table-error",
-            onClick: canRetry ? retry : undefined,
+            content: canRetry ? `${message}，请使用页面重试按钮。` : message,
         });
-    }, [canRetry, error, prompt, retry]);
+    }, [canRetry, error, prompt]);
 
     return (
-        <Card className="console-table-card" extra={extra} title={title}>
+        <Card
+            actions={
+                canRetry ? (
+                    <div className="flex items-center justify-end gap-2">
+                        {extra}
+                        <Button onClick={onRetry} size="small" variant="outline">
+                            重试
+                        </Button>
+                    </div>
+                ) : (
+                    extra
+                )
+            }
+            className="console-table-card"
+            header={title}
+        >
             {toolbar ? <div className="mb-4">{toolbar}</div> : null}
             <Table<T>
+                {...tableProps}
                 columns={columns}
-                dataSource={data}
+                data={data}
+                disableDataPage
+                empty={<Empty description="暂无数据" />}
                 loading={loading}
-                locale={{ emptyText: <Empty description="暂无数据" image={Empty.PRESENTED_IMAGE_SIMPLE} /> }}
-                pagination={pagination ?? false}
+                pagination={pagination === false ? undefined : pagination}
                 rowKey={rowKey}
-                scroll={{ x: "max-content" }}
-                size={isMobile ? "small" : "middle"}
             />
         </Card>
     );

@@ -2,7 +2,9 @@
 
 import type { ReactNode } from "react";
 
-import { theme } from "antd";
+import { Card } from "tdesign-react";
+
+import { useDesignTokens } from "./design-tokens";
 
 type StatTileProps = {
     className?: string;
@@ -12,25 +14,23 @@ type StatTileProps = {
 };
 
 export function StatTile({ className, compact = false, label, value }: StatTileProps) {
-    const { token } = theme.useToken();
+    const token = useDesignTokens();
 
     return (
-        <div
-            className={`rounded-2xl border ${compact ? "px-3 py-2.5" : "px-4 py-3"} ${className ?? ""}`}
-            style={{
-                background: token.colorFillQuaternary,
-                borderColor: token.colorBorderSecondary,
-            }}
+        <Card
+            className={className}
+            size="small"
+            style={{ background: token.colorFillQuaternary, borderColor: token.colorBorderSecondary }}
         >
             <div className="text-[11px]" style={{ color: token.colorTextSecondary }}>
                 {label}
             </div>
             <div
-                className="mt-1 text-sm font-semibold [overflow-wrap:anywhere] break-words"
+                className={`${compact ? "mt-0.5" : "mt-1"} text-sm font-semibold [overflow-wrap:anywhere] break-words`}
                 style={{ color: token.colorText }}
             >
                 {value}
             </div>
-        </div>
+        </Card>
     );
 }

@@ -1,8 +1,10 @@
 "use client";
 
-import { Icon } from "@iconify/react";
 import type { WorkspaceMenuOperation } from "@pudans-dev/api-client";
-import { Checkbox, Table, type TableProps, Tag, Tooltip, theme } from "antd";
+import { Checkbox, Table, Tag, Tooltip } from "tdesign-react";
+import type { TableProps } from "tdesign-react";
+
+import { MenuIcon } from "@/components/ui";
 
 import {
     type RoleCatalogIndex,
@@ -24,8 +26,8 @@ type RoleOperationPermissionsProps = {
 };
 
 type OperationRow = {
+    __rowKey: string;
     entry: RoleMenuEntry;
-    key: string;
     operation: WorkspaceMenuOperation;
 };
 
@@ -83,34 +85,32 @@ function OperationPermissionTable({
 }: OperationPermissionTableProps) {
     const rows = entries.flatMap((entry) =>
         entry.operations.map((operation) => ({
+            __rowKey: `${entry.workspace.id ?? entry.workspace.name}:${entry.menu.key}:${operation.key}`,
             entry,
-            key: `${entry.workspace.id ?? entry.workspace.name}:${entry.menu.key}:${operation.key}`,
             operation,
         })),
     );
 
-    const columns: TableProps<OperationRow>["columns"] = [
+    const columns: NonNullable<TableProps<OperationRow>["columns"]> = [
         {
-            key: "menu",
-            render: (_, row) => <OperationMenuCell entry={row.entry} />,
+            cell: ({ row }) => <OperationMenuCell entry={row.entry} />,
+            colKey: "menu",
             title: "菜单",
             width: 140,
         },
         {
-            key: "operation",
-            render: (_, row) => <OperationCell operation={row.operation} />,
+            cell: ({ row }) => <OperationCell operation={row.operation} />,
+            colKey: "operation",
             title: "操作",
         },
         {
-            key: "permission",
-            render: (_, row) => <PermissionCode value={row.operation.permission ?? row.operation.key ?? "—"} />,
+            cell: ({ row }) => <PermissionCode value={row.operation.permission ?? row.operation.key ?? "未配置"} />,
+            colKey: "permission",
             title: "权限标识",
             width: 170,
         },
         {
-            align: "center",
-            key: "allow",
-            render: (_, row) => (
+            cell: ({ row }) => (
                 <OperationCheckbox
                     allowedPermissions={allowedPermissions}
                     draft={draft}
@@ -120,46 +120,36 @@ function OperationPermissionTable({
                     operation={row.operation}
                 />
             ),
+            colKey: "allow",
             title: "允许",
             width: 64,
         },
     ];
 
-    return (
-        <Table<OperationRow>
-            columns={columns}
-            dataSource={rows}
-            pagination={false}
-            rowKey={(row) => row.key}
-            scroll={{ x: 520 }}
-            tableLayout="fixed"
-        />
-    );
+    return <Table<OperationRow> columns={columns} data={rows} rowKey="__rowKey" tableLayout="fixed" />;
 }
 
 function OperationMenuCell({ entry }: { entry: RoleMenuEntry }) {
     return (
         <div className="flex min-w-0 items-center gap-2">
-            <Icon icon={entry.menu.icon || "lucide:panel-top"} width={14} />
+            <MenuIcon icon={entry.menu.icon} size={14} />
             <span className="truncate text-xs">{entry.menu.label ?? entry.menu.key}</span>
         </div>
     );
 }
 
 function OperationCell({ operation }: { operation: WorkspaceMenuOperation }) {
-    const { token } = theme.useToken();
-
     return (
         <div className="min-w-0">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
                 <span className="truncate text-sm">{operation.label ?? operation.key}</span>
-                <Tag className="!m-0" color={operation.type === "table" ? "geekblue" : "default"}>
+                <Tag theme={operation.type === "table" ? "primary" : "default"} variant="light">
                     {operationTypeLabel(operation.type)}
                 </Tag>
             </div>
             {operation.description ? (
-                <Tooltip title={operation.description}>
-                    <div className="truncate text-[11px]" style={{ color: token.colorTextTertiary }}>
+                <Tooltip content={operation.description}>
+                    <div className="truncate text-[11px] text-[var(--td-text-color-placeholder)]">
                         {operation.description}
                     </div>
                 </Tooltip>
@@ -169,13 +159,9 @@ function OperationCell({ operation }: { operation: WorkspaceMenuOperation }) {
 }
 
 function PermissionCode({ value }: { value: string }) {
-    const { token } = theme.useToken();
-
     return (
-        <Tooltip title={value}>
-            <div className="truncate font-mono text-[10px]" style={{ color: token.colorTextTertiary }}>
-                {value}
-            </div>
+        <Tooltip content={value}>
+            <div className="truncate font-mono text-[10px] text-[var(--td-text-color-placeholder)]">{value}</div>
         </Tooltip>
     );
 }
@@ -210,15 +196,13 @@ function OperationCheckbox({
             : undefined;
 
     return (
-        <Tooltip title={tooltip}>
+        <Tooltip content={tooltip}>
             <span>
                 <Checkbox
                     aria-label="允许"
                     checked={granted}
                     disabled={disabled}
-                    onChange={(event) =>
-                        setOperation(entry, operation.permission, event.target.checked, draft, onChange)
-                    }
+                    onChange={(checked) => setOperation(entry, operation.permission, checked, draft, onChange)}
                 />
             </span>
         </Tooltip>

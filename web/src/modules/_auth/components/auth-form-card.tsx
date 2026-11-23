@@ -1,29 +1,29 @@
 import type { ReactNode } from "react";
 
-import { Flex, Typography } from "antd";
+import { Typography } from "tdesign-react";
 
 type AuthFormCardProps = {
+    children: ReactNode;
+    description: ReactNode;
     eyebrow: string;
     title: string;
-    description: ReactNode;
-    children: ReactNode;
 };
 
-export function AuthFormCard({ eyebrow, title, description, children }: AuthFormCardProps) {
+export function AuthFormCard({ children, description, eyebrow, title }: AuthFormCardProps) {
     return (
-        <Flex vertical gap={20}>
+        <div className="flex flex-col gap-5">
             <div>
-                <Typography.Text className="text-xs font-semibold tracking-[0.2em] uppercase" type="secondary">
+                <Typography.Text className="text-xs font-semibold tracking-[0.2em] uppercase" theme="secondary">
                     {eyebrow}
                 </Typography.Text>
-                <Typography.Title className="!mt-2 !mb-1" level={2}>
+                <Typography.Title className="!mt-2 !mb-1 !text-[30px] !leading-[1.35]" level="h2">
                     {title}
                 </Typography.Title>
-                <Typography.Paragraph className="!mb-0" type="secondary">
+                <Typography.Paragraph className="!mb-0 !text-sm !text-[var(--td-text-color-secondary)]">
                     {description}
                 </Typography.Paragraph>
             </div>
             {children}
-        </Flex>
+        </div>
     );
 }

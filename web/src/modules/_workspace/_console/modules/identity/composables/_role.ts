@@ -1,6 +1,6 @@
 import type { Role } from "@pudans-dev/api-client";
 
-const ROLE_BUILTIN_LABEL = "pudans.tolim.cn/builtin";
+export const BUILTIN_LABEL = "pudans.tolim.cn/builtin";
 export const ROLE_DEPENDENCIES_ANNOTATION = "rbac.authorization.pudans.tolim.cn/dependencies";
 export const ROLE_DESCRIPTION_ANNOTATION = "rbac.authorization.pudans.tolim.cn/description";
 export const ROLE_DISPLAY_NAME_ANNOTATION = "rbac.authorization.pudans.tolim.cn/display-name";
@@ -23,7 +23,7 @@ export function roleDescription(role: Role): string {
 }
 
 export function isBuiltinRole(role: Role): boolean {
-    return role.metadata.labels?.[ROLE_BUILTIN_LABEL] === "true";
+    return role.metadata.labels?.[BUILTIN_LABEL] === "true";
 }
 
 export function roleDependencies(role: Role): string[] {
