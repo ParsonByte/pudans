@@ -553,6 +553,38 @@
         ]
       }
     },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/flows/overview": {
+      "get": {
+        "description": "Return aggregated audit trace flow activity for the selected number of days.",
+        "operationId": "GetAuditFlowOverview",
+        "parameters": [
+          {
+            "description": "Aggregation range in days, between 1 and 90. Defaults to 7.",
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditFlowOverview"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuditLogV1alpha1"
+        ]
+      }
+    },
     "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/graph": {
       "get": {
         "description": "Daily user operation graph: nodes are audit steps and edges are parent/child relations.",
@@ -667,6 +699,38 @@
         ]
       }
     },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/overview": {
+      "get": {
+        "description": "Return aggregated audit activity for the selected number of days.",
+        "operationId": "GetAuditOverview",
+        "parameters": [
+          {
+            "description": "Aggregation range in days, between 1 and 90. Defaults to 7.",
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditOverview"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuditLogV1alpha1"
+        ]
+      }
+    },
     "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/replay/{traceFlowId}": {
       "get": {
         "description": "Virtual read-only replay of stored actionSnapshot values for a trace flow.",
@@ -687,6 +751,119 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/AuditReplay"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuditLogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/sessions": {
+      "get": {
+        "description": "Return user sessions split by a thirty-minute inactivity gap. Each session links its entry page, intermediate pages and actions, and exit page.",
+        "operationId": "ListAuditSessions",
+        "parameters": [
+          {
+            "description": "Page number (default 1).",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Page size (1-100, default 10).",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Filter by user uid.",
+            "in": "query",
+            "name": "uid",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Only return sessions containing this operation.",
+            "in": "query",
+            "name": "operation",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Filter by aggregated session result (SUCCESS, FAILURE, DENIED).",
+            "in": "query",
+            "name": "result",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Inclusive lower bound of the UTC timestamp (ISO-8601).",
+            "in": "query",
+            "name": "from",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exclusive upper bound of the UTC timestamp (ISO-8601).",
+            "in": "query",
+            "name": "to",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditSessionPage"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "AuditLogV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/sessions/{sessionId}": {
+      "get": {
+        "description": "Return the complete user session identified by ListAuditSessions.",
+        "operationId": "ReplayAuditSession",
+        "parameters": [
+          {
+            "description": "Opaque session id returned by ListAuditSessions.",
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditSessionReplay"
                 }
               }
             },
@@ -3091,6 +3268,38 @@
         ]
       }
     },
+    "/apis/api.pudans.tolim.cn/v1alpha1/riskrules/overview": {
+      "get": {
+        "description": "Aggregate real risk control events, rules, bans, heatmap and relations.",
+        "operationId": "GetRiskOverview",
+        "parameters": [
+          {
+            "description": "Analytics range in days, between 1 and 90. Defaults to 7.",
+            "in": "query",
+            "name": "days",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "default": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/RiskOverview"
+                }
+              }
+            },
+            "description": "default response"
+          }
+        },
+        "tags": [
+          "RiskRuleV1alpha1"
+        ]
+      }
+    },
     "/apis/api.pudans.tolim.cn/v1alpha1/riskrules/unban": {
       "delete": {
         "description": "Lift the active ban of a scene subject, e.g. an IP address.",
@@ -3830,6 +4039,63 @@
               }
             },
             "description": "Response secrets created just now"
+          }
+        },
+        "tags": [
+          "SecretV1alpha1"
+        ]
+      }
+    },
+    "/apis/api.pudans.tolim.cn/v1alpha1/secrets/catalog": {
+      "get": {
+        "description": "Browse secret metadata without exposing stored values.",
+        "operationId": "getSecretCatalog",
+        "parameters": [
+          {
+            "description": "One-based page number; defaults to 1.",
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Page size between 1 and 100; defaults to 20.",
+            "in": "query",
+            "name": "size",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "description": "Case-insensitive match on the secret name or any key.",
+            "in": "query",
+            "name": "keyword",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Exact secret type filter.",
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecretCatalog"
+                }
+              }
+            },
+            "description": "default response"
           }
         },
         "tags": [
@@ -5319,6 +5585,16 @@
       "post": {
         "description": "Record a client-side page navigation. The request itself is audited as a Page navigation record and returns the audit id used to chain following requests.",
         "operationId": "RecordUserNavigation",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NavigationEvent"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "default": {
             "content": {
@@ -6948,6 +7224,31 @@
           }
         }
       },
+      "AuditActorStat": {
+        "type": "object",
+        "properties": {
+          "averageDurationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failures": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "operations": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "uid": {
+            "type": "string"
+          }
+        },
+        "description": "Audit record aggregation for one active user."
+      },
       "AuditArchiveRequest": {
         "type": "object",
         "properties": {
@@ -6987,6 +7288,19 @@
           }
         }
       },
+      "AuditDurationBucket": {
+        "type": "object",
+        "properties": {
+          "bucket": {
+            "type": "string"
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Audit record count for one request duration bucket."
+      },
       "AuditEdge": {
         "type": "object",
         "properties": {
@@ -7000,6 +7314,146 @@
             "type": "string"
           }
         }
+      },
+      "AuditFlowOverview": {
+        "type": "object",
+        "properties": {
+          "actors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditActorStat"
+            }
+          },
+          "durations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditDurationBucket"
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "heatmap": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditHeatmapCell"
+            }
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditOperationStat"
+            }
+          },
+          "rangeDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditResultStat"
+            }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditFlowStepBucket"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AuditFlowOverviewSummary"
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditFlowTimelinePoint"
+            }
+          }
+        },
+        "description": "Aggregated audit trace flow activity for the selected range."
+      },
+      "AuditFlowOverviewSummary": {
+        "type": "object",
+        "properties": {
+          "activeUsers": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "archivedFlows": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "archivedRecords": {
+            "type": "integer",
+            "description": "All-time archived audit record count.",
+            "format": "int64"
+          },
+          "averageDurationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "averageSteps": {
+            "type": "number",
+            "format": "double"
+          },
+          "failedFlows": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "flows": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "p95DurationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Selected-range flow counters; archivedRecords is the all-time archived count."
+      },
+      "AuditFlowStepBucket": {
+        "type": "object",
+        "properties": {
+          "bucket": {
+            "type": "string"
+          },
+          "flows": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Trace flow count for one step-count bucket."
+      },
+      "AuditFlowTimelinePoint": {
+        "type": "object",
+        "properties": {
+          "archivedRecords": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string"
+          },
+          "failedFlows": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "flows": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Daily trace flow counts based on the Beijing flow start date."
       },
       "AuditGraph": {
         "type": "object",
@@ -7029,6 +7483,24 @@
             "type": "string"
           }
         }
+      },
+      "AuditHeatmapCell": {
+        "type": "object",
+        "properties": {
+          "hour": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "weekday": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Audit record count for one weekday and hour in the Beijing time zone."
       },
       "AuditJourney": {
         "type": "object",
@@ -7226,6 +7698,114 @@
           }
         }
       },
+      "AuditOperationStat": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "string"
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Audit record aggregation for one operation."
+      },
+      "AuditOverview": {
+        "type": "object",
+        "properties": {
+          "actors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditActorStat"
+            }
+          },
+          "durations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditDurationBucket"
+            }
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "heatmap": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditHeatmapCell"
+            }
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditOperationStat"
+            }
+          },
+          "rangeDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditResultStat"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/AuditOverviewSummary"
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditTimelinePoint"
+            }
+          }
+        },
+        "description": "Aggregated audit activity for the selected range."
+      },
+      "AuditOverviewSummary": {
+        "type": "object",
+        "properties": {
+          "activeRecords": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "activeUsers": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "archivedRecords": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "averageDurationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "denied": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failure": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "p95DurationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "success": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Audit volume, outcome, latency and retention counters for the selected range."
+      },
       "AuditRecord": {
         "type": "object",
         "properties": {
@@ -7345,6 +7925,171 @@
             "type": "string"
           }
         }
+      },
+      "AuditResultStat": {
+        "type": "object",
+        "properties": {
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "result": {
+            "type": "string"
+          }
+        },
+        "description": "Audit record aggregation for one result."
+      },
+      "AuditSessionPage": {
+        "type": "object",
+        "properties": {
+          "actionCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "averageDurationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "averageSteps": {
+            "type": "number",
+            "format": "double"
+          },
+          "failedSessions": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuditSessionSummary"
+            }
+          },
+          "p95DurationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageViews": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AuditSessionReplay": {
+        "type": "object",
+        "properties": {
+          "session": {
+            "$ref": "#/components/schemas/AuditSessionSummary"
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ReplayStep"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AuditSessionSummary": {
+        "type": "object",
+        "properties": {
+          "actionCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "archived": {
+            "type": "boolean"
+          },
+          "durationMs": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "entryPath": {
+            "type": "string"
+          },
+          "exitPath": {
+            "type": "string"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pageCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "recordCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sessionId": {
+            "type": "string"
+          },
+          "start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "uid": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        }
+      },
+      "AuditTimelinePoint": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "denied": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "failure": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "records": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "success": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Daily audit counts in the Beijing time zone."
       },
       "AuditTrace": {
         "type": "object",
@@ -8547,6 +9292,14 @@
           }
         }
       },
+      "NavigationEvent": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        }
+      },
       "NavigationResult": {
         "type": "object",
         "properties": {
@@ -9208,6 +9961,166 @@
           }
         }
       },
+      "RiskEventView": {
+        "type": "object",
+        "properties": {
+          "auditId": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operation": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string"
+          },
+          "scene": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          }
+        },
+        "description": "One recent risk control audit event."
+      },
+      "RiskHeatmapCell": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "hour": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "weekday": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "description": "Risk event count for one weekday and hour in the Beijing time zone."
+      },
+      "RiskOverview": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "heatmap": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskHeatmapCell"
+            }
+          },
+          "rangeDays": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "recentEvents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskEventView"
+            }
+          },
+          "relations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskRelation"
+            }
+          },
+          "scenes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskSceneStat"
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskSubjectStat"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/RiskOverviewSummary"
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RiskTimelinePoint"
+            }
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "description": "Aggregated risk control posture for the selected range."
+      },
+      "RiskOverviewSummary": {
+        "type": "object",
+        "properties": {
+          "activeBans": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "affectedSubjects": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "alerts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blocked": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "enabledRules": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "events": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalRules": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Risk event, ban and rule counters for the selected range."
+      },
+      "RiskRelation": {
+        "type": "object",
+        "properties": {
+          "blocked": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "events": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scene": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          }
+        },
+        "description": "Relation between one risk scene and one affected subject."
+      },
       "RiskRule": {
         "type": "object",
         "properties": {
@@ -9289,6 +10202,89 @@
           "total",
           "totalPages"
         ]
+      },
+      "RiskSceneStat": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "alerts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blocked": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "description": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "events": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "label": {
+            "type": "string"
+          },
+          "scene": {
+            "type": "string"
+          },
+          "subjects": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Risk event aggregation for one rule scene, including configured rules without events."
+      },
+      "RiskSubjectStat": {
+        "type": "object",
+        "properties": {
+          "alerts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blocked": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "events": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "scenes": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "subject": {
+            "type": "string"
+          }
+        },
+        "description": "Risk event aggregation for one affected subject."
+      },
+      "RiskTimelinePoint": {
+        "type": "object",
+        "properties": {
+          "alerts": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "blocked": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "date": {
+            "type": "string"
+          },
+          "events": {
+            "type": "integer",
+            "format": "int64"
+          }
+        },
+        "description": "Daily risk event counts in the Beijing time zone."
       },
       "Role": {
         "type": "object",
@@ -9500,6 +10496,8 @@
           },
           "data": {
             "type": "object",
+            "description": "Binary secret data. Write-only; values are never returned by responses.",
+            "writeOnly": true,
             "additionalProperties": {
               "type": "string",
               "format": "byte"
@@ -9513,6 +10511,8 @@
           },
           "stringData": {
             "type": "object",
+            "description": "String secret data. Write-only; values are never returned by responses.",
+            "writeOnly": true,
             "additionalProperties": {
               "type": "string"
             }
@@ -9585,6 +10585,163 @@
           "total",
           "totalPages"
         ]
+      },
+      "SecretCatalog": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Catalog generation time."
+          },
+          "items": {
+            "type": "array",
+            "description": "Catalog items for the requested page.",
+            "items": {
+              "$ref": "#/components/schemas/SecretCatalogItem"
+            }
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "description": "One-based page number."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Page size."
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SecretCatalogSummary"
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total items after filters."
+          },
+          "totalPages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total pages after filters."
+          }
+        }
+      },
+      "SecretCatalogItem": {
+        "type": "object",
+        "properties": {
+          "annotations": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Secret annotations."
+          },
+          "creationTimestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation time."
+          },
+          "dataKeys": {
+            "type": "array",
+            "description": "Sorted data keys.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "hasData": {
+            "type": "boolean",
+            "description": "Whether data contains any keys."
+          },
+          "hasStringData": {
+            "type": "boolean",
+            "description": "Whether stringData contains any keys."
+          },
+          "keys": {
+            "type": "array",
+            "description": "Sorted union of data and stringData keys.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "labels": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Secret labels."
+          },
+          "name": {
+            "type": "string",
+            "description": "Secret name."
+          },
+          "stringDataKeys": {
+            "type": "array",
+            "description": "Sorted stringData keys.",
+            "items": {
+              "type": "string"
+            }
+          },
+          "type": {
+            "type": "string",
+            "description": "Secret type."
+          },
+          "version": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Optimistic version."
+          }
+        }
+      },
+      "SecretCatalogSummary": {
+        "type": "object",
+        "properties": {
+          "createdLastSevenDays": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Secrets created in the last seven days."
+          },
+          "empty": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Secrets without keys."
+          },
+          "entries": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total key entries."
+          },
+          "total": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Total secrets."
+          },
+          "types": {
+            "type": "array",
+            "description": "Per-type totals sorted by count and type.",
+            "items": {
+              "$ref": "#/components/schemas/SecretTypeCount"
+            }
+          }
+        }
+      },
+      "SecretTypeCount": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Secret count."
+          },
+          "entries": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Key entry count."
+          },
+          "type": {
+            "type": "string",
+            "description": "Secret type."
+          }
+        }
       },
       "SendCodeRequest": {
         "type": "object",

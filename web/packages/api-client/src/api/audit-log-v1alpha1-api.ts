@@ -28,13 +28,21 @@ import type { AuditArchiveResult } from '../models';
 // @ts-ignore
 import type { AuditArchiveStats } from '../models';
 // @ts-ignore
+import type { AuditFlowOverview } from '../models';
+// @ts-ignore
 import type { AuditGraph } from '../models';
 // @ts-ignore
 import type { AuditJourneyPage } from '../models';
 // @ts-ignore
 import type { AuditLogPage } from '../models';
 // @ts-ignore
+import type { AuditOverview } from '../models';
+// @ts-ignore
 import type { AuditReplay } from '../models';
+// @ts-ignore
+import type { AuditSessionPage } from '../models';
+// @ts-ignore
+import type { AuditSessionReplay } from '../models';
 // @ts-ignore
 import type { AuditTrace } from '../models';
 // @ts-ignore
@@ -111,6 +119,90 @@ export const AuditLogV1alpha1ApiAxiosParamCreator = function (configuration?: Co
             // authentication bearerAuth required
             // http bearer authentication required
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Return aggregated audit trace flow activity for the selected number of days.
+         * @param {number} [days] Aggregation range in days, between 1 and 90. Defaults to 7.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAuditFlowOverview: async (days?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/flows/overview`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (days !== undefined) {
+                localVarQueryParameter['days'] = days;
+            }
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Return aggregated audit activity for the selected number of days.
+         * @param {number} [days] Aggregation range in days, between 1 and 90. Defaults to 7.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAuditOverview: async (days?: number, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/overview`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (days !== undefined) {
+                localVarQueryParameter['days'] = days;
+            }
 
             localVarHeaderParameter['Accept'] = '*/*';
 
@@ -462,6 +554,78 @@ export const AuditLogV1alpha1ApiAxiosParamCreator = function (configuration?: Co
             };
         },
         /**
+         * Return user sessions split by a thirty-minute inactivity gap. Each session links its entry page, intermediate pages and actions, and exit page.
+         * @param {number} [page] Page number (default 1).
+         * @param {number} [size] Page size (1-100, default 10).
+         * @param {string} [uid] Filter by user uid.
+         * @param {string} [operation] Only return sessions containing this operation.
+         * @param {string} [result] Filter by aggregated session result (SUCCESS, FAILURE, DENIED).
+         * @param {string} [from] Inclusive lower bound of the UTC timestamp (ISO-8601).
+         * @param {string} [to] Exclusive upper bound of the UTC timestamp (ISO-8601).
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listAuditSessions: async (page?: number, size?: number, uid?: string, operation?: string, result?: string, from?: string, to?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/sessions`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (page !== undefined) {
+                localVarQueryParameter['page'] = page;
+            }
+
+            if (size !== undefined) {
+                localVarQueryParameter['size'] = size;
+            }
+
+            if (uid !== undefined) {
+                localVarQueryParameter['uid'] = uid;
+            }
+
+            if (operation !== undefined) {
+                localVarQueryParameter['operation'] = operation;
+            }
+
+            if (result !== undefined) {
+                localVarQueryParameter['result'] = result;
+            }
+
+            if (from !== undefined) {
+                localVarQueryParameter['from'] = from;
+            }
+
+            if (to !== undefined) {
+                localVarQueryParameter['to'] = to;
+            }
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * Query audit trace flows grouped by traceFlowId and return each flow with all of its audit records.
          * @param {number} [page] Page number (default 1).
          * @param {number} [size] Page size (1-100, default 10).
@@ -589,6 +753,47 @@ export const AuditLogV1alpha1ApiAxiosParamCreator = function (configuration?: Co
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * Return the complete user session identified by ListAuditSessions.
+         * @param {string} sessionId Opaque session id returned by ListAuditSessions.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        replayAuditSession: async (sessionId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'sessionId' is not null or undefined
+            assertParamExists('replayAuditSession', 'sessionId', sessionId)
+            const localVarPath = `/apis/api.pudans.tolim.cn/v1alpha1/auditlogs/sessions/{sessionId}`
+                .replace('{sessionId}', encodeURIComponent(String(sessionId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication basicAuth required
+            // http basic authentication required
+            setBasicAuthToObject(localVarRequestOptions, configuration)
+
+            // authentication bearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            localVarHeaderParameter['Accept'] = '*/*';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -619,6 +824,30 @@ export const AuditLogV1alpha1ApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.getAuditArchiveStats(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.getAuditArchiveStats']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Return aggregated audit trace flow activity for the selected number of days.
+         * @param {number} [days] Aggregation range in days, between 1 and 90. Defaults to 7.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getAuditFlowOverview(days?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuditFlowOverview>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAuditFlowOverview(days, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.getAuditFlowOverview']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Return aggregated audit activity for the selected number of days.
+         * @param {number} [days] Aggregation range in days, between 1 and 90. Defaults to 7.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async getAuditOverview(days?: number, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuditOverview>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.getAuditOverview(days, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.getAuditOverview']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
@@ -707,6 +936,24 @@ export const AuditLogV1alpha1ApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Return user sessions split by a thirty-minute inactivity gap. Each session links its entry page, intermediate pages and actions, and exit page.
+         * @param {number} [page] Page number (default 1).
+         * @param {number} [size] Page size (1-100, default 10).
+         * @param {string} [uid] Filter by user uid.
+         * @param {string} [operation] Only return sessions containing this operation.
+         * @param {string} [result] Filter by aggregated session result (SUCCESS, FAILURE, DENIED).
+         * @param {string} [from] Inclusive lower bound of the UTC timestamp (ISO-8601).
+         * @param {string} [to] Exclusive upper bound of the UTC timestamp (ISO-8601).
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async listAuditSessions(page?: number, size?: number, uid?: string, operation?: string, result?: string, from?: string, to?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuditSessionPage>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.listAuditSessions(page, size, uid, operation, result, from, to, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.listAuditSessions']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * Query audit trace flows grouped by traceFlowId and return each flow with all of its audit records.
          * @param {number} [page] Page number (default 1).
          * @param {number} [size] Page size (1-100, default 10).
@@ -739,6 +986,18 @@ export const AuditLogV1alpha1ApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.replayAuditFlow']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         * Return the complete user session identified by ListAuditSessions.
+         * @param {string} sessionId Opaque session id returned by ListAuditSessions.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async replayAuditSession(sessionId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuditSessionReplay>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.replayAuditSession(sessionId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['AuditLogV1alpha1Api.replayAuditSession']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -764,6 +1023,24 @@ export const AuditLogV1alpha1ApiFactory = function (configuration?: Configuratio
          */
         getAuditArchiveStats(options?: RawAxiosRequestConfig): AxiosPromise<AuditArchiveStats> {
             return localVarFp.getAuditArchiveStats(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Return aggregated audit trace flow activity for the selected number of days.
+         * @param {AuditLogV1alpha1ApiGetAuditFlowOverviewRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAuditFlowOverview(requestParameters: AuditLogV1alpha1ApiGetAuditFlowOverviewRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<AuditFlowOverview> {
+            return localVarFp.getAuditFlowOverview(requestParameters.days, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Return aggregated audit activity for the selected number of days.
+         * @param {AuditLogV1alpha1ApiGetAuditOverviewRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        getAuditOverview(requestParameters: AuditLogV1alpha1ApiGetAuditOverviewRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<AuditOverview> {
+            return localVarFp.getAuditOverview(requestParameters.days, options).then((request) => request(axios, basePath));
         },
         /**
          * Return the complete trace flow containing the audit record: previous and following steps.
@@ -811,6 +1088,15 @@ export const AuditLogV1alpha1ApiFactory = function (configuration?: Configuratio
             return localVarFp.listAuditLogs(requestParameters.cursor, requestParameters.order, requestParameters.limit, requestParameters.page, requestParameters.size, requestParameters.uid, requestParameters.operation, requestParameters.result, requestParameters.traceId, requestParameters.traceFlowId, requestParameters.from, requestParameters.to, options).then((request) => request(axios, basePath));
         },
         /**
+         * Return user sessions split by a thirty-minute inactivity gap. Each session links its entry page, intermediate pages and actions, and exit page.
+         * @param {AuditLogV1alpha1ApiListAuditSessionsRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        listAuditSessions(requestParameters: AuditLogV1alpha1ApiListAuditSessionsRequest = {}, options?: RawAxiosRequestConfig): AxiosPromise<AuditSessionPage> {
+            return localVarFp.listAuditSessions(requestParameters.page, requestParameters.size, requestParameters.uid, requestParameters.operation, requestParameters.result, requestParameters.from, requestParameters.to, options).then((request) => request(axios, basePath));
+        },
+        /**
          * Query audit trace flows grouped by traceFlowId and return each flow with all of its audit records.
          * @param {AuditLogV1alpha1ApiListAuditTraceFlowsRequest} requestParameters Request parameters.
          * @param {*} [options] Override http request option.
@@ -828,6 +1114,15 @@ export const AuditLogV1alpha1ApiFactory = function (configuration?: Configuratio
         replayAuditFlow(requestParameters: AuditLogV1alpha1ApiReplayAuditFlowRequest, options?: RawAxiosRequestConfig): AxiosPromise<AuditReplay> {
             return localVarFp.replayAuditFlow(requestParameters.traceFlowId, options).then((request) => request(axios, basePath));
         },
+        /**
+         * Return the complete user session identified by ListAuditSessions.
+         * @param {AuditLogV1alpha1ApiReplayAuditSessionRequest} requestParameters Request parameters.
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        replayAuditSession(requestParameters: AuditLogV1alpha1ApiReplayAuditSessionRequest, options?: RawAxiosRequestConfig): AxiosPromise<AuditSessionReplay> {
+            return localVarFp.replayAuditSession(requestParameters.sessionId, options).then((request) => request(axios, basePath));
+        },
     };
 };
 
@@ -836,6 +1131,26 @@ export const AuditLogV1alpha1ApiFactory = function (configuration?: Configuratio
  */
 export interface AuditLogV1alpha1ApiArchiveAuditLogsRequest {
     readonly auditArchiveRequest: AuditArchiveRequest
+}
+
+/**
+ * Request parameters for getAuditFlowOverview operation in AuditLogV1alpha1Api.
+ */
+export interface AuditLogV1alpha1ApiGetAuditFlowOverviewRequest {
+    /**
+     * Aggregation range in days, between 1 and 90. Defaults to 7.
+     */
+    readonly days?: number
+}
+
+/**
+ * Request parameters for getAuditOverview operation in AuditLogV1alpha1Api.
+ */
+export interface AuditLogV1alpha1ApiGetAuditOverviewRequest {
+    /**
+     * Aggregation range in days, between 1 and 90. Defaults to 7.
+     */
+    readonly days?: number
 }
 
 /**
@@ -1011,6 +1326,46 @@ export interface AuditLogV1alpha1ApiListAuditLogsRequest {
 }
 
 /**
+ * Request parameters for listAuditSessions operation in AuditLogV1alpha1Api.
+ */
+export interface AuditLogV1alpha1ApiListAuditSessionsRequest {
+    /**
+     * Page number (default 1).
+     */
+    readonly page?: number
+
+    /**
+     * Page size (1-100, default 10).
+     */
+    readonly size?: number
+
+    /**
+     * Filter by user uid.
+     */
+    readonly uid?: string
+
+    /**
+     * Only return sessions containing this operation.
+     */
+    readonly operation?: string
+
+    /**
+     * Filter by aggregated session result (SUCCESS, FAILURE, DENIED).
+     */
+    readonly result?: string
+
+    /**
+     * Inclusive lower bound of the UTC timestamp (ISO-8601).
+     */
+    readonly from?: string
+
+    /**
+     * Exclusive upper bound of the UTC timestamp (ISO-8601).
+     */
+    readonly to?: string
+}
+
+/**
  * Request parameters for listAuditTraceFlows operation in AuditLogV1alpha1Api.
  */
 export interface AuditLogV1alpha1ApiListAuditTraceFlowsRequest {
@@ -1073,6 +1428,16 @@ export interface AuditLogV1alpha1ApiReplayAuditFlowRequest {
 }
 
 /**
+ * Request parameters for replayAuditSession operation in AuditLogV1alpha1Api.
+ */
+export interface AuditLogV1alpha1ApiReplayAuditSessionRequest {
+    /**
+     * Opaque session id returned by ListAuditSessions.
+     */
+    readonly sessionId: string
+}
+
+/**
  * AuditLogV1alpha1Api - object-oriented interface
  */
 export class AuditLogV1alpha1Api extends BaseAPI {
@@ -1093,6 +1458,26 @@ export class AuditLogV1alpha1Api extends BaseAPI {
      */
     public getAuditArchiveStats(options?: RawAxiosRequestConfig) {
         return AuditLogV1alpha1ApiFp(this.configuration).getAuditArchiveStats(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Return aggregated audit trace flow activity for the selected number of days.
+     * @param {AuditLogV1alpha1ApiGetAuditFlowOverviewRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getAuditFlowOverview(requestParameters: AuditLogV1alpha1ApiGetAuditFlowOverviewRequest = {}, options?: RawAxiosRequestConfig) {
+        return AuditLogV1alpha1ApiFp(this.configuration).getAuditFlowOverview(requestParameters.days, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Return aggregated audit activity for the selected number of days.
+     * @param {AuditLogV1alpha1ApiGetAuditOverviewRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public getAuditOverview(requestParameters: AuditLogV1alpha1ApiGetAuditOverviewRequest = {}, options?: RawAxiosRequestConfig) {
+        return AuditLogV1alpha1ApiFp(this.configuration).getAuditOverview(requestParameters.days, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -1146,6 +1531,16 @@ export class AuditLogV1alpha1Api extends BaseAPI {
     }
 
     /**
+     * Return user sessions split by a thirty-minute inactivity gap. Each session links its entry page, intermediate pages and actions, and exit page.
+     * @param {AuditLogV1alpha1ApiListAuditSessionsRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public listAuditSessions(requestParameters: AuditLogV1alpha1ApiListAuditSessionsRequest = {}, options?: RawAxiosRequestConfig) {
+        return AuditLogV1alpha1ApiFp(this.configuration).listAuditSessions(requestParameters.page, requestParameters.size, requestParameters.uid, requestParameters.operation, requestParameters.result, requestParameters.from, requestParameters.to, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
      * Query audit trace flows grouped by traceFlowId and return each flow with all of its audit records.
      * @param {AuditLogV1alpha1ApiListAuditTraceFlowsRequest} requestParameters Request parameters.
      * @param {*} [options] Override http request option.
@@ -1163,5 +1558,15 @@ export class AuditLogV1alpha1Api extends BaseAPI {
      */
     public replayAuditFlow(requestParameters: AuditLogV1alpha1ApiReplayAuditFlowRequest, options?: RawAxiosRequestConfig) {
         return AuditLogV1alpha1ApiFp(this.configuration).replayAuditFlow(requestParameters.traceFlowId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Return the complete user session identified by ListAuditSessions.
+     * @param {AuditLogV1alpha1ApiReplayAuditSessionRequest} requestParameters Request parameters.
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     */
+    public replayAuditSession(requestParameters: AuditLogV1alpha1ApiReplayAuditSessionRequest, options?: RawAxiosRequestConfig) {
+        return AuditLogV1alpha1ApiFp(this.configuration).replayAuditSession(requestParameters.sessionId, options).then((request) => request(this.axios, this.basePath));
     }
 }
