@@ -8,6 +8,7 @@ import type { CaptchaChallenge } from "@pudans-dev/api-client";
 import { Button, Flex, Form, Input, Steps, Typography } from "antd";
 import { ArrowLeft, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 
+import { PASSWORD_PATTERN } from "@/constants/validation";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 
 import { AuthFormCard } from "../../../components/auth-form-card";
@@ -27,8 +28,6 @@ type RecoveryValues = {
     newPassword: string;
     confirmPassword: string;
 };
-
-const PASSWORD_PATTERN = /^[A-Za-z0-9!@#$%^&*.?]+$/;
 
 export function ForgotPasswordForm() {
     const prompt = useMessagePrompt();

@@ -27,9 +27,12 @@ import { ConsoleTable } from "../../../components/console-table";
 import { consoleErrorMessage } from "../../../composables/_errors";
 import { formatDateTime } from "../../../composables/_format";
 import { useConsoleTableState } from "../../../composables/_table";
+import {
+    ROLE_DISPLAY_NAME_ANNOTATION as DISPLAY_NAME_KEY,
+    ROLE_TEMPLATE_LABEL as TEMPLATE_LABEL,
+    roleDisplayName,
+} from "../composables/_role";
 
-const DISPLAY_NAME_KEY = "rbac.authorization.pudans.tolim.cn/display-name";
-const TEMPLATE_LABEL = "pudans.tolim.cn/role-template";
 const BUILTIN_LABEL = "pudans.tolim.cn/builtin";
 
 type RoleFormValues = {
@@ -148,9 +151,7 @@ export function RolesView() {
             key: "name",
             render: (_, role) => (
                 <div className="flex items-center gap-2">
-                    <span className="font-medium">
-                        {role.metadata.annotations?.[DISPLAY_NAME_KEY] ?? role.metadata.name}
-                    </span>
+                    <span className="font-medium">{roleDisplayName(role)}</span>
                     {isBuiltin(role) ? <Tag>内置</Tag> : null}
                 </div>
             ),

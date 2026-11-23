@@ -4,14 +4,13 @@ import { useEffect, useState } from "react";
 
 import { Button, Form, Input } from "antd";
 
+import { PASSWORD_PATTERN, USERNAME_PATTERN } from "@/constants/validation";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { markSetupCompleted } from "@/stores/_setup";
 
 import { setupErrorMessage, submitSetup } from "../../../composables/_setup";
 import { FormSection } from "./form-section";
 
-const USERNAME_PATTERN = /^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$/;
-const PASSWORD_PATTERN = /^[A-Za-z0-9!@#$%^&*.?]+$/;
 const EXTERNAL_URL_PATTERN = /^https?:\/\//i;
 const DEFAULT_SITE_TITLE = "Pudans";
 
