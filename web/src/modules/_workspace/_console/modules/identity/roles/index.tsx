@@ -1,352 +1,258 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { type PolicyRule, type Role, apiClient } from "@pudans-dev/api-client";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-    App,
-    Button,
-    Card,
-    Descriptions,
-    Empty,
-    Flex,
-    Form,
-    Input,
-    Modal,
-    Select,
-    Space,
-    Table,
-    type TableProps,
-    Tag,
-} from "antd";
+import { ProCard } from "@ant-design/pro-components";
+import type { Role } from "@pudans-dev/api-client";
+import { useQueryClient } from "@tanstack/react-query";
+import { App, Button, Empty, Result, Skeleton } from "antd";
+import { Plus, RefreshCw } from "lucide-react";
 
-import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
+import { usePermission } from "@/hooks/utils/use-permission";
+import { useQueryParams } from "@/hooks/utils/use-query-params";
 
-import { ConsoleTable } from "../../../components/console-table";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatDateTime } from "../../../composables/_format";
-import { useConsoleTableState } from "../../../composables/_table";
-import {
-    ROLE_DISPLAY_NAME_ANNOTATION as DISPLAY_NAME_KEY,
-    ROLE_TEMPLATE_LABEL as TEMPLATE_LABEL,
-    roleDisplayName,
-} from "../composables/_role";
+import { useConsoleSession } from "../../../composables/_session";
+import { ROLE_PERMISSIONS, ROLE_TEMPLATE_LABEL, isBuiltinRole, roleDisplayName } from "../composables/_role";
+import { RoleDetailPanel } from "./components/role-detail-panel";
+import { RoleEditorModal } from "./components/role-editor-modal";
+import { RoleListPanel } from "./components/role-list-panel";
+import { useDeleteRole } from "./composables/_role-actions";
+import { useRolesQuery } from "./composables/_role-queries";
 
-const BUILTIN_LABEL = "pudans.tolim.cn/builtin";
-
-type RoleFormValues = {
-    displayName?: string;
-    name: string;
-    rules?: PolicyRule[];
-};
-
-function tagsOf(value?: string[]) {
-    return value && value.length > 0 ? (
-        <Space size={[4, 4]} wrap>
-            {value.map((item) => (
-                <Tag key={item}>{item}</Tag>
-            ))}
-        </Space>
-    ) : (
-        "—"
-    );
-}
-
-function isBuiltin(role: Role): boolean {
-    return role.metadata.labels?.[BUILTIN_LABEL] === "true";
-}
+const ROLE_QUERY_KEY = ["console", "roles"] as const;
 
 export function RolesView() {
     const { modal } = App.useApp();
-    const prompt = useMessagePrompt();
     const queryClient = useQueryClient();
-    const table = useConsoleTableState();
-    const [form] = Form.useForm<RoleFormValues>();
-    const [open, setOpen] = useState(false);
-    const [editing, setEditing] = useState<Role>();
-    const [selected, setSelected] = useState<Role>();
-    const rolesQuery = useQuery({
-        queryKey: ["console", "roles", table.page, table.pageSize],
-        queryFn: async () =>
-            (
-                await apiClient.role.listRole({
-                    labelSelector: [`${TEMPLATE_LABEL}!=true`],
-                    page: table.page,
-                    size: table.pageSize,
-                })
-            ).data,
-    });
-    const roles = (rolesQuery.data?.items ?? []).filter((role) => role.metadata.labels?.[TEMPLATE_LABEL] !== "true");
-    const saveRole = useMutation({
-        mutationFn: async ({ record, values }: { record?: Role; values: RoleFormValues }) => {
-            const payload = {
-                apiVersion: "pudans.tolim.cn/v1alpha1",
-                kind: "Role",
-                metadata: {
-                    ...record?.metadata,
-                    annotations: {
-                        ...record?.metadata.annotations,
-                        [DISPLAY_NAME_KEY]: values.displayName ?? "",
-                    },
-                    name: record?.metadata.name ?? values.name,
-                },
-                rules: values.rules ?? [],
-            };
+    const { searchParams, setParam } = useQueryParams();
+    const sessionQuery = useConsoleSession();
+    const rolesQuery = useRolesQuery();
+    const deleteRole = useDeleteRole();
+    const { can } = usePermission({ permissions: sessionQuery.data?.uiPermissions }, ROLE_PERMISSIONS.view);
+    const canCreate = can(ROLE_PERMISSIONS.create);
+    const canDelete = can(ROLE_PERMISSIONS.delete);
+    const canUpdate = can(ROLE_PERMISSIONS.update);
+    const [dirty, setDirty] = useState(false);
+    const [panelRevision, setPanelRevision] = useState(0);
+    const [editorRole, setEditorRole] = useState<Role | "create" | null>(null);
 
-            if (record) {
-                await apiClient.role.updateRole({ name: record.metadata.name, role: payload });
-                return;
+    const activeRoles = useMemo(() => rolesQuery.data ?? [], [rolesQuery.data]);
+    const roles = useMemo(() => visibleRoles(activeRoles), [activeRoles]);
+    const requestedRole = searchParams.get("role") ?? undefined;
+    const selectedRole = useMemo(
+        () => roles.find((role) => role.metadata.name === requestedRole) ?? roles[0],
+        [requestedRole, roles],
+    );
+
+    const refreshRole = () => {
+        void queryClient.invalidateQueries({ queryKey: ROLE_QUERY_KEY });
+    };
+    const discardDraft = () => {
+        setDirty(false);
+        setPanelRevision((revision) => revision + 1);
+    };
+    const selectRole = (roleName: string) => {
+        if (roleName === selectedRole?.metadata.name) {
+            if (requestedRole !== roleName) {
+                setParam("role", roleName);
             }
+            return;
+        }
 
-            await apiClient.role.createRole({ role: payload });
-        },
-        onError: (error) => prompt.error(consoleErrorMessage(error)),
-        onSuccess: () => {
-            prompt.success("角色已保存。");
-            setOpen(false);
-            void queryClient.invalidateQueries({ queryKey: ["console", "roles"] });
-        },
-    });
-    const deleteRole = useMutation({
-        mutationFn: async (name: string) => apiClient.role.deleteRole({ name }),
-        onError: (error) => prompt.error(consoleErrorMessage(error)),
-        onSuccess: () => {
-            prompt.success("角色已删除。");
-            void queryClient.invalidateQueries({ queryKey: ["console", "roles"] });
-        },
-    });
+        const applySelection = () => {
+            setDirty(false);
+            setParam("role", roleName);
+        };
 
-    const openCreate = () => {
-        setEditing(undefined);
-        form.resetFields();
-        form.setFieldsValue({ rules: [] });
-        setOpen(true);
-    };
+        if (!dirty) {
+            applySelection();
+            return;
+        }
 
-    const openEdit = (role: Role) => {
-        setEditing(role);
-        form.resetFields();
-        form.setFieldsValue({
-            displayName: role.metadata.annotations?.[DISPLAY_NAME_KEY],
-            name: role.metadata.name,
-            rules: role.rules ?? [],
+        modal.confirm({
+            cancelText: "继续编辑",
+            content: "切换角色会丢失当前未保存的菜单和操作权限变更。",
+            okButtonProps: { danger: true },
+            okText: "放弃并切换",
+            onOk: applySelection,
+            title: "放弃未保存的变更？",
         });
-        setOpen(true);
     };
+    const openCreate = () => {
+        const open = () => {
+            discardDraft();
+            setEditorRole("create");
+        };
 
+        if (!dirty) {
+            open();
+            return;
+        }
+
+        modal.confirm({
+            cancelText: "继续编辑",
+            content: "新建角色会关闭当前权限草稿，未保存的变更将不会保留。",
+            okButtonProps: { danger: true },
+            okText: "放弃并新建",
+            onOk: open,
+            title: "放弃未保存的变更？",
+        });
+    };
+    const openEdit = (role: Role) => {
+        setEditorRole(role);
+    };
+    const handleEditorSaved = (roleName: string) => {
+        setEditorRole(null);
+        setParam("role", roleName);
+    };
     const confirmDelete = (role: Role) => {
+        if (!canDelete || isBuiltinRole(role)) {
+            return;
+        }
+
+        const deletingSelectedRole = selectedRole?.metadata.name === role.metadata.name;
         modal.confirm({
             cancelText: "取消",
-            content: `确定删除角色 ${role.metadata.name} 吗？`,
+            content: `确定删除角色 ${roleDisplayName(role)} 吗？删除后无法恢复。${
+                dirty && deletingSelectedRole ? "当前未保存的权限变更也会一并丢弃。" : ""
+            }`,
             okButtonProps: { danger: true },
             okText: "删除",
-            onOk: () => deleteRole.mutateAsync(role.metadata.name),
+            onOk: async () => {
+                await deleteRole.mutateAsync(role.metadata.name);
+                if (deletingSelectedRole) {
+                    setDirty(false);
+                    setParam("role", null);
+                }
+            },
             title: "删除角色",
         });
     };
 
-    const columns: TableProps<Role>["columns"] = [
-        {
-            key: "name",
-            render: (_, role) => (
-                <div className="flex items-center gap-2">
-                    <span className="font-medium">{roleDisplayName(role)}</span>
-                    {isBuiltin(role) ? <Tag>内置</Tag> : null}
-                </div>
-            ),
-            title: "角色",
-        },
-        { dataIndex: ["metadata", "name"], key: "metadataName", title: "名称" },
-        {
-            key: "rules",
-            render: (_, role) => role.rules?.length ?? 0,
-            title: "规则数",
-        },
-        {
-            dataIndex: ["metadata", "creationTimestamp"],
-            key: "creationTimestamp",
-            render: (value: string) => formatDateTime(value),
-            title: "创建时间",
-        },
-        {
-            key: "actions",
-            render: (_, role) => (
-                <Space>
-                    <Button disabled={isBuiltin(role)} onClick={() => openEdit(role)} size="small">
-                        编辑
-                    </Button>
-                    <Button onClick={() => setSelected(role)} size="small">
-                        详情
-                    </Button>
-                    <Button danger disabled={isBuiltin(role)} onClick={() => confirmDelete(role)} size="small">
-                        删除
-                    </Button>
-                </Space>
-            ),
-            title: "操作",
-        },
-    ];
+    if (sessionQuery.isPending) {
+        return <Skeleton active paragraph={{ rows: 10 }} />;
+    }
 
-    const ruleColumns: TableProps<PolicyRule>["columns"] = [
-        { key: "apiGroups", render: (_, rule) => tagsOf(rule.apiGroups), title: "API 组" },
-        { key: "resources", render: (_, rule) => tagsOf(rule.resources), title: "资源" },
-        { key: "resourceNames", render: (_, rule) => tagsOf(rule.resourceNames), title: "资源名称" },
-        { key: "nonResourceURLs", render: (_, rule) => tagsOf(rule.nonResourceURLs), title: "非资源 URL" },
-        { key: "verbs", render: (_, rule) => tagsOf(rule.verbs), title: "动词" },
-    ];
+    if (sessionQuery.error) {
+        return (
+            <Result
+                extra={
+                    <Button onClick={() => void sessionQuery.refetch()} type="primary">
+                        重试
+                    </Button>
+                }
+                status="error"
+                subTitle={consoleErrorMessage(sessionQuery.error)}
+                title="无法读取当前会话权限"
+            />
+        );
+    }
+
+    if (!can(ROLE_PERMISSIONS.view)) {
+        return <Result status="403" subTitle="当前账号没有查看角色的权限。" title="无权查看" />;
+    }
 
     return (
         <>
-            <ConsoleTable
-                columns={columns}
-                data={roles}
-                error={rolesQuery.error}
+            <div className="grid min-w-0 gap-4 lg:grid-cols-[300px_minmax(0,1fr)] xl:grid-cols-[340px_minmax(0,1fr)]">
+                <RoleListPanel
+                    canCreate={canCreate}
+                    loading={rolesQuery.isPending}
+                    onCreate={openCreate}
+                    onSelect={selectRole}
+                    roles={roles}
+                    selectedName={selectedRole?.metadata.name}
+                />
+                {rolesQuery.isPending ? (
+                    <RoleDetailSkeleton />
+                ) : rolesQuery.error ? (
+                    <RoleLoadError error={rolesQuery.error} onRetry={() => void rolesQuery.refetch()} />
+                ) : selectedRole ? (
+                    <RoleDetailPanel
+                        allowedPermissions={sessionQuery.data?.uiPermissions}
+                        canDelete={canDelete}
+                        canUpdate={canUpdate}
+                        key={`${selectedRole.metadata.name}:${panelRevision}`}
+                        onDelete={confirmDelete}
+                        onDirtyChange={setDirty}
+                        onEditRole={openEdit}
+                        onRefresh={refreshRole}
+                        role={selectedRole}
+                        roles={activeRoles}
+                    />
+                ) : (
+                    <EmptyRoleState canCreate={canCreate} onCreate={openCreate} />
+                )}
+            </div>
+            {editorRole ? (
+                <RoleEditorModal
+                    onClose={() => setEditorRole(null)}
+                    onSaved={handleEditorSaved}
+                    role={editorRole === "create" ? undefined : editorRole}
+                />
+            ) : null}
+        </>
+    );
+}
+
+function visibleRoles(items?: Role[]): Role[] {
+    return (items ?? [])
+        .filter((role) => role.metadata.labels?.[ROLE_TEMPLATE_LABEL] !== "true" && !role.metadata.deletionTimestamp)
+        .sort((left, right) => {
+            const builtinOrder = Number(isBuiltinRole(right)) - Number(isBuiltinRole(left));
+            if (builtinOrder !== 0) {
+                return builtinOrder;
+            }
+
+            return (
+                roleDisplayName(left).localeCompare(roleDisplayName(right), "zh-Hans-CN", {
+                    sensitivity: "base",
+                }) || left.metadata.name.localeCompare(right.metadata.name)
+            );
+        });
+}
+
+function RoleDetailSkeleton() {
+    return (
+        <ProCard className="min-h-[480px] overflow-hidden !rounded-[24px]" styles={{ body: { padding: 20 } }}>
+            <Skeleton active paragraph={{ rows: 12 }} />
+        </ProCard>
+    );
+}
+
+function RoleLoadError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+    return (
+        <ProCard className="min-h-[480px] overflow-hidden !rounded-[24px]">
+            <Result
                 extra={
-                    <Space>
-                        <Button onClick={openCreate} size="small" type="primary">
+                    <Button icon={<RefreshCw size={14} />} onClick={onRetry} type="primary">
+                        重试
+                    </Button>
+                }
+                status="error"
+                subTitle={consoleErrorMessage(error)}
+                title="角色列表加载失败"
+            />
+        </ProCard>
+    );
+}
+
+function EmptyRoleState({ canCreate, onCreate }: { canCreate: boolean; onCreate: () => void }) {
+    return (
+        <ProCard
+            className="min-h-[480px] overflow-hidden !rounded-[24px]"
+            styles={{ body: { height: "100%", padding: 0 } }}
+        >
+            <div className="flex min-h-[480px] flex-col items-center justify-center gap-3">
+                <Empty description="暂无角色" image={Empty.PRESENTED_IMAGE_SIMPLE}>
+                    {canCreate ? (
+                        <Button icon={<Plus size={14} />} onClick={onCreate} type="primary">
                             新建角色
                         </Button>
-                        <Button onClick={() => void rolesQuery.refetch()} size="small">
-                            刷新
-                        </Button>
-                    </Space>
-                }
-                loading={rolesQuery.isPending}
-                onRetry={() => void rolesQuery.refetch()}
-                pagination={{ ...table.pagination, total: rolesQuery.data?.total ?? 0 }}
-                rowKey={(role) => role.metadata.name}
-                title="角色"
-            />
-            <Modal
-                destroyOnHidden
-                footer={
-                    <Space>
-                        <Button onClick={() => setOpen(false)}>取消</Button>
-                        <Button loading={saveRole.isPending} onClick={() => form.submit()} type="primary">
-                            保存
-                        </Button>
-                    </Space>
-                }
-                onCancel={() => setOpen(false)}
-                open={open}
-                title={editing ? "编辑角色" : "新建角色"}
-                width={760}
-            >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={(values) => saveRole.mutate({ record: editing, values })}
-                    requiredMark={false}
-                >
-                    <Form.Item
-                        label="名称"
-                        name="name"
-                        rules={[{ message: "请输入名称。", required: true, whitespace: true }]}
-                    >
-                        <Input disabled={Boolean(editing)} placeholder="例如：auditor" />
-                    </Form.Item>
-                    <Form.Item label="显示名称" name="displayName">
-                        <Input placeholder="例如：审计员" />
-                    </Form.Item>
-                    <Form.List name="rules">
-                        {(fields, { add, remove }) => (
-                            <Flex vertical gap={12}>
-                                {fields.map(({ key, name, ...restField }) => (
-                                    <Card
-                                        extra={
-                                            <Button danger onClick={() => remove(name)} size="small" type="text">
-                                                删除规则
-                                            </Button>
-                                        }
-                                        key={key}
-                                        size="small"
-                                        title={`规则 ${name + 1}`}
-                                    >
-                                        <Form.Item {...restField} label="API 组" name={[name, "apiGroups"]}>
-                                            <Select mode="tags" placeholder="例如：api.pudans.tolim.cn" />
-                                        </Form.Item>
-                                        <Form.Item {...restField} label="资源" name={[name, "resources"]}>
-                                            <Select mode="tags" placeholder="例如：users" />
-                                        </Form.Item>
-                                        <Form.Item {...restField} label="动词" name={[name, "verbs"]}>
-                                            <Select
-                                                mode="tags"
-                                                options={[
-                                                    { label: "get", value: "get" },
-                                                    { label: "list", value: "list" },
-                                                    { label: "create", value: "create" },
-                                                    { label: "update", value: "update" },
-                                                    { label: "patch", value: "patch" },
-                                                    { label: "delete", value: "delete" },
-                                                ]}
-                                            />
-                                        </Form.Item>
-                                        <Form.Item {...restField} label="资源名称" name={[name, "resourceNames"]}>
-                                            <Select mode="tags" placeholder="可选" />
-                                        </Form.Item>
-                                        <Form.Item {...restField} label="非资源 URL" name={[name, "nonResourceURLs"]}>
-                                            <Select mode="tags" placeholder="可选" />
-                                        </Form.Item>
-                                    </Card>
-                                ))}
-                                <Button onClick={() => add({ apiGroups: [], resources: [], verbs: [] })} type="dashed">
-                                    添加规则
-                                </Button>
-                            </Flex>
-                        )}
-                    </Form.List>
-                </Form>
-            </Modal>
-            <Modal
-                destroyOnHidden
-                footer={null}
-                onCancel={() => setSelected(undefined)}
-                open={Boolean(selected)}
-                title={selected?.metadata.name}
-                width={760}
-            >
-                <Flex vertical gap={16}>
-                    <Descriptions
-                        bordered
-                        column={{ sm: 2, xs: 1 }}
-                        items={[
-                            {
-                                children: selected?.metadata.annotations?.[DISPLAY_NAME_KEY] ?? "—",
-                                key: "displayName",
-                                label: "显示名称",
-                            },
-                            { children: selected?.metadata.name ?? "—", key: "name", label: "名称" },
-                            {
-                                children: selected && isBuiltin(selected) ? "是" : "否",
-                                key: "builtin",
-                                label: "内置角色",
-                            },
-                            {
-                                children: formatDateTime(selected?.metadata.creationTimestamp),
-                                key: "created",
-                                label: "创建时间",
-                            },
-                        ]}
-                        size="small"
-                    />
-                    <div>
-                        <div className="mb-2 font-medium">权限规则</div>
-                        {(selected?.rules ?? []).length === 0 ? (
-                            <Empty description="暂无权限规则" image={Empty.PRESENTED_IMAGE_SIMPLE} />
-                        ) : (
-                            <Table
-                                columns={ruleColumns}
-                                dataSource={selected?.rules}
-                                pagination={false}
-                                rowKey={(_, index) => String(index)}
-                                scroll={{ x: "max-content" }}
-                                size="small"
-                            />
-                        )}
-                    </div>
-                </Flex>
-            </Modal>
-        </>
+                    ) : null}
+                </Empty>
+            </div>
+        </ProCard>
     );
 }
