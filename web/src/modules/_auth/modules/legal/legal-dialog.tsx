@@ -2,7 +2,6 @@
 
 import { GlobalDialog } from "@/components/ui";
 import { useIsClient } from "@/hooks/utils/use-is-client";
-import { AUTH_GLASS_CLASS } from "@/modules/_auth/styles/glass";
 
 import { LegalView } from "./index";
 import type { LegalDocumentKey } from "./legal-content";
@@ -22,14 +21,7 @@ export function LegalDialog({ activeTab, onClose, onTabChange, open }: LegalDial
     }
 
     return (
-        <GlobalDialog
-            className={AUTH_GLASS_CLASS}
-            footer={false}
-            onClose={onClose}
-            open={open}
-            title={false}
-            width={800}
-        >
+        <GlobalDialog footer={false} onClose={onClose} open={open} title={false} width={800}>
             <LegalView activeTab={activeTab} onTabChange={onTabChange} />
         </GlobalDialog>
     );

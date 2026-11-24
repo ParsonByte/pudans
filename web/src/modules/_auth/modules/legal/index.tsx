@@ -49,7 +49,7 @@ function LegalArticle({ document }: { document: LegalDocument }) {
 
 export function LegalView({ activeTab, onTabChange }: LegalViewProps) {
     return (
-        <div className="flex flex-col gap-5">
+        <div className="flex min-h-0 flex-1 flex-col gap-5">
             <div>
                 <Typography.Text className="text-xs font-semibold tracking-[0.2em]" theme="secondary">
                     法律条款 · PUDANS
@@ -60,13 +60,10 @@ export function LegalView({ activeTab, onTabChange }: LegalViewProps) {
             </div>
 
             <Tabs
+                className="legal-tabs"
                 list={LEGAL_KEYS.map((key) => ({
                     label: LEGAL_DOCUMENTS[key].title,
-                    panel: (
-                        <div className="max-h-[min(52svh,520px)] overflow-y-auto pe-3">
-                            <LegalArticle document={LEGAL_DOCUMENTS[key]} />
-                        </div>
-                    ),
+                    panel: <LegalArticle document={LEGAL_DOCUMENTS[key]} />,
                     value: key,
                 }))}
                 onChange={(key) => onTabChange(key as LegalDocumentKey)}
