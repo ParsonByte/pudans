@@ -190,6 +190,7 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
                     style={{ marginBottom: 8 }}
                 >
                     <Input
+                        aria-label="用户名或邮箱"
                         autocomplete="username"
                         placeholder="请输入用户名或邮箱"
                         prefixIcon={<UserIcon />}
@@ -197,8 +198,14 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
                         spellCheck={false}
                     />
                 </FormItem>
-                <FormItem label="密码" name="password" rules={[{ message: "请输入密码。", required: true }]}>
+                <FormItem
+                    label="密码"
+                    name="password"
+                    rules={[{ message: "请输入密码。", required: true }]}
+                    style={{ marginBottom: 4 }}
+                >
                     <Input
+                        aria-label="密码"
                         autocomplete="current-password"
                         placeholder="请输入密码"
                         prefixIcon={<LockOnIcon />}
@@ -206,7 +213,7 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
                         type="password"
                     />
                 </FormItem>
-                <div className="-mt-3 mb-4 flex justify-end">
+                <div className="mb-4 flex justify-end">
                     <Link
                         className="text-xs font-medium text-[var(--td-text-color-link)] hover:opacity-80"
                         href="/sign-in?routes=forgot-password"
@@ -239,12 +246,14 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
                         onClick={() => {
                             void handlePasskey();
                         }}
+                        theme="default"
+                        variant="outline"
                     >
                         通行密钥
                     </Button>
                     <Button
                         aria-label="飞书"
-                        className="w-32 shrink-0"
+                        className="w-20 shrink-0"
                         icon={<FeishuIcon />}
                         onClick={() => {
                             if (feishuUrl) {
@@ -254,7 +263,9 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
 
                             prompt.error({ content: "飞书未配置" });
                         }}
+                        theme="default"
                         title="飞书"
+                        variant="outline"
                     />
                     {otherProviders.map((provider) => (
                         <Button
@@ -263,7 +274,9 @@ export function LoginForm({ onTwoFactorRequired, redirectTo }: LoginFormProps) {
                             icon={<LinkIcon />}
                             key={`${provider.name}-${provider.authenticationUrl}`}
                             onClick={() => window.location.assign(provider.authenticationUrl)}
+                            theme="default"
                             title={provider.displayName ?? provider.name ?? "外部登录"}
+                            variant="outline"
                         />
                     ))}
                 </div>

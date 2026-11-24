@@ -92,7 +92,7 @@ export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
                     <span className="truncate text-sm leading-none font-bold tracking-[0.16em]">{BRAND_NAME}</span>
                 </Link>
                 <ThemeMenu
-                    buttonClassName="drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] transition-colors hover:bg-(--auth-surface)"
+                    buttonClassName="drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] transition-opacity hover:opacity-80"
                     buttonStyle={{ color: "var(--auth-foreground)" }}
                 />
             </header>
@@ -133,17 +133,24 @@ export function AuthLayout({ children, variant = "auth" }: AuthLayoutProps) {
                     <Button
                         aria-label={videoPlaying ? "暂停背景视频" : "继续播放背景视频"}
                         aria-pressed={!videoPlaying}
-                        className="border-(--auth-border) bg-(--auth-surface) text-xs font-medium whitespace-nowrap text-(--auth-foreground) drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] backdrop-blur-md transition-colors hover:bg-(--auth-surface-hover)"
+                        className="text-xs font-medium whitespace-nowrap drop-shadow-[0_1px_2px_rgba(0,0,0,0.55)] backdrop-blur-md transition-opacity hover:opacity-80"
                         onClick={toggleVideo}
-                        style={{ color: "var(--auth-foreground)" }}
+                        shape="round"
+                        style={{
+                            backgroundColor: "var(--auth-surface)",
+                            borderColor: "var(--auth-border)",
+                            color: "var(--auth-foreground)",
+                        }}
                         variant="text"
                     >
-                        {videoPlaying ? (
-                            <PauseIcon className="size-3.5 text-(--auth-accent)" />
-                        ) : (
-                            <PlayIcon className="size-3.5 text-(--auth-accent)" />
-                        )}
-                        {videoPlaying ? "创意正在进行" : "开始发挥创意"}
+                        <span className="inline-flex items-center gap-1.5">
+                            {videoPlaying ? (
+                                <PauseIcon className="size-3.5 shrink-0 text-(--auth-accent)" />
+                            ) : (
+                                <PlayIcon className="size-3.5 shrink-0 text-(--auth-accent)" />
+                            )}
+                            <span>{videoPlaying ? "创意正在进行" : "开始发挥创意"}</span>
+                        </span>
                     </Button>
                 </div>
             )}

@@ -225,7 +225,7 @@ export function ForgotPasswordForm() {
                                         />
                                     </FormItem>
                                     <Button
-                                        className="w-full sm:mt-7 sm:w-auto"
+                                        className="w-full sm:mt-8 sm:w-auto"
                                         loading={codeSending}
                                         onClick={() => {
                                             void sendCode();
