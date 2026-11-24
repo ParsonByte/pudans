@@ -53,7 +53,7 @@ public class LiveSourceValidator {
             return DEFAULT_SEGMENT_SECONDS;
         }
         if (value != MIN_SEGMENT_SECONDS && value != MAX_SEGMENT_SECONDS) {
-            throw LiveErrorCode.LIVE_INVALID_SPEC.exception();
+            throw LiveErrorCode.LIVE_INVALID_ARGUMENT.exception();
         }
         return value;
     }
@@ -64,7 +64,7 @@ public class LiveSourceValidator {
             return DEFAULT_MERGE_INTERVAL_SECONDS;
         }
         if (value != 0 && (value < 60 || value > MAX_MERGE_INTERVAL_SECONDS)) {
-            throw LiveErrorCode.LIVE_INVALID_SPEC.exception();
+            throw LiveErrorCode.LIVE_INVALID_ARGUMENT.exception();
         }
         return value;
     }

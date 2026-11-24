@@ -68,9 +68,13 @@ class LiveSourceValidatorTest {
         assertThat(LiveSourceValidator.mergeIntervalSeconds(60)).isEqualTo(60);
 
         assertThatThrownBy(() -> LiveSourceValidator.segmentSeconds(15))
-                .isInstanceOf(ApiException.class);
+                .isInstanceOf(ApiException.class)
+                .extracting(error -> ((ApiException) error).getCode())
+                .isEqualTo(LiveErrorCode.LIVE_INVALID_ARGUMENT.name());
         assertThatThrownBy(() -> LiveSourceValidator.mergeIntervalSeconds(30))
-                .isInstanceOf(ApiException.class);
+                .isInstanceOf(ApiException.class)
+                .extracting(error -> ((ApiException) error).getCode())
+                .isEqualTo(LiveErrorCode.LIVE_INVALID_ARGUMENT.name());
     }
 
     @Test

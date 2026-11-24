@@ -109,7 +109,7 @@ class LiveSourceCreateTest {
     void rejectsInvalidSegmentSeconds() {
         StepVerifier.create(service().create("https://live.douyin.com/123456789", null, false, 15, null, null))
                 .expectErrorMatches(error -> error instanceof ApiException api
-                        && LiveErrorCode.LIVE_INVALID_SPEC.name().equals(api.getCode()))
+                        && LiveErrorCode.LIVE_INVALID_ARGUMENT.name().equals(api.getCode()))
                 .verify();
         verifyNoInteractions(roomResolver);
     }}

@@ -150,4 +150,15 @@ public class LiveProperties {
     public boolean isMinFreeDiskValid() {
         return recorder.getMinFreeDiskBytes().toBytes() >= DataSize.ofGigabytes(1).toBytes();
     }
+
+    // 中断告警阈值必须大于零且不小于流空闲超时，否则告警会静默失效。
+    @AssertTrue(message = "直播中断告警阈值必须大于 0 且不小于流空闲超时")
+    public boolean isStreamInterruptThresholdValid() {
+        var threshold = alert.getStreamInterruptThreshold();
+        if (threshold == null || threshold.isZero() || threshold.isNegative()) {
+            return false;
+        }
+        var idleTimeout = recorder.getStreamIdleTimeout();
+        return idleTimeout == null || threshold.compareTo(idleTimeout) >= 0;
+    }
 }
