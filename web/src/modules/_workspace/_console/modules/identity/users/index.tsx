@@ -9,7 +9,11 @@ import type { ListedUser, User } from "@pudans-dev/api-client";
 import { apiClient } from "@pudans-dev/api-client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+    BrowseIcon,
+    CloseIcon,
+    DeleteIcon,
     DownloadIcon,
+    KeyIcon,
     MailIcon,
     MobileIcon,
     MoreIcon,
@@ -17,11 +21,12 @@ import {
     PoweroffIcon,
     RefreshIcon,
     SearchIcon,
+    TaskDoubleIcon,
     UploadIcon,
     UserAddIcon,
     UsergroupAddIcon,
 } from "tdesign-icons-react";
-import { Button, Card, Dropdown, Input, Select } from "tdesign-react";
+import { Breadcrumb, Button, Card, Dropdown, Input, Select } from "tdesign-react";
 import type { DropdownOption, TableProps } from "tdesign-react";
 
 import { confirmGlobalDialog } from "@/components/ui";
@@ -33,24 +38,22 @@ import { usePermission } from "@/hooks/utils/use-permission";
 import { ConsoleTable } from "../../../components/console-table";
 import { EmptyValue } from "../../../components/empty-value";
 import { consoleErrorMessage } from "../../../composables/_errors";
-import { formatCountOrDash, formatDateTime } from "../../../composables/_format";
+import { formatDateTime } from "../../../composables/_format";
 import { useConsoleSession } from "../../../composables/_session";
 import { useConsoleTableState } from "../../../composables/_table";
-import { IdentityPageOverview } from "../components/identity-page-overview";
 import { BatchCreateUsersModal } from "./components/batch-create-users-modal";
 import { CreateUserModal } from "./components/create-user-modal";
 import { ImportUsersModal } from "./components/import-users-modal";
 import { ResetUserPasswordModal } from "./components/reset-user-password-modal";
 import { UserAvatar } from "./components/user-avatar";
 import { UserEditorModal } from "./components/user-editor-modal";
-import { UserExpandedRow } from "./components/user-expanded-row";
+import { UserGroupTree } from "./components/user-group-tree";
 import { UserGroupTag, UserStatusTag } from "./components/user-tags";
 import { usersToCsv } from "./composables/_feishu-users";
 import { useDeleteUser, useSetUserStatus } from "./composables/_user-actions";
 import { useUserGroupOptions } from "./composables/_user-groups";
 import { USER_PERMISSIONS } from "./composables/_user-permissions";
 import { userDetailPath } from "./composables/_user-route";
-import { useUserSummaryQuery } from "./composables/_user-summary";
 
 const STATUS_OPTIONS = [
     { label: "正常", value: "active" },
@@ -64,6 +67,7 @@ const SORT_OPTIONS = [
 ];
 
 const EXPORT_PAGE_SIZE = 1000;
+const { BreadcrumbItem } = Breadcrumb;
 
 type UserRow = ListedUser & {
     __rowKey: string;
@@ -88,13 +92,9 @@ export function UsersView() {
     const table = useConsoleTableState();
     const isMobile = useMobile();
     const { download } = useDownload();
-    const { options: groupOptions, query: groupQuery } = useUserGroupOptions();
+    const { groups: userGroups, options: groupOptions, query: groupQuery } = useUserGroupOptions();
     const sessionQuery = useConsoleSession();
-    const { allowed: canView, can } = usePermission(
-        { permissions: sessionQuery.data?.uiPermissions },
-        USER_PERMISSIONS.view,
-    );
-    const summaryQuery = useUserSummaryQuery(sessionQuery.isSuccess && canView);
+    const { can } = usePermission({ permissions: sessionQuery.data?.uiPermissions }, USER_PERMISSIONS.view);
     const canCreate = can(USER_PERMISSIONS.create);
     const canBatchCreate = can(USER_PERMISSIONS.batchCreate);
     const canImport = can(USER_PERMISSIONS.import);
@@ -115,11 +115,11 @@ export function UsersView() {
     const [resetUser, setResetUser] = useState<ListedUser>();
     const [detailLoadingName, setDetailLoadingName] = useState<string>();
     const [exporting, setExporting] = useState(false);
+    const [keywordDraft, setKeywordDraft] = useState(table.keyword);
     const status = table.filters.status ?? "";
     const userGroup = table.filters.userGroup ?? "";
     const activeSort = table.sorting[0];
     const sortValue = activeSort ? `${activeSort.id},${activeSort.desc ? "desc" : "asc"}` : "";
-    const hasFilters = Boolean(table.keyword || status || userGroup || sortValue);
     const setStatus = useSetUserStatus();
     const deleteUser = useDeleteUser();
     const usersQuery = useQuery({
@@ -136,12 +136,6 @@ export function UsersView() {
                 })
             ).data,
     });
-    const overviewMetrics = [
-        { label: "用户总数", value: formatCountOrDash(summaryQuery.data?.total) },
-        { label: "正常账号", value: formatCountOrDash(summaryQuery.data?.active) },
-        { label: "已禁用", value: formatCountOrDash(summaryQuery.data?.disabled) },
-        { label: "用户组", value: formatCountOrDash(groupQuery.data?.total) },
-    ];
     const users = useMemo<UserRow[]>(
         () =>
             (usersQuery.data?.items ?? []).map((user, index) => ({
@@ -156,8 +150,11 @@ export function UsersView() {
     };
     const clearSelection = () => setSelectedUsers(new Map());
     const applyKeyword = (value: string) => {
+        const keyword = value.trim();
+
+        setKeywordDraft(keyword);
         clearSelection();
-        table.setKeyword(value);
+        table.setKeyword(keyword);
     };
     const applyStatus = (value?: string) => {
         clearSelection();
@@ -179,6 +176,7 @@ export function UsersView() {
         table.setSort(column ?? null, order === "desc");
     };
     const resetFilters = () => {
+        setKeywordDraft("");
         clearSelection();
         table.reset();
     };
@@ -416,7 +414,7 @@ export function UsersView() {
 
                 return (
                     <div className="flex min-w-0 items-center gap-2.5">
-                        <UserAvatar name={name} size={36} />
+                        <UserAvatar name={name} size={36} src={row.avatar} />
                         <div className="min-w-0">
                             {row.name ? (
                                 <Link className="block truncate font-medium" href={userDetailPath(workspace, row.name)}>
@@ -507,7 +505,12 @@ export function UsersView() {
             cell: ({ row }) => {
                 const statusPending = setStatus.isPending && setStatus.variables?.name === row.name;
                 const options: DropdownOption[] = [
-                    { content: "查看详情", disabled: !row.name, value: "detail" },
+                    {
+                        content: "查看详情",
+                        disabled: !row.name,
+                        prefixIcon: <BrowseIcon />,
+                        value: "detail",
+                    },
                     ...(canStatus
                         ? [
                               {
@@ -518,11 +521,16 @@ export function UsersView() {
                               },
                           ]
                         : []),
-                    ...(canPassword ? [{ content: "重置密码", value: "password" }] : []),
+                    ...(canPassword ? [{ content: "重置密码", prefixIcon: <KeyIcon />, value: "password" }] : []),
                     ...(canDelete
                         ? [
                               { divider: true, value: "divider" },
-                              { content: "删除用户", theme: "error" as const, value: "delete" },
+                              {
+                                  content: "删除用户",
+                                  prefixIcon: <DeleteIcon />,
+                                  theme: "error" as const,
+                                  value: "delete",
+                              },
                           ]
                         : []),
                 ];
@@ -551,6 +559,7 @@ export function UsersView() {
                                     confirmDelete(row);
                                 }
                             }}
+                            maxColumnWidth={140}
                             options={options}
                             trigger="click"
                         >
@@ -623,7 +632,7 @@ export function UsersView() {
     if (bulkItems.length > 0) {
         bulkItems.push({ divider: true, value: "divider" });
     }
-    bulkItems.push({ content: "取消选择", value: "clear" });
+    bulkItems.push({ content: "取消选择", prefixIcon: <CloseIcon />, value: "clear" });
     const handleBulkAction = (key: string) => {
         if (key === "export-selected") {
             void exportRows(selectedRows);
@@ -638,142 +647,139 @@ export function UsersView() {
 
     return (
         <>
-            <div className="flex w-full flex-col gap-4">
-                <IdentityPageOverview
-                    actions={
-                        <>
-                            {canCreate ? (
-                                <Button icon={<UserAddIcon />} onClick={() => setCreateOpen(true)} theme="primary">
-                                    新建用户
-                                </Button>
-                            ) : null}
-                            <Button
-                                icon={<RefreshIcon />}
-                                loading={usersQuery.isFetching || summaryQuery.isFetching}
-                                onClick={refreshUsers}
-                                variant="outline"
-                            >
-                                刷新
-                            </Button>
-                        </>
-                    }
-                    icon={<UsergroupAddIcon />}
-                    metrics={overviewMetrics}
-                    title="用户目录"
-                />
-                <Card>
-                    <div className="flex w-full flex-wrap items-center gap-3">
-                        <Select
-                            className="min-w-0 flex-1 basis-52"
-                            clearable
-                            onChange={(value) => applyStatus(value ? String(value) : undefined)}
-                            options={STATUS_OPTIONS}
-                            placeholder="账号状态"
-                            value={status || undefined}
-                        />
-                        <Select
-                            className="min-w-0 flex-1 basis-52"
-                            clearable
-                            filterable
-                            onChange={(value) => applyGroup(value ? String(value) : undefined)}
-                            options={groupOptions}
-                            placeholder="用户组"
-                            value={userGroup || undefined}
-                        />
-                        <Select
-                            className="min-w-0 flex-1 basis-52"
-                            clearable
-                            onChange={(value) => applySort(value ? String(value) : undefined)}
-                            options={SORT_OPTIONS}
-                            placeholder="排序方式"
-                            value={sortValue || undefined}
-                        />
-                        {hasFilters ? (
-                            <Button onClick={resetFilters} variant="text">
-                                重置筛选
-                            </Button>
-                        ) : null}
+            <div className="flex w-full min-w-0 flex-col gap-4">
+                <Breadcrumb>
+                    <BreadcrumbItem>身份与权限</BreadcrumbItem>
+                    <BreadcrumbItem>用户</BreadcrumbItem>
+                </Breadcrumb>
+                <Card bordered={false} bodyClassName="!p-0" className="min-w-0 overflow-hidden" shadow={false}>
+                    <div className="flex min-w-0 flex-col lg:flex-row">
+                        <div className="w-full shrink-0 border-b border-[var(--td-component-border)] p-4 lg:w-[264px] lg:border-r lg:border-b-0 lg:p-6">
+                            <UserGroupTree
+                                error={groupQuery.error}
+                                groups={userGroups}
+                                loading={groupQuery.isPending}
+                                onRetry={groupQuery.error ? () => void groupQuery.refetch() : undefined}
+                                onSelect={applyGroup}
+                                selectedName={userGroup || undefined}
+                            />
+                        </div>
+                        <div className="min-w-0 flex-1 p-4 lg:p-6">
+                            <ConsoleTable<UserRow>
+                                cardless
+                                columns={columns}
+                                data={users}
+                                error={usersQuery.error}
+                                loading={usersQuery.isFetching}
+                                onRetry={usersQuery.error ? () => void usersQuery.refetch() : undefined}
+                                pagination={{ ...table.pagination, total: usersQuery.data?.total ?? 0 }}
+                                rowKey="__rowKey"
+                                tableProps={{
+                                    onSelectChange: handleSelectChange,
+                                    selectedRowKeys: selectedRows.map((user) => user.__rowKey),
+                                }}
+                                toolbar={
+                                    <div className="flex w-full flex-col gap-3 xl:flex-row xl:items-start">
+                                        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                                            <div className="w-full sm:w-36">
+                                                <Select
+                                                    className="w-full"
+                                                    clearable
+                                                    onChange={(value) => applyStatus(value ? String(value) : undefined)}
+                                                    options={STATUS_OPTIONS}
+                                                    placeholder="账号状态"
+                                                    value={status || undefined}
+                                                />
+                                            </div>
+                                            <div className="w-full sm:w-48">
+                                                <Select
+                                                    className="w-full"
+                                                    clearable
+                                                    onChange={(value) => applySort(value ? String(value) : undefined)}
+                                                    options={SORT_OPTIONS}
+                                                    placeholder="排序方式"
+                                                    value={sortValue || undefined}
+                                                />
+                                            </div>
+                                            <div className="w-full sm:w-64">
+                                                <Input
+                                                    className="w-full"
+                                                    clearable
+                                                    onChange={(value) => setKeywordDraft(String(value))}
+                                                    onClear={() => applyKeyword("")}
+                                                    onEnter={(value) => applyKeyword(String(value))}
+                                                    placeholder="搜索显示名称或邮箱"
+                                                    suffixIcon={<SearchIcon />}
+                                                    value={keywordDraft}
+                                                />
+                                            </div>
+                                            <Button onClick={() => applyKeyword(keywordDraft)} theme="primary">
+                                                查询
+                                            </Button>
+                                            <Button onClick={resetFilters} variant="outline">
+                                                重置
+                                            </Button>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-2 xl:ml-auto">
+                                            {canCreate ? (
+                                                <Button
+                                                    icon={<UserAddIcon />}
+                                                    onClick={() => setCreateOpen(true)}
+                                                    theme="primary"
+                                                >
+                                                    新建用户
+                                                </Button>
+                                            ) : null}
+                                            {canExport ? (
+                                                <Button
+                                                    icon={<DownloadIcon />}
+                                                    loading={exporting}
+                                                    onClick={() => void exportRows()}
+                                                    variant="outline"
+                                                >
+                                                    导出
+                                                </Button>
+                                            ) : null}
+                                            {canSelect && selectedRows.length > 0 ? (
+                                                <Dropdown
+                                                    onClick={(item) => handleBulkAction(String(item.value))}
+                                                    maxColumnWidth={140}
+                                                    options={bulkItems}
+                                                    trigger="click"
+                                                >
+                                                    <Button icon={<TaskDoubleIcon />} variant="outline">
+                                                        批量操作
+                                                    </Button>
+                                                </Dropdown>
+                                            ) : null}
+                                            <Dropdown
+                                                onClick={(item) => {
+                                                    if (item.value === "batch-create") {
+                                                        setBatchOpen(true);
+                                                    } else if (item.value === "import") {
+                                                        setImportOpen(true);
+                                                    } else if (item.value === "refresh") {
+                                                        refreshUsers();
+                                                    }
+                                                }}
+                                                maxColumnWidth={180}
+                                                options={moreItems}
+                                                trigger="click"
+                                            >
+                                                <Button
+                                                    aria-label="更多操作"
+                                                    icon={<MoreIcon />}
+                                                    shape="square"
+                                                    variant="outline"
+                                                />
+                                            </Dropdown>
+                                        </div>
+                                    </div>
+                                }
+                            />
+                        </div>
                     </div>
                 </Card>
-                <ConsoleTable<UserRow>
-                    columns={columns}
-                    data={users}
-                    error={usersQuery.error}
-                    loading={usersQuery.isFetching}
-                    onRetry={usersQuery.error ? () => void usersQuery.refetch() : undefined}
-                    pagination={{ ...table.pagination, total: usersQuery.data?.total ?? 0 }}
-                    rowKey="__rowKey"
-                    tableProps={{
-                        expandedRow: ({ row }) => (
-                            <UserExpandedRow
-                                canEdit={canEditRow}
-                                onEdit={() => void openEdit(row)}
-                                user={row}
-                                workspace={workspace}
-                            />
-                        ),
-                        onSelectChange: handleSelectChange,
-                        selectedRowKeys: selectedRows.map((user) => user.__rowKey),
-                    }}
-                    title="用户"
-                    toolbar={
-                        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-                            <Input
-                                className="w-full sm:max-w-xs"
-                                clearable
-                                defaultValue={table.keyword}
-                                key={table.keyword}
-                                onClear={() => applyKeyword("")}
-                                onEnter={(value) => applyKeyword(String(value))}
-                                placeholder="搜索显示名称或邮箱"
-                                prefixIcon={<SearchIcon />}
-                            />
-                            <div className="flex items-center gap-2 sm:ml-auto">
-                                {canExport ? (
-                                    <Button
-                                        icon={<DownloadIcon />}
-                                        loading={exporting}
-                                        onClick={() => void exportRows()}
-                                        variant="outline"
-                                    >
-                                        导出
-                                    </Button>
-                                ) : null}
-                                {canSelect && selectedRows.length > 0 ? (
-                                    <Dropdown
-                                        onClick={(item) => handleBulkAction(String(item.value))}
-                                        options={bulkItems}
-                                        trigger="click"
-                                    >
-                                        <Button icon={<PlayCircleIcon />} variant="outline">
-                                            批量操作
-                                        </Button>
-                                    </Dropdown>
-                                ) : null}
-                                <Dropdown
-                                    onClick={(item) => {
-                                        if (item.value === "batch-create") {
-                                            setBatchOpen(true);
-                                        } else if (item.value === "import") {
-                                            setImportOpen(true);
-                                        } else if (item.value === "refresh") {
-                                            refreshUsers();
-                                        }
-                                    }}
-                                    options={moreItems}
-                                    trigger="click"
-                                >
-                                    <Button
-                                        aria-label="更多操作"
-                                        icon={<MoreIcon />}
-                                        shape="square"
-                                        variant="outline"
-                                    />
-                                </Dropdown>
-                            </div>
-                        </div>
-                    }
-                />
             </div>
             {createOpen ? <CreateUserModal groupOptions={groupOptions} onClose={() => setCreateOpen(false)} /> : null}
             {batchOpen ? (

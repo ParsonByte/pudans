@@ -10,6 +10,7 @@ import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
 import { consoleErrorMessage } from "../composables/_errors";
 
 type ConsoleTableProps<T extends TableRowData> = {
+    cardless?: boolean;
     columns: TableProps<T>["columns"];
     data?: T[];
     error?: unknown;
@@ -24,6 +25,7 @@ type ConsoleTableProps<T extends TableRowData> = {
 };
 
 export function ConsoleTable<T extends TableRowData>({
+    cardless = false,
     columns,
     data,
     error,
@@ -50,6 +52,37 @@ export function ConsoleTable<T extends TableRowData>({
         });
     }, [canRetry, error, prompt]);
 
+    const content = (
+        <>
+            {cardless && title ? <div className="mb-4 text-base font-semibold">{title}</div> : null}
+            {cardless && (canRetry || extra) ? (
+                <div className="mb-4 flex items-center justify-end gap-2">
+                    {extra}
+                    {canRetry ? (
+                        <Button onClick={onRetry} size="small" variant="outline">
+                            重试
+                        </Button>
+                    ) : null}
+                </div>
+            ) : null}
+            {toolbar ? <div className={cardless ? "mb-6" : "mb-4"}>{toolbar}</div> : null}
+            <Table<T>
+                {...tableProps}
+                columns={columns}
+                data={data}
+                disableDataPage
+                empty={<Empty description="暂无数据" />}
+                loading={loading}
+                pagination={pagination === false ? undefined : pagination}
+                rowKey={rowKey}
+            />
+        </>
+    );
+
+    if (cardless) {
+        return <div className="min-w-0">{content}</div>;
+    }
+
     return (
         <Card
             actions={
@@ -67,17 +100,7 @@ export function ConsoleTable<T extends TableRowData>({
             className="console-table-card"
             header={title}
         >
-            {toolbar ? <div className="mb-4">{toolbar}</div> : null}
-            <Table<T>
-                {...tableProps}
-                columns={columns}
-                data={data}
-                disableDataPage
-                empty={<Empty description="暂无数据" />}
-                loading={loading}
-                pagination={pagination === false ? undefined : pagination}
-                rowKey={rowKey}
-            />
+            {content}
         </Card>
     );
 }

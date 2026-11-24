@@ -5,11 +5,8 @@ import { useMemo } from "react";
 import { apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { LinkIcon } from "tdesign-icons-react";
-import { Button, Empty, Skeleton, Tag, Typography } from "tdesign-react";
+import { Button, Card, Empty, Skeleton, Tag, Typography } from "tdesign-react";
 
-import { SectionCard, useDesignTokens } from "@/components/ui";
-
-import { CopyableIdentifier } from "../../../../components/copyable-identifier";
 import { consoleErrorMessage } from "../../../../composables/_errors";
 import { formatDateTime } from "../../../../composables/_format";
 import { useListedAuthProvidersQuery } from "../../composables/_auth-provider-directory";
@@ -29,7 +26,6 @@ function builtinProviderLabel(registrationId?: string): string | undefined {
 }
 
 export function UserDetailConnections({ name }: UserDetailConnectionsProps) {
-    const tokens = useDesignTokens();
     const connectionsQuery = useQuery({
         queryKey: ["console", "users", "connections", name],
         queryFn: async () => (await apiClient.user.listUserConnections({ name })).data,
@@ -49,13 +45,14 @@ export function UserDetailConnections({ name }: UserDetailConnectionsProps) {
     const connections = connectionsQuery.data ?? [];
 
     return (
-        <SectionCard
-            className="!h-auto"
-            extra={
-                <Typography.Text theme="secondary">
+        <Card
+            actions={
+                <span className="text-xs text-[var(--td-text-color-secondary)]">
                     {connectionsQuery.isPending ? "加载中" : `${connections.length} 个连接`}
-                </Typography.Text>
+                </span>
             }
+            bordered={false}
+            shadow={false}
             title="身份连接"
         >
             {connectionsQuery.error ? (
@@ -73,7 +70,7 @@ export function UserDetailConnections({ name }: UserDetailConnectionsProps) {
             {connectionsQuery.isPending ? <Skeleton theme="paragraph" /> : null}
             {connectionsQuery.isSuccess ? (
                 connections.length > 0 ? (
-                    <div className="flex flex-col gap-2.5">
+                    <div className="flex flex-col gap-4">
                         {connections.map((connection, index) => {
                             const registrationId = connection.registrationId;
                             const providerLabel =
@@ -85,36 +82,27 @@ export function UserDetailConnections({ name }: UserDetailConnectionsProps) {
 
                             return (
                                 <div
-                                    className="rounded-xl border p-3"
+                                    className="flex min-w-0 items-start gap-3"
                                     key={connection.name ?? connection.providerUserId ?? index}
-                                    style={{ borderColor: tokens.colorBorderSecondary }}
                                 >
-                                    <div className="flex items-center justify-between gap-2">
-                                        <Tag
-                                            theme="primary"
-                                            title={providerLabel === "其他身份提供方" ? registrationId : undefined}
-                                            variant="light"
-                                        >
-                                            {providerLabel}
-                                        </Tag>
-                                        <Typography.Text className="whitespace-nowrap" theme="secondary">
-                                            {formatDateTime(connection.createdAt)}
-                                        </Typography.Text>
-                                    </div>
-                                    <div className="mt-2 flex min-w-0 items-center gap-2">
-                                        <LinkIcon className="shrink-0" style={{ color: tokens.colorTextTertiary }} />
-                                        <Typography.Text className="min-w-0 flex-1" ellipsis strong>
-                                            {connectionLabel}
-                                        </Typography.Text>
-                                    </div>
-                                    <div
-                                        className="mt-2 rounded-lg px-2.5 py-2"
-                                        style={{ backgroundColor: tokens.colorFillQuaternary }}
-                                    >
-                                        <Typography.Text className="mb-1 block text-[11px]" theme="secondary">
-                                            提供方用户编号
-                                        </Typography.Text>
-                                        <CopyableIdentifier value={connection.providerUserId} />
+                                    <LinkIcon
+                                        className="mt-0.5 shrink-0 text-[var(--td-text-color-secondary)]"
+                                        size={20}
+                                    />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-sm font-medium">{connectionLabel}</div>
+                                        <div className="mt-1 flex min-w-0 items-center gap-2">
+                                            <Tag
+                                                theme="primary"
+                                                title={providerLabel === "其他身份提供方" ? registrationId : undefined}
+                                                variant="light"
+                                            >
+                                                {providerLabel}
+                                            </Tag>
+                                            <Typography.Text className="truncate text-xs" theme="secondary">
+                                                {formatDateTime(connection.createdAt)}
+                                            </Typography.Text>
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -124,6 +112,6 @@ export function UserDetailConnections({ name }: UserDetailConnectionsProps) {
                     <Empty description="暂无身份连接" />
                 )
             ) : null}
-        </SectionCard>
+        </Card>
     );
 }

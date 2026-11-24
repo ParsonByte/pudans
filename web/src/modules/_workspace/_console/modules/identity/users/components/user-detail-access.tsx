@@ -5,9 +5,7 @@ import { useMemo } from "react";
 import { apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { SecuredIcon } from "tdesign-icons-react";
-import { Button, Empty, Skeleton, Typography } from "tdesign-react";
-
-import { SectionCard, useDesignTokens } from "@/components/ui";
+import { Button, Card, Empty, Skeleton, Typography } from "tdesign-react";
 
 import { consoleErrorMessage } from "../../../../composables/_errors";
 import { roleDisplayName } from "../../composables/_role";
@@ -19,7 +17,6 @@ type UserDetailAccessProps = {
 const ROLE_LOOKUP_PAGE_SIZE = 1000;
 
 export function UserDetailAccess({ name }: UserDetailAccessProps) {
-    const tokens = useDesignTokens();
     const permissionsQuery = useQuery({
         queryKey: ["console", "users", "permissions", name],
         queryFn: async () => (await apiClient.user.getUserPermissions({ name })).data,
@@ -44,9 +41,10 @@ export function UserDetailAccess({ name }: UserDetailAccessProps) {
     const summary = permissionsQuery.isPending ? "加载中" : `${roles.length} 个角色 · ${permissionCount} 项权限`;
 
     return (
-        <SectionCard
-            className="!h-auto"
-            extra={<Typography.Text theme="secondary">{summary}</Typography.Text>}
+        <Card
+            actions={<span className="text-xs text-[var(--td-text-color-secondary)]">{summary}</span>}
+            bordered={false}
+            shadow={false}
             title="角色"
         >
             {permissionsQuery.isPending ? <Skeleton theme="paragraph" /> : null}
@@ -64,22 +62,15 @@ export function UserDetailAccess({ name }: UserDetailAccessProps) {
             ) : null}
             {permissionsQuery.isSuccess ? (
                 roles.length > 0 ? (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-4">
                         {roles.map((role) => {
                             const label = roleLabels.get(role);
                             const displayLabel = label ?? (rolesQuery.isPending ? "加载中" : "未知角色");
 
                             return (
-                                <div
-                                    className="flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5"
-                                    key={role}
-                                    style={{ backgroundColor: tokens.colorFillQuaternary }}
-                                >
-                                    <span
-                                        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg"
-                                        style={{ backgroundColor: tokens.colorPrimaryBg, color: tokens.colorPrimary }}
-                                    >
-                                        <SecuredIcon />
+                                <div className="flex min-w-0 items-center gap-3" key={role}>
+                                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-[var(--td-text-color-secondary)]">
+                                        <SecuredIcon size={20} />
                                     </span>
                                     <Typography.Text className="min-w-0 flex-1" ellipsis>
                                         {displayLabel}
@@ -92,6 +83,6 @@ export function UserDetailAccess({ name }: UserDetailAccessProps) {
                     <Typography.Text theme="secondary">未分配角色</Typography.Text>
                 )
             ) : null}
-        </SectionCard>
+        </Card>
     );
 }

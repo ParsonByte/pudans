@@ -2,8 +2,8 @@
 
 import { useMemo } from "react";
 
-import { apiClient } from "@pudans-dev/api-client";
-import { useQuery } from "@tanstack/react-query";
+import { sortUserGroups, userGroupDisplayName } from "../../user-groups/composables/_user-group";
+import { useUserGroupsQuery } from "../../user-groups/composables/_user-group-queries";
 
 export type UserGroupOption = {
     label: string;
@@ -11,18 +11,16 @@ export type UserGroupOption = {
 };
 
 export function useUserGroupOptions() {
-    const query = useQuery({
-        queryKey: ["console", "user-groups", "options"],
-        queryFn: async () => (await apiClient.userGroup.listUserGroup({ page: 1, size: 200 })).data,
-    });
+    const query = useUserGroupsQuery();
+    const groups = useMemo(() => sortUserGroups(query.data ?? []), [query.data]);
     const options = useMemo<UserGroupOption[]>(
         () =>
-            (query.data?.items ?? []).map((group) => ({
-                label: group.displayName,
+            groups.map((group) => ({
+                label: userGroupDisplayName(group),
                 value: group.metadata.name,
             })),
-        [query.data?.items],
+        [groups],
     );
 
-    return { options, query };
+    return { groups, options, query };
 }

@@ -8,8 +8,8 @@ import { useRouter } from "next/navigation";
 import { apiClient } from "@pudans-dev/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
-import { ArrowLeftIcon } from "tdesign-icons-react";
-import { Breadcrumb, Button, Skeleton, Typography } from "tdesign-react";
+import { differenceInCalendarDays } from "date-fns";
+import { Breadcrumb, Button, Card, Col, Row, Skeleton } from "tdesign-react";
 
 import { confirmGlobalDialog } from "@/components/ui";
 import { useMessagePrompt } from "@/hooks/ui/use-message-prompt";
@@ -24,7 +24,9 @@ import { UserDetailActivity } from "./components/user-detail-activity";
 import { UserDetailConnections } from "./components/user-detail-connections";
 import { UserDetailInformation } from "./components/user-detail-information";
 import { UserDetailProfile } from "./components/user-detail-profile";
+import { UserDetailTeammates } from "./components/user-detail-teammates";
 import { UserEditorModal } from "./components/user-editor-modal";
+import { UserGroupTag, UserStatusTag } from "./components/user-tags";
 import { useDeleteUser, useSetUserStatus } from "./composables/_user-actions";
 import { useUserGroupOptions } from "./composables/_user-groups";
 import { USER_PERMISSIONS } from "./composables/_user-permissions";
@@ -34,6 +36,28 @@ type UserDetailViewProps = {
     name: string;
     workspace: string;
 };
+
+function joinedDayCount(value?: string): number | undefined {
+    if (!value) {
+        return undefined;
+    }
+
+    const joinedAt = new Date(value);
+
+    return Number.isNaN(joinedAt.getTime())
+        ? undefined
+        : Math.max(1, differenceInCalendarDays(new Date(), joinedAt) + 1);
+}
+
+function greeting(): string {
+    const hour = new Date().getHours();
+
+    if (hour < 12) {
+        return "上午好";
+    }
+
+    return hour < 18 ? "下午好" : "晚上好";
+}
 
 export function UserDetailView({ name, workspace }: UserDetailViewProps) {
     const router = useRouter();
@@ -131,11 +155,16 @@ export function UserDetailView({ name, workspace }: UserDetailViewProps) {
 
     const user = userQuery.data;
     const displayName = user.spec.displayName || user.metadata.name;
+    const viewerName = sessionQuery.data?.displayName || sessionQuery.data?.username || "当前账号";
     const canEdit = canUpdate || (canGroup && groupQuery.isSuccess);
+    const days = joinedDayCount(user.spec.registeredAt);
+    const welcomeText = days
+        ? `${greeting()}，今天是${displayName}加入的第 ${days} 天～`
+        : `${greeting()}，欢迎查看${displayName}的资料～`;
 
     const confirmToggleStatus = () => {
         confirmGlobalDialog({
-            confirmText: user.spec.disabled ? "启用账号" : "禁用账号",
+            confirmText: user.spec.disabled ? "启用用户" : "禁用用户",
             content: user.spec.disabled
                 ? "启用后该账号可以重新登录。"
                 : "禁用后该账号将无法登录，已有会话会按后端策略处理。",
@@ -165,48 +194,68 @@ export function UserDetailView({ name, workspace }: UserDetailViewProps) {
 
     return (
         <>
-            <div className="flex w-full min-w-0 flex-col gap-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <Breadcrumb
-                            options={[
-                                {
-                                    content: <Link href={userListPath(workspace)}>用户</Link>,
-                                },
-                                { content: "详情" },
-                            ]}
-                        />
-                        <Typography.Title className="mt-2" level="h3">
-                            {displayName}
-                        </Typography.Title>
-                    </div>
-                    <Button icon={<ArrowLeftIcon />} onClick={() => router.push(userListPath(workspace))}>
-                        返回用户列表
-                    </Button>
-                </div>
-                <div className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-12">
-                    <div className="flex min-w-0 flex-col gap-4 lg:col-span-5 xl:col-span-4">
-                        <UserDetailProfile
-                            canDelete={canDelete}
-                            canEdit={canEdit}
-                            canPassword={canPassword}
-                            canStatus={canStatus}
-                            groupLabel={groupLabel}
-                            onDelete={confirmDelete}
-                            onEdit={() => setEditingOpen(true)}
-                            onResetPassword={() => setResetOpen(true)}
-                            onToggleStatus={confirmToggleStatus}
-                            statusPending={setStatus.isPending}
-                            user={user}
-                        />
-                        <UserDetailAccess name={name} />
-                        <UserDetailConnections name={name} />
-                    </div>
-                    <div className="flex min-w-0 flex-col gap-4 lg:col-span-7 xl:col-span-8">
-                        <UserDetailInformation groupLabel={groupLabel} user={user} />
-                        <UserDetailActivity name={name} />
-                    </div>
-                </div>
+            <div className="flex min-w-0 flex-col gap-4">
+                <Breadcrumb
+                    options={[
+                        {
+                            content: <Link href={userListPath(workspace)}>用户</Link>,
+                        },
+                        { content: "个人中心" },
+                    ]}
+                />
+                <Row gutter={[16, 16]}>
+                    <Col lg={12} xl={9} xs={12}>
+                        <div className="flex min-w-0 flex-col gap-4">
+                            <Card bordered={false} shadow={false}>
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div className="min-w-0">
+                                        <div className="text-xl font-medium break-words">
+                                            Hi，{viewerName}
+                                            {"，"}
+                                            <span className="text-sm font-normal text-[var(--td-text-color-secondary)]">
+                                                {welcomeText}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <UserStatusTag disabled={user.spec.disabled} />
+                                        <UserGroupTag displayName={groupLabel === "未分组" ? undefined : groupLabel} />
+                                    </div>
+                                </div>
+                            </Card>
+                            <UserDetailInformation
+                                canEdit={canEdit}
+                                groupLabel={groupLabel}
+                                onEdit={() => setEditingOpen(true)}
+                                user={user}
+                            />
+                            <UserDetailActivity name={name} />
+                        </div>
+                    </Col>
+                    <Col lg={12} xl={3} xs={12}>
+                        <div className="flex min-w-0 flex-col gap-4">
+                            <UserDetailProfile
+                                canDelete={canDelete}
+                                canPassword={canPassword}
+                                canStatus={canStatus}
+                                groupLabel={groupLabel}
+                                onDelete={confirmDelete}
+                                onResetPassword={() => setResetOpen(true)}
+                                onToggleStatus={confirmToggleStatus}
+                                statusPending={setStatus.isPending}
+                                user={user}
+                            />
+                            <UserDetailTeammates
+                                groupLabel={groupLabel}
+                                groupName={groupQuery.data?.metadata.name}
+                                name={name}
+                                workspace={workspace}
+                            />
+                            <UserDetailAccess name={name} />
+                            <UserDetailConnections name={name} />
+                        </div>
+                    </Col>
+                </Row>
             </div>
             {editingOpen ? (
                 <UserEditorModal
