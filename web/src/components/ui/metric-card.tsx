@@ -26,11 +26,7 @@ export function MetricCard({ badge, className, footer, icon, label, loading, ton
     const token = useDesignTokens();
 
     return (
-        <Card
-            className={`relative h-full overflow-hidden transition-transform duration-300 hover:-translate-y-0.5 ${className ?? ""}`}
-            bordered
-            shadow
-        >
+        <Card bordered={false} className={`relative h-full overflow-hidden ${className ?? ""}`}>
             <div className="flex flex-col gap-5">
                 <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
