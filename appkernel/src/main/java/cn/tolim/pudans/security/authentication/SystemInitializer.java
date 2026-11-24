@@ -65,6 +65,7 @@ public class SystemInitializer implements SuperAdminInitializer {
 
     // 复用已有管理员或新建，并发创建冲突时回查确认。
     Mono<User> ensureSuperAdmin(InitializationParam param) {
+        // 超管创建即带系统终结器，只有内部客户端能写入该受保护字段
         return client.fetch(User.class, param.getUsername())
                 .flatMap(admin -> verifyExistingAdmin(admin, param))
                 .switchIfEmpty(Mono.defer(() -> client.createInternal(createAdmin(param))

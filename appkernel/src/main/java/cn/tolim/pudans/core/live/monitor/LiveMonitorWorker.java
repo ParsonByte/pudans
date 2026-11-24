@@ -74,6 +74,7 @@ public class LiveMonitorWorker {
     // 一次 tick 只做租约、到期选取与限流并发解析，单源失败不影响其他源
     public Mono<Void> tick() {
         var started = Instant.now();
+        // 失败数只由 leader 从共享集合读取，其余实例归零，避免多实例重复计数
         return Mono.defer(() -> lease
                         .renew()
                         .flatMap(leader -> metrics
