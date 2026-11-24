@@ -11,7 +11,7 @@ import type { AppShellItem } from "./app-shell-types";
 import { SIDE_NAVIGATION_ID } from "./app-shell-types";
 
 const { MenuGroup, MenuItem } = Menu;
-const SIDEBAR_WIDTH = "200px";
+const SIDEBAR_WIDTH = "232px";
 const SIDEBAR_COLLAPSED_WIDTH = "48px";
 
 type AppShellMenuSection = {

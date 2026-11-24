@@ -2,7 +2,6 @@
 
 import type { CSSProperties } from "react";
 
-import { flushSync } from "react-dom";
 import { MoonIcon, SunnyIcon } from "tdesign-icons-react";
 import { Button } from "tdesign-react";
 
@@ -31,16 +30,19 @@ export function ThemeMenu({ buttonClassName, buttonStyle }: ThemeMenuProps) {
     const activeTheme = isReady ? (isDark ? "dark" : "light") : undefined;
     const className = ["theme-menu", buttonClassName].filter(Boolean).join(" ");
     const selectTheme = (theme: Theme) => {
-        if (theme === activeTheme) {
+        const currentTheme = document.documentElement.classList.contains("dark") ? "dark" : "light";
+
+        if (theme === currentTheme) {
             return;
         }
 
-        const updateTheme = () => {
-            applyDocumentTheme(theme);
-            flushSync(() => setTheme(theme));
-        };
         const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         const transitionDocument = document as ViewTransitionDocument;
+
+        const updateTheme = () => {
+            applyDocumentTheme(theme);
+            setTheme(theme);
+        };
 
         if (!transitionDocument.startViewTransition || prefersReducedMotion) {
             updateTheme();
@@ -52,7 +54,7 @@ export function ThemeMenu({ buttonClassName, buttonStyle }: ThemeMenuProps) {
 
     return (
         <div aria-label="切换主题" className={className} role="group" style={buttonStyle}>
-            <span aria-hidden className="theme-menu__thumb" data-theme={activeTheme} />
+            <span aria-hidden className="theme-menu__thumb" />
             <Button
                 aria-label="浅色"
                 aria-pressed={activeTheme === "light"}
