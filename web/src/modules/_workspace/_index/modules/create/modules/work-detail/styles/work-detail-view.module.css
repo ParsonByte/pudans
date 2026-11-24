@@ -1,0 +1,409 @@
+.page {
+    display: flex;
+    height: calc(100dvh - 112px);
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.scroller {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 0 4px 24px;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.topBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0 16px;
+}
+
+.backButton {
+    display: inline-grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 50%;
+    color: var(--td-text-color-secondary);
+    background: var(--td-bg-color-container);
+}
+
+.backButton:hover {
+    color: var(--td-text-color-primary);
+    background: var(--td-bg-color-container-hover);
+}
+
+.pendingBadge {
+    padding: 4px 10px;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 999px;
+    color: var(--td-text-color-placeholder);
+    background: var(--td-bg-color-container);
+    font-size: 12px;
+    line-height: 18px;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px 92px;
+    align-items: start;
+    gap: 24px;
+}
+
+.primaryColumn {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+
+.mediaStage {
+    display: flex;
+    height: clamp(420px, calc(100dvh - 276px), 680px);
+    max-width: 100%;
+    aspect-ratio: 3 / 4;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 18px;
+    color: var(--td-text-color-placeholder);
+    background: var(--td-bg-color-secondarycontainer);
+}
+
+.mediaIcon {
+    display: grid;
+    width: 58px;
+    height: 58px;
+    place-items: center;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 18px;
+    background: var(--td-bg-color-container);
+}
+
+.mediaLabel {
+    font-size: 13px;
+}
+
+.reactionBar {
+    display: flex;
+    width: min(100%, 640px);
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.reactionButton,
+.watermarkButton {
+    display: inline-flex;
+    height: 34px;
+    align-items: center;
+    gap: 7px;
+    padding: 0 12px;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 999px;
+    color: var(--td-text-color-secondary);
+    background: var(--td-bg-color-container);
+    cursor: default;
+    font: inherit;
+    font-size: 12px;
+    line-height: 1;
+}
+
+.watermarkButton {
+    padding-right: 8px;
+}
+
+.switchTrack {
+    position: relative;
+    display: inline-block;
+    width: 32px;
+    height: 18px;
+    border-radius: 999px;
+    background: var(--td-bg-color-component);
+}
+
+.switchThumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--td-bg-color-container);
+}
+
+.infoColumn {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.creatorRow {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border-radius: 50%;
+    background: var(--td-bg-color-component);
+}
+
+.creatorCopy {
+    display: flex;
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.aiBadge {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    color: var(--td-text-color-placeholder);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.skeletonLineWide,
+.skeletonLineFull,
+.skeletonLineMedium,
+.skeletonLineShort {
+    display: block;
+    height: 10px;
+    border-radius: 999px;
+    background: var(--td-bg-color-component);
+}
+
+.skeletonLineWide {
+    width: 76%;
+}
+
+.skeletonLineFull {
+    width: 100%;
+}
+
+.skeletonLineMedium {
+    width: 52%;
+}
+
+.skeletonLineShort {
+    width: 32%;
+}
+
+.promptCard {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 14px;
+    background: var(--td-bg-color-container);
+}
+
+.promptHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.promptHeader strong {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.copyButton {
+    padding: 0;
+    border: 0;
+    color: var(--td-text-color-placeholder);
+    background: transparent;
+    cursor: default;
+    font: inherit;
+    font-size: 11px;
+}
+
+.promptCopy {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+
+.referenceThumb {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 8px;
+    color: var(--td-text-color-placeholder);
+    background: var(--td-bg-color-secondarycontainer);
+}
+
+.detailsToggle {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0 0;
+    border: 0;
+    border-top: 1px solid var(--td-component-stroke);
+    color: var(--td-text-color-secondary);
+    background: transparent;
+    cursor: default;
+    font: inherit;
+    font-size: 12px;
+}
+
+.sectionHeader {
+    margin-bottom: 10px;
+    color: var(--td-text-color-secondary);
+    font-size: 12px;
+}
+
+.editGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.editButton {
+    display: flex;
+    min-width: 0;
+    height: 40px;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 10px;
+    color: var(--td-text-color-secondary);
+    background: var(--td-bg-color-secondarycontainer);
+    cursor: default;
+    font: inherit;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.createBlock {
+    margin-top: 4px;
+}
+
+.createActions {
+    display: grid;
+    grid-template-columns: 1fr 1.35fr;
+    gap: 8px;
+}
+
+.retryButton,
+.primaryAction {
+    display: inline-flex;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 10px;
+    font: inherit;
+    font-size: 13px;
+    text-decoration: none;
+}
+
+.retryButton {
+    border: 1px solid var(--td-component-stroke);
+    color: var(--td-text-color-secondary);
+    background: var(--td-bg-color-container);
+    cursor: default;
+}
+
+.primaryAction {
+    color: #fff;
+    background: var(--td-brand-color);
+}
+
+.primaryAction:hover {
+    background: var(--td-brand-color-hover);
+}
+
+.relatedRail {
+    min-width: 0;
+    max-height: clamp(420px, calc(100dvh - 176px), 760px);
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+
+.relatedRail::-webkit-scrollbar {
+    display: none;
+}
+
+.relatedList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.relatedThumb {
+    display: grid;
+    width: 100%;
+    aspect-ratio: 1;
+    place-items: center;
+    border: 1px solid var(--td-component-stroke);
+    border-radius: 14px;
+    color: var(--td-text-color-placeholder);
+    background: var(--td-bg-color-secondarycontainer);
+}
+
+@media (max-width: 1279px) {
+    .layout {
+        grid-template-columns: minmax(0, 1fr) 320px;
+    }
+
+    .relatedRail {
+        display: none;
+    }
+}
+
+@media (max-width: 767px) {
+    .page {
+        height: calc(100dvh - 96px);
+    }
+
+    .scroller {
+        padding: 0 0 16px;
+    }
+
+    .layout {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+    }
+
+    .mediaStage {
+        width: min(100%, 440px);
+        height: auto;
+    }
+
+    .reactionBar {
+        justify-content: flex-start;
+    }
+
+    .watermarkButton {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
