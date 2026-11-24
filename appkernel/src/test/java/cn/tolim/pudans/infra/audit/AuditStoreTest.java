@@ -260,6 +260,30 @@ class AuditStoreTest {
     }
 
     @Test
+    void countPerDayAppliesTheExclusiveEndWhenProvided() {
+        var spec = org.mockito.Mockito.mock(DatabaseClient.GenericExecuteSpec.class);
+        when(databaseClient.sql(anyString())).thenReturn(spec);
+        when(spec.bind(anyString(), any())).thenReturn(spec);
+        when(spec.map(ArgumentMatchers.<BiFunction<Row, RowMetadata, Map.Entry<LocalDate, Long>>>any()))
+                .thenReturn(dayRows);
+        when(dayRows.all()).thenReturn(Flux.empty());
+
+        store.countPerDay(
+                        Instant.parse("2026-11-15T00:00:00Z"),
+                        Instant.parse("2026-11-22T00:00:00Z"),
+                        null,
+                        null,
+                        "SUCCESS")
+                .block();
+
+        var sql = ArgumentCaptor.forClass(String.class);
+        verify(databaseClient).sql(sql.capture());
+        assertThat(sql.getValue())
+                .contains("occurred_at >= :since", "occurred_at < :to", "request_path <> '/login-bg.mp4'");
+        verify(spec, times(3)).bind(anyString(), any());
+    }
+
+    @Test
     void topOperationsAggregatesBothAuditStores() {
         givenResultQuery();
 

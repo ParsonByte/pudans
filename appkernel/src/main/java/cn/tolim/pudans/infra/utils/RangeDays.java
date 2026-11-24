@@ -1,5 +1,7 @@
 package cn.tolim.pudans.infra.utils;
 
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.server.ServerWebInputException;
@@ -28,6 +30,21 @@ public final class RangeDays {
             return days;
         } catch (NumberFormatException e) {
             throw new ServerWebInputException("查询参数 'days' 必须是整数。");
+        }
+    }
+
+    // 解析可选的统计结束时刻，缺省为当前时刻。
+    public static Instant resolveEnd(ServerRequest request) {
+        var value = request.queryParam("to").orElse(null);
+        if (!StringUtils.hasText(value)) {
+            return Instant.now();
+        }
+        try {
+            var end = Instant.parse(value);
+            var now = Instant.now();
+            return end.isAfter(now) ? now : end;
+        } catch (DateTimeParseException e) {
+            throw new ServerWebInputException("查询参数 'to' 必须是 ISO-8601 时间。");
         }
     }
 }

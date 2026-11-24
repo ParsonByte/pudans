@@ -1091,6 +1091,7 @@ public class UserEndpoint implements CustomEndpoint {
             @Schema(description = "Effective local login name.")
             String loginName,
             String displayName,
+            String avatar,
             String email,
             String phone,
             Instant registeredAt,
@@ -1113,6 +1114,7 @@ public class UserEndpoint implements CustomEndpoint {
                     user.getMetadata().getName(),
                     user.effectiveLoginName(),
                     user.getSpec().getDisplayName(),
+                    user.getSpec().getAvatar(),
                     exposeEmail ? user.getSpec().getEmail() : null,
                     user.getSpec().getPhone(),
                     user.getSpec().getRegisteredAt(),

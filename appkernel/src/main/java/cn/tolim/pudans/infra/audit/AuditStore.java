@@ -282,22 +282,34 @@ public class AuditStore {
     // 跨活跃与归档表按北京时间自然日聚合统计。
     public Mono<Map<LocalDate, Long>> countPerDay(
             Instant since, String uid, String operation, String result) {
+        return countPerDay(since, null, uid, operation, result);
+    }
+
+    // 按可选的结束时刻限制统计区间。
+    public Mono<Map<LocalDate, Long>> countPerDay(
+            Instant since, Instant to, String uid, String operation, String result) {
         var sql = new StringBuilder("""
                         SELECT day, SUM(total) AS total FROM (
                             SELECT (occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
                                    COUNT(*) AS total
                             FROM audit_record
                             WHERE occurred_at >= :since
-                        """)
-                .append(NON_STATIC_REQUEST_SQL);
+                        """);
+        if (to != null) {
+            sql.append(" AND occurred_at < :to");
+        }
+        sql.append(NON_STATIC_REQUEST_SQL);
         var archiveSql = new StringBuilder("""
                             UNION ALL
                             SELECT (occurred_at AT TIME ZONE 'Asia/Shanghai')::date AS day,
                                    COUNT(*) AS total
                             FROM audit_record_archive
                             WHERE occurred_at >= :since
-                        """)
-                .append(NON_STATIC_REQUEST_SQL);
+                        """);
+        if (to != null) {
+            archiveSql.append(" AND occurred_at < :to");
+        }
+        archiveSql.append(NON_STATIC_REQUEST_SQL);
         if (StringUtils.hasText(uid)) {
             var condition = " AND uid = :uid";
             sql.append(condition);
@@ -317,6 +329,9 @@ public class AuditStore {
         archiveSql.append(" GROUP BY 1");
         sql.append("\n").append(archiveSql).append(") grouped GROUP BY day ORDER BY day");
         var spec = databaseClient.sql(sql.toString()).bind("since", toOffsetDateTime(since));
+        if (to != null) {
+            spec = spec.bind("to", toOffsetDateTime(to));
+        }
         if (StringUtils.hasText(uid)) {
             spec = spec.bind("uid", uid);
         }

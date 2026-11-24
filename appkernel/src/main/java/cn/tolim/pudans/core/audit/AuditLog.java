@@ -364,7 +364,13 @@ public class AuditLog {
     // 按用户、操作与结果按天统计记录数。
     public Mono<Map<java.time.LocalDate, Long>> countPerDay(
             Instant since, String uid, String operation, String result) {
-        return auditStore.countPerDay(since, uid, operation, result);
+        return countPerDay(since, null, uid, operation, result);
+    }
+
+    // 按可选的结束时刻限制按天统计区间。
+    public Mono<Map<java.time.LocalDate, Long>> countPerDay(
+            Instant since, Instant to, String uid, String operation, String result) {
+        return auditStore.countPerDay(since, to, uid, operation, result);
     }
 
     // 按结果统计指定区间内的审计数量。

@@ -106,13 +106,19 @@ public class DashboardEndpoint implements CustomEndpoint {
                                 .required(false)
                                 .description("Trend and comparison range in days, between 1 and 90. Defaults to 7.")
                                 .implementation(Integer.class))
+                        .parameter(parameterBuilder()
+                                .in(ParameterIn.QUERY)
+                                .name("to")
+                                .required(false)
+                                .description("Inclusive range end as an ISO-8601 instant. Defaults to now.")
+                                .implementation(String.class))
                         .response(Builder.responseBuilder().implementation(DashboardOverview.class)))
                 .build();
     }
 
     // 聚合失败时记录日志并返回统一的服务端错误。
     private Mono<ServerResponse> overview(ServerRequest request) {
-        return aggregate(RangeDays.resolve(request))
+        return aggregate(RangeDays.resolve(request), RangeDays.resolveEnd(request))
                 .flatMap(overview -> ServerResponse.ok().bodyValue(overview))
                 .onErrorResume(error -> {
                     log.warn("无法聚合仪表盘概览", error);
@@ -126,14 +132,20 @@ public class DashboardEndpoint implements CustomEndpoint {
         return aggregate(RangeDays.DEFAULT);
     }
 
-    // 并行汇总用户、角色、审计与趋势数据。
+    // 使用默认结束时刻聚合并保持旧调用方式。
     Mono<DashboardOverview> aggregate(int days) {
-        var now = Instant.now();
-        var dayStart = PudansTime.startOfDay(now);
+        return aggregate(days, Instant.now());
+    }
+
+    // 并行汇总用户、角色、审计与趋势数据。
+    Mono<DashboardOverview> aggregate(int days, Instant end) {
+        var generatedAt = Instant.now();
+        var rangeEnd = end.isAfter(generatedAt) ? generatedAt : end;
+        var dayStart = PudansTime.startOfDay(rangeEnd);
         var rangeFrom = dayStart.minus(Duration.ofDays(days - 1L));
         var previousFrom = rangeFrom.minus(Duration.ofDays(days));
         var totalUsers = countNotDeleting(User.class);
-        var newUsersCurrent = countCreatedBetween(User.class, rangeFrom, now);
+        var newUsersCurrent = countCreatedBetween(User.class, rangeFrom, rangeEnd);
         var newUsersPrevious = countCreatedBetween(User.class, previousFrom, rangeFrom);
         var globalInfo = systemInfoGetter
                 .get()
@@ -147,7 +159,9 @@ public class DashboardEndpoint implements CustomEndpoint {
                 countNotDeleting(UserGroup.class),
                 Mono.just((long) riskRuleRegistry.ruleCount()),
                 countNotDeleting(Webhook.class));
-        var todayOperations = auditLog.countSince(dayStart).onErrorReturn(0L);
+        var todayOperations = auditLog
+                .countSince(PudansTime.startOfDay(generatedAt))
+                .onErrorReturn(0L);
         var recentRecords = auditLog
                 .findRecent(RECENT_AUDIT_LOG_LIMIT)
                 .collectList()
@@ -155,33 +169,33 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .onErrorReturn(List.of())
                 .cache();
         var loginTrend = auditLog
-                .countPerDay(rangeFrom, "LOGIN", "SUCCESS")
-                .map(daysByCount -> toDailyTrend(daysByCount, now, days))
+                .countPerDay(rangeFrom, rangeEnd, null, "LOGIN", "SUCCESS")
+                .map(daysByCount -> toDailyTrend(daysByCount, rangeEnd, days))
                 .defaultIfEmpty(List.of())
                 .onErrorReturn(List.of());
         var operationTrend = auditLog
-                .countPerDay(rangeFrom, null, null)
-                .map(daysByCount -> toDailyTrend(daysByCount, now, days))
+                .countPerDay(rangeFrom, rangeEnd, null, null, null)
+                .map(daysByCount -> toDailyTrend(daysByCount, rangeEnd, days))
                 .defaultIfEmpty(List.of())
                 .onErrorReturn(List.of());
         var failureTrend = Mono.zip(
-                        auditLog.countPerDay(rangeFrom, null, "FAILURE"),
-                        auditLog.countPerDay(rangeFrom, null, "DENIED"))
-                .map(tuple -> toDailyTrend(mergeCounts(tuple.getT1(), tuple.getT2()), now, days))
+                        auditLog.countPerDay(rangeFrom, rangeEnd, null, null, "FAILURE"),
+                        auditLog.countPerDay(rangeFrom, rangeEnd, null, null, "DENIED"))
+                .map(tuple -> toDailyTrend(mergeCounts(tuple.getT1(), tuple.getT2()), rangeEnd, days))
                 .defaultIfEmpty(List.of())
                 .onErrorReturn(List.of());
         var riskRules = listNotDeleting(RiskRule.class).cache();
         var riskRuleTrend = riskRules
-                .map(items -> toCreationTrend(creationTimestampsOf(items), now, days))
+                .map(items -> toCreationTrend(creationTimestampsOf(items), rangeEnd, days))
                 .defaultIfEmpty(List.of())
                 .onErrorReturn(List.of());
         var newRiskRulesCurrent =
-                riskRules.map(items -> countCreatedBetween(items, rangeFrom, now)).onErrorReturn(0L);
+                riskRules.map(items -> countCreatedBetween(items, rangeFrom, rangeEnd)).onErrorReturn(0L);
         var newRiskRulesPrevious =
                 riskRules.map(items -> countCreatedBetween(items, previousFrom, rangeFrom)).onErrorReturn(0L);
         var webhooks = listNotDeleting(Webhook.class).cache();
         var webhookTrend = webhooks
-                .map(items -> toCreationTrend(creationTimestampsOf(items), now, days))
+                .map(items -> toCreationTrend(creationTimestampsOf(items), rangeEnd, days))
                 .defaultIfEmpty(List.of())
                 .onErrorReturn(List.of());
         var trends = Mono.zip(loginTrend, operationTrend, failureTrend, riskRuleTrend, webhookTrend)
@@ -197,7 +211,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .query(new AuditStore.AuditQuery(
                         null,
                         rangeFrom,
-                        null,
+                        rangeEnd,
                         null,
                         null,
                         null,
@@ -215,18 +229,18 @@ public class DashboardEndpoint implements CustomEndpoint {
                         .filter(uid -> !"anonymous".equals(uid))
                         .toList()))
                 .defaultIfEmpty(Map.of());
-        var resultCounts = auditLog.countByResult(rangeFrom, now, null).onErrorReturn(Map.of());
+        var resultCounts = auditLog.countByResult(rangeFrom, rangeEnd, null).onErrorReturn(Map.of());
         var previousResultCounts =
                 auditLog.countByResult(previousFrom, rangeFrom, null).onErrorReturn(Map.of());
         var loginResultCounts =
-                auditLog.countByResult(rangeFrom, now, "LOGIN").onErrorReturn(Map.of());
+                auditLog.countByResult(rangeFrom, rangeEnd, "LOGIN").onErrorReturn(Map.of());
         var previousLoginResultCounts =
                 auditLog.countByResult(previousFrom, rangeFrom, "LOGIN").onErrorReturn(Map.of());
-        var activeUserCount = auditLog.countDistinctUids(rangeFrom, now).onErrorReturn(0L);
+        var activeUserCount = auditLog.countDistinctUids(rangeFrom, rangeEnd).onErrorReturn(0L);
         var previousActiveUserCount =
                 auditLog.countDistinctUids(previousFrom, rangeFrom).onErrorReturn(0L);
         var topOperations = auditLog
-                .topOperations(rangeFrom, now, TOP_OPERATION_LIMIT)
+                .topOperations(rangeFrom, rangeEnd, TOP_OPERATION_LIMIT)
                 .onErrorReturn(Map.of());
         var activeBans = riskGuard.listBans().count().onErrorReturn(0L);
         var auditStats = Mono.zip(
@@ -280,7 +294,7 @@ public class DashboardEndpoint implements CustomEndpoint {
                 .map(tuple -> new DashboardOverview(
                         tuple.getT1(),
                         days,
-                        now,
+                        generatedAt,
                         tuple.getT2(),
                         tuple.getT3().size(),
                         tuple.getT4().getT1(),
