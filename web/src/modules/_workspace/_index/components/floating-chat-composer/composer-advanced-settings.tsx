@@ -2,8 +2,8 @@ import { Dices } from "lucide-react";
 import { HelpCircleIcon } from "tdesign-icons-react";
 import { Button, Input, Slider, Switch, Tooltip } from "tdesign-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import { COMPOSER_MAX_SEED, type ComposerAdvancedSettingsValue } from "./composer-types";
-import styles from "./floating-chat-composer.module.css";
 
 const SEED_SLIDER_MAX = 1000;
 

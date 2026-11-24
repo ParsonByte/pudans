@@ -3,10 +3,10 @@ import { useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon, SoundIcon, TimeIcon } from "tdesign-icons-react";
 import { Avatar, Button, Popup } from "tdesign-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import { ComposerAudioEmotionPanel } from "./composer-audio-emotion-panel";
 import { ComposerAudioSettings, formatComposerAudioSpeed } from "./composer-audio-settings";
 import type { ComposerAudioSettingsValue } from "./composer-types";
-import styles from "./floating-chat-composer.module.css";
 
 type ComposerAudioToolbarProps = {
     onChangeSettings: (next: Partial<ComposerAudioSettingsValue>) => void;

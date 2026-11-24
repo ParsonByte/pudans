@@ -10,6 +10,7 @@ import {
 } from "tdesign-icons-react";
 import { Button, InputNumber, Popup, Switch, Tooltip } from "tdesign-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import { ComposerAdvancedSettings } from "./composer-advanced-settings";
 import { ComposerAudioToolbar } from "./composer-audio-toolbar";
 import { ComposerModelPanel } from "./composer-model-panel";
@@ -23,7 +24,6 @@ import {
     type ComposerToolMode,
     getComposerBackgroundLabel,
 } from "./composer-types";
-import styles from "./floating-chat-composer.module.css";
 
 type ComposerToolbarProps = {
     advancedSettings: ComposerAdvancedSettingsValue;

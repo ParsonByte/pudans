@@ -12,10 +12,10 @@ import {
 } from "tdesign-icons-react";
 import { Button, Tooltip } from "tdesign-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import { ComposerModeSwitch } from "./composer-mode-switch";
 import { ComposerResetButton } from "./composer-reset-button";
 import { type ComposerMediaMode, type ComposerToolMode, getComposerToolModes } from "./composer-types";
-import styles from "./floating-chat-composer.module.css";
 
 const TOOL_MODE_META = {
     continue: { icon: <TextformatLongerIcon size={16} />, label: "续写" },

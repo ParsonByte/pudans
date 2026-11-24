@@ -3,8 +3,8 @@ import { useState } from "react";
 import { AiImageIcon, AiVideoIcon, AudioIcon, CheckIcon, ChevronDownIcon } from "tdesign-icons-react";
 import { Button, Popup } from "tdesign-react";
 
+import styles from "../../styles/floating-chat-composer.module.css";
 import type { ComposerMediaMode } from "./composer-types";
-import styles from "./floating-chat-composer.module.css";
 
 const MEDIA_MODE_OPTIONS = [
     {

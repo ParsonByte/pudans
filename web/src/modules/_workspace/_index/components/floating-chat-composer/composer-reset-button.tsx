@@ -1,7 +1,7 @@
 import { Broom } from "lucide-react";
 import { Button, Tooltip } from "tdesign-react";
 
-import styles from "./floating-chat-composer.module.css";
+import styles from "../../styles/floating-chat-composer.module.css";
 
 type ComposerResetButtonProps = {
     onReset: () => void;
