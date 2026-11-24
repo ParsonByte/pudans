@@ -1,5 +1,7 @@
 "use client";
 
+import { usePathname, useSearchParams } from "next/navigation";
+
 import { config } from "@fortawesome/fontawesome-svg-core";
 import { faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faEllipsis } from "@fortawesome/free-solid-svg-icons";
@@ -11,6 +13,14 @@ import { Menu } from "tdesign-react";
 
 import type { AppShellSidebarProps } from "@/components/layouts";
 import { SIDE_NAVIGATION_ID } from "@/components/layouts/app-shell-types";
+import {
+    INDEX_LEGACY_PAGE_PARAM,
+    INDEX_NAV_GROUP,
+    INDEX_PAGE_KEYS,
+    indexPageHref,
+    isIndexPageKey,
+    resolveIndexPage,
+} from "@/routes/(_workspace)/(_index)/paths";
 
 config.autoAddCss = false;
 
@@ -18,7 +28,15 @@ const { MenuItem, SubMenu } = Menu;
 const SIDEBAR_WIDTH = "232px";
 const SIDEBAR_COLLAPSED_WIDTH = "48px";
 
-export function IndexSidebar({ collapsed, isDark }: AppShellSidebarProps) {
+export function IndexSidebar({ collapsed, isDark, onNavigate }: AppShellSidebarProps) {
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const activePage = resolveIndexPage(
+        pathname,
+        searchParams.get(INDEX_NAV_GROUP),
+        searchParams.get(INDEX_LEGACY_PAGE_PARAM),
+    );
+
     return (
         <aside
             className="app-shell__aside index-sidebar"
@@ -29,23 +47,33 @@ export function IndexSidebar({ collapsed, isDark }: AppShellSidebarProps) {
                 <nav aria-label="DANS 导航" className="index-sidebar__navigation">
                     <Menu
                         collapsed={collapsed}
-                        defaultValue="create"
+                        onChange={(value) => {
+                            const page = String(value);
+
+                            if (isIndexPageKey(page)) {
+                                onNavigate(indexPageHref(page));
+                            }
+                        }}
                         theme={isDark ? "dark" : "light"}
+                        value={activePage}
                         width={[SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH]}
                     >
-                        <MenuItem icon={<SparklesIcon className="t-icon" />} value="create">
+                        <MenuItem icon={<SparklesIcon className="t-icon" />} value={INDEX_PAGE_KEYS.create}>
                             创作
                         </MenuItem>
-                        <MenuItem icon={<ExploreIcon />} value="explore">
+                        <MenuItem icon={<ExploreIcon />} value={INDEX_PAGE_KEYS.explore}>
                             探索
                         </MenuItem>
-                        <MenuItem icon={<GraphicDesignTwo className="t-icon" size={20} />} value="dans">
+                        <MenuItem icon={<GraphicDesignTwo className="t-icon" size={20} />} value={INDEX_PAGE_KEYS.dans}>
                             DANS
                         </MenuItem>
-                        <MenuItem icon={<LayoutGridCirclesIcon className="t-icon" />} value="ai-tools">
+                        <MenuItem icon={<LayoutGridCirclesIcon className="t-icon" />} value={INDEX_PAGE_KEYS.aiTools}>
                             AI 工具
                         </MenuItem>
-                        <MenuItem icon={<FontAwesomeIcon className="t-icon" icon={faFolder} />} value="assets">
+                        <MenuItem
+                            icon={<FontAwesomeIcon className="t-icon" icon={faFolder} />}
+                            value={INDEX_PAGE_KEYS.assets}
+                        >
                             资产和主体
                         </MenuItem>
                         <SubMenu
@@ -53,10 +81,10 @@ export function IndexSidebar({ collapsed, isDark }: AppShellSidebarProps) {
                             title="更多"
                             value="more"
                         >
-                            <MenuItem icon={<LightbulbIcon />} value="deep-understanding">
+                            <MenuItem icon={<LightbulbIcon />} value={INDEX_PAGE_KEYS.deepUnderstanding}>
                                 深度理解
                             </MenuItem>
-                            <MenuItem icon={<LineSquiggleIcon className="t-icon" />} value="dream-space">
+                            <MenuItem icon={<LineSquiggleIcon className="t-icon" />} value={INDEX_PAGE_KEYS.dreamSpace}>
                                 幻境空间
                             </MenuItem>
                         </SubMenu>
@@ -65,10 +93,19 @@ export function IndexSidebar({ collapsed, isDark }: AppShellSidebarProps) {
 
                 <section aria-label="对话管理" className="index-sidebar__conversations">
                     <div className="flex items-center justify-between gap-2 px-2">
-                        <span className="flex items-center gap-2 text-xs font-semibold text-[var(--td-text-color-secondary)]">
+                        <button
+                            aria-label="打开会话页"
+                            className={`flex items-center gap-2 text-xs font-semibold ${
+                                activePage === INDEX_PAGE_KEYS.conversation
+                                    ? "text-[var(--td-brand-color)]"
+                                    : "text-[var(--td-text-color-secondary)]"
+                            }`}
+                            onClick={() => onNavigate(indexPageHref(INDEX_PAGE_KEYS.conversation))}
+                            type="button"
+                        >
                             <ChatIcon size={16} />
                             对话
-                        </span>
+                        </button>
                         <span className="text-xs text-[var(--td-text-color-placeholder)]">0</span>
                     </div>
                     <div className="index-sidebar__conversation-empty">

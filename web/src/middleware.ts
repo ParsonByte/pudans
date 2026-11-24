@@ -1,10 +1,43 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { readSetupRequired } from "@/modules/_setup/composables/_setup-guard";
+import {
+    INDEX_BASE_PATH,
+    INDEX_LEGACY_PAGE_PARAM,
+    INDEX_NAV_GROUP,
+    INDEX_SESSION_PARAM,
+    indexPageHref,
+    isIndexPageKey,
+    legacyIndexPageFromPathname,
+} from "@/routes/(_workspace)/(_index)/paths";
 import { requireAuthentication, resolveDefaultWorkspacePath } from "@/routes/_authenticated/route";
 
 const SETUP_PATH = "/setup";
 const SIGN_IN_PATH = "/sign-in";
+
+function legacyIndexRedirect(request: NextRequest): NextResponse | undefined {
+    const navigationPage = request.nextUrl.searchParams.get(INDEX_NAV_GROUP);
+    const queryPage = request.nextUrl.searchParams.get(INDEX_LEGACY_PAGE_PARAM);
+    let page = legacyIndexPageFromPathname(request.nextUrl.pathname);
+
+    if (
+        !page &&
+        request.nextUrl.pathname === INDEX_BASE_PATH &&
+        !isIndexPageKey(navigationPage ?? "") &&
+        queryPage &&
+        isIndexPageKey(queryPage)
+    ) {
+        page = queryPage;
+    }
+
+    if (!page) {
+        return undefined;
+    }
+
+    const sessionIds = request.nextUrl.searchParams.getAll(INDEX_SESSION_PARAM);
+
+    return NextResponse.redirect(new URL(indexPageHref(page, sessionIds), request.url));
+}
 
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -38,6 +71,12 @@ export async function middleware(request: NextRequest) {
     }
 
     if (await requireAuthentication(request)) {
+        const legacyRedirect = legacyIndexRedirect(request);
+
+        if (legacyRedirect) {
+            return legacyRedirect;
+        }
+
         return NextResponse.next();
     }
 

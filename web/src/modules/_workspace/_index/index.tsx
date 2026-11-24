@@ -1,9 +1,13 @@
-import { FloatingChatComposer } from "./components/floating-chat-composer";
+"use client";
+
+import { createElement } from "react";
+
+import { INDEX_PAGE_VIEWS } from "@/routes/(_workspace)/(_index)";
+
+import { useIndexRoute } from "./composables/_index-route";
 
 export function IndexView() {
-    return (
-        <div className="flex min-h-[calc(100dvh-112px)] min-w-0 flex-col justify-end max-md:min-h-[calc(100dvh-96px)]">
-            <FloatingChatComposer />
-        </div>
-    );
+    const page = useIndexRoute();
+
+    return createElement(INDEX_PAGE_VIEWS[page]);
 }

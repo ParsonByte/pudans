@@ -81,12 +81,25 @@ function WorkspaceLayoutContent({ children, workspace }: WorkspaceLayoutProps) {
     );
 
     useEffect(() => {
-        if (dynamicMenu.loading || dynamicMenu.error || dynamicMenu.selectionFromUrl || !dynamicMenu.selectionPath) {
+        if (
+            workspace === HOME_WORKSPACE_KEY ||
+            dynamicMenu.loading ||
+            dynamicMenu.error ||
+            dynamicMenu.selectionFromUrl ||
+            !dynamicMenu.selectionPath
+        ) {
             return;
         }
 
         router.replace(dynamicMenu.selectionPath);
-    }, [dynamicMenu.error, dynamicMenu.loading, dynamicMenu.selectionFromUrl, dynamicMenu.selectionPath, router]);
+    }, [
+        dynamicMenu.error,
+        dynamicMenu.loading,
+        dynamicMenu.selectionFromUrl,
+        dynamicMenu.selectionPath,
+        router,
+        workspace,
+    ]);
 
     useEffect(() => {
         if (!dynamicMenu.error) {
