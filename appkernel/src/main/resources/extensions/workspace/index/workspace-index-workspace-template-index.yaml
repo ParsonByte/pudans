@@ -1,0 +1,16 @@
+apiVersion: pudans.tolim.cn/v1alpha1
+kind: Role
+metadata:
+  name: role-template-workspace-index
+  labels:
+    pudans.tolim.cn/role-template: "true"
+  annotations:
+    rbac.authorization.pudans.tolim.cn/ui-type: "workspace"
+    rbac.authorization.pudans.tolim.cn/ui-workspace: "index"
+    rbac.authorization.pudans.tolim.cn/ui-slug: "index"
+    rbac.authorization.pudans.tolim.cn/ui-label: "首页"
+    rbac.authorization.pudans.tolim.cn/ui-description: "Pudans 企业身份与权限管理平台"
+    rbac.authorization.pudans.tolim.cn/ui-icon: "lucide:house"
+    rbac.authorization.pudans.tolim.cn/ui-order: "1"
+    rbac.authorization.pudans.tolim.cn/ui-public: "true"
+rules: []

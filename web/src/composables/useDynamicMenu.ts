@@ -33,6 +33,14 @@ export type DynamicMenuSelection = {
     item: DynamicMenuItem;
 };
 
+function useNavigationQuery() {
+    return useQuery({
+        queryKey: ["navigation"],
+        queryFn: async () => (await apiClient.navigation.getNavigation()).data,
+        staleTime: 5 * 60 * 1000,
+    });
+}
+
 type DynamicMenuState = {
     error: unknown;
     groups: DynamicMenuGroup[];
@@ -153,11 +161,7 @@ export function useDynamicMenu(workspace: string): DynamicMenuState {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const search = searchParams.toString();
-    const navigationQuery = useQuery({
-        queryKey: ["navigation"],
-        queryFn: async () => (await apiClient.navigation.getNavigation()).data,
-        staleTime: 5 * 60 * 1000,
-    });
+    const navigationQuery = useNavigationQuery();
     const state = useMemo(() => {
         const navigationWorkspace = navigationQuery.data?.workspaces?.find(
             (item) => (item.slug ?? item.id) === workspace,
